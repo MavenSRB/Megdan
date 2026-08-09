@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Scope
 
-The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. Milestone 1.2 adds Edit Mode layout, mesh, and saved-scene coverage plus a Play Mode scene-loading check. Milestone 1.3 adds primitive hero occupancy and placement coverage. Milestone 1.4 adds adjacent-empty destination query, selection highlighting, Input System pointer-path, saved-scene, and Play Mode coverage. Milestone 1.5 adds pure adjacent-move command/event authority coverage. Milestone 1.6 adds pointer-to-command hookup coverage for accepted and rejected adjacent destination flows. Milestone 1.7 expands the placeholder validation grid and adds scene coverage for radius-2 coordinates, distance coverage, alternate routes, and preserved click-to-move behavior. Milestone 1.8 adds pure movement-session coverage for zero movement, early stopping, exact allowance, and over-movement, plus reachable-destination query, controller, and Play Mode pointer coverage for one-click destination movement that records adjacent step routes. Milestone 1.9 adds pure obstacle occupancy, adjacent-move blocking, reachability detours around blocked spaces, visible placeholder obstacle views, saved-scene obstacle wiring, and Play Mode coverage for one-click detour movement. These tests do not implement or verify a complete official game rule.
+The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. Milestone 1.2 adds Edit Mode layout, mesh, and saved-scene coverage plus a Play Mode scene-loading check. Milestone 1.3 adds primitive hero occupancy and placement coverage. Milestone 1.4 adds adjacent-empty destination query, selection highlighting, Input System pointer-path, saved-scene, and Play Mode coverage. Milestone 1.5 adds pure adjacent-move command/event authority coverage. Milestone 1.6 adds pointer-to-command hookup coverage for accepted and rejected adjacent destination flows. Milestone 1.7 expands the placeholder validation grid and adds scene coverage for radius-2 coordinates, distance coverage, alternate routes, and preserved click-to-move behavior. Milestone 1.8 adds pure movement-session coverage for zero movement, early stopping, exact allowance, and over-movement, plus reachable-destination query, controller, and Play Mode pointer coverage for one-click destination movement that records adjacent step routes. Milestone 1.9 adds pure obstacle occupancy, adjacent-move blocking, reachability detours around blocked spaces, visible placeholder obstacle views, saved-scene obstacle wiring, and Play Mode coverage for one-click detour movement. Milestone 1.10 adds pure card definition/instance coverage for stable identities, content revisions, definition references, primitive-hero ownership, orthogonal initial state facts, shared immutable definitions, and initial setup validation. These tests do not implement or verify a complete official game rule.
 
 Run commands from PowerShell. Each focused Unity command opens the project, runs only its named test fixture or case, writes NUnit XML plus a Unity log under `tmp/`, and exits without producing a player build. Scene-dependent filters load the saved validation scene.
 
@@ -315,6 +315,33 @@ if ($obstacleBlockingEditProcess.ExitCode -ne 0) {
 ```
 
 Expected result: all discovered cases pass, covering placeholder obstacle identity/occupancy, visible obstacle view placement, occupied-destination rejections, one-obstacle-per-space conflicts including units, reachable-destination exclusion for blockers, legal detours, insufficient allowance for detours, and saved-scene obstacle wiring.
+
+## Card definition/instance focused Edit Mode tests
+
+```powershell
+$cardDefinitionInstanceEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-10-edit-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-10-edit-tests.log"'
+)
+
+$cardDefinitionInstanceEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $cardDefinitionInstanceEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($cardDefinitionInstanceEditProcess.ExitCode -ne 0) {
+    throw "Card definition/instance Edit Mode tests failed with exit code $($cardDefinitionInstanceEditProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering stable card definition IDs, content revisions, display names, definition references, distinct card instance IDs, primitive-hero ownership, initial in-hand runtime state, multiple instances sharing one immutable definition, orthogonal state facts, and rejection of blank, duplicate, unresolved, stale, or invalid initial card data.
 
 ## Placeholder-grid focused Play Mode test
 

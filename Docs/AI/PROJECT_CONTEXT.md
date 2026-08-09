@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.9 is complete: the expanded placeholder grid now includes generic placeholder obstacles. Obstacles have pure occupancies, occupy unique board coordinates, cannot share a space with the primitive hero or another obstacle, block adjacent move commands, and are excluded from reachable-destination highlighting and internal movement routes. The one-click movement flow can route around blockers when the allowance permits and rejects destinations that require entering or passing through blocked spaces. No obstacle subtypes, terrain data/art, tokens, ignore-obstacle behavior, official map data, zones, cards, turns, networking, animation, Fast Travel, movement from card text, movement-limiting effects, or broader gameplay resolution has been implemented.
+Milestone 1.10 is complete: pure placeholder card definitions are now separated from runtime card instances. Definitions have stable IDs, content revisions, and display names; instances have distinct stable IDs, definition references, primitive-hero ownership, and orthogonal runtime state facts initialized in hand. Initial card setup validation rejects missing, duplicate, unresolved, or invalid initial data. No action offers, card values, real Wasp data/images, state transitions, play/reveal flow, turns, Unity presentation, animation, or broader gameplay resolution has been implemented.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -14,7 +14,7 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 1.10, separating card definitions from card instances, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.11, representing action definitions, runtime offers, and typed values, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
@@ -257,7 +257,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Card definitions, cards, or turns before milestone 1.10 approval.
+- Action offers, card execution, visible card UI, turns, or Wasp content before their exact milestone approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.
