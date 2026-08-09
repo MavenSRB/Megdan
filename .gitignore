@@ -1,0 +1,47 @@
+# Unity-generated project data
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Local validation output
+/tmp/
+
+# Private local rule and card references; preserve in place, never commit or distribute
+/Docs/Guards of Atlantis II - 2nd Printing_web.pdf
+/Docs/Guards of Atlantis II - Tabletopia Cards/
+
+# IDE and generated solution files
+/.vs/
+/.idea/
+/.vscode/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.sln.iml
+
+# Unity crash and diagnostic output
+sysinfo.txt
+*.stackdump
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Asset Store publishing tools are not project content
+/Assets/AssetStoreTools*

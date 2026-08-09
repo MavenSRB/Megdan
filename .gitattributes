@@ -1,0 +1,35 @@
+* text=auto
+.gitattributes text eol=lf
+.gitignore text eol=lf
+
+# Source and Unity text serialization
+*.cs text eol=lf
+*.asmdef text eol=lf
+*.asmref text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.meta text eol=lf whitespace=-blank-at-eol
+*.asset text eol=lf whitespace=-blank-at-eol
+*.unity text eol=lf whitespace=-blank-at-eol
+*.prefab text eol=lf whitespace=-blank-at-eol
+*.mat text eol=lf whitespace=-blank-at-eol
+*.anim text eol=lf whitespace=-blank-at-eol
+*.controller text eol=lf whitespace=-blank-at-eol
+*.inputactions text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.psd binary
+*.tga binary
+*.fbx binary
+*.blend binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.mp4 binary
+*.mov binary
+*.pdf binary
