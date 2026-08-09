@@ -26,6 +26,8 @@ For every item:
 
 Milestones may be split further if implementation reveals more than one independently testable behavior. They must not be silently combined.
 
+At each designated phase-gate roadmap audit, reassess the affected unstarted milestones against the evidence produced so far. The audit is a required handoff activity, not a separately numbered milestone, and does not authorize implementation. For each affected milestone, recommend whether to keep it unchanged, merge it with adjacent work that shares the same authority and validation boundary, split independently risky behavior, or defer/remove work that is not required for the private publisher pitch. Record an approximate remaining-effort range and identify the shortest dependency-safe path to the next hard integration outcome. Any resulting roadmap change requires explicit user approval and the applicable continuity updates before the next milestone profile is assigned. An audit must not weaken verified rules, architecture contracts, acceptance evidence, validation gates, or the one-approved-micro-milestone-at-a-time rule.
+
 Acceptance checks define what must be proved; `Docs/AI/TESTING.md` defines the required breadth. Unless a milestone is an explicit gate or qualifies as broad risk, completion does not require both unfiltered Unity suites.
 
 Every card-related milestone must preserve the contracts in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` and `Docs/AI/CARD_EFFECT_CAPABILITIES.md`. A narrow milestone implements only the required subset of those contracts; it must not introduce a shortcut that the next card milestone is expected to replace.
@@ -533,6 +535,8 @@ Acceptance checks:
 - No general gameplay RNG subsystem is introduced.
 - T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass after the Phase 2 focused scenarios.
 
+Phase-gate roadmap audit: After milestone 2.6 passes its T3 gate, audit Phase 3 before assigning the next milestone profile. Confirm that its lifecycle, Initiative, turn, round, snapshot, Undo/restart, and event-log boundaries reach one complete deterministic round through the shortest dependency-safe sequence; recommend any justified keep/merge/split/defer/remove decisions and record the remaining-effort range.
+
 ## Phase 3 - Test-card Initiative, turns, and rounds
 
 ### [ ] 3.1 Extend the test-card foundation with turn lifecycle
@@ -664,6 +668,8 @@ Acceptance checks:
 - T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
 Non-goals: No final visual styling, export format, analytics, telemetry, or player-facing match history.
+
+Phase-gate roadmap audit: After milestone 3.11 passes its T3 gate, audit Phases 4-7 before assigning the next milestone profile. Reassess milestone packaging and sequencing around the shortest dependency-safe path to milestone 7.9's complete deterministic synthetic match, while preserving the full-map, general-rule, snapshot, progression, and victory evidence required by that hard gate; recommend any justified keep/merge/split/defer/remove decisions and record the remaining-effort range.
 
 ## Phase 4 - Full official multi-zone board
 
@@ -1023,6 +1029,8 @@ Acceptance checks:
 
 Hard gate: The complete Wasp card inventory and Wasp-specific card implementation do not begin until milestone 7.9 is reviewed and approved.
 
+Hard-gate roadmap audit: After milestone 7.9 passes its T3 gate and is reviewed, audit readiness for verified Wasp content before assigning the next milestone profile. Confirm that the synthetic core loop has retired the intended architecture and integration risks, identify unresolved prerequisites that must remain ahead of Wasp implementation, recommend any justified changes to Phase 8's inventory/mapping entry sequence, and record the remaining-effort range. This audit cannot waive milestones 8.1 or 8.2 or authorize Wasp-specific implementation.
+
 ## Phase 8 - Verified Wasp content and deterministic 1v1 integration
 
 Phase 8 begins only after the synthetic core match gate. Wasp-specific card work extends proven core systems; it does not replace them. The mirrored Wasp setup identities introduced earlier are configuration placeholders, not card-content implementation.
@@ -1048,7 +1056,8 @@ Acceptance checks:
 - The matrix covers every Wasp card face, tier, item relationship, and Ultimate from milestone 8.1.
 - Existing core capabilities are distinguished from Wasp-specific refinements, new reusable primitives, and genuinely unique handlers.
 - Every effect node maps to a capability ID/version, typed bindings, policy, failure/atomicity rule, checkpoints, and tests.
-- Remaining Phase 8 milestones are reordered or split so dependencies precede the first Wasp card that needs them.
+- The designated roadmap audit applies the verified inventory and capability matrix to all remaining Phase 8 milestones and the Phase 9 private-pitch presentation scope. It recommends justified keep/merge/split/defer/remove decisions, records an updated remaining-effort range, and keeps dependencies ahead of the first Wasp card or presentation path that needs them.
+- Approved remaining Phase 8 milestones are reordered or split so dependencies precede the first Wasp card that needs them.
 - If the Phase 8 endpoint changes, update the T3 gate in `TESTING.md` and this roadmap in the same re-baseline.
 - New reusable contracts update `CARD_EFFECT_CAPABILITIES.md` before implementation.
 - Any schema change is explicit and migration-tested rather than hidden inside a card milestone.
