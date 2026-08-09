@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Units.Heroes;
@@ -58,6 +59,77 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(definition.ActionDefinitions.Single(action =>
                         action.Id.Equals(secondary.ActionDefinitionId)).DefaultPolicy.CardTextApplication,
                     Is.EqualTo(CardTextApplicationPolicy.Suppressed));
+            }
+        }
+
+        [Test]
+        public void SelectingBlueHero_ExposesBlueOwnedCardsAndMovesBlueThroughSharedAuthority()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var redObject = new GameObject("Red Hero");
+                objects.Add(redObject);
+                var redHero = redObject.AddComponent<PrimitiveHeroView>();
+                redHero.Configure(
+                    new HeroOccupancy(
+                        new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                        new HexCoordinate(0, 0)),
+                    HexWorldLayout.DefaultOuterRadius);
+
+                var blueObject = new GameObject("Blue Hero");
+                objects.Add(blueObject);
+                var blueHero = blueObject.AddComponent<PrimitiveHeroView>();
+                blueHero.Configure(
+                    new HeroOccupancy(
+                        new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
+                        new HexCoordinate(0, -1)),
+                    HexWorldLayout.DefaultOuterRadius);
+
+                var tiles = CreateRadiusTwoCoordinates()
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var controllerObject = new GameObject("Two Hero Card Movement Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(
+                    redHero,
+                    tiles,
+                    CreateMaterial(Color.yellow),
+                    otherHeroes: new[] { blueHero });
+                controller.ConfigureCardDrivenMovement(true);
+
+                var redCardIds = controller.VisibleCardInstances.Select(card => card.Id).ToArray();
+                Assert.That(controller.ActiveHeroView, Is.SameAs(redHero));
+                Assert.That(controller.VisibleCardInstances.All(card =>
+                    card.OwnerId.Equals(redHero.Occupancy.HeroId)), Is.True);
+                Assert.That(redCardIds.All(id => id.Value.StartsWith("red-")), Is.True);
+
+                Assert.That(controller.TrySelectHero(blueHero), Is.True);
+                var blueCardIds = controller.VisibleCardInstances.Select(card => card.Id).ToArray();
+
+                Assert.That(controller.ActiveHeroView, Is.SameAs(blueHero));
+                Assert.That(controller.VisibleCardInstances.All(card =>
+                    card.OwnerId.Equals(blueHero.Occupancy.HeroId)), Is.True);
+                Assert.That(blueCardIds.All(id => id.Value.StartsWith("blue-")), Is.True);
+                Assert.That(blueCardIds.Intersect(redCardIds), Is.Empty);
+                Assert.That(controller.TrySelectCard(blueCardIds[0]), Is.True);
+                Assert.That(controller.TrySelectAction(
+                    new ActionDefinitionId("secondary-movement")), Is.True);
+                Assert.That(controller.PendingCardChoice.Origin, Is.EqualTo(blueHero.Coordinate));
+                Assert.That(controller.HighlightedCoordinates, Has.No.Member(redHero.Coordinate));
+                Assert.That(controller.TrySelectHero(redHero), Is.False);
+                Assert.That(controller.ActiveHeroView, Is.SameAs(blueHero));
+                Assert.That(controller.IsCardResolutionPending, Is.True);
+
+                var destination = new HexCoordinate(1, -1);
+                Assert.That(controller.TrySubmitCardDestination(destination), Is.True);
+                Assert.That(blueHero.Coordinate, Is.EqualTo(destination));
+                Assert.That(redHero.Coordinate, Is.EqualTo(new HexCoordinate(0, 0)));
+            }
+            finally
+            {
+                DestroyAll(objects);
             }
         }
 

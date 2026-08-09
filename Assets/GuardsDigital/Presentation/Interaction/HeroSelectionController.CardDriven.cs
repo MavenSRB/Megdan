@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Units.Heroes;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Interaction
@@ -19,6 +21,9 @@ namespace GuardsDigital.Presentation.Interaction
 
         private readonly List<CardActionResolutionEvent> cardResolutionEvents =
             new List<CardActionResolutionEvent>();
+        private readonly Dictionary<HeroId, PlaceholderMovementHand> placeholderHands =
+            new Dictionary<HeroId, PlaceholderMovementHand>();
+        private bool placeholderOneVsOneHandsInitialized;
 
         private PlaceholderMovementHand placeholderHand;
         private CardActionResolutionAuthority cardResolutionAuthority;
@@ -307,10 +312,11 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            var ownerId = heroView.Occupancy.HeroId;
             if (placeholderHand == null ||
-                placeholderHand.Instances.Any(instance => !instance.OwnerId.Equals(heroView.Occupancy.HeroId)))
+                placeholderHand.Instances.Any(instance => !instance.OwnerId.Equals(ownerId)))
             {
-                placeholderHand = PlaceholderMovementHand.Create(heroView.Occupancy.HeroId);
+                placeholderHand = GetOrCreatePlaceholderHand(ownerId);
             }
 
             if (string.IsNullOrWhiteSpace(cardStatus))
@@ -333,6 +339,32 @@ namespace GuardsDigital.Presentation.Interaction
             LastCardTextApplicationPolicy = CardTextApplicationPolicy.None;
             LastCardRejectionReason = CardActionResolutionRejectionReason.None;
             cardStatus = cardDrivenMovementEnabled ? "Select a test card." : string.Empty;
+        }
+
+        private PlaceholderMovementHand GetOrCreatePlaceholderHand(HeroId ownerId)
+        {
+            EnsurePlaceholderOneVsOneHands();
+            if (placeholderHands.TryGetValue(ownerId, out var existingHand))
+            {
+                return existingHand;
+            }
+
+            var hand = PlaceholderMovementHand.Create(ownerId);
+            placeholderHands[ownerId] = hand;
+            return hand;
+        }
+
+        private void EnsurePlaceholderOneVsOneHands()
+        {
+            if (placeholderOneVsOneHandsInitialized)
+            {
+                return;
+            }
+
+            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            placeholderHands[configuration.RedHand.Instances[0].OwnerId] = configuration.RedHand;
+            placeholderHands[configuration.BlueHand.Instances[0].OwnerId] = configuration.BlueHand;
+            placeholderOneVsOneHandsInitialized = true;
         }
 
         private void RefreshCardChoiceHighlights(PendingMovementChoice choice)
@@ -412,7 +444,10 @@ namespace GuardsDigital.Presentation.Interaction
             var panel = GetCardPanelRect();
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));
-            GUILayout.Label("PHASE 1 TEST HAND - choose a card, then one Movement offer");
+            var activeHeroLabel = heroView != null
+                ? $"{heroView.TeamSide.ToString().ToUpperInvariant()} HERO"
+                : "NO HERO";
+            GUILayout.Label($"PHASE 1 TEST HAND - {activeHeroLabel} - choose a card, then one Movement offer");
             GUILayout.Label(cardStatus);
 
             GUILayout.BeginHorizontal();

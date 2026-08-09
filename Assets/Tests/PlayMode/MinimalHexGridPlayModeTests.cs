@@ -152,6 +152,59 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_SelectsBlueHeroAndMovesItWithItsOwnCard()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var redHero = FindRedHero(heroes);
+            var blueHero = heroes.Single(hero => hero != redHero);
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var redCardIds = controller.VisibleCardInstances.Select(card => card.Id).ToArray();
+            var blueOrigin = blueHero.Coordinate;
+
+            Assert.That(controller.ActiveHeroView, Is.SameAs(redHero));
+            Assert.That(redCardIds.All(id => id.Value.StartsWith("red-")), Is.True);
+            Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(blueHero.transform.position)), Is.True);
+
+            var blueCards = controller.VisibleCardInstances.ToArray();
+            Assert.That(controller.ActiveHeroView, Is.SameAs(blueHero));
+            Assert.That(blueCards.All(card => card.OwnerId.Equals(blueHero.Occupancy.HeroId)), Is.True);
+            Assert.That(blueCards.All(card => card.Id.Value.StartsWith("blue-")), Is.True);
+            Assert.That(blueCards.Select(card => card.Id).Intersect(redCardIds), Is.Empty);
+            Assert.That(controller.TrySelectCard(blueCards[0].Id), Is.True);
+            Assert.That(controller.TrySelectAction(
+                new ActionDefinitionId("secondary-movement")), Is.True);
+            Assert.That(controller.PendingCardChoice.Origin, Is.EqualTo(blueOrigin));
+            Assert.That(controller.HighlightedCoordinates, Has.No.Member(redHero.Coordinate));
+
+            var destination = new HexCoordinate(1, -1);
+            var destinationTile = tiles.Single(tile => tile.Coordinate.Equals(destination));
+            Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(destinationTile.transform.position)), Is.True);
+
+            Physics.SyncTransforms();
+            yield return null;
+
+            Assert.That(blueHero.Coordinate, Is.EqualTo(destination));
+            Assert.That(redHero.Coordinate, Is.EqualTo(new HexCoordinate(0, 0)));
+            Assert.That(controller.IsCardResolutionPending, Is.False);
+            Assert.That(controller.MovementRoute, Is.EqualTo(new[] { blueOrigin, destination }));
+            Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(redHero.transform.position)), Is.True);
+            Assert.That(controller.ActiveHeroView, Is.SameAs(redHero));
+            Assert.That(controller.VisibleCardInstances.Select(card => card.Id), Is.EquivalentTo(redCardIds));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_ClicksTwoPartialMovementWaypointsThenStopsWithAllowanceRemaining()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);

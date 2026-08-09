@@ -53,6 +53,15 @@ namespace GuardsDigital.Presentation.Interaction
         public IReadOnlyList<PrimitiveHeroView> OtherHeroViews =>
             otherHeroViews != null ? otherHeroViews.Where(hero => hero != null).ToArray() : System.Array.Empty<PrimitiveHeroView>();
 
+        public PrimitiveHeroView ActiveHeroView
+        {
+            get
+            {
+                EnsureBindings();
+                return heroView;
+            }
+        }
+
         public IReadOnlyList<HeroOccupancy> HeroOccupancies
         {
             get
@@ -117,17 +126,59 @@ namespace GuardsDigital.Presentation.Interaction
         public void SelectHero()
         {
             EnsureBindings();
+            TrySelectHero(heroView);
+        }
+
+        public bool TrySelectHero(PrimitiveHeroView selectedHero)
+        {
+            EnsureBindings();
             EnsureMoveAuthority();
+
+            if (selectedHero == null)
+            {
+                return false;
+            }
+
+            var boundHeroes = new[] { heroView }
+                .Concat(otherHeroViews ?? System.Array.Empty<PrimitiveHeroView>())
+                .Where(hero => hero != null)
+                .Distinct()
+                .ToArray();
+            if (!boundHeroes.Contains(selectedHero))
+            {
+                return false;
+            }
+
+            if (IsMovementSessionActive)
+            {
+                return selectedHero == heroView && StopMovementSession();
+            }
+
+            if (selectedHero != heroView)
+            {
+                ClearSelectionVisuals();
+                heroView = selectedHero;
+                otherHeroViews = boundHeroes.Where(hero => hero != selectedHero).ToArray();
+                movementSession = null;
+                RebuildMoveAuthority();
+
+                if (cardDrivenMovementEnabled)
+                {
+                    ResetCardDrivenMovementPresentation();
+                    InitializeCardDrivenMovementIfEnabled();
+                    cardStatus = $"{heroView.TeamSide} hero selected. Choose a test card.";
+                }
+            }
 
             if (cardDrivenMovementEnabled)
             {
-                return;
+                return true;
             }
 
             if (heroView == null || tileViews == null)
             {
                 IsHeroSelected = false;
-                return;
+                return false;
             }
 
             RebuildMoveAuthority();
@@ -137,6 +188,7 @@ namespace GuardsDigital.Presentation.Interaction
                 selectedOccupancy.HeroId,
                 movementAllowance);
             RefreshSelectionHighlights(selectedOccupancy);
+            return true;
         }
 
         public bool StopMovementSession()

@@ -207,19 +207,25 @@ namespace GuardsDigital.Tests.EditMode
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
 
             Assert.That(controllers, Has.Length.EqualTo(1));
-            Assert.That(selectors, Has.Length.EqualTo(1));
+            Assert.That(selectors, Has.Length.EqualTo(2));
             Assert.That(inputs, Has.Length.EqualTo(1));
             Assert.That(controllers[0].MovementAllowance, Is.GreaterThan(1));
             Assert.That(controllers[0].IsCardDrivenMovementEnabled, Is.True);
             Assert.That(controllers[0].VisibleCardInstances.Count, Is.EqualTo(2));
+            Assert.That(controllers[0].VisibleCardInstances.All(card =>
+                card.OwnerId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue), Is.True);
+            Assert.That(controllers[0].VisibleCardInstances.All(card =>
+                card.Id.Value.StartsWith("red-")), Is.True);
             Assert.That(controllers[0].OtherHeroViews.Count, Is.EqualTo(1));
             Assert.That(controllers[0].HeroOccupancies.Count, Is.EqualTo(2));
-            Assert.That(selectors[0].SelectionController, Is.SameAs(controllers[0]));
+            Assert.That(selectors, Has.All.Matches<PrimitiveHeroPointerSelector>(selector =>
+                selector.SelectionController == controllers[0]));
             Assert.That(inputs[0].EventCamera, Is.Not.Null);
-            Assert.That(inputs[0].Selectors, Has.Member(selectors[0]));
-            var redHero = heroes.Single(hero =>
-                hero.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            Assert.That(redHero.GetComponent<CapsuleCollider>(), Is.Not.Null);
+            Assert.That(inputs[0].Selectors.Count, Is.EqualTo(2));
+            Assert.That(inputs[0].Selectors, Is.EquivalentTo(selectors));
+            Assert.That(heroes, Has.All.Matches<PrimitiveHeroView>(hero =>
+                hero.GetComponent<CapsuleCollider>() != null &&
+                hero.GetComponent<PrimitiveHeroPointerSelector>() != null));
         }
 
         [Test]
