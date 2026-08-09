@@ -460,7 +460,7 @@ namespace GuardsDigital.Presentation.Interaction
                 PrintedValueChannel.Attack).Total;
             cardStatus = $"{FormatContext(offer.InvocationContext)} Attack {attackTotal}: " +
                 "click the adjacent enemy hero.";
-            ClearSelectionVisuals();
+            RefreshAttackTargetHighlights(start.PendingTargetChoice);
             return true;
         }
 
@@ -490,6 +490,30 @@ namespace GuardsDigital.Presentation.Interaction
             foreach (var tile in tileViews.Where(tile => tile != null))
             {
                 tile.SetHighlighted(destinations.Contains(tile.Coordinate), material);
+            }
+
+            IsHeroSelected = true;
+        }
+
+        private void RefreshAttackTargetHighlights(PendingAttackTargetChoice choice)
+        {
+            ClearTileHighlights();
+            highlightedCoordinates.Clear();
+            reachableDestinations.Clear();
+
+            var legalTargetIds = new HashSet<HeroId>(choice.LegalTargetHeroIds);
+            var targetCoordinates = new[] { heroView }
+                .Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>())
+                .Where(view => view != null && legalTargetIds.Contains(view.Occupancy.HeroId))
+                .Select(view => view.Coordinate)
+                .ToArray();
+            highlightedCoordinates.AddRange(targetCoordinates);
+
+            var coordinates = new HashSet<HexCoordinate>(targetCoordinates);
+            var material = EnsureHighlightMaterial();
+            foreach (var tile in tileViews.Where(tile => tile != null))
+            {
+                tile.SetHighlighted(coordinates.Contains(tile.Coordinate), material);
             }
 
             IsHeroSelected = true;

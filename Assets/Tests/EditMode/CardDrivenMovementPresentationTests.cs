@@ -190,6 +190,10 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
                 Assert.That(controller.IsAttackTargetPending, Is.True);
                 Assert.That(controller.CardStatus, Does.Contain("click the adjacent enemy hero"));
+                Assert.That(controller.HighlightedCoordinates, Is.EqualTo(new[] { blueHero.Coordinate }));
+                Assert.That(tiles.Single(tile => tile.Coordinate.Equals(blueHero.Coordinate)).IsHighlighted, Is.True);
+                Assert.That(tiles.Where(tile => !tile.Coordinate.Equals(blueHero.Coordinate)),
+                    Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
 
                 var targeted = blueSelector.TrySelectFromPointerRay(
                     new Ray(blueHero.transform.position + (Vector3.up * 2f), Vector3.down));
@@ -202,6 +206,8 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
                 Assert.That(controller.PendingDefenseChoice.LegalDefenseOffers, Has.Count.EqualTo(2));
                 Assert.That(controller.CardStatus, Does.Contain("Defense response pending"));
+                Assert.That(controller.HighlightedCoordinates, Is.Empty);
+                Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
                 Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
                 {
                     CardActionResolutionEventKind.AttackTargetChoiceRequested,

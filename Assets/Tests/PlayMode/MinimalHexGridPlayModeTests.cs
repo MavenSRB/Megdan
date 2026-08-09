@@ -222,6 +222,7 @@ namespace GuardsDigital.Tests.PlayMode
             var blueHero = heroes.Single(hero => hero != redHero);
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
             var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             var routeDrill = controller.VisibleCardInstances.Single(card =>
                 card.Id.Value == "red-route-drill-card");
 
@@ -231,6 +232,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Has.Member("primary-attack"));
             Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
             Assert.That(controller.IsAttackTargetPending, Is.True);
+            Assert.That(controller.HighlightedCoordinates, Is.EqualTo(new[] { blueHero.Coordinate }));
+            Assert.That(tiles.Single(tile => tile.Coordinate.Equals(blueHero.Coordinate)).IsHighlighted, Is.True);
 
             var targeted = pointerInput.TryHandlePointerRay(CreateDownRay(blueHero.transform.position));
             Physics.SyncTransforms();
@@ -242,6 +245,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(controller.PendingDefenseChoice.ChooserId, Is.EqualTo(blueHero.Occupancy.HeroId));
             Assert.That(controller.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
             Assert.That(controller.CardStatus, Does.Contain("Defense response pending"));
+            Assert.That(controller.HighlightedCoordinates, Is.Empty);
+            Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
             Assert.That(redHero.Coordinate, Is.EqualTo(new HexCoordinate(0, 0)));
             Assert.That(blueHero.Coordinate, Is.EqualTo(new HexCoordinate(0, -1)));
         }
