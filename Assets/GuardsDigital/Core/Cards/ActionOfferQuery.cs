@@ -65,13 +65,21 @@ namespace GuardsDigital.Core.Cards
                         continue;
                     }
 
+                    if (actionDefinition.SourceCardStateTransition.IsDefined &&
+                        instance.State.Location != actionDefinition.SourceCardStateTransition.RequiredLocation)
+                    {
+                        continue;
+                    }
+
                     offers.Add(new ActionOffer(
                         instance.Id,
                         instance.DefinitionReference,
                         actionDefinition.Id,
                         actorId,
                         ToInvocationContext(actionDefinition.Origin),
-                        true));
+                        true,
+                        actionDefinition.AttackRange,
+                        actionDefinition.SourceCardStateTransition));
                 }
             }
 

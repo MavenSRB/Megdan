@@ -98,6 +98,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(resolvedFacedownDiscarded.HasBeenPlayed, Is.True);
             Assert.That(resolvedFacedownDiscarded.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(resolvedFacedownDiscarded.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceDown));
+
+            var unplayedDiscarded = CardStateFacts.DiscardedUnplayed();
+            Assert.That(unplayedDiscarded.Location, Is.EqualTo(CardLocation.DiscardPile));
+            Assert.That(unplayedDiscarded.HasBeenPlayed, Is.False);
+            Assert.That(unplayedDiscarded.ResolutionStatus, Is.EqualTo(CardResolutionStatus.None));
+            Assert.That(unplayedDiscarded.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceUp));
         }
 
         [Test]

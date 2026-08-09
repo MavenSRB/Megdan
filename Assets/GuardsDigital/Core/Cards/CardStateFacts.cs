@@ -48,6 +48,15 @@ namespace GuardsDigital.Core.Cards
                 CardFaceOrientation.FaceUp);
         }
 
+        public static CardStateFacts DiscardedUnplayed()
+        {
+            return new CardStateFacts(
+                CardLocation.DiscardPile,
+                false,
+                CardResolutionStatus.None,
+                CardFaceOrientation.FaceUp);
+        }
+
         public bool IsInitialInHand => Equals(InitialInHand());
 
         public bool Equals(CardStateFacts other)

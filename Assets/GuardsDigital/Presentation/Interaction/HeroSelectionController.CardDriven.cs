@@ -78,6 +78,7 @@ namespace GuardsDigital.Presentation.Interaction
                         placeholderHand.Instances,
                         heroView.Occupancy.HeroId,
                         ActionOfferWindow.NormalPlay)
+                    .Where(offer => GetActionDefinition(offer).Kind == ActionKind.Movement)
                     .Where(offer => offer.SourceCardInstanceId.Equals(selectedCardInstanceId.Value))
                     .ToArray();
             }

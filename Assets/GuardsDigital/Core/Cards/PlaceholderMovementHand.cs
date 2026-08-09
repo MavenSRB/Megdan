@@ -46,8 +46,8 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("A placeholder movement hand requires unique card instance IDs.");
             }
 
-            var routeDrill = CreateDefinition("route-drill", "Route Drill");
-            var obstacleCourse = CreateDefinition("obstacle-course", "Obstacle Course");
+            var routeDrill = CreateDefinition("route-drill", "Route Drill", true, 2);
+            var obstacleCourse = CreateDefinition("obstacle-course", "Obstacle Course", false, 3);
             var definitions = Array.AsReadOnly(new[] { routeDrill, obstacleCourse });
             var instances = Array.AsReadOnly(new[]
             {
@@ -64,23 +64,36 @@ namespace GuardsDigital.Core.Cards
             return new PlaceholderMovementHand(definitions, instances);
         }
 
-        private static CardDefinition CreateDefinition(string id, string displayName)
+        private static CardDefinition CreateDefinition(
+            string id,
+            string displayName,
+            bool includesAttack,
+            int defenseValue)
         {
+            var actions = new List<ActionDefinition>
+            {
+                CreateMovementAction(
+                    "primary-movement",
+                    ActionDefinitionOrigin.PrintedPrimary,
+                    3),
+                CreateMovementAction(
+                    "secondary-movement",
+                    ActionDefinitionOrigin.PrintedSecondary,
+                    1)
+            };
+
+            if (includesAttack)
+            {
+                actions.Add(CreateAttackAction(3));
+            }
+
+            actions.Add(CreateDefenseAction(defenseValue));
+
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{id}"),
-                "phase-1-rev-1",
+                "phase-2-rev-1",
                 $"TEST - {displayName}",
-                new[]
-                {
-                    CreateMovementAction(
-                        "primary-movement",
-                        ActionDefinitionOrigin.PrintedPrimary,
-                        3),
-                    CreateMovementAction(
-                        "secondary-movement",
-                        ActionDefinitionOrigin.PrintedSecondary,
-                        1)
-                });
+                actions);
         }
 
         private static ActionDefinition CreateMovementAction(
@@ -96,6 +109,30 @@ namespace GuardsDigital.Core.Cards
                 origin == ActionDefinitionOrigin.PrintedPrimary
                     ? new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true)
                     : new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true));
+        }
+
+        private static ActionDefinition CreateAttackAction(int value)
+        {
+            return new ActionDefinition(
+                new ActionDefinitionId("primary-attack"),
+                ActionKind.Attack,
+                ActionDefinitionOrigin.PrintedPrimary,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, value) },
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                AttackRangeKind.NonRanged,
+                default);
+        }
+
+        private static ActionDefinition CreateDefenseAction(int value)
+        {
+            return new ActionDefinition(
+                new ActionDefinitionId("defense-reaction"),
+                ActionKind.Defense,
+                ActionDefinitionOrigin.Reaction,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, value) },
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, false),
+                AttackRangeKind.None,
+                new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
         }
     }
 }

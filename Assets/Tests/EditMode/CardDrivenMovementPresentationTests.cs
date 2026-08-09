@@ -39,9 +39,17 @@ namespace GuardsDigital.Tests.EditMode
                     .Where(offer => offer.SourceCardInstanceId.Equals(instance.Id))
                     .ToArray();
                 var primary = offers.Single(offer =>
-                    offer.InvocationContext == ActionInvocationContext.PrintedPrimary);
+                    offer.InvocationContext == ActionInvocationContext.PrintedPrimary &&
+                    hand.Definitions.Single(candidate =>
+                            candidate.Reference.Equals(offer.SourceDefinitionReference))
+                        .ActionDefinitions.Single(action =>
+                            action.Id.Equals(offer.ActionDefinitionId)).Kind == ActionKind.Movement);
                 var secondary = offers.Single(offer =>
-                    offer.InvocationContext == ActionInvocationContext.PrintedSecondary);
+                    offer.InvocationContext == ActionInvocationContext.PrintedSecondary &&
+                    hand.Definitions.Single(candidate =>
+                            candidate.Reference.Equals(offer.SourceDefinitionReference))
+                        .ActionDefinitions.Single(action =>
+                            action.Id.Equals(offer.ActionDefinitionId)).Kind == ActionKind.Movement);
                 var definition = hand.Definitions.Single(candidate =>
                     candidate.Reference.Equals(instance.DefinitionReference));
 

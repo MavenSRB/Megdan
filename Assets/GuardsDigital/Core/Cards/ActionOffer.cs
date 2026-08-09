@@ -12,6 +12,27 @@ namespace GuardsDigital.Core.Cards
             HeroId actorId,
             ActionInvocationContext invocationContext,
             bool isAvailable)
+            : this(
+                sourceCardInstanceId,
+                sourceDefinitionReference,
+                actionDefinitionId,
+                actorId,
+                invocationContext,
+                isAvailable,
+                AttackRangeKind.None,
+                default)
+        {
+        }
+
+        public ActionOffer(
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            ActionInvocationContext invocationContext,
+            bool isAvailable,
+            AttackRangeKind attackRange,
+            ActionCardStateTransition sourceCardStateTransition)
         {
             if (!sourceCardInstanceId.IsDefined)
             {
@@ -38,12 +59,19 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Action offer requires an invocation context.", nameof(invocationContext));
             }
 
+            if (!Enum.IsDefined(typeof(AttackRangeKind), attackRange))
+            {
+                throw new ArgumentException("Action offer requires a valid Attack range classification.", nameof(attackRange));
+            }
+
             SourceCardInstanceId = sourceCardInstanceId;
             SourceDefinitionReference = sourceDefinitionReference;
             ActionDefinitionId = actionDefinitionId;
             ActorId = actorId;
             InvocationContext = invocationContext;
             IsAvailable = isAvailable;
+            AttackRange = attackRange;
+            SourceCardStateTransition = sourceCardStateTransition;
         }
 
         public CardInstanceId SourceCardInstanceId { get; }
@@ -58,6 +86,10 @@ namespace GuardsDigital.Core.Cards
 
         public bool IsAvailable { get; }
 
+        public AttackRangeKind AttackRange { get; }
+
+        public ActionCardStateTransition SourceCardStateTransition { get; }
+
         public bool Equals(ActionOffer other)
         {
             return SourceCardInstanceId.Equals(other.SourceCardInstanceId) &&
@@ -65,7 +97,9 @@ namespace GuardsDigital.Core.Cards
                 ActionDefinitionId.Equals(other.ActionDefinitionId) &&
                 ActorId.Equals(other.ActorId) &&
                 InvocationContext == other.InvocationContext &&
-                IsAvailable == other.IsAvailable;
+                IsAvailable == other.IsAvailable &&
+                AttackRange == other.AttackRange &&
+                SourceCardStateTransition.Equals(other.SourceCardStateTransition);
         }
 
         public override bool Equals(object obj)
@@ -83,6 +117,8 @@ namespace GuardsDigital.Core.Cards
                 hashCode = (hashCode * 397) ^ ActorId.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)InvocationContext;
                 hashCode = (hashCode * 397) ^ IsAvailable.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)AttackRange;
+                hashCode = (hashCode * 397) ^ SourceCardStateTransition.GetHashCode();
                 return hashCode;
             }
         }

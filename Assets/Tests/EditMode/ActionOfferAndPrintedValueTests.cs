@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -176,6 +177,159 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void PlaceholderDefinitions_DeriveOwnedNonRangedAttackAndDefenseReactionOffers()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+
+            var redNormalOffers = ActionOfferQuery.GetAvailableOffers(
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                redHeroId,
+                ActionOfferWindow.NormalPlay);
+            var redAttack = redNormalOffers.Single(offer =>
+                offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
+
+            Assert.That(redAttack.ActorId, Is.EqualTo(redHeroId));
+            Assert.That(redAttack.SourceCardInstanceId.Value, Does.StartWith("red-"));
+            Assert.That(redAttack.InvocationContext, Is.EqualTo(ActionInvocationContext.PrintedPrimary));
+            Assert.That(redAttack.AttackRange, Is.EqualTo(AttackRangeKind.NonRanged));
+            Assert.That(redAttack.SourceCardStateTransition.IsDefined, Is.False);
+            Assert.That(
+                PrintedValueQuery.CalculatePrintedValue(
+                    redAttack,
+                    configuration.CardDefinitions,
+                    PrintedValueChannel.Attack).Total,
+                Is.EqualTo(3));
+
+            var blueDefenseOffers = ActionOfferQuery.GetAvailableOffers(
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                blueHeroId,
+                ActionOfferWindow.Reaction);
+
+            Assert.That(blueDefenseOffers.Count, Is.EqualTo(2));
+            Assert.That(blueDefenseOffers.Select(offer => offer.ActorId), Is.All.EqualTo(blueHeroId));
+            Assert.That(blueDefenseOffers.Select(offer => offer.SourceCardInstanceId.Value),
+                Is.All.StartsWith("blue-"));
+            Assert.That(blueDefenseOffers.Select(offer => offer.InvocationContext),
+                Is.All.EqualTo(ActionInvocationContext.Reaction));
+            Assert.That(blueDefenseOffers.Select(offer => offer.SourceCardStateTransition.RequiredLocation),
+                Is.All.EqualTo(CardLocation.Hand));
+            Assert.That(blueDefenseOffers.Select(offer => offer.SourceCardStateTransition.DestinationLocation),
+                Is.All.EqualTo(CardLocation.DiscardPile));
+            Assert.That(blueDefenseOffers.Select(offer =>
+                    PrintedValueQuery.CalculatePrintedValue(
+                        offer,
+                        configuration.CardDefinitions,
+                        PrintedValueChannel.Defense).Total),
+                Is.EquivalentTo(new[] { 2, 3 }));
+        }
+
+        [Test]
+        public void DefenseReaction_IsNotANormalActionAndRejectsDiscardedOrCrossOwnerCards()
+        {
+            var actorId = new HeroId("defending-hero");
+            var otherHeroId = new HeroId("other-hero");
+            var definition = CreateDefinition(CreateDefenseAction("defense", 2));
+            var actorCard = CardInstance.CreateInHand(
+                new CardInstanceId("defender-card"),
+                definition.Reference,
+                actorId);
+            var otherCard = CardInstance.CreateInHand(
+                new CardInstanceId("other-card"),
+                definition.Reference,
+                otherHeroId);
+            var discardedActorCard = new CardInstance(
+                new CardInstanceId("discarded-defender-card"),
+                definition.Reference,
+                actorId,
+                CardStateFacts.DiscardedUnplayed());
+
+            Assert.That(ActionOfferQuery.GetAvailableOffers(
+                new[] { definition },
+                new[] { actorCard, otherCard, discardedActorCard },
+                actorId,
+                ActionOfferWindow.NormalPlay), Is.Empty);
+
+            var reactions = ActionOfferQuery.GetAvailableOffers(
+                new[] { definition },
+                new[] { actorCard, otherCard, discardedActorCard },
+                actorId,
+                ActionOfferWindow.Reaction);
+
+            Assert.That(reactions.Select(offer => offer.SourceCardInstanceId),
+                Is.EqualTo(new[] { actorCard.Id }));
+            Assert.That(discardedActorCard.State.Location, Is.EqualTo(CardLocation.DiscardPile));
+            Assert.That(discardedActorCard.State.HasBeenPlayed, Is.False);
+        }
+
+        [Test]
+        public void AttackAndDefenseDefinitions_RejectInvalidValuesRangeOriginAndTransition()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new PrintedValueDefinition(PrintedValueChannel.Attack, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new PrintedValueDefinition(PrintedValueChannel.Defense, -1));
+
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("attack-with-defense-value"),
+                ActionKind.Attack,
+                ActionDefinitionOrigin.PrintedPrimary,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, 2) },
+                PrimaryMovementPolicy(),
+                AttackRangeKind.NonRanged,
+                default));
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("attack-without-range"),
+                ActionKind.Attack,
+                ActionDefinitionOrigin.PrintedPrimary,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, 2) },
+                PrimaryMovementPolicy()));
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("normal-defense"),
+                ActionKind.Defense,
+                ActionDefinitionOrigin.PrintedSecondary,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, 2) },
+                SecondaryMovementPolicy(),
+                AttackRangeKind.None,
+                new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile)));
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("defense-without-discard"),
+                ActionKind.Defense,
+                ActionDefinitionOrigin.Reaction,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, 2) },
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, false),
+                AttackRangeKind.None,
+                default));
+        }
+
+        [Test]
+        public void ActionOfferQuery_RejectsMissingOwnerAndReturnsNoCrossOwnerOffer()
+        {
+            var definition = CreateDefinition(CreateDefenseAction("defense", 2));
+            var ownerId = new HeroId("owner");
+            var card = CardInstance.CreateInHand(new CardInstanceId("card"), definition.Reference, ownerId);
+
+            Assert.Throws<ArgumentException>(() => ActionOfferQuery.GetAvailableOffers(
+                new[] { definition },
+                new[] { card },
+                default,
+                ActionOfferWindow.Reaction));
+            Assert.Throws<ArgumentException>(() => new CardInstance(
+                new CardInstanceId("missing-owner-card"),
+                definition.Reference,
+                default,
+                CardStateFacts.InitialInHand()));
+            Assert.That(ActionOfferQuery.GetAvailableOffers(
+                new[] { definition },
+                new[] { card },
+                new HeroId("different-owner"),
+                ActionOfferWindow.Reaction), Is.Empty);
+        }
+
+        [Test]
         public void InvocationContextVocabulary_CoversFutureOfferContextsWithoutResolvingThem()
         {
             Assert.That(Enum.IsDefined(typeof(ActionInvocationContext), ActionInvocationContext.PrintedPrimary), Is.True);
@@ -325,6 +479,18 @@ namespace GuardsDigital.Tests.EditMode
                 origin,
                 Array.Empty<PrintedValueDefinition>(),
                 new ActionDefinitionPolicy(cardTextApplication, false, canBeReplaced));
+        }
+
+        private static ActionDefinition CreateDefenseAction(string id, int defenseValue)
+        {
+            return new ActionDefinition(
+                new ActionDefinitionId(id),
+                ActionKind.Defense,
+                ActionDefinitionOrigin.Reaction,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, defenseValue) },
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, false),
+                AttackRangeKind.None,
+                new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
         }
 
         private static ActionDefinitionPolicy PrimaryMovementPolicy()

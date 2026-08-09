@@ -12,6 +12,25 @@ namespace GuardsDigital.Core.Cards
             ActionDefinitionOrigin origin,
             IEnumerable<PrintedValueDefinition> baseValues,
             ActionDefinitionPolicy defaultPolicy)
+            : this(
+                id,
+                kind,
+                origin,
+                baseValues,
+                defaultPolicy,
+                AttackRangeKind.None,
+                default)
+        {
+        }
+
+        public ActionDefinition(
+            ActionDefinitionId id,
+            ActionKind kind,
+            ActionDefinitionOrigin origin,
+            IEnumerable<PrintedValueDefinition> baseValues,
+            ActionDefinitionPolicy defaultPolicy,
+            AttackRangeKind attackRange,
+            ActionCardStateTransition sourceCardStateTransition)
         {
             if (!id.IsDefined)
             {
@@ -33,6 +52,11 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentNullException(nameof(baseValues));
             }
 
+            if (!Enum.IsDefined(typeof(AttackRangeKind), attackRange))
+            {
+                throw new ArgumentException("Action definition requires a valid Attack range classification.", nameof(attackRange));
+            }
+
             ValidatePolicy(origin, defaultPolicy);
 
             Id = id;
@@ -41,19 +65,15 @@ namespace GuardsDigital.Core.Cards
             var materializedBaseValues = baseValues.ToArray();
             BaseValues = Array.AsReadOnly(materializedBaseValues);
             DefaultPolicy = defaultPolicy;
+            AttackRange = attackRange;
+            SourceCardStateTransition = sourceCardStateTransition;
 
             if (BaseValues.Select(value => value.Channel).Distinct().Count() != BaseValues.Count)
             {
                 throw new ArgumentException("Action definition base values must have unique channels.", nameof(baseValues));
             }
 
-            if (Kind == ActionKind.Movement)
-            {
-                if (BaseValues.Count != 1 || BaseValues[0].Channel != PrintedValueChannel.Movement)
-                {
-                    throw new ArgumentException("Movement action definitions currently support exactly one Movement printed value.", nameof(baseValues));
-                }
-            }
+            ValidateActionShape(baseValues);
         }
 
         public ActionDefinitionId Id { get; }
@@ -65,6 +85,60 @@ namespace GuardsDigital.Core.Cards
         public IReadOnlyList<PrintedValueDefinition> BaseValues { get; }
 
         public ActionDefinitionPolicy DefaultPolicy { get; }
+
+        public AttackRangeKind AttackRange { get; }
+
+        public ActionCardStateTransition SourceCardStateTransition { get; }
+
+        private void ValidateActionShape(IEnumerable<PrintedValueDefinition> baseValues)
+        {
+            if (Kind == ActionKind.Movement)
+            {
+                ValidateSinglePrintedValue(PrintedValueChannel.Movement, baseValues);
+            }
+            else if (Kind == ActionKind.Attack)
+            {
+                ValidateSinglePrintedValue(PrintedValueChannel.Attack, baseValues);
+                if (AttackRange == AttackRangeKind.None)
+                {
+                    throw new ArgumentException("Attack action definitions require a range classification.", nameof(AttackRange));
+                }
+            }
+            else if (Kind == ActionKind.Defense)
+            {
+                ValidateSinglePrintedValue(PrintedValueChannel.Defense, baseValues);
+                if (Origin != ActionDefinitionOrigin.Reaction)
+                {
+                    throw new ArgumentException("Defense action definitions must be reactions.", nameof(Origin));
+                }
+
+                if (!SourceCardStateTransition.Equals(new ActionCardStateTransition(
+                        CardLocation.Hand,
+                        CardLocation.DiscardPile)))
+                {
+                    throw new ArgumentException(
+                        "Defense action definitions must require an in-hand card and declare discard as their cost/state transition.",
+                        nameof(SourceCardStateTransition));
+                }
+            }
+
+            if (Kind != ActionKind.Attack && AttackRange != AttackRangeKind.None)
+            {
+                throw new ArgumentException("Only Attack action definitions may declare an Attack range classification.", nameof(AttackRange));
+            }
+        }
+
+        private void ValidateSinglePrintedValue(
+            PrintedValueChannel expectedChannel,
+            IEnumerable<PrintedValueDefinition> baseValues)
+        {
+            if (BaseValues.Count != 1 || BaseValues[0].Channel != expectedChannel)
+            {
+                throw new ArgumentException(
+                    $"{Kind} action definitions currently support exactly one {expectedChannel} printed value.",
+                    nameof(baseValues));
+            }
+        }
 
         private static void ValidatePolicy(ActionDefinitionOrigin origin, ActionDefinitionPolicy defaultPolicy)
         {
