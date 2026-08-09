@@ -1,5 +1,6 @@
 using System.Collections;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Units.Heroes;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -35,6 +36,26 @@ namespace GuardsDigital.Tests.PlayMode
                        edgeRenderer != null &&
                        edgeRenderer.enabled;
             }));
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_LoadsOneVisiblePrimitiveHero()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+
+            Assert.That(heroes, Has.Length.EqualTo(1));
+            Assert.That(heroes[0].GetComponent<MeshRenderer>().enabled, Is.True);
+            Assert.That(heroes[0].GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
         }
     }
 }

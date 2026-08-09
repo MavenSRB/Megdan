@@ -4,9 +4,9 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.2 is complete: a Unity presentation assembly converts axial coordinates to pointy-top XZ positions, and a fixed-camera scene renders an origin hex plus its six neighbors as connected flat placeholder meshes. No gameplay has been implemented.
+Milestone 1.3 is complete: the core model can represent one primitive hero occupying one logical hex, and the validation scene renders a simple placeholder hero at the world position derived from that authoritative occupancy. No movement, teams, cards, turns, or gameplay resolution has been implemented.
 
-Milestone 1.3, placing one primitive hero from authoritative occupancy data, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.4, selecting the hero and one adjacent destination, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
@@ -206,7 +206,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Placing a hero or introducing authoritative occupancy before milestone 1.3 approval.
+- Selecting a hero or highlighting destinations before milestone 1.4 approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.

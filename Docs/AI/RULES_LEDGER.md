@@ -6,7 +6,7 @@ Last updated: 2026-08-09
 
 This ledger prevents silent rule drift. It connects each game system to its source, approved deviations, implementation status, and focused tests.
 
-The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, and placeholder coordinate-to-XZ presentation from milestones 0.2 through 1.2. It contains no game-rule implementation. All rule systems are therefore unimplemented unless stated otherwise.
+The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, placeholder coordinate-to-XZ presentation, and one primitive hero occupancy/rendering slice from milestones 0.2 through 1.3. It contains no gameplay resolution. All rule systems are therefore unimplemented unless stated otherwise.
 
 ## Authority hierarchy
 
@@ -72,6 +72,7 @@ Printed rulebook page numbers are used below.
 | System | Primary source | Current status | Required verification notes |
 | --- | --- | --- | --- |
 | Generic hex coordinates, adjacency, and placeholder XZ layout | Project architecture; not a game-rule interpretation | Implemented; milestone verified | Axial `(q, r)` coordinates expose six named standard neighbors; pointy-top placeholder conversion and mesh spacing are tested, but official board spaces and adjacency remain unverified and unimplemented until milestones 3.1-3.2 |
+| Primitive hero occupancy and placeholder placement | Project architecture; not a game-rule interpretation | Implemented; focused tests passing | One placeholder hero has a stable hero ID and occupied axial coordinate; the scene view derives its position from that coordinate. This does not implement teams, legal setup, movement, targeting, turns, card effects, or official board spaces |
 | Heroes, teams, zones, Thrones, minions, lanes, win overview | Rulebook p.3 | Not implemented | Verify digital terms and object relationships before domain modeling |
 | Table talk and hidden information | Rulebook p.4 | Deferred by DEV-003 | Required for post-authorization online 3v3, not pitch interaction |
 | Four-/six-player setup | Rulebook pp.5-6 | Source reviewed; not implemented | Pitch inherits four-player Quick Game values except DEV-001/002/003 |

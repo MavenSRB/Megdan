@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Units.Heroes;
 using NUnit.Framework;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -87,6 +88,26 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Mathf.Abs(edgeColor.r - edgeColor.g), Is.LessThan(0.05f));
             Assert.That(Mathf.Abs(edgeColor.g - edgeColor.b), Is.LessThan(0.05f));
             Assert.That(edgeColor.grayscale, Is.LessThan(fillColor.grayscale - 0.25f));
+        }
+
+        [Test]
+        public void Scene_ContainsOnePrimitiveHeroAtItsAuthoritativeOccupiedCoordinate()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+
+            Assert.That(heroes, Has.Length.EqualTo(1));
+
+            var hero = heroes[0];
+            var expectedPosition = HexWorldLayout.ToWorld(hero.Occupancy.Coordinate, hero.OuterRadius) +
+                (Vector3.up * hero.VerticalOffset);
+
+            Assert.That(hero.Occupancy.HeroId.Value, Is.EqualTo(PrimitiveHeroView.DefaultHeroId));
+            Assert.That(tiles.Select(tile => tile.Coordinate), Does.Contain(hero.Occupancy.Coordinate));
+            Assert.That(
+                Vector3.Distance(hero.transform.localPosition, expectedPosition),
+                Is.LessThan(Tolerance));
         }
     }
 }
