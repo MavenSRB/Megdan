@@ -6,7 +6,7 @@ Last updated: 2026-08-09
 
 This ledger prevents silent rule drift. It connects each game system to its source, approved deviations, implementation status, and focused tests.
 
-The project contains the completed Unity shell, automated test infrastructure, and the generic hex-coordinate foundation from milestones 0.2 through 1.1. It contains no game-rule implementation. All rule systems are therefore unimplemented unless stated otherwise.
+The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, and placeholder coordinate-to-XZ presentation from milestones 0.2 through 1.2. It contains no game-rule implementation. All rule systems are therefore unimplemented unless stated otherwise.
 
 ## Authority hierarchy
 
@@ -71,7 +71,7 @@ Printed rulebook page numbers are used below.
 
 | System | Primary source | Current status | Required verification notes |
 | --- | --- | --- | --- |
-| Generic hex coordinates and adjacency | Project architecture; not a game-rule interpretation | Implemented; focused tests passing | Axial `(q, r)` coordinates expose six named standard neighbors; official board spaces and adjacency remain unverified and unimplemented until milestones 3.1-3.2 |
+| Generic hex coordinates, adjacency, and placeholder XZ layout | Project architecture; not a game-rule interpretation | Implemented; milestone verified | Axial `(q, r)` coordinates expose six named standard neighbors; pointy-top placeholder conversion and mesh spacing are tested, but official board spaces and adjacency remain unverified and unimplemented until milestones 3.1-3.2 |
 | Heroes, teams, zones, Thrones, minions, lanes, win overview | Rulebook p.3 | Not implemented | Verify digital terms and object relationships before domain modeling |
 | Table talk and hidden information | Rulebook p.4 | Deferred by DEV-003 | Required for post-authorization online 3v3, not pitch interaction |
 | Four-/six-player setup | Rulebook pp.5-6 | Source reviewed; not implemented | Pitch inherits four-player Quick Game values except DEV-001/002/003 |

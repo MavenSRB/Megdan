@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Milestone1_2_HexGrid.unity
+    guid: 346fa6b0cd22ce246a6f43f221b0f8a4
   m_configObjects: {}

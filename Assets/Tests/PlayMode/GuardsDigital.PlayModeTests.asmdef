@@ -1,7 +1,10 @@
 {
   "name": "GuardsDigital.PlayModeTests",
   "rootNamespace": "GuardsDigital.Tests.PlayMode",
-  "references": [],
+  "references": [
+    "GuardsDigital.Core",
+    "GuardsDigital.Presentation"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

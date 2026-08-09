@@ -86,7 +86,7 @@ Non-goals: No rendering, pathfinding, zones, terrain, or units.
 
 Completion note (2026-08-09): Added a no-engine-reference `GuardsDigital.Core` assembly with immutable axial `(q, r)` hex coordinates, six named directions, single-neighbor lookup, and six-neighbor enumeration. Eight focused Edit Mode cases verify every direction, uniqueness and completeness of the neighbor set, and invalid-direction rejection. The complete Edit Mode suite passed 9/9 and the Play Mode suite passed 1/1. No rendering, pathfinding, zones, terrain, units, or scene objects were added.
 
-### [ ] 1.2 Render a minimal connected test grid
+### [x] 1.2 Render a minimal connected test grid
 
 Observable outcome: A small set of flat placeholder hex meshes appears on the XZ plane under a fixed camera.
 
@@ -96,6 +96,8 @@ Acceptance checks:
 - No overlaps or gaps caused by coordinate conversion.
 
 Non-goals: No official map, camera movement, selection, or rules.
+
+Completion note (2026-08-09): Added a Unity-specific presentation assembly with pointy-top axial-to-XZ conversion, a regular flat placeholder hex mesh, and coordinate-bearing tile views. The `Milestone1_2_HexGrid` scene renders the origin and its six logical neighbors edge-to-edge under one fixed camera; alternating placeholder colors make tile boundaries inspectable without adding gaps. Ten focused Edit Mode cases verify conversion, geometric center spacing, mesh construction, saved-scene coordinates, and the fixed-camera constraint, while one focused Play Mode case verifies the scene loads with seven visible tiles. Visual inspection passed, the complete Edit Mode suite passed 19/19, and the complete Play Mode suite passed 2/2. No official map data, camera movement, selection, units, or rules were added.
 
 ### [ ] 1.3 Place one primitive hero
 

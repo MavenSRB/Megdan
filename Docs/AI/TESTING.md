@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Scope
 
-The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. These tests do not implement or verify a game rule.
+The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. Milestone 1.2 adds Edit Mode layout, mesh, and saved-scene coverage plus a Play Mode scene-loading check. These tests do not implement or verify a game rule.
 
 Run commands from PowerShell. Each focused command opens the project, runs only its named test fixture or case, writes NUnit XML plus a Unity log under `tmp/`, and exits without producing a player build or requiring a project scene.
 
@@ -61,6 +61,60 @@ if ($hexCoordinateProcess.ExitCode -ne 0) {
 ```
 
 Expected result: eight cases pass, covering all six directions, the complete unique neighbor set, and invalid-direction rejection.
+
+## Minimal-grid focused Edit Mode tests
+
+```powershell
+$minimalGridEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.HexWorldLayoutTests;GuardsDigital.Tests.EditMode.FlatHexMeshBuilderTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\minimal-grid-edit-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\minimal-grid-edit-tests.log"'
+)
+
+$minimalGridEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $minimalGridEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($minimalGridEditProcess.ExitCode -ne 0) {
+    throw "Minimal-grid Edit Mode tests failed with exit code $($minimalGridEditProcess.ExitCode)."
+}
+```
+
+Expected result: ten cases pass, covering coordinate conversion, edge-to-edge center spacing, mesh geometry, saved-scene placement, and the fixed camera.
+
+## Minimal-grid focused Play Mode test
+
+```powershell
+$minimalGridPlayArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'PlayMode',
+    '-testFilter', 'GuardsDigital.Tests.PlayMode.MinimalHexGridPlayModeTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\minimal-grid-play-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\minimal-grid-play-tests.log"'
+)
+
+$minimalGridPlayProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $minimalGridPlayArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($minimalGridPlayProcess.ExitCode -ne 0) {
+    throw "Minimal-grid Play Mode test failed with exit code $($minimalGridPlayProcess.ExitCode)."
+}
+```
+
+Expected result: one case passes after loading the saved scene with seven visible tile renderers and one fixed camera.
 
 ## Play Mode shell test
 

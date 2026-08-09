@@ -4,9 +4,9 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.1 is complete: a pure C# core assembly represents axial hex coordinates and their six named adjacent directions, with focused Edit Mode coverage. No gameplay or scene presentation has been implemented.
+Milestone 1.2 is complete: a Unity presentation assembly converts axial coordinates to pointy-top XZ positions, and a fixed-camera scene renders an origin hex plus its six neighbors as connected flat placeholder meshes. No gameplay has been implemented.
 
-Milestone 1.2, rendering a minimal connected test grid, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.3, placing one primitive hero from authoritative occupancy data, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
@@ -126,6 +126,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 - The Unity scene is 3D from the beginning, with the board on the XZ plane.
 - Early implementation uses primitive meshes and a fixed camera.
+- Pointy-top presentation maps `q` eastward and decreasing `r` northward; the same outer-radius value defines both the regular hex mesh and its center spacing.
 - The polished pitch uses a stylized tabletop presentation.
 - Heroes and minions appear as 3D miniatures on clearly marked team bases.
 - Miniatures may briefly animate when acting.
@@ -203,7 +204,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Rendering hexes or converting logical coordinates to Unity world positions before milestone 1.2 approval.
+- Placing a hero or introducing authoritative occupancy before milestone 1.3 approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.
