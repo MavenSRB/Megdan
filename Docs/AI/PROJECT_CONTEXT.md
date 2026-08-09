@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.10 is complete: pure placeholder card definitions are now separated from runtime card instances. Definitions have stable IDs, content revisions, and display names; instances have distinct stable IDs, definition references, primitive-hero ownership, and orthogonal runtime state facts initialized in hand. Initial card setup validation rejects missing, duplicate, unresolved, or invalid initial data. No action offers, card values, real Wasp data/images, state transitions, play/reveal flow, turns, Unity presentation, animation, or broader gameplay resolution has been implemented.
+Milestone 1.11 is complete: placeholder card definitions now own ordered immutable Movement action definitions, and pure runtime queries derive context-bound action offers for in-hand card instances. The model distinguishes printed Primary and printed Secondary Movement offers, uses explicit invocation-context vocabulary for later general-rule, replacement, reaction, repeated, and text-granted uses, and obtains movement allowance through typed printed-value queries with inspectable printed-icon contributions. No action execution, pending choices, real Wasp data/images, card-state transitions, play/reveal flow, turns, Unity presentation, animation, or broader gameplay resolution has been implemented.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -14,7 +14,7 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 1.11, representing action definitions, runtime offers, and typed values, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.12, adding a resumable card-action resolution shell, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
@@ -257,7 +257,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Action offers, card execution, visible card UI, turns, or Wasp content before their exact milestone approval.
+- Card execution, pending choices, visible card UI, turns, or Wasp content before their exact milestone approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.

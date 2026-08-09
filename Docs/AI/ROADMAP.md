@@ -305,7 +305,7 @@ Non-goals: No action offers, card values, real Wasp data/images, state transitio
 
 Completion note (2026-08-09): Added a no-engine-reference `GuardsDigital.Core.Cards` foundation with stable `CardDefinitionId`, `CardInstanceId`, and definition references; immutable placeholder `CardDefinition` data; runtime `CardInstance` data owned by the primitive test hero; and orthogonal `CardStateFacts` for location, played status, resolution status, and face orientation. Initial setup validation accepts unique in-hand instances, including multiple instances referencing one immutable definition, and rejects blank identity/revision/name data, duplicate definition IDs, duplicate instance IDs, stale or unresolved definition references, and invalid initial runtime state. Focused T1 validation passed after allowing Unity batchmode access to local licensing/package services: Edit Mode 12/12 (`CardDefinitionInstanceTests`). Play Mode and complete unfiltered suites were intentionally omitted because this is not a T2/T3 gate and no Unity-facing path, scene, input, presentation, package, assembly, or snapshot schema changed. No action offers, card values, real Wasp data/images, card-state transitions, play/reveal flow, turns, networking, Unity presentation, or animation was added.
 
-### [ ] 1.11 Represent action definitions, runtime offers, and typed values
+### [x] 1.11 Represent action definitions, runtime offers, and typed values
 
 Observable outcome: A small placeholder hand contains immutable Movement action definitions, and pure rules queries derive context-bound runtime offers with different typed printed values and explicit Primary/Secondary use.
 
@@ -322,6 +322,8 @@ Acceptance checks:
 - Card images remain optional presentation and never authoritative data.
 
 Non-goals: No Wasp content, initiative, card color/tier, printed card-text effects, action execution, card-state transitions, or turns.
+
+Completion note (2026-08-09): Extended pure placeholder card definitions with ordered immutable `ActionDefinition` data, stable local action IDs, `ActionKind`, printed/general origin vocabulary, typed printed value definitions, and explicit default card-text/repeat/replacement policy. Added runtime `ActionOffer` and `ActionOfferQuery` projection for in-hand owned card instances, deriving separate printed Primary and printed Secondary Movement offers without mutating instances or copying static values into the offer. Added `PrintedValueQuery` returning printed-icon contribution provenance and totals for the chosen offer, proving distinct Movement allowances for Primary and Secondary offers. Focused T1 validation passed after allowing Unity batchmode access to local licensing/package services: Edit Mode 23/23 (`ActionOfferAndPrintedValueTests`; directly affected `CardDefinitionInstanceTests`). Play Mode and complete unfiltered suites were intentionally omitted because this is not a T2/T3 gate and no Unity-facing path, scene, input, presentation, package, assembly, snapshot schema, action execution, or resolver path changed. No Wasp content, initiative, card color/tier, printed card-text effects, action execution, card-state transitions, turns, networking, Unity presentation, or animation was added.
 
 ### [ ] 1.12 Add a resumable card-action resolution shell
 

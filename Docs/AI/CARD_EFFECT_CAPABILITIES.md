@@ -8,7 +8,7 @@ This document is the effect-level companion to `CARD_SYSTEM_ARCHITECTURE.md`. It
 
 The baseline catalog is derived from the second-printing rulebook's action execution, card states, actions, progression, concepts, and keywords on printed pages 7-19. Verified card text may override a general rule or introduce a new capability. No hero-specific capability is authoritative until its card source and any applicable official correction are verified in `RULES_LEDGER.md`.
 
-This is an architecture specification, not evidence that these effects are implemented. A roadmap milestone implements only the smallest capabilities it explicitly names.
+This is an architecture specification, not evidence that these effects are implemented. A roadmap milestone implements only the smallest capabilities it explicitly names. Milestone 1.11 has implemented only the placeholder printed Movement value query/contribution seam; it has not implemented Movement resolution, modifiers, card-text effects, or any mutation handler.
 
 ## Capability categories
 
