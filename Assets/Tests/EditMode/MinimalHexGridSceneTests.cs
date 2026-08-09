@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
@@ -126,24 +127,49 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_ContainsOnePrimitiveHeroAtItsAuthoritativeOccupiedCoordinate()
+        public void Scene_ContainsVisibleRedAndBlueHeroesAtAuthoritativeAdjacentCoordinates()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
 
-            Assert.That(heroes, Has.Length.EqualTo(1));
-
-            var hero = heroes[0];
-            var expectedPosition = HexWorldLayout.ToWorld(hero.Occupancy.Coordinate, hero.OuterRadius) +
-                (Vector3.up * hero.VerticalOffset);
-
-            Assert.That(hero.Occupancy.HeroId.Value, Is.EqualTo(PrimitiveHeroView.DefaultHeroId));
-            Assert.That(tiles.Select(tile => tile.Coordinate), Does.Contain(hero.Occupancy.Coordinate));
+            Assert.That(heroes, Has.Length.EqualTo(2));
             Assert.That(
-                Vector3.Distance(hero.transform.localPosition, expectedPosition),
-                Is.LessThan(Tolerance));
+                heroes.Select(hero => hero.Occupancy.HeroId.Value),
+                Is.EquivalentTo(new[]
+                {
+                    PlaceholderOneVsOneParticipants.RedHeroIdValue,
+                    PlaceholderOneVsOneParticipants.BlueHeroIdValue
+                }));
+            Assert.That(heroes.Select(hero => hero.Coordinate).Distinct().Count(), Is.EqualTo(2));
+
+            var redHero = heroes.Single(hero =>
+                hero.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var blueHero = heroes.Single(hero =>
+                hero.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            Assert.That(redHero.TeamSide, Is.EqualTo(TeamSide.Red));
+            Assert.That(blueHero.TeamSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(HexDistance(redHero.Coordinate, blueHero.Coordinate), Is.EqualTo(1));
+
+            foreach (var hero in heroes)
+            {
+                hero.EnsurePrimitiveVisual();
+                var expectedPosition = HexWorldLayout.ToWorld(hero.Occupancy.Coordinate, hero.OuterRadius) +
+                    (Vector3.up * hero.VerticalOffset);
+                Assert.That(tiles.Select(tile => tile.Coordinate), Does.Contain(hero.Occupancy.Coordinate));
+                Assert.That(Vector3.Distance(hero.transform.localPosition, expectedPosition), Is.LessThan(Tolerance));
+                Assert.That(hero.GetComponent<MeshRenderer>().enabled, Is.True);
+                Assert.That(hero.GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
+            }
+
+            var redRenderer = redHero.GetComponent<MeshRenderer>();
+            var blueRenderer = blueHero.GetComponent<MeshRenderer>();
+            Assert.That(redRenderer.sharedMaterial.color.r, Is.GreaterThan(redRenderer.sharedMaterial.color.b));
+            Assert.That(blueRenderer.sharedMaterial.color.b, Is.GreaterThan(blueRenderer.sharedMaterial.color.r));
+            Assert.That(
+                redHero.GetComponent<MeshFilter>().sharedMesh.vertexCount,
+                Is.Not.EqualTo(blueHero.GetComponent<MeshFilter>().sharedMesh.vertexCount));
         }
 
         [Test]
@@ -152,13 +178,17 @@ namespace GuardsDigital.Tests.EditMode
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var hero = Object.FindFirstObjectByType<PrimitiveHeroView>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
             var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
             var expectedCoordinates = new[] { new HexCoordinate(1, 0), new HexCoordinate(0, 1) };
 
             Assert.That(obstacles, Has.Length.EqualTo(2));
             Assert.That(obstacles.Select(obstacle => obstacle.Coordinate), Is.EquivalentTo(expectedCoordinates));
-            Assert.That(obstacles.Select(obstacle => obstacle.Coordinate), Has.No.Member(hero.Coordinate));
+            Assert.That(
+                obstacles.Select(obstacle => obstacle.Coordinate)
+                    .Intersect(heroes.Select(hero => hero.Coordinate))
+                    .Any(),
+                Is.False);
             Assert.That(obstacles.Select(obstacle => obstacle.Coordinate).Distinct().Count(), Is.EqualTo(obstacles.Length));
             Assert.That(tiles.Select(tile => tile.Coordinate), Is.SupersetOf(expectedCoordinates));
             Assert.That(obstacles, Has.All.Matches<PlaceholderObstacleView>(obstacle =>
@@ -182,10 +212,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(controllers[0].MovementAllowance, Is.GreaterThan(1));
             Assert.That(controllers[0].IsCardDrivenMovementEnabled, Is.True);
             Assert.That(controllers[0].VisibleCardInstances.Count, Is.EqualTo(2));
+            Assert.That(controllers[0].OtherHeroViews.Count, Is.EqualTo(1));
+            Assert.That(controllers[0].HeroOccupancies.Count, Is.EqualTo(2));
             Assert.That(selectors[0].SelectionController, Is.SameAs(controllers[0]));
             Assert.That(inputs[0].EventCamera, Is.Not.Null);
             Assert.That(inputs[0].Selectors, Has.Member(selectors[0]));
-            Assert.That(heroes[0].GetComponent<CapsuleCollider>(), Is.Not.Null);
+            var redHero = heroes.Single(hero =>
+                hero.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            Assert.That(redHero.GetComponent<CapsuleCollider>(), Is.Not.Null);
         }
 
         [Test]
@@ -194,7 +228,9 @@ namespace GuardsDigital.Tests.EditMode
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
-            var hero = Object.FindFirstObjectByType<PrimitiveHeroView>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var hero = heroes.Single(candidate =>
+                candidate.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
 
             var selectedCard = controller.VisibleCardInstances[0];
@@ -212,7 +248,7 @@ namespace GuardsDigital.Tests.EditMode
             var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
                     hero.Occupancy,
                     tiles.Select(tile => tile.Coordinate),
-                    new[] { hero.Occupancy },
+                    heroes.Select(candidate => candidate.Occupancy),
                     obstacles.Select(obstacle => obstacle.Occupancy),
                     controller.LastCardMovementAllowance)
                 .Select(destination => destination.Destination)
@@ -223,6 +259,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(tiles.Single(tile => tile.Coordinate.Equals(hero.Coordinate)).IsHighlighted, Is.False);
             Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(1, 0)));
             Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(0, 1)));
+            Assert.That(
+                highlightedCoordinates,
+                Has.No.Member(heroes.Single(candidate => candidate != hero).Coordinate));
         }
 
         private static HashSet<HexCoordinate> CreateRadiusTwoCoordinates()

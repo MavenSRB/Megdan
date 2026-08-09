@@ -316,6 +316,42 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void SelectHero_WithAnotherHero_UsesExistingUnitOccupancyBlocking()
+        {
+            var objects = new List<GameObject>();
+
+            try
+            {
+                var redHero = CreateHero(objects, new HexCoordinate(0, 0), "red-hero");
+                var blueHero = CreateHero(objects, new HexCoordinate(0, -1), "blue-hero");
+                var tiles = redHero.Coordinate.GetNeighbors()
+                    .Concat(new[] { redHero.Coordinate })
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var controllerObject = new GameObject("Selection Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(
+                    redHero,
+                    tiles,
+                    CreateMaterial(Color.yellow),
+                    1,
+                    null,
+                    new[] { blueHero });
+
+                controller.SelectHero();
+
+                Assert.That(controller.HeroOccupancies.Count, Is.EqualTo(2));
+                Assert.That(controller.HighlightedCoordinates, Has.No.Member(blueHero.Coordinate));
+                Assert.That(controller.HighlightedCoordinates.Count, Is.EqualTo(5));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
         public void TryCommitDestination_WithBlockedIntermediate_CommitsLegalDetourWhenAllowancePermits()
         {
             var objects = new List<GameObject>();
@@ -392,12 +428,15 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        private static PrimitiveHeroView CreateHero(ICollection<GameObject> objects, HexCoordinate coordinate)
+        private static PrimitiveHeroView CreateHero(
+            ICollection<GameObject> objects,
+            HexCoordinate coordinate,
+            string heroId = "hero")
         {
             var gameObject = new GameObject("Hero");
             objects.Add(gameObject);
             var hero = gameObject.AddComponent<PrimitiveHeroView>();
-            hero.Configure(new HeroOccupancy(new HeroId("hero"), coordinate), HexWorldLayout.DefaultOuterRadius);
+            hero.Configure(new HeroOccupancy(new HeroId(heroId), coordinate), HexWorldLayout.DefaultOuterRadius);
             return hero;
         }
 

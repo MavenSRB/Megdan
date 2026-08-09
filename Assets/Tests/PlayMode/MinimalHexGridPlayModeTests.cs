@@ -2,6 +2,7 @@ using System.Collections;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
@@ -44,7 +45,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_LoadsOneVisiblePrimitiveHero()
+        public IEnumerator Scene_LoadsVisibleRedAndBluePrimitiveHeroes()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(loadOperation, Is.Not.Null);
@@ -58,9 +59,28 @@ namespace GuardsDigital.Tests.PlayMode
 
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
 
-            Assert.That(heroes, Has.Length.EqualTo(1));
-            Assert.That(heroes[0].GetComponent<MeshRenderer>().enabled, Is.True);
-            Assert.That(heroes[0].GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
+            Assert.That(heroes, Has.Length.EqualTo(2));
+            Assert.That(
+                heroes.Select(hero => hero.Occupancy.HeroId.Value),
+                Is.EquivalentTo(new[]
+                {
+                    PlaceholderOneVsOneParticipants.RedHeroIdValue,
+                    PlaceholderOneVsOneParticipants.BlueHeroIdValue
+                }));
+            Assert.That(heroes, Has.All.Matches<PrimitiveHeroView>(hero =>
+                hero.GetComponent<MeshRenderer>().enabled &&
+                hero.GetComponent<MeshFilter>().sharedMesh != null));
+
+            var redHero = FindRedHero(heroes);
+            var blueHero = heroes.Single(hero => hero != redHero);
+            Assert.That(redHero.TeamSide, Is.EqualTo(TeamSide.Red));
+            Assert.That(blueHero.TeamSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(redHero.GetComponent<MeshRenderer>().sharedMaterial.color.r,
+                Is.GreaterThan(redHero.GetComponent<MeshRenderer>().sharedMaterial.color.b));
+            Assert.That(blueHero.GetComponent<MeshRenderer>().sharedMaterial.color.b,
+                Is.GreaterThan(blueHero.GetComponent<MeshRenderer>().sharedMaterial.color.r));
+            Assert.That(redHero.GetComponent<MeshFilter>().sharedMesh.vertexCount,
+                Is.Not.EqualTo(blueHero.GetComponent<MeshFilter>().sharedMesh.vertexCount));
         }
 
         [UnityTest]
@@ -76,7 +96,8 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var hero = Object.FindFirstObjectByType<PrimitiveHeroView>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var hero = FindRedHero(heroes);
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
             var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
@@ -94,6 +115,14 @@ namespace GuardsDigital.Tests.PlayMode
                 .Where(tile => tile.IsHighlighted)
                 .Select(tile => tile.Coordinate)
                 .ToArray();
+            var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
+                    originOccupancy,
+                    tiles.Select(tile => tile.Coordinate),
+                    heroes.Select(candidate => candidate.Occupancy),
+                    obstacles.Select(obstacle => obstacle.Occupancy),
+                    controller.LastCardMovementAllowance)
+                .Select(reachable => reachable.Destination)
+                .ToArray();
             var moved = pointerInput.TryHandlePointerRay(CreateDownRay(destinationTile.transform.position));
             var activeAfterMove = controller.IsMovementSessionActive;
             var remainingAfterMove = controller.RemainingMovementAllowance;
@@ -102,18 +131,11 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(selected, Is.True);
             Assert.That(selectedAction, Is.True);
-            var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
-                    originOccupancy,
-                    tiles.Select(tile => tile.Coordinate),
-                    new[] { originOccupancy },
-                    obstacles.Select(obstacle => obstacle.Occupancy),
-                    controller.LastCardMovementAllowance)
-                .Select(destination => destination.Destination)
-                .ToArray();
             Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(highlightedCoordinates, Has.No.Member(origin));
             Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(1, 0)));
             Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(0, 1)));
+            Assert.That(highlightedCoordinates, Has.No.Member(heroes.Single(candidate => candidate != hero).Coordinate));
             Assert.That(moved, Is.True);
             Assert.That(activeAfterMove, Is.False);
             Assert.That(remainingAfterMove, Is.EqualTo(0));
@@ -142,7 +164,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var hero = Object.FindFirstObjectByType<PrimitiveHeroView>();
+            var hero = FindRedHero(Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None));
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
             var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
@@ -185,6 +207,12 @@ namespace GuardsDigital.Tests.PlayMode
         private static Ray CreateDownRay(Vector3 target)
         {
             return new Ray(target + (Vector3.up * 2f), Vector3.down);
+        }
+
+        private static PrimitiveHeroView FindRedHero(PrimitiveHeroView[] heroes)
+        {
+            return heroes.Single(hero =>
+                hero.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
         }
     }
 }

@@ -1,4 +1,5 @@
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using UnityEngine;
@@ -14,10 +15,14 @@ namespace GuardsDigital.Presentation.Units.Heroes
         public const float DefaultHeight = 0.5f;
         public const float DefaultVerticalOffset = 0.03f;
 
-        private const int SideCount = 16;
+        private const int RedSideCount = 16;
+        private const int BlueSideCount = 4;
 
         [SerializeField]
         private string heroId = DefaultHeroId;
+
+        [SerializeField]
+        private TeamSide teamSide = TeamSide.Red;
 
         [SerializeField]
         private int q;
@@ -38,6 +43,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private float verticalOffset = DefaultVerticalOffset;
 
         public HeroOccupancy Occupancy => new HeroOccupancy(new HeroId(heroId), Coordinate);
+
+        public TeamSide TeamSide => teamSide;
 
         public HexCoordinate Coordinate => new HexCoordinate(q, r);
 
@@ -69,7 +76,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
             if (meshFilter.sharedMesh == null)
             {
-                meshFilter.sharedMesh = CreateCylinderMesh(baseRadius, height);
+                meshFilter.sharedMesh = CreatePrismMesh(baseRadius, height, GetSideCount());
             }
 
             var meshRenderer = GetComponent<MeshRenderer>();
@@ -80,35 +87,40 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
             if (meshRenderer.sharedMaterial == null)
             {
-                meshRenderer.sharedMaterial = CreatePlaceholderMaterial();
+                meshRenderer.sharedMaterial = CreatePlaceholderMaterial(teamSide);
             }
         }
 
-        private static Mesh CreateCylinderMesh(float radius, float cylinderHeight)
+        private int GetSideCount()
         {
-            var vertices = new Vector3[(SideCount * 2) + 2];
-            var triangles = new int[SideCount * 12];
-            var bottomCenterIndex = SideCount * 2;
+            return teamSide == TeamSide.Blue ? BlueSideCount : RedSideCount;
+        }
+
+        private static Mesh CreatePrismMesh(float radius, float cylinderHeight, int sideCount)
+        {
+            var vertices = new Vector3[(sideCount * 2) + 2];
+            var triangles = new int[sideCount * 12];
+            var bottomCenterIndex = sideCount * 2;
             var topCenterIndex = bottomCenterIndex + 1;
 
             vertices[bottomCenterIndex] = Vector3.zero;
             vertices[topCenterIndex] = Vector3.up * cylinderHeight;
 
-            for (var side = 0; side < SideCount; side++)
+            for (var side = 0; side < sideCount; side++)
             {
-                var angle = Mathf.Deg2Rad * ((360f / SideCount) * side);
+                var angle = Mathf.Deg2Rad * ((360f / sideCount) * side);
                 var x = Mathf.Cos(angle) * radius;
                 var z = Mathf.Sin(angle) * radius;
                 vertices[side] = new Vector3(x, 0f, z);
-                vertices[side + SideCount] = new Vector3(x, cylinderHeight, z);
+                vertices[side + sideCount] = new Vector3(x, cylinderHeight, z);
             }
 
             var triangleIndex = 0;
-            for (var side = 0; side < SideCount; side++)
+            for (var side = 0; side < sideCount; side++)
             {
-                var next = (side + 1) % SideCount;
-                var top = side + SideCount;
-                var nextTop = next + SideCount;
+                var next = (side + 1) % sideCount;
+                var top = side + sideCount;
+                var nextTop = next + sideCount;
 
                 triangles[triangleIndex++] = side;
                 triangles[triangleIndex++] = top;
@@ -128,7 +140,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
             var mesh = new Mesh
             {
-                name = "Primitive Hero Placeholder",
+                name = $"Primitive {sideCount}-Sided Hero Placeholder",
                 vertices = vertices,
                 triangles = triangles
             };
@@ -137,13 +149,15 @@ namespace GuardsDigital.Presentation.Units.Heroes
             return mesh;
         }
 
-        private static Material CreatePlaceholderMaterial()
+        private static Material CreatePlaceholderMaterial(TeamSide side)
         {
             var shader = Shader.Find("Standard");
             var material = new Material(shader)
             {
-                name = "Primitive Hero Placeholder",
-                color = new Color(0.1f, 0.45f, 0.9f, 1f)
+                name = $"{side} Primitive Hero Placeholder",
+                color = side == TeamSide.Blue
+                    ? new Color(0.1f, 0.35f, 0.9f, 1f)
+                    : new Color(0.82f, 0.12f, 0.12f, 1f)
             };
             return material;
         }

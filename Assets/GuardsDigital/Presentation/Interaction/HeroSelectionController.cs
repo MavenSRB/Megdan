@@ -20,6 +20,9 @@ namespace GuardsDigital.Presentation.Interaction
         private PrimitiveHeroView heroView;
 
         [SerializeField]
+        private PrimitiveHeroView[] otherHeroViews;
+
+        [SerializeField]
         private HexTileView[] tileViews;
 
         [SerializeField]
@@ -46,6 +49,21 @@ namespace GuardsDigital.Presentation.Interaction
 
         public IReadOnlyList<PlaceholderObstacleView> ObstacleViews =>
             obstacleViews != null ? obstacleViews.Where(obstacle => obstacle != null).ToArray() : System.Array.Empty<PlaceholderObstacleView>();
+
+        public IReadOnlyList<PrimitiveHeroView> OtherHeroViews =>
+            otherHeroViews != null ? otherHeroViews.Where(hero => hero != null).ToArray() : System.Array.Empty<PrimitiveHeroView>();
+
+        public IReadOnlyList<HeroOccupancy> HeroOccupancies
+        {
+            get
+            {
+                EnsureBindings();
+                EnsureMoveAuthority();
+                return moveAuthority != null
+                    ? moveAuthority.Occupancies
+                    : System.Array.Empty<HeroOccupancy>();
+            }
+        }
 
         public int MovementAllowance => movementAllowance;
 
@@ -79,9 +97,11 @@ namespace GuardsDigital.Presentation.Interaction
             IEnumerable<HexTileView> tiles,
             Material material,
             int allowance = DefaultMovementAllowance,
-            IEnumerable<PlaceholderObstacleView> obstacles = null)
+            IEnumerable<PlaceholderObstacleView> obstacles = null,
+            IEnumerable<PrimitiveHeroView> otherHeroes = null)
         {
             heroView = hero;
+            otherHeroViews = otherHeroes?.Where(otherHero => otherHero != null && otherHero != hero).ToArray();
             tileViews = tiles?.Where(tile => tile != null).ToArray();
             obstacleViews = obstacles?.Where(obstacle => obstacle != null).ToArray();
             highlightMaterial = material;
@@ -279,9 +299,20 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void EnsureBindings()
         {
+            var discoveredHeroes = FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
             if (heroView == null)
             {
-                heroView = FindFirstObjectByType<PrimitiveHeroView>();
+                heroView = discoveredHeroes.FirstOrDefault(
+                        hero => hero.Occupancy.HeroId.Value == PrimitiveHeroView.DefaultHeroId) ??
+                    discoveredHeroes.FirstOrDefault();
+            }
+
+            if (discoveredHeroes.Length > 0 &&
+                (otherHeroViews == null ||
+                 otherHeroViews.Any(hero => hero == null) ||
+                 otherHeroViews.Length != discoveredHeroes.Count(hero => hero != heroView)))
+            {
+                otherHeroViews = discoveredHeroes.Where(hero => hero != heroView).ToArray();
             }
 
             var discoveredTiles = FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
@@ -324,10 +355,13 @@ namespace GuardsDigital.Presentation.Interaction
                     .ToArray()
                 : System.Array.Empty<ObstacleOccupancy>();
 
-            moveAuthority = new AdjacentMoveAuthority(
-                boardCoordinates,
-                new[] { heroView.Occupancy },
-                obstacleOccupancies);
+            var heroOccupancies = new[] { heroView }
+                .Concat(otherHeroViews ?? System.Array.Empty<PrimitiveHeroView>())
+                .Where(hero => hero != null)
+                .Select(hero => hero.Occupancy)
+                .ToArray();
+
+            moveAuthority = new AdjacentMoveAuthority(boardCoordinates, heroOccupancies, obstacleOccupancies);
         }
 
         private void EnsureMoveAuthority()
