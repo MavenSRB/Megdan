@@ -51,17 +51,37 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_OriginUsesTheSharedPlaceholderPalette()
+        public void Scene_UsesOneLightGrayFillMaterialForEveryTile()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var origin = tiles.Single(tile => tile.Coordinate.Equals(new HexCoordinate(0, 0)));
-            var originMaterial = origin.GetComponent<MeshRenderer>().sharedMaterial;
+            var fillMaterials = tiles
+                .Select(tile => tile.GetComponent<MeshRenderer>().sharedMaterial)
+                .Distinct()
+                .ToArray();
 
-            Assert.That(
-                tiles.Any(tile => tile != origin && tile.GetComponent<MeshRenderer>().sharedMaterial == originMaterial),
-                Is.True,
-                "The origin should not have a unique visual treatment in the placeholder grid.");
+            Assert.That(fillMaterials, Has.Length.EqualTo(1));
+            Assert.That(Mathf.Abs(fillMaterials[0].color.r - fillMaterials[0].color.g), Is.LessThan(0.05f));
+            Assert.That(Mathf.Abs(fillMaterials[0].color.g - fillMaterials[0].color.b), Is.LessThan(0.05f));
+            Assert.That(fillMaterials[0].color.grayscale, Is.GreaterThan(0.6f));
+        }
+
+        [Test]
+        public void Scene_UsesOneDarkerGrayClosedEdgeForEveryTile()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var fillColor = tiles[0].GetComponent<MeshRenderer>().sharedMaterial.color;
+            var edgeRenderers = tiles.Select(tile => tile.GetComponentInChildren<LineRenderer>()).ToArray();
+
+            Assert.That(edgeRenderers, Has.All.Not.Null);
+            Assert.That(edgeRenderers.All(edge => edge.loop && edge.positionCount == 6), Is.True);
+            Assert.That(edgeRenderers.Select(edge => edge.sharedMaterial).Distinct().Count(), Is.EqualTo(1));
+
+            var edgeColor = edgeRenderers[0].sharedMaterial.color;
+            Assert.That(Mathf.Abs(edgeColor.r - edgeColor.g), Is.LessThan(0.05f));
+            Assert.That(Mathf.Abs(edgeColor.g - edgeColor.b), Is.LessThan(0.05f));
+            Assert.That(edgeColor.grayscale, Is.LessThan(fillColor.grayscale - 0.25f));
         }
     }
 }

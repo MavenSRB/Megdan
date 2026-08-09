@@ -28,7 +28,13 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(tiles, Has.Length.EqualTo(7));
             Assert.That(cameras, Has.Length.EqualTo(1));
             Assert.That(tiles, Has.All.Matches<HexTileView>(tile =>
-                tile.GetComponent<MeshRenderer>().enabled && tile.GetComponent<MeshFilter>().sharedMesh != null));
+            {
+                var edgeRenderer = tile.GetComponentInChildren<LineRenderer>();
+                return tile.GetComponent<MeshRenderer>().enabled &&
+                       tile.GetComponent<MeshFilter>().sharedMesh != null &&
+                       edgeRenderer != null &&
+                       edgeRenderer.enabled;
+            }));
         }
     }
 }
