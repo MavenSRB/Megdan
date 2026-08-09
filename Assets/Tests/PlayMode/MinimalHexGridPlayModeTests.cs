@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Linq;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Units.Heroes;
 using NUnit.Framework;
 using UnityEngine;
@@ -56,6 +58,36 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(heroes, Has.Length.EqualTo(1));
             Assert.That(heroes[0].GetComponent<MeshRenderer>().enabled, Is.True);
             Assert.That(heroes[0].GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_SelectsPrimitiveHeroAndHighlightsAdjacentDestinations()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var hero = Object.FindFirstObjectByType<PrimitiveHeroView>();
+            var selector = Object.FindFirstObjectByType<PrimitiveHeroPointerSelector>();
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var pointerRay = new Ray(hero.transform.position + (Vector3.up * 1f), Vector3.down);
+
+            var selected = selector.TrySelectFromPointerRay(pointerRay);
+            var highlightedCoordinates = tiles
+                .Where(tile => tile.IsHighlighted)
+                .Select(tile => tile.Coordinate)
+                .ToArray();
+
+            Assert.That(selected, Is.True);
+            Assert.That(highlightedCoordinates, Is.EquivalentTo(hero.Coordinate.GetNeighbors()));
+            Assert.That(highlightedCoordinates, Has.Length.EqualTo(6));
+            Assert.That(highlightedCoordinates, Has.No.Member(hero.Coordinate));
         }
     }
 }

@@ -3,7 +3,8 @@
   "rootNamespace": "GuardsDigital.Tests.PlayMode",
   "references": [
     "GuardsDigital.Core",
-    "GuardsDigital.Presentation"
+    "GuardsDigital.Presentation",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

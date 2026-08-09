@@ -175,7 +175,7 @@ Non-goals: No teams, movement, animation, cards, or turns.
 
 Completion note (2026-08-09): Added a no-engine-reference primitive hero occupancy model with a stable placeholder hero ID and occupied axial coordinate. Added a Unity presentation view that derives its local position from that occupancy through the existing pointy-top hex layout and builds a simple placeholder mesh at runtime. The validation scene now contains one primitive hero on the origin hex while preserving the seven-tile minimal grid. Focused Edit Mode tests passed 10/10 and focused Play Mode tests passed 2/2. No teams, movement, animation, cards, turns, or gameplay resolution were added.
 
-### [ ] 1.4 Select the hero and one adjacent destination
+### [x] 1.4 Select the hero and one adjacent destination
 
 Observable outcome: Pointer input can select the hero and highlight valid adjacent empty hexes.
 
@@ -185,6 +185,8 @@ Acceptance checks:
 - Selection is usable with Unity's pointer abstraction.
 
 Non-goals: The hero does not move yet.
+
+Completion note (2026-08-09): Added a pure adjacent-empty destination query and Unity presentation selection path. The validation scene now uses the Unity Input System pointer abstraction (`<Pointer>/press` and pointer position raycast) to select the primitive hero and highlight only adjacent empty tiles; the current seven-hex scene therefore highlights all six neighbors and not the occupied origin. Focused Edit Mode tests passed 13/13, focused Play Mode tests passed 3/3, and milestone-boundary suites passed Edit Mode 35/35 and Play Mode 4/4. No movement command, occupancy mutation, rule event, teams, cards, turns, or gameplay resolution was added.
 
 ### [ ] 1.5 Commit one adjacent move through rules authority
 

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Units.Heroes;
 using NUnit.Framework;
 using UnityEditor.SceneManagement;
@@ -41,14 +42,14 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_UsesOneFixedTopDownCameraAndNoCameraController()
+        public void Scene_UsesOneFixedTopDownCameraWithPointerInputAndNoCameraController()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var cameras = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
 
             Assert.That(cameras, Has.Length.EqualTo(1));
             Assert.That(cameras[0].name, Is.EqualTo("Fixed Camera"));
-            Assert.That(cameras[0].GetComponents<MonoBehaviour>(), Is.Empty);
+            Assert.That(cameras[0].GetComponents<MonoBehaviour>(), Has.All.TypeOf<PrimitiveHeroPointerInput>());
             Assert.That(cameras[0].transform.position.y, Is.GreaterThan(0f));
             Assert.That(
                 new Vector2(cameras[0].transform.position.x, cameras[0].transform.position.z).magnitude,
@@ -108,6 +109,45 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 Vector3.Distance(hero.transform.localPosition, expectedPosition),
                 Is.LessThan(Tolerance));
+        }
+
+        [Test]
+        public void Scene_ContainsInputSystemPointerSelectionPath()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var controllers = Object.FindObjectsByType<HeroSelectionController>(FindObjectsSortMode.None);
+            var selectors = Object.FindObjectsByType<PrimitiveHeroPointerSelector>(FindObjectsSortMode.None);
+            var inputs = Object.FindObjectsByType<PrimitiveHeroPointerInput>(FindObjectsSortMode.None);
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+
+            Assert.That(controllers, Has.Length.EqualTo(1));
+            Assert.That(selectors, Has.Length.EqualTo(1));
+            Assert.That(inputs, Has.Length.EqualTo(1));
+            Assert.That(selectors[0].SelectionController, Is.SameAs(controllers[0]));
+            Assert.That(inputs[0].EventCamera, Is.Not.Null);
+            Assert.That(inputs[0].Selectors, Has.Member(selectors[0]));
+            Assert.That(heroes[0].GetComponent<CapsuleCollider>(), Is.Not.Null);
+        }
+
+        [Test]
+        public void Scene_SelectingHeroHighlightsOnlyAdjacentEmptyTiles()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var hero = Object.FindFirstObjectByType<PrimitiveHeroView>();
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+
+            controller.SelectHero();
+
+            var highlightedCoordinates = tiles
+                .Where(tile => tile.IsHighlighted)
+                .Select(tile => tile.Coordinate)
+                .ToArray();
+
+            Assert.That(controller.IsHeroSelected, Is.True);
+            Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(hero.Coordinate.GetNeighbors()));
+            Assert.That(highlightedCoordinates, Is.EquivalentTo(hero.Coordinate.GetNeighbors()));
+            Assert.That(tiles.Single(tile => tile.Coordinate.Equals(hero.Coordinate)).IsHighlighted, Is.False);
         }
     }
 }

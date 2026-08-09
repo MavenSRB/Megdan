@@ -3,7 +3,8 @@
   "rootNamespace": "GuardsDigital.Tests.EditMode",
   "references": [
     "GuardsDigital.Core",
-    "GuardsDigital.Presentation"
+    "GuardsDigital.Presentation",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [
     "Editor"
