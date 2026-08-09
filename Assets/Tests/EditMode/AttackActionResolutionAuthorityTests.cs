@@ -139,6 +139,219 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void RangedAttack_RangeOneIncludesAdjacentEnemyThroughTypedOfferRange()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var rangedDefinition = new CardDefinition(
+                new CardDefinitionId("range-one-test-card"),
+                "rev-1",
+                "TEST - Range One Attack",
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("range-one-attack"),
+                        ActionKind.Attack,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        new[]
+                        {
+                            new PrintedValueDefinition(PrintedValueChannel.Attack, 4),
+                            new PrintedValueDefinition(PrintedValueChannel.Range, 1)
+                        },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.Ranged,
+                        default)
+                });
+            var rangedCard = CardInstance.CreateInHand(
+                new CardInstanceId("range-one-test-instance"),
+                rangedDefinition.Reference,
+                attackerId);
+            var definitions = configuration.CardDefinitions.Concat(new[] { rangedDefinition }).ToArray();
+            var instances = configuration.CardInstances.Concat(new[] { rangedCard }).ToArray();
+            var offer = ActionOfferQuery.GetAvailableOffers(
+                    definitions,
+                    instances,
+                    attackerId,
+                    ActionOfferWindow.NormalPlay)
+                .Single(candidate => candidate.ActionDefinitionId.Equals(new ActionDefinitionId("range-one-attack")));
+            var authority = new CardActionResolutionAuthority(CreateBoardAuthority(attackerId, defenderId));
+
+            var start = authority.StartAttackResolution(
+                new ActionResolutionId("range-one-resolution"),
+                offer,
+                definitions,
+                instances,
+                configuration.Participants);
+
+            Assert.That(start.Accepted, Is.True);
+            Assert.That(start.PendingTargetChoice.LegalTargetHeroIds, Is.EqualTo(new[] { defenderId }));
+            Assert.That(
+                PrintedValueQuery.CalculatePrintedValue(offer, definitions, PrintedValueChannel.Range).Total,
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        public void RangedAttack_UsesHexDistanceThroughOccupiedSpaceAndRejectsBeyondMaximumRange()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var maximumRangeEnemyId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var friendlyBlockerId = new HeroId("red-friendly-hero");
+            var beyondRangeEnemyId = new HeroId("blue-far-hero");
+            var participants = CreateFourHeroParticipants(
+                attackerId,
+                maximumRangeEnemyId,
+                friendlyBlockerId,
+                beyondRangeEnemyId);
+            var board = new AdjacentMoveAuthority(
+                CreateRadiusThreeCoordinates(),
+                new[]
+                {
+                    new HeroOccupancy(attackerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(friendlyBlockerId, new HexCoordinate(1, 0)),
+                    new HeroOccupancy(maximumRangeEnemyId, new HexCoordinate(2, 0)),
+                    new HeroOccupancy(beyondRangeEnemyId, new HexCoordinate(3, 0))
+                });
+            var authority = new CardActionResolutionAuthority(board);
+            var rangedOffer = GetRangedAttackOffer(configuration, attackerId);
+            var originalStates = configuration.CardInstances.Select(instance => instance.State).ToArray();
+
+            var start = authority.StartAttackResolution(
+                new ActionResolutionId("ranged-resolution"),
+                rangedOffer,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                participants);
+            var beyondRange = authority.AnswerAttackTarget(
+                new AttackTargetChoiceCommand(
+                    start.PendingTargetChoice.ResolutionId,
+                    start.PendingTargetChoice.ChoiceId,
+                    beyondRangeEnemyId),
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                participants);
+            var accepted = authority.AnswerAttackTarget(
+                new AttackTargetChoiceCommand(
+                    start.PendingTargetChoice.ResolutionId,
+                    start.PendingTargetChoice.ChoiceId,
+                    maximumRangeEnemyId),
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                participants);
+
+            Assert.That(HexDistanceQuery.Calculate(new HexCoordinate(0, 0), new HexCoordinate(2, 0)), Is.EqualTo(2));
+            Assert.That(start.PendingTargetChoice.LegalTargetHeroIds, Is.EqualTo(new[] { maximumRangeEnemyId }));
+            Assert.That(beyondRange.Accepted, Is.False);
+            Assert.That(beyondRange.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.TargetUnavailable));
+            Assert.That(beyondRange.Events, Is.Empty);
+            Assert.That(configuration.CardInstances.Select(instance => instance.State), Is.EqualTo(originalStates));
+            Assert.That(accepted.Accepted, Is.True);
+            Assert.That(accepted.PendingResolution.AttackTotal, Is.EqualTo(2));
+            Assert.That(accepted.PendingDefenseChoice.ChooserId, Is.EqualTo(maximumRangeEnemyId));
+            Assert.That(accepted.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
+            {
+                CardActionResolutionEventKind.AttackStarted,
+                CardActionResolutionEventKind.AttackTotalCalculated,
+                CardActionResolutionEventKind.DefenseResponseChoiceRequested
+            }));
+        }
+
+        [Test]
+        public void RangedAttack_TargetsThroughObstacleWithoutLineOfSightRule()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var authority = new CardActionResolutionAuthority(new AdjacentMoveAuthority(
+                CreateRadiusThreeCoordinates(),
+                new[]
+                {
+                    new HeroOccupancy(attackerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(defenderId, new HexCoordinate(2, 0))
+                },
+                new[] { new ObstacleOccupancy(new ObstacleId("between-heroes"), new HexCoordinate(1, 0)) }));
+
+            var start = authority.StartAttackResolution(
+                new ActionResolutionId("ranged-through-obstacle"),
+                GetRangedAttackOffer(configuration, attackerId),
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants);
+
+            Assert.That(start.Accepted, Is.True);
+            Assert.That(start.PendingTargetChoice.LegalTargetHeroIds, Is.EqualTo(new[] { defenderId }));
+        }
+
+        [Test]
+        public void RangedAttack_RestoresTargetAndDefenseChoicesThroughSharedContinuationBoundary()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var board = new AdjacentMoveAuthority(
+                CreateRadiusThreeCoordinates(),
+                new[]
+                {
+                    new HeroOccupancy(attackerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(defenderId, new HexCoordinate(2, 0))
+                });
+            var authority = new CardActionResolutionAuthority(board);
+            var rangedOffer = GetRangedAttackOffer(configuration, attackerId);
+            var start = authority.StartAttackResolution(
+                new ActionResolutionId("restorable-ranged-resolution"),
+                rangedOffer,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants);
+
+            var restoredTarget = CardActionResolutionAuthority.RestoreAttack(
+                new AdjacentMoveAuthority(
+                    CreateRadiusThreeCoordinates(),
+                    new[]
+                    {
+                        new HeroOccupancy(attackerId, new HexCoordinate(0, 0)),
+                        new HeroOccupancy(defenderId, new HexCoordinate(2, 0))
+                    }),
+                start.PendingResolution,
+                start.PendingTargetChoice,
+                null,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants);
+            var restoredTargetChoice = restoredTarget.PendingAttackTargetChoice;
+            var answer = restoredTarget.AnswerAttackTarget(
+                new AttackTargetChoiceCommand(
+                    start.PendingTargetChoice.ResolutionId,
+                    start.PendingTargetChoice.ChoiceId,
+                    defenderId),
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants);
+            var restoredDefense = CardActionResolutionAuthority.RestoreAttack(
+                new AdjacentMoveAuthority(
+                    CreateRadiusThreeCoordinates(),
+                    new[]
+                    {
+                        new HeroOccupancy(attackerId, new HexCoordinate(0, 0)),
+                        new HeroOccupancy(defenderId, new HexCoordinate(2, 0))
+                    }),
+                answer.PendingResolution,
+                null,
+                answer.PendingDefenseChoice,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants);
+
+            Assert.That(restoredTargetChoice.LegalTargetHeroIds,
+                Is.EqualTo(new[] { defenderId }));
+            Assert.That(answer.Accepted, Is.True);
+            Assert.That(answer.PendingResolution.AttackTotal, Is.EqualTo(2));
+            Assert.That(restoredDefense.PendingDefenseChoice.ChooserId, Is.EqualTo(defenderId));
+            Assert.That(restoredDefense.PendingDefenseChoice.AttackTotal, Is.EqualTo(2));
+        }
+
+        [Test]
         public void StartAttack_WhenNoAdjacentEnemyExists_RejectsWithoutPendingStateOrCardMutation()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.Create();
@@ -380,6 +593,18 @@ namespace GuardsDigital.Tests.EditMode
                     attackerId,
                     ActionOfferWindow.NormalPlay)
                 .Single(offer => offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
+        }
+
+        private static ActionOffer GetRangedAttackOffer(
+            PlaceholderOneVsOneTestConfiguration configuration,
+            HeroId attackerId)
+        {
+            return ActionOfferQuery.GetAvailableOffers(
+                    configuration.CardDefinitions,
+                    configuration.CardInstances,
+                    attackerId,
+                    ActionOfferWindow.NormalPlay)
+                .Single(offer => offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-ranged-attack")));
         }
 
         private static MatchParticipants CreateFourHeroParticipants(

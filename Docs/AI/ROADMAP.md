@@ -1,6 +1,6 @@
 # Guards Digital - Roadmap
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 ## Status legend
 
@@ -470,7 +470,7 @@ Non-goals: No ranged targeting, minions, items, modifiers, Before/After Attack t
 
 Completion note (2026-08-09): Extended the existing pure card-action authority with a typed, restorable non-Ranged Attack path that revalidates the selected normal-play offer, projects only adjacent enemy participant heroes from authoritative unit occupancies, accepts a stable target-choice command, and pauses the same resolution at a defender-owned Defense response choice. Self, friendly, non-adjacent, unknown/empty, terrain/token, and non-unit-obstacle identities are excluded, while hero occupancy continues to block movement without erasing unit target identity. Target validation and stale-board failures emit no events, preserve the exact pending Attack, and leave every card state unchanged. After a legal target, the authority queries the selected offer's printed Attack contribution (total 3 with no modifiers), projects the target hero's currently eligible Defense reaction offers without consuming them, and emits ordered `AttackStarted`, `AttackTotalCalculated`, and `DefenseResponseChoiceRequested` facts. Printed rulebook pages 13-14 were visually verified. The original authority-focused handoff passed Edit Mode 7/7 and 100/100 but omitted a user-testable presentation path. The corrective completion exposes Route Drill's `PRIMARY ATTACK 3` control, highlights exactly the coordinates belonging to the authority-projected legal target hero IDs, routes an adjacent enemy-miniature click through the stable target command, clears the highlight after acceptance, retains the attacker as active actor, and displays the resulting pending Defense response. Corrective T2 validation passed with zero skipped or inconclusive cases: initial presentation Edit Mode 35/35, initial affected Edit Mode 71/71, target-highlight regression Edit Mode 43/43 (`CardDrivenMovementPresentationTests`, `AttackActionResolutionAuthorityTests`, `CardActionResolutionAuthorityTests`, and `HeroSelectionControllerTests`), and focused Play Mode 6/6 (`MinimalHexGridPlayModeTests`). Targeted visual inspection confirmed the Phase 2 test hand visibly renders `PRIMARY ATTACK 3` without clipping or overlap and the legal target tile receives a strong yellow highlight. Complete unfiltered suites were intentionally omitted because milestone 2.3 is not a T3 gate and the affected consumers are enumerated. No Defense answer, discard, comparison/result, Ranged Attack, minion, item/modifier, timing text, Wasp effect, card consumption, or animation was added.
 
-### [ ] 2.3a Initiate a basic Ranged hero Attack
+### [x] 2.3a Initiate a basic Ranged hero Attack
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -488,7 +488,11 @@ Acceptance checks:
 
 Non-goals: No minion targets, Range modifiers from card text/items/Active effects, Before/After Attack text, Defense-card selection/resolution, Block, full-map combat integration, Wasp data or effects, or animation.
 
+Completion note (2026-08-10): Extended the same typed, restorable Attack authority from milestone 2.3 with an explicit rulebook hex-distance query and shared enemy-hero target projection for both non-Ranged and Ranged classifications. The synthetic Obstacle Course definition now exposes a printed Primary Ranged Attack 2 with printed Range 2; action-definition validation requires exactly one typed Attack and one positive typed Range value for Ranged Attacks, while non-Ranged Attacks remain Attack-only. The authority re-derives the selected runtime offer and its current Range Total at start, target answer, and restoration boundaries. Range 1 includes adjacent targets, the maximum printed Range is inclusive, targets beyond it reject without events or card mutation, and occupied/obstacle spaces do not block or lengthen the geometric distance because the rulebook has no line-of-sight rule. Accepted Ranged targets enter the unchanged `AttackStarted`, `AttackTotalCalculated`, and defender-owned `DefenseResponseChoiceRequested` flow; self, friendly, empty, terrain/token, and non-unit obstacles remain excluded. The Phase 2 test hand visibly exposes `PRIMARY RANGED ATTACK 2 RANGE 2`, routes the existing hero pointer through the same stable target command, and uses the same authority-projected yellow target highlight and Defense prompt. Printed rulebook pages 9 and 13 were visually verified. T2 validation passed with zero skipped or inconclusive cases: final focused Edit Mode 36/36, final affected Edit Mode 114/114 across the Attack, resolver, offer/value, card, participant, movement, occupancy, presentation, controller, and hex fixtures, and focused Play Mode 6/6 (`MinimalHexGridPlayModeTests`). Targeted visual inspection confirmed the Ranged action label/status are readable without clipping and the accepted target coordinate receives the strong yellow highlight. Complete unfiltered suites were intentionally omitted because milestone 2.3a is not a T3 gate and all affected consumers are enumerated. No Defense answer/discard, comparison/result, minion target, Range modifier, timing text, Wasp data/effect, card consumption, full-map integration, or animation was added.
+
 ### [ ] 2.4 Defend with one test card or decline
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The targeted hero answers the pending Defense reaction by discarding exactly one legal card from its own hand for its Defense value or declining, after which the Attack resolution resumes.
 

@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 ## Purpose and authority
 
@@ -10,12 +10,12 @@ This brief is not a substitute for authoritative sources. `AGENTS.md` controls t
 
 ## Current state and authorization
 
-- Roadmap milestones 0.1 through 0.7, 1.1 through 1.13, and 2.1 through 2.3 are marked complete, including corrective milestones 1.12a, 1.12b, and 1.13a.
-- The project has living documentation, a Unity/test shell, card-system and effect-capability architecture contracts, risk-tiered validation, hex foundations, a primitive obstacle map, placeholder card definitions/instances and offers, typed printed values, authoritative visible card-driven Movement with cumulative waypoint routes and explicit Stop, and a visible basic adjacent non-Ranged Attack that reaches the pending Defense response.
+- Roadmap milestones 0.1 through 0.7, 1.1 through 1.13, and 2.1 through 2.3a are marked complete, including corrective milestones 1.12a, 1.12b, and 1.13a.
+- The project has living documentation, a Unity/test shell, card-system and effect-capability architecture contracts, risk-tiered validation, hex foundations, a primitive obstacle map, placeholder card definitions/instances and offers, typed printed values, authoritative visible card-driven Movement with cumulative waypoint routes and explicit Stop, and visible basic non-Ranged and Ranged hero Attacks that share typed target/distance queries and reach the pending Defense response.
 - Phase 1 does not implement broader card lifecycle, real Wasp content, card-text effects, attacks, turns, rounds, snapshots, networking, animation, or later gameplay systems.
-- Milestone 2.3a, initiating a basic Ranged hero Attack, is proposed but **not authorized**.
-- Do not begin milestone 2.3a or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
-- Required Codex profile for milestone 2.3a: **GPT-5.6 Sol with medium reasoning**.
+- Milestone 2.4, defending with one test card or declining, is proposed but **not authorized**.
+- Do not begin milestone 2.4 or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
+- Required Codex profile for milestone 2.4: **GPT-5.6 Sol with medium reasoning**.
 - A local Git repository exists on `main`. No remote is configured or authorized.
 
 ## Working boundaries

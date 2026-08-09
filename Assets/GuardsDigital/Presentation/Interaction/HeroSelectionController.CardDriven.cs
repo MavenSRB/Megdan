@@ -235,7 +235,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (!result.Accepted)
             {
                 LastCardRejectionReason = result.RejectionReason;
-                cardStatus = $"Attack target rejected: {result.RejectionReason}. Choose the adjacent enemy hero.";
+                cardStatus = $"Attack target rejected: {result.RejectionReason}. Choose a legal enemy hero.";
                 return false;
             }
 
@@ -458,8 +458,11 @@ namespace GuardsDigital.Presentation.Interaction
                 offer,
                 placeholderHand.Definitions,
                 PrintedValueChannel.Attack).Total;
-            cardStatus = $"{FormatContext(offer.InvocationContext)} Attack {attackTotal}: " +
-                "click the adjacent enemy hero.";
+            cardStatus = offer.AttackRange == AttackRangeKind.Ranged
+                ? $"{FormatContext(offer.InvocationContext)} Ranged Attack {attackTotal} " +
+                    $"Range {GetPrintedRangeTotal(offer)}: click an enemy hero within range."
+                : $"{FormatContext(offer.InvocationContext)} Attack {attackTotal}: " +
+                    "click the adjacent enemy hero.";
             RefreshAttackTargetHighlights(start.PendingTargetChoice);
             return true;
         }
@@ -550,6 +553,14 @@ namespace GuardsDigital.Presentation.Interaction
                     : PrintedValueChannel.Movement).Total;
         }
 
+        private int GetPrintedRangeTotal(ActionOffer offer)
+        {
+            return PrintedValueQuery.CalculatePrintedValue(
+                offer,
+                placeholderHand.Definitions,
+                PrintedValueChannel.Range).Total;
+        }
+
         private static string FormatContext(ActionInvocationContext context)
         {
             return context == ActionInvocationContext.PrintedPrimary ? "Primary" : "Secondary";
@@ -621,9 +632,13 @@ namespace GuardsDigital.Presentation.Interaction
                 var textPolicy = definition.DefaultPolicy.CardTextApplication == CardTextApplicationPolicy.Applies
                     ? "text applies"
                     : "text suppressed";
+                var actionLabel = actionKind == ActionKind.Attack &&
+                    offer.AttackRange == AttackRangeKind.Ranged
+                        ? $"RANGED ATTACK {printedValue} RANGE {GetPrintedRangeTotal(offer)}"
+                        : $"{actionKind.ToString().ToUpperInvariant()} {printedValue}";
                 if (GUILayout.Button(
                         $"{FormatContext(offer.InvocationContext).ToUpperInvariant()} " +
-                        $"{actionKind.ToString().ToUpperInvariant()} {printedValue}\n{textPolicy}",
+                        $"{actionLabel}\n{textPolicy}",
                         GUILayout.Height(46f)))
                 {
                     TrySelectAction(offer.ActionDefinitionId);

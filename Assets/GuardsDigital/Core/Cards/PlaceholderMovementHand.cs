@@ -46,8 +46,20 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("A placeholder movement hand requires unique card instance IDs.");
             }
 
-            var routeDrill = CreateDefinition("route-drill", "Route Drill", true, 2);
-            var obstacleCourse = CreateDefinition("obstacle-course", "Obstacle Course", false, 3);
+            var routeDrill = CreateDefinition(
+                "route-drill",
+                "Route Drill",
+                AttackRangeKind.NonRanged,
+                3,
+                0,
+                2);
+            var obstacleCourse = CreateDefinition(
+                "obstacle-course",
+                "Obstacle Course",
+                AttackRangeKind.Ranged,
+                2,
+                2,
+                3);
             var definitions = Array.AsReadOnly(new[] { routeDrill, obstacleCourse });
             var instances = Array.AsReadOnly(new[]
             {
@@ -67,7 +79,9 @@ namespace GuardsDigital.Core.Cards
         private static CardDefinition CreateDefinition(
             string id,
             string displayName,
-            bool includesAttack,
+            AttackRangeKind attackRange,
+            int attackValue,
+            int rangeValue,
             int defenseValue)
         {
             var actions = new List<ActionDefinition>
@@ -82,16 +96,16 @@ namespace GuardsDigital.Core.Cards
                     1)
             };
 
-            if (includesAttack)
+            if (attackRange != AttackRangeKind.None)
             {
-                actions.Add(CreateAttackAction(3));
+                actions.Add(CreateAttackAction(attackRange, attackValue, rangeValue));
             }
 
             actions.Add(CreateDefenseAction(defenseValue));
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{id}"),
-                "phase-2-rev-1",
+                "phase-2-rev-2",
                 $"TEST - {displayName}",
                 actions);
         }
@@ -111,15 +125,28 @@ namespace GuardsDigital.Core.Cards
                     : new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true));
         }
 
-        private static ActionDefinition CreateAttackAction(int value)
+        private static ActionDefinition CreateAttackAction(
+            AttackRangeKind attackRange,
+            int attackValue,
+            int rangeValue)
         {
+            var values = attackRange == AttackRangeKind.Ranged
+                ? new[]
+                {
+                    new PrintedValueDefinition(PrintedValueChannel.Attack, attackValue),
+                    new PrintedValueDefinition(PrintedValueChannel.Range, rangeValue)
+                }
+                : new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, attackValue) };
             return new ActionDefinition(
-                new ActionDefinitionId("primary-attack"),
+                new ActionDefinitionId(
+                    attackRange == AttackRangeKind.Ranged
+                        ? "primary-ranged-attack"
+                        : "primary-attack"),
                 ActionKind.Attack,
                 ActionDefinitionOrigin.PrintedPrimary,
-                new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, value) },
+                values,
                 new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
-                AttackRangeKind.NonRanged,
+                attackRange,
                 default);
         }
 

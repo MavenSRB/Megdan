@@ -1,6 +1,6 @@
 # Guards Digital - Card Effect Capabilities
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 ## Purpose and status
 
@@ -8,7 +8,7 @@ This document is the effect-level companion to `CARD_SYSTEM_ARCHITECTURE.md`. It
 
 The baseline catalog is derived from the second-printing rulebook's action execution, card states, actions, progression, concepts, and keywords on printed pages 7-19. Verified card text may override a general rule or introduce a new capability. No hero-specific capability is authoritative until its card source and any applicable official correction are verified in `RULES_LEDGER.md`.
 
-This is an architecture specification, not evidence that these effects are implemented. A roadmap milestone implements only the smallest capabilities it explicitly names. Milestone 1.11 implemented the placeholder printed Movement value query/contribution seam. Milestone 1.12 implemented the pure placeholder Movement pending-choice shell, corrective milestone 1.12a made its authority and continuation self-contained/restorable, corrective milestone 1.12b projects immutable reachable destination/route/cost candidates and commits the selected candidate's adjacent steps through the existing authorities, milestone 1.13 proved that capability through a visible synthetic card/action/pending-choice presentation bridge, and corrective milestone 1.13a lets repeated waypoint segments accumulate inside that same pending Movement action until Stop or allowance exhaustion. Milestone 2.2 adds typed printed Attack/Defense query data and declares the source-state/cost transition for a future one-card Defense reaction. Milestone 2.3 implements the minimum non-Ranged `TargetQuery`/`ChooseTarget` slice for adjacent enemy heroes, calculates the initial printed Attack contribution/total, and opens a restorable defender-owned response choice without executing `DiscardCard` or resolving combat. Fast Travel, direct Move, concrete action-start restriction effects, modifiers, card-text effects, modal/repeat execution, Defense selection/resolution, Attack/Defense comparison, timing effects, card lifecycle transitions, snapshot import/export, and broader mutation handlers remain unimplemented.
+This is an architecture specification, not evidence that these effects are implemented. A roadmap milestone implements only the smallest capabilities it explicitly names. Milestone 1.11 implemented the placeholder printed Movement value query/contribution seam. Milestone 1.12 implemented the pure placeholder Movement pending-choice shell, corrective milestone 1.12a made its authority and continuation self-contained/restorable, corrective milestone 1.12b projects immutable reachable destination/route/cost candidates and commits the selected candidate's adjacent steps through the existing authorities, milestone 1.13 proved that capability through a visible synthetic card/action/pending-choice presentation bridge, and corrective milestone 1.13a lets repeated waypoint segments accumulate inside that same pending Movement action until Stop or allowance exhaustion. Milestone 2.2 adds typed printed Attack/Defense query data and declares the source-state/cost transition for a future one-card Defense reaction. Milestone 2.3 implements the minimum non-Ranged `TargetQuery`/`ChooseTarget` slice for adjacent enemy heroes, calculates the initial printed Attack contribution/total, and opens a restorable defender-owned response choice without executing `DiscardCard` or resolving combat. Milestone 2.3a adds the first narrow `DistanceQuery`/`RangeQuery` implementation: a selected Ranged Attack offer supplies typed printed Attack and Range totals, and the shared hero-target query uses inclusive rulebook hex distance without line of sight before entering the same restorable Defense-response flow. Fast Travel, direct Move, concrete action-start restriction effects, modifiers including Range modifiers, card-text effects, modal/repeat execution, Defense selection/resolution, Attack/Defense comparison, timing effects, card lifecycle transitions, snapshot import/export, and broader mutation handlers remain unimplemented.
 
 ## Capability categories
 
@@ -129,6 +129,8 @@ Reusable geometry queries include:
 - `EmptySpaceQuery`, `EmptySpawnPointQuery`, occupancy, terrain, obstacle, and token filters.
 
 Movement path, rulebook distance, Range, Radius, straight line, and zone adjacency are different calculations. A capability selects the required query explicitly.
+
+Milestone 2.3a implements only the hero-Attack subset: axial-coordinate rulebook distance and an inclusive Range Total comparison for enemy heroes, with Range 1 including adjacency and occupied/obstacle spaces creating no line-of-sight restriction. Broader object categories, Range modifiers, Radius, straight-line, immunity, and presence interactions remain specified but unimplemented.
 
 Zone adjacency follows the board rule: two zones are adjacent when there is an adjacent pair of non-terrain spaces, one in each zone. It is not inferred from bounding boxes or art proximity and is verified against authoritative map data.
 

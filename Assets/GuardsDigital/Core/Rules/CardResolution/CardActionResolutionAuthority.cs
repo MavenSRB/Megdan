@@ -5,6 +5,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -329,7 +330,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.UnsupportedActionKind);
             }
 
-            if (offer.AttackRange != AttackRangeKind.NonRanged)
+            if (offer.AttackRange != AttackRangeKind.NonRanged &&
+                offer.AttackRange != AttackRangeKind.Ranged)
             {
                 return RejectAttack(CardActionResolutionRejectionReason.UnsupportedAttackRange);
             }
@@ -359,7 +361,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AttackResolutionPhase.ChooseTarget,
                 default,
                 null);
-            pendingAttackTargetChoice = CreateAttackTargetChoice(pendingAttackResolution, participants);
+            pendingAttackTargetChoice = CreateAttackTargetChoice(
+                pendingAttackResolution,
+                offer,
+                materializedDefinitions,
+                participants);
             pendingDefenseChoice = null;
 
             if (pendingAttackTargetChoice.LegalTargetHeroIds.Count == 0)
@@ -401,7 +407,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var authoritativeChoice = CreateAttackTargetChoice(pendingAttackResolution, participants);
+            var offer = FindPendingAttackOffer(
+                pendingAttackResolution,
+                materializedDefinitions,
+                materializedInstances);
+            if (!offer.HasValue)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
+            }
+
+            var authoritativeChoice = CreateAttackTargetChoice(
+                pendingAttackResolution,
+                offer.Value,
+                materializedDefinitions,
+                participants);
             if (!AttackTargetChoicesMatch(authoritativeChoice, pendingAttackTargetChoice))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
@@ -410,15 +429,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (!authoritativeChoice.LegalTargetHeroIds.Contains(command.TargetHeroId))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.TargetUnavailable);
-            }
-
-            var offer = FindPendingAttackOffer(
-                pendingAttackResolution,
-                materializedDefinitions,
-                materializedInstances);
-            if (!offer.HasValue)
-            {
-                return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
             }
 
             var attackValue = PrintedValueQuery.CalculatePrintedValue(
@@ -498,7 +508,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (pendingResolution.Phase == AttackResolutionPhase.ChooseTarget)
             {
-                var expectedChoice = authority.CreateAttackTargetChoice(pendingResolution, participants);
+                var expectedChoice = authority.CreateAttackTargetChoice(
+                    pendingResolution,
+                    offer.Value,
+                    materializedDefinitions,
+                    participants);
                 if (pendingTargetChoice == null || pendingDefenseChoice != null ||
                     !AttackTargetChoicesMatch(expectedChoice, pendingTargetChoice))
                 {
@@ -507,10 +521,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
             else
             {
-                var legalTargets = AttackTargetQuery.FindAdjacentEnemyHeroes(
+                var legalTargets = authority.FindLegalAttackTargets(
                     pendingResolution.ActorId,
-                    participants,
-                    adjacentMoveAuthority.Occupancies);
+                    offer.Value,
+                    materializedDefinitions,
+                    participants);
                 if (!legalTargets.Contains(pendingResolution.TargetHeroId))
                 {
                     throw new ArgumentException("Pending Attack target is no longer legal.", nameof(pendingResolution));
@@ -552,16 +567,39 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         private PendingAttackTargetChoice CreateAttackTargetChoice(
             PendingAttackResolution resolution,
+            ActionOffer offer,
+            IReadOnlyList<CardDefinition> definitions,
             MatchParticipants participants)
         {
             return new PendingAttackTargetChoice(
                 resolution.ResolutionId,
                 resolution.CurrentStepId,
                 resolution.ActorId,
-                AttackTargetQuery.FindAdjacentEnemyHeroes(
+                FindLegalAttackTargets(
                     resolution.ActorId,
-                    participants,
-                    adjacentMoveAuthority.Occupancies));
+                    offer,
+                    definitions,
+                    participants));
+        }
+
+        private IReadOnlyList<HeroId> FindLegalAttackTargets(
+            HeroId attackerId,
+            ActionOffer offer,
+            IReadOnlyList<CardDefinition> definitions,
+            MatchParticipants participants)
+        {
+            var rangeTotal = offer.AttackRange == AttackRangeKind.Ranged
+                ? PrintedValueQuery.CalculatePrintedValue(
+                    offer,
+                    definitions,
+                    PrintedValueChannel.Range).Total
+                : 1;
+            return AttackTargetQuery.FindLegalEnemyHeroes(
+                attackerId,
+                offer.AttackRange,
+                rangeTotal,
+                participants,
+                adjacentMoveAuthority.Occupancies);
         }
 
         private static ActionOffer? FindPendingAttackOffer(
@@ -579,8 +617,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     candidate.Value.SourceCardInstanceId.Equals(resolution.SourceCardInstanceId) &&
                     candidate.Value.SourceDefinitionReference.Equals(resolution.SourceDefinitionReference) &&
                     candidate.Value.ActionDefinitionId.Equals(resolution.ActionDefinitionId) &&
-                    candidate.Value.InvocationContext == resolution.InvocationContext &&
-                    candidate.Value.AttackRange == AttackRangeKind.NonRanged);
+                    candidate.Value.InvocationContext == resolution.InvocationContext);
         }
 
         private static bool AttackTargetChoicesMatch(

@@ -1,10 +1,12 @@
 # Guards Digital - Verification and Testing
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 ## Scope
 
 The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. Milestone 1.2 adds Edit Mode layout, mesh, and saved-scene coverage plus a Play Mode scene-loading check. Milestone 1.3 adds primitive hero occupancy and placement coverage. Milestone 1.4 adds adjacent-empty destination query, selection highlighting, Input System pointer-path, saved-scene, and Play Mode coverage. Milestone 1.5 adds pure adjacent-move command/event authority coverage. Milestone 1.6 adds pointer-to-command hookup coverage for accepted and rejected adjacent destination flows. Milestone 1.7 expands the placeholder validation grid and adds scene coverage for radius-2 coordinates, distance coverage, alternate routes, and preserved click-to-move behavior. Milestone 1.8 adds pure movement-session coverage for zero movement, early stopping, exact allowance, and over-movement, plus reachable-destination query, controller, and Play Mode pointer coverage for one-click destination movement that records adjacent step routes. Milestone 1.9 adds pure obstacle occupancy, adjacent-move blocking, reachability detours around blocked spaces, visible placeholder obstacle views, saved-scene obstacle wiring, and Play Mode coverage. Milestone 1.10 adds pure card definition/instance coverage for stable identities, content revisions, definition references, primitive-hero ownership, orthogonal initial state facts, shared immutable definitions, and initial setup validation. Milestone 1.11 adds pure action definition, runtime offer, invocation-context vocabulary, and typed printed Movement value query coverage. Milestone 1.12 adds the pure card-action resolution shell, corrective milestone 1.12a hardens offer/continuation authority, and corrective milestone 1.12b covers immutable destination/route/cost candidates, one-command segment commitment, zero/early Stop, obstacle detours, changed-board rejection without partial mutation, restoration, and deterministic replay. Milestone 1.13 adds visible synthetic hand/card/action/pending-choice integration and the Phase 1 unfiltered gate. Corrective milestone 1.13a adds pure, presentation, and saved-scene regressions for partial segments remaining pending, cumulative waypoint routes, refreshed choices, stale prior choices, Stop with unused allowance, allowance exhaustion, and restore after committed steps, then re-runs the complete Phase 1 gate. Milestone 2.1 adds participant-collection coverage for Red/Blue team, player, and hero IDs and references, plural multi-hero team queries, the stable Phase 1 Red hero ID, distinct owned synthetic Movement hands for both test heroes, two saved-scene hero occupancies with visually distinct primitives, and Edit/Play Mode regressions proving either hero can be pointer-selected, sees only its own stable card instances, resolves Movement through the shared authority, treats the opponent as occupied, and cannot transfer a pending resolution to the other actor. Milestone 2.2 adds definition/offer/value coverage for a printed Primary non-Ranged Attack and Hand-to-Discard-Pile Defense reactions, including requested-window, owner, discarded-state, missing-owner, cross-owner, invalid-value/channel/range/origin/transition, and Movement-only presentation regressions. Milestone 2.3 adds adjacent-enemy hero target projection, stable target commands, printed Attack Total calculation, ordered Attack/Defense-request events, restorable target/response choices, stale-board and invalid-target rejection without card mutation, plus visible Attack-offer, hero-pointer target, pending-Defense prompt, saved-scene, and directly affected resolver/event-consumer regressions. These tests do not answer a Defense response, discard a card, compare combat totals, mutate the attacking card, or implement concrete action-start restrictions, Fast Travel, direct Move, or the complete official game loop.
+
+Milestone 2.3a adds typed printed Range validation/query coverage, explicit axial rulebook-distance coverage, inclusive Range 1/maximum/beyond-range cases, targeting through occupied and obstacle spaces without line of sight, Ranged target/Defense continuation restoration, unchanged ordered Attack events, and visible Ranged-offer/pointer/highlight integration through the shared authority.
 
 Run commands from PowerShell. Each focused Unity command opens the project, runs only its named test fixture or case, writes NUnit XML plus a Unity log under `tmp/`, and exits without producing a player build. Scene-dependent filters load the saved validation scene.
 
@@ -403,7 +405,7 @@ if ($actionOfferValueEditProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: all discovered cases pass, covering ordered immutable action definitions; printed Primary/Secondary Movement and printed Primary non-Ranged Attack offers; Hand-to-Discard-Pile Defense reaction declarations; actor/source/window binding; typed Movement, Attack, and Defense printed-value contributions/totals; discarded/cross-owner/missing-owner rejection; invalid value/channel/range/origin/transition rejection; unresolved offer references; and the directly affected card definition/instance regressions.
+Expected result: all discovered cases pass, covering ordered immutable action definitions; printed Primary/Secondary Movement plus printed Primary non-Ranged and Ranged Attack offers; Hand-to-Discard-Pile Defense reaction declarations; actor/source/window binding; typed Movement, Attack, Defense, and Range printed-value contributions/totals; discarded/cross-owner/missing-owner rejection; invalid value/channel/range/origin/transition rejection; unresolved offer references; and the directly affected card definition/instance regressions.
 
 ## Basic adjacent hero Attack focused Edit Mode tests
 
@@ -431,6 +433,33 @@ if ($attackInitiationEditProcess.ExitCode -ne 0) {
 ```
 
 Expected result: all discovered cases pass, covering only-adjacent-enemy hero target projection; self/friendly/non-adjacent/empty/terrain/token/non-unit-obstacle exclusion; stable target commands; stale-board, forged-offer, no-target, and overlapping-resolution rejection without card mutation; typed printed Attack contribution/total; ordered Attack-start/value/Defense-request events; defender-owned eligible reaction projection; exact pending-choice restoration; deterministic replay; visible Attack offer, exact legal-target highlighting, highlight clearing after acceptance, and pointer target submission; and directly affected Movement, offer/value, participant, occupancy, resolver, event-consumer, controller, and scene regressions. The milestone 2.3 presentation correction is T2: its initial final affected Edit Mode filter passed 71/71, the target-highlight regression filter passed 43/43 (`CardDrivenMovementPresentationTests`, `AttackActionResolutionAuthorityTests`, `CardActionResolutionAuthorityTests`, and `HeroSelectionControllerTests`), focused Play Mode passed 6/6 (`MinimalHexGridPlayModeTests`), and targeted visual inspection confirmed both a readable `PRIMARY ATTACK 3` control and a strong yellow legal-target highlight. Complete unfiltered suites remain unnecessary because this is not a T3 gate and the affected consumers are enumerated.
+
+## Basic Ranged hero Attack focused Edit Mode tests
+
+```powershell
+$rangedAttackEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.HexCoordinateTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-3a-final-affected-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-3a-final-affected.log"'
+)
+
+$rangedAttackEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $rangedAttackEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($rangedAttackEditProcess.ExitCode -ne 0) {
+    throw "Basic Ranged hero Attack Edit Mode tests failed with exit code $($rangedAttackEditProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering typed Ranged Attack/Range definition shape and offer-derived totals; Range 1 adjacency; inclusive maximum and beyond-Range rejection; explicit axial distance through occupied/obstacle spaces without line of sight; self/friendly/non-unit exclusions; forged/stale/invalid attempts without mutation; shared target-command, ordered Attack events, defender-owned response, restoration, and deterministic boundaries for both range classifications; visible Ranged offer/status/highlight/pointer integration; and directly affected Movement, occupancy, participant, value, resolver, controller, and scene regressions. Milestone 2.3a T2 evidence passed final focused Edit Mode 36/36, final affected Edit Mode 114/114, and focused Play Mode 6/6 (`MinimalHexGridPlayModeTests`), all with zero skipped or inconclusive cases. Targeted visual inspection confirmed `PRIMARY RANGED ATTACK 2 RANGE 2`, its status text, and the strong yellow legal-target highlight render without clipping or overlap. Complete unfiltered suites were intentionally omitted because this is not a T3 gate and the affected consumers are enumerated.
 
 ## Card-foundation authority hardening focused Edit Mode tests
 

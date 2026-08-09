@@ -98,10 +98,30 @@ namespace GuardsDigital.Core.Cards
             }
             else if (Kind == ActionKind.Attack)
             {
-                ValidateSinglePrintedValue(PrintedValueChannel.Attack, baseValues);
                 if (AttackRange == AttackRangeKind.None)
                 {
                     throw new ArgumentException("Attack action definitions require a range classification.", nameof(AttackRange));
+                }
+
+                var expectedChannels = AttackRange == AttackRangeKind.Ranged
+                    ? new[] { PrintedValueChannel.Attack, PrintedValueChannel.Range }
+                    : new[] { PrintedValueChannel.Attack };
+                if (BaseValues.Count != expectedChannels.Length ||
+                    expectedChannels.Any(channel => BaseValues.All(value => value.Channel != channel)))
+                {
+                    throw new ArgumentException(
+                        AttackRange == AttackRangeKind.Ranged
+                            ? "Ranged Attack action definitions require exactly one Attack and one Range printed value."
+                            : "Non-Ranged Attack action definitions require exactly one Attack printed value.",
+                        nameof(baseValues));
+                }
+
+                if (AttackRange == AttackRangeKind.Ranged &&
+                    BaseValues.Single(value => value.Channel == PrintedValueChannel.Range).Amount < 1)
+                {
+                    throw new ArgumentException(
+                        "Ranged Attack action definitions require a positive printed Range value.",
+                        nameof(baseValues));
                 }
             }
             else if (Kind == ActionKind.Defense)

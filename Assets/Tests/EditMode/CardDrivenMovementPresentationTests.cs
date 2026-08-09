@@ -226,6 +226,91 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ObstacleCourse_ExposesTypedRangedAttackAndUsesSharedVisibleDefenseFlow()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var redObject = new GameObject("Red Ranged Hero");
+                objects.Add(redObject);
+                var redHero = redObject.AddComponent<PrimitiveHeroView>();
+                redHero.Configure(
+                    new HeroOccupancy(
+                        new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                        new HexCoordinate(0, 0)),
+                    HexWorldLayout.DefaultOuterRadius);
+
+                var blueObject = new GameObject("Blue Ranged Target");
+                objects.Add(blueObject);
+                var blueHero = blueObject.AddComponent<PrimitiveHeroView>();
+                blueHero.Configure(
+                    new HeroOccupancy(
+                        new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
+                        new HexCoordinate(0, -1)),
+                    HexWorldLayout.DefaultOuterRadius);
+                var blueSelector = blueObject.AddComponent<PrimitiveHeroPointerSelector>();
+
+                var tiles = CreateRadiusTwoCoordinates()
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var controllerObject = new GameObject("Visible Ranged Attack Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(
+                    redHero,
+                    tiles,
+                    CreateMaterial(Color.yellow),
+                    otherHeroes: new[] { blueHero });
+                controller.ConfigureCardDrivenMovement(true);
+                blueSelector.Configure(controller);
+
+                var obstacleCourse = controller.VisibleCardInstances.Single(card =>
+                    card.Id.Value == "red-obstacle-course-card");
+                Assert.That(controller.TrySelectCard(obstacleCourse.Id), Is.True);
+                var rangedOffer = controller.SelectedCardOffers.Single(offer =>
+                    offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-ranged-attack")));
+                Assert.That(rangedOffer.AttackRange, Is.EqualTo(AttackRangeKind.Ranged));
+                Assert.That(PrintedValueQuery.CalculatePrintedValue(
+                    rangedOffer,
+                    controller.VisibleCardDefinitions,
+                    PrintedValueChannel.Attack).Total, Is.EqualTo(2));
+                Assert.That(PrintedValueQuery.CalculatePrintedValue(
+                    rangedOffer,
+                    controller.VisibleCardDefinitions,
+                    PrintedValueChannel.Range).Total, Is.EqualTo(2));
+
+                Assert.That(controller.TrySelectAction(rangedOffer.ActionDefinitionId), Is.True);
+                Assert.That(controller.IsAttackTargetPending, Is.True);
+                Assert.That(controller.CardStatus, Does.Contain("Ranged Attack 2 Range 2"));
+                Assert.That(controller.CardStatus, Does.Contain("within range"));
+                Assert.That(controller.HighlightedCoordinates, Is.EqualTo(new[] { blueHero.Coordinate }));
+
+                var targeted = blueSelector.TrySelectFromPointerRay(
+                    new Ray(blueHero.transform.position + (Vector3.up * 2f), Vector3.down));
+
+                Assert.That(targeted, Is.True);
+                Assert.That(controller.IsAttackTargetPending, Is.False);
+                Assert.That(controller.IsDefenseResponsePending, Is.True);
+                Assert.That(controller.PendingDefenseChoice.ChooserId, Is.EqualTo(blueHero.Occupancy.HeroId));
+                Assert.That(controller.PendingDefenseChoice.AttackTotal, Is.EqualTo(2));
+                Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
+                {
+                    CardActionResolutionEventKind.AttackTargetChoiceRequested,
+                    CardActionResolutionEventKind.AttackStarted,
+                    CardActionResolutionEventKind.AttackTotalCalculated,
+                    CardActionResolutionEventKind.DefenseResponseChoiceRequested
+                }));
+                Assert.That(controller.HighlightedCoordinates, Is.Empty);
+                Assert.That(controller.VisibleCardInstances, Has.All.Matches<CardInstance>(card =>
+                    card.State.Location == CardLocation.Hand));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
         public void SecondaryOffer_UsesTypedValueOneAndProjectsOnlyLegalAdjacentDestinations()
         {
             var objects = new List<GameObject>();

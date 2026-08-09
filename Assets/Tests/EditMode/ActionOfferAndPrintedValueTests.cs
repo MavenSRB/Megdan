@@ -177,7 +177,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PlaceholderDefinitions_DeriveOwnedNonRangedAttackAndDefenseReactionOffers()
+        public void PlaceholderDefinitions_DeriveOwnedNonRangedAndRangedAttackAndDefenseReactionOffers()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.Create();
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
@@ -202,6 +202,25 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardDefinitions,
                     PrintedValueChannel.Attack).Total,
                 Is.EqualTo(3));
+
+            var redRangedAttack = redNormalOffers.Single(offer =>
+                offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-ranged-attack")));
+            Assert.That(redRangedAttack.ActorId, Is.EqualTo(redHeroId));
+            Assert.That(redRangedAttack.SourceCardInstanceId.Value, Is.EqualTo("red-obstacle-course-card"));
+            Assert.That(redRangedAttack.InvocationContext, Is.EqualTo(ActionInvocationContext.PrintedPrimary));
+            Assert.That(redRangedAttack.AttackRange, Is.EqualTo(AttackRangeKind.Ranged));
+            Assert.That(
+                PrintedValueQuery.CalculatePrintedValue(
+                    redRangedAttack,
+                    configuration.CardDefinitions,
+                    PrintedValueChannel.Attack).Total,
+                Is.EqualTo(2));
+            Assert.That(
+                PrintedValueQuery.CalculatePrintedValue(
+                    redRangedAttack,
+                    configuration.CardDefinitions,
+                    PrintedValueChannel.Range).Total,
+                Is.EqualTo(2));
 
             var blueDefenseOffers = ActionOfferQuery.GetAvailableOffers(
                 configuration.CardDefinitions,
@@ -287,6 +306,38 @@ namespace GuardsDigital.Tests.EditMode
                 ActionDefinitionOrigin.PrintedPrimary,
                 new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, 2) },
                 PrimaryMovementPolicy()));
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("ranged-attack-without-range-value"),
+                ActionKind.Attack,
+                ActionDefinitionOrigin.PrintedPrimary,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, 2) },
+                PrimaryMovementPolicy(),
+                AttackRangeKind.Ranged,
+                default));
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("ranged-attack-with-zero-range"),
+                ActionKind.Attack,
+                ActionDefinitionOrigin.PrintedPrimary,
+                new[]
+                {
+                    new PrintedValueDefinition(PrintedValueChannel.Attack, 2),
+                    new PrintedValueDefinition(PrintedValueChannel.Range, 0)
+                },
+                PrimaryMovementPolicy(),
+                AttackRangeKind.Ranged,
+                default));
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("non-ranged-attack-with-range-value"),
+                ActionKind.Attack,
+                ActionDefinitionOrigin.PrintedPrimary,
+                new[]
+                {
+                    new PrintedValueDefinition(PrintedValueChannel.Attack, 2),
+                    new PrintedValueDefinition(PrintedValueChannel.Range, 1)
+                },
+                PrimaryMovementPolicy(),
+                AttackRangeKind.NonRanged,
+                default));
             Assert.Throws<ArgumentException>(() => new ActionDefinition(
                 new ActionDefinitionId("normal-defense"),
                 ActionKind.Defense,
