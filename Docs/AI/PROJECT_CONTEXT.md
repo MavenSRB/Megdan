@@ -126,6 +126,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 - The Unity scene is 3D from the beginning, with the board on the XZ plane.
 - Early implementation uses primitive meshes and a fixed camera.
+- The minimal-grid validation scene centers its fixed camera directly above the map and looks straight down.
 - Pointy-top presentation maps `q` eastward and decreasing `r` northward; the same outer-radius value defines both the regular hex mesh and its center spacing.
 - Placeholder hexes use one light-gray fill with a darker gray perimeter for separation; this styling is non-semantic and the logical origin has no unique treatment.
 - The polished pitch uses a stylized tabletop presentation.

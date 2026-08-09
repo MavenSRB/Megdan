@@ -40,7 +40,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_UsesOneFixedCameraAndNoCameraController()
+        public void Scene_UsesOneFixedTopDownCameraAndNoCameraController()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var cameras = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
@@ -48,6 +48,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(cameras, Has.Length.EqualTo(1));
             Assert.That(cameras[0].name, Is.EqualTo("Fixed Camera"));
             Assert.That(cameras[0].GetComponents<MonoBehaviour>(), Is.Empty);
+            Assert.That(cameras[0].transform.position.y, Is.GreaterThan(0f));
+            Assert.That(
+                new Vector2(cameras[0].transform.position.x, cameras[0].transform.position.z).magnitude,
+                Is.LessThan(Tolerance));
+            Assert.That(Vector3.Angle(cameras[0].transform.forward, Vector3.down), Is.LessThan(Tolerance));
         }
 
         [Test]

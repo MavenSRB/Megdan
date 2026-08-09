@@ -87,7 +87,7 @@ if ($minimalGridEditProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: twelve cases pass, covering coordinate conversion, edge-to-edge center spacing, mesh geometry, saved-scene placement, uniform light-gray fills, darker closed tile edges, and the fixed camera.
+Expected result: twelve cases pass, covering coordinate conversion, edge-to-edge center spacing, mesh geometry, saved-scene placement, uniform light-gray fills, darker closed tile edges, and the fixed top-down camera.
 
 ## Minimal-grid focused Play Mode test
 
