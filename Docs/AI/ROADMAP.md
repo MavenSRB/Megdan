@@ -118,6 +118,22 @@ Non-goals: No effect handlers, Wasp inventory, card corpus taxonomy, Unity conte
 
 Completion note (2026-08-09): Re-audited printed rulebook pages 7-19 and expanded the card foundation into an explicit reusable effect/keyword capability catalog. The catalog covers the general rules vocabulary and deliberately leaves hero-specific semantics to verified card inventory.
 
+### [x] 0.6 Re-sequence development around the core match loop
+
+Observable outcome: The roadmap proves a deterministic match with synthetic test cards before the complete Wasp set is inventoried or implemented.
+
+Acceptance checks:
+
+- Configurable multi-space movement is followed immediately by obstacle blocking in milestones 1.8-1.9.
+- Test cards prove Tie Breaker state, Initiative ordering, play/reveal, turns, and the four-turn round structure in Phases 2-3.
+- The full official map and generic core systems for combat, minions, Lane Push, end-of-round ordering, economy, progression, respawn, and victory are completed in Phases 4-7.
+- A deterministic test-card core match is a hard gate before the complete Wasp card inventory or Wasp-specific card implementation begins in Phase 8.
+- The Wasp capability matrix identifies Wasp-specific gaps and refinements; it no longer owns or delays general core-rule capabilities.
+
+Non-goals: No gameplay code, Wasp inventory, Unity content, or implementation milestone is authorized by this planning change.
+
+Completion note (2026-08-09): Reordered the roadmap so initiative, Tie Breaker behavior, turns, rounds, and the full synthetic core loop precede the complete Wasp content pass while preserving the smallest-step approval gates.
+
 ## Phase 1 - Smallest board interaction
 
 ### [x] 1.1 Define hex coordinates and adjacency
@@ -306,7 +322,7 @@ Acceptance checks:
 
 Non-goals: No real Wasp cards, printed card text, initiative, facedown/reveal behavior, lifecycle transitions beyond the initial hand state, turns, rounds, Fast Travel, or animation.
 
-## Phase 2 - Two-hero combat, authoritative state, and internal tools
+## Phase 2 - Two-hero combat and Tie Breaker state
 
 ### [ ] 2.1 Introduce teams, players, heroes, and stable IDs
 
@@ -380,33 +396,136 @@ Acceptance checks:
 
 Non-goals: A successful test attack does not yet implement full hero defeat, removal, unresolved-card resolution, active-effect cancellation, markers, coins, assists, Life spending, victory, or respawn.
 
-### [ ] 2.6 Serialize and restore authoritative snapshots
+### [ ] 2.6 Add Tie Breaker setup state
+
+Observable outcome: Normal setup chooses the initial Tie Breaker side; internal tests can explicitly select Red or Blue.
+
+Acceptance checks:
+
+- The result is stored in authoritative state and included in later snapshot history.
+- No general gameplay RNG subsystem is introduced.
+
+## Phase 3 - Test-card Initiative, turns, and rounds
+
+### [ ] 3.1 Extend the test-card foundation with turn lifecycle
+
+Observable outcome: Synthetic card instances can represent and transition through the lifecycle facts needed to play a turn without using Wasp data.
+
+Acceptance checks:
+
+- Location, played status, unresolved/resolved status, and face orientation remain orthogonal where the rulebook permits overlap.
+- Pure-rule tests cover playing a card Facedown, revealing it, resolving it after an action, and discarding a Defense card from hand.
+- Synthetic definitions include validated typed Initiative values, with fixtures for both unequal values and ties.
+- Resolved status, discard location, and face orientation remain separate facts rather than mutually exclusive states.
+- Test definitions are explicitly synthetic fixtures and cannot become authority for Wasp values or text.
+
+Non-goals: No Wasp inventory, printed card effects, upgrades, items, or end-of-round subsystems.
+
+### [ ] 3.2 Display both director-mode test hands
+
+Observable outcome: Separate Red and Blue synthetic hands are visible and independently selectable by the director-mode controller.
+
+Acceptance checks:
+
+- Every displayed card resolves to one authoritative owned card instance.
+- Team identity is not conveyed by color alone.
+- Selecting a card does not play it or resolve an action.
+
+### [ ] 3.3 Play and reveal one test card per side
+
+Observable outcome: The controller selects and confirms one card for each side, both cards enter the correct played/unresolved state, and they reveal together.
+
+Acceptance checks:
+
+- Each side can commit only an eligible card from its own hand.
+- Neither side's selection is revealed early.
+- Reveal changes authoritative card state; it is not a presentation-only flip.
+- Passing is represented when a side has no card available.
+
+Non-goals: No Initiative ordering or action execution.
+
+### [ ] 3.4 Resolve Initiative and tied Initiative
+
+Observable outcome: The authority identifies the next unresolved actor from current Initiative values and applies the Tie Breaker rules without depending on Wasp cards.
+
+Acceptance checks:
+
+- Initiative comes through the typed value/contribution query rather than a turn-controller field or UI value.
+- The highest current Initiative among unresolved cards is queried again after every resolution rather than cached as a complete order.
+- A cross-team tie uses the current Tie Breaker side and records a deferred flip that occurs only after the selected tied resolver finishes.
+- A same-team tie creates an authoritative pending choice for that team/controller and never flips the Tie Breaker.
+- Synthetic multi-hero tests cover more than two tied cards even though the pitch setup uses one hero per team.
+
+### [ ] 3.5 Resolve Hold and complete one turn
+
+Observable outcome: Both unresolved test cards can perform Hold in Initiative order, become resolved, and end the turn.
+
+Acceptance checks:
+
+- Each hero performs no more than one normal action from its played card.
+- A deferred cross-team Tie Breaker flip occurs only after the selected tied card resolves.
+- The next actor is re-queried from current unresolved state.
+- Turn-only effects have an explicit cancellation checkpoint even though no concrete effect is required yet.
+
+### [ ] 3.6 Resolve test-card Movement within a turn
+
+Observable outcome: A hero can choose its synthetic Movement offer during its Initiative position, complete the Phase 1 movement flow, resolve its card, and yield to the next actor.
+
+Acceptance checks:
+
+- Movement reuses the allowance, chosen-route, obstacle, command/event, and pending-choice authority from Phase 1.
+- The turn controller does not mutate occupancy itself.
+- Completing Movement resolves exactly the acting card and continues Initiative order.
+
+### [ ] 3.7 Resolve test-card Attack and Defense within a turn
+
+Observable outcome: A hero can perform the Phase 2 test Attack during its Initiative position, pause for the enemy Defense reaction, resume, resolve the attacking card, and continue the turn.
+
+Acceptance checks:
+
+- The Defense reaction does not consume the defender's normal action.
+- The nested response resumes the same pending Attack and turn frame.
+- Attack completion resolves only the attacker's played card.
+- The next unresolved actor is selected from current state after the reaction closes.
+
+### [ ] 3.8 Complete the four-turn round skeleton
+
+Observable outcome: Four turns advance, cards occupy the correct turn slots, and the round reaches an explicit end-of-round phase.
+
+Acceptance checks:
+
+- A card cannot be replayed from the wrong state.
+- Passing behavior is represented when no card remains.
+- Turn and round indices are authoritative and deterministic.
+- End-of-round entry is explicit but does not yet resolve its subsystems.
+
+### [ ] 3.9 Serialize and restore authoritative snapshots
 
 Observable outcome: A versioned snapshot round-trips without changing logical state.
 
 Acceptance checks:
 
-- Teams, players, heroes, board occupancy, card instances/state facets, and definition references survive round-trip tests.
-- A state paused on a pending card choice round-trips and resumes to the same result and ordered events.
+- Teams, players, heroes, Tie Breaker, turn/round state, board occupancy, card instances/state facets, and definition references survive round-trip tests.
+- A state paused on a pending card choice or Defense reaction resumes to the same result and ordered events.
 - Snapshot schema version and card-definition content revision are checked independently; mismatches are rejected clearly until a migration exists.
 - Presentation can rebuild from restored state.
 
 Non-goals: No player-facing save slots or cloud storage.
 
-### [ ] 2.7 Add director-mode Undo and restart
+### [ ] 3.10 Add director-mode Undo and restart
 
 Observable outcome: Undo restores the snapshot before the last committed command; restart restores the initial scenario.
 
 Acceptance checks:
 
 - Invalid commands do not create undo entries.
-- Undo restores both authoritative state and presentation.
+- Undo restores authoritative card, turn, Tie Breaker, pending-resolution, and board state plus presentation.
 
 Non-goals: No redo requirement and no competitive availability.
 
-### [ ] 2.8 Add the internal rule-event log
+### [ ] 3.11 Add the internal rule-event log
 
-Observable outcome: A primitive internal panel shows the accepted ordered rule events for the current authoritative history and rebuilds consistently after restore, Undo, or restart.
+Observable outcome: A primitive internal panel shows accepted ordered rule events and rebuilds consistently after restore, Undo, or restart.
 
 Acceptance checks:
 
@@ -417,18 +536,9 @@ Acceptance checks:
 
 Non-goals: No final visual styling, export format, analytics, telemetry, or player-facing match history.
 
-### [ ] 2.9 Add Tie Breaker setup state
+## Phase 4 - Full official multi-zone board
 
-Observable outcome: Normal setup chooses the initial Tie Breaker side; internal tests can explicitly select Red or Blue.
-
-Acceptance checks:
-
-- The result is stored in authoritative state and snapshot history.
-- No general gameplay RNG subsystem is introduced.
-
-## Phase 3 - Full official multi-zone board
-
-### [ ] 3.1 Inventory the complete single-lane board reference
+### [ ] 4.1 Inventory the complete single-lane board reference
 
 Observable outcome: Every part of the complete official single-lane board - including all spaces, connections, terrain, zones, spawn points, Thrones, and the starting Battle Zone - has a reviewed data specification.
 
@@ -440,9 +550,9 @@ Acceptance checks:
 
 Non-goals: No production board art or models.
 
-### [ ] 3.2 Upgrade the test grid to the full official placeholder map
+### [ ] 4.2 Upgrade the test grid to the full official placeholder map
 
-Observable outcome: The temporary Phase 1 test grid is replaced in the main validation scene by placeholder geometry for the complete official multi-zone single-lane map.
+Observable outcome: The temporary Phases 1-3 test grid is replaced in the main validation scene by placeholder geometry for the complete official multi-zone single-lane map.
 
 Acceptance checks:
 
@@ -453,7 +563,7 @@ Acceptance checks:
 
 Non-goals: No polished environment, Fast Travel, lane pushing, or production camera controls.
 
-### [ ] 3.3 Define and validate zones and zone adjacency
+### [ ] 4.3 Define and validate zones and zone adjacency
 
 Observable outcome: Every board space belongs to the correct official zone, and authoritative queries can distinguish the same zone, an adjacent zone, and a non-adjacent zone.
 
@@ -467,19 +577,322 @@ Acceptance checks:
 
 Non-goals: No Fast Travel validation, current-Battle-Zone changes, lane pushing, minion respawn, or victory logic.
 
-### [ ] 3.4 Place the 1v1 Quick Game setup
+### [ ] 4.4 Place the 1v1 Quick Game setup
 
-Observable outcome: Red Wasp, Blue Wasp, standard minions, Lives, Waves, and Tie Breaker state are placed from configuration data.
+Observable outcome: Red Wasp, Blue Wasp, standard minions, Lives, Waves, and Tie Breaker state are placed from configuration data while their hands still use synthetic test cards.
 
 Acceptance checks:
 
 - Three Wave counters and four Life counters per team.
-- Standard single-lane minion setup.
-- Only the approved player-count and mirrored-hero deviations are present.
+- Standard single-lane minions are created from configuration with stable identity, team, type, and occupied-space data.
+- The initial Tie Breaker result comes from milestone 2.6.
+- Only the approved player-count, mirrored-hero, and director-mode deviations are present.
 
-## Phase 4 - Verified Wasp cards and turn skeleton
+Non-goals: No complete Wasp card inventory or Wasp-specific behavior.
 
-### [ ] 4.1 Inventory and verify Wasp's complete card set
+## Phase 5 - Core full-map actions and combat
+
+Phase 5 uses verified general rules and synthetic test definitions. It does not depend on the complete Wasp card set, inventory that set, or implement it.
+
+### [ ] 5.1 Integrate and verify exact card-based Movement on the full map
+
+Observable outcome: A synthetic Movement action uses its typed allowance to traverse a chosen legal route on the official placeholder map.
+
+Acceptance checks:
+
+- The action reuses Phase 1 route choice, obstacle blocking, command/event authority, and pending resolution.
+- Action-start restrictions are evaluated at the correct checkpoint.
+- Up-to movement permits zero movement and early stopping.
+- Ordinary Movement remains distinct from direct movement written in card text.
+
+### [ ] 5.2 Implement Fast Travel replacement
+
+Implements only after milestone 5.1 and the Phase 4 zone model are complete.
+
+Acceptance checks:
+
+- Fast Travel works within the same zone and into an adjacent zone.
+- A non-adjacent destination zone is rejected.
+- Enemy presence in the origin or destination zone blocks eligibility.
+- No empty-space path between origin and destination is required.
+- Fast Travel replaces the entire Movement action and suppresses Primary card text.
+
+### [ ] 5.3 Add minion obstacle behavior and Defense contributions
+
+Observable outcome: Standard minions are authoritative units/obstacles and contribute their general Defense modifiers through the typed value service.
+
+Acceptance checks:
+
+- The rules reuse the authoritative minion identities, teams, types, and spaces created by milestone 4.4 rather than creating a second representation.
+- Hero/minion occupancy follows the one-obstacle-per-space rule.
+- Defense contributions retain minion-source provenance.
+- Heavy, Ranged, and Melee identity is not inferred from presentation.
+
+### [ ] 5.4 Add generic timing, Active-effect, and continuous-source lifecycles
+
+Observable outcome: Synthetic effects can occupy named timing windows and serializable lifetimes without Wasp-specific logic.
+
+Acceptance checks:
+
+- Before/After Attack, action start/end, turn end, round end, and defeat/card-state cancellation hooks are explicit.
+- Active effects and passive/continuous sources remain distinct.
+- Simultaneous ordering uses the official tie procedure without flipping the Tie Breaker.
+- Presentation timing cannot delay or reorder rules checkpoints.
+
+### [ ] 5.5 Add coin awards and assist-ready accounting
+
+Observable outcome: Defeat outcomes can award coins to the correct hero/team collection through typed resource operations.
+
+Acceptance checks:
+
+- The 1v1 setup awards the acting hero correctly.
+- The model supports friendly assist recipients without implementing 3v3 UI.
+- Rewards remain distinct from removal so prevented removal does not erase a verified Defeat reward.
+
+Non-goals: Exact hero-Level and lowest-Tier reward amounts remain part of complete hero-defeat integration at milestone 7.4.
+
+### [ ] 5.6 Attack and defeat minions with test cards
+
+Observable outcome: A synthetic Attack can legally target and defeat an enemy minion using the general minion rules.
+
+Acceptance checks:
+
+- Minions do not open a Defense reaction.
+- Heavy immunity applies while a friendly non-Heavy minion remains in the Battle Zone.
+- Defeat, reward, removal attempt, and removal result remain distinct typed facts.
+- Melee/Ranged and Heavy rewards use verified general values.
+- Last-minion Lane-Push handling remains a separate Phase 6 integration.
+
+### [ ] 5.7 Return displaced minions to the Battle Zone
+
+Acceptance checks:
+
+- Correction applies only to intrinsic minion miniatures outside the Battle Zone after the whole action.
+- A minion follows a shortest empty path; its team chooses among equally short valid paths.
+- With no path or legal move, the minion is Placed into a nearest empty Battle-Zone space.
+- The fallback implements the minimum general Place capability through typed policy/outcome data and emits Place rather than Movement facts.
+- When cross-team order matters, the Tie-Breaker-side team resolves first without flipping the coin.
+- End-to-end ordering between separate Repeat instances is deferred until the first verified Repeat implementation.
+
+### [ ] 5.8 Complete the general Hero Attack and Defense order with test cards
+
+Observable outcome: Synthetic hero combat follows the complete general Attack/Defense order while still deferring Wasp-specific text.
+
+Acceptance checks:
+
+- Target validation, Before Attack, Attack Total, Defense response, Block/result comparison, After Attack, and action-end checkpoints occur in verified order.
+- Focused synthetic scenarios cover both non-Ranged adjacent targeting and Ranged targeting through typed Range/distance queries.
+- Printed, minion, item-ready, card-text-ready, and Active-effect-ready contributions remain distinct even when only synthetic contributions are populated.
+- A successful Attack records a staged Defeat outcome for Phase 7 consequences.
+- Wasp card text, values, items, and special effects are not used.
+
+## Phase 6 - Tokens, minions, Lane Push, and end-of-round components
+
+Phase 6 uses the complete Phase 4 map and the synthetic turn/round controller. Lane behavior is never validated on the reduced test grid.
+
+### [ ] 6.1 Resolve the end-of-round Minion Battle
+
+Observable outcome: The authority compares Battle-Zone minions, resolves the losing team's choices with Heavy removed last, and records an end-of-round Lane-Push request if a team loses its last minion.
+
+Acceptance checks:
+
+- Equal counts have no effect.
+- The losing team removes the exact difference or all remaining minions when it has fewer than required.
+- Choice ownership and Heavy-last ordering are authoritative.
+- The Lane-Push request is not consumed before token/marker cleanup.
+
+### [ ] 6.2 Add token and marker instances, supplies, placement, and attachment
+
+Observable outcome: Synthetic tokens and markers have stable authoritative identity without requiring Wasp content.
+
+Acceptance checks:
+
+- Tokens use the authoritative finite supply and occupy board spaces as obstacles.
+- Markers are attachments rather than board occupants and have explicit return state.
+- Token placement/reclamation and marker attachment are authoritative choices/transitions.
+- Token and marker lifetime is not inferred from art or UI objects.
+
+### [ ] 6.3 Add core token interactions, persistent properties, and Clear
+
+Observable outcome: Synthetic tokens preserve their properties while supporting the general board interactions needed by the core loop.
+
+Acceptance checks:
+
+- Token properties are continuous sources, not ordinary card Active effects.
+- Clear replaces an entire Attack and may remove any chosen subset of adjacent tokens.
+- A unit spawning on a token-covered Spawn point removes that token first.
+- Token lifetime is defined independently from the source hero's on-board or defeated state.
+- Optional card-only Move, Object Push, Swap, and Replace interactions are deferred until verified content requires them.
+
+### [ ] 6.4 Emit an immediate Lane-Push request during a turn
+
+Acceptance checks:
+
+- A recorded Defeat of the last relevant enemy Battle-Zone minion emits the request.
+- Ordinary Movement never emits the request; optional direct Move, Object Push, Swap, and standalone Remove conformance is deferred until each verified capability is first implemented.
+- A Defeat still emits the request when its later removal is prevented.
+- The request reaches the immediate checkpoint before a later Initiative action can continue.
+- This milestone does not expose a partial Lane transition.
+
+### [ ] 6.5 Resolve Lane Push Wave and Battle-Zone stages
+
+Builds the non-executable ordered prefix: flip exactly one Wave counter and stop on final-Wave victory; otherwise advance one verified Zone toward the losing team's Throne and stop on Throne capture.
+
+Acceptance checks:
+
+- The incomplete prefix remains internal and cannot consume a live request.
+- Wave and Zone stages emit deterministic typed outcomes/events.
+- An early game-ending result prevents later stages.
+
+### [ ] 6.6 Complete Lane Push minion respawn and transition
+
+Completes the transition by removing all minions from the previous Battle Zone and respawning the matching type at every verified Spawn point in the new Battle Zone.
+
+Acceptance checks:
+
+- Transition order is Wave/final-Wave check, Zone/Throne check, then old-zone removal and new-zone respawn.
+- A token-covered Spawn point removes its token before respawn.
+- A non-token obstacle makes the owning team Place that minion in a chosen nearest empty Battle-Zone space.
+- When cross-team order matters, the Tie-Breaker-side team starts without flipping the coin.
+- An immediate transition completes before later Initiative resolution continues.
+- Repeat-boundary integration is deferred until the first verified Repeat implementation.
+
+### [ ] 6.7 Remove tokens and return markers at end of round
+
+Runs the general cleanup checkpoint: remove all board tokens and return all markers to supply except where exact verified text provides an override.
+
+An end-of-round Lane-Push request remains pending until this cleanup finishes.
+
+### [ ] 6.8 Retrieve cards and cancel applicable Active effects
+
+Observable outcome: Each hero retrieves only its own eligible resolved/discarded synthetic cards and applicable effects end through authoritative state changes.
+
+Acceptance checks:
+
+- Retrieval never takes another hero's card.
+- Every eligible card returns regardless of its prior eligible state, while ineligible/set-aside/item cards do not.
+- Applicable Active effects, including relevant Next Turn effects, cancel through authoritative events.
+- Focused tests cover resolved, discarded, facedown eligible, other-owner, and active-effect cases.
+
+## Phase 7 - Progression, victory, and the complete synthetic core loop
+
+### [ ] 7.1 Add synthetic card tiers and upgrade relationships
+
+Observable outcome: Synthetic non-Basic cards model Tier I-III upgrade choices without mutating definitions or using Wasp data.
+
+Acceptance checks:
+
+- Basic cards have no Tier and are excluded from lowest-Tier and upgrade-candidate queries.
+- Every non-Basic definition has an explicit Tier and stable same-color next-Tier candidates where applicable.
+- Hand, deck, and set-aside instances retain ownership and definition revision through upgrade transitions.
+- Each synthetic hero has authoritative current-Level state initialized to Level 1.
+- Typed queries can identify a hero's current lowest non-Basic card Tier for later Life and leveling rules.
+
+Non-goals: No coin spending, level purchase, item bonus, Ultimate, or Wasp definition.
+
+### [ ] 7.2 Add generic item state and printed-icon bonuses
+
+Observable outcome: A synthetic set-aside card can become an item in the matching dashboard slot and contribute through typed printed-value queries.
+
+Acceptance checks:
+
+- Item ownership, source card, slot, and order are authoritative data; multiple items may occupy the same slot.
+- Each item adds `+1` only to the matching printed Initiative, Attack, Defense, Movement, Range, or Radius icon.
+- Items never modify numbers in card text, and every contribution retains item provenance.
+
+Non-goals: No leveling orchestrator, Wasp item values, or final item presentation.
+
+### [ ] 7.3 Add Ultimate continuous-source behavior
+
+Observable outcome: A synthetic Ultimate can be unlocked as persistent state and supplies its rule only while its hero is on the board.
+
+Acceptance checks:
+
+- The Ultimate remains distinct from ordinary cancelable Active effects and ordinary hand/deck cards.
+- Defeat/off-board state suppresses its applicability without deleting the unlocked source; legal respawn restores applicability.
+- Unlock eligibility can require completion of the Tier III upgrade state without hard-coding a hero name.
+
+Non-goals: No Wasp Ultimate text or final visual treatment.
+
+### [ ] 7.4 Resolve hero defeat, Lives, and respawn
+
+Observable outcome: A successful synthetic Hero Attack resolves the complete general defeat consequences and later legal respawn.
+
+Acceptance checks:
+
+- Defeat, rewards, removal/prevention, unresolved-card resolution, effect cancellation, marker return, Life spending, and victory checks occur at verified checkpoints.
+- The attacker gains coins equal to the defeated hero's current Level; eligible friendly heroes gain assist coins from the defeated hero's lowest card Tier.
+- Life spending reads the defeated hero's current lowest non-Basic card Tier through the milestone 7.1 query.
+- Defeating a token's source hero does not remove that token; markers held by the defeated hero return as required.
+- Optional before-action respawn and resolving without action after declining are supported.
+- Spawn-point and nearest-empty fallback use the full Phase 4 map.
+- The Defense exception remains distinct.
+
+### [ ] 7.5 Resolve mandatory end-of-round leveling and upgrades
+
+Observable outcome: Every eligible synthetic hero buys as many consecutive levels as it can afford and completes the required upgrade, item, or Ultimate outcome for each level.
+
+Acceptance checks:
+
+- Level purchases are mandatory, spend the configured cost in order, and cannot skip a level.
+- Each ordinary purchase upgrades one chosen lowest-Tier non-Basic card; tied choices and the two same-color next-Tier candidates use authoritative pending choices.
+- The chosen upgrade enters the hand, the replaced card returns to the deck, and the unchosen candidate becomes the matching item using milestone 7.2.
+- After all non-Basic cards reach Tier III, the next eligible level unlocks the milestone 7.3 Ultimate and no further levels are available.
+- Multi-level and multi-hero ordering is deterministic and resumable without Wasp-specific branches.
+
+Non-goals: No Wasp costs, card identities, item art, or Ultimate text.
+
+### [ ] 7.6 Resolve Pity Coin ordering
+
+Observable outcome: After all leveling finishes, each hero that did not level this round receives exactly one Pity Coin.
+
+Acceptance checks:
+
+- Eligibility is tracked authoritatively for the current round and is independent per hero.
+- A hero that bought one or more levels receives no Pity Coin.
+- A Pity Coin that raises a hero to a level threshold cannot be spent until a later round.
+
+### [ ] 7.7 Integrate and verify all three victory paths
+
+Observable outcome: Final Wave, Throne capture, and loss of the final Life all end the match through one authoritative game-ending contract.
+
+Acceptance checks:
+
+- Final-Wave and Throne outcomes reuse milestone 6.5; final-Life loss reuses milestone 7.4.
+- Each path records the winning team and exact reason, stops pending resolution, and prevents later rule steps.
+- Focused scenarios prove each path independently and reject duplicate or conflicting winners.
+
+### [ ] 7.8 Integrate the exact end-of-round sequence
+
+Observable outcome: One authoritative state machine executes the completed end-of-round systems in source order and arrives at a valid next round or game-ended state.
+
+Acceptance checks:
+
+- The sequence runs Minion Battle; token removal/marker return; requested Lane Push; card retrieval/cancellation; mandatory leveling/upgrades; and Pity Coin collection at their exact checkpoints.
+- Applicable End of Round effects and immediate victory checks occur at rules boundaries rather than presentation timing.
+- A game-ending result stops later processing immediately.
+- Focused scenarios cover no Lane Push, one Lane Push, level/no-level players, retrieved effects, Pity Coin eligibility, and a game-ending Push.
+- The same state and choices produce the same state and ordered events.
+
+### [ ] 7.9 Complete a deterministic test-card core match
+
+Observable outcome: Synthetic test cards can start a match, play legal Movement/Hold/Attack/Defense turns, complete rounds, resolve minions and Lane Pushes, progress, and end through every victory path.
+
+Acceptance checks:
+
+- Every general core rule used by the loop links to its authoritative source and focused tests.
+- Initiative, Tie Breaker flips, turns, rounds, immediate/end-of-round Lane Pushes, retrieval, leveling, respawn, and victory work together.
+- Snapshots, Undo, restart, and the event log remain deterministic across the complete loop.
+- Synthetic definitions are visibly test-only and contain no claim about Wasp values or effects.
+- A broader core-loop suite passes.
+
+Hard gate: The complete Wasp card inventory and Wasp-specific card implementation do not begin until milestone 7.9 is reviewed and approved.
+
+## Phase 8 - Verified Wasp content and deterministic 1v1 integration
+
+Phase 8 begins only after the synthetic core match gate. Wasp-specific card work extends proven core systems; it does not replace them. The mirrored Wasp setup identities introduced earlier are configuration placeholders, not card-content implementation.
+
+### [ ] 8.1 Inventory and verify Wasp's complete card set
 
 Observable outcome: Wasp's cards, tiers, values, action types, text, item possibilities, and Ultimate are traceable to source images.
 
@@ -489,263 +902,85 @@ Acceptance checks:
 - Structured data is manually checked against the images.
 - Missing or ambiguous content is recorded in `RULES_LEDGER.md`.
 
-Non-goals: No other hero inventory.
+Non-goals: No other hero inventory or effect implementation.
 
-### [ ] 4.2 Map Wasp cards to engine capabilities and re-baseline Phase 5
+### [ ] 8.2 Map Wasp cards to capabilities and re-baseline the remaining Phase 8 milestones
 
-Observable outcome: Every verified Wasp action is mapped to its required action contexts, ordered steps, choices, targets, values, timing windows, state transitions, simultaneous batches, Active effects versus continuous sources, and reusable or custom capabilities before effect implementation begins.
-
-Acceptance checks:
-
-- The matrix covers every Wasp card face, tier, item relationship, and Ultimate from milestone 4.1.
-- Existing capabilities are distinguished from new reusable primitives and genuinely unique handlers.
-- Every ordered effect node maps to a capability ID/version, typed input/output bindings, operation-specific policy, failure/atomicity rule, systemic checkpoints, and required handler/card tests.
-- Dependencies identify which targeting, timing, active-effect, progression, minion, and map rules must precede each card.
-- Phase 5 is reordered or split so each Wasp card is implemented only after its actual dependencies; active effects do not remain artificially late if an earlier card requires them.
-- Any new or refined reusable effect/query contract is added to `CARD_EFFECT_CAPABILITIES.md` before implementation.
-- Any proposed change to the core architecture, definition schema, or snapshot schema is explicit and migration-tested rather than hidden inside a card milestone.
-
-Non-goals: No effect implementation or other-hero corpus inventory.
-
-### [ ] 4.3 Extend the card foundation with verified Wasp values and lifecycle
-
-Observable outcome: Verified Wasp definitions use the Phase 1-2 foundation, and Wasp card instances can represent and transition through the rulebook's applicable overlapping lifecycle facts.
+Observable outcome: Every verified Wasp action maps to required contexts, ordered nodes, typed bindings/outcomes, timing, state transitions, and reusable or custom capabilities before effect implementation.
 
 Acceptance checks:
 
-- Location, played status, unresolved/resolved status, and face orientation remain orthogonal where the rulebook allows facts to overlap.
-- Pure-rule tests cover play, reveal, resolve, resolve without action, discard, retrieve, and becoming facedown as applicable.
-- Tests cover a played-and-resolved card, the rare played-and-discarded representation, rules-information suppression when a resolved/discarded card becomes facedown, and applicable active-effect cancellation hooks even before concrete effects exist.
-- Card images remain presentation-only.
-- Phase 1 placeholder cards and hard-coded test values are not used as Wasp authority.
+- The matrix covers every Wasp card face, tier, item relationship, and Ultimate from milestone 8.1.
+- Existing core capabilities are distinguished from Wasp-specific refinements, new reusable primitives, and genuinely unique handlers.
+- Every effect node maps to a capability ID/version, typed bindings, policy, failure/atomicity rule, checkpoints, and tests.
+- Remaining Phase 8 milestones are reordered or split so dependencies precede the first Wasp card that needs them.
+- New reusable contracts update `CARD_EFFECT_CAPABILITIES.md` before implementation.
+- Any schema change is explicit and migration-tested rather than hidden inside a card milestone.
 
-Non-goals: No card effects yet.
+Non-goals: No effect implementation or other-hero inventory.
 
-### [ ] 4.4 Display both director-mode hands
+### [ ] 8.3 Add verified Wasp definitions and lifecycle data
 
-Observable outcome: Red and Blue Wasp hands are visible and separately selectable.
-
-Acceptance checks:
-
-- Team identity is not conveyed by color alone.
-- Selecting a card does not yet resolve an action.
-
-### [ ] 4.5 Play, reveal, and order two cards
-
-Observable outcome: The controller selects one card per side, confirms, reveals both, and the authority identifies the correct next unresolved resolver without pre-sorting the rest of the turn.
+Observable outcome: Verified Wasp definitions/instances use the existing lifecycle and turn foundation without placeholder authority.
 
 Acceptance checks:
 
-- The highest current Initiative among unresolved cards is queried again after every later resolution rather than cached as a complete order.
-- A cross-team tie selects an eligible tied resolver using the current Tie Breaker side and records any required flip for after that resolver finishes; it does not flip early.
-- A same-team tie produces an authoritative pending choice for that team/controller and never flips the Tie Breaker.
-- Focused synthetic multi-hero cases cover more than two tied cards even though the pitch setup has one hero per team.
+- Wasp values and text are source-verified structured data.
+- Definition revisions and upgrade/replacement relationships are explicit.
+- Card images remain presentation/audit assets only.
+- Synthetic test values are not used as Wasp authority.
 
-Non-goals: No action execution, including Hold.
+### [ ] 8.4 Load both Wasp hands into the director turn loop
 
-### [ ] 4.6 Resolve Hold and end one turn
+Observable outcome: Red and Blue Wasp hands replace the synthetic hands while using the already-proven play/reveal/Initiative/turn controller.
 
-Observable outcome: Each unresolved card can perform Hold, becomes resolved, and the turn ends after both sides resolve.
+### [!] 8.5 Implement exact Wasp Movement behavior
 
-Acceptance checks:
+### [!] 8.6 Implement verified Wasp spatial effects
 
-- Resolution proceeds one card at a time in initiative order.
-- Any deferred cross-team Tie Breaker flip occurs only after the selected tied resolver's card resolves, then the next resolver is queried from current unresolved state.
-- Turn-only effects have a defined cancellation boundary even if none exist yet.
+Covers only required direct Move, Object Push, Place, Spawn, Respawn, Swap, and Replace slices.
 
-### [ ] 4.7 Complete the four-turn round skeleton
+### [!] 8.7 Implement verified Wasp token, marker, obstacle, and persistent effects
 
-Observable outcome: Four turns advance, cards occupy the correct turn slots, and the round reaches an end-of-round phase.
+### [!] 8.8 Implement verified Wasp card-state and resource effects
 
-Acceptance checks:
+### [!] 8.9 Implement verified Wasp modifiers, restrictions, permissions, and characteristics
 
-- A card cannot be replayed from the wrong state.
-- Passing behavior is represented when no card remains.
+### [!] 8.10 Implement Wasp Skills and structured control flow
 
-Non-goals: End-of-round subsystems are not resolved yet.
+### [!] 8.11 Implement Wasp Attack, range, and minion interactions
 
-## Phase 5 - Provisional Wasp capability groups
+### [!] 8.12 Implement complete Wasp Defense behavior
 
-Every item below is deliberately blocked until milestone 4.2 produces the verified Wasp capability matrix. These are discovery groups, not an executable order. Reorder, split, rename, and unblock them so map, targeting, timing, active/continuous-effect, minion, economy, and progression dependencies precede the first card that needs them. Split again whenever targeting, validation, state mutation, and presentation can be proven independently.
+### [!] 8.13 Implement Wasp timing, Active-effect, and continuous behavior
 
-Milestone 4.2 assigns exactly one first implementation owner when a capability also appears in Phase 6 or 7. If a Wasp card needs a token, marker, resource, or system prerequisite early, move only that smallest reusable slice into Phase 5 and make the later milestone integration/coverage work; otherwise the later milestone owns its first implementation. No capability is built twice.
+### [!] 8.14 Integrate Wasp leveling, upgrades, items, and Ultimate
 
-### [!] 5.1 Exact card-based Movement capability
+Every milestone from 8.5 onward remains blocked until milestone 8.2 re-baselines the exact dependency order and smallest proving slices.
 
-Includes movement allowance, obstacles, legal endpoints, and Wasp movement text required at the current tier.
+### [!] 8.15 Complete and verify every Wasp card behavior
 
-### [!] 5.2 Fast Travel replacement capability
-
-Implements only after exact movement works and Phase 3 has supplied the complete map with verified zone membership and adjacency.
-
-Acceptance checks must exercise Fast Travel within the same zone, into an adjacent zone, rejection of a non-adjacent zone, enemy presence in the origin or destination zone, and the rule that no empty-space path is required.
-
-### [!] 5.3 Verified spatial-effect capabilities
-
-Adds only the spatial operations required by verified Wasp cards, split into independently tested slices. Direct Move, including source-relative `move toward` constraints, Object Push, Place, Spawn, Respawn, Swap, and Replace keep distinct capability IDs, outcomes, events, and checkpoint behavior even when they share geometry and occupancy helpers.
-
-### [!] 5.4 Verified token, marker, obstacle, and persistent-property capabilities
-
-Adds only Wasp-required instance, token finite-supply, placement/attachment, board-interaction, continuous-property, and lifetime rules. Token and marker semantics remain separate, neither is inferred from art or UI state, and milestone 4.2 decides whether this group or Phase 6 owns the first reusable slice.
-
-### [!] 5.5 Verified card-state and resource capabilities
-
-Adds only required typed Discard, Retrieve, card-state Swap, value/resource gain or spend, and ownership/control operations. Board-object Swap and card-state Swap remain distinct.
-
-### [!] 5.6 Verified modifier, restriction, permission, and characteristic capabilities
-
-Adds only required typed value modifiers, Block/prevention, immunity, obstacle policies, action permissions/restrictions, and intrinsic-versus-effective characteristic queries.
-
-### [!] 5.7 Skill and structured control-flow capabilities
-
-Adds only the typed effect and composition primitives required by a verified Wasp card, including ordered, optional, conditional, choice, repeat, replacement, and simultaneous behavior.
-
-### [!] 5.8 Verified Wasp Attack targeting and range capabilities
-
-Builds on the Phase 2 adjacent test Attack with verified Wasp values, Ranged targeting where required, and applicable card behavior. Minion targeting remains separately verified in milestone 5.9.
-
-### [!] 5.9 Minion Attack capability
-
-Includes minion targeting, Heavy immunity, staged defeat/removal, and immediate Lane Push dependencies. Coin rewards remain blocked on milestone 7.1 and must not be implemented ad hoc here.
-
-### [!] 5.10 Complete Hero Defense capability
-
-Builds on the Phase 2 test-card comparison with the detailed attack/defense order, primary/secondary Defense behavior, applicable card text, Block, and verified Wasp requirements. Minion modifiers and item bonuses remain dependent on milestones 6.1 and 7.3 unless milestone 4.2 explicitly reorders their smaller prerequisites.
-
-### [!] 5.11 Hero defeat, Lives, and respawn capability
-
-Includes staged defeat/removal, Life spending, rewards, effect/marker consequences, and legal respawn. It cannot complete before required coin accounting and active/continuous-effect cancellation capabilities exist.
-
-### [!] 5.12 Timing, Active-effect, and continuous-rule capabilities
-
-Implements only verified Wasp requirements, using reusable typed triggers, durations, ordering choices, cancellation, and distinct passive/continuous sources.
-
-## Phase 6 - Minions, lane, and end of round
-
-Phase 6 uses the complete Phase 3 map. Lane-push behavior must never be tested against the reduced Phase 1 movement grid.
-
-### [ ] 6.1 Minion occupancy and defense modifiers
-
-### [ ] 6.2 Minions returning to the Battle Zone
+Observable outcome: Every Wasp definition and legal action at each pitch-relevant tier passes source-linked focused scenarios after its re-baselined dependencies are available.
 
 Acceptance checks:
 
-- Correction applies only to intrinsic minion miniatures outside the Battle Zone after the whole action and between separate Repeat instances.
-- A minion follows a shortest empty path; its team chooses among equally short valid paths.
-- With no path or no legal move, the minion is Placed into a nearest empty Battle-Zone space.
-- When cross-team order matters, the Tie-Breaker-side team resolves first and the coin is not flipped.
-
-### [ ] 6.3 End-of-round Minion Battle
-
-Proves the count, choice, Heavy-last ordering, and minion removals, then records a typed end-of-round Lane-Push request when the last minion is lost. The request is not consumed here: end-of-round execution waits for cleanup milestone 6.9 and exact sequence integration in 7.7.
-
-### [ ] 6.4 Token and marker instances, supplies, placement, and attachment
-
-Unless milestone 4.2 moved a required prerequisite into Phase 5, this milestone establishes stable token/marker instances, the authoritative finite token supply, token placement/reclamation choices, marker attachment/return state, and their distinct ownership and location rules. If the prerequisite was moved, this milestone verifies Phase 6 integration without recreating it.
-
-### [ ] 6.5 Token board interactions and persistent properties
-
-Token-owned properties persist through their own authoritative continuous-source lifetime until removal and are not modeled as card Active effects. Cover Move/Object Push/Swap/Replace/Remove targeting, Clear, spawn-over-token removal, traversal effects, and the rule that defeating the placing hero does not remove tokens unless verified text says otherwise.
-
-### [ ] 6.6 Immediate Lane-Push request during a turn
-
-Acceptance checks:
-
-- Only a recorded Defeat or successful Remove of the last relevant enemy Battle-Zone minion emits the request; Move, Object Push, and Swap never do.
-- A Defeat still emits the request when its later removal is prevented because prevention does not erase the Defeat outcome; an attempted but prevented standalone Remove does not emit a successful Remove outcome.
-- The triggering operation emits a typed immediate Lane-Push request and reaches the correct checkpoint before a repeated action instance can continue.
-- This milestone verifies the request/checkpoint only and does not expose or partially execute the transition defined by 6.7-6.8.
-
-### [ ] 6.7 Lane Push Wave and Battle-Zone stages
-
-Builds the non-executable ordered prefix of the transition: flip exactly one Wave counter and stop immediately on the final Wave; otherwise advance exactly one verified Zone toward the losing team's Throne and stop immediately if that Throne Zone becomes the Battle Zone. The incomplete prefix remains internal and cannot consume a live match request.
-
-### [ ] 6.8 Lane Push minion respawn and transition completion
-
-Completes the transition by removing all minions from the previous Battle Zone and respawning the matching minion type at each verified Spawn point in the new Battle Zone. It then connects immediate mid-turn requests from 6.6 to the complete transition; end-of-round requests remain deferred to 7.7.
-
-Acceptance checks:
-
-- The transition always resolves Wave/final-Wave check, then zone/Throne check, then old-zone removal and new-zone respawn; an earlier game-ending result stops all later stages.
-- A token-covered Spawn point removes its token before the unit respawns.
-- A Spawn point occupied by a non-token obstacle makes the owning team Place that minion in a chosen nearest empty Battle-Zone space; when order matters, the Tie-Breaker-side team starts without flipping the coin.
-- The complete transition uses the authoritative ordered lane, Battle Zone, and spawn-point data and is never exposed in a partially implemented state.
-- An immediate mid-turn transition finishes before a repeated action instance continues.
-
-### [ ] 6.9 End-of-round token removal and marker return
-
-Runs the general cleanup checkpoints: remove all board tokens and return all markers to supply, except where exact verified text supplies an explicit override.
-
-An end-of-round Lane-Push request remains pending until this cleanup completes; milestone 7.7 connects it to the complete transition before card retrieval.
-
-### [ ] 6.10 Retrieve cards and cancel applicable Active effects
-
-Observable outcome: At the correct end-of-round step, each hero retrieves only its own eligible resolved/discarded cards into hand and all Active effects canceled by those state changes end, including applicable Next Turn effects.
-
-Acceptance checks:
-
-- Retrieval uses explicit card-state transitions and never retrieves another hero's card.
-- Every eligible card returns regardless of its prior eligible state, while ineligible/set-aside/item cards do not.
-- Applicable Active effects are canceled from authoritative state and emit ordered cancellation events.
-- Focused tests cover resolved, discarded, facedown eligible, other-owner, and active-effect cases.
-
-Each milestone must cover its exact rule ordering and focused edge cases before the next begins.
-
-## Phase 7 - Economy and progression
-
-### [ ] 7.1 Coin awards and assist-ready accounting
-
-The 1v1 configuration has no friendly assisting hero, but the model must support team collections without implementing 3v3 UI.
-
-### [ ] 7.2 Mandatory end-of-round leveling
-
-### [ ] 7.3 Card upgrades and item bonuses
-
-### [ ] 7.4 Ultimate access
-
-Ultimate behavior is exposed as a continuous rules source only while its hero is on the board, with its own applicability boundary rather than ordinary card Active-effect cancellation.
-
-### [ ] 7.5 Pity Coin ordering
-
-### [ ] 7.6 All three victory paths
-
-### [ ] 7.7 Integrate the exact end-of-round sequence
-
-Observable outcome: One authoritative end-of-round state machine executes all completed subsystems in the exact source-verified order and arrives at a valid next-round or game-ended state.
-
-Acceptance checks:
-
-- The sequence covers Minion Battle; token removal/marker return; Lane Push; card retrieval and cancellation; mandatory leveling/upgrades; and Pity Coin collection at their exact checkpoints.
-- Applicable End of Round Active effects and immediate victory checks occur at their verified boundaries rather than presentation timing.
-- A game-ending result stops later processing wherever the rules end the game immediately.
-- Focused integration scenarios cover no Lane Push, one Lane Push, level/no-level players, retrieved effects, Pity Coin eligibility, and a game-ending Lane Push.
-- The same starting state and choices produce the same state and ordered event sequence.
-
-## Phase 8 - Primitive complete match
-
-### [ ] 8.1 Complete and verify all Wasp card behaviors
-
-Observable outcome: Every Wasp definition and legal action at every pitch-relevant tier, including item/Ultimate and cross-system interactions, passes source-linked focused scenario tests after its Phase 5-7 dependencies are available.
-
-Acceptance checks:
-
-- Every Wasp action offer and invocation context from the milestone 4.2 capability matrix is implemented or explicitly blocked by a recorded source question.
+- Every offer/context from the milestone 8.2 matrix is implemented; a blocked entry keeps this milestone incomplete.
 - No placeholder value, display-name branch, runtime text parsing, or UI-owned rule path remains.
-- Interaction tests cover each required timing, state, target, modifier, replacement, repeat, Active effect, and continuous source.
-- Any unresolved source question prevents this milestone from being marked complete rather than being guessed.
+- Interaction tests cover each required timing, target, modifier, replacement, repeat, state change, Active effect, and continuous source.
+- Any unresolved source question prevents completion rather than being guessed.
 
-### [ ] 8.2 Complete deterministic 1v1 match
+### [!] 8.16 Complete the deterministic Wasp 1v1 match
 
-Observable outcome: A match can start, play through repeated turns and rounds, and end through each official victory path using primitive visuals and debug UI.
+Observable outcome: A Wasp mirror match can start, play repeated turns/rounds, and end through every victory path with primitive visuals and debug UI.
 
 Acceptance checks:
 
-- Every implemented rule links to an authoritative source and focused tests.
+- Every implemented Wasp rule links to an authoritative source and focused tests.
 - Approved deviations are the only known departures.
 - Undo, restart, snapshots, event log, and Tie Breaker override work internally.
-- A broader milestone suite passes.
+- A broader Wasp integration suite passes.
 
-Hard gate: Production visual work does not begin until this milestone is reviewed and approved.
+Hard gate: Production visual work does not begin until milestone 8.16 is reviewed and approved.
 
 ## Phase 9 - Presentation and pitch polish
 

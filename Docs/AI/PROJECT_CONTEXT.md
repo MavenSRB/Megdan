@@ -10,6 +10,8 @@ Documentation milestone 0.4 is also complete: the general card/action rules on p
 
 Documentation milestone 0.5 is complete: `Docs/AI/CARD_EFFECT_CAPABILITIES.md` now defines effect-level contracts for the rulebook's mutation operations, queries, modifiers, control flow, timing, persistent sources, and system transitions, including explicit Object Push, source-relative direct Move, Place, Spawn, token, marker, Swap, Replace, Remove, Defeat, and keyword-query architecture. This also implements no gameplay.
 
+Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker state, Initiative, turns, rounds, and the complete general match loop with synthetic test cards before the complete Wasp card inventory or Wasp-specific card implementation begins. This sequencing change also implements no gameplay.
+
 Milestone 1.4, selecting the hero and one adjacent destination, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
@@ -94,8 +96,8 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ### Map progression
 
-- Phases 1 and 2 use an expanded temporary test grid only for foundational movement, obstacles, cards, and two-hero combat.
-- Phase 3 replaces that grid in the main validation scene with the complete official multi-zone single-lane map.
+- Phases 1 through 3 use an expanded temporary test grid only for foundational movement, obstacles, cards, two-hero combat, Initiative, turns, and rounds.
+- Phase 4 replaces that grid in the main validation scene with the complete official multi-zone single-lane map.
 - The full map model includes every official space, terrain classification, zone, zone boundary, zone adjacency, spawn point, Throne, starting Battle Zone, and ordered lane relationship.
 - Fast Travel cannot begin until same-zone, adjacent-zone, and non-adjacent-zone queries are verified on the full map.
 - Lane pushing cannot begin until the full ordered lane, movable Battle Zone, Thrones, and per-zone minion spawn points are verified.
@@ -148,8 +150,10 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Never branch rules on card display name, hero display name, image filename, or printed text. Do not build a runtime natural-language parser or speculative universal scripting language.
 - Phase 1 proves this foundation with placeholder definitions/instances, explicit Movement offers and typed values, command/events, a resumable choice shell, and visible card-driven movement.
 - Phase 2 proves extension by opening a basic Attack, pausing for the target hero's Defense reaction, discarding one owned card or declining, and resuming the unmodified comparison through the same authority.
-- Phase 4 verifies Wasp, maps every action to a capability/dependency matrix, and re-baselines Phase 5 before real effects are implemented. Phase 5 ordering is provisional until that matrix exists.
-- Complete Wasp verification is a later integration gate after minion, economy, item, Ultimate, and progression dependencies exist; an earlier action-category milestone cannot claim the whole hero is complete.
+- Phase 3 proves generic card lifecycle, director hands, play/reveal, Initiative and tied Initiative, Hold, Movement and Attack inside turns, the four-turn round skeleton, snapshots, Undo/restart, and event logging with synthetic definitions.
+- Phases 4 through 7 prove the official map, core full-map actions and combat, minions, tokens, Lane Push, exact end-of-round order, defeat/respawn, progression, victory, and a deterministic complete match with synthetic definitions.
+- The complete Wasp card inventory and Wasp-specific card implementation wait until Phase 8, after milestone 7.9 proves the synthetic core match. Milestone 8.2 may re-baseline Wasp-specific work and add verified capability deltas, but it does not gate or redesign the already-proven general core loop.
+- Complete Wasp verification remains a later integration gate; an earlier action-category milestone cannot claim the whole hero is complete.
 - Add reusable primitives only when a verified rule or card requires them. Later discoveries may require a localized capability, handler, or explicit schema migration, but must not silently rewrite ownership, action context, UI authority, or continuation semantics.
 
 ## Presentation direction
@@ -208,7 +212,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - One approved micro-milestone per task.
 - Every milestone defines one observable outcome, explicit non-goals, focused acceptance checks, and a hard stop.
 - Do not start the next milestone without explicit user approval.
-- The early board/card foundation proceeds in separate steps: adjacent selection, an authoritative adjacent-move command/event, presentation hookup, a larger placeholder grid, movement of multiple spaces, obstacle blocking, definition/instance separation, action definitions/runtime offers and typed values, resumable card-action choices, then visible card-driven movement.
+- The early board/card foundation proceeds in separate steps: adjacent selection, an authoritative adjacent-move command/event, presentation hookup, a larger placeholder grid, movement of multiple spaces, obstacle blocking immediately afterward, definition/instance separation, action definitions/runtime offers and typed values, resumable card-action choices, then visible card-driven movement.
 - Multi-space movement must preserve the player's chosen route, allow stopping before the allowance is exhausted, and reject entering or passing through obstacles.
 - Before Phase 1 ends, the selected test action offer's typed printed-value query must be the sole source of movement allowance.
 - Fast Travel, movement from card text, and movement-limiting effects remain later rule milestones rather than being folded into the early board test.

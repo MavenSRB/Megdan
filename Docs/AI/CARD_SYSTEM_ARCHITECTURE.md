@@ -131,7 +131,7 @@ At a high level it:
 
 The resolver also runs explicit rules checkpoints at the correct boundaries. A checkpoint may produce immediate deterministic consequences that change later targets or repeats; it cannot be deferred until animation finishes. Movement restrictions whose rules are checked only at action start use an explicit action-start snapshot/context rather than being re-evaluated accidentally on every step.
 
-Pending resolution data must contain enough information to reproduce and later serialize the exact continuation: source instance, definition revision, chosen offer, actor/chooser, current effect-node path, repeat depth, completed choices, typed capability outcomes/result bindings, timing stack, and pending choice. The early phases do not need snapshot import/export yet, but they must not choose a representation that prevents it in Phase 2.
+Pending resolution data must contain enough information to reproduce and later serialize the exact continuation: source instance, definition revision, chosen offer, actor/chooser, current effect-node path, repeat depth, completed choices, typed capability outcomes/result bindings, timing stack, and pending choice. The early phases do not need snapshot import/export yet, but they must not choose a representation that prevents it at milestone 3.9.
 
 Nested rules work, such as an Attack awaiting a Defense reaction, is represented by explicit resolution frames rather than a second disconnected resolver. The outer action resumes after the reaction closes, preserving exact Attack/Defense ordering and allowing the same hero to defend again later if another legal attack occurs.
 
@@ -270,7 +270,7 @@ The first card slice should implement only:
 - A data-shaped pending resolution/choice protocol.
 - The minimum structured Movement action needed to select a card and perform the already-tested stepwise movement.
 
-Phase 2 then proves that the same foundation can open an Attack, pause for a Defense reaction from the correct hand, discard exactly one card or decline, calculate the unmodified result, and resume. Verified Wasp content, full lifecycle, replacement actions, card text, complex targets, timing, and active effects remain separately approved milestones.
+Phase 2 then proves that the same foundation can open an Attack, pause for a Defense reaction from the correct hand, discard exactly one card or decline, calculate the unmodified result, and resume. Phase 3 proves generic lifecycle, Initiative, turns, rounds, snapshots, and internal tools with synthetic definitions. Phases 4 through 7 extend that synthetic foundation through the official map and the complete general core match loop. The complete Wasp card inventory and Wasp-specific card implementation begin only in Phase 8 after the milestone 7.9 core-match gate; Wasp verification may add localized capability deltas but does not own or block the general rules foundation.
 
 The foundation is succeeding when:
 

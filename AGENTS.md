@@ -12,7 +12,7 @@ Read these files before planning or changing anything in this workspace:
 
 ## Current authorization
 
-Roadmap milestones 0.1 through 0.5 and 1.1 through 1.3 are complete: living documentation, the Unity/test shell, the card-system and effect-capability architecture contracts, hex foundations, minimal rendering, and one primitive hero exist. A local Git repository is authorized and initialized.
+Roadmap milestones 0.1 through 0.6 and 1.1 through 1.3 are complete: living documentation, the Unity/test shell, the card-system and effect-capability architecture contracts, the core-match-first dependency order, hex foundations, minimal rendering, and one primitive hero exist. A local Git repository is authorized and initialized.
 
 Milestone 1.4 is proposed but not authorized. Do not begin it or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
 

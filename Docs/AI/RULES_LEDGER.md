@@ -6,7 +6,7 @@ Last updated: 2026-08-09
 
 This ledger prevents silent rule drift. It connects each game system to its source, approved deviations, implementation status, and focused tests.
 
-The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, placeholder coordinate-to-XZ presentation, one primitive hero occupancy/rendering slice, and the architecture documents from completed roadmap milestones 0.1-0.5 and 1.1-1.3. It contains no gameplay resolution. All rule systems are therefore unimplemented unless stated otherwise.
+The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, placeholder coordinate-to-XZ presentation, one primitive hero occupancy/rendering slice, the architecture documents from completed roadmap milestones 0.1-0.5, and the core-first roadmap sequence from milestone 0.6. Milestones 1.1-1.3 are also complete. It contains no gameplay resolution. All rule systems are therefore unimplemented unless stated otherwise.
 
 ## Authority hierarchy
 
@@ -75,16 +75,16 @@ Printed rulebook page numbers are used below.
 
 | System | Primary source | Current status | Required verification notes |
 | --- | --- | --- | --- |
-| Generic hex coordinates, adjacency, and placeholder XZ layout | Project architecture; not a game-rule interpretation | Implemented; milestone verified | Axial `(q, r)` coordinates expose six named standard neighbors; pointy-top placeholder conversion and mesh spacing are tested, but official board spaces and adjacency remain unverified and unimplemented until milestones 3.1-3.2 |
+| Generic hex coordinates, adjacency, and placeholder XZ layout | Project architecture; not a game-rule interpretation | Implemented; milestone verified | Axial `(q, r)` coordinates expose six named standard neighbors; pointy-top placeholder conversion and mesh spacing are tested, but official board spaces and adjacency remain unverified and unimplemented until milestones 4.1-4.2 |
 | Primitive hero occupancy and placeholder placement | Project architecture; not a game-rule interpretation | Implemented; focused tests passing | One placeholder hero has a stable hero ID and occupied axial coordinate; the scene view derives its position from that coordinate. This does not implement teams, legal setup, movement, targeting, turns, card effects, or official board spaces |
-| Heroes, teams, zones, Thrones, minions, lanes, win overview | Rulebook p.3 | Not implemented | Phase 3 must model the complete official multi-zone single-lane map; reduced Phase 1 grids cannot verify Fast Travel or lane pushing |
+| Heroes, teams, zones, Thrones, minions, lanes, win overview | Rulebook p.3 | Not implemented | Phase 4 must model the complete official multi-zone single-lane map; reduced early grids cannot verify Fast Travel or Lane Push |
 | Table talk and hidden information | Rulebook p.4 | Deferred by DEV-003 | Required for post-authorization online 3v3, not pitch interaction |
 | Four-/six-player setup | Rulebook pp.5-6 | Source reviewed; not implemented | Pitch inherits four-player Quick Game values except DEV-001/002/003 |
 | Minion setup and types | Rulebook p.6 and summary | Not implemented | Verify every spawn point and type against official board reference |
-| Round structure | Rulebook p.7 | Source reviewed; not implemented | Exactly four turns per round |
-| Play/reveal cards | Rulebook p.7 | Source reviewed; not implemented | Director UI changes who selects, not card-state or reveal rules |
-| Initiative and ties | Rulebook p.7 | Source reviewed; not implemented | Tie Breaker flip timing requires focused scenarios |
-| Perform one action / resolve card / turn end | Rulebook p.7 | Source reviewed; not implemented | Preserve choice timing and unresolved/resolved order |
+| Round structure | Rulebook p.7 | Source reviewed; not implemented | Milestone 3.8 proves exactly four turns per round with synthetic cards |
+| Play/reveal cards | Rulebook p.7 | Source reviewed; not implemented | Milestone 3.3 proves the lifecycle with synthetic cards; director UI changes who selects, not card-state or reveal rules |
+| Initiative and ties | Rulebook p.7 | Source reviewed; not implemented | Tie Breaker setup is milestone 2.6; milestone 3.4 proves Initiative and exact flip timing before later simultaneous-order systems |
+| Perform one action / resolve card / turn end | Rulebook p.7 | Source reviewed; not implemented | Milestones 3.5-3.8 prove choice timing, unresolved/resolved order, turns, and the round shell before the complete Wasp set |
 | Hero respawn | Rulebook p.7 | Not implemented | Include optional timing and Defense exception |
 | Minion Battle | Rulebook p.8 | Source reviewed; not implemented | Difference removal, Heavy removed last, zero-effect tie |
 | Remove tokens / return markers | Rulebook p.8 | Source reviewed; architecture specified; not implemented | Verify ordering relative to Active effects and Lane Push |
@@ -99,7 +99,7 @@ Printed rulebook page numbers are used below.
 | Card lifecycle and state changes | Rulebook pp.8, 10 | Source reviewed; architecture specified; not implemented | Location, played, unresolved/resolved, and face orientation are orthogonal; played/resolved and rare played/discarded combinations must work; resolved/discarded facedown suppression is distinct from newly played hidden/reveal flow; retrieve/swap and effect cancellation remain later milestones |
 | Printed values and modifier contributions | Rulebook pp.9, 13-16 | Source reviewed; architecture specified; not implemented | Typed queries retain contribution provenance; items modify matching printed icons only, while text, minions, and active effects contribute through distinct sources |
 | Movement action and direct Move | Rulebook p.11 plus cards | Source reviewed; architecture specified; not implemented | Phase 1 proves stepwise Movement offers and ordinary obstacle blocking; direct card-text Move remains a distinct capability and cannot become Fast Travel. Wording such as `move a unit towards you` composes Move with a source-relative `Closer` destination constraint; no separate Pull keyword/capability is defined |
-| Fast Travel replacement | Rulebook p.11 | Source reviewed; architecture specified; not implemented | Blocked until Phase 3 verifies full-map zone membership/adjacency; replaces the entire Movement action, suppresses Primary card text, and needs no empty-space path |
+| Fast Travel replacement | Rulebook p.11 | Source reviewed; architecture specified; not implemented | Blocked until Phase 4 verifies full-map zone membership/adjacency; replaces the entire Movement action, suppresses Primary card text, and needs no empty-space path |
 | Skill | Rulebook p.12 plus verified Wasp cards | General source reviewed; Wasp requirements not inventoried | Add only the typed components required by verified Wasp actions |
 | Hold and resolve without action | Rulebook pp.7, 12-13 | Source reviewed; architecture specified; not implemented | Hold is a general Secondary action; resolving without action after defeat/no respawn is a distinct state transition and timing path |
 | Attack and Clear replacement | Rulebook p.13 | Source reviewed; architecture specified; not implemented | Separate non-Ranged/Ranged targeting and Before/After windows; Clear replaces the entire Attack action and suppresses Attack card text |
@@ -130,29 +130,31 @@ Milestones 0.4-0.5 specify these representation and capability seams; they do no
 | UI must not own rule mutation | Intent commands and ordered rule events | 1.5 |
 | Static print data versus mutable physical card | Versioned definition plus stable owned instance | 1.10 |
 | One card exposes context-dependent actions | Immutable action definitions plus runtime offers selected separately from card | 1.11 |
-| Printed icons gain distinct modifiers | Typed value query with contribution provenance | 1.11, extended in re-baselined 5.x/7.3 |
+| Printed icons gain distinct modifiers | Typed value query with contribution provenance | 1.11, extended in 5.3-5.4, 5.8, 7.2-7.3, and verified Wasp slices |
 | Actions pause for route/target/option/other-player choices | Serializable pending resolution and pending choice | 1.12 |
 | Defense interrupts Attack | Reaction offer nested in the same resolution | 2.3-2.5 |
-| Undo/networking must preserve partial resolution | Versioned snapshot of card state and pending choice | 2.6 |
-| Played/resolved/discarded/facedown facts overlap | Orthogonal lifecycle axes and validated transitions | 4.3 |
-| Real cards introduce ordered effects and dependencies | Verified capability matrix before effect work | 4.1-4.2 |
-| Timed and persistent text outlives one resolver step | Serializable active-effect instances and timing windows | Re-baselined Phase 5 |
-| Ultimate/token rules persist without ordinary Active-effect semantics | Distinct continuous-rule sources and effective-characteristic queries | Re-baselined Phase 5 / 7.4 |
+| Undo/networking must preserve partial resolution | Versioned snapshot of card state and pending choice | 3.9 |
+| Played/resolved/discarded/facedown facts overlap | Orthogonal lifecycle axes and validated transitions | 3.1-3.8; verified Wasp data in 8.3 |
+| Real Wasp cards introduce ordered effects and dependencies | Verified Wasp capability matrix before Wasp effect work | 8.1-8.2 |
+| Timed and persistent text outlives one resolver step | Serializable active-effect instances and timing windows | 5.4, 6.8, and verified Wasp slices |
+| Ultimate/token rules persist without ordinary Active-effect semantics | Distinct continuous-rule sources and effective-characteristic queries | 6.3, 7.3, and verified Wasp slices |
 
 ## Effect capability coverage
 
-The capability catalog is source-reviewed architecture, not an implementation claim. Milestone 4.2 maps verified Wasp content to the smallest required slices before any provisional Phase 5 group becomes executable.
+The capability catalog is source-reviewed architecture, not an implementation claim. Phases 1 through 7 prove verified general/core slices with synthetic definitions. After the deterministic core-match gate, milestone 8.2 maps verified Wasp content to the smallest Wasp-specific slices and records any capability deltas without retroactively gating the core rules.
 
 | Capability family | Primary general source | Architecture status | Planned proving/integration milestones |
 | --- | --- | --- | --- |
-| Movement action and direct Move, including source-relative destinations | Rulebook p.11 plus verified cards | Architecture specified; not implemented | 1.11-1.13 for Movement foundation; re-baselined 5.x for direct Move |
-| Object Push, Place, Spawn, Respawn, Swap, Replace | Rulebook pp.7-8, 18-19 plus verified cards | Architecture specified; not implemented | Re-baselined 5.x; systemic integration in Phase 6 where required |
-| Remove, Defeat, prevention, and Clear | Rulebook pp.8, 12-14, 18-19 plus verified cards | Architecture specified; not implemented | Phase 2 foundation; re-baselined 5.x and Phase 6 consequences |
-| Tokens, markers, obstacles, and persistent properties | Rulebook pp.8, 18-19 plus verified cards | Architecture specified; not implemented | One owner chosen by 4.2; otherwise 6.4-6.5, then cleanup in 6.9 |
-| Card-state, ownership, value, and resource operations | Rulebook pp.7-10, 15-16 plus verified cards | Architecture specified; not implemented | Phase 4 foundation; re-baselined 5.x, 6.10, and Phase 7 |
-| Target/presence and spatial queries | Rulebook pp.9-10, 13, 17-19 plus verified cards | Architecture specified; not implemented | Phase 1 query foundation; re-baselined 5.x |
-| Modifiers, restrictions, permissions, immunity, and effective characteristics | Rulebook pp.9, 11-19 plus verified cards | Architecture specified; not implemented | Re-baselined 5.x and 7.3-7.4 |
-| Timing, control flow, Active effects, and continuous sources | Rulebook pp.7-10, 13-19 plus verified cards | Architecture specified; not implemented | Phase 2 pending-reaction foundation; re-baselined 5.x |
+| Movement action and Fast Travel | Rulebook p.11 | Architecture specified; not implemented | 1.11-1.13 Movement foundation; 5.1-5.2 full-map core integration; 8.5 Wasp integration |
+| Direct Move, including source-relative destinations | Verified cards | Architecture specified; not implemented | Milestone 8.2 assigns the first verified Wasp slice if required; provisionally 8.6 |
+| Place, Spawn, and Respawn | Rulebook pp.7-8, 18-19 plus verified cards | Architecture specified; not implemented | 5.7, 6.6, and 7.4 core/system integration; 8.6 Wasp integration if required |
+| Object Push, Swap, and Replace | Rulebook pp.18-19 plus verified cards | Architecture specified; not implemented | Milestone 8.2 assigns the first verified Wasp slice if required; provisionally 8.6 |
+| Remove, Defeat, prevention, and Clear | Rulebook pp.8, 12-14, 18-19 plus verified cards | Architecture specified; not implemented | Phase 2 foundation; 5.6, 5.8, 6.1, 6.3-6.6, and 7.4 consequences |
+| Tokens, markers, obstacles, and persistent properties | Rulebook pp.8, 18-19 plus verified cards | Architecture specified; not implemented | 1.9 obstacle foundation; 6.2-6.3 and 6.7 core lifecycle; optional spatial interactions assigned by 8.2 and integrated in 8.6-8.7 only if verified Wasp content requires them |
+| Card-state, ownership, value, and resource operations | Rulebook pp.7-10, 15-16 plus verified cards | Architecture specified; not implemented | 1.10-1.13 and Phase 3 foundation; 5.5, 6.8, and 7.1-7.6 core integration; 8.8 Wasp integration |
+| Target/presence and spatial queries | Rulebook pp.9-10, 13, 17-19 plus verified cards | Architecture specified; not implemented | Phases 1-2 foundation; 4.3 and Phase 5 core integration; verified Phase 8 Wasp slices |
+| Modifiers, restrictions, permissions, immunity, and effective characteristics | Rulebook pp.9, 11-19 plus verified cards | Architecture specified; not implemented | 1.11 foundation; 5.3-5.4, 5.8, and 7.2-7.3 core integration; 8.9 and 8.11-8.14 Wasp integration |
+| Timing, control flow, Active effects, and continuous sources | Rulebook pp.7-10, 13-19 plus verified cards | Architecture specified; not implemented | 1.12 and 2.3-2.5 foundation; Phase 3, 5.4, 6.4, 6.8, and 7.8 core integration; 8.10 and 8.13 Wasp integration |
 | Lane/minion/end-of-round/progression system transitions | Rulebook pp.7-8, 15-16 | Architecture specified; not implemented | Phases 6-7 |
 
 ## Wasp content ledger
@@ -175,7 +177,7 @@ The pitch requires Wasp's complete progression. Before verified Wasp definitions
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **Not inventoried**. Wasp inventory is deferred until milestone 4.1; its capability matrix follows in 4.2. Other heroes remain outside the pitch inventory.
+Current status: **Not inventoried**. Wasp inventory is deferred until milestone 8.1, after milestone 7.9 proves the deterministic synthetic core match; its capability matrix follows in 8.2. Other heroes remain outside the pitch inventory.
 
 ## Rule implementation template
 
