@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Corrective milestone 1.12b is complete: the milestones 1.10-1.12 card foundation now exposes genuinely read-only definition/value/choice collections, validates action origin and policy combinations, scopes runtime offers to an explicit timing window, and treats repeat as an invocation of an existing action rather than a static definition origin. Starting Movement resolution re-derives the selected offer from current authoritative definitions and card instances, rejects forged/stale offers or an unavailable actor, and projects every reachable destination as an immutable destination/route/cost candidate. One destination command re-derives the exact candidates against current occupancy, validates the selected route without side effects, commits its ordered adjacent steps through the existing authority, and completes the `up to` Movement action; Stop remains the zero-movement choice. A new authority can validate and resume the pending destination choice against restored board occupancy without relying on a hidden in-memory `MovementSession`. This makes the narrow shell compatible with later snapshot work without implementing snapshot import/export itself. No visible card hand, card play/reveal, card lifecycle transitions, real Wasp data/images, modal/repeat behavior, reactions, timing effects, turns, Unity presentation, animation, or broader gameplay resolution has been implemented.
+Milestone 1.13 is complete: the expanded obstacle-map scene now shows two visibly test-only placeholder cards. Selecting one card exposes its separate printed Primary Movement 3 and printed Secondary Movement 1 offers, including whether source-card text applies or is suppressed. Selecting an offer starts the existing authoritative resumable Movement resolution; the selected offer's typed printed value is the sole allowance source, exact pending destination/route/cost candidates drive highlights, pointer destination clicks and Stop submit follow-up commands, and presentation updates only from accepted occupancy. The UI clears card/action/pending selection when resolution ends while retaining a readable completion status. This completes the Phase 1 visible integration gate without implementing card play/reveal, lifecycle transitions, real Wasp data/images, alternate/non-shortest route choice, modal/repeat behavior, reactions, timing effects, turns, snapshots, networking, animation, or broader gameplay resolution.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -14,7 +14,7 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 1.13, selecting a test card and performing visible card-driven movement, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 2.1, introducing teams, players, heroes, and stable IDs, is proposed but not authorized. Every later milestone retains the same approval gate.
 
 ## Mission
 
@@ -257,7 +257,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Card execution beyond the placeholder Movement destination shell, visible card UI, turns, or Wasp content before their exact milestone approval.
+- Card execution beyond the completed visible placeholder Movement slice, card play/reveal or lifecycle transitions, turns, or Wasp content before their exact milestone approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.

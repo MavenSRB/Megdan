@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Scope
 
-The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. Milestone 1.2 adds Edit Mode layout, mesh, and saved-scene coverage plus a Play Mode scene-loading check. Milestone 1.3 adds primitive hero occupancy and placement coverage. Milestone 1.4 adds adjacent-empty destination query, selection highlighting, Input System pointer-path, saved-scene, and Play Mode coverage. Milestone 1.5 adds pure adjacent-move command/event authority coverage. Milestone 1.6 adds pointer-to-command hookup coverage for accepted and rejected adjacent destination flows. Milestone 1.7 expands the placeholder validation grid and adds scene coverage for radius-2 coordinates, distance coverage, alternate routes, and preserved click-to-move behavior. Milestone 1.8 adds pure movement-session coverage for zero movement, early stopping, exact allowance, and over-movement, plus reachable-destination query, controller, and Play Mode pointer coverage for one-click destination movement that records adjacent step routes. Milestone 1.9 adds pure obstacle occupancy, adjacent-move blocking, reachability detours around blocked spaces, visible placeholder obstacle views, saved-scene obstacle wiring, and Play Mode coverage for one-click detour movement. Milestone 1.10 adds pure card definition/instance coverage for stable identities, content revisions, definition references, primitive-hero ownership, orthogonal initial state facts, shared immutable definitions, and initial setup validation. Milestone 1.11 adds pure action definition, runtime offer, invocation-context vocabulary, and typed printed Movement value query coverage. Milestone 1.12 adds the pure card-action resolution shell, corrective milestone 1.12a hardens offer/continuation authority, and corrective milestone 1.12b covers immutable destination/route/cost candidates, one-command route completion, zero/early stop, obstacle detours, changed-board rejection without partial movement, restoration, and deterministic replay. These tests do not implement or verify the complete official Movement rule or game loop.
+The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. Milestone 1.2 adds Edit Mode layout, mesh, and saved-scene coverage plus a Play Mode scene-loading check. Milestone 1.3 adds primitive hero occupancy and placement coverage. Milestone 1.4 adds adjacent-empty destination query, selection highlighting, Input System pointer-path, saved-scene, and Play Mode coverage. Milestone 1.5 adds pure adjacent-move command/event authority coverage. Milestone 1.6 adds pointer-to-command hookup coverage for accepted and rejected adjacent destination flows. Milestone 1.7 expands the placeholder validation grid and adds scene coverage for radius-2 coordinates, distance coverage, alternate routes, and preserved click-to-move behavior. Milestone 1.8 adds pure movement-session coverage for zero movement, early stopping, exact allowance, and over-movement, plus reachable-destination query, controller, and Play Mode pointer coverage for one-click destination movement that records adjacent step routes. Milestone 1.9 adds pure obstacle occupancy, adjacent-move blocking, reachability detours around blocked spaces, visible placeholder obstacle views, saved-scene obstacle wiring, and Play Mode coverage for one-click detour movement. Milestone 1.10 adds pure card definition/instance coverage for stable identities, content revisions, definition references, primitive-hero ownership, orthogonal initial state facts, shared immutable definitions, and initial setup validation. Milestone 1.11 adds pure action definition, runtime offer, invocation-context vocabulary, and typed printed Movement value query coverage. Milestone 1.12 adds the pure card-action resolution shell, corrective milestone 1.12a hardens offer/continuation authority, and corrective milestone 1.12b covers immutable destination/route/cost candidates, one-command route completion, zero/early stop, obstacle detours, changed-board rejection without partial movement, restoration, and deterministic replay. Milestone 1.13 adds visible synthetic hand/card/action/pending-choice integration coverage for typed Primary/Secondary allowances, text policy, Stop and early destinations, stale UI choices, obstacle detours, pointer-submitted commands, saved-scene wiring, and the Phase 1 unfiltered gate. These tests do not implement or verify the complete official Movement rule or game loop.
 
 Run commands from PowerShell. Each focused Unity command opens the project, runs only its named test fixture or case, writes NUnit XML plus a Unity log under `tmp/`, and exits without producing a player build. Scene-dependent filters load the saved validation scene.
 
@@ -423,6 +423,33 @@ if ($oneClickCardMovementProcess.ExitCode -ne 0) {
 ```
 
 Expected result: all discovered cases pass, covering immutable and structurally valid destination/route/cost candidates, typed Primary/Secondary allowance, one-command adjacent and multi-step completion, zero and early stopping, ordered internal step events, obstacle exclusion and legal detours, stale/invalid/changed-board rejection without partial actor movement, exact restored choices, deterministic replay, and the directly affected card, movement, reachability, adjacent-authority, and controller regressions.
+
+## Visible card-driven Movement focused Edit Mode tests
+
+```powershell
+$visibleCardMovementArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-13-focused-edit-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-13-focused-edit.log"'
+)
+
+$visibleCardMovementProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $visibleCardMovementArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($visibleCardMovementProcess.ExitCode -ne 0) {
+    throw "Visible card-driven Movement Edit Mode tests failed with exit code $($visibleCardMovementProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering two visibly test-only hand cards; separate card/action selection; typed Primary Movement 3 and Secondary Movement 1 allowances; explicit Primary/Secondary text policy; exact pending destination/route/cost projection; zero and early stopping; stale UI-choice rejection; blocked destinations and legal obstacle detours; pointer-submitted destination commands; cleared selection after completion; and saved-scene card-driven wiring.
 
 ## Placeholder-grid focused Play Mode test
 

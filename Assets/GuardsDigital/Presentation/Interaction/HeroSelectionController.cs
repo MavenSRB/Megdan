@@ -12,7 +12,7 @@ using UnityEngine;
 namespace GuardsDigital.Presentation.Interaction
 {
     [DisallowMultipleComponent]
-    public sealed class HeroSelectionController : MonoBehaviour
+    public sealed partial class HeroSelectionController : MonoBehaviour
     {
         public const int DefaultMovementAllowance = 3;
 
@@ -49,12 +49,18 @@ namespace GuardsDigital.Presentation.Interaction
 
         public int MovementAllowance => movementAllowance;
 
-        public int RemainingMovementAllowance => movementSession != null ? movementSession.RemainingAllowance : 0;
+        public int RemainingMovementAllowance => cardDrivenMovementEnabled
+            ? CardRemainingMovementAllowance
+            : movementSession != null ? movementSession.RemainingAllowance : 0;
 
-        public bool IsMovementSessionActive => movementSession != null && !movementSession.IsComplete;
+        public bool IsMovementSessionActive => cardDrivenMovementEnabled
+            ? IsCardResolutionPending
+            : movementSession != null && !movementSession.IsComplete;
 
         public IReadOnlyList<HexCoordinate> MovementRoute =>
-            movementSession != null ? movementSession.Route : System.Array.Empty<HexCoordinate>();
+            cardDrivenMovementEnabled
+                ? CardMovementRoute
+                : movementSession != null ? movementSession.Route : System.Array.Empty<HexCoordinate>();
 
         public AdjacentMoveRejectionReason LastMoveRejectionReason { get; private set; }
 
@@ -84,12 +90,19 @@ namespace GuardsDigital.Presentation.Interaction
             reachableDestinations.Clear();
             RebuildMoveAuthority();
             ClearSelectionVisuals();
+            ResetCardDrivenMovementPresentation();
+            InitializeCardDrivenMovementIfEnabled();
         }
 
         public void SelectHero()
         {
             EnsureBindings();
             EnsureMoveAuthority();
+
+            if (cardDrivenMovementEnabled)
+            {
+                return;
+            }
 
             if (heroView == null || tileViews == null)
             {
@@ -108,6 +121,11 @@ namespace GuardsDigital.Presentation.Interaction
 
         public bool StopMovementSession()
         {
+            if (cardDrivenMovementEnabled)
+            {
+                return TryStopCardMovement();
+            }
+
             if (!IsHeroSelected || movementSession == null || movementSession.IsComplete)
             {
                 return false;
@@ -153,6 +171,11 @@ namespace GuardsDigital.Presentation.Interaction
         {
             EnsureBindings();
             EnsureMoveAuthority();
+
+            if (cardDrivenMovementEnabled)
+            {
+                return TrySubmitCardDestination(destination);
+            }
 
             if (!IsHeroSelected || heroView == null || moveAuthority == null)
             {
@@ -208,6 +231,20 @@ namespace GuardsDigital.Presentation.Interaction
 
         public void ClearSelection()
         {
+            if (cardDrivenMovementEnabled)
+            {
+                if (IsCardResolutionPending)
+                {
+                    TryStopCardMovement();
+                }
+                else
+                {
+                    ClearSelectionVisuals();
+                }
+
+                return;
+            }
+
             if (movementSession != null && !movementSession.IsComplete)
             {
                 movementSession.Complete();
@@ -347,6 +384,7 @@ namespace GuardsDigital.Presentation.Interaction
         {
             EnsureBindings();
             EnsureMoveAuthority();
+            InitializeCardDrivenMovementIfEnabled();
         }
     }
 }

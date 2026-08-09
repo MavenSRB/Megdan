@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
@@ -179,6 +180,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(selectors, Has.Length.EqualTo(1));
             Assert.That(inputs, Has.Length.EqualTo(1));
             Assert.That(controllers[0].MovementAllowance, Is.GreaterThan(1));
+            Assert.That(controllers[0].IsCardDrivenMovementEnabled, Is.True);
+            Assert.That(controllers[0].VisibleCardInstances.Count, Is.EqualTo(2));
             Assert.That(selectors[0].SelectionController, Is.SameAs(controllers[0]));
             Assert.That(inputs[0].EventCamera, Is.Not.Null);
             Assert.That(inputs[0].Selectors, Has.Member(selectors[0]));
@@ -186,7 +189,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_SelectingHeroHighlightsReachableEmptyTilesWithinAllowance()
+        public void Scene_SelectingPrimaryMovementOfferHighlightsAuthoritativeCardDestinations()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
@@ -194,7 +197,10 @@ namespace GuardsDigital.Tests.EditMode
             var hero = Object.FindFirstObjectByType<PrimitiveHeroView>();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
 
-            controller.SelectHero();
+            var selectedCard = controller.VisibleCardInstances[0];
+            Assert.That(controller.TrySelectCard(selectedCard.Id), Is.True);
+            Assert.That(controller.TrySelectAction(
+                new ActionDefinitionId("primary-movement")), Is.True);
 
             var highlightedCoordinates = tiles
                 .Where(tile => tile.IsHighlighted)
@@ -208,7 +214,7 @@ namespace GuardsDigital.Tests.EditMode
                     tiles.Select(tile => tile.Coordinate),
                     new[] { hero.Occupancy },
                     obstacles.Select(obstacle => obstacle.Occupancy),
-                    controller.MovementAllowance)
+                    controller.LastCardMovementAllowance)
                 .Select(destination => destination.Destination)
                 .ToArray();
 

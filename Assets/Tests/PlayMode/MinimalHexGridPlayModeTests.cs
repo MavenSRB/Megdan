@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
@@ -63,7 +64,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_ClicksHeroThenReachableDestinationInOneClick()
+        public IEnumerator Scene_SelectsVisibleCardOfferThenClicksReachableDestinationInOneClick()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(loadOperation, Is.Not.Null);
@@ -85,7 +86,10 @@ namespace GuardsDigital.Tests.PlayMode
             var destination = new HexCoordinate(2, 0);
             var destinationTile = tiles.Single(tile => tile.Coordinate.Equals(destination));
 
-            var selected = pointerInput.TryHandlePointerRay(CreateDownRay(hero.transform.position));
+            var selectedCard = controller.VisibleCardInstances[0];
+            var selected = controller.TrySelectCard(selectedCard.Id);
+            var selectedAction = controller.TrySelectAction(
+                new ActionDefinitionId("primary-movement"));
             var highlightedCoordinates = tiles
                 .Where(tile => tile.IsHighlighted)
                 .Select(tile => tile.Coordinate)
@@ -97,12 +101,13 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             Assert.That(selected, Is.True);
+            Assert.That(selectedAction, Is.True);
             var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
                     originOccupancy,
                     tiles.Select(tile => tile.Coordinate),
                     new[] { originOccupancy },
                     obstacles.Select(obstacle => obstacle.Occupancy),
-                    controller.MovementAllowance)
+                    controller.LastCardMovementAllowance)
                 .Select(destination => destination.Destination)
                 .ToArray();
             Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
