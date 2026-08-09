@@ -1,5 +1,6 @@
 using System;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -14,8 +15,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId actorId,
             ActionInvocationContext invocationContext,
             ActionResolutionStepId currentStepId,
-            int movementAllowance,
-            int remainingAllowance)
+            MovementSessionState movementSessionState)
         {
             if (!resolutionId.IsDefined)
             {
@@ -42,7 +42,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentException("Pending resolution requires an actor ID.", nameof(actorId));
             }
 
-            if (invocationContext == ActionInvocationContext.None)
+            if (!Enum.IsDefined(typeof(ActionInvocationContext), invocationContext) ||
+                invocationContext == ActionInvocationContext.None)
             {
                 throw new ArgumentException("Pending resolution requires an invocation context.", nameof(invocationContext));
             }
@@ -52,20 +53,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentException("Pending resolution requires a current step ID.", nameof(currentStepId));
             }
 
-            if (movementAllowance < 0)
+            if (movementSessionState == null)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(movementAllowance),
-                    movementAllowance,
-                    "Movement allowance must not be negative.");
+                throw new ArgumentNullException(nameof(movementSessionState));
             }
 
-            if (remainingAllowance < 0 || remainingAllowance > movementAllowance)
+            if (!movementSessionState.HeroId.Equals(actorId))
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(remainingAllowance),
-                    remainingAllowance,
-                    "Remaining movement allowance must be between zero and the starting allowance.");
+                throw new ArgumentException("Pending resolution movement state must belong to its actor.", nameof(movementSessionState));
             }
 
             ResolutionId = resolutionId;
@@ -75,8 +70,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActorId = actorId;
             InvocationContext = invocationContext;
             CurrentStepId = currentStepId;
-            MovementAllowance = movementAllowance;
-            RemainingAllowance = remainingAllowance;
+            MovementSessionState = movementSessionState;
         }
 
         public ActionResolutionId ResolutionId { get; }
@@ -93,8 +87,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public ActionResolutionStepId CurrentStepId { get; }
 
-        public int MovementAllowance { get; }
+        public MovementSessionState MovementSessionState { get; }
 
-        public int RemainingAllowance { get; }
+        public int MovementAllowance => MovementSessionState.MovementAllowance;
+
+        public int RemainingAllowance => MovementSessionState.RemainingAllowance;
     }
 }

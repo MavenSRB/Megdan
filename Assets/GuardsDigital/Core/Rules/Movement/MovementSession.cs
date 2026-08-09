@@ -44,6 +44,35 @@ namespace GuardsDigital.Core.Rules.Movement
             route = new List<HexCoordinate> { CurrentOccupancy.Coordinate };
         }
 
+        public MovementSession(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            MovementSessionState state)
+        {
+            this.adjacentMoveAuthority = adjacentMoveAuthority ?? throw new ArgumentNullException(nameof(adjacentMoveAuthority));
+            if (state == null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            var matchingOccupancies = adjacentMoveAuthority.Occupancies
+                .Where(occupancy => occupancy.HeroId.Equals(state.HeroId))
+                .ToArray();
+            if (matchingOccupancies.Length != 1 ||
+                !matchingOccupancies[0].Coordinate.Equals(state.Route[state.Route.Count - 1]))
+            {
+                throw new ArgumentException(
+                    "Restored movement state must end at the moving hero's authoritative coordinate.",
+                    nameof(state));
+            }
+
+            heroId = state.HeroId;
+            MovementAllowance = state.MovementAllowance;
+            RemainingAllowance = state.RemainingAllowance;
+            IsComplete = state.IsComplete;
+            route = new List<HexCoordinate>(state.Route);
+            stepEvents.AddRange(state.StepEvents);
+        }
+
         public int MovementAllowance { get; }
 
         public int RemainingAllowance { get; private set; }
@@ -53,6 +82,17 @@ namespace GuardsDigital.Core.Rules.Movement
         public IReadOnlyList<HexCoordinate> Route => route.ToArray();
 
         public IReadOnlyList<AdjacentMoveEvent> StepEvents => stepEvents.ToArray();
+
+        public MovementSessionState CaptureState()
+        {
+            return new MovementSessionState(
+                heroId,
+                MovementAllowance,
+                RemainingAllowance,
+                IsComplete,
+                route,
+                stepEvents);
+        }
 
         public HeroOccupancy CurrentOccupancy =>
             adjacentMoveAuthority.Occupancies.Single(occupancy => occupancy.HeroId.Equals(heroId));

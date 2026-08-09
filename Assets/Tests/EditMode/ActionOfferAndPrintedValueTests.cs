@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Units.Heroes;
@@ -26,6 +27,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(definition.ActionDefinitions[0].DefaultPolicy.CardTextApplication, Is.EqualTo(CardTextApplicationPolicy.Applies));
             Assert.That(definition.ActionDefinitions[0].DefaultPolicy.CanRepeat, Is.False);
             Assert.That(definition.ActionDefinitions[0].DefaultPolicy.CanBeReplaced, Is.True);
+            Assert.That(definition.ActionDefinitions, Is.Not.InstanceOf<ActionDefinition[]>());
+            Assert.Throws<NotSupportedException>(() =>
+                ((IList<ActionDefinition>)definition.ActionDefinitions)[0] = secondary);
+            Assert.That(primary.BaseValues, Is.Not.InstanceOf<PrintedValueDefinition[]>());
+            Assert.Throws<NotSupportedException>(() =>
+                ((IList<PrintedValueDefinition>)primary.BaseValues)[0] =
+                    new PrintedValueDefinition(PrintedValueChannel.Movement, 99));
         }
 
         [Test]
@@ -82,6 +90,39 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ActionOfferQuery_OnlyEmitsDefinitionsForTheRequestedTimingWindow()
+        {
+            var actorId = new HeroId("primitive-hero");
+            var definition = CreateDefinition(
+                CreateAction("primary", ActionDefinitionOrigin.PrintedPrimary, CardTextApplicationPolicy.Applies, true),
+                CreateAction("secondary", ActionDefinitionOrigin.PrintedSecondary, CardTextApplicationPolicy.Suppressed, true),
+                CreateAction("general", ActionDefinitionOrigin.GeneralRuleSecondary, CardTextApplicationPolicy.Suppressed, true),
+                CreateAction("replacement", ActionDefinitionOrigin.Replacement, CardTextApplicationPolicy.Suppressed, false),
+                CreateAction("reaction", ActionDefinitionOrigin.Reaction, CardTextApplicationPolicy.Applies, false),
+                CreateAction("text-granted", ActionDefinitionOrigin.TextGranted, CardTextApplicationPolicy.Applies, false));
+            var instance = CardInstance.CreateInHand(
+                new CardInstanceId("primitive-card-1"),
+                definition.Reference,
+                actorId);
+
+            var normal = ActionOfferQuery.GetAvailableOffers(new[] { definition }, new[] { instance }, actorId);
+            var general = ActionOfferQuery.GetAvailableOffers(new[] { definition }, new[] { instance }, actorId, ActionOfferWindow.GeneralRule);
+            var replacement = ActionOfferQuery.GetAvailableOffers(new[] { definition }, new[] { instance }, actorId, ActionOfferWindow.Replacement);
+            var reaction = ActionOfferQuery.GetAvailableOffers(new[] { definition }, new[] { instance }, actorId, ActionOfferWindow.Reaction);
+            var textGranted = ActionOfferQuery.GetAvailableOffers(new[] { definition }, new[] { instance }, actorId, ActionOfferWindow.TextGranted);
+
+            Assert.That(normal.Select(offer => offer.InvocationContext), Is.EqualTo(new[]
+            {
+                ActionInvocationContext.PrintedPrimary,
+                ActionInvocationContext.PrintedSecondary
+            }));
+            Assert.That(general.Single().InvocationContext, Is.EqualTo(ActionInvocationContext.GeneralRuleSecondary));
+            Assert.That(replacement.Single().InvocationContext, Is.EqualTo(ActionInvocationContext.Replacement));
+            Assert.That(reaction.Single().InvocationContext, Is.EqualTo(ActionInvocationContext.Reaction));
+            Assert.That(textGranted.Single().InvocationContext, Is.EqualTo(ActionInvocationContext.TextGranted));
+        }
+
+        [Test]
         public void PrintedValueQuery_ReturnsPrintedContributionAndTotalForChosenOffer()
         {
             var actorId = new HeroId("primitive-hero");
@@ -107,6 +148,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(value.Contributions[0].SourceCardInstanceId, Is.EqualTo(instance.Id));
             Assert.That(value.Contributions[0].SourceActionDefinitionId, Is.EqualTo(new ActionDefinitionId("secondary-move")));
             Assert.That(value.Contributions[0].Amount, Is.EqualTo(1));
+            Assert.That(value.Contributions, Is.Not.InstanceOf<PrintedValueContribution[]>());
+            Assert.Throws<NotSupportedException>(() =>
+                ((IList<PrintedValueContribution>)value.Contributions)[0] = value.Contributions[0]);
         }
 
         [Test]
@@ -174,11 +218,35 @@ namespace GuardsDigital.Tests.EditMode
                 new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true)));
 
             Assert.Throws<ArgumentException>(() => new ActionDefinition(
-                new ActionDefinitionId("bad-repeat"),
+                new ActionDefinitionId("bad-secondary"),
                 ActionKind.Movement,
-                ActionDefinitionOrigin.Repeated,
+                ActionDefinitionOrigin.PrintedSecondary,
                 new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, 3) },
-                new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, true, false)));
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true)));
+
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("missing-policy"),
+                ActionKind.Hold,
+                ActionDefinitionOrigin.TextGranted,
+                Array.Empty<PrintedValueDefinition>(),
+                default));
+
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("invalid-kind"),
+                (ActionKind)999,
+                ActionDefinitionOrigin.PrintedPrimary,
+                Array.Empty<PrintedValueDefinition>(),
+                PrimaryMovementPolicy()));
+
+            Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                new ActionDefinitionId("invalid-origin"),
+                ActionKind.Hold,
+                (ActionDefinitionOrigin)999,
+                Array.Empty<PrintedValueDefinition>(),
+                PrimaryMovementPolicy()));
+
+            Assert.That(Enum.IsDefined(typeof(ActionDefinitionOrigin), 6), Is.False,
+                "Repeated actions are invocations of an existing definition, not static definition origins.");
         }
 
         [Test]
@@ -243,6 +311,20 @@ namespace GuardsDigital.Tests.EditMode
                 origin == ActionDefinitionOrigin.PrintedPrimary
                     ? PrimaryMovementPolicy()
                     : SecondaryMovementPolicy());
+        }
+
+        private static ActionDefinition CreateAction(
+            string id,
+            ActionDefinitionOrigin origin,
+            CardTextApplicationPolicy cardTextApplication,
+            bool canBeReplaced)
+        {
+            return new ActionDefinition(
+                new ActionDefinitionId(id),
+                ActionKind.Hold,
+                origin,
+                Array.Empty<PrintedValueDefinition>(),
+                new ActionDefinitionPolicy(cardTextApplication, false, canBeReplaced));
         }
 
         private static ActionDefinitionPolicy PrimaryMovementPolicy()

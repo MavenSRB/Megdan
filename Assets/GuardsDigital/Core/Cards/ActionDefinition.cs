@@ -18,12 +18,12 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Action definition requires a defined ID.", nameof(id));
             }
 
-            if (kind == ActionKind.None)
+            if (!Enum.IsDefined(typeof(ActionKind), kind) || kind == ActionKind.None)
             {
                 throw new ArgumentException("Action definition requires an action kind.", nameof(kind));
             }
 
-            if (origin == ActionDefinitionOrigin.None)
+            if (!Enum.IsDefined(typeof(ActionDefinitionOrigin), origin) || origin == ActionDefinitionOrigin.None)
             {
                 throw new ArgumentException("Action definition requires an origin.", nameof(origin));
             }
@@ -38,7 +38,8 @@ namespace GuardsDigital.Core.Cards
             Id = id;
             Kind = kind;
             Origin = origin;
-            BaseValues = baseValues.ToArray();
+            var materializedBaseValues = baseValues.ToArray();
+            BaseValues = Array.AsReadOnly(materializedBaseValues);
             DefaultPolicy = defaultPolicy;
 
             if (BaseValues.Select(value => value.Channel).Distinct().Count() != BaseValues.Count)
@@ -67,23 +68,32 @@ namespace GuardsDigital.Core.Cards
 
         private static void ValidatePolicy(ActionDefinitionOrigin origin, ActionDefinitionPolicy defaultPolicy)
         {
+            if (!defaultPolicy.IsDefined)
+            {
+                throw new ArgumentException("Action definitions require a defined default policy.", nameof(defaultPolicy));
+            }
+
             if (origin == ActionDefinitionOrigin.PrintedPrimary &&
                 defaultPolicy.CardTextApplication != CardTextApplicationPolicy.Applies)
             {
                 throw new ArgumentException("Printed Primary actions must default to applying card text.", nameof(defaultPolicy));
             }
 
-            if ((origin == ActionDefinitionOrigin.Replacement ||
-                    origin == ActionDefinitionOrigin.Reaction ||
-                    origin == ActionDefinitionOrigin.Repeated) &&
-                defaultPolicy.CanBeReplaced)
+            if ((origin == ActionDefinitionOrigin.PrintedSecondary ||
+                    origin == ActionDefinitionOrigin.GeneralRuleSecondary ||
+                    origin == ActionDefinitionOrigin.Replacement) &&
+                defaultPolicy.CardTextApplication != CardTextApplicationPolicy.Suppressed)
             {
-                throw new ArgumentException("Replacement, reaction, and repeated actions cannot default to being replaced.", nameof(defaultPolicy));
+                throw new ArgumentException(
+                    "Printed Secondary, General Rule Secondary, and replacement actions must default to suppressing source-card text.",
+                    nameof(defaultPolicy));
             }
 
-            if (origin == ActionDefinitionOrigin.Repeated && defaultPolicy.CanRepeat)
+            if ((origin == ActionDefinitionOrigin.Replacement ||
+                    origin == ActionDefinitionOrigin.Reaction) &&
+                defaultPolicy.CanBeReplaced)
             {
-                throw new ArgumentException("Repeated actions cannot default to being repeated again.", nameof(defaultPolicy));
+                throw new ArgumentException("Replacement and reaction actions cannot default to being replaced.", nameof(defaultPolicy));
             }
         }
     }

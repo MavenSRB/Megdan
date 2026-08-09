@@ -21,7 +21,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             Channel = channel;
-            Contributions = contributions.ToArray();
+            Contributions = Array.AsReadOnly(contributions.ToArray());
             Total = Contributions.Sum(contribution => contribution.Amount);
         }
 

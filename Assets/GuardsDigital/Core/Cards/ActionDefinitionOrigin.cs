@@ -8,7 +8,6 @@ namespace GuardsDigital.Core.Cards
         GeneralRuleSecondary = 3,
         Replacement = 4,
         Reaction = 5,
-        Repeated = 6,
         TextGranted = 7
     }
 }

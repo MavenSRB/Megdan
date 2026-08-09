@@ -12,9 +12,23 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardInstance> instances,
             HeroId actorId)
         {
+            return GetAvailableOffers(definitions, instances, actorId, ActionOfferWindow.NormalPlay);
+        }
+
+        public static IReadOnlyList<ActionOffer> GetAvailableOffers(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            HeroId actorId,
+            ActionOfferWindow window)
+        {
             if (!actorId.IsDefined)
             {
                 throw new ArgumentException("Action offer query requires a defined actor ID.", nameof(actorId));
+            }
+
+            if (!Enum.IsDefined(typeof(ActionOfferWindow), window) || window == ActionOfferWindow.None)
+            {
+                throw new ArgumentException("Action offer query requires a defined offer window.", nameof(window));
             }
 
             var definitionsByReference = BuildDefinitionLookup(definitions);
@@ -46,6 +60,11 @@ namespace GuardsDigital.Core.Cards
 
                 foreach (var actionDefinition in definition.ActionDefinitions)
                 {
+                    if (!IsAvailableInWindow(actionDefinition.Origin, window))
+                    {
+                        continue;
+                    }
+
                     offers.Add(new ActionOffer(
                         instance.Id,
                         instance.DefinitionReference,
@@ -56,7 +75,7 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
-            return offers;
+            return Array.AsReadOnly(offers.ToArray());
         }
 
         internal static Dictionary<CardDefinitionReference, CardDefinition> BuildDefinitionLookup(
@@ -90,7 +109,43 @@ namespace GuardsDigital.Core.Cards
 
         private static ActionInvocationContext ToInvocationContext(ActionDefinitionOrigin origin)
         {
-            return (ActionInvocationContext)(int)origin;
+            switch (origin)
+            {
+                case ActionDefinitionOrigin.PrintedPrimary:
+                    return ActionInvocationContext.PrintedPrimary;
+                case ActionDefinitionOrigin.PrintedSecondary:
+                    return ActionInvocationContext.PrintedSecondary;
+                case ActionDefinitionOrigin.GeneralRuleSecondary:
+                    return ActionInvocationContext.GeneralRuleSecondary;
+                case ActionDefinitionOrigin.Replacement:
+                    return ActionInvocationContext.Replacement;
+                case ActionDefinitionOrigin.Reaction:
+                    return ActionInvocationContext.Reaction;
+                case ActionDefinitionOrigin.TextGranted:
+                    return ActionInvocationContext.TextGranted;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(origin), origin, "Unknown action definition origin.");
+            }
+        }
+
+        private static bool IsAvailableInWindow(ActionDefinitionOrigin origin, ActionOfferWindow window)
+        {
+            switch (window)
+            {
+                case ActionOfferWindow.NormalPlay:
+                    return origin == ActionDefinitionOrigin.PrintedPrimary ||
+                        origin == ActionDefinitionOrigin.PrintedSecondary;
+                case ActionOfferWindow.GeneralRule:
+                    return origin == ActionDefinitionOrigin.GeneralRuleSecondary;
+                case ActionOfferWindow.Replacement:
+                    return origin == ActionDefinitionOrigin.Replacement;
+                case ActionOfferWindow.Reaction:
+                    return origin == ActionDefinitionOrigin.Reaction;
+                case ActionOfferWindow.TextGranted:
+                    return origin == ActionDefinitionOrigin.TextGranted;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(window), window, "Unknown action offer window.");
+            }
         }
     }
 }

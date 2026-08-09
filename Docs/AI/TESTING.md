@@ -370,6 +370,33 @@ if ($actionOfferValueEditProcess.ExitCode -ne 0) {
 
 Expected result: all discovered cases pass, covering ordered immutable action definitions, printed Primary and printed Secondary Movement offers, actor/source binding, explicit invocation-context vocabulary, typed Movement printed-value contributions/totals, duplicate definition/action ID rejection, unsupported value rejection, invalid origin/policy rejection, unresolved offer references, and the directly affected card definition/instance regressions.
 
+## Card-foundation authority hardening focused Edit Mode tests
+
+```powershell
+$cardFoundationHardeningArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\card-foundation-hardening-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\card-foundation-hardening.log"'
+)
+
+$cardFoundationHardeningProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $cardFoundationHardeningArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($cardFoundationHardeningProcess.ExitCode -ne 0) {
+    throw "Card-foundation hardening Edit Mode tests failed with exit code $($cardFoundationHardeningProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering externally immutable definition/value/choice/continuation collections, strict origin/policy validation, timing-window-scoped offer projection, authoritative forged/stale offer rejection, structured missing-actor rejection, exact pending Movement continuation data, restoration through a fresh authority, deterministic choice resumption, and the directly affected definition, value, movement, reachability, and adjacent-move regressions.
+
 ## Placeholder-grid focused Play Mode test
 
 ```powershell

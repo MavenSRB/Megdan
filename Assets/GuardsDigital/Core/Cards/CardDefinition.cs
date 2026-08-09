@@ -40,7 +40,8 @@ namespace GuardsDigital.Core.Cards
             Id = id;
             ContentRevision = contentRevision;
             DisplayName = displayName;
-            ActionDefinitions = actionDefinitions.ToArray();
+            var materializedActionDefinitions = actionDefinitions.ToArray();
+            ActionDefinitions = Array.AsReadOnly(materializedActionDefinitions);
 
             if (ActionDefinitions.Any(actionDefinition => actionDefinition == null))
             {

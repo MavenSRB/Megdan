@@ -9,7 +9,8 @@ namespace GuardsDigital.Core.Cards
             bool canRepeat,
             bool canBeReplaced)
         {
-            if (cardTextApplication == CardTextApplicationPolicy.None)
+            if (!Enum.IsDefined(typeof(CardTextApplicationPolicy), cardTextApplication) ||
+                cardTextApplication == CardTextApplicationPolicy.None)
             {
                 throw new ArgumentException("Action definition policy requires a card-text application policy.", nameof(cardTextApplication));
             }
@@ -24,6 +25,10 @@ namespace GuardsDigital.Core.Cards
         public bool CanRepeat { get; }
 
         public bool CanBeReplaced { get; }
+
+        public bool IsDefined =>
+            Enum.IsDefined(typeof(CardTextApplicationPolicy), CardTextApplication) &&
+            CardTextApplication != CardTextApplicationPolicy.None;
 
         public bool Equals(ActionDefinitionPolicy other)
         {

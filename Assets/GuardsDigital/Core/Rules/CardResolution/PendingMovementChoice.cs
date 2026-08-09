@@ -58,7 +58,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             Origin = origin;
             RemainingAllowance = remainingAllowance;
             CanStop = canStop;
-            LegalStepDestinations = legalStepDestinations.ToArray();
+            var materializedDestinations = legalStepDestinations.ToArray();
+            if (materializedDestinations.Distinct().Count() != materializedDestinations.Length)
+            {
+                throw new ArgumentException("Legal movement destinations must be unique.", nameof(legalStepDestinations));
+            }
+
+            LegalStepDestinations = Array.AsReadOnly(materializedDestinations);
         }
 
         public ActionResolutionId ResolutionId { get; }

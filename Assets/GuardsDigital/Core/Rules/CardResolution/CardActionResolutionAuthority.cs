@@ -10,10 +10,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
     public sealed class CardActionResolutionAuthority
     {
         private readonly AdjacentMoveAuthority adjacentMoveAuthority;
-        private MovementSession movementSession;
         private PendingCardActionResolution pendingResolution;
         private PendingMovementChoice pendingChoice;
-        private int committedStepCount;
 
         public CardActionResolutionAuthority(AdjacentMoveAuthority adjacentMoveAuthority)
         {
@@ -24,10 +22,50 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public PendingMovementChoice PendingChoice => pendingChoice;
 
+        public static CardActionResolutionAuthority Restore(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            PendingCardActionResolution pendingResolution,
+            PendingMovementChoice pendingChoice)
+        {
+            if (pendingResolution == null)
+            {
+                throw new ArgumentNullException(nameof(pendingResolution));
+            }
+
+            if (pendingChoice == null)
+            {
+                throw new ArgumentNullException(nameof(pendingChoice));
+            }
+
+            if (pendingResolution.MovementSessionState.IsComplete)
+            {
+                throw new ArgumentException("A restored pending resolution cannot contain a completed movement session.", nameof(pendingResolution));
+            }
+
+            var authority = new CardActionResolutionAuthority(adjacentMoveAuthority);
+            var movementSession = new MovementSession(adjacentMoveAuthority, pendingResolution.MovementSessionState);
+            var expectedStepId = CreateStepId(movementSession.CaptureState().CommittedStepCount);
+            if (!pendingResolution.CurrentStepId.Equals(expectedStepId))
+            {
+                throw new ArgumentException("Pending resolution step ID does not match its movement continuation.", nameof(pendingResolution));
+            }
+
+            var expectedChoice = authority.CreatePendingChoice(pendingResolution, movementSession);
+            if (!ChoicesMatch(expectedChoice, pendingChoice))
+            {
+                throw new ArgumentException("Pending movement choice does not match the authoritative continuation state.", nameof(pendingChoice));
+            }
+
+            authority.pendingResolution = pendingResolution;
+            authority.pendingChoice = pendingChoice;
+            return authority;
+        }
+
         public CardActionResolutionResult StartMovementResolution(
             ActionResolutionId resolutionId,
             ActionOffer offer,
-            IEnumerable<CardDefinition> definitions)
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances)
         {
             if (!resolutionId.IsDefined)
             {
@@ -42,14 +80,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            if (!offer.IsAvailable)
-            {
-                return CardActionResolutionResult.Reject(
-                    CardActionResolutionRejectionReason.UnavailableOffer,
-                    pendingResolution,
-                    pendingChoice);
-            }
-
             if (offer.InvocationContext != ActionInvocationContext.PrintedPrimary &&
                 offer.InvocationContext != ActionInvocationContext.PrintedSecondary)
             {
@@ -59,7 +89,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            var actionDefinition = FindActionDefinition(offer, definitions);
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var authoritativeOffers = ActionOfferQuery.GetAvailableOffers(
+                materializedDefinitions,
+                materializedInstances,
+                offer.ActorId,
+                ActionOfferWindow.NormalPlay);
+            if (!offer.IsAvailable || !authoritativeOffers.Contains(offer))
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.UnavailableOffer,
+                    pendingResolution,
+                    pendingChoice);
+            }
+
+            var actionDefinition = FindActionDefinition(offer, materializedDefinitions);
             if (actionDefinition.Kind != ActionKind.Movement)
             {
                 return CardActionResolutionResult.Reject(
@@ -68,18 +113,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
+            if (!adjacentMoveAuthority.Occupancies.Any(occupancy => occupancy.HeroId.Equals(offer.ActorId)))
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.ActorUnavailable,
+                    pendingResolution,
+                    pendingChoice);
+            }
+
             var movementValue = PrintedValueQuery.CalculatePrintedValue(
                 offer,
-                definitions,
+                materializedDefinitions,
                 PrintedValueChannel.Movement);
-
-            movementSession = new MovementSession(
-                adjacentMoveAuthority,
-                offer.ActorId,
-                movementValue.Total);
-            committedStepCount = 0;
-            pendingResolution = CreatePendingResolution(resolutionId, offer, movementSession.RemainingAllowance);
-            pendingChoice = CreatePendingChoice(pendingResolution);
+            var movementSession = new MovementSession(adjacentMoveAuthority, offer.ActorId, movementValue.Total);
+            pendingResolution = CreatePendingResolution(resolutionId, offer, movementSession.CaptureState());
+            pendingChoice = CreatePendingChoice(pendingResolution, movementSession);
 
             return CardActionResolutionResult.Accept(
                 false,
@@ -111,6 +159,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
+            var movementSession = new MovementSession(adjacentMoveAuthority, pendingResolution.MovementSessionState);
             if (command.ChoiceKind == MovementChoiceKind.Stop)
             {
                 if (!pendingChoice.CanStop)
@@ -121,7 +170,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         pendingChoice);
                 }
 
-                return CompleteResolution();
+                return CompleteResolution(movementSession);
             }
 
             if (command.ChoiceKind != MovementChoiceKind.Step ||
@@ -143,26 +192,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var completedStepResolution = pendingResolution;
-            committedStepCount++;
             var movementEvent = stepResult.NewEvents.Single();
-            var nextResolution = CreatePendingResolution(
-                pendingResolution.ResolutionId,
-                pendingResolution.SourceCardInstanceId,
-                pendingResolution.SourceDefinitionReference,
-                pendingResolution.ActionDefinitionId,
-                pendingResolution.ActorId,
-                pendingResolution.InvocationContext,
-                movementSession.RemainingAllowance);
-
+            var nextResolution = CreatePendingResolution(completedStepResolution, movementSession.CaptureState());
             if (movementSession.IsComplete)
             {
-                pendingResolution = nextResolution;
-                var completedEvent = CardActionResolutionEvent.MovementActionCompleted(pendingResolution);
                 var stepEvent = CardActionResolutionEvent.MovementStepCommitted(completedStepResolution, movementEvent);
-
+                var completedEvent = CardActionResolutionEvent.MovementActionCompleted(nextResolution);
                 pendingResolution = null;
                 pendingChoice = null;
-                movementSession = null;
 
                 return CardActionResolutionResult.Accept(
                     true,
@@ -172,8 +209,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             pendingResolution = nextResolution;
-            pendingChoice = CreatePendingChoice(pendingResolution);
-
+            pendingChoice = CreatePendingChoice(pendingResolution, movementSession);
             return CardActionResolutionResult.Accept(
                 false,
                 pendingResolution,
@@ -185,14 +221,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 });
         }
 
-        private CardActionResolutionResult CompleteResolution()
+        private CardActionResolutionResult CompleteResolution(MovementSession movementSession)
         {
             movementSession.Complete();
-            var completedEvent = CardActionResolutionEvent.MovementActionCompleted(pendingResolution);
-
+            var completedResolution = CreatePendingResolution(pendingResolution, movementSession.CaptureState());
+            var completedEvent = CardActionResolutionEvent.MovementActionCompleted(completedResolution);
             pendingResolution = null;
             pendingChoice = null;
-            movementSession = null;
 
             return CardActionResolutionResult.Accept(
                 true,
@@ -201,7 +236,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new[] { completedEvent });
         }
 
-        private PendingMovementChoice CreatePendingChoice(PendingCardActionResolution resolution)
+        private PendingMovementChoice CreatePendingChoice(
+            PendingCardActionResolution resolution,
+            MovementSession movementSession)
         {
             var currentOccupancy = movementSession.CurrentOccupancy;
             var legalDestinations = MovementReachabilityQuery.FindReachableDestinations(
@@ -223,40 +260,53 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 legalDestinations);
         }
 
-        private PendingCardActionResolution CreatePendingResolution(
+        private static PendingCardActionResolution CreatePendingResolution(
             ActionResolutionId resolutionId,
             ActionOffer offer,
-            int remainingAllowance)
+            MovementSessionState movementState)
         {
-            return CreatePendingResolution(
+            return new PendingCardActionResolution(
                 resolutionId,
                 offer.SourceCardInstanceId,
                 offer.SourceDefinitionReference,
                 offer.ActionDefinitionId,
                 offer.ActorId,
                 offer.InvocationContext,
-                remainingAllowance);
+                CreateStepId(movementState.CommittedStepCount),
+                movementState);
         }
 
-        private PendingCardActionResolution CreatePendingResolution(
-            ActionResolutionId resolutionId,
-            CardInstanceId sourceCardInstanceId,
-            CardDefinitionReference sourceDefinitionReference,
-            ActionDefinitionId actionDefinitionId,
-            GuardsDigital.Core.Units.Heroes.HeroId actorId,
-            ActionInvocationContext invocationContext,
-            int remainingAllowance)
+        private static PendingCardActionResolution CreatePendingResolution(
+            PendingCardActionResolution previous,
+            MovementSessionState movementState)
         {
             return new PendingCardActionResolution(
-                resolutionId,
-                sourceCardInstanceId,
-                sourceDefinitionReference,
-                actionDefinitionId,
-                actorId,
-                invocationContext,
-                new ActionResolutionStepId($"movement-step-{committedStepCount}"),
-                movementSession.MovementAllowance,
-                remainingAllowance);
+                previous.ResolutionId,
+                previous.SourceCardInstanceId,
+                previous.SourceDefinitionReference,
+                previous.ActionDefinitionId,
+                previous.ActorId,
+                previous.InvocationContext,
+                CreateStepId(movementState.CommittedStepCount),
+                movementState);
+        }
+
+        private static ActionResolutionStepId CreateStepId(int committedStepCount)
+        {
+            return new ActionResolutionStepId($"movement-step-{committedStepCount}");
+        }
+
+        private static bool ChoicesMatch(PendingMovementChoice expected, PendingMovementChoice actual)
+        {
+            return expected.ResolutionId.Equals(actual.ResolutionId) &&
+                expected.ChoiceId.Equals(actual.ChoiceId) &&
+                expected.ChooserId.Equals(actual.ChooserId) &&
+                expected.MovingHeroId.Equals(actual.MovingHeroId) &&
+                expected.Origin.Equals(actual.Origin) &&
+                expected.RemainingAllowance == actual.RemainingAllowance &&
+                expected.CanStop == actual.CanStop &&
+                expected.LegalStepDestinations.Count == actual.LegalStepDestinations.Count &&
+                !expected.LegalStepDestinations.Except(actual.LegalStepDestinations).Any();
         }
 
         private static ActionDefinition FindActionDefinition(
@@ -264,18 +314,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions)
         {
             var definitionsByReference = ActionOfferQuery.BuildDefinitionLookup(definitions);
-            if (!definitionsByReference.TryGetValue(offer.SourceDefinitionReference, out var definition))
-            {
-                throw new ArgumentException("Action offer references an unresolved definition ID or content revision.", nameof(offer));
-            }
-
-            var actionDefinition = definition.ActionDefinitions.SingleOrDefault(action => action.Id.Equals(offer.ActionDefinitionId));
-            if (actionDefinition == null)
-            {
-                throw new ArgumentException("Action offer references an unresolved action definition ID.", nameof(offer));
-            }
-
-            return actionDefinition;
+            var definition = definitionsByReference[offer.SourceDefinitionReference];
+            return definition.ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId));
         }
     }
 }

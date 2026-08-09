@@ -10,6 +10,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         UnavailableOffer = 5,
         UnsupportedActionKind = 6,
         UnsupportedInvocationContext = 7,
-        MovementStepRejected = 8
+        MovementStepRejected = 8,
+        ActorUnavailable = 9
     }
 }
