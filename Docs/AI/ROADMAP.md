@@ -586,7 +586,7 @@ Acceptance checks:
 - The highest current Initiative among unresolved cards is queried again after every resolution rather than cached as a complete order.
 - A cross-team tie uses the current Tie Breaker side and records a deferred flip that occurs only after the selected tied resolver finishes.
 - A same-team tie creates an authoritative pending choice for that team/controller and never flips the Tie Breaker.
-- Synthetic multi-hero tests cover more than two tied cards even though the pitch setup uses one hero per team.
+- Synthetic multi-hero tests cover more than two tied cards even though the current staged fixture uses one hero per team.
 
 ### [ ] 3.5 Resolve Hold and complete one turn
 
@@ -1031,9 +1031,9 @@ Hard gate: The complete Wasp card inventory and Wasp-specific card implementatio
 
 Hard-gate roadmap audit: After milestone 7.9 passes its T3 gate and is reviewed, audit readiness for verified Wasp content before assigning the next milestone profile. Confirm that the synthetic core loop has retired the intended architecture and integration risks, identify unresolved prerequisites that must remain ahead of Wasp implementation, recommend any justified changes to Phase 8's inventory/mapping entry sequence, and record the remaining-effort range. This audit cannot waive milestones 8.1 or 8.2 or authorize Wasp-specific implementation.
 
-## Phase 8 - Verified Wasp content and deterministic 1v1 integration
+## Phase 8 - Verified hero content and deterministic 3v3 integration
 
-Phase 8 begins only after the synthetic core match gate. Wasp-specific card work extends proven core systems; it does not replace them. The mirrored Wasp setup identities introduced earlier are configuration placeholders, not card-content implementation.
+Phase 8 begins only after the synthetic core match gate. Wasp-specific card work extends proven core systems; it does not replace them. The mirrored Wasp setup identities introduced earlier remain an intermediate configuration for the first complete hero gate, not the final pitch roster. After that gate, five additional user-approved heroes enter through source inventory and capability-delta mapping before the final six-distinct-hero 3v3 integration.
 
 ### [ ] 8.1 Inventory and verify Wasp's complete card set
 
@@ -1056,8 +1056,8 @@ Acceptance checks:
 - The matrix covers every Wasp card face, tier, item relationship, and Ultimate from milestone 8.1.
 - Existing core capabilities are distinguished from Wasp-specific refinements, new reusable primitives, and genuinely unique handlers.
 - Every effect node maps to a capability ID/version, typed bindings, policy, failure/atomicity rule, checkpoints, and tests.
-- The designated roadmap audit applies the verified inventory and capability matrix to all remaining Phase 8 milestones and the Phase 9 private-pitch presentation scope. It recommends justified keep/merge/split/defer/remove decisions, records an updated remaining-effort range, and keeps dependencies ahead of the first Wasp card or presentation path that needs them.
-- Approved remaining Phase 8 milestones are reordered or split so dependencies precede the first Wasp card that needs them.
+- The designated roadmap audit applies the verified inventory and capability matrix to the remaining Wasp milestones through 8.16. It recommends justified keep/merge/split/defer/remove decisions, records an updated remaining-effort range, and keeps dependencies ahead of the first Wasp card that needs them.
+- Approved remaining Wasp milestones through 8.16 are reordered or split so dependencies precede the first Wasp card that needs them.
 - If the Phase 8 endpoint changes, update the T3 gate in `TESTING.md` and this roadmap in the same re-baseline.
 - New reusable contracts update `CARD_EFFECT_CAPABILITIES.md` before implementation.
 - Any schema change is explicit and migration-tested rather than hidden inside a card milestone.
@@ -1114,7 +1114,7 @@ Acceptance checks:
 - Interaction tests cover each required timing, target, modifier, replacement, repeat, state change, Active effect, and continuous source.
 - Any unresolved source question prevents completion rather than being guessed.
 
-### [!] 8.16 Complete the deterministic Wasp 1v1 match
+### [!] 8.16 Complete the deterministic Wasp mirror integration gate
 
 Observable outcome: A Wasp mirror match can start, play repeated turns/rounds, and end through every victory path with primitive visuals and debug UI.
 
@@ -1126,7 +1126,107 @@ Acceptance checks:
 - A broader source-linked Wasp integration suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: Production visual work does not begin until milestone 8.16 is reviewed and approved.
+Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16 is reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27.
+
+### [!] 8.17 Select the five additional pitch heroes
+
+Observable outcome: The user approves five specific heroes that join Wasp as six different heroes divided into three Red and three Blue roster slots for the private pitch.
+
+Acceptance checks:
+
+- The proposed roster contains no duplicate hero and identifies each hero's intended team slot without treating team assignment as a card-rule branch.
+- Implementation-grade card, dashboard, token/marker, miniature/presentation, and applicable official-ruling sources are confirmed available or explicitly recorded as blockers.
+- Selection considers effect-family and presentation breadth so the roster demonstrates the reusable architecture without claiming equal implementation cost for every hero.
+- The exact five-hero choice receives explicit user approval before inventory begins.
+
+Non-goals: No card transcription, effect implementation, production art, balance adjustment, or seventh pitch hero.
+
+### [!] 8.18 Inventory and verify the five additional hero sets
+
+Observable outcome: Every selected hero's cards, tiers, values, action types, text, item possibilities, Ultimate, tokens/markers, and other hero-owned components are traceable to source material.
+
+Acceptance checks:
+
+- Every required face and component is present and readable for all five heroes.
+- Structured data is manually checked against source images and applicable official rulings.
+- Missing, ambiguous, or conflicting content is recorded in `RULES_LEDGER.md` and blocks the affected hero rather than being guessed.
+- No implementation begins from unverified filenames, OCR, display text, or assumed cross-hero similarity.
+
+### [!] 8.19 Map the five heroes to capabilities and re-baseline the 3v3 pitch work
+
+Observable outcome: Every verified action and hero-owned component maps to existing or new typed capabilities, and the remaining hero, 3v3 integration, and presentation milestones are re-baselined from evidence.
+
+Acceptance checks:
+
+- A roster-wide matrix distinguishes reused core/Wasp capabilities, reusable refinements, new primitives, and genuinely unique isolated handlers for every verified hero face and component.
+- Every effect node maps to a capability ID/version, typed bindings, policy, failure/atomicity rule, checkpoints, and source-linked tests.
+- The designated roadmap audit applies the matrix to milestones 8.20-8.27 and Phase 9, recommending justified keep/merge/split/defer/remove decisions and recording an updated remaining-effort range.
+- Approved implementation slices are dependency ordered; a shared capability precedes the first hero that needs it, and no hero-name rule branch or runtime text parsing is scheduled.
+- Any schema change is explicit and migration-tested rather than hidden inside a hero milestone.
+
+Non-goals: No effect implementation or production art.
+
+### [!] 8.20 Complete and verify additional pitch hero slot A
+
+The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+
+### [!] 8.21 Complete and verify additional pitch hero slot B
+
+The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+
+### [!] 8.22 Complete and verify additional pitch hero slot C
+
+The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+
+### [!] 8.23 Complete and verify additional pitch hero slot D
+
+The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+
+### [!] 8.24 Complete and verify additional pitch hero slot E
+
+The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+
+### [!] 8.25 Replace the staged 1v1 setup with the official six-player Quick Game configuration
+
+Observable outcome: Configuration data places three different Red heroes and three different Blue heroes with their own hands and components using the official six-player Quick Game baseline.
+
+Acceptance checks:
+
+- All six stable player/hero identities, ownership relationships, hero spawn positions, hands, dashboards, and hero-owned components resolve without assuming one hero per team.
+- Setup uses three Wave counters, five Life counters per team, the normal Tie Breaker flip, and the verified official board/minion setup.
+- Wasp appears once; all six heroes are different and assigned to exactly one team/player.
+- DEV-001 and DEV-002 are marked retired; only approved director/debug deviations remain.
+- Snapshots round-trip the complete six-player setup deterministically.
+
+Non-goals: No networking, hidden per-player devices, AI, matchmaking, or balance changes.
+
+### [!] 8.26 Integrate six-hero director control and team interactions
+
+Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
+
+Acceptance checks:
+
+- The director can access each hero's correct hand, choose one card for every able hero, reveal the complete turn, and resolve all six Initiative positions without transferring ownership.
+- Friendly/enemy queries, tied Initiative decisions, assists, reactions, hero-specific pending choices, and actor switching use authoritative team/player/hero relationships.
+- Played/revealed cards and the active resolver remain readable without requiring presentation to own turn legality.
+- Undo, restart, snapshot restore, and the event log reproduce the same six-hero turn.
+
+Non-goals: No hidden-information enforcement, table-talk enforcement, networking, AI, or six separate input devices.
+
+### [!] 8.27 Complete the deterministic six-hero 3v3 pitch match
+
+Observable outcome: Wasp and the five other distinct verified heroes can start from the official six-player Quick Game setup, play repeated turns and rounds, and end through every victory path with primitive visuals and director/debug UI.
+
+Acceptance checks:
+
+- Every implemented hero rule links to an authoritative source and focused tests; unresolved source or capability entries keep the gate incomplete.
+- The complete six-hero roster exercises legal team interactions, combat, minions, Lane Push, progression, defeat/respawn, and victory without card-name/hero-name branches outside isolated approved handlers.
+- The official six-player setup and only the remaining approved director/debug deviations are represented.
+- Undo, restart, snapshots, event log, and Tie Breaker override remain deterministic across the complete 3v3 loop.
+- A broader source-linked six-hero integration suite passes.
+- T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
+
+Hard gate: Production visual work does not begin until milestone 8.27 is reviewed and approved.
 
 ## Phase 9 - Presentation and pitch polish
 
@@ -1136,7 +1236,7 @@ Each visible milestone runs focused Play Mode checks for the affected presentati
 
 ### [ ] 9.1 Production board environment
 
-### [ ] 9.2 Wasp miniature and Red/Blue team treatments
+### [ ] 9.2 Six hero miniatures and Red/Blue team treatments
 
 ### [ ] 9.3 Minion miniatures
 
@@ -1144,15 +1244,15 @@ Each visible milestone runs focused Play Mode checks for the affected presentati
 
 ### [ ] 9.5 Automatic 3D miniature / 2D token switching
 
-### [ ] 9.6 Wasp idle animation
+### [ ] 9.6 Six-hero idle animation coverage
 
-### [ ] 9.7 Wasp movement animation
+### [ ] 9.7 Six-hero movement animation coverage
 
-### [ ] 9.8 Wasp attack animation
+### [ ] 9.8 Six-hero attack animation coverage
 
-### [ ] 9.9 Wasp hit/defeat animation
+### [ ] 9.9 Six-hero hit/defeat animation coverage
 
-### [ ] 9.10 Wasp respawn animation
+### [ ] 9.10 Six-hero respawn animation coverage
 
 ### [ ] 9.11 Shared minion animation set
 
@@ -1170,7 +1270,7 @@ Observable outcome: The finished pitch presentation remains readable and synchro
 
 Acceptance checks:
 
-- A targeted visual sweep covers the board, both hands, prompts, event log, team differentiation, camera bounds, 3D/2D switching, animations, and affected audio cues.
+- A targeted visual sweep covers the board, all six team/hero-grouped hands, played/revealed cards, prompts, event log, six-hero and team differentiation, camera bounds, 3D/2D switching, animations, and affected audio cues.
 - Skipping or accelerating presentation produces the same authoritative state and ordered rules events.
 - Common reference desktop resolutions preserve readable cards, values, prompts, and team identity.
 - T3 pre-build gate: both complete unfiltered Edit Mode and Play Mode suites pass.

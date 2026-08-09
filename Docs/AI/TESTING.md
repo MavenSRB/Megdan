@@ -57,7 +57,7 @@ The tier may escalate during implementation; it is never lowered to avoid a fail
 
 ### Explicit integration gates
 
-The current T3 phase/hard gates are milestones `1.13`, `2.6`, `3.11`, `4.4`, `5.8`, `6.8`, `7.9`, `8.16`, and `9.16`. A corrective milestone that changes an already-passed gate boundary, such as `1.13a`, re-runs that gate's complete suites. Milestone `8.2` must update this list if it re-baselines the end of Phase 8.
+The current T3 phase/hard gates are milestones `1.13`, `2.6`, `3.11`, `4.4`, `5.8`, `6.8`, `7.9`, `8.16`, `8.27`, and `9.16`. A corrective milestone that changes an already-passed gate boundary, such as `1.13a`, re-runs that gate's complete suites. Milestones `8.2` and `8.19` must update this list if they re-baseline the Wasp or six-hero 3v3 endpoints.
 
 Milestone `10.1` reuses the unchanged `9.16` result and adds build-and-launch smoke; rerun T3 if code or executable content changed after `9.16`. Milestone `10.2` runs the clean-machine private smoke test without redundantly rerunning Unity Test Framework against an unchanged build.
 

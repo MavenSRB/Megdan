@@ -4,7 +4,7 @@ Last updated: 2026-08-10
 
 ## Purpose and status
 
-This document is the implementation contract for card-related code. It exists so the small Phase 1 test hand can grow into the complete Wasp set and, after authorization, a roster of roughly 40 heroes without putting card rules in Unity scenes, UI callbacks, or card-name conditionals.
+This document is the implementation contract for card-related code. It exists so the small Phase 1 test hand can grow into the complete Wasp set, then five additional distinct heroes for the private 3v3 pitch, and eventually an authorized roster of roughly 40 heroes without putting card rules in Unity scenes, UI callbacks, or card-name conditionals.
 
 `CARD_EFFECT_CAPABILITIES.md` is the mandatory effect-level companion. It defines the reusable contracts for Object Push, source-relative direct Move, Place, Spawn, tokens, markers, board-object changes, keyword queries, modifiers, timing, and other card-driven operations.
 
@@ -276,7 +276,7 @@ The first card slice should implement only:
 - A data-shaped pending resolution/choice protocol.
 - The minimum structured Movement action needed to select disclosed destination/route segments, accumulate their already-tested adjacent steps, and Stop or continue within one allowance.
 
-Phase 2 then proves that the same foundation can open an Attack, pause for a Defense reaction from the correct hand, discard exactly one card or decline, calculate the unmodified result, and resume. Phase 3 proves generic lifecycle, Initiative, turns, rounds, snapshots, and internal tools with synthetic definitions. Phases 4 through 7 extend that synthetic foundation through the official map and the complete general core match loop. The complete Wasp card inventory and Wasp-specific card implementation begin only in Phase 8 after the milestone 7.9 core-match gate; Wasp verification may add localized capability deltas but does not own or block the general rules foundation.
+Phase 2 then proves that the same foundation can open an Attack, pause for a Defense reaction from the correct hand, discard exactly one card or decline, calculate the unmodified result, and resume. Phase 3 proves generic lifecycle, Initiative, turns, rounds, snapshots, and internal tools with synthetic definitions. Phases 4 through 7 extend that synthetic foundation through the official map and the complete general core match loop. The complete Wasp card inventory and Wasp-specific card implementation begin only in Phase 8 after the milestone 7.9 core-match gate; Wasp verification may add localized capability deltas but does not own or block the general rules foundation. After the Wasp integration gate, five additional user-approved heroes each enter through source inventory and capability-delta mapping before the six distinct heroes are integrated into the official-setup director-mode 3v3 pitch match.
 
 The foundation is succeeding when:
 

@@ -1,14 +1,16 @@
 # Guards Digital - Project Context
 
-Last updated: 2026-08-09
+Last updated: 2026-08-10
 
 ## Current status
+
+Milestone 2.3a is complete: the shared Attack authority now derives typed printed Range, uses explicit rulebook hex distance rather than movement paths or invented line of sight, and projects legal enemy-hero targets for both non-Ranged and Ranged synthetic Attacks through the same command, continuation, event, and presentation boundaries. The next proposed milestone is 2.4; no later gameplay milestone is authorized.
 
 Milestone 2.3 is complete: the shared card-action authority can initiate the synthetic printed Primary non-Ranged Attack, project only adjacent enemy hero targets from participant relationships and authoritative occupancies, accept a stable target-choice command, calculate the initial Attack Total through typed printed-value contributions, emit ordered target-request/Attack-start/Attack-total/Defense-request events, and pause in a restorable defender-owned Defense response choice. Self, friendly, non-adjacent, unknown, empty-space, terrain/token, and non-unit-obstacle identities are never legal hero targets; rejected or stale commands preserve the same pending state and all card states. Units continue to occupy/block spaces through occupancy authority while remaining eligible typed targets. The visible Phase 2 test hand now exposes Route Drill's `Primary Attack 3`; selecting it highlights exactly the authority-projected legal enemy hero coordinates, and clicking the adjacent enemy miniature submits the target through the existing pointer/command boundary, clears the target highlight, and displays the pending Defense response. This milestone does not select or discard a Defense card, resolve/decline Defense, compare totals, mutate the attacking card, or add Ranged Attack/minions/items/modifiers/text timing.
 
 Milestone 2.2 is complete: the existing synthetic definitions now carry typed non-Ranged Attack and Defense-reaction data in addition to their Phase 1 Movement definitions. One test definition declares a printed Primary Attack 3 classified as non-Ranged; both definitions declare Defense reactions with printed Defense 2/3 and an explicit Hand-to-Discard-Pile source-card cost/state transition. Runtime offers project these typed facts only in the applicable normal or reaction window and remain bound to one owned card instance and hero. Discarded and cross-owner cards are ineligible, and missing owners or invalid Attack/Defense definition shapes are rejected. The existing visible Phase 1 panel remains Movement-only. This milestone does not initiate an Attack, open a Defense response, mutate/discard a card, calculate combat totals beyond typed printed-value queries, or add Ranged Attack, Block, Wasp content, items/modifiers, turns, or animations.
 
-Milestone 2.1 is complete: authoritative participant data now uses validated collections of teams, players, and heroes with nonempty unique stable IDs and collection-backed relationship lookups. The synthetic 1v1 configuration creates one Red player/hero and one Blue player/hero; the existing `primitive-hero` ID remains the Red hero, and the new Blue hero has its own stable identity and occupied coordinate. Each hero owns a distinct two-card copy of the Phase 1 synthetic Movement hand, with globally unique card-instance IDs whose owner references resolve through the participant collections. Team queries return collections and are tested with multiple heroes per team rather than assuming the pitch configuration's one-hero team size. The validation scene visibly renders both occupancies with distinct Red/round and Blue/square primitive treatments. Clicking either miniature makes it the active director-controlled hero and projects only that hero's stable owned hand; either hero can resolve the existing placeholder Movement offers, while the other hero remains an occupied blocker through the same generic authority. An action already in progress cannot be transferred to the other hero. This does not add 3v3 UI, multiplayer behavior, Attack/Defense offers, combat, or later Phase 2 systems.
+Milestone 2.1 is complete: authoritative participant data now uses validated collections of teams, players, and heroes with nonempty unique stable IDs and collection-backed relationship lookups. The synthetic 1v1 configuration creates one Red player/hero and one Blue player/hero; the existing `primitive-hero` ID remains the Red hero, and the new Blue hero has its own stable identity and occupied coordinate. Each hero owns a distinct two-card copy of the Phase 1 synthetic Movement hand, with globally unique card-instance IDs whose owner references resolve through the participant collections. Team queries return collections and are tested with multiple heroes per team rather than assuming the staged fixture's one-hero team size. The validation scene visibly renders both occupancies with distinct Red/round and Blue/square primitive treatments. Clicking either miniature makes it the active director-controlled hero and projects only that hero's stable owned hand; either hero can resolve the existing placeholder Movement offers, while the other hero remains an occupied blocker through the same generic authority. An action already in progress cannot be transferred to the other hero. This does not add 3v3 UI, multiplayer behavior, Attack/Defense offers, combat, or later Phase 2 systems.
 
 Corrective milestone 1.13a is complete: the visible Phase 1 Movement action now stays pending after any selected destination route that costs less than the remaining allowance. The same resolution accumulates every committed adjacent step, advances its choice/step ID, recalculates destination candidates from the hero's new authoritative position, and lets the tester choose another waypoint or Stop. Exhausting the allowance completes automatically; Stop completes while preserving unused allowance. Presentation retains the selected card/action and refreshes highlights between segments, then clears them only when the action completes. This permits deliberately longer cumulative routes through waypoint choices without enumerating every complete route to a destination. Action-start-only restrictions remain a single future checkpoint for the whole Movement action rather than restarting per segment. Phase 1 still does not implement card play/reveal, lifecycle transitions, real Wasp data/images, action-start restriction effects, Fast Travel, direct card-text Move, modal/repeat behavior, reactions, timing effects, turns, snapshot import/export, networking, animation, or broader gameplay resolution.
 
@@ -20,13 +22,11 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 2.3a, initiating a basic Ranged hero Attack, is proposed but not authorized. Every later milestone retains the same approval gate.
-
 ## Mission
 
 Create a polished private digital prototype of *Guards of Atlantis II* that can be demonstrated to its publisher as the basis for a possible licensed, cross-platform adaptation.
 
-The prototype is a narrow 1v1 director-mode implementation used to prove the game loop and presentation. It is not the intended final player count. The eventual primary mode is online 3v3 with six human players, one hero per player.
+The private pitch prototype is a complete 3v3 director-mode match with six different heroes: Wasp plus five later user-approved, source-verified heroes. One human controls both teams for demonstration, while authoritative ownership remains one hero per player so the eventual licensed product can use online 3v3 with six humans without redesigning the rules model.
 
 ## Rights and distribution boundary
 
@@ -43,15 +43,16 @@ This is a project boundary, not a legal determination.
 
 ### Horizon 1 - Private pitch prototype
 
-A complete but intentionally simplified 1v1 match:
+A complete but intentionally director-controlled 3v3 match:
 
-- One Red Wasp and one Blue Wasp.
-- One human controls both sides in director mode.
-- Both hands are visible to the controller.
-- The controller selects one card for each side, then resolves the turn.
+- Three Red heroes and three Blue heroes, all different: Wasp plus five later user-approved, source-verified heroes.
+- Wasp is implemented and integrated first; a mirrored Wasp 1v1 remains an intermediate development gate, not the pitch endpoint.
+- One human controls all six heroes in director mode.
+- All six hands are available to the controller through team/hero grouping; played and revealed cards remain readable across the whole turn.
+- The controller selects one card for every able hero, then resolves the turn through normal Initiative order.
 - Full official single-lane board structure and standard minion setup.
-- Four-player Quick Game setup values: three Wave counters and four Life counters per team.
-- Full Wasp progression, including relevant card tiers, items, and Ultimate access.
+- Six-player Quick Game setup values: three Wave counters and five Life counters per team.
+- Full verified progression for all six heroes, including relevant card tiers, items, and Ultimate access.
 - Complete applicable game loop: cards, initiative, actions, combat, defense, minions, rounds, lane pushing, economy, leveling, respawn, and victory conditions.
 - No opponent AI, pass-and-play, networking, accounts, matchmaking, progression meta, or public services.
 
@@ -70,10 +71,9 @@ Post-authorization only:
 
 Everything not listed here must behave exactly like the authoritative physical game sources.
 
-1. One hero per team instead of the supported four- or six-player configurations.
-2. Wasp is mirrored across opposing teams.
-3. One controller sees and operates both teams in director mode.
-4. Internal debug tools may expose hidden state, undo commands, restart matches, import/export snapshots, change animation speed, and override the initial Tie Breaker side.
+1. Before the final pitch integration, staged development configurations may use one hero per team and mirrored Wasp; both temporary deviations must be retired by the official six-player setup gate.
+2. One controller sees and operates all six heroes in director mode.
+3. Internal debug tools may expose hidden state, undo commands, restart matches, import/export snapshots, change animation speed, and override the initial Tie Breaker side.
 
 These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
@@ -116,7 +116,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Rules state is plain, deterministic game data, not Unity scene state.
 - Logical hexes use integer axial `(q, r)` coordinates; generic adjacency is the six standard axial offsets exposed as named directions.
 - The model uses collections and stable IDs for teams, players, heroes, cards, units, spaces, zones, and effects.
-- The model must not assume exactly one hero per team even though the pitch configuration creates only one.
+- The model must support exactly three independently owned heroes per team for the pitch without hard-coding that team size into general rule APIs.
 - Authoritative state must be serializable and schema-versioned.
 
 ### Commands and events
@@ -161,7 +161,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Phase 3 proves generic card lifecycle, director hands, play/reveal, Initiative and tied Initiative, Hold, Movement and Attack inside turns, the four-turn round skeleton, snapshots, Undo/restart, and event logging with synthetic definitions.
 - Phases 4 through 7 prove the official map, core full-map actions and combat, minions, tokens, Lane Push, exact end-of-round order, defeat/respawn, progression, victory, and a deterministic complete match with synthetic definitions.
 - The complete Wasp card inventory and Wasp-specific card implementation wait until Phase 8, after milestone 7.9 proves the synthetic core match. Milestone 8.2 may re-baseline Wasp-specific work and add verified capability deltas, but it does not gate or redesign the already-proven general core loop.
-- Complete Wasp verification remains a later integration gate; an earlier action-category milestone cannot claim the whole hero is complete.
+- Complete Wasp verification remains an intermediate integration gate. Only afterward are five additional heroes selected, inventoried, capability-mapped, implemented, and integrated into the official-setup 3v3 pitch match.
 - Add reusable primitives only when a verified rule or card requires them. Later discoveries may require a localized capability, handler, or explicit schema migration, but must not silently rewrite ownership, action context, UI authority, or continuation semantics.
 
 ## Presentation direction
@@ -191,7 +191,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Rules resolve independently of animations.
 - The presentation layer consumes ordered rule events and animates them.
 - Skipping or accelerating animation never changes game state.
-- Target Wasp animation set: idle, movement, attack, hit/defeat, and respawn.
+- Target animation coverage for each of the six pitch heroes: idle, movement, attack, hit/defeat, and respawn, reusing shared rigs/clips where suitable without sacrificing hero readability.
 - Minions use a smaller shared animation set.
 - The pitch receives a small sound-effects pass for UI confirmation, card reveal, movement, attack, hit/defeat, minion battle, and lane push.
 - Music, voice acting, announcer systems, and elaborate adaptive audio are out of scope.
@@ -199,7 +199,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 ## Pitch HUD
 
 - The board is the primary focus.
-- Red and Blue hands are simultaneously visible and clearly separated.
+- All six director-controlled hands are accessible through clear Red/Blue team and hero grouping; played/revealed cards and the active resolver remain simultaneously readable without requiring six full hands to occupy the board view at once.
 - Show round, turn, active resolver, Lives, Waves, hero levels, and coins.
 - Use contextual prompts for actions, targets, and choices.
 - Provide internal Undo, restart, animation-speed, and camera-reset controls.
@@ -249,7 +249,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 ## Shared terminology
 
 - **Director mode:** One human can see and control both teams for testing and demonstration. This is not opponent AI and not the final multiplayer interaction model.
-- **Pitch prototype:** The private, polished 1v1 Wasp-versus-Wasp build described above.
+- **Pitch prototype:** The private, polished director-mode 3v3 build with Wasp and five other distinct verified heroes described above.
 - **Authoritative state:** The validated rules state from which all visuals are derived.
 - **Command:** A requested player or debug action sent to the rules authority.
 - **Rule event:** An ordered, validated state change produced by the rules authority and consumed by presentation.
@@ -269,7 +269,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Online play during the pitch phase.
 - AI opponents.
 - Pass-and-play.
-- Multiple distinct hero designs beyond mirrored Wasp in the pitch.
+- Any seventh pitch hero or hero content not selected through the post-Wasp roster milestone.
 - A universal card-text parser.
 - Production visuals before the primitive game loop is complete.
 - Music, voice, tutorials, accounts, matchmaking, cloud saves, or telemetry.

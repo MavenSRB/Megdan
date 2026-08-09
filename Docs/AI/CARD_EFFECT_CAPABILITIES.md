@@ -435,6 +435,6 @@ The catalog is intentionally broader than the current code, but it is not author
 - Phase 2 proves nested Attack/Defense reaction using the same capability contracts.
 - Phases 3 through 7 implement only the verified general/core capabilities needed to prove the complete match loop with synthetic definitions.
 - After that core-loop gate, milestone 8.2 maps verified Wasp content, identifies Wasp-specific capability deltas or refinements, and orders the remaining Wasp work; it does not gate general core capabilities.
-- Later heroes extend the catalog with verified reusable capabilities or isolated handlers without rewriting card instances, action offers, pending choices, commands/events, or snapshot foundations.
+- After Wasp is complete, the five additional pitch heroes are selected and inventoried before a roster-wide delta map re-baselines their implementation. Each hero extends the catalog with verified reusable capabilities or isolated handlers without rewriting card instances, action offers, pending choices, commands/events, or snapshot foundations.
 
 The foundation is considered successful when Object Push, source-relative direct Move, Place, tokens, or another future effect can be introduced by registering/mapping the exact capability and tests, rather than adding branches across unrelated systems.

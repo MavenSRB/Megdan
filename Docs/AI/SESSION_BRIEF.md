@@ -12,6 +12,7 @@ This brief is not a substitute for authoritative sources. `AGENTS.md` controls t
 
 - Roadmap milestones 0.1 through 0.7, 1.1 through 1.13, and 2.1 through 2.3a are marked complete, including corrective milestones 1.12a, 1.12b, and 1.13a.
 - The project has living documentation, a Unity/test shell, card-system and effect-capability architecture contracts, risk-tiered validation, hex foundations, a primitive obstacle map, placeholder card definitions/instances and offers, typed printed values, authoritative visible card-driven Movement with cumulative waypoint routes and explicit Stop, and visible basic non-Ranged and Ranged hero Attacks that share typed target/distance queries and reach the pending Defense response.
+- The private pitch target is an official-setup 3v3 match with six different heroes: Wasp plus five later user-approved, source-verified heroes. The pitch remains single-controller director mode with no networking; mirrored Wasp 1v1 remains only an intermediate content-integration gate.
 - Phase 1 does not implement broader card lifecycle, real Wasp content, card-text effects, attacks, turns, rounds, snapshots, networking, animation, or later gameplay systems.
 - Milestone 2.4, defending with one test card or declining, is proposed but **not authorized**.
 - Do not begin milestone 2.4 or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
