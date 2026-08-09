@@ -20,9 +20,30 @@ namespace GuardsDigital.Core.Cards
 
         public static PlaceholderMovementHand Create(HeroId ownerId)
         {
+            return Create(
+                ownerId,
+                new CardInstanceId("route-drill-card"),
+                new CardInstanceId("obstacle-course-card"));
+        }
+
+        public static PlaceholderMovementHand Create(
+            HeroId ownerId,
+            CardInstanceId routeDrillInstanceId,
+            CardInstanceId obstacleCourseInstanceId)
+        {
             if (!ownerId.IsDefined)
             {
                 throw new ArgumentException("A placeholder movement hand requires a defined owner.", nameof(ownerId));
+            }
+
+            if (!routeDrillInstanceId.IsDefined || !obstacleCourseInstanceId.IsDefined)
+            {
+                throw new ArgumentException("A placeholder movement hand requires defined card instance IDs.");
+            }
+
+            if (routeDrillInstanceId.Equals(obstacleCourseInstanceId))
+            {
+                throw new ArgumentException("A placeholder movement hand requires unique card instance IDs.");
             }
 
             var routeDrill = CreateDefinition("route-drill", "Route Drill");
@@ -31,11 +52,11 @@ namespace GuardsDigital.Core.Cards
             var instances = Array.AsReadOnly(new[]
             {
                 CardInstance.CreateInHand(
-                    new CardInstanceId("route-drill-card"),
+                    routeDrillInstanceId,
                     routeDrill.Reference,
                     ownerId),
                 CardInstance.CreateInHand(
-                    new CardInstanceId("obstacle-course-card"),
+                    obstacleCourseInstanceId,
                     obstacleCourse.Reference,
                     ownerId)
             });

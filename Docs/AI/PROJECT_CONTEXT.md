@@ -4,6 +4,8 @@ Last updated: 2026-08-09
 
 ## Current status
 
+Milestone 2.1 is complete: authoritative participant data now uses validated collections of teams, players, and heroes with nonempty unique stable IDs and collection-backed relationship lookups. The synthetic 1v1 configuration creates one Red player/hero and one Blue player/hero; the existing `primitive-hero` ID remains the Red hero, and the new Blue hero has its own stable identity. Each hero owns a distinct two-card copy of the Phase 1 synthetic Movement hand, with globally unique card-instance IDs whose owner references resolve through the participant collections. Team queries return collections and are tested with multiple heroes per team rather than assuming the pitch configuration's one-hero team size. This does not add a second scene miniature, 3v3 UI, multiplayer behavior, Attack/Defense offers, combat, or later Phase 2 systems.
+
 Corrective milestone 1.13a is complete: the visible Phase 1 Movement action now stays pending after any selected destination route that costs less than the remaining allowance. The same resolution accumulates every committed adjacent step, advances its choice/step ID, recalculates destination candidates from the hero's new authoritative position, and lets the tester choose another waypoint or Stop. Exhausting the allowance completes automatically; Stop completes while preserving unused allowance. Presentation retains the selected card/action and refreshes highlights between segments, then clears them only when the action completes. This permits deliberately longer cumulative routes through waypoint choices without enumerating every complete route to a destination. Action-start-only restrictions remain a single future checkpoint for the whole Movement action rather than restarting per segment. Phase 1 still does not implement card play/reveal, lifecycle transitions, real Wasp data/images, action-start restriction effects, Fast Travel, direct card-text Move, modal/repeat behavior, reactions, timing effects, turns, snapshot import/export, networking, animation, or broader gameplay resolution.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
@@ -14,7 +16,7 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 2.1, introducing teams, players, heroes, and stable IDs, is proposed but not authorized. Every later milestone retains the same approval gate.
+Milestone 2.2, extending the synthetic cards with Attack and Defense action offers, is proposed but not authorized. Every later milestone retains the same approval gate.
 
 ## Mission
 

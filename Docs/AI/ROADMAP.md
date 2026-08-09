@@ -418,7 +418,7 @@ Completion note (2026-08-09): Changed `CardActionResolutionAuthority` so a parti
 
 ## Phase 2 - Two-hero combat and Tie Breaker state
 
-### [ ] 2.1 Introduce teams, players, heroes, and stable IDs
+### [x] 2.1 Introduce teams, players, heroes, and stable IDs
 
 Observable outcome: The model supports collections of teams, players, and heroes while the test configuration creates one Red and one Blue hero.
 
@@ -429,6 +429,8 @@ Acceptance checks:
 - The existing primitive hero ID remains stable, and Phase 1 card-instance owner references still resolve after the state is expanded to Red/Blue teams and players.
 
 Non-goals: No 3v3 UI or multiplayer behavior.
+
+Completion note (2026-08-09): Added pure immutable `Team`, `Player`, and `Hero` participant records with typed nonempty IDs, validated collection uniqueness, collection-backed relationship resolution, and plural player/hero queries by team. The synthetic 1v1 configuration creates one Red player with the existing stable `primitive-hero` and one Blue player with the new stable `blue-test-hero`. Each hero owns a separate two-card copy of the Phase 1 synthetic Movement hand; all four runtime card-instance IDs are globally unique, their shared definition references validate, and every owner ID resolves to the correct hero/player/team. A four-player synthetic fixture proves team APIs return multiple heroes rather than assuming one hero per team. Visually reviewed rulebook printed pages 3 and 5-6 for one hero per player, opposing Red/Blue teams, equal-team setup, and per-player hero cards; the pitch still applies DEV-001 and DEV-003. T1 focused Edit Mode validation passed 35/35 (`MatchParticipantsTests`, `CardDefinitionInstanceTests`, `ActionOfferAndPrintedValueTests`, and `HeroOccupancyTests`) with zero skipped or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because this is not a T2/T3 gate and no Unity-facing scene, input, presentation, package, assembly, or snapshot schema changed. No second scene miniature, 3v3 UI, multiplayer behavior, Attack/Defense offers, combat, turns, networking, or animation was added.
 
 ### [ ] 2.2 Extend the test cards with Attack and Defense action offers
 
