@@ -4,6 +4,8 @@ Last updated: 2026-08-09
 
 ## Current status
 
+Milestone 2.3 is complete: the shared card-action authority can initiate the synthetic printed Primary non-Ranged Attack, project only adjacent enemy hero targets from participant relationships and authoritative occupancies, accept a stable target-choice command, calculate the initial Attack Total through typed printed-value contributions, emit ordered target-request/Attack-start/Attack-total/Defense-request events, and pause in a restorable defender-owned Defense response choice. Self, friendly, non-adjacent, unknown, empty-space, terrain/token, and non-unit-obstacle identities are never legal hero targets; rejected or stale commands preserve the same pending state and all card states. Units continue to occupy/block spaces through occupancy authority while remaining eligible typed targets. This milestone does not select or discard a Defense card, resolve/decline Defense, compare totals, mutate the attacking card, add Ranged Attack/minions/items/modifiers/text timing, or expose combat through presentation.
+
 Milestone 2.2 is complete: the existing synthetic definitions now carry typed non-Ranged Attack and Defense-reaction data in addition to their Phase 1 Movement definitions. One test definition declares a printed Primary Attack 3 classified as non-Ranged; both definitions declare Defense reactions with printed Defense 2/3 and an explicit Hand-to-Discard-Pile source-card cost/state transition. Runtime offers project these typed facts only in the applicable normal or reaction window and remain bound to one owned card instance and hero. Discarded and cross-owner cards are ineligible, and missing owners or invalid Attack/Defense definition shapes are rejected. The existing visible Phase 1 panel remains Movement-only. This milestone does not initiate an Attack, open a Defense response, mutate/discard a card, calculate combat totals beyond typed printed-value queries, or add Ranged Attack, Block, Wasp content, items/modifiers, turns, or animations.
 
 Milestone 2.1 is complete: authoritative participant data now uses validated collections of teams, players, and heroes with nonempty unique stable IDs and collection-backed relationship lookups. The synthetic 1v1 configuration creates one Red player/hero and one Blue player/hero; the existing `primitive-hero` ID remains the Red hero, and the new Blue hero has its own stable identity and occupied coordinate. Each hero owns a distinct two-card copy of the Phase 1 synthetic Movement hand, with globally unique card-instance IDs whose owner references resolve through the participant collections. Team queries return collections and are tested with multiple heroes per team rather than assuming the pitch configuration's one-hero team size. The validation scene visibly renders both occupancies with distinct Red/round and Blue/square primitive treatments. Clicking either miniature makes it the active director-controlled hero and projects only that hero's stable owned hand; either hero can resolve the existing placeholder Movement offers, while the other hero remains an occupied blocker through the same generic authority. An action already in progress cannot be transferred to the other hero. This does not add 3v3 UI, multiplayer behavior, Attack/Defense offers, combat, or later Phase 2 systems.
@@ -18,7 +20,7 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 2.3, initiating a basic adjacent hero Attack, is proposed but not authorized. Every later milestone retains the same approval gate.
+Milestone 2.3a, initiating a basic Ranged hero Attack, is proposed but not authorized. Every later milestone retains the same approval gate.
 
 ## Mission
 
@@ -228,6 +230,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Prefer tiny deterministic scenarios to complete match replays.
 - Run Play Mode and visual checks only for affected Unity-facing or visible paths.
 - Run complete unfiltered suites only at implementation-phase endpoints, explicit hard gates, broad-risk infrastructure/schema changes, or when affected consumers cannot be confidently enumerated.
+- Run Unity validation serially with the long-running process and licensing safeguards in `Docs/AI/TESTING.md`; a command-runner timeout is not a Unity test result, and an active Unity process is monitored rather than replaced.
 - Documentation/source-only work uses diff, reference, traceability, and consistency validation without launching Unity.
 - Visually inspect only the presentation affected by the current milestone.
 - Record the validation tier, exact checks/results, visual or source review, and any intentionally omitted unaffected suite in the completion note.

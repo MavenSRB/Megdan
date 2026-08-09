@@ -451,7 +451,7 @@ Non-goals: No Wasp data or text, ranged attacks, card tiers/colors, initiative, 
 
 Completion note (2026-08-09): Extended the two immutable synthetic definitions used by both test heroes with typed Attack/Defense data while preserving their existing Movement definitions and stable card-instance ownership. `Route Drill` now declares a printed Primary non-Ranged Attack 3; both test definitions declare Defense reactions (2 and 3) whose required source state and declared cost/state transition are Hand to Discard Pile. Runtime offers carry the typed Attack-range and source-card transition facts, derive only in their requested normal/reaction windows, and remain bound to the exact owner/source card. The minimal orthogonal state vocabulary now exposes an unplayed discarded state for eligibility tests, but no Defense discard is executed. Definition validation rejects wrong Attack/Defense channels, missing Attack range, non-reaction Defense, missing Defense discard transitions, and negative printed values. Focused tests reject missing owners, cross-owner attempts, and already-discarded Defense cards. The Phase 1 card panel explicitly remains Movement-only, so these new offers are authority data rather than prematurely exposed combat controls. Rulebook printed pages 13-14 were visually verified. T2 validation passed: focused Edit Mode 28/28 (`ActionOfferAndPrintedValueTests`, `CardDefinitionInstanceTests`); directly affected Edit Mode 80/80 (`ActionOfferAndPrintedValueTests`, `CardDefinitionInstanceTests`, `MatchParticipantsTests`, `CardActionResolutionAuthorityTests`, `CardDrivenMovementPresentationTests`, `HeroSelectionControllerTests`, `MinimalHexGridSceneTests`); and focused Play Mode 5/5 (`MinimalHexGridPlayModeTests`), all with zero skipped or inconclusive cases. Complete unfiltered suites were intentionally omitted because 2.2 is not a T3 gate and the affected authority/participant/presentation consumers were enumerated. No Attack target, Defense response window, card mutation, combat result, Wasp content, Ranged Attack, Block, item/modifier, turn, or animation behavior was added.
 
-### [ ] 2.3 Initiate a basic adjacent hero Attack
+### [x] 2.3 Initiate a basic adjacent hero Attack
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -466,6 +466,26 @@ Acceptance checks:
 - The resolver opens an explicit Defense response choice owned by the targeted hero and emits an ordered Attack-started event for presentation.
 
 Non-goals: No ranged targeting, minions, items, modifiers, Before/After Attack text, Wasp effects, Defense-card selection/resolution, or animation.
+
+Completion note (2026-08-09): Extended the existing pure card-action authority with a typed, restorable non-Ranged Attack path that revalidates the selected normal-play offer, projects only adjacent enemy participant heroes from authoritative unit occupancies, accepts a stable target-choice command, and pauses the same resolution at a defender-owned Defense response choice. Self, friendly, non-adjacent, unknown/empty, terrain/token, and non-unit-obstacle identities are excluded, while hero occupancy continues to block movement without erasing unit target identity. Target validation and stale-board failures emit no events, preserve the exact pending Attack, and leave every card state unchanged. After a legal target, the authority queries the selected offer's printed Attack contribution (total 3 with no modifiers), projects the target hero's currently eligible Defense reaction offers without consuming them, and emits ordered `AttackStarted`, `AttackTotalCalculated`, and `DefenseResponseChoiceRequested` facts. Printed rulebook pages 13-14 were visually verified. T2 validation passed with zero skipped or inconclusive cases: focused Edit Mode 7/7 (`AttackActionResolutionAuthorityTests`) and the canonical combined affected Edit Mode run 100/100 (`AttackActionResolutionAuthorityTests`, `CardActionResolutionAuthorityTests`, `ActionOfferAndPrintedValueTests`, `CardDefinitionInstanceTests`, `MatchParticipantsTests`, `AdjacentMoveAuthorityTests`, `ObstacleOccupancyTests`, `MovementSessionTests`, `MovementReachabilityQueryTests`, `CardDrivenMovementPresentationTests`, and `HeroSelectionControllerTests`). Focused Play Mode, visual scene inspection, and complete unfiltered suites were intentionally omitted because no Unity-facing scene/input/UI path changed and milestone 2.3 is not a T3 gate. No Defense answer, discard, comparison/result, Ranged Attack, minion, item/modifier, timing text, Wasp effect, card consumption, or animation was added.
+
+### [ ] 2.3a Initiate a basic Ranged hero Attack
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: One test hero can select a synthetic Ranged Attack offer and target the enemy test hero within the offer's typed printed Range through the same shared target-query, command, and resumable-resolution boundary introduced by milestone 2.3.
+
+Acceptance checks:
+
+- A synthetic test-card definition declares a printed Primary Ranged Attack with typed Attack and Range values, and the authority derives both through the selected runtime offer rather than UI or scene constants.
+- An enemy hero is a legal target when its rulebook hex distance from the attacker is no greater than the current Range Total; Range 1 includes adjacent targets and the printed Range is the complete Range Total when no modifiers exist.
+- Rulebook distance and Range are queried explicitly rather than inferred from movement paths. Occupied spaces and other obstacles count normally and do not create an invented line-of-sight restriction.
+- The attacker cannot target itself, a friendly hero, an out-of-range hero, an empty space, terrain/token, or another non-unit obstacle.
+- Accepted Ranged and non-Ranged hero targets enter the same pending Attack/Defense response flow and emit the same ordered Attack-started event shape; range classification changes target eligibility, not resolution ownership or presentation authority.
+- Invalid, forged, stale, or out-of-range attempts do not mutate state, consume a card, or open a Defense response.
+- Focused tests cover Range 1 adjacency, a target exactly at maximum Range, a target beyond Range, and an in-range target across occupied or obstacle spaces.
+
+Non-goals: No minion targets, Range modifiers from card text/items/Active effects, Before/After Attack text, Defense-card selection/resolution, Block, full-map combat integration, Wasp data or effects, or animation.
 
 ### [ ] 2.4 Defend with one test card or decline
 

@@ -11,6 +11,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         UnsupportedActionKind = 6,
         UnsupportedInvocationContext = 7,
         MovementStepRejected = 8,
-        ActorUnavailable = 9
+        ActorUnavailable = 9,
+        UnsupportedAttackRange = 10,
+        TargetUnavailable = 11
     }
 }
