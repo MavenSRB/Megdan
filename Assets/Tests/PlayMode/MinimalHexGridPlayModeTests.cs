@@ -14,7 +14,7 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class MinimalHexGridPlayModeTests
     {
         [UnityTest]
-        public IEnumerator Scene_LoadsSevenVisibleHexTilesUnderFixedCamera()
+        public IEnumerator Scene_LoadsExpandedVisibleHexTilesUnderFixedCamera()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(loadOperation, Is.Not.Null);
@@ -29,7 +29,7 @@ namespace GuardsDigital.Tests.PlayMode
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             var cameras = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
 
-            Assert.That(tiles, Has.Length.EqualTo(7));
+            Assert.That(tiles, Has.Length.EqualTo(19));
             Assert.That(cameras, Has.Length.EqualTo(1));
             Assert.That(tiles, Has.All.Matches<HexTileView>(tile =>
             {

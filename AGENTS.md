@@ -12,9 +12,9 @@ Read these files before planning or changing anything in this workspace:
 
 ## Current authorization
 
-Roadmap milestones 0.1 through 0.7 and 1.1 through 1.6 are complete: living documentation, the Unity/test shell, the card-system and effect-capability architecture contracts, the core-match-first dependency order, the risk-tiered verification policy, hex foundations, minimal rendering, one primitive hero, selectable adjacent-destination highlighting, an authoritative adjacent-move command/event slice, and click-to-move presentation hookup exist. A local Git repository is authorized and initialized.
+Roadmap milestones 0.1 through 0.7 and 1.1 through 1.7 are complete: living documentation, the Unity/test shell, the card-system and effect-capability architecture contracts, the core-match-first dependency order, the risk-tiered verification policy, hex foundations, minimal rendering, one primitive hero, selectable adjacent-destination highlighting, an authoritative adjacent-move command/event slice, click-to-move presentation hookup, and the expanded placeholder test grid exist. A local Git repository is authorized and initialized.
 
-Milestone 1.7 is proposed but not authorized. Do not begin it or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
+Milestone 1.8 is proposed but not authorized. Do not begin it or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
 
 ## Non-negotiable working rules
 

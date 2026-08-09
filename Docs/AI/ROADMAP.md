@@ -238,7 +238,7 @@ Non-goals: No multi-space movement, card, turn, path automation, networking, or 
 
 Completion note (2026-08-09): Connected the scene selection flow to the milestone 1.5 adjacent-move authority. Pointer input first tries to select the hero, then treats non-hero tile hits as destination intents; the selection controller submits an `AdjacentMoveCommand`, updates the hero view only after an accepted authority result, and leaves selection/highlights unchanged on rejected commands. T2 validation passed: focused Edit Mode 11/11 and focused Play Mode 3/3. Complete unfiltered suites were intentionally omitted because this is not a T3 gate and the affected Unity-facing path is covered by the focused Play Mode scene test. No multi-space movement, card, turn, path automation, networking, or animation was added.
 
-### [ ] 1.7 Expand the placeholder test grid
+### [x] 1.7 Expand the placeholder test grid
 
 Observable outcome: The scene contains a larger connected placeholder grid with enough space to test movement of several steps, alternate routes, and later obstacle placement.
 
@@ -250,6 +250,8 @@ Acceptance checks:
 - Existing seven-hex rendering and occupancy behavior remain valid.
 
 Non-goals: No official map data, movement-rule change, obstacle, zone, terrain, card, turn, or camera movement.
+
+Completion note (2026-08-09): Added a presentation-owned radius-2 placeholder grid expander to the existing validation scene, producing 19 rendered axial spaces while preserving the original origin-plus-six-neighbor cluster, primitive hero at the origin, and adjacent click-to-move behavior through the existing adjacent-move authority. Focused T2 validation passed after allowing Unity batchmode access to local licensing/package services: Edit Mode 19/19 (`MinimalHexGridSceneTests`, `HeroSelectionControllerTests`, `AdjacentMoveAuthorityTests`) and Play Mode 3/3 (`MinimalHexGridPlayModeTests`). Complete unfiltered suites were intentionally omitted because this is not a T3 gate and the changed Unity-facing scene/controller path is covered by the focused Edit Mode and Play Mode tests. No official map data, movement-rule change, obstacle, zone, terrain, card, turn, camera movement, networking, or animation was added.
 
 ### [ ] 1.8 Move up to a configurable number of spaces
 

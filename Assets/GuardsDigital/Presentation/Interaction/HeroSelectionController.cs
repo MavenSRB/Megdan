@@ -160,9 +160,14 @@ namespace GuardsDigital.Presentation.Interaction
                 heroView = FindFirstObjectByType<PrimitiveHeroView>();
             }
 
-            if (tileViews == null || tileViews.Length == 0)
+            var discoveredTiles = FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            if (discoveredTiles.Length > 0 &&
+                (tileViews == null ||
+                 tileViews.Length == 0 ||
+                 tileViews.Any(tile => tile == null) ||
+                 discoveredTiles.Length != tileViews.Length))
             {
-                tileViews = FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+                tileViews = discoveredTiles;
             }
         }
 
