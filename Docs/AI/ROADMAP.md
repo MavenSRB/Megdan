@@ -73,7 +73,7 @@ Repository note (2026-08-09): Git was authorized after milestone 0.3. The comple
 
 ## Phase 1 - Smallest board interaction
 
-### [ ] 1.1 Define hex coordinates and adjacency
+### [x] 1.1 Define hex coordinates and adjacency
 
 Observable outcome: Pure C# code represents a hex and returns its six neighbors.
 
@@ -83,6 +83,8 @@ Acceptance checks:
 - No Unity scene object is required by the tests.
 
 Non-goals: No rendering, pathfinding, zones, terrain, or units.
+
+Completion note (2026-08-09): Added a no-engine-reference `GuardsDigital.Core` assembly with immutable axial `(q, r)` hex coordinates, six named directions, single-neighbor lookup, and six-neighbor enumeration. Eight focused Edit Mode cases verify every direction, uniqueness and completeness of the neighbor set, and invalid-direction rejection. The complete Edit Mode suite passed 9/9 and the Play Mode suite passed 1/1. No rendering, pathfinding, zones, terrain, units, or scene objects were added.
 
 ### [ ] 1.2 Render a minimal connected test grid
 

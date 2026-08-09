@@ -4,9 +4,9 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 0.3 is complete: the Unity project contains isolated Edit Mode and Play Mode test assemblies, and one shell test in each mode passes independently. No gameplay has been implemented.
+Milestone 1.1 is complete: a pure C# core assembly represents axial hex coordinates and their six named adjacent directions, with focused Edit Mode coverage. No gameplay or scene presentation has been implemented.
 
-Milestone 1.1, hex coordinates and adjacency, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.2, rendering a minimal connected test grid, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
@@ -91,6 +91,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 ### Authoritative state
 
 - Rules state is plain, deterministic game data, not Unity scene state.
+- Logical hexes use integer axial `(q, r)` coordinates; generic adjacency is the six standard axial offsets exposed as named directions.
 - The model uses collections and stable IDs for teams, players, heroes, cards, units, spaces, zones, and effects.
 - The model must not assume exactly one hero per team even though the pitch configuration creates only one.
 - Authoritative state must be serializable and schema-versioned.
@@ -202,7 +203,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Defining hex coordinates or adjacency before milestone 1.1 approval.
+- Rendering hexes or converting logical coordinates to Unity world positions before milestone 1.2 approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.

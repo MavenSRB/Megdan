@@ -1,7 +1,9 @@
 {
   "name": "GuardsDigital.EditModeTests",
   "rootNamespace": "GuardsDigital.Tests.EditMode",
-  "references": [],
+  "references": [
+    "GuardsDigital.Core"
+  ],
   "includePlatforms": [
     "Editor"
   ],
