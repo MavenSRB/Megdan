@@ -142,6 +142,84 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void RouteDrill_ExposesAttackAndClickingAdjacentEnemyOpensVisibleDefensePrompt()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var redObject = new GameObject("Red Hero");
+                objects.Add(redObject);
+                var redHero = redObject.AddComponent<PrimitiveHeroView>();
+                redHero.Configure(
+                    new HeroOccupancy(
+                        new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                        new HexCoordinate(0, 0)),
+                    HexWorldLayout.DefaultOuterRadius);
+
+                var blueObject = new GameObject("Blue Hero");
+                objects.Add(blueObject);
+                var blueHero = blueObject.AddComponent<PrimitiveHeroView>();
+                blueHero.Configure(
+                    new HeroOccupancy(
+                        new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
+                        new HexCoordinate(0, -1)),
+                    HexWorldLayout.DefaultOuterRadius);
+                var blueSelector = blueObject.AddComponent<PrimitiveHeroPointerSelector>();
+
+                var tiles = CreateRadiusTwoCoordinates()
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var controllerObject = new GameObject("Visible Attack Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(
+                    redHero,
+                    tiles,
+                    CreateMaterial(Color.yellow),
+                    otherHeroes: new[] { blueHero });
+                controller.ConfigureCardDrivenMovement(true);
+                blueSelector.Configure(controller);
+
+                var routeDrill = controller.VisibleCardInstances.Single(card =>
+                    card.Id.Value == "red-route-drill-card");
+                Assert.That(controller.TrySelectCard(routeDrill.Id), Is.True);
+                Assert.That(
+                    controller.SelectedCardOffers.Select(offer => offer.ActionDefinitionId.Value),
+                    Is.EquivalentTo(new[] { "primary-movement", "secondary-movement", "primary-attack" }));
+
+                Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
+                Assert.That(controller.IsAttackTargetPending, Is.True);
+                Assert.That(controller.CardStatus, Does.Contain("click the adjacent enemy hero"));
+
+                var targeted = blueSelector.TrySelectFromPointerRay(
+                    new Ray(blueHero.transform.position + (Vector3.up * 2f), Vector3.down));
+
+                Assert.That(targeted, Is.True);
+                Assert.That(controller.ActiveHeroView, Is.SameAs(redHero));
+                Assert.That(controller.IsAttackTargetPending, Is.False);
+                Assert.That(controller.IsDefenseResponsePending, Is.True);
+                Assert.That(controller.PendingDefenseChoice.ChooserId, Is.EqualTo(blueHero.Occupancy.HeroId));
+                Assert.That(controller.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
+                Assert.That(controller.PendingDefenseChoice.LegalDefenseOffers, Has.Count.EqualTo(2));
+                Assert.That(controller.CardStatus, Does.Contain("Defense response pending"));
+                Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
+                {
+                    CardActionResolutionEventKind.AttackTargetChoiceRequested,
+                    CardActionResolutionEventKind.AttackStarted,
+                    CardActionResolutionEventKind.AttackTotalCalculated,
+                    CardActionResolutionEventKind.DefenseResponseChoiceRequested
+                }));
+                Assert.That(controller.VisibleCardInstances, Has.All.Matches<CardInstance>(card =>
+                    card.State.Location == CardLocation.Hand));
+                Assert.That(controller.TrySelectHero(blueHero), Is.False);
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
         public void SecondaryOffer_UsesTypedValueOneAndProjectsOnlyLegalAdjacentDestinations()
         {
             var objects = new List<GameObject>();

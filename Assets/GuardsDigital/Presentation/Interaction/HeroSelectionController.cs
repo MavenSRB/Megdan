@@ -81,7 +81,7 @@ namespace GuardsDigital.Presentation.Interaction
             : movementSession != null ? movementSession.RemainingAllowance : 0;
 
         public bool IsMovementSessionActive => cardDrivenMovementEnabled
-            ? IsCardResolutionPending
+            ? IsCardMovementResolutionPending
             : movementSession != null && !movementSession.IsComplete;
 
         public IReadOnlyList<HexCoordinate> MovementRoute =>
@@ -149,6 +149,16 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            if (cardDrivenMovementEnabled && IsAttackTargetPending)
+            {
+                return TrySubmitAttackTarget(selectedHero.Occupancy.HeroId);
+            }
+
+            if (cardDrivenMovementEnabled && IsDefenseResponsePending)
+            {
+                return false;
+            }
+
             if (IsMovementSessionActive)
             {
                 return selectedHero == heroView && StopMovementSession();
@@ -195,7 +205,7 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (cardDrivenMovementEnabled)
             {
-                return TryStopCardMovement();
+                return IsCardMovementResolutionPending && TryStopCardMovement();
             }
 
             if (!IsHeroSelected || movementSession == null || movementSession.IsComplete)
@@ -305,11 +315,11 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (cardDrivenMovementEnabled)
             {
-                if (IsCardResolutionPending)
+                if (IsCardMovementResolutionPending)
                 {
                     TryStopCardMovement();
                 }
-                else
+                else if (!IsCardResolutionPending)
                 {
                     ClearSelectionVisuals();
                 }

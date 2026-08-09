@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Units.Heroes;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Interaction
@@ -24,6 +25,7 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly Dictionary<HeroId, PlaceholderMovementHand> placeholderHands =
             new Dictionary<HeroId, PlaceholderMovementHand>();
         private bool placeholderOneVsOneHandsInitialized;
+        private MatchParticipants placeholderParticipants;
 
         private PlaceholderMovementHand placeholderHand;
         private CardActionResolutionAuthority cardResolutionAuthority;
@@ -78,16 +80,35 @@ namespace GuardsDigital.Presentation.Interaction
                         placeholderHand.Instances,
                         heroView.Occupancy.HeroId,
                         ActionOfferWindow.NormalPlay)
-                    .Where(offer => GetActionDefinition(offer).Kind == ActionKind.Movement)
+                    .Where(offer =>
+                    {
+                        var kind = GetActionDefinition(offer).Kind;
+                        return kind == ActionKind.Movement || kind == ActionKind.Attack;
+                    })
                     .Where(offer => offer.SourceCardInstanceId.Equals(selectedCardInstanceId.Value))
                     .ToArray();
             }
         }
 
         public bool IsCardResolutionPending =>
+            IsCardMovementResolutionPending || IsAttackTargetPending || IsDefenseResponsePending;
+
+        public bool IsCardMovementResolutionPending =>
             cardResolutionAuthority != null && cardResolutionAuthority.PendingChoice != null;
 
+        public bool IsAttackTargetPending =>
+            cardResolutionAuthority != null && cardResolutionAuthority.PendingAttackTargetChoice != null;
+
+        public bool IsDefenseResponsePending =>
+            cardResolutionAuthority != null && cardResolutionAuthority.PendingDefenseChoice != null;
+
         public PendingMovementChoice PendingCardChoice => cardResolutionAuthority?.PendingChoice;
+
+        public PendingAttackTargetChoice PendingAttackTargetChoice =>
+            cardResolutionAuthority?.PendingAttackTargetChoice;
+
+        public PendingDefenseResponseChoice PendingDefenseChoice =>
+            cardResolutionAuthority?.PendingDefenseChoice;
 
         public IReadOnlyList<ReachableMovementDestination> PendingCardDestinations =>
             PendingCardChoice != null
@@ -98,7 +119,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         public IReadOnlyList<HexCoordinate> CardMovementRoute => lastCardMovementRoute;
 
-        public int CardRemainingMovementAllowance => IsCardResolutionPending
+        public int CardRemainingMovementAllowance => IsCardMovementResolutionPending
             ? PendingCardChoice.RemainingAllowance
             : lastCardRemainingAllowance;
 
@@ -135,7 +156,7 @@ namespace GuardsDigital.Presentation.Interaction
             selectedCardInstanceId = cardInstanceId;
             selectedActionOffer = null;
             LastCardRejectionReason = CardActionResolutionRejectionReason.None;
-            cardStatus = "Card selected. Choose Primary or Secondary Movement.";
+            cardStatus = "Card selected. Choose an available action.";
             ClearSelectionVisuals();
             return true;
         }
@@ -162,6 +183,12 @@ namespace GuardsDigital.Presentation.Interaction
             cardResolutionSequence++;
             cardResolutionEvents.Clear();
             lastCardMovementRoute = Array.Empty<HexCoordinate>();
+            var actionDefinition = GetActionDefinition(matchingOffers[0]);
+            if (actionDefinition.Kind == ActionKind.Attack)
+            {
+                return StartVisibleAttack(matchingOffers[0]);
+            }
+
             var start = cardResolutionAuthority.StartMovementResolution(
                 new ActionResolutionId($"visible-movement-{cardResolutionSequence}"),
                 matchingOffers[0],
@@ -190,9 +217,45 @@ namespace GuardsDigital.Presentation.Interaction
             return true;
         }
 
+        public bool TrySubmitAttackTarget(HeroId targetHeroId)
+        {
+            if (!IsAttackTargetPending || placeholderHand == null || placeholderParticipants == null)
+            {
+                return false;
+            }
+
+            var result = cardResolutionAuthority.AnswerAttackTarget(
+                new AttackTargetChoiceCommand(
+                    PendingAttackTargetChoice.ResolutionId,
+                    PendingAttackTargetChoice.ChoiceId,
+                    targetHeroId),
+                placeholderHand.Definitions,
+                GetAllPlaceholderCardInstances(),
+                placeholderParticipants);
+            if (!result.Accepted)
+            {
+                LastCardRejectionReason = result.RejectionReason;
+                cardStatus = $"Attack target rejected: {result.RejectionReason}. Choose the adjacent enemy hero.";
+                return false;
+            }
+
+            cardResolutionEvents.AddRange(result.Events);
+            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            ClearSelectionVisuals();
+            var targetView = new[] { heroView }
+                .Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>())
+                .FirstOrDefault(view => view != null && view.Occupancy.HeroId.Equals(targetHeroId));
+            var targetLabel = targetView != null
+                ? $"{targetView.TeamSide} hero"
+                : targetHeroId.ToString();
+            cardStatus = $"Attack {result.PendingResolution.AttackTotal} targets {targetLabel}. " +
+                "Defense response pending; Defense selection is introduced in milestone 2.4.";
+            return true;
+        }
+
         public bool TrySubmitCardDestination(HexCoordinate destination)
         {
-            if (!IsCardResolutionPending)
+            if (!IsCardMovementResolutionPending)
             {
                 return false;
             }
@@ -213,7 +276,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         public bool TryStopCardMovement()
         {
-            if (!IsCardResolutionPending || !PendingCardChoice.CanStop)
+            if (!IsCardMovementResolutionPending || !PendingCardChoice.CanStop)
             {
                 return false;
             }
@@ -225,7 +288,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         public bool SubmitCardMovementChoice(MovementChoiceCommand command)
         {
-            if (!IsCardResolutionPending)
+            if (!IsCardMovementResolutionPending)
             {
                 return false;
             }
@@ -363,9 +426,51 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            placeholderParticipants = configuration.Participants;
             placeholderHands[configuration.RedHand.Instances[0].OwnerId] = configuration.RedHand;
             placeholderHands[configuration.BlueHand.Instances[0].OwnerId] = configuration.BlueHand;
             placeholderOneVsOneHandsInitialized = true;
+        }
+
+        private bool StartVisibleAttack(ActionOffer offer)
+        {
+            EnsurePlaceholderOneVsOneHands();
+            var start = cardResolutionAuthority.StartAttackResolution(
+                new ActionResolutionId($"visible-attack-{cardResolutionSequence}"),
+                offer,
+                placeholderHand.Definitions,
+                GetAllPlaceholderCardInstances(),
+                placeholderParticipants);
+            if (!start.Accepted)
+            {
+                LastCardRejectionReason = start.RejectionReason;
+                cardStatus = $"Attack rejected: {start.RejectionReason}";
+                cardResolutionAuthority = null;
+                selectedActionOffer = null;
+                return false;
+            }
+
+            cardResolutionEvents.AddRange(start.Events);
+            LastCardInvocationContext = start.PendingResolution.InvocationContext;
+            LastCardTextApplicationPolicy = GetActionDefinition(offer).DefaultPolicy.CardTextApplication;
+            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            var attackTotal = PrintedValueQuery.CalculatePrintedValue(
+                offer,
+                placeholderHand.Definitions,
+                PrintedValueChannel.Attack).Total;
+            cardStatus = $"{FormatContext(offer.InvocationContext)} Attack {attackTotal}: " +
+                "click the adjacent enemy hero.";
+            ClearSelectionVisuals();
+            return true;
+        }
+
+        private IReadOnlyList<CardInstance> GetAllPlaceholderCardInstances()
+        {
+            EnsurePlaceholderOneVsOneHands();
+            return placeholderHands.Values
+                .SelectMany(hand => hand.Instances)
+                .OrderBy(instance => instance.Id.Value, StringComparer.Ordinal)
+                .ToArray();
         }
 
         private void RefreshCardChoiceHighlights(PendingMovementChoice choice)
@@ -411,12 +516,14 @@ namespace GuardsDigital.Presentation.Interaction
                 candidate => candidate.Id.Equals(offer.ActionDefinitionId));
         }
 
-        private int GetPrintedMovement(ActionOffer offer)
+        private int GetPrintedActionValue(ActionOffer offer, ActionKind kind)
         {
             return PrintedValueQuery.CalculatePrintedValue(
                 offer,
                 placeholderHand.Definitions,
-                PrintedValueChannel.Movement).Total;
+                kind == ActionKind.Attack
+                    ? PrintedValueChannel.Attack
+                    : PrintedValueChannel.Movement).Total;
         }
 
         private static string FormatContext(ActionInvocationContext context)
@@ -448,7 +555,7 @@ namespace GuardsDigital.Presentation.Interaction
             var activeHeroLabel = heroView != null
                 ? $"{heroView.TeamSide.ToString().ToUpperInvariant()} HERO"
                 : "NO HERO";
-            GUILayout.Label($"PHASE 1 TEST HAND - {activeHeroLabel} - choose a card, then one Movement offer");
+            GUILayout.Label($"PHASE 2 TEST HAND - {activeHeroLabel} - choose a card, then an action");
             GUILayout.Label(cardStatus);
 
             GUILayout.BeginHorizontal();
@@ -479,7 +586,8 @@ namespace GuardsDigital.Presentation.Interaction
             foreach (var offer in SelectedCardOffers)
             {
                 var definition = GetActionDefinition(offer);
-                var printedMovement = GetPrintedMovement(offer);
+                var actionKind = definition.Kind;
+                var printedValue = GetPrintedActionValue(offer, actionKind);
                 var isSelected = selectedActionOffer.HasValue && selectedActionOffer.Value.Equals(offer);
                 var previousColor = GUI.backgroundColor;
                 GUI.backgroundColor = isSelected
@@ -490,7 +598,8 @@ namespace GuardsDigital.Presentation.Interaction
                     ? "text applies"
                     : "text suppressed";
                 if (GUILayout.Button(
-                        $"{FormatContext(offer.InvocationContext).ToUpperInvariant()} MOVE {printedMovement}\n{textPolicy}",
+                        $"{FormatContext(offer.InvocationContext).ToUpperInvariant()} " +
+                        $"{actionKind.ToString().ToUpperInvariant()} {printedValue}\n{textPolicy}",
                         GUILayout.Height(46f)))
                 {
                     TrySelectAction(offer.ActionDefinitionId);
@@ -500,7 +609,7 @@ namespace GuardsDigital.Presentation.Interaction
                 GUI.backgroundColor = previousColor;
             }
 
-            if (IsCardResolutionPending)
+            if (IsCardMovementResolutionPending)
             {
                 GUILayout.FlexibleSpace();
                 GUI.backgroundColor = new Color(0.95f, 0.45f, 0.35f);

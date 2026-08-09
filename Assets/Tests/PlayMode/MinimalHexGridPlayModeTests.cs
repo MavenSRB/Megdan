@@ -205,6 +205,48 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_SelectsVisibleAttackAndClicksAdjacentEnemyHero()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var redHero = FindRedHero(heroes);
+            var blueHero = heroes.Single(hero => hero != redHero);
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
+            var routeDrill = controller.VisibleCardInstances.Single(card =>
+                card.Id.Value == "red-route-drill-card");
+
+            Assert.That(controller.TrySelectCard(routeDrill.Id), Is.True);
+            Assert.That(
+                controller.SelectedCardOffers.Select(offer => offer.ActionDefinitionId.Value),
+                Has.Member("primary-attack"));
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
+            Assert.That(controller.IsAttackTargetPending, Is.True);
+
+            var targeted = pointerInput.TryHandlePointerRay(CreateDownRay(blueHero.transform.position));
+            Physics.SyncTransforms();
+            yield return null;
+
+            Assert.That(targeted, Is.True);
+            Assert.That(controller.ActiveHeroView, Is.SameAs(redHero));
+            Assert.That(controller.IsDefenseResponsePending, Is.True);
+            Assert.That(controller.PendingDefenseChoice.ChooserId, Is.EqualTo(blueHero.Occupancy.HeroId));
+            Assert.That(controller.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
+            Assert.That(controller.CardStatus, Does.Contain("Defense response pending"));
+            Assert.That(redHero.Coordinate, Is.EqualTo(new HexCoordinate(0, 0)));
+            Assert.That(blueHero.Coordinate, Is.EqualTo(new HexCoordinate(0, -1)));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_ClicksTwoPartialMovementWaypointsThenStopsWithAllowanceRemaining()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
