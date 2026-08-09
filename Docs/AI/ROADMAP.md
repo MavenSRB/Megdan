@@ -25,7 +25,7 @@ For every item:
 
 Milestones may be split further if implementation reveals more than one independently testable behavior. They must not be silently combined.
 
-Every card-related milestone must preserve the contracts in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. A narrow milestone implements only the required subset of that contract; it must not introduce a shortcut that the next card milestone is expected to replace.
+Every card-related milestone must preserve the contracts in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` and `Docs/AI/CARD_EFFECT_CAPABILITIES.md`. A narrow milestone implements only the required subset of those contracts; it must not introduce a shortcut that the next card milestone is expected to replace.
 
 ## Phase 0 - Shared context and project shell
 
@@ -94,6 +94,29 @@ Acceptance checks:
 Non-goals: No card code, Wasp inventory, corpus-wide effect taxonomy, Unity content, or gameplay implementation.
 
 Completion note (2026-08-09): Reviewed the second-printing rulebook's complete general card/action rules on printed pages 7-19 and documented the resulting architecture and implementation gates. The design is intended to localize future extensions, not to claim that unknown cards can be implemented without any new typed primitive or isolated handler.
+
+### [x] 0.5 Establish the reusable card-effect capability catalog
+
+Observable outcome: Future cards can reference a source-traceable catalog of typed mutation, query, modifier, control-flow, timing, persistent-source, and system-transition capabilities instead of adding ad hoc effect logic.
+
+Artifacts:
+
+- `Docs/AI/CARD_EFFECT_CAPABILITIES.md`
+- Aligned effect gates in `AGENTS.md`, `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`, `Docs/AI/PROJECT_CONTEXT.md`, `Docs/AI/ROADMAP.md`, and `Docs/AI/RULES_LEDGER.md`
+
+Acceptance checks:
+
+- The catalog defines a mandatory registration contract covering roles, parameters, choice ownership, optionality/failure, atomicity, state changes, checkpoints, events, continuation data, validation, and tests; concrete schemas are instantiated only when a verified milestone registers that capability/version.
+- Stable effect-node IDs and typed input/outcome bindings preserve actual results for later conditional steps and pending-resolution serialization.
+- Object Push, source-relative direct Move, Movement action, Place, Spawn, Respawn, Swap, Replace, Remove, Defeat, Clear, tokens, and markers have distinct contracts.
+- Rulebook query/modifier concepts including adjacency, Range/Radius, direction/straight line, distance ordering, zones, targeting versus presence, immunity, `Counts As`, obstacles, and effective type have explicit owners.
+- Card-state, value/resource, timing, Active-effect, continuous-source, control-flow, and system-transition capabilities are covered.
+- Card text such as `move a unit towards you` is represented by direct Move plus source-relative destination constraints rather than an invented Pull keyword/capability.
+- New verified effects have a documented extension and source-linked testing process.
+
+Non-goals: No effect handlers, Wasp inventory, card corpus taxonomy, Unity content, or gameplay implementation.
+
+Completion note (2026-08-09): Re-audited printed rulebook pages 7-19 and expanded the card foundation into an explicit reusable effect/keyword capability catalog. The catalog covers the general rules vocabulary and deliberately leaves hero-specific semantics to verified card inventory.
 
 ## Phase 1 - Smallest board interaction
 
@@ -476,8 +499,10 @@ Acceptance checks:
 
 - The matrix covers every Wasp card face, tier, item relationship, and Ultimate from milestone 4.1.
 - Existing capabilities are distinguished from new reusable primitives and genuinely unique handlers.
+- Every ordered effect node maps to a capability ID/version, typed input/output bindings, operation-specific policy, failure/atomicity rule, systemic checkpoints, and required handler/card tests.
 - Dependencies identify which targeting, timing, active-effect, progression, minion, and map rules must precede each card.
 - Phase 5 is reordered or split so each Wasp card is implemented only after its actual dependencies; active effects do not remain artificially late if an earlier card requires them.
+- Any new or refined reusable effect/query contract is added to `CARD_EFFECT_CAPABILITIES.md` before implementation.
 - Any proposed change to the core architecture, definition schema, or snapshot schema is explicit and migration-tested rather than hidden inside a card milestone.
 
 Non-goals: No effect implementation or other-hero corpus inventory.
@@ -543,6 +568,8 @@ Non-goals: End-of-round subsystems are not resolved yet.
 
 Every item below is deliberately blocked until milestone 4.2 produces the verified Wasp capability matrix. These are discovery groups, not an executable order. Reorder, split, rename, and unblock them so map, targeting, timing, active/continuous-effect, minion, economy, and progression dependencies precede the first card that needs them. Split again whenever targeting, validation, state mutation, and presentation can be proven independently.
 
+Milestone 4.2 assigns exactly one first implementation owner when a capability also appears in Phase 6 or 7. If a Wasp card needs a token, marker, resource, or system prerequisite early, move only that smallest reusable slice into Phase 5 and make the later milestone integration/coverage work; otherwise the later milestone owns its first implementation. No capability is built twice.
+
 ### [!] 5.1 Exact card-based Movement capability
 
 Includes movement allowance, obstacles, legal endpoints, and Wasp movement text required at the current tier.
@@ -553,27 +580,43 @@ Implements only after exact movement works and Phase 3 has supplied the complete
 
 Acceptance checks must exercise Fast Travel within the same zone, into an adjacent zone, rejection of a non-adjacent zone, enemy presence in the origin or destination zone, and the rule that no empty-space path is required.
 
-### [!] 5.3 Skill and structured-effect capabilities
+### [!] 5.3 Verified spatial-effect capabilities
 
-Adds only the typed effect primitives required by a verified Wasp card.
+Adds only the spatial operations required by verified Wasp cards, split into independently tested slices. Direct Move, including source-relative `move toward` constraints, Object Push, Place, Spawn, Respawn, Swap, and Replace keep distinct capability IDs, outcomes, events, and checkpoint behavior even when they share geometry and occupancy helpers.
 
-### [!] 5.4 Verified Wasp Attack targeting and range capabilities
+### [!] 5.4 Verified token, marker, obstacle, and persistent-property capabilities
 
-Builds on the Phase 2 adjacent test Attack with verified Wasp values, Ranged targeting where required, and applicable card behavior. Minion targeting remains separately verified in milestone 5.5.
+Adds only Wasp-required instance, token finite-supply, placement/attachment, board-interaction, continuous-property, and lifetime rules. Token and marker semantics remain separate, neither is inferred from art or UI state, and milestone 4.2 decides whether this group or Phase 6 owns the first reusable slice.
 
-### [!] 5.5 Minion Attack capability
+### [!] 5.5 Verified card-state and resource capabilities
 
-Includes minion targeting, Heavy immunity, staged defeat/removal, and immediate Push dependencies. Coin rewards remain blocked on milestone 7.1 and must not be implemented ad hoc here.
+Adds only required typed Discard, Retrieve, card-state Swap, value/resource gain or spend, and ownership/control operations. Board-object Swap and card-state Swap remain distinct.
 
-### [!] 5.6 Complete Hero Defense capability
+### [!] 5.6 Verified modifier, restriction, permission, and characteristic capabilities
+
+Adds only required typed value modifiers, Block/prevention, immunity, obstacle policies, action permissions/restrictions, and intrinsic-versus-effective characteristic queries.
+
+### [!] 5.7 Skill and structured control-flow capabilities
+
+Adds only the typed effect and composition primitives required by a verified Wasp card, including ordered, optional, conditional, choice, repeat, replacement, and simultaneous behavior.
+
+### [!] 5.8 Verified Wasp Attack targeting and range capabilities
+
+Builds on the Phase 2 adjacent test Attack with verified Wasp values, Ranged targeting where required, and applicable card behavior. Minion targeting remains separately verified in milestone 5.9.
+
+### [!] 5.9 Minion Attack capability
+
+Includes minion targeting, Heavy immunity, staged defeat/removal, and immediate Lane Push dependencies. Coin rewards remain blocked on milestone 7.1 and must not be implemented ad hoc here.
+
+### [!] 5.10 Complete Hero Defense capability
 
 Builds on the Phase 2 test-card comparison with the detailed attack/defense order, primary/secondary Defense behavior, applicable card text, Block, and verified Wasp requirements. Minion modifiers and item bonuses remain dependent on milestones 6.1 and 7.3 unless milestone 4.2 explicitly reorders their smaller prerequisites.
 
-### [!] 5.7 Hero defeat, Lives, and respawn capability
+### [!] 5.11 Hero defeat, Lives, and respawn capability
 
 Includes staged defeat/removal, Life spending, rewards, effect/marker consequences, and legal respawn. It cannot complete before required coin accounting and active/continuous-effect cancellation capabilities exist.
 
-### [!] 5.8 Timing, Active-effect, and continuous-rule capabilities
+### [!] 5.12 Timing, Active-effect, and continuous-rule capabilities
 
 Implements only verified Wasp requirements, using reusable typed triggers, durations, ordering choices, cancellation, and distinct passive/continuous sources.
 
@@ -585,21 +628,57 @@ Phase 6 uses the complete Phase 3 map. Lane-push behavior must never be tested a
 
 ### [ ] 6.2 Minions returning to the Battle Zone
 
+Acceptance checks:
+
+- Correction applies only to intrinsic minion miniatures outside the Battle Zone after the whole action and between separate Repeat instances.
+- A minion follows a shortest empty path; its team chooses among equally short valid paths.
+- With no path or no legal move, the minion is Placed into a nearest empty Battle-Zone space.
+- When cross-team order matters, the Tie-Breaker-side team resolves first and the coin is not flipped.
+
 ### [ ] 6.3 End-of-round Minion Battle
 
-### [ ] 6.4 Immediate Push trigger during a turn
+Proves the count, choice, Heavy-last ordering, and minion removals, then records a typed end-of-round Lane-Push request when the last minion is lost. The request is not consumed here: end-of-round execution waits for cleanup milestone 6.9 and exact sequence integration in 7.7.
 
-### [ ] 6.5 Lane Push state transition and respawn
+### [ ] 6.4 Token and marker instances, supplies, placement, and attachment
 
-Uses the authoritative ordered lane, current Battle Zone, adjacent next zone toward the losing team's Throne, and that zone's verified minion spawn points.
+Unless milestone 4.2 moved a required prerequisite into Phase 5, this milestone establishes stable token/marker instances, the authoritative finite token supply, token placement/reclamation choices, marker attachment/return state, and their distinct ownership and location rules. If the prerequisite was moved, this milestone verifies Phase 6 integration without recreating it.
 
-### [ ] 6.6 Wave counters, Throne capture, and Last Push victory
+### [ ] 6.5 Token board interactions and persistent properties
 
-### [ ] 6.7 Token removal and marker return
+Token-owned properties persist through their own authoritative continuous-source lifetime until removal and are not modeled as card Active effects. Cover Move/Object Push/Swap/Replace/Remove targeting, Clear, spawn-over-token removal, traversal effects, and the rule that defeating the placing hero does not remove tokens unless verified text says otherwise.
 
-Token-owned properties persist through their own authoritative continuous-source lifetime until removal and are not modeled as card Active effects. Defeating the placing hero does not remove tokens unless a verified rule says otherwise.
+### [ ] 6.6 Immediate Lane-Push request during a turn
 
-### [ ] 6.8 Retrieve cards and cancel applicable Active effects
+Acceptance checks:
+
+- Only a recorded Defeat or successful Remove of the last relevant enemy Battle-Zone minion emits the request; Move, Object Push, and Swap never do.
+- A Defeat still emits the request when its later removal is prevented because prevention does not erase the Defeat outcome; an attempted but prevented standalone Remove does not emit a successful Remove outcome.
+- The triggering operation emits a typed immediate Lane-Push request and reaches the correct checkpoint before a repeated action instance can continue.
+- This milestone verifies the request/checkpoint only and does not expose or partially execute the transition defined by 6.7-6.8.
+
+### [ ] 6.7 Lane Push Wave and Battle-Zone stages
+
+Builds the non-executable ordered prefix of the transition: flip exactly one Wave counter and stop immediately on the final Wave; otherwise advance exactly one verified Zone toward the losing team's Throne and stop immediately if that Throne Zone becomes the Battle Zone. The incomplete prefix remains internal and cannot consume a live match request.
+
+### [ ] 6.8 Lane Push minion respawn and transition completion
+
+Completes the transition by removing all minions from the previous Battle Zone and respawning the matching minion type at each verified Spawn point in the new Battle Zone. It then connects immediate mid-turn requests from 6.6 to the complete transition; end-of-round requests remain deferred to 7.7.
+
+Acceptance checks:
+
+- The transition always resolves Wave/final-Wave check, then zone/Throne check, then old-zone removal and new-zone respawn; an earlier game-ending result stops all later stages.
+- A token-covered Spawn point removes its token before the unit respawns.
+- A Spawn point occupied by a non-token obstacle makes the owning team Place that minion in a chosen nearest empty Battle-Zone space; when order matters, the Tie-Breaker-side team starts without flipping the coin.
+- The complete transition uses the authoritative ordered lane, Battle Zone, and spawn-point data and is never exposed in a partially implemented state.
+- An immediate mid-turn transition finishes before a repeated action instance continues.
+
+### [ ] 6.9 End-of-round token removal and marker return
+
+Runs the general cleanup checkpoints: remove all board tokens and return all markers to supply, except where exact verified text supplies an explicit override.
+
+An end-of-round Lane-Push request remains pending until this cleanup completes; milestone 7.7 connects it to the complete transition before card retrieval.
+
+### [ ] 6.10 Retrieve cards and cancel applicable Active effects
 
 Observable outcome: At the correct end-of-round step, each hero retrieves only its own eligible resolved/discarded cards into hand and all Active effects canceled by those state changes end, including applicable Next Turn effects.
 
@@ -639,7 +718,7 @@ Acceptance checks:
 - The sequence covers Minion Battle; token removal/marker return; Lane Push; card retrieval and cancellation; mandatory leveling/upgrades; and Pity Coin collection at their exact checkpoints.
 - Applicable End of Round Active effects and immediate victory checks occur at their verified boundaries rather than presentation timing.
 - A game-ending result stops later processing wherever the rules end the game immediately.
-- Focused integration scenarios cover no Push, one Push, level/no-level players, retrieved effects, Pity Coin eligibility, and a game-ending Push.
+- Focused integration scenarios cover no Lane Push, one Lane Push, level/no-level players, retrieved effects, Pity Coin eligibility, and a game-ending Lane Push.
 - The same starting state and choices produce the same state and ordered event sequence.
 
 ## Phase 8 - Primitive complete match
@@ -721,5 +800,5 @@ Non-goals: Public distribution, installer, launcher, login, telemetry, store pag
 - Move authoritative resolution to a host/server.
 - Add per-player hidden hands and six-human online 3v3.
 - Add reconnect, lobby, matchmaking, accounts, and team communication.
-- Add heroes incrementally using the verified card-effect architecture.
+- Add heroes incrementally; every hero intake starts with a verified effect-family delta audit against the capability catalog before implementation is scheduled.
 - Validate macOS/Linux, then touch devices, then closed platforms as separately approved tracks.

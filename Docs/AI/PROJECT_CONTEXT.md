@@ -8,6 +8,8 @@ Milestone 1.3 is complete: the core model can represent one primitive hero occup
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
+Documentation milestone 0.5 is complete: `Docs/AI/CARD_EFFECT_CAPABILITIES.md` now defines effect-level contracts for the rulebook's mutation operations, queries, modifiers, control flow, timing, persistent sources, and system transitions, including explicit Object Push, source-relative direct Move, Place, Spawn, token, marker, Swap, Replace, Remove, Defeat, and keyword-query architecture. This also implements no gameplay.
+
 Milestone 1.4, selecting the hero and one adjacent destination, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
@@ -127,7 +129,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ### Card system
 
-- `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` is the required detailed contract for all card, action, effect, combat, turn, progression, snapshot, and rules-authority work.
+- `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` is the required card/resolver contract. `Docs/AI/CARD_EFFECT_CAPABILITIES.md` is its mandatory effect/keyword companion for all mutation, query, modifier, token, marker, timing, and system-transition work.
 - The architecture must support the future hero catalog without claiming that unknown cards require zero extensions.
 - Immutable, revisioned `CardDefinition`-equivalent content is separate from owned runtime `CardInstance`-equivalent state. Instances refer to definitions; definitions are never mutated into match state or upgrades.
 - Runtime card lifecycle is represented through orthogonal facts such as location, played status, resolution status, and face orientation because the rulebook permits overlapping states.
@@ -137,6 +139,12 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Targeting, presence checks, value calculation, card-state transitions, timing, and active-effect lifetime are reusable rule services rather than card-specific UI logic.
 - Passive/continuous rules sources, including Ultimates and persistent token properties, remain distinct from ordinary cancelable Active effects.
 - Common effects compose small typed definitions/handlers. A genuinely unique verified effect may register one isolated pure-code handler, but it must use the same validation, pending-choice, event, timing, state, and serialization boundaries.
+- Each reusable effect/query has a stable versioned capability ID and typed contract covering source/actor/chooser/target roles, optionality, atomicity, state changes, checkpoints, events, continuation data, validation, and tests.
+- Every effect node has its own stable node ID and typed input/output bindings. Serializable outcomes record actual targets, path/distance, stopping reason, defeat/removal/prevention, resource changes, and other facts so later text can branch on real results without callbacks or a universal expression language.
+- Object Push, direct Move, Place, Spawn, Respawn, Swap, Replace, Remove, and Defeat remain distinct public capabilities even when they share spatial helpers. Tokens and markers have distinct instance, supply, occupancy/attachment, and lifetime rules.
+- Card text such as `move a unit towards you` uses direct Move plus source-relative `Closer` destination constraints, not a separate Pull capability.
+- Rules objects preserve both intrinsic representation kind and derived effective type. Each capability declares which it queries, including the rulebook exception that after-action Battle-Zone correction applies to minion miniatures rather than objects that merely count as minions.
+- System consequences use typed operation facts/checkpoints: only Defeat/Remove can immediately advance the Lane, while Move/Object Push/Swap cannot; displaced-minion correction runs after the whole action.
 - Never branch rules on card display name, hero display name, image filename, or printed text. Do not build a runtime natural-language parser or speculative universal scripting language.
 - Phase 1 proves this foundation with placeholder definitions/instances, explicit Movement offers and typed values, command/events, a resumable choice shell, and visible card-driven movement.
 - Phase 2 proves extension by opening a basic Attack, pausing for the target hero's Defense reaction, discarding one owned card or declining, and resuming the unmodified comparison through the same authority.
@@ -216,6 +224,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 - `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` - primary local rulebook.
 - `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` - project architecture contract derived from the general card/action rules; it is not a substitute for card-specific source verification.
+- `Docs/AI/CARD_EFFECT_CAPABILITIES.md` - effect and keyword capability catalog; it is not evidence that a capability or card is implemented.
 - `Docs/Guards of Atlantis II - Tabletopia Cards/` - private reference extraction containing hero-card material and supporting scripts/assets.
 - The extracted card corpus has not been accepted as complete or fully verified for implementation.
 - Do not assume filenames, duplicates, image faces, or extraction completeness are authoritative without an explicit inventory milestone.
@@ -232,6 +241,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - **Card instance:** One stable owned runtime card that references a definition and carries its current lifecycle facts.
 - **Action definition:** Immutable structured content for a printed or general-rule action before current match context is applied.
 - **Action offer:** One context-specific legal use of a card or general rule, selected separately from the card itself.
+- **Effect capability:** One versioned typed mutation, query, modifier, control-flow, timing, persistent-source, or system-transition contract referenced by structured card rules.
 - **Pending choice:** Serializable authoritative input required to continue a paused action resolution.
 - **Micro-milestone:** The smallest user-approved, independently testable increment with a hard stop after acceptance.
 - **Rules ledger:** The traceability record connecting rule systems to sources, implementation, tests, and deviations.

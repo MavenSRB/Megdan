@@ -6,6 +6,8 @@ Last updated: 2026-08-09
 
 This document is the implementation contract for card-related code. It exists so the small Phase 1 test hand can grow into the complete Wasp set and, after authorization, a roster of roughly 40 heroes without putting card rules in Unity scenes, UI callbacks, or card-name conditionals.
 
+`CARD_EFFECT_CAPABILITIES.md` is the mandatory effect-level companion. It defines the reusable contracts for Object Push, source-relative direct Move, Place, Spawn, tokens, markers, board-object changes, keyword queries, modifiers, timing, and other card-driven operations.
+
 The contract is based on the second-printing rulebook's game structure, Action Card anatomy, action execution, card states, Movement, Skill, Hold, Attack, Defense, leveling, items, active effects, and keywords on printed pages 7-19. Exact hero content still requires the source-verification milestones in `ROADMAP.md` and `RULES_LEDGER.md`.
 
 This is an architecture specification, not evidence that any card rule is implemented. Implement only the subset named by the currently approved micro-milestone.
@@ -55,6 +57,7 @@ Names below are conceptual contracts. Exact C# names may change, but the respons
 | `ActionDefinition` | Immutable structured content for one printed or general-rule action | Runtime actor/source, current availability, UI widgets |
 | `ActionOffer` | One currently legal context-bound use derived from an action definition and authoritative state | Duplicated card content, UI widgets, direct state mutation |
 | `EffectDefinition` | Structured ordered behavior for an action or active effect | Arbitrary executable strings or scene operations |
+| `CapabilityOutcome` | Serializable typed facts from one effect node, available to later nodes and checkpoints | Presentation-only state, untyped dictionaries, hidden callbacks |
 | `PendingResolution` | Serializable progress through one action, including prior choices and current timing position | Delegates, coroutines, hidden UI-only choices |
 | `PendingChoice` | The exact legal decision currently required, its chooser, candidates/constraints, and continuation location | An already-assumed answer |
 | `ActiveEffectInstance` | A live effect's source, controller, scope, trigger, duration, and cancellation conditions | Presentation-only duration or animation state |
@@ -128,17 +131,19 @@ At a high level it:
 
 The resolver also runs explicit rules checkpoints at the correct boundaries. A checkpoint may produce immediate deterministic consequences that change later targets or repeats; it cannot be deferred until animation finishes. Movement restrictions whose rules are checked only at action start use an explicit action-start snapshot/context rather than being re-evaluated accidentally on every step.
 
-Pending resolution data must contain enough information to reproduce and later serialize the exact continuation: source instance, definition revision, chosen offer, actor/chooser, current effect-node path, repeat depth, completed choices, timing stack, and pending choice. The early phases do not need snapshot import/export yet, but they must not choose a representation that prevents it in Phase 2.
+Pending resolution data must contain enough information to reproduce and later serialize the exact continuation: source instance, definition revision, chosen offer, actor/chooser, current effect-node path, repeat depth, completed choices, typed capability outcomes/result bindings, timing stack, and pending choice. The early phases do not need snapshot import/export yet, but they must not choose a representation that prevents it in Phase 2.
 
 Nested rules work, such as an Attack awaiting a Defense reaction, is represented by explicit resolution frames rather than a second disconnected resolver. The outer action resumes after the reaction closes, preserving exact Attack/Defense ordering and allowing the same hero to defend again later if another legal attack occurs.
 
-Defeat is likewise staged rather than treated as one deletion call: defeated status/outcome, rewards tied to defeat, attempted removal, any triggered choice that may prevent removal, and the final removed/not-removed result remain distinct. A prevention effect can therefore leave a defeated minion on the board without erasing the attacker's defeat reward. Exact stage ordering is source-tested when that capability is introduced.
+Defeat is likewise staged rather than treated as one deletion call. Defeated status/outcome, reward eligibility/award, the removal attempt and its triggered prevention choices, and the final removed/not-removed result remain distinct facts/operations; their order is supplied and source-tested rather than implied by this list. A prevention effect can therefore leave a defeated minion on the board without erasing the attacker's defeat reward.
 
 Presentation observes choices and events. It may animate, skip, or replay them, but it never owns the continuation.
 
 ## Effect composition and extension
 
 The common resolver vocabulary should stay small and typed. Add only what verified rules or cards require.
+
+Every leaf mutation, query, modifier, timing source, and system transition follows the capability contract and coverage catalog in `CARD_EFFECT_CAPABILITIES.md`. A card definition references stable capability IDs and typed parameters rather than relying on this document's examples as implicit behavior.
 
 Control-flow components are expected to include, as required:
 
@@ -154,13 +159,13 @@ Atomic effects are domain operations such as move, perform a Movement action, at
 
 Names that are distinct in the rules remain distinct operations. Direct card-text `move` is not a Movement action; place, spawn, push, and swap are not movement; remove is not defeat; and resolving without action is not Hold. They may share low-level occupancy helpers, but they retain separate validation, triggers, rewards, replacements, and events.
 
-Rules-property replacement such as `Counts As` is an effective-classification query, not a permanent extra tag on the source definition. Limited supplies such as tokens are authoritative resources, so place/remove handlers validate and update the supply rather than creating presentation objects freely.
+Rules-property replacement such as `Counts As` is an effective-characteristic replacement modifier/overlay consumed by typed queries, not a permanent extra tag on the source definition. Limited supplies such as tokens are authoritative resources, so place/remove handlers validate and update the supply rather than creating presentation objects freely.
 
-Effective-characteristic overlays are used consistently by targeting, occupancy, immunity, systemic minion rules, rewards, and other type queries. No subsystem may bypass them by reading only the immutable base category.
+Rules objects expose both intrinsic representation kind and effective rules characteristics. Most type-based targeting, immunity, rewards, and other rules queries use effective characteristics after `Counts As`; rules that explicitly refer to a physical representation, such as the p.18 correction for minion miniatures outside the Battle Zone, use intrinsic kind and exclude objects that merely count as minions. Every capability declares which axis it queries rather than reading one global type field.
 
 Effects that the rules resolve simultaneously use a batch contract. The resolver validates shared choices and all affected objects against the appropriate pre-effect state, then applies the batch as one authoritative transaction. For example, a multi-target Push uses one chosen distance and cannot become an order-dependent loop of single-target pushes.
 
-Effect definitions use stable type discriminators and validated typed parameters. A registry maps each discriminator to a pure rules handler. Avoid a single giant `ResolveCard` method and avoid a speculative general-purpose scripting language.
+Effect definitions use stable capability-ID/schema-version discriminators and validated typed parameters; each occurrence inside one definition also has its own effect-node ID. A registry maps each capability/version to a pure rules handler. Avoid a single giant `ResolveCard` method and avoid a speculative general-purpose scripting language.
 
 If a verified card cannot be expressed cleanly with existing components, first decide whether it reveals a reusable rules concept. If yes, add a focused primitive. If it is genuinely unique, add a card-specific pure handler behind the registry. That handler still cannot bypass command validation, pending choices, timing, events, state transitions, or serialization. Its discriminator is stable and its behavior has direct scenario tests.
 
@@ -288,6 +293,7 @@ Before accepting a real card definition:
 8. Test state, timing, replacement, repeat, immunity, and ownership interactions that apply.
 9. Confirm no card/hero/display-name branch, scene dependency, or runtime text parsing was introduced.
 10. Update `RULES_LEDGER.md` with verification and implementation status.
+11. Update `CARD_EFFECT_CAPABILITIES.md` whenever the card adds or refines a reusable effect/query contract.
 
 ## Deferred decisions
 
