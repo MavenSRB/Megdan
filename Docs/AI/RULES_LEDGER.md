@@ -6,7 +6,7 @@ Last updated: 2026-08-09
 
 This ledger prevents silent rule drift. It connects each game system to its source, approved deviations, implementation status, and focused tests.
 
-The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, placeholder coordinate-to-XZ presentation, and one primitive hero occupancy/rendering slice from milestones 0.2 through 1.3. It contains no gameplay resolution. All rule systems are therefore unimplemented unless stated otherwise.
+The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, placeholder coordinate-to-XZ presentation, one primitive hero occupancy/rendering slice from milestones 0.2 through 1.3, and the card architecture specification from milestone 0.4. It contains no gameplay resolution. All rule systems are therefore unimplemented unless stated otherwise.
 
 ## Authority hierarchy
 
@@ -30,6 +30,8 @@ Do not use an unofficial forum answer, convenience behavior, or remembered table
 - Wasp references: `Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/`
 
 The card extraction has not yet completed an implementation-grade inventory and verification pass. Its presence does not prove completeness, correctness, edition, or distribution rights.
+
+`Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` records project design decisions derived from these sources. It is mandatory implementation guidance but is not a game-rule authority and never replaces source verification.
 
 ## Prototype setup baseline
 
@@ -58,8 +60,10 @@ Do not rebalance Life, Waves, minions, card values, economy, or Wasp merely beca
 ## Status vocabulary
 
 - **Not inventoried:** Required source material has not been checked for completeness.
+- **Source reviewed:** The named local source section has been inspected; this does not prove card-corpus completeness or that all applicable errata have been found.
 - **Source verified:** Rule or card data has been checked against the authority hierarchy.
-- **Specified:** Digital behavior and edge cases are documented but not implemented.
+- **Architecture specified:** Digital boundaries needed to represent the rule are documented but not implemented.
+- **Specified:** Exact digital behavior and edge cases are documented but not implemented.
 - **Implemented:** Authoritative rule behavior exists.
 - **Focused tests passing:** Narrow automated scenarios cover the implemented behavior.
 - **Milestone verified:** Relevant broad and presentation checks pass at an approved milestone boundary.
@@ -73,7 +77,7 @@ Printed rulebook page numbers are used below.
 | --- | --- | --- | --- |
 | Generic hex coordinates, adjacency, and placeholder XZ layout | Project architecture; not a game-rule interpretation | Implemented; milestone verified | Axial `(q, r)` coordinates expose six named standard neighbors; pointy-top placeholder conversion and mesh spacing are tested, but official board spaces and adjacency remain unverified and unimplemented until milestones 3.1-3.2 |
 | Primitive hero occupancy and placeholder placement | Project architecture; not a game-rule interpretation | Implemented; focused tests passing | One placeholder hero has a stable hero ID and occupied axial coordinate; the scene view derives its position from that coordinate. This does not implement teams, legal setup, movement, targeting, turns, card effects, or official board spaces |
-| Heroes, teams, zones, Thrones, minions, lanes, win overview | Rulebook p.3 | Not implemented | Verify digital terms and object relationships before domain modeling |
+| Heroes, teams, zones, Thrones, minions, lanes, win overview | Rulebook p.3 | Not implemented | Phase 3 must model the complete official multi-zone single-lane map; reduced Phase 1 grids cannot verify Fast Travel or lane pushing |
 | Table talk and hidden information | Rulebook p.4 | Deferred by DEV-003 | Required for post-authorization online 3v3, not pitch interaction |
 | Four-/six-player setup | Rulebook pp.5-6 | Source reviewed; not implemented | Pitch inherits four-player Quick Game values except DEV-001/002/003 |
 | Minion setup and types | Rulebook p.6 and summary | Not implemented | Verify every spawn point and type against official board reference |
@@ -84,46 +88,71 @@ Printed rulebook page numbers are used below.
 | Hero respawn | Rulebook p.7 | Not implemented | Include optional timing and Defense exception |
 | Minion Battle | Rulebook p.8 | Source reviewed; not implemented | Difference removal, Heavy removed last, zero-effect tie |
 | Remove tokens / return markers | Rulebook p.8 | Source reviewed; not implemented | Verify ordering relative to active effects and Push |
-| Lane Push and respawn | Rulebook p.8 | Source reviewed; not implemented | Include immediate mid-turn Push and end-of-round Push |
+| Lane Push and respawn | Rulebook p.8 | Source reviewed; not implemented | Requires the complete ordered lane, movable Battle Zone, Thrones, and verified per-zone spawn points; include immediate mid-turn Push and end-of-round Push |
 | Wave counters / Throne / Last Push | Rulebook pp.3, 8 | Source reviewed; not implemented | Test each victory path independently |
 | Retrieve cards | Rulebook p.8 | Source reviewed; not implemented | Cancels applicable active effects through state changes |
 | Level Up and Pity Coin ordering | Rulebook pp.8, 15-16 | Source reviewed in outline; not implemented | Leveling is mandatory before Pity Coin resolution |
-| Action-card anatomy and values | Rulebook p.9 plus verified Wasp cards | Not inventoried | Images are presentation-only; structured data requires manual verification |
-| Action execution, choices, targets, repeat | Rulebook p.10 | Not implemented | Stop-on-failure and mandatory/optional wording need focused cases |
-| Card states and state changes | Rulebook p.10 | Not implemented | Hand, played, unresolved, resolved, discarded, facedown, retrieve, swap |
-| Movement and movement text | Rulebook p.11 | Not implemented | Separate primary/secondary Movement and movement inside card text |
-| Fast Travel | Rulebook p.11 | Not implemented | Replacement action; card text does not apply |
-| Skill | Rulebook p.12 plus verified Wasp cards | Not implemented | Add only real, typed Wasp requirements initially |
-| Hold | Rulebook p.12 | Not implemented | Any card may Hold; perform no action |
-| Attack and Clear | Rulebook p.13 | Not implemented | Separate replacement Clear from Attack text |
-| Attacking minions | Rulebook p.13 | Not implemented | Rewards and Heavy immunity require minion data |
-| Attacking heroes and defeat | Rulebook p.13 | Not implemented | Coins, assists, Life spending, effect cancellation, markers |
-| Defense and detailed attack order | Rulebook p.14 | Not implemented | Primary/secondary Defense, discard choice, Block, minion modifiers |
-| Card upgrades, items, Ultimate | Rulebook pp.15-16 plus Wasp cards | Not inventoried | Full Wasp progression is required for pitch completion |
-| Active effects and timing | Rulebook pp.17-19 plus Wasp cards | Not inventoried | Build typed triggers/durations only from verified requirements |
-| Obstacles and occupancy | Rulebook pp.18-19 | Not implemented | Never more than one obstacle in a space |
-| Push, swap, place, move through | Rulebook pp.18-19 plus cards | Not inventoried | Exact Wasp needs determine initial primitives |
+| Card anatomy, classification, and static values | Rulebook pp.9, 15-16 plus verified Wasp cards | General source reviewed; architecture specified; Wasp not inventoried | Immutable revisioned definitions carry structured content and source text; images are presentation/audit references and verified Wasp values still require manual verification |
+| Action availability and invocation context | Rulebook pp.7, 9, 11-14 | Source reviewed; architecture specified; not implemented | Select card and action separately; derive runtime offers from static definitions; distinguish printed Primary/Secondary, general Hold, Fast Travel/Clear replacements, Defense reaction, repeated, and text-granted actions; Basic and Defense/Skill classification is context-sensitive |
+| Ordered mandatory/optional execution and failure | Rulebook p.10 | Source reviewed; architecture specified; not implemented | Preserve written order; stop the remaining action at an impossible mandatory step; represent `may`, `up to`, and `if able` semantics explicitly |
+| Decisions, modal actions, targets, and repeat | Rulebook p.10 | Source reviewed; architecture specified; not implemented | Serializable pending choices record chooser and continuation; repeat is a separate action instance, cannot recurse, and has replacement/active-effect restrictions |
+| Card lifecycle and state changes | Rulebook pp.8, 10 | Source reviewed; architecture specified; not implemented | Location, played, unresolved/resolved, and face orientation are orthogonal; played/resolved and rare played/discarded combinations must work; resolved/discarded facedown suppression is distinct from newly played hidden/reveal flow; retrieve/swap and effect cancellation remain later milestones |
+| Printed values and modifier contributions | Rulebook pp.9, 13-16 | Source reviewed; architecture specified; not implemented | Typed queries retain contribution provenance; items modify matching printed icons only, while text, minions, and active effects contribute through distinct sources |
+| Movement action and movement in card text | Rulebook p.11 | Source reviewed; architecture specified; not implemented | Phase 1 proves stepwise Movement offers and ordinary obstacle blocking; direct card-text movement, action-start restrictions, exact/optional distances, Primary text, and ignore-obstacle behavior remain later work |
+| Fast Travel replacement | Rulebook p.11 | Source reviewed; architecture specified; not implemented | Blocked until Phase 3 verifies full-map zone membership/adjacency; replaces the entire Movement action, suppresses Primary card text, and needs no empty-space path |
+| Skill | Rulebook p.12 plus verified Wasp cards | General source reviewed; Wasp requirements not inventoried | Add only the typed components required by verified Wasp actions |
+| Hold and resolve without action | Rulebook pp.7, 12-13 | Source reviewed; architecture specified; not implemented | Hold is a general Secondary action; resolving without action after defeat/no respawn is a distinct state transition and timing path |
+| Attack and Clear replacement | Rulebook p.13 | Source reviewed; architecture specified; not implemented | Separate non-Ranged/Ranged targeting and Before/After windows; Clear replaces the entire Attack action and suppresses Attack card text |
+| Attacking minions | Rulebook pp.8, 13, 18 | Source reviewed; not implemented | No Defense reaction; rewards, Heavy immunity, immediate Push only on defeat/removal, and after-action Battle-Zone correction require focused ordering tests |
+| Attacking heroes, defeat, and systemic consequences | Rulebook pp.12-13 | Source reviewed; architecture specified; not implemented | Phase 2 reports only a basic success result; later stage defeat, reward, attempted/prevented removal, unresolved-card resolution, effect cancellation, markers, assists, Life, victory, and respawn so prevention does not erase defeat rewards |
+| Defense reaction and detailed Attack order | Rulebook p.14 | Source reviewed; architecture specified; not implemented | Phase 2 proves a nested pending Defense choice, exactly-one-card discard/decline, and unmodified `Defense >= Attack`; later add text context, Block, items, minion modifiers, and full timing |
+| Card upgrades, items, and Ultimate | Rulebook pp.15-16 plus Wasp cards | General source reviewed; architecture specified; Wasp not inventoried | Upgrades replace runtime card definitions/instances rather than mutating definitions; full Wasp relationships and values are required for pitch completion |
+| Active effects, timing, cancellation, and continuous sources | Rulebook pp.7-10, 13-19 plus Wasp cards | General source reviewed; architecture specified; Wasp not inventoried | Serializable Active-effect instances carry source, trigger, scope, duration, order/choice, uniqueness, and cancellation; Ultimates/token properties use distinct continuous-source lifetime rules; no Tie Breaker flip for simultaneous Active-effect ordering |
+| Targeting, presence checks, geometry, immunity, and effective type | Rulebook pp.9-10, 13, 17-19 plus cards | General source reviewed; architecture specified; Wasp not inventoried | Typed queries distinguish target from presence, self from friendly, Range/Radius from movement path, straight line, zone, immunity, and `Counts As` replacement; obstacles do not create invented line of sight |
+| Obstacles and occupancy | Rulebook pp.18-19 | Not implemented | Phase 1 adds generic blocking only; never more than one obstacle in a space; ignore-obstacle behavior and concrete unit/terrain/token distinctions remain later work |
+| Move, place, spawn, push, swap, replace, remove, defeat, and respawn | Rulebook pp.7-8, 11-19 plus cards | General source reviewed; architecture specified; Wasp not inventoried | These are distinct typed operations with different triggers/rewards; simultaneous multi-target operations require batch semantics; do not collapse them into generic movement/deletion; verified Wasp needs determine initial primitives |
 | Minions outside Battle Zone | Rulebook p.18 | Source reviewed; not implemented | Return after the action by shortest empty path; tie order does not flip coin |
 | Extended player counts | Rulebook p.20 | Reference only | Pitch does not claim official two-player setup because DEV-001 differs |
 | Hero profile / selection guidance | Rulebook pp.21-22 | Reference only | Wasp selected for versatility and first-game suitability |
 
+## Card architecture coverage
+
+Milestone 0.4 specifies these representation seams; it does not implement the rules:
+
+| Rule pressure | Required architecture seam | First proving milestone |
+| --- | --- | --- |
+| UI must not own rule mutation | Intent commands and ordered rule events | 1.5 |
+| Static print data versus mutable physical card | Versioned definition plus stable owned instance | 1.10 |
+| One card exposes context-dependent actions | Immutable action definitions plus runtime offers selected separately from card | 1.11 |
+| Printed icons gain distinct modifiers | Typed value query with contribution provenance | 1.11, extended in re-baselined 5.x/7.3 |
+| Actions pause for route/target/option/other-player choices | Serializable pending resolution and pending choice | 1.12 |
+| Defense interrupts Attack | Reaction offer nested in the same resolution | 2.3-2.5 |
+| Undo/networking must preserve partial resolution | Versioned snapshot of card state and pending choice | 2.6 |
+| Played/resolved/discarded/facedown facts overlap | Orthogonal lifecycle axes and validated transitions | 4.3 |
+| Real cards introduce ordered effects and dependencies | Verified capability matrix before effect work | 4.1-4.2 |
+| Timed and persistent text outlives one resolver step | Serializable active-effect instances and timing windows | Re-baselined Phase 5 |
+| Ultimate/token rules persist without ordinary Active-effect semantics | Distinct continuous-rule sources and effective-characteristic queries | Re-baselined Phase 5 / 7.4 |
+
 ## Wasp content ledger
 
-The pitch requires Wasp's complete progression. Before card implementation, create an implementation-grade inventory containing at least:
+The pitch requires Wasp's complete progression. Before verified Wasp definitions or effects are implemented, create an implementation-grade inventory containing at least:
 
-- Stable card ID.
-- Display name and source image path.
-- Color/slot and tier.
+- Stable definition ID and content revision.
+- Display name, source image path/face, edition, and starting hand/deck/set-aside membership.
+- Hero/content-set ID, color/slot, nullable tier, and upgrade/replacement relationships.
 - Basic/non-basic/Ultimate/Handicap classification as applicable.
-- Primary and secondary action types.
+- Stable action-definition IDs; derived Primary/Secondary/reaction/replacement offer contexts; subtype; and text-application policy.
 - Initiative, Attack, Defense, Movement, Range, and Radius values where present.
 - Exact rules text transcription.
-- Structured triggers, conditions, targets, choices, and effects.
-- Item contribution when set aside.
+- Ordered mandatory/optional steps; choice owner; modal/repeat behavior.
+- Structured triggers, conditions, targets versus presence checks, choices, values, effects, batch/simultaneous behavior, timing, duration, and cancellation.
+- Reused capability IDs and any controlled custom-handler ID.
+- Item contribution and destination when set aside; Active-effect versus passive/continuous-source classification; Ultimate persistence requirements.
+- Required source-linked scenarios and interaction/ordering tests.
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **Not inventoried**. Corpus-wide analysis is intentionally deferred until its roadmap milestone.
+Current status: **Not inventoried**. Wasp inventory is deferred until milestone 4.1; its capability matrix follows in 4.2. Other heroes remain outside the pitch inventory.
 
 ## Rule implementation template
 

@@ -170,6 +170,54 @@ if ($playModeProcess.ExitCode -ne 0) {
 
 Expected result: one test passes after entering Play Mode and advancing one frame; the process exits with code `0`.
 
+## Complete milestone-boundary suites
+
+Run both unfiltered suites after the focused checks pass and before marking a roadmap milestone complete. These commands intentionally omit `-testFilter`.
+
+```powershell
+$completeEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\complete-edit-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\complete-edit-tests.log"'
+)
+
+$completeEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $completeEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($completeEditProcess.ExitCode -ne 0) {
+    throw "Complete Edit Mode suite failed with exit code $($completeEditProcess.ExitCode)."
+}
+
+$completePlayArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'PlayMode',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\complete-play-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\complete-play-tests.log"'
+)
+
+$completePlayProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $completePlayArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($completePlayProcess.ExitCode -ne 0) {
+    throw "Complete Play Mode suite failed with exit code $($completePlayProcess.ExitCode)."
+}
+```
+
+Expected result: every currently discovered Edit Mode and Play Mode test passes, each process exits with code `0`, and the two complete NUnit XML files record the milestone-boundary result.
+
 ## Test ownership
 
 - `Assets/Tests/EditMode/` contains tests that run without entering Play Mode.

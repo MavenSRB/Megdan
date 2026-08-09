@@ -6,6 +6,8 @@ Last updated: 2026-08-09
 
 Milestone 1.3 is complete: the core model can represent one primitive hero occupying one logical hex, and the validation scene renders a simple placeholder hero at the world position derived from that authoritative occupancy. No movement, teams, cards, turns, or gameplay resolution has been implemented.
 
+Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
+
 Milestone 1.4, selecting the hero and one adjacent destination, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
@@ -88,6 +90,15 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Core architecture constraints
 
+### Map progression
+
+- Phases 1 and 2 use an expanded temporary test grid only for foundational movement, obstacles, cards, and two-hero combat.
+- Phase 3 replaces that grid in the main validation scene with the complete official multi-zone single-lane map.
+- The full map model includes every official space, terrain classification, zone, zone boundary, zone adjacency, spawn point, Throne, starting Battle Zone, and ordered lane relationship.
+- Fast Travel cannot begin until same-zone, adjacent-zone, and non-adjacent-zone queries are verified on the full map.
+- Lane pushing cannot begin until the full ordered lane, movable Battle Zone, Thrones, and per-zone minion spawn points are verified.
+- Do not use a reduced or invented map as evidence that Fast Travel or lane pushing is correct.
+
 ### Authoritative state
 
 - Rules state is plain, deterministic game data, not Unity scene state.
@@ -100,6 +111,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 - The UI submits commands such as play card, choose action, select target, or confirm movement.
 - A rules authority validates commands and produces ordered state-change events.
+- Multi-step actions pause on authoritative, data-shaped pending choices and resume through follow-up commands; UI callbacks never own the continuation.
 - The pitch authority runs locally in-process.
 - A future online build can move authority to a host/server without rewriting card rules.
 - Randomness must not be generalized beyond the initial Tie Breaker setup decision.
@@ -115,12 +127,22 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ### Card system
 
-- The architecture must grow to support the future hero catalog.
-- Add reusable effect primitives only when a real card requires them.
-- Represent common card behavior as composable, typed data and small rule components.
-- Keep a controlled custom-code extension point for genuinely unique effects.
-- Do not build a runtime natural-language parser or a speculative universal scripting language.
-- The full card corpus review is deferred. New cards are classified as they enter an approved milestone, and later cards may trigger deliberate refactoring.
+- `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` is the required detailed contract for all card, action, effect, combat, turn, progression, snapshot, and rules-authority work.
+- The architecture must support the future hero catalog without claiming that unknown cards require zero extensions.
+- Immutable, revisioned `CardDefinition`-equivalent content is separate from owned runtime `CardInstance`-equivalent state. Instances refer to definitions; definitions are never mutated into match state or upgrades.
+- Runtime card lifecycle is represented through orthogonal facts such as location, played status, resolution status, and face orientation because the rulebook permits overlapping states.
+- A card and an action are not the same selection. Immutable action definitions hold structured printed/general rules content; runtime action offers bind a definition to the current actor, source card, state, and invocation context. Offers explicitly distinguish printed Primary, printed Secondary, general-rule Secondary, replacement, reaction, repeated, and card-text-granted use, including whether card text applies.
+- Printed icon values are queried through typed value/contribution services so later items, card text, minions, and active effects can modify totals without replacing early card models.
+- Ordered action execution is deterministic and resumable. Mandatory/optional steps, target and modal choices, repeats, nested Defense, timing windows, and active effects use serializable rules data rather than delegates, coroutines, or UI-owned state.
+- Targeting, presence checks, value calculation, card-state transitions, timing, and active-effect lifetime are reusable rule services rather than card-specific UI logic.
+- Passive/continuous rules sources, including Ultimates and persistent token properties, remain distinct from ordinary cancelable Active effects.
+- Common effects compose small typed definitions/handlers. A genuinely unique verified effect may register one isolated pure-code handler, but it must use the same validation, pending-choice, event, timing, state, and serialization boundaries.
+- Never branch rules on card display name, hero display name, image filename, or printed text. Do not build a runtime natural-language parser or speculative universal scripting language.
+- Phase 1 proves this foundation with placeholder definitions/instances, explicit Movement offers and typed values, command/events, a resumable choice shell, and visible card-driven movement.
+- Phase 2 proves extension by opening a basic Attack, pausing for the target hero's Defense reaction, discarding one owned card or declining, and resuming the unmodified comparison through the same authority.
+- Phase 4 verifies Wasp, maps every action to a capability/dependency matrix, and re-baselines Phase 5 before real effects are implemented. Phase 5 ordering is provisional until that matrix exists.
+- Complete Wasp verification is a later integration gate after minion, economy, item, Ultimate, and progression dependencies exist; an earlier action-category milestone cannot claim the whole hero is complete.
+- Add reusable primitives only when a verified rule or card requires them. Later discoveries may require a localized capability, handler, or explicit schema migration, but must not silently rewrite ownership, action context, UI authority, or continuation semantics.
 
 ## Presentation direction
 
@@ -178,6 +200,10 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - One approved micro-milestone per task.
 - Every milestone defines one observable outcome, explicit non-goals, focused acceptance checks, and a hard stop.
 - Do not start the next milestone without explicit user approval.
+- The early board/card foundation proceeds in separate steps: adjacent selection, an authoritative adjacent-move command/event, presentation hookup, a larger placeholder grid, movement of multiple spaces, obstacle blocking, definition/instance separation, action definitions/runtime offers and typed values, resumable card-action choices, then visible card-driven movement.
+- Multi-space movement must preserve the player's chosen route, allow stopping before the allowance is exhausted, and reject entering or passing through obstacles.
+- Before Phase 1 ends, the selected test action offer's typed printed-value query must be the sole source of movement allowance.
+- Fast Travel, movement from card text, and movement-limiting effects remain later rule milestones rather than being folded into the early board test.
 - Mechanics are completed with primitives and debug UI before production art begins.
 - Add focused automated tests for the changed behavior.
 - Add a regression test for every fixed bug.
@@ -189,6 +215,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 ## Available reference material
 
 - `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` - primary local rulebook.
+- `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` - project architecture contract derived from the general card/action rules; it is not a substitute for card-specific source verification.
 - `Docs/Guards of Atlantis II - Tabletopia Cards/` - private reference extraction containing hero-card material and supporting scripts/assets.
 - The extracted card corpus has not been accepted as complete or fully verified for implementation.
 - Do not assume filenames, duplicates, image faces, or extraction completeness are authoritative without an explicit inventory milestone.
@@ -201,6 +228,11 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - **Authoritative state:** The validated rules state from which all visuals are derived.
 - **Command:** A requested player or debug action sent to the rules authority.
 - **Rule event:** An ordered, validated state change produced by the rules authority and consumed by presentation.
+- **Card definition:** Immutable, versioned structured rules content for a printed card face; never live match state.
+- **Card instance:** One stable owned runtime card that references a definition and carries its current lifecycle facts.
+- **Action definition:** Immutable structured content for a printed or general-rule action before current match context is applied.
+- **Action offer:** One context-specific legal use of a card or general rule, selected separately from the card itself.
+- **Pending choice:** Serializable authoritative input required to continue a paused action resolution.
 - **Micro-milestone:** The smallest user-approved, independently testable increment with a hard stop after acceptance.
 - **Rules ledger:** The traceability record connecting rule systems to sources, implementation, tests, and deviations.
 
@@ -211,7 +243,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Online play during the pitch phase.
 - AI opponents.
 - Pass-and-play.
-- Multiple playable heroes in the pitch.
+- Multiple distinct hero designs beyond mirrored Wasp in the pitch.
 - A universal card-text parser.
 - Production visuals before the primitive game loop is complete.
 - Music, voice, tutorials, accounts, matchmaking, cloud saves, or telemetry.

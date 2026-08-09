@@ -5,13 +5,15 @@ Read these files before planning or changing anything in this workspace:
 1. `Docs/AI/PROJECT_CONTEXT.md`
 2. `Docs/AI/ROADMAP.md`
 3. `Docs/AI/RULES_LEDGER.md`
-4. `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` when the task depends on a game rule
+4. `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` for any card, action, effect, combat, turn, progression, snapshot, or rules-authority work
+5. `Docs/AI/TESTING.md` before running or changing automated tests
+6. `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` when the task depends on a game rule
 
 ## Current authorization
 
-Roadmap milestones 0.1 through 0.3 are complete: living documentation, the empty Unity project shell, and the automated test shell exist. A local Git repository is authorized and initialized.
+Roadmap milestones 0.1 through 0.4 and 1.1 through 1.3 are complete: living documentation, the Unity/test shell, the card-system architecture contract, hex foundations, minimal rendering, and one primitive hero exist. A local Git repository is authorized and initialized.
 
-No later roadmap milestone is currently authorized. Do not begin milestone 1.1 or any gameplay, presentation, or build work until the user explicitly approves that exact micro-milestone.
+Milestone 1.4 is proposed but not authorized. Do not begin it or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
 
 ## Non-negotiable working rules
 
@@ -22,6 +24,7 @@ No later roadmap milestone is currently authorized. Do not begin milestone 1.1 o
 - Do not continue into adjacent features merely because they appear easy or logically related.
 - Use the smallest implementation that proves the current behavior, while preserving the architectural constraints in `PROJECT_CONTEXT.md`.
 - Keep authoritative rules and state independent from Unity scene objects, presentation, animation, and audio.
+- Preserve the definition/instance, action-offer, command/event, pending-choice, timing, and versioning contracts in `CARD_SYSTEM_ARCHITECTURE.md`. Do not add card-name/hero-name rule branches, runtime printed-text parsing, or UI-owned card resolution.
 - Add focused automated tests for the behavior being changed. Add regression tests for bugs. Run the broader suite only at roadmap milestone boundaries unless risk requires more.
 - Do not repeatedly retest the whole game for a narrow change.
 - Preserve user-created and reference files. Do not bulk-process or reorganize the card corpus unless the current milestone requires it.
@@ -35,4 +38,5 @@ After an approved decision or completed milestone:
 - Update `PROJECT_CONTEXT.md` when product scope, constraints, terminology, or architecture changes.
 - Update `ROADMAP.md` when milestone status or sequencing changes.
 - Update `RULES_LEDGER.md` when a rule is verified, implemented, tested, clarified, or intentionally deviated from.
+- Update `CARD_SYSTEM_ARCHITECTURE.md` when a verified rule or card changes a card-engine contract or extension boundary.
 - If these files disagree, stop and resolve the conflict with the user before implementation.
