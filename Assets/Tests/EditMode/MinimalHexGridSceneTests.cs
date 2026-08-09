@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -145,6 +146,27 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void Scene_ContainsVisiblePlaceholderObstaclesOnUniqueEmptySpaces()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var hero = Object.FindFirstObjectByType<PrimitiveHeroView>();
+            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
+            var expectedCoordinates = new[] { new HexCoordinate(1, 0), new HexCoordinate(0, 1) };
+
+            Assert.That(obstacles, Has.Length.EqualTo(2));
+            Assert.That(obstacles.Select(obstacle => obstacle.Coordinate), Is.EquivalentTo(expectedCoordinates));
+            Assert.That(obstacles.Select(obstacle => obstacle.Coordinate), Has.No.Member(hero.Coordinate));
+            Assert.That(obstacles.Select(obstacle => obstacle.Coordinate).Distinct().Count(), Is.EqualTo(obstacles.Length));
+            Assert.That(tiles.Select(tile => tile.Coordinate), Is.SupersetOf(expectedCoordinates));
+            Assert.That(obstacles, Has.All.Matches<PlaceholderObstacleView>(obstacle =>
+                obstacle.GetComponent<MeshRenderer>().enabled &&
+                obstacle.GetComponent<MeshFilter>().sharedMesh != null));
+        }
+
+
+        [Test]
         public void Scene_ContainsInputSystemPointerSelectionPath()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
@@ -180,14 +202,21 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
 
             Assert.That(controller.IsHeroSelected, Is.True);
-            var expectedDestinations = tiles
-                .Select(tile => tile.Coordinate)
-                .Where(coordinate => !coordinate.Equals(hero.Coordinate))
+            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
+            var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
+                    hero.Occupancy,
+                    tiles.Select(tile => tile.Coordinate),
+                    new[] { hero.Occupancy },
+                    obstacles.Select(obstacle => obstacle.Occupancy),
+                    controller.MovementAllowance)
+                .Select(destination => destination.Destination)
                 .ToArray();
 
             Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(tiles.Single(tile => tile.Coordinate.Equals(hero.Coordinate)).IsHighlighted, Is.False);
+            Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(1, 0)));
+            Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(0, 1)));
         }
 
         private static HashSet<HexCoordinate> CreateRadiusTwoCoordinates()

@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.8 is complete with an approved one-click movement adjustment: selecting the primitive hero starts a configurable movement session and highlights every empty destination currently reachable within the allowance on the placeholder grid. Clicking one reachable destination commits the deterministic shortest adjacent route internally through the milestone 1.5 adjacent-move authority, spends one allowance per adjacent step, records the resulting route/events, snaps the hero to the authoritative final occupancy, and ends the session. Clicking the selected hero again still stops without moving, including zero movement. No obstacles, official map data, zones, terrain, cards, turns, networking, animation, Fast Travel, movement from card text, movement-limiting effects, or broader gameplay resolution has been implemented.
+Milestone 1.9 is complete: the expanded placeholder grid now includes generic placeholder obstacles. Obstacles have pure occupancies, occupy unique board coordinates, cannot share a space with the primitive hero or another obstacle, block adjacent move commands, and are excluded from reachable-destination highlighting and internal movement routes. The one-click movement flow can route around blockers when the allowance permits and rejects destinations that require entering or passing through blocked spaces. No obstacle subtypes, terrain data/art, tokens, ignore-obstacle behavior, official map data, zones, cards, turns, networking, animation, Fast Travel, movement from card text, movement-limiting effects, or broader gameplay resolution has been implemented.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -14,7 +14,7 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 1.9, adding obstacles and enforcing movement blocking, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.10, separating card definitions from card instances, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
@@ -215,7 +215,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Every milestone defines one observable outcome, explicit non-goals, focused acceptance checks, and a hard stop.
 - Do not start the next milestone without explicit user approval.
 - The early board/card foundation proceeds in separate steps: adjacent selection, an authoritative adjacent-move command/event, presentation hookup, a larger placeholder grid, movement of multiple spaces, obstacle blocking immediately afterward, definition/instance separation, action definitions/runtime offers and typed values, resumable card-action choices, then visible card-driven movement.
-- Multi-space movement currently treats the player's clicked reachable destination as the explicit choice, records the deterministic internal adjacent route used to reach it, allows zero movement by stopping before a destination click, and must reject entering or passing through obstacles once obstacle spaces exist.
+- Multi-space movement currently treats the player's clicked reachable destination as the explicit choice, records the deterministic internal adjacent route used to reach it, allows zero movement by stopping before a destination click, and rejects entering or passing through generic placeholder obstacles.
 - Before Phase 1 ends, the selected test action offer's typed printed-value query must be the sole source of movement allowance.
 - Fast Travel, movement from card text, and movement-limiting effects remain later rule milestones rather than being folded into the early board test.
 - Mechanics are completed with primitives and debug UI before production art begins.
@@ -257,7 +257,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Obstacles, cards, or turns before milestone 1.9 approval.
+- Card definitions, cards, or turns before milestone 1.10 approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.

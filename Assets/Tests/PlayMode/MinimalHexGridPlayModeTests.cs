@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -78,7 +79,9 @@ namespace GuardsDigital.Tests.PlayMode
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
             var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
             var origin = hero.Coordinate;
+            var originOccupancy = hero.Occupancy;
             var destination = new HexCoordinate(2, 0);
             var destinationTile = tiles.Single(tile => tile.Coordinate.Equals(destination));
 
@@ -94,19 +97,27 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             Assert.That(selected, Is.True);
-            Assert.That(highlightedCoordinates, Is.EquivalentTo(tiles
-                .Select(tile => tile.Coordinate)
-                .Where(coordinate => !coordinate.Equals(origin))));
-            Assert.That(highlightedCoordinates, Has.Length.EqualTo(18));
+            var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
+                    originOccupancy,
+                    tiles.Select(tile => tile.Coordinate),
+                    new[] { originOccupancy },
+                    obstacles.Select(obstacle => obstacle.Occupancy),
+                    controller.MovementAllowance)
+                .Select(destination => destination.Destination)
+                .ToArray();
+            Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(highlightedCoordinates, Has.No.Member(origin));
+            Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(1, 0)));
+            Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(0, 1)));
             Assert.That(moved, Is.True);
             Assert.That(activeAfterMove, Is.False);
-            Assert.That(remainingAfterMove, Is.EqualTo(HeroSelectionController.DefaultMovementAllowance - 2));
+            Assert.That(remainingAfterMove, Is.EqualTo(0));
             Assert.That(controller.IsMovementSessionActive, Is.False);
             Assert.That(controller.MovementRoute, Is.EqualTo(new[]
             {
                 origin,
-                new HexCoordinate(1, 0),
+                new HexCoordinate(1, -1),
+                new HexCoordinate(2, -1),
                 destination
             }));
             Assert.That(hero.Coordinate, Is.EqualTo(destination));

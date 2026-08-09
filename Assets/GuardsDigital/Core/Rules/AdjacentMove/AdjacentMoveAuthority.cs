@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.AdjacentMove
@@ -10,10 +11,19 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
     {
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly List<HeroOccupancy> occupancies;
+        private readonly List<ObstacleOccupancy> obstacleOccupancies;
 
         public AdjacentMoveAuthority(
             IEnumerable<HexCoordinate> boardCoordinates,
             IEnumerable<HeroOccupancy> initialOccupancies)
+            : this(boardCoordinates, initialOccupancies, Enumerable.Empty<ObstacleOccupancy>())
+        {
+        }
+
+        public AdjacentMoveAuthority(
+            IEnumerable<HexCoordinate> boardCoordinates,
+            IEnumerable<HeroOccupancy> initialOccupancies,
+            IEnumerable<ObstacleOccupancy> initialObstacleOccupancies)
         {
             if (boardCoordinates == null)
             {
@@ -25,8 +35,14 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new ArgumentNullException(nameof(initialOccupancies));
             }
 
+            if (initialObstacleOccupancies == null)
+            {
+                throw new ArgumentNullException(nameof(initialObstacleOccupancies));
+            }
+
             this.boardCoordinates = new HashSet<HexCoordinate>(boardCoordinates);
             occupancies = new List<HeroOccupancy>();
+            obstacleOccupancies = new List<ObstacleOccupancy>();
 
             foreach (var occupancy in initialOccupancies)
             {
@@ -47,9 +63,32 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
                 occupancies.Add(occupancy);
             }
+
+            foreach (var obstacleOccupancy in initialObstacleOccupancies)
+            {
+                if (!this.boardCoordinates.Contains(obstacleOccupancy.Coordinate))
+                {
+                    throw new ArgumentException("Initial obstacle occupancy must be on the board.", nameof(initialObstacleOccupancies));
+                }
+
+                if (obstacleOccupancies.Any(existing => existing.ObstacleId.Equals(obstacleOccupancy.ObstacleId)))
+                {
+                    throw new ArgumentException("Initial obstacle occupancies must have unique obstacle IDs.", nameof(initialObstacleOccupancies));
+                }
+
+                if (obstacleOccupancies.Any(existing => existing.Coordinate.Equals(obstacleOccupancy.Coordinate)) ||
+                    occupancies.Any(existing => existing.Coordinate.Equals(obstacleOccupancy.Coordinate)))
+                {
+                    throw new ArgumentException("Initial obstacle occupancies must not share coordinates with another obstacle or unit.", nameof(initialObstacleOccupancies));
+                }
+
+                obstacleOccupancies.Add(obstacleOccupancy);
+            }
         }
 
         public IReadOnlyList<HeroOccupancy> Occupancies => occupancies.ToArray();
+
+        public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupancies.ToArray();
 
         public AdjacentMoveResult TryCommit(AdjacentMoveCommand command)
         {
@@ -75,7 +114,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 return AdjacentMoveResult.Reject(AdjacentMoveRejectionReason.DestinationNotAdjacent);
             }
 
-            if (occupancies.Any(occupancy => occupancy.Coordinate.Equals(command.Destination)))
+            if (occupancies.Any(occupancy => occupancy.Coordinate.Equals(command.Destination)) ||
+                obstacleOccupancies.Any(occupancy => occupancy.Coordinate.Equals(command.Destination)))
             {
                 return AdjacentMoveResult.Reject(AdjacentMoveRejectionReason.DestinationOccupied);
             }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Units.Heroes;
@@ -22,6 +23,9 @@ namespace GuardsDigital.Presentation.Interaction
         private HexTileView[] tileViews;
 
         [SerializeField]
+        private PlaceholderObstacleView[] obstacleViews;
+
+        [SerializeField]
         private Material highlightMaterial;
 
         [SerializeField]
@@ -39,6 +43,9 @@ namespace GuardsDigital.Presentation.Interaction
         public IReadOnlyList<HexCoordinate> HighlightedCoordinates => highlightedCoordinates;
 
         public Material HighlightMaterial => EnsureHighlightMaterial();
+
+        public IReadOnlyList<PlaceholderObstacleView> ObstacleViews =>
+            obstacleViews != null ? obstacleViews.Where(obstacle => obstacle != null).ToArray() : System.Array.Empty<PlaceholderObstacleView>();
 
         public int MovementAllowance => movementAllowance;
 
@@ -65,10 +72,12 @@ namespace GuardsDigital.Presentation.Interaction
             PrimitiveHeroView hero,
             IEnumerable<HexTileView> tiles,
             Material material,
-            int allowance = DefaultMovementAllowance)
+            int allowance = DefaultMovementAllowance,
+            IEnumerable<PlaceholderObstacleView> obstacles = null)
         {
             heroView = hero;
             tileViews = tiles?.Where(tile => tile != null).ToArray();
+            obstacleViews = obstacles?.Where(obstacle => obstacle != null).ToArray();
             highlightMaterial = material;
             movementAllowance = allowance;
             movementSession = null;
@@ -88,6 +97,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            RebuildMoveAuthority();
             var selectedOccupancy = GetHeroOccupancyFromAuthority();
             movementSession = new MovementSession(
                 moveAuthority,
@@ -120,6 +130,7 @@ namespace GuardsDigital.Presentation.Interaction
                 selectedOccupancy,
                 boardCoordinates,
                 moveAuthority.Occupancies,
+                moveAuthority.ObstacleOccupancies,
                 movementSession != null ? movementSession.RemainingAllowance : movementAllowance);
             var destinationSet = new HashSet<HexCoordinate>(destinations.Select(destination => destination.Destination));
 
@@ -245,6 +256,16 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 tileViews = discoveredTiles;
             }
+
+            var discoveredObstacles = FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
+            if (discoveredObstacles.Length > 0 &&
+                (obstacleViews == null ||
+                 obstacleViews.Length == 0 ||
+                 obstacleViews.Any(obstacle => obstacle == null) ||
+                 discoveredObstacles.Length != obstacleViews.Length))
+            {
+                obstacleViews = discoveredObstacles;
+            }
         }
 
         private void RebuildMoveAuthority()
@@ -259,10 +280,17 @@ namespace GuardsDigital.Presentation.Interaction
                 .Where(tile => tile != null)
                 .Select(tile => tile.Coordinate)
                 .ToArray();
+            var obstacleOccupancies = obstacleViews != null
+                ? obstacleViews
+                    .Where(obstacle => obstacle != null)
+                    .Select(obstacle => obstacle.Occupancy)
+                    .ToArray()
+                : System.Array.Empty<ObstacleOccupancy>();
 
             moveAuthority = new AdjacentMoveAuthority(
                 boardCoordinates,
-                new[] { heroView.Occupancy });
+                new[] { heroView.Occupancy },
+                obstacleOccupancies);
         }
 
         private void EnsureMoveAuthority()

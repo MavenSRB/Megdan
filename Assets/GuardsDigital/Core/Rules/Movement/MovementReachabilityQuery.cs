@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.Movement
@@ -14,6 +15,21 @@ namespace GuardsDigital.Core.Rules.Movement
             IEnumerable<HeroOccupancy> occupancies,
             int movementAllowance)
         {
+            return FindReachableDestinations(
+                selectedHero,
+                boardCoordinates,
+                occupancies,
+                Enumerable.Empty<ObstacleOccupancy>(),
+                movementAllowance);
+        }
+
+        public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
+            HeroOccupancy selectedHero,
+            IEnumerable<HexCoordinate> boardCoordinates,
+            IEnumerable<HeroOccupancy> occupancies,
+            IEnumerable<ObstacleOccupancy> obstacleOccupancies,
+            int movementAllowance)
+        {
             if (boardCoordinates == null)
             {
                 throw new ArgumentNullException(nameof(boardCoordinates));
@@ -22,6 +38,11 @@ namespace GuardsDigital.Core.Rules.Movement
             if (occupancies == null)
             {
                 throw new ArgumentNullException(nameof(occupancies));
+            }
+
+            if (obstacleOccupancies == null)
+            {
+                throw new ArgumentNullException(nameof(obstacleOccupancies));
             }
 
             if (movementAllowance < 0)
@@ -44,6 +65,11 @@ namespace GuardsDigital.Core.Rules.Movement
             }
 
             var blocked = new HashSet<HexCoordinate>(occupancies.Select(occupancy => occupancy.Coordinate));
+            foreach (var obstacleOccupancy in obstacleOccupancies)
+            {
+                blocked.Add(obstacleOccupancy.Coordinate);
+            }
+
             blocked.Remove(selectedHero.Coordinate);
 
             var costs = new Dictionary<HexCoordinate, int>

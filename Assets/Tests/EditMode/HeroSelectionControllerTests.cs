@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -283,6 +284,114 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void SelectHero_WithObstacles_HighlightsLegalDetourButNotBlockedSpaces()
+        {
+            var objects = new List<GameObject>();
+
+            try
+            {
+                var origin = new HexCoordinate(0, 0);
+                var legalDetourDestination = new HexCoordinate(2, 0);
+                var hero = CreateHero(objects, origin);
+                var tiles = CreateRadiusTwoCoordinates()
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var obstacles = CreateDetourObstacles(objects);
+                var controllerObject = new GameObject("Selection Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(hero, tiles, CreateMaterial(Color.yellow), 3, obstacles);
+
+                controller.SelectHero();
+
+                Assert.That(controller.HighlightedCoordinates, Has.No.Member(new HexCoordinate(1, 0)));
+                Assert.That(controller.HighlightedCoordinates, Has.No.Member(new HexCoordinate(0, 1)));
+                Assert.That(controller.HighlightedCoordinates, Has.Member(legalDetourDestination));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
+        public void TryCommitDestination_WithBlockedIntermediate_CommitsLegalDetourWhenAllowancePermits()
+        {
+            var objects = new List<GameObject>();
+
+            try
+            {
+                var origin = new HexCoordinate(0, 0);
+                var destination = new HexCoordinate(2, 0);
+                var hero = CreateHero(objects, origin);
+                var tiles = CreateRadiusTwoCoordinates()
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var obstacles = CreateDetourObstacles(objects);
+                var controllerObject = new GameObject("Selection Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(hero, tiles, CreateMaterial(Color.yellow), 3, obstacles);
+
+                controller.SelectHero();
+                var moved = controller.TryCommitDestination(destination);
+
+                Assert.That(moved, Is.True);
+                Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(0));
+                Assert.That(controller.MovementRoute, Is.EqualTo(new[]
+                {
+                    origin,
+                    new HexCoordinate(1, -1),
+                    new HexCoordinate(2, -1),
+                    destination
+                }));
+                Assert.That(hero.Occupancy.Coordinate, Is.EqualTo(destination));
+                Assert.That(controller.IsMovementSessionActive, Is.False);
+                Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
+        public void TryCommitDestination_WhenDetourExceedsAllowance_KeepsSelection()
+        {
+            var objects = new List<GameObject>();
+
+            try
+            {
+                var origin = new HexCoordinate(0, 0);
+                var destination = new HexCoordinate(2, 0);
+                var hero = CreateHero(objects, origin);
+                var tiles = CreateRadiusTwoCoordinates()
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var obstacles = CreateDetourObstacles(objects);
+                var controllerObject = new GameObject("Selection Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(hero, tiles, CreateMaterial(Color.yellow), 2, obstacles);
+
+                controller.SelectHero();
+                var highlightedBefore = controller.HighlightedCoordinates.ToArray();
+                var moved = controller.TryCommitDestination(destination);
+
+                Assert.That(moved, Is.False);
+                Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(highlightedBefore));
+                Assert.That(controller.HighlightedCoordinates, Has.No.Member(destination));
+                Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(2));
+                Assert.That(hero.Occupancy.Coordinate, Is.EqualTo(origin));
+                Assert.That(controller.IsMovementSessionActive, Is.True);
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
         private static PrimitiveHeroView CreateHero(ICollection<GameObject> objects, HexCoordinate coordinate)
         {
             var gameObject = new GameObject("Hero");
@@ -301,6 +410,29 @@ namespace GuardsDigital.Tests.EditMode
             var tile = gameObject.AddComponent<HexTileView>();
             tile.Configure(coordinate, HexWorldLayout.DefaultOuterRadius);
             return tile;
+        }
+
+        private static PlaceholderObstacleView CreateObstacle(
+            ICollection<GameObject> objects,
+            string obstacleId,
+            HexCoordinate coordinate)
+        {
+            var gameObject = new GameObject($"Obstacle {coordinate}");
+            objects.Add(gameObject);
+            gameObject.AddComponent<MeshFilter>();
+            gameObject.AddComponent<MeshRenderer>().sharedMaterial = CreateMaterial(Color.black);
+            var obstacle = gameObject.AddComponent<PlaceholderObstacleView>();
+            obstacle.Configure(new ObstacleOccupancy(new ObstacleId(obstacleId), coordinate), HexWorldLayout.DefaultOuterRadius);
+            return obstacle;
+        }
+
+        private static PlaceholderObstacleView[] CreateDetourObstacles(ICollection<GameObject> objects)
+        {
+            return new[]
+            {
+                CreateObstacle(objects, "east-blocker", new HexCoordinate(1, 0)),
+                CreateObstacle(objects, "south-east-blocker", new HexCoordinate(0, 1))
+            };
         }
 
         private static Ray CreateDownRay(Vector3 target)
