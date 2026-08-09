@@ -49,5 +49,19 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(cameras[0].name, Is.EqualTo("Fixed Camera"));
             Assert.That(cameras[0].GetComponents<MonoBehaviour>(), Is.Empty);
         }
+
+        [Test]
+        public void Scene_OriginUsesTheSharedPlaceholderPalette()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var origin = tiles.Single(tile => tile.Coordinate.Equals(new HexCoordinate(0, 0)));
+            var originMaterial = origin.GetComponent<MeshRenderer>().sharedMaterial;
+
+            Assert.That(
+                tiles.Any(tile => tile != origin && tile.GetComponent<MeshRenderer>().sharedMaterial == originMaterial),
+                Is.True,
+                "The origin should not have a unique visual treatment in the placeholder grid.");
+        }
     }
 }
