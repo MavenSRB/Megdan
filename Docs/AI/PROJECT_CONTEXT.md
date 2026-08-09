@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.4 is complete: the core model can derive adjacent empty destination candidates for the primitive hero, and the validation scene can select that hero through Unity Input System pointer input and highlight the six adjacent empty hexes. The hero still does not move, and no teams, cards, turns, command authority, or gameplay resolution has been implemented.
+Milestone 1.5 is complete: pure rules code can accept an adjacent-move command for the primitive hero, validate stable hero identity plus explicit origin/destination coordinates, commit authoritative occupancy for a legal adjacent empty destination, and return a rules-only movement event. Invalid or stale commands return structured rejections, emit no accepted movement event, and leave authoritative occupancy unchanged. The validation scene still does not submit move commands or update presentation from movement events, and no teams, cards, turns, movement range, networking, animation, or broader gameplay resolution has been implemented.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -12,7 +12,7 @@ Documentation milestone 0.5 is complete: `Docs/AI/CARD_EFFECT_CAPABILITIES.md` n
 
 Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker state, Initiative, turns, rounds, and the complete general match loop with synthetic test cards before the complete Wasp card inventory or Wasp-specific card implementation begins. This sequencing change also implements no gameplay.
 
-Milestone 1.5, committing one adjacent move through rules authority, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.6, connecting adjacent selection to the committed move, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
@@ -252,7 +252,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Committing a move, changing occupancy, or emitting movement events before milestone 1.5 approval.
+- Connecting pointer selection to movement commands, presentation movement, or multi-space movement before milestone 1.6 approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.

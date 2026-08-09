@@ -6,7 +6,7 @@ Last updated: 2026-08-09
 
 This ledger prevents silent rule drift. It connects each game system to its source, approved deviations, implementation status, and focused tests.
 
-The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, placeholder coordinate-to-XZ presentation, one primitive hero occupancy/rendering slice, selectable adjacent-destination highlighting, the architecture documents from completed roadmap milestones 0.1-0.5, and the core-first roadmap sequence from milestone 0.6. Milestones 1.1-1.4 are also complete. It contains no gameplay resolution. All rule systems are therefore unimplemented unless stated otherwise.
+The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, placeholder coordinate-to-XZ presentation, one primitive hero occupancy/rendering slice, selectable adjacent-destination highlighting, an authoritative adjacent-move command/event slice, the architecture documents from completed roadmap milestones 0.1-0.5, and the core-first roadmap sequence from milestone 0.6. Milestones 1.1-1.5 are also complete. It contains no broader gameplay resolution. All rule systems are therefore unimplemented unless stated otherwise.
 
 ## Authority hierarchy
 
@@ -78,6 +78,7 @@ Printed rulebook page numbers are used below.
 | Generic hex coordinates, adjacency, and placeholder XZ layout | Project architecture; not a game-rule interpretation | Implemented; milestone verified | Axial `(q, r)` coordinates expose six named standard neighbors; pointy-top placeholder conversion and mesh spacing are tested, but official board spaces and adjacency remain unverified and unimplemented until milestones 4.1-4.2 |
 | Primitive hero occupancy and placeholder placement | Project architecture; not a game-rule interpretation | Implemented; focused tests passing | One placeholder hero has a stable hero ID and occupied axial coordinate; the scene view derives its position from that coordinate. This does not implement teams, legal setup, movement, targeting, turns, card effects, or official board spaces |
 | Primitive hero selection and adjacent-empty highlighting | Project architecture; not a game-rule interpretation | Implemented; focused tests passing | A pure query derives empty adjacent destination candidates from board coordinates and current occupancies. The validation scene selects the primitive hero through Unity Input System pointer input and highlights adjacent empty hexes only. This does not implement a move command, occupancy mutation, movement events, teams, turns, or gameplay legality |
+| Primitive adjacent-move command/event authority | Project architecture; not a game-rule interpretation | Implemented; focused tests passing | A pure rules authority validates stable hero ID, explicit origin, explicit destination, board membership, adjacency, and occupancy before committing a one-space occupancy update and emitting a semantic movement event. Structured rejections leave state unchanged and emit no accepted event. This does not implement pointer wiring, presentation movement, Movement action allowance, cards, turns, teams, networking, or animation |
 | Heroes, teams, zones, Thrones, minions, lanes, win overview | Rulebook p.3 | Not implemented | Phase 4 must model the complete official multi-zone single-lane map; reduced early grids cannot verify Fast Travel or Lane Push |
 | Table talk and hidden information | Rulebook p.4 | Deferred by DEV-003 | Required for post-authorization online 3v3, not pitch interaction |
 | Four-/six-player setup | Rulebook pp.5-6 | Source reviewed; not implemented | Pitch inherits four-player Quick Game values except DEV-001/002/003 |
@@ -128,7 +129,7 @@ Milestones 0.4-0.5 specify these representation and capability seams; they do no
 
 | Rule pressure | Required architecture seam | Planned proving milestone(s) |
 | --- | --- | --- |
-| UI must not own rule mutation | Intent commands and ordered rule events | 1.5 |
+| UI must not own rule mutation | Intent commands and ordered rule events | 1.5 implemented a pure adjacent-move command/event slice |
 | Static print data versus mutable physical card | Versioned definition plus stable owned instance | 1.10 |
 | One card exposes context-dependent actions | Immutable action definitions plus runtime offers selected separately from card | 1.11 |
 | Printed icons gain distinct modifiers | Typed value query with contribution provenance | 1.11, extended in 5.3-5.4, 5.8, 7.2-7.3, and verified Wasp slices |

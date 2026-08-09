@@ -188,7 +188,7 @@ Non-goals: The hero does not move yet.
 
 Completion note (2026-08-09): Added a pure adjacent-empty destination query and Unity presentation selection path. The validation scene now uses the Unity Input System pointer abstraction (`<Pointer>/press` and pointer position raycast) to select the primitive hero and highlight only adjacent empty tiles; the current seven-hex scene therefore highlights all six neighbors and not the occupied origin. Focused Edit Mode tests passed 13/13, focused Play Mode tests passed 3/3, and milestone-boundary suites passed Edit Mode 35/35 and Play Mode 4/4. No movement command, occupancy mutation, rule event, teams, cards, turns, or gameplay resolution was added.
 
-### [ ] 1.5 Commit one adjacent move through rules authority
+### [x] 1.5 Commit one adjacent move through rules authority
 
 Observable outcome: Pure rules code accepts an adjacent-move intent command, validates it, commits authoritative occupancy, and returns an ordered movement rule event.
 
@@ -201,6 +201,8 @@ Acceptance checks:
 - Focused pure-rule tests cover legal, non-adjacent, occupied, wrong-origin, and unknown-hero requests.
 
 Non-goals: No pointer wiring, presentation movement, movement range, cards, turns, networking, or animation.
+
+Completion note (2026-08-09): Added a pure `AdjacentMoveAuthority` with `AdjacentMoveCommand`, structured rejection reasons, and rules-only `AdjacentMoveEvent` output. A legal adjacent command updates the copied authoritative occupancy list and emits one accepted movement event; unknown-hero, wrong-origin/stale, non-adjacent, occupied-destination, and off-board commands reject without changing occupancy or emitting accepted events. Focused pure-rule Edit Mode tests passed 6/6, and milestone-boundary suites passed Edit Mode 41/41 and Play Mode 4/4. No pointer wiring, presentation movement, movement range, cards, turns, networking, or animation was added.
 
 ### [ ] 1.6 Connect adjacent selection to the committed move
 

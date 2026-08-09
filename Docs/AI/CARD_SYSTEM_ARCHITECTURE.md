@@ -8,6 +8,8 @@ This document is the implementation contract for card-related code. It exists so
 
 `CARD_EFFECT_CAPABILITIES.md` is the mandatory effect-level companion. It defines the reusable contracts for Object Push, source-relative direct Move, Place, Spawn, tokens, markers, board-object changes, keyword queries, modifiers, timing, and other card-driven operations.
 
+Milestone 1.5 has now proved the first narrow command/event authority slice with a primitive adjacent-move command. This does not implement card resolution, Movement actions, or any effect handler; it only confirms that accepted rule mutation is owned by pure deterministic authority code and reported through semantic events.
+
 The contract is based on the second-printing rulebook's game structure, Action Card anatomy, action execution, card states, Movement, Skill, Hold, Attack, Defense, leveling, items, active effects, and keywords on printed pages 7-19. Exact hero content still requires the source-verification milestones in `ROADMAP.md` and `RULES_LEDGER.md`.
 
 This is an architecture specification, not evidence that any card rule is implemented. Implement only the subset named by the currently approved micro-milestone.
