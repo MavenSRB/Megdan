@@ -15,13 +15,14 @@ This roadmap is a sequence of micro-milestones, not authorization to execute the
 
 For every item:
 
-1. Obtain explicit user approval for that item.
-2. Implement only its stated observable outcome.
-3. Respect its non-goals.
-4. Run the milestone's focused tests, directly affected regressions, and highest applicable validation tier from `Docs/AI/TESTING.md`.
-5. Update the project documents.
-6. Create a local Git commit containing the completed milestone and continuity updates.
-7. Report the result and stop.
+1. Confirm that the exact item declares its `Required Codex profile` and that `.codex/config.toml` matches it; this is execution metadata, not authorization.
+2. Obtain explicit user approval for that item.
+3. Implement only its stated observable outcome.
+4. Respect its non-goals.
+5. Run the milestone's focused tests, directly affected regressions, and highest applicable validation tier from `Docs/AI/TESTING.md`.
+6. Update the project documents and `.codex/config.toml`, including the next proposed milestone's required profile and matching new-task defaults.
+7. Create a local Git commit containing the completed milestone and continuity updates.
+8. Report the result, the next proposed milestone and its required profile, then stop.
 
 Milestones may be split further if implementation reveals more than one independently testable behavior. They must not be silently combined.
 
@@ -808,7 +809,7 @@ Observable outcome: Synthetic hero combat follows the complete general Attack/De
 Acceptance checks:
 
 - Target validation, Before Attack, Attack Total, Defense response, Block/result comparison, After Attack, and action-end checkpoints occur in verified order.
-- Focused synthetic scenarios cover both non-Ranged adjacent targeting and Ranged targeting through typed Range/distance queries.
+- Focused synthetic scenarios integrate and regress both milestone 2.3's non-Ranged adjacent targeting and milestone 2.3a's Ranged targeting through typed Range/distance queries within the complete Attack/Defense order.
 - Printed, minion, item-ready, card-text-ready, and Active-effect-ready contributions remain distinct even when only synthetic contributions are populated.
 - A successful Attack records a staged Defeat outcome for Phase 7 consequences.
 - Wasp card text, values, items, and special effects are not used.
