@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.5 is complete: pure rules code can accept an adjacent-move command for the primitive hero, validate stable hero identity plus explicit origin/destination coordinates, commit authoritative occupancy for a legal adjacent empty destination, and return a rules-only movement event. Invalid or stale commands return structured rejections, emit no accepted movement event, and leave authoritative occupancy unchanged. The validation scene still does not submit move commands or update presentation from movement events, and no teams, cards, turns, movement range, networking, animation, or broader gameplay resolution has been implemented.
+Milestone 1.6 is complete: the validation scene now lets the tester click the primitive hero, then click a highlighted adjacent destination to submit the milestone 1.5 adjacent-move command. Accepted moves update authoritative occupancy through the rules authority, clear obsolete highlights, and snap the hero view to the position derived from the updated occupancy. Rejected destination commands keep selection and presentation consistent with unchanged authoritative state. No multi-space movement, cards, turns, path automation, networking, animation, or broader gameplay resolution has been implemented.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -14,7 +14,7 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 1.6, connecting adjacent selection to the committed move, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.7, expanding the placeholder test grid, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
@@ -257,7 +257,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Connecting pointer selection to movement commands, presentation movement, or multi-space movement before milestone 1.6 approval.
+- Expanding the placeholder grid, multi-space movement, obstacles, cards, or turns before milestone 1.7 approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.

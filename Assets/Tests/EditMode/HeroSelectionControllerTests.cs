@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
@@ -119,6 +120,89 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void TryCommitDestination_LegalHighlightedDestination_UpdatesHeroFromAuthorityAndClearsHighlights()
+        {
+            var objects = new List<GameObject>();
+
+            try
+            {
+                var hero = CreateHero(objects, new HexCoordinate(0, 0));
+                var destination = hero.Coordinate.GetNeighbor(HexDirection.East);
+                var tiles = hero.Coordinate.GetNeighbors()
+                    .Concat(new[] { hero.Coordinate })
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var controllerObject = new GameObject("Selection Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(hero, tiles, CreateMaterial(Color.yellow));
+
+                controller.SelectHero();
+                var moved = controller.TryCommitDestination(destination);
+
+                Assert.That(moved, Is.True);
+                Assert.That(controller.IsHeroSelected, Is.False);
+                Assert.That(controller.HighlightedCoordinates, Is.Empty);
+                Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
+                Assert.That(controller.CurrentHeroOccupancy.Coordinate, Is.EqualTo(destination));
+                Assert.That(hero.Occupancy.Coordinate, Is.EqualTo(destination));
+                Assert.That(
+                    Vector3.Distance(
+                        hero.transform.localPosition,
+                        HexWorldLayout.ToWorld(destination) + (Vector3.up * hero.VerticalOffset)),
+                    Is.LessThan(0.0001f));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
+        public void PointerInput_ClickingNonAdjacentTileSubmitsRejectedCommandAndKeepsSelection()
+        {
+            var objects = new List<GameObject>();
+
+            try
+            {
+                var origin = new HexCoordinate(0, 0);
+                var farCoordinate = new HexCoordinate(2, 0);
+                var hero = CreateHero(objects, origin);
+                var tiles = origin.GetNeighbors()
+                    .Concat(new[] { origin, farCoordinate })
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var controllerObject = new GameObject("Selection Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(hero, tiles, CreateMaterial(Color.yellow));
+                var selector = hero.gameObject.AddComponent<PrimitiveHeroPointerSelector>();
+                selector.Configure(controller);
+                var inputObject = new GameObject("Pointer Input");
+                objects.Add(inputObject);
+                var pointerInput = inputObject.AddComponent<PrimitiveHeroPointerInput>();
+                pointerInput.Configure(null, new[] { selector });
+
+                controller.SelectHero();
+                var highlightedBefore = controller.HighlightedCoordinates.ToArray();
+                var farTile = tiles.Single(tile => tile.Coordinate.Equals(farCoordinate));
+
+                var handled = pointerInput.TryHandlePointerRay(CreateDownRay(farTile.transform.position));
+
+                Assert.That(handled, Is.False);
+                Assert.That(controller.LastMoveRejectionReason, Is.EqualTo(AdjacentMoveRejectionReason.DestinationNotAdjacent));
+                Assert.That(controller.IsHeroSelected, Is.True);
+                Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(highlightedBefore));
+                Assert.That(hero.Occupancy.Coordinate, Is.EqualTo(origin));
+                Assert.That(controller.CurrentHeroOccupancy.Coordinate, Is.EqualTo(origin));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
         private static PrimitiveHeroView CreateHero(ICollection<GameObject> objects, HexCoordinate coordinate)
         {
             var gameObject = new GameObject("Hero");
@@ -137,6 +221,11 @@ namespace GuardsDigital.Tests.EditMode
             var tile = gameObject.AddComponent<HexTileView>();
             tile.Configure(coordinate, HexWorldLayout.DefaultOuterRadius);
             return tile;
+        }
+
+        private static Ray CreateDownRay(Vector3 target)
+        {
+            return new Ray(target + (Vector3.up * 2f), Vector3.down);
         }
 
         private static Material CreateMaterial(Color color)

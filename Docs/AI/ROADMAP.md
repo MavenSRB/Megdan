@@ -223,7 +223,7 @@ Non-goals: No pointer wiring, presentation movement, movement range, cards, turn
 
 Completion note (2026-08-09): Added a pure `AdjacentMoveAuthority` with `AdjacentMoveCommand`, structured rejection reasons, and rules-only `AdjacentMoveEvent` output. A legal adjacent command updates the copied authoritative occupancy list and emits one accepted movement event; unknown-hero, wrong-origin/stale, non-adjacent, occupied-destination, and off-board commands reject without changing occupancy or emitting accepted events. Focused pure-rule Edit Mode tests passed 6/6, and milestone-boundary suites passed Edit Mode 41/41 and Play Mode 4/4. No pointer wiring, presentation movement, movement range, cards, turns, networking, or animation was added.
 
-### [ ] 1.6 Connect adjacent selection to the committed move
+### [x] 1.6 Connect adjacent selection to the committed move
 
 Observable outcome: Clicking a highlighted destination submits the milestone 1.5 command, then the primitive hero view snaps to the position derived from updated authoritative occupancy and the emitted event.
 
@@ -235,6 +235,8 @@ Acceptance checks:
 - Focused Edit Mode and Play Mode tests cover valid and invalid pointer-to-command flows.
 
 Non-goals: No multi-space movement, card, turn, path automation, networking, or animation.
+
+Completion note (2026-08-09): Connected the scene selection flow to the milestone 1.5 adjacent-move authority. Pointer input first tries to select the hero, then treats non-hero tile hits as destination intents; the selection controller submits an `AdjacentMoveCommand`, updates the hero view only after an accepted authority result, and leaves selection/highlights unchanged on rejected commands. T2 validation passed: focused Edit Mode 11/11 and focused Play Mode 3/3. Complete unfiltered suites were intentionally omitted because this is not a T3 gate and the affected Unity-facing path is covered by the focused Play Mode scene test. No multi-space movement, card, turn, path automation, networking, or animation was added.
 
 ### [ ] 1.7 Expand the placeholder test grid
 

@@ -61,12 +61,25 @@ namespace GuardsDigital.Presentation.Interaction
             var screenPosition = Pointer.current.position.ReadValue();
             var pointerRay = eventCamera.ScreenPointToRay(screenPosition);
 
+            return TryHandlePointerRay(pointerRay);
+        }
+
+        public bool TryHandlePointerRay(Ray pointerRay)
+        {
+            EnsureBindings();
+
             foreach (var selector in selectors)
             {
                 if (selector != null && selector.TrySelectFromPointerRay(pointerRay))
                 {
                     return true;
                 }
+            }
+
+            var selectionController = FindFirstObjectByType<HeroSelectionController>();
+            if (selectionController != null && selectionController.TryCommitDestinationFromPointerRay(pointerRay))
+            {
+                return true;
             }
 
             return false;
