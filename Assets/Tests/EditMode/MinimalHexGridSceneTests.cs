@@ -164,7 +164,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_SelectingHeroHighlightsOnlyAdjacentEmptyTiles()
+        public void Scene_SelectingHeroHighlightsReachableEmptyTilesWithinAllowance()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
@@ -180,8 +180,13 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
 
             Assert.That(controller.IsHeroSelected, Is.True);
-            Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(hero.Coordinate.GetNeighbors()));
-            Assert.That(highlightedCoordinates, Is.EquivalentTo(hero.Coordinate.GetNeighbors()));
+            var expectedDestinations = tiles
+                .Select(tile => tile.Coordinate)
+                .Where(coordinate => !coordinate.Equals(hero.Coordinate))
+                .ToArray();
+
+            Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(expectedDestinations));
+            Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(tiles.Single(tile => tile.Coordinate.Equals(hero.Coordinate)).IsHighlighted, Is.False);
         }
 

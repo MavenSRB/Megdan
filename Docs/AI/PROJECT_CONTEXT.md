@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.8 is complete: selecting the primitive hero now starts a configurable movement session with allowance greater than one. Each clicked destination commits exactly one adjacent step through the milestone 1.5 adjacent-move authority, spends one allowance, records the explicit chosen route, and refreshes legal next-step highlighting from the hero's current authoritative occupancy. Spending the full allowance ends the session; clicking the selected hero again stops early, including zero movement. No obstacles, official map data, zones, terrain, cards, turns, path automation, networking, animation, Fast Travel, movement from card text, movement-limiting effects, or broader gameplay resolution has been implemented.
+Milestone 1.8 is complete with an approved one-click movement adjustment: selecting the primitive hero starts a configurable movement session and highlights every empty destination currently reachable within the allowance on the placeholder grid. Clicking one reachable destination commits the deterministic shortest adjacent route internally through the milestone 1.5 adjacent-move authority, spends one allowance per adjacent step, records the resulting route/events, snaps the hero to the authoritative final occupancy, and ends the session. Clicking the selected hero again still stops without moving, including zero movement. No obstacles, official map data, zones, terrain, cards, turns, networking, animation, Fast Travel, movement from card text, movement-limiting effects, or broader gameplay resolution has been implemented.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -215,7 +215,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Every milestone defines one observable outcome, explicit non-goals, focused acceptance checks, and a hard stop.
 - Do not start the next milestone without explicit user approval.
 - The early board/card foundation proceeds in separate steps: adjacent selection, an authoritative adjacent-move command/event, presentation hookup, a larger placeholder grid, movement of multiple spaces, obstacle blocking immediately afterward, definition/instance separation, action definitions/runtime offers and typed values, resumable card-action choices, then visible card-driven movement.
-- Multi-space movement must preserve the player's chosen route, allow stopping before the allowance is exhausted, and reject entering or passing through obstacles.
+- Multi-space movement currently treats the player's clicked reachable destination as the explicit choice, records the deterministic internal adjacent route used to reach it, allows zero movement by stopping before a destination click, and must reject entering or passing through obstacles once obstacle spaces exist.
 - Before Phase 1 ends, the selected test action offer's typed printed-value query must be the sole source of movement allowance.
 - Fast Travel, movement from card text, and movement-limiting effects remain later rule milestones rather than being folded into the early board test.
 - Mechanics are completed with primitives and debug UI before production art begins.

@@ -255,21 +255,21 @@ Completion note (2026-08-09): Added a presentation-owned radius-2 placeholder gr
 
 ### [x] 1.8 Move up to a configurable number of spaces
 
-Observable outcome: A movement session gives the primitive hero a configurable allowance greater than one and lets the tester choose each adjacent step until stopping early or spending the allowance.
+Observable outcome: A movement session gives the primitive hero a configurable allowance greater than one, highlights every empty destination reachable within that allowance, and lets the tester move to one chosen destination with one click.
 
 Acceptance checks:
 
-- Every committed step is adjacent to the hero's current space.
+- Every internally committed step is adjacent to the hero's current space.
 - Each step consumes exactly one point of movement allowance.
 - The hero cannot take more steps than the allowance.
-- Moving zero spaces and stopping before the allowance is exhausted are both legal.
-- The chosen route is explicit; the system does not silently substitute a different path.
+- Moving zero spaces by stopping before a destination click is legal.
+- The chosen destination is explicit; the deterministic internal route is recorded as ordered adjacent steps/events.
 - Every committed step uses the milestone 1.5 command/event authority.
-- Focused tests cover zero movement, early stopping, exact allowance, and attempted over-movement.
+- Focused tests cover zero movement, exact allowance, attempted over-movement, reachable-destination highlighting, deterministic route recording, and unreachable destination rejection.
 
 Non-goals: No cards, turns, Fast Travel, movement from card text, movement-limiting effects, obstacles, or animation.
 
-Completion note (2026-08-09): Added a pure `MovementSession` wrapper around the milestone 1.5 adjacent-move authority. Sessions track configured allowance, remaining allowance, explicit route, and the ordered accepted adjacent-move events; rejected or over-allowance steps do not mutate occupancy or add events. The validation scene now starts a default allowance-3 session on primitive hero selection, refreshes legal adjacent highlights after each accepted step, ends automatically when allowance is spent, and stops early when the tester clicks the selected hero again. Focused T2 validation passed after allowing Unity batchmode access to local licensing/package services: Edit Mode 25/25 (`MovementSessionTests`, `HeroSelectionControllerTests`, `AdjacentMoveAuthorityTests`, `MinimalHexGridSceneTests`) and Play Mode 3/3 (`MinimalHexGridPlayModeTests`). Complete unfiltered suites were intentionally omitted because this is not a T3 gate and the affected pure/session/controller/scene path is covered by the focused tests. No cards, turns, Fast Travel, movement from card text, movement-limiting effects, obstacles, networking, or animation was added.
+Completion note (2026-08-09): Added a pure `MovementSession` wrapper around the milestone 1.5 adjacent-move authority. Sessions track configured allowance, remaining allowance, explicit route, and the ordered accepted adjacent-move events; rejected or over-allowance steps do not mutate occupancy or add events. The validation scene now starts a default allowance-3 session on primitive hero selection, highlights every empty destination reachable within the remaining allowance, commits the deterministic shortest adjacent route to the clicked destination through the same authority, ends after that one destination click, and stops with zero movement when the tester clicks the selected hero again before choosing a destination. Focused T2 validation passed after allowing Unity batchmode access to local licensing/package services: Edit Mode 29/29 (`MovementSessionTests`, `MovementReachabilityQueryTests`, `HeroSelectionControllerTests`, `AdjacentMoveAuthorityTests`, `MinimalHexGridSceneTests`) and Play Mode 3/3 (`MinimalHexGridPlayModeTests`). Complete unfiltered suites were intentionally omitted because this is not a T3 gate and the affected pure/session/controller/scene path is covered by the focused tests. No cards, turns, Fast Travel, movement from card text, movement-limiting effects, obstacles, networking, or animation was added.
 
 ### [ ] 1.9 Add obstacles and enforce movement blocking
 
@@ -279,9 +279,9 @@ Acceptance checks:
 
 - An obstacle prevents the hero from entering its space.
 - An obstacle cannot be crossed as an intermediate movement step.
-- The tester can choose an alternate legal route when the allowance permits it.
+- The tester can choose a reachable legal destination when the allowance permits it.
 - A space can contain at most one obstacle, including a unit.
-- Legal-next-step highlighting updates after every step and excludes blocked spaces.
+- Reachable-destination highlighting excludes blocked spaces and spaces that require passing through blocked spaces.
 - Focused tests cover blocked destinations, blocked intermediate spaces, legal detours, insufficient allowance for a detour, and occupancy conflicts.
 
 Non-goals: No ability to ignore obstacles, obstacle subtypes, tokens, terrain art, other units, path automation, cards, turns, Fast Travel, or animation.

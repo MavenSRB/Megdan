@@ -28,6 +28,8 @@ namespace GuardsDigital.Presentation.Interaction
         private int movementAllowance = DefaultMovementAllowance;
 
         private readonly List<HexCoordinate> highlightedCoordinates = new List<HexCoordinate>();
+        private readonly Dictionary<HexCoordinate, ReachableMovementDestination> reachableDestinations =
+            new Dictionary<HexCoordinate, ReachableMovementDestination>();
 
         private AdjacentMoveAuthority moveAuthority;
         private MovementSession movementSession;
@@ -70,6 +72,7 @@ namespace GuardsDigital.Presentation.Interaction
             highlightMaterial = material;
             movementAllowance = allowance;
             movementSession = null;
+            reachableDestinations.Clear();
             RebuildMoveAuthority();
             ClearSelectionVisuals();
         }
@@ -109,18 +112,21 @@ namespace GuardsDigital.Presentation.Interaction
         {
             ClearTileHighlights();
             highlightedCoordinates.Clear();
+            reachableDestinations.Clear();
 
             var availableTiles = tileViews.Where(tile => tile != null).ToArray();
             var boardCoordinates = availableTiles.Select(tile => tile.Coordinate);
-            var destinations = AdjacentDestinationQuery.FindEmptyAdjacentDestinations(
+            var destinations = MovementReachabilityQuery.FindReachableDestinations(
                 selectedOccupancy,
                 boardCoordinates,
-                moveAuthority.Occupancies);
-            var destinationSet = new HashSet<HexCoordinate>(destinations);
+                moveAuthority.Occupancies,
+                movementSession != null ? movementSession.RemainingAllowance : movementAllowance);
+            var destinationSet = new HashSet<HexCoordinate>(destinations.Select(destination => destination.Destination));
 
-            foreach (var coordinate in destinations)
+            foreach (var destination in destinations)
             {
-                highlightedCoordinates.Add(coordinate);
+                highlightedCoordinates.Add(destination.Destination);
+                reachableDestinations[destination.Destination] = destination;
             }
 
             var material = EnsureHighlightMaterial();
@@ -151,24 +157,27 @@ namespace GuardsDigital.Presentation.Interaction
                     movementAllowance);
             }
 
-            var result = movementSession.TryCommitStep(destination);
-            LastMoveRejectionReason = result.AdjacentMoveRejectionReason;
-
-            if (!result.Accepted)
+            if (!reachableDestinations.TryGetValue(destination, out var reachableDestination))
             {
+                LastMoveRejectionReason = AdjacentMoveRejectionReason.None;
                 return false;
+            }
+
+            for (var routeIndex = 1; routeIndex < reachableDestination.Route.Count; routeIndex++)
+            {
+                var result = movementSession.TryCommitStep(reachableDestination.Route[routeIndex]);
+                LastMoveRejectionReason = result.AdjacentMoveRejectionReason;
+
+                if (!result.Accepted)
+                {
+                    return false;
+                }
             }
 
             var updatedOccupancy = GetHeroOccupancyFromAuthority();
             heroView.Configure(updatedOccupancy, heroView.OuterRadius);
-            if (result.SessionComplete)
-            {
-                ClearSelectionVisuals();
-            }
-            else
-            {
-                RefreshSelectionHighlights(updatedOccupancy);
-            }
+            movementSession.Complete();
+            ClearSelectionVisuals();
 
             return true;
         }
@@ -200,6 +209,7 @@ namespace GuardsDigital.Presentation.Interaction
         {
             ClearTileHighlights();
             highlightedCoordinates.Clear();
+            reachableDestinations.Clear();
             IsHeroSelected = false;
         }
 

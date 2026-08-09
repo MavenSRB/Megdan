@@ -1,0 +1,107 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Units.Heroes;
+
+namespace GuardsDigital.Core.Rules.Movement
+{
+    public static class MovementReachabilityQuery
+    {
+        public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
+            HeroOccupancy selectedHero,
+            IEnumerable<HexCoordinate> boardCoordinates,
+            IEnumerable<HeroOccupancy> occupancies,
+            int movementAllowance)
+        {
+            if (boardCoordinates == null)
+            {
+                throw new ArgumentNullException(nameof(boardCoordinates));
+            }
+
+            if (occupancies == null)
+            {
+                throw new ArgumentNullException(nameof(occupancies));
+            }
+
+            if (movementAllowance < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(movementAllowance),
+                    movementAllowance,
+                    "Movement allowance must not be negative.");
+            }
+
+            if (movementAllowance == 0)
+            {
+                return Array.Empty<ReachableMovementDestination>();
+            }
+
+            var board = new HashSet<HexCoordinate>(boardCoordinates);
+            if (!board.Contains(selectedHero.Coordinate))
+            {
+                return Array.Empty<ReachableMovementDestination>();
+            }
+
+            var blocked = new HashSet<HexCoordinate>(occupancies.Select(occupancy => occupancy.Coordinate));
+            blocked.Remove(selectedHero.Coordinate);
+
+            var costs = new Dictionary<HexCoordinate, int>
+            {
+                [selectedHero.Coordinate] = 0
+            };
+            var parents = new Dictionary<HexCoordinate, HexCoordinate>();
+            var queue = new Queue<HexCoordinate>();
+            var destinations = new List<ReachableMovementDestination>();
+
+            queue.Enqueue(selectedHero.Coordinate);
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                var currentCost = costs[current];
+                if (currentCost >= movementAllowance)
+                {
+                    continue;
+                }
+
+                foreach (var neighbor in current.GetNeighbors())
+                {
+                    if (!board.Contains(neighbor) ||
+                        blocked.Contains(neighbor) ||
+                        costs.ContainsKey(neighbor))
+                    {
+                        continue;
+                    }
+
+                    var cost = currentCost + 1;
+                    costs[neighbor] = cost;
+                    parents[neighbor] = current;
+                    queue.Enqueue(neighbor);
+                    destinations.Add(new ReachableMovementDestination(
+                        neighbor,
+                        BuildRoute(selectedHero.Coordinate, neighbor, parents),
+                        cost));
+                }
+            }
+
+            return destinations;
+        }
+
+        private static IReadOnlyList<HexCoordinate> BuildRoute(
+            HexCoordinate origin,
+            HexCoordinate destination,
+            IReadOnlyDictionary<HexCoordinate, HexCoordinate> parents)
+        {
+            var route = new List<HexCoordinate> { destination };
+            var current = destination;
+            while (!current.Equals(origin))
+            {
+                current = parents[current];
+                route.Add(current);
+            }
+
+            route.Reverse();
+            return route;
+        }
+    }
+}
