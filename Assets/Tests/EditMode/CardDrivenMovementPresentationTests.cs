@@ -98,13 +98,14 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PrimaryOffer_EarlyDestinationCommitsAuthorityRouteAndClearsSelections()
+        public void PrimaryOffer_TwoWaypointStepsRemainPendingUntilPlayerStops()
         {
             var objects = new List<GameObject>();
             try
             {
                 var scenario = CreateScenario(objects, 99, true);
-                var destination = new HexCoordinate(-1, 0);
+                var firstDestination = new HexCoordinate(-1, 0);
+                var secondDestination = new HexCoordinate(-2, 0);
                 var selectedCard = scenario.Controller.VisibleCardInstances[1];
 
                 scenario.Controller.TrySelectCard(selectedCard.Id);
@@ -118,13 +119,31 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(scenario.Controller.PendingCardDestinations.Select(choice => choice.Destination),
                     Is.EquivalentTo(expectedChoices.Select(choice => choice.Destination)));
-                Assert.That(scenario.Controller.TrySubmitCardDestination(destination), Is.True);
+                Assert.That(scenario.Controller.TrySubmitCardDestination(firstDestination), Is.True);
 
-                Assert.That(scenario.Hero.Coordinate, Is.EqualTo(destination));
-                Assert.That(scenario.Controller.CurrentHeroOccupancy.Coordinate, Is.EqualTo(destination));
+                Assert.That(scenario.Hero.Coordinate, Is.EqualTo(firstDestination));
+                Assert.That(scenario.Controller.CurrentHeroOccupancy.Coordinate, Is.EqualTo(firstDestination));
                 Assert.That(scenario.Controller.CardMovementRoute,
-                    Is.EqualTo(new[] { new HexCoordinate(0, 0), destination }));
+                    Is.EqualTo(new[] { new HexCoordinate(0, 0), firstDestination }));
                 Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(2));
+                Assert.That(scenario.Controller.PendingCardChoice.Origin, Is.EqualTo(firstDestination));
+                Assert.That(scenario.Controller.IsCardResolutionPending, Is.True);
+                Assert.That(scenario.Controller.SelectedCardInstanceId, Is.EqualTo(selectedCard.Id));
+                Assert.That(scenario.Controller.SelectedActionOffer, Is.Not.Null);
+                Assert.That(scenario.Controller.HighlightedCoordinates,
+                    Is.EquivalentTo(scenario.Controller.PendingCardDestinations.Select(choice => choice.Destination)));
+                Assert.That(scenario.Controller.TrySubmitCardDestination(secondDestination), Is.True);
+
+                Assert.That(scenario.Hero.Coordinate, Is.EqualTo(secondDestination));
+                Assert.That(scenario.Controller.CardMovementRoute,
+                    Is.EqualTo(new[] { new HexCoordinate(0, 0), firstDestination, secondDestination }));
+                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
+                Assert.That(scenario.Controller.PendingCardChoice.Origin, Is.EqualTo(secondDestination));
+                Assert.That(scenario.Controller.IsCardResolutionPending, Is.True);
+                Assert.That(scenario.Controller.TryStopCardMovement(), Is.True);
+
+                Assert.That(scenario.Hero.Coordinate, Is.EqualTo(secondDestination));
+                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
                 Assert.That(scenario.Controller.IsCardResolutionPending, Is.False);
                 Assert.That(scenario.Controller.SelectedCardInstanceId, Is.Null);
                 Assert.That(scenario.Controller.SelectedActionOffer, Is.Null);
@@ -135,6 +154,9 @@ namespace GuardsDigital.Tests.EditMode
                         CardActionResolutionEventKind.MovementActionStarted,
                         CardActionResolutionEventKind.MovementChoiceRequested,
                         CardActionResolutionEventKind.MovementStepCommitted,
+                        CardActionResolutionEventKind.MovementChoiceRequested,
+                        CardActionResolutionEventKind.MovementStepCommitted,
+                        CardActionResolutionEventKind.MovementChoiceRequested,
                         CardActionResolutionEventKind.MovementActionCompleted
                     }));
             }

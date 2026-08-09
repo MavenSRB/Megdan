@@ -42,13 +42,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentException("A restored pending resolution cannot contain a completed movement session.", nameof(pendingResolution));
             }
 
-            if (pendingResolution.MovementSessionState.CommittedStepCount != 0)
-            {
-                throw new ArgumentException(
-                    "A pending one-click destination resolution cannot contain already committed movement steps.",
-                    nameof(pendingResolution));
-            }
-
             var authority = new CardActionResolutionAuthority(adjacentMoveAuthority);
             var movementSession = new MovementSession(adjacentMoveAuthority, pendingResolution.MovementSessionState);
             var expectedStepId = CreateStepId(movementSession.CaptureState().CommittedStepCount);
@@ -237,16 +230,46 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 stepResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
             }
 
-            movementSession.Complete();
-            var completedResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
-            resolutionEvents.Add(CardActionResolutionEvent.MovementActionCompleted(completedResolution));
-            pendingResolution = null;
-            pendingChoice = null;
+            if (movementSession.IsComplete)
+            {
+                movementSession.Complete();
+                var completedResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
+                resolutionEvents.Add(CardActionResolutionEvent.MovementActionCompleted(completedResolution));
+                pendingResolution = null;
+                pendingChoice = null;
+
+                return CardActionResolutionResult.Accept(
+                    true,
+                    null,
+                    null,
+                    resolutionEvents);
+            }
+
+            var nextResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
+            var nextChoice = CreatePendingChoice(nextResolution, movementSession);
+            if (nextChoice.LegalDestinations.Count == 0)
+            {
+                movementSession.Complete();
+                var completedResolution = CreatePendingResolution(nextResolution, movementSession.CaptureState());
+                resolutionEvents.Add(CardActionResolutionEvent.MovementActionCompleted(completedResolution));
+                pendingResolution = null;
+                pendingChoice = null;
+
+                return CardActionResolutionResult.Accept(
+                    true,
+                    null,
+                    null,
+                    resolutionEvents);
+            }
+
+            pendingResolution = nextResolution;
+            pendingChoice = nextChoice;
+            resolutionEvents.Add(CardActionResolutionEvent.MovementChoiceRequested(nextResolution));
 
             return CardActionResolutionResult.Accept(
-                true,
-                null,
-                null,
+                false,
+                pendingResolution,
+                pendingChoice,
                 resolutionEvents);
         }
 

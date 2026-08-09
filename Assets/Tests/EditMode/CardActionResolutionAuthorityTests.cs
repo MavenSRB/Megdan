@@ -158,7 +158,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void AnswerMovementChoice_SelectsReachableDestinationAndCompletesAfterItsRoute()
+        public void AnswerMovementChoice_SelectsPartialDestinationAndRequestsContinuationFromNewPosition()
         {
             var actorId = new HeroId("primitive-hero");
             var origin = new HexCoordinate(0, 0);
@@ -175,22 +175,29 @@ namespace GuardsDigital.Tests.EditMode
                 destination));
 
             Assert.That(movement.Accepted, Is.True);
-            Assert.That(movement.IsComplete, Is.True);
+            Assert.That(movement.IsComplete, Is.False);
             Assert.That(movementAuthority.Occupancies.Single().Coordinate, Is.EqualTo(destination));
-            Assert.That(movement.PendingResolution, Is.Null);
-            Assert.That(movement.PendingChoice, Is.Null);
+            Assert.That(movement.PendingResolution, Is.Not.Null);
+            Assert.That(movement.PendingResolution.ResolutionId, Is.EqualTo(start.PendingResolution.ResolutionId));
+            Assert.That(movement.PendingResolution.CurrentStepId, Is.EqualTo(new ActionResolutionStepId("movement-step-1")));
+            Assert.That(movement.PendingResolution.MovementSessionState.Route, Is.EqualTo(new[] { origin, destination }));
+            Assert.That(movement.PendingChoice, Is.Not.Null);
+            Assert.That(movement.PendingChoice.Origin, Is.EqualTo(destination));
+            Assert.That(movement.PendingChoice.RemainingAllowance, Is.EqualTo(1));
             Assert.That(movement.Events.Select(resolutionEvent => resolutionEvent.Kind), Is.EqualTo(new[]
             {
                 CardActionResolutionEventKind.MovementStepCommitted,
-                CardActionResolutionEventKind.MovementActionCompleted
+                CardActionResolutionEventKind.MovementChoiceRequested
             }));
             Assert.That(movement.Events[0].MovementEvent.Origin, Is.EqualTo(origin));
             Assert.That(movement.Events[0].MovementEvent.Destination, Is.EqualTo(destination));
             Assert.That(movement.Events[1].RemainingAllowance, Is.EqualTo(1));
+            Assert.That(authority.PendingResolution, Is.SameAs(movement.PendingResolution));
+            Assert.That(authority.PendingChoice, Is.SameAs(movement.PendingChoice));
         }
 
         [Test]
-        public void AnswerMovementChoice_StopAtZeroOrBeforeAllowanceIsSpent_CompletesLegally()
+        public void AnswerMovementChoice_StopBeforeAllowanceIsSpent_CompletesLegally()
         {
             var actorId = new HeroId("primitive-hero");
             var origin = new HexCoordinate(0, 0);
@@ -282,17 +289,57 @@ namespace GuardsDigital.Tests.EditMode
                 start.PendingChoice.ResolutionId,
                 start.PendingChoice.ChoiceId,
                 firstDestination));
-            var afterCompletion = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
+            var staleAfterContinuation = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
                 start.PendingChoice.ResolutionId,
                 start.PendingChoice.ChoiceId,
                 firstDestination));
 
             Assert.That(accepted.Accepted, Is.True);
-            Assert.That(accepted.IsComplete, Is.True);
-            Assert.That(afterCompletion.Accepted, Is.False);
-            Assert.That(afterCompletion.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.NoPendingResolution));
+            Assert.That(accepted.IsComplete, Is.False);
+            Assert.That(staleAfterContinuation.Accepted, Is.False);
+            Assert.That(staleAfterContinuation.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.StaleChoice));
             Assert.That(movementAuthority.Occupancies.Single().Coordinate, Is.EqualTo(firstDestination));
-            Assert.That(authority.PendingChoice, Is.Null);
+            Assert.That(authority.PendingChoice, Is.SameAs(accepted.PendingChoice));
+        }
+
+        [Test]
+        public void AnswerMovementChoice_WaypointsBuildOneCumulativeRouteUntilAllowanceIsSpent()
+        {
+            var actorId = new HeroId("primitive-hero");
+            var origin = new HexCoordinate(0, 0);
+            var east = origin.GetNeighbor(HexDirection.East);
+            var definition = CreateDefinition(CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 3));
+            var offer = CreateOffer(actorId, definition, ActionInvocationContext.PrintedPrimary);
+            var movementAuthority = CreateMovementAuthority(actorId, origin);
+            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var start = authority.StartMovementResolution(new ActionResolutionId("resolution-1"), offer, new[] { definition }, new[] { CreateInstance(actorId, definition) });
+
+            var first = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
+                start.PendingChoice.ResolutionId,
+                start.PendingChoice.ChoiceId,
+                east));
+            var second = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
+                first.PendingChoice.ResolutionId,
+                first.PendingChoice.ChoiceId,
+                origin));
+            var third = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
+                second.PendingChoice.ResolutionId,
+                second.PendingChoice.ChoiceId,
+                east));
+
+            Assert.That(first.IsComplete, Is.False);
+            Assert.That(second.IsComplete, Is.False);
+            Assert.That(second.PendingResolution.MovementSessionState.Route, Is.EqualTo(new[] { origin, east, origin }));
+            Assert.That(second.PendingChoice.Origin, Is.EqualTo(origin));
+            Assert.That(second.PendingChoice.RemainingAllowance, Is.EqualTo(1));
+            Assert.That(third.Accepted, Is.True);
+            Assert.That(third.IsComplete, Is.True);
+            Assert.That(movementAuthority.Occupancies.Single().Coordinate, Is.EqualTo(east));
+            Assert.That(third.Events.Select(resolutionEvent => resolutionEvent.Kind), Is.EqualTo(new[]
+            {
+                CardActionResolutionEventKind.MovementStepCommitted,
+                CardActionResolutionEventKind.MovementActionCompleted
+            }));
         }
 
         [Test]
@@ -595,7 +642,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PendingMovementResolution_RejectsRestoredPartialRouteFromLegacyStepFlow()
+        public void PendingMovementResolution_RestoresCommittedPartialRouteAndContinuesSameAction()
         {
             var actorId = new HeroId("primitive-hero");
             var origin = new HexCoordinate(0, 0);
@@ -603,34 +650,40 @@ namespace GuardsDigital.Tests.EditMode
             var definition = CreateDefinition(CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 2));
             var instance = CreateInstance(actorId, definition);
             var offer = ActionOfferQuery.GetAvailableOffers(new[] { definition }, new[] { instance }, actorId).Single();
-            var originalAuthority = CreateResolutionAuthority(actorId, origin);
+            var originalMovementAuthority = CreateMovementAuthority(actorId, origin);
+            var originalAuthority = new CardActionResolutionAuthority(originalMovementAuthority);
             var start = originalAuthority.StartMovementResolution(
                 new ActionResolutionId("resolution-1"),
                 offer,
                 new[] { definition },
                 new[] { instance });
-            var partialState = new MovementSessionState(
-                actorId,
-                2,
-                1,
-                false,
-                new[] { origin, firstDestination },
-                new[] { new AdjacentMoveEvent(actorId, origin, firstDestination) });
-            var partialResolution = new PendingCardActionResolution(
-                start.PendingResolution.ResolutionId,
-                start.PendingResolution.SourceCardInstanceId,
-                start.PendingResolution.SourceDefinitionReference,
-                start.PendingResolution.ActionDefinitionId,
-                start.PendingResolution.ActorId,
-                start.PendingResolution.InvocationContext,
-                new ActionResolutionStepId("movement-step-1"),
-                partialState);
+            var partial = originalAuthority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
+                start.PendingChoice.ResolutionId,
+                start.PendingChoice.ChoiceId,
+                firstDestination));
             var movementAuthority = CreateMovementAuthority(actorId, firstDestination);
-
-            Assert.Throws<System.ArgumentException>(() => CardActionResolutionAuthority.Restore(
+            var restored = CardActionResolutionAuthority.Restore(
                 movementAuthority,
-                partialResolution,
-                start.PendingChoice));
+                partial.PendingResolution,
+                partial.PendingChoice);
+            var destination = firstDestination.GetNeighbor(HexDirection.NorthEast);
+            Assert.That(restored.PendingResolution, Is.SameAs(partial.PendingResolution));
+
+            var completed = restored.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
+                restored.PendingChoice.ResolutionId,
+                restored.PendingChoice.ChoiceId,
+                destination));
+
+            Assert.That(partial.IsComplete, Is.False);
+            Assert.That(partial.PendingResolution.MovementSessionState.Route, Is.EqualTo(new[] { origin, firstDestination }));
+            Assert.That(completed.Accepted, Is.True);
+            Assert.That(completed.IsComplete, Is.True);
+            Assert.That(movementAuthority.Occupancies.Single().Coordinate, Is.EqualTo(destination));
+            Assert.That(completed.Events.Select(resolutionEvent => resolutionEvent.Kind), Is.EqualTo(new[]
+            {
+                CardActionResolutionEventKind.MovementStepCommitted,
+                CardActionResolutionEventKind.MovementActionCompleted
+            }));
         }
 
         private static ReplayResult RunTwoStepReplay()

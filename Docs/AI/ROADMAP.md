@@ -397,6 +397,25 @@ Non-goals: No real Wasp cards, printed card text, initiative, facedown/reveal be
 
 Completion note (2026-08-09): Added two visibly test-only placeholder Movement cards to the expanded obstacle-map scene. Card selection and action selection remain separate; each card derives a printed Primary Movement 3 offer with card-text application and a printed Secondary Movement 1 offer with card text suppressed. The presentation bridge starts `CardActionResolutionAuthority`, highlights its exact pending destination/route/cost candidates, submits Stop or destination commands, updates the primitive hero only from accepted authoritative occupancy, and clears selected card/action/pending visuals on completion. UI clicks over the card panel are blocked from leaking into board input. Re-reviewed rulebook printed pages 7, 10, and 11 for one-action selection, Primary/Secondary text policy, optional `up to` Movement, and obstacle blocking. T3 validation passed after allowing Unity batchmode access to local licensing/package services: focused Edit Mode 41/41 (`CardDrivenMovementPresentationTests`, `CardActionResolutionAuthorityTests`, `HeroSelectionControllerTests`, and `MinimalHexGridSceneTests`); focused Play Mode 3/3 (`MinimalHexGridPlayModeTests`); targeted offscreen scene render 1/1 with readable hero/obstacles and correct pending Primary-value-3 destination highlights; complete unfiltered Edit Mode 114/114; and complete unfiltered Play Mode 4/4, all with zero skipped or inconclusive cases. No real Wasp content, printed card-text effects, play/reveal, lifecycle transition, initiative, turn/round, Fast Travel, alternate/non-shortest route selection, snapshot import/export, networking, or animation was added.
 
+### [x] 1.13a Keep partial Movement pending and build cumulative waypoint routes
+
+Observable outcome: If a Movement 3 action commits a route costing 2, the same action remains pending with 1 allowance and offers another destination choice or Stop from the hero's new authoritative position.
+
+Acceptance checks:
+
+- A destination route that costs less than the remaining allowance commits its adjacent steps but does not complete the Movement action.
+- The continuation preserves the resolution/source/action/actor/context, advances its step/choice ID, accumulates the full route and ordered events, and emits another choice request without emitting another action-start event.
+- Legal destination candidates and highlights are recalculated from the new authoritative occupancy using only the remaining allowance.
+- Waypoint choices can form a deliberately longer cumulative route, including revisiting a previously occupied coordinate, without enumerating multiple complete routes for one destination.
+- Stop completes at any point with unused allowance; exhausting the allowance completes automatically.
+- An old choice becomes stale after a partial segment, and restored pending state with committed steps resumes deterministically.
+- Presentation retains the selected card/action between partial segments and clears them only when resolution ends.
+- T3 corrective phase gate: focused affected Edit/Play checks and both complete unfiltered suites pass.
+
+Non-goals: No official full map, concrete movement-limiting effects, Fast Travel, direct card-text Move, real Wasp data/text, play/reveal, lifecycle transitions, turns, networking, or animation.
+
+Completion note (2026-08-09): Changed `CardActionResolutionAuthority` so a partial destination advances the existing pending Movement resolution instead of implicitly stopping it. The authority re-derives candidates from the new occupancy, preserves cumulative `MovementSessionState` route/events, issues a new step-scoped choice, accepts Stop with unused allowance, and completes automatically only when the allowance is exhausted (or no continuation destination exists). `Restore` now accepts and validates pending continuations with already committed steps. The visible controller retains card/action selection, accumulates route presentation, refreshes highlights/status after each segment, and clears only on completion. Re-reviewed rulebook printed page 11: Movement is optional up to the printed value, obstacles block entry/passage, and movement-limiting effects are checked only once at action start. T3 validation passed: focused Edit Mode 42/42 (`CardDrivenMovementPresentationTests`, `CardActionResolutionAuthorityTests`, `HeroSelectionControllerTests`, and `MinimalHexGridSceneTests`); focused Play Mode 4/4 (`MinimalHexGridPlayModeTests`); complete Edit Mode 115/115; and complete Play Mode 5/5, all with zero skipped or inconclusive cases. No milestone 2.1 or later gameplay was started.
+
 ## Phase 2 - Two-hero combat and Tie Breaker state
 
 ### [ ] 2.1 Introduce teams, players, heroes, and stable IDs
@@ -679,8 +698,8 @@ Observable outcome: A synthetic Movement action uses its typed allowance to trav
 Acceptance checks:
 
 - The action reuses Phase 1 route choice, obstacle blocking, command/event authority, and pending resolution.
-- When multiple legal routes reach the same destination within the allowance, the player can choose among them, including a deliberately longer/non-shortest route; shortest-path projection must not make that choice on the player's behalf.
-- Focused tests prove shortest and longer legal routes to the same destination remain distinct choices and commit the selected route's exact ordered steps deterministically.
+- The Phase 1 segmented waypoint interaction is integrated on the official placeholder map so the player can construct any legal cumulative route within the allowance, including a deliberately longer/non-shortest route to a destination.
+- Focused source-linked tests prove shortest and longer legal cumulative routes to the same destination commit their selected ordered steps deterministically without enumerating every complete route up front.
 - Action-start restrictions are evaluated at the correct checkpoint.
 - Up-to movement permits zero movement and early stopping.
 - Ordinary Movement remains distinct from direct movement written in card text.

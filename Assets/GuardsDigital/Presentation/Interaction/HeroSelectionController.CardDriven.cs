@@ -245,29 +245,42 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             cardResolutionEvents.AddRange(result.Events);
-            lastCardRemainingAllowance = selectedDestination.HasValue
-                ? choiceBeforeSubmission.RemainingAllowance - selectedDestination.Value.Cost
-                : choiceBeforeSubmission.RemainingAllowance;
-            lastCardMovementRoute = selectedDestination.HasValue
-                ? selectedDestination.Value.Route.ToArray()
-                : new[] { choiceBeforeSubmission.Origin };
+            lastCardRemainingAllowance = result.PendingResolution != null
+                ? result.PendingResolution.RemainingAllowance
+                : selectedDestination.HasValue
+                    ? choiceBeforeSubmission.RemainingAllowance - selectedDestination.Value.Cost
+                    : choiceBeforeSubmission.RemainingAllowance;
+            if (selectedDestination.HasValue)
+            {
+                lastCardMovementRoute = lastCardMovementRoute
+                    .Concat(selectedDestination.Value.Route.Skip(1))
+                    .ToArray();
+            }
 
             var completedCardName = GetSelectedCardDefinition()?.DisplayName ?? "Test card";
             var completedContext = selectedActionOffer.HasValue
                 ? FormatContext(selectedActionOffer.Value.InvocationContext)
                 : "Movement";
-            var completedCost = selectedDestination.HasValue ? selectedDestination.Value.Cost : 0;
 
             var updatedOccupancy = GetHeroOccupancyFromAuthority();
             heroView.Configure(updatedOccupancy, heroView.OuterRadius);
+            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            if (!result.IsComplete)
+            {
+                cardStatus = $"{completedCardName}: {completedContext} Movement has " +
+                    $"{result.PendingChoice.RemainingAllowance} remaining. Choose another destination or Stop.";
+                RefreshCardChoiceHighlights(result.PendingChoice);
+                return true;
+            }
+
+            var completedCost = lastCardMovementAllowance - lastCardRemainingAllowance;
             ClearSelectionVisuals();
             selectedCardInstanceId = null;
             selectedActionOffer = null;
             cardResolutionAuthority = null;
-            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
             cardStatus = $"{completedCardName}: {completedContext} Movement completed ({completedCost} space" +
                 (completedCost == 1 ? "). Select another card." : "s). Select another card.");
-            return result.IsComplete;
+            return true;
         }
 
         public bool BlocksPointerAt(Vector2 screenPosition)

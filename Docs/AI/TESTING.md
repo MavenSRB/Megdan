@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Scope
 
-The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. Milestone 1.2 adds Edit Mode layout, mesh, and saved-scene coverage plus a Play Mode scene-loading check. Milestone 1.3 adds primitive hero occupancy and placement coverage. Milestone 1.4 adds adjacent-empty destination query, selection highlighting, Input System pointer-path, saved-scene, and Play Mode coverage. Milestone 1.5 adds pure adjacent-move command/event authority coverage. Milestone 1.6 adds pointer-to-command hookup coverage for accepted and rejected adjacent destination flows. Milestone 1.7 expands the placeholder validation grid and adds scene coverage for radius-2 coordinates, distance coverage, alternate routes, and preserved click-to-move behavior. Milestone 1.8 adds pure movement-session coverage for zero movement, early stopping, exact allowance, and over-movement, plus reachable-destination query, controller, and Play Mode pointer coverage for one-click destination movement that records adjacent step routes. Milestone 1.9 adds pure obstacle occupancy, adjacent-move blocking, reachability detours around blocked spaces, visible placeholder obstacle views, saved-scene obstacle wiring, and Play Mode coverage for one-click detour movement. Milestone 1.10 adds pure card definition/instance coverage for stable identities, content revisions, definition references, primitive-hero ownership, orthogonal initial state facts, shared immutable definitions, and initial setup validation. Milestone 1.11 adds pure action definition, runtime offer, invocation-context vocabulary, and typed printed Movement value query coverage. Milestone 1.12 adds the pure card-action resolution shell, corrective milestone 1.12a hardens offer/continuation authority, and corrective milestone 1.12b covers immutable destination/route/cost candidates, one-command route completion, zero/early stop, obstacle detours, changed-board rejection without partial movement, restoration, and deterministic replay. Milestone 1.13 adds visible synthetic hand/card/action/pending-choice integration coverage for typed Primary/Secondary allowances, text policy, Stop and early destinations, stale UI choices, obstacle detours, pointer-submitted commands, saved-scene wiring, and the Phase 1 unfiltered gate. These tests do not implement or verify the complete official Movement rule or game loop.
+The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. Milestone 1.2 adds Edit Mode layout, mesh, and saved-scene coverage plus a Play Mode scene-loading check. Milestone 1.3 adds primitive hero occupancy and placement coverage. Milestone 1.4 adds adjacent-empty destination query, selection highlighting, Input System pointer-path, saved-scene, and Play Mode coverage. Milestone 1.5 adds pure adjacent-move command/event authority coverage. Milestone 1.6 adds pointer-to-command hookup coverage for accepted and rejected adjacent destination flows. Milestone 1.7 expands the placeholder validation grid and adds scene coverage for radius-2 coordinates, distance coverage, alternate routes, and preserved click-to-move behavior. Milestone 1.8 adds pure movement-session coverage for zero movement, early stopping, exact allowance, and over-movement, plus reachable-destination query, controller, and Play Mode pointer coverage for one-click destination movement that records adjacent step routes. Milestone 1.9 adds pure obstacle occupancy, adjacent-move blocking, reachability detours around blocked spaces, visible placeholder obstacle views, saved-scene obstacle wiring, and Play Mode coverage for one-click detour movement. Milestone 1.10 adds pure card definition/instance coverage for stable identities, content revisions, definition references, primitive-hero ownership, orthogonal initial state facts, shared immutable definitions, and initial setup validation. Milestone 1.11 adds pure action definition, runtime offer, invocation-context vocabulary, and typed printed Movement value query coverage. Milestone 1.12 adds the pure card-action resolution shell, corrective milestone 1.12a hardens offer/continuation authority, and corrective milestone 1.12b covers immutable destination/route/cost candidates, one-command segment commitment, zero/early Stop, obstacle detours, changed-board rejection without partial mutation, restoration, and deterministic replay. Milestone 1.13 adds visible synthetic hand/card/action/pending-choice integration and the Phase 1 unfiltered gate. Corrective milestone 1.13a adds pure, presentation, and saved-scene regressions for partial segments remaining pending, cumulative waypoint routes, refreshed choices, stale prior choices, Stop with unused allowance, allowance exhaustion, and restore after committed steps, then re-runs the complete Phase 1 gate. These tests do not implement or verify concrete action-start restriction effects, Fast Travel, direct Move, or the complete official game loop.
 
 Run commands from PowerShell. Each focused Unity command opens the project, runs only its named test fixture or case, writes NUnit XML plus a Unity log under `tmp/`, and exits without producing a player build. Scene-dependent filters load the saved validation scene.
 
@@ -47,7 +47,7 @@ The tier may escalate during implementation; it is never lowered to avoid a fail
 
 ### Explicit integration gates
 
-The current T3 phase/hard gates are milestones `1.13`, `2.6`, `3.11`, `4.4`, `5.8`, `6.8`, `7.9`, `8.16`, and `9.16`. Milestone `8.2` must update this list if it re-baselines the end of Phase 8.
+The current T3 phase/hard gates are milestones `1.13`, `2.6`, `3.11`, `4.4`, `5.8`, `6.8`, `7.9`, `8.16`, and `9.16`. A corrective milestone that changes an already-passed gate boundary, such as `1.13a`, re-runs that gate's complete suites. Milestone `8.2` must update this list if it re-baselines the end of Phase 8.
 
 Milestone `10.1` reuses the unchanged `9.16` result and adds build-and-launch smoke; rerun T3 if code or executable content changed after `9.16`. Milestone `10.2` runs the clean-machine private smoke test without redundantly rerunning Unity Test Framework against an unchanged build.
 
@@ -397,7 +397,7 @@ if ($cardFoundationHardeningProcess.ExitCode -ne 0) {
 
 Expected result: all discovered cases pass, covering externally immutable definition/value/choice/continuation collections, strict origin/policy validation, timing-window-scoped offer projection, authoritative forged/stale offer rejection, structured missing-actor rejection, exact pending Movement continuation data, restoration through a fresh authority, deterministic choice resumption, and the directly affected definition, value, movement, reachability, and adjacent-move regressions.
 
-## One-click card-resolution Movement focused Edit Mode tests
+## Card-resolution Movement focused Edit Mode tests
 
 ```powershell
 $oneClickCardMovementArguments = @(
@@ -422,7 +422,7 @@ if ($oneClickCardMovementProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: all discovered cases pass, covering immutable and structurally valid destination/route/cost candidates, typed Primary/Secondary allowance, one-command adjacent and multi-step completion, zero and early stopping, ordered internal step events, obstacle exclusion and legal detours, stale/invalid/changed-board rejection without partial actor movement, exact restored choices, deterministic replay, and the directly affected card, movement, reachability, adjacent-authority, and controller regressions.
+Expected result: all discovered cases pass, covering immutable and structurally valid destination/route/cost candidates, typed Primary/Secondary allowance, partial segments that continue inside one resolution, cumulative waypoint routes, Stop with unused allowance, automatic exhaustion, ordered internal step/choice events, obstacle exclusion and legal detours, stale/invalid/changed-board rejection without unintended partial actor movement, exact restored choices after zero or more committed steps, deterministic replay, and the directly affected card, movement, reachability, adjacent-authority, and controller regressions.
 
 ## Visible card-driven Movement focused Edit Mode tests
 
@@ -449,7 +449,7 @@ if ($visibleCardMovementProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: all discovered cases pass, covering two visibly test-only hand cards; separate card/action selection; typed Primary Movement 3 and Secondary Movement 1 allowances; explicit Primary/Secondary text policy; exact pending destination/route/cost projection; zero and early stopping; stale UI-choice rejection; blocked destinations and legal obstacle detours; pointer-submitted destination commands; cleared selection after completion; and saved-scene card-driven wiring.
+Expected result: all discovered cases pass, covering two visibly test-only hand cards; separate card/action selection; typed Primary Movement 3 and Secondary Movement 1 allowances; explicit Primary/Secondary text policy; exact pending destination/route/cost projection; partial waypoint continuation with refreshed highlights; zero and explicit early Stop; stale UI-choice rejection; blocked destinations and legal obstacle detours; pointer-submitted destination commands; retained selection while pending; cleared selection after completion; and saved-scene card-driven wiring.
 
 ## Placeholder-grid focused Play Mode test
 
@@ -476,7 +476,7 @@ if ($minimalGridPlayProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: all discovered cases pass after loading the saved scene with 19 visible tile renderers, visible placeholder obstacle renderers, one fixed camera, one visible primitive hero placeholder, selectable reachable-destination highlighting that excludes blockers, accepted one-click movement to a non-adjacent reachable destination by legal detour, and cleared highlights after the committed internal adjacent route.
+Expected result: all discovered cases pass after loading the saved scene with 19 visible tile renderers, visible placeholder obstacle renderers, one fixed camera, one visible primitive hero placeholder, selectable reachable-destination highlighting that excludes blockers, accepted one-click movement to a non-adjacent reachable destination by legal detour, two partial waypoint clicks that preserve the pending action and remaining allowance, explicit Stop, and cleared highlights only after completion.
 
 ## Play Mode shell test
 
