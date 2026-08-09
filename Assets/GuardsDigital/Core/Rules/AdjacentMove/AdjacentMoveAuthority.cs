@@ -90,6 +90,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupancies.ToArray();
 
+        public IReadOnlyList<HexCoordinate> BoardCoordinates => boardCoordinates.ToArray();
+
         public AdjacentMoveResult TryCommit(AdjacentMoveCommand command)
         {
             var heroIndex = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(command.HeroId));

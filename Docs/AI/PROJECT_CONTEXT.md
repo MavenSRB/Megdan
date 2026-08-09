@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.11 is complete: placeholder card definitions now own ordered immutable Movement action definitions, and pure runtime queries derive context-bound action offers for in-hand card instances. The model distinguishes printed Primary and printed Secondary Movement offers, uses explicit invocation-context vocabulary for later general-rule, replacement, reaction, repeated, and text-granted uses, and obtains movement allowance through typed printed-value queries with inspectable printed-icon contributions. No action execution, pending choices, real Wasp data/images, card-state transitions, play/reveal flow, turns, Unity presentation, animation, or broader gameplay resolution has been implemented.
+Milestone 1.12 is complete: pure rules code can start one selected placeholder Movement offer in its explicit printed Primary or printed Secondary context, record a serializable pending resolution and movement choice, accept or reject follow-up step/stop commands, and resume through the existing movement session and adjacent-move authority until the action completes. The shell preserves source-card instance, action-offer, actor, invocation-context, current-step, chooser, and legal-decision data without Unity callbacks, delegates, coroutines, or UI-owned continuation state. No visible card hand, card play/reveal, card lifecycle transitions, real Wasp data/images, modal/repeat behavior, reactions, timing effects, turns, Unity presentation, animation, or broader gameplay resolution has been implemented.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -14,7 +14,7 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 1.12, adding a resumable card-action resolution shell, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.13, selecting a test card and performing visible card-driven movement, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
