@@ -18,12 +18,14 @@ For every item:
 1. Obtain explicit user approval for that item.
 2. Implement only its stated observable outcome.
 3. Respect its non-goals.
-4. Run focused acceptance checks.
+4. Run the milestone's focused tests, directly affected regressions, and highest applicable validation tier from `Docs/AI/TESTING.md`.
 5. Update the project documents.
 6. Create a local Git commit containing the completed milestone and continuity updates.
 7. Report the result and stop.
 
 Milestones may be split further if implementation reveals more than one independently testable behavior. They must not be silently combined.
+
+Acceptance checks define what must be proved; `Docs/AI/TESTING.md` defines the required breadth. Unless a milestone is an explicit gate or qualifies as broad risk, completion does not require both unfiltered Unity suites.
 
 Every card-related milestone must preserve the contracts in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` and `Docs/AI/CARD_EFFECT_CAPABILITIES.md`. A narrow milestone implements only the required subset of those contracts; it must not introduce a shortcut that the next card milestone is expected to replace.
 
@@ -133,6 +135,23 @@ Acceptance checks:
 Non-goals: No gameplay code, Wasp inventory, Unity content, or implementation milestone is authorized by this planning change.
 
 Completion note (2026-08-09): Reordered the roadmap so initiative, Tie Breaker behavior, turns, rounds, and the full synthetic core loop precede the complete Wasp content pass while preserving the smallest-step approval gates.
+
+### [x] 0.7 Adopt proportional risk-tiered validation
+
+Observable outcome: Every milestone uses the smallest test set that proves its behavior and protects affected contracts, while complete Unity suites remain mandatory at integration gates and for broad-risk changes.
+
+Acceptance checks:
+
+- Documentation/source-only changes use diff, reference, milestone-ID/status, traceability, and authority-consistency checks without launching Unity.
+- Every executable behavior change has focused automated tests plus directly affected regressions; every bug fix adds a regression test.
+- Play Mode and visual checks run only when a Unity-facing path or visible output changes.
+- Unfiltered Edit Mode and Play Mode suites run at implementation-phase endpoints, explicit hard gates, before the first player build, after shared test/package/assembly infrastructure changes, or when affected consumers cannot be confidently enumerated.
+- Rule-dependent work verifies its authority first and records source-linked scenarios; unresolved ambiguity blocks completion.
+- Completion evidence records the chosen tier, exact checks/results, and why any unaffected suite was omitted.
+
+Non-goals: No gameplay, test-runner code, Unity content, source transcription, or build is added by this documentation-only policy milestone.
+
+Completion note (2026-08-09): Replaced the ambiguous requirement to run both complete Unity suites at every micro-milestone with four validation tiers, explicit integration gates, and objective escalation triggers. Focused coverage remains mandatory for executable work; documentation-only checks, targeted visual review, source validation, and build smoke testing now have distinct owners.
 
 ## Phase 1 - Smallest board interaction
 
@@ -323,6 +342,7 @@ Acceptance checks:
 - Card, action, and pending-choice selection are visually identifiable and clear when resolution ends.
 - UI input submits commands and answers pending choices; it never owns card resolution or mutates occupancy.
 - Focused tests cover both values, early stopping, stale/invalid choices, over-movement rejection, and obstacle interaction.
+- T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
 Non-goals: No real Wasp cards, printed card text, initiative, facedown/reveal behavior, lifecycle transitions beyond the initial hand state, turns, rounds, Fast Travel, or animation.
 
@@ -408,6 +428,7 @@ Acceptance checks:
 
 - The result is stored in authoritative state and included in later snapshot history.
 - No general gameplay RNG subsystem is introduced.
+- T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass after the Phase 2 focused scenarios.
 
 ## Phase 3 - Test-card Initiative, turns, and rounds
 
@@ -537,6 +558,7 @@ Acceptance checks:
 - Rejected commands do not appear as accepted state-change events; any rejection display is clearly separate.
 - Undo removes events after the restored command boundary, restart clears to setup events, and snapshot restore reproduces the same log projection.
 - The log is a read-only projection and cannot mutate or continue rules resolution.
+- T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
 Non-goals: No final visual styling, export format, analytics, telemetry, or player-facing match history.
 
@@ -591,6 +613,7 @@ Acceptance checks:
 - Standard single-lane minions are created from configuration with stable identity, team, type, and occupied-space data.
 - The initial Tie Breaker result comes from milestone 2.6.
 - Only the approved player-count, mirrored-hero, and director-mode deviations are present.
+- T3 phase gate: source/data validation, focused setup-scene inspection, and both complete unfiltered Unity suites pass.
 
 Non-goals: No complete Wasp card inventory or Wasp-specific behavior.
 
@@ -689,6 +712,7 @@ Acceptance checks:
 - Printed, minion, item-ready, card-text-ready, and Active-effect-ready contributions remain distinct even when only synthetic contributions are populated.
 - A successful Attack records a staged Defeat outcome for Phase 7 consequences.
 - Wasp card text, values, items, and special effects are not used.
+- T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass after the focused combat scenarios.
 
 ## Phase 6 - Tokens, minions, Lane Push, and end-of-round components
 
@@ -777,6 +801,7 @@ Acceptance checks:
 - Every eligible card returns regardless of its prior eligible state, while ineligible/set-aside/item cards do not.
 - Applicable Active effects, including relevant Next Turn effects, cancel through authoritative events.
 - Focused tests cover resolved, discarded, facedown eligible, other-owner, and active-effect cases.
+- T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass after the focused Phase 6 scenarios.
 
 ## Phase 7 - Progression, victory, and the complete synthetic core loop
 
@@ -888,7 +913,8 @@ Acceptance checks:
 - Initiative, Tie Breaker flips, turns, rounds, immediate/end-of-round Lane Pushes, retrieval, leveling, respawn, and victory work together.
 - Snapshots, Undo, restart, and the event log remain deterministic across the complete loop.
 - Synthetic definitions are visibly test-only and contain no claim about Wasp values or effects.
-- A broader core-loop suite passes.
+- A broader deterministic core-loop suite passes.
+- T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
 Hard gate: The complete Wasp card inventory and Wasp-specific card implementation do not begin until milestone 7.9 is reviewed and approved.
 
@@ -918,6 +944,7 @@ Acceptance checks:
 - Existing core capabilities are distinguished from Wasp-specific refinements, new reusable primitives, and genuinely unique handlers.
 - Every effect node maps to a capability ID/version, typed bindings, policy, failure/atomicity rule, checkpoints, and tests.
 - Remaining Phase 8 milestones are reordered or split so dependencies precede the first Wasp card that needs them.
+- If the Phase 8 endpoint changes, update the T3 gate in `TESTING.md` and this roadmap in the same re-baseline.
 - New reusable contracts update `CARD_EFFECT_CAPABILITIES.md` before implementation.
 - Any schema change is explicit and migration-tested rather than hidden inside a card milestone.
 
@@ -982,13 +1009,16 @@ Acceptance checks:
 - Every implemented Wasp rule links to an authoritative source and focused tests.
 - Approved deviations are the only known departures.
 - Undo, restart, snapshots, event log, and Tie Breaker override work internally.
-- A broader Wasp integration suite passes.
+- A broader source-linked Wasp integration suite passes.
+- T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
 Hard gate: Production visual work does not begin until milestone 8.16 is reviewed and approved.
 
 ## Phase 9 - Presentation and pitch polish
 
 Every item remains a separate micro-milestone.
+
+Each visible milestone runs focused Play Mode checks for the affected presentation path plus one targeted visual inspection. No player build is produced before Phase 10, and complete unfiltered suites wait for milestone 9.16 unless a T3 risk trigger applies earlier.
 
 ### [ ] 9.1 Production board environment
 
@@ -1020,11 +1050,42 @@ Every item remains a separate micro-milestone.
 
 ### [ ] 9.15 Minimal sound-effects pass
 
+### [ ] 9.16 Complete presentation regression and visual-readability sweep
+
+Observable outcome: The finished pitch presentation remains readable and synchronized with authoritative rules across the complete primitive-to-polished match flow.
+
+Acceptance checks:
+
+- A targeted visual sweep covers the board, both hands, prompts, event log, team differentiation, camera bounds, 3D/2D switching, animations, and affected audio cues.
+- Skipping or accelerating presentation produces the same authoritative state and ordered rules events.
+- Common reference desktop resolutions preserve readable cards, values, prompts, and team identity.
+- T3 pre-build gate: both complete unfiltered Edit Mode and Play Mode suites pass.
+
+Hard gate: The first player build does not begin until milestone 9.16 is reviewed and approved.
+
 ## Phase 10 - Private publisher pitch package
 
 ### [ ] 10.1 Windows standalone build
 
+Observable outcome: An unchanged milestone 9.16 revision produces a private Win64 player that launches to the pitch prototype without compilation, startup, or missing-content errors.
+
+Acceptance checks:
+
+- Build settings, version, source commit, output path, and launch-smoke result are recorded.
+- The build launches, reaches the prototype, starts a deterministic scenario, and exits cleanly.
+- The milestone reuses the unchanged 9.16 T3 result; any intervening code or executable-content change requires T3 again before building.
+
+Non-goals: No installer, launcher, code signing, updater, or public distribution.
+
 ### [ ] 10.2 Clean-machine private smoke test
+
+Observable outcome: The exact private Win64 build launches and performs the scripted smoke path on a clean Windows machine without Unity or project dependencies installed.
+
+Acceptance checks:
+
+- The packaged build starts from a clean copy, reaches the prototype, accepts input, completes the scripted smoke path, and exits without an unhandled error.
+- Missing files, platform dependencies, logs, machine details, and build identity are recorded.
+- Unity Test Framework is not rerun against an unchanged build merely to duplicate the 9.16 evidence.
 
 ### [ ] 10.3 Short recorded gameplay walkthrough
 

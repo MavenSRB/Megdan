@@ -12,6 +12,8 @@ Documentation milestone 0.5 is complete: `Docs/AI/CARD_EFFECT_CAPABILITIES.md` n
 
 Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker state, Initiative, turns, rounds, and the complete general match loop with synthetic test cards before the complete Wasp card inventory or Wasp-specific card implementation begins. This sequencing change also implements no gameplay.
 
+Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
+
 Milestone 1.6, connecting adjacent selection to the committed move, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
@@ -86,7 +88,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Reference development platform: Windows desktop and Unity Editor.
 - Active reference build target: Windows 64-bit standalone (`Win64`).
 - Input: Unity Input System package `1.19.0`, with **Input System Package (New)** as the only active input handler. The legacy Input Manager is not selected for gameplay input.
-- Automated testing: Unity Test Framework `1.7.0`, with independent Edit Mode and Play Mode assemblies. Focused commands are documented in `Docs/AI/TESTING.md`.
+- Automated testing: Unity Test Framework `1.7.0`, with independent Edit Mode and Play Mode assemblies. Validation tiers, focused commands, and full-suite gates are documented in `Docs/AI/TESTING.md`.
 - Version control: Local Git repository on branch `main`, with root `.gitignore` and `.gitattributes` policies. Unity-generated data, local validation output, the private rulebook, and the extracted card corpus are ignored. Completed roadmap milestones require a local commit after acceptance and continuity updates. No remote is configured.
 - Platform rollout direction: Windows first, then macOS/Linux, then touch devices, with closed platforms considered later.
 - Use Unity's Input System and keep interactions adaptable across mouse and touch.
@@ -217,11 +219,14 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Before Phase 1 ends, the selected test action offer's typed printed-value query must be the sole source of movement allowance.
 - Fast Travel, movement from card text, and movement-limiting effects remain later rule milestones rather than being folded into the early board test.
 - Mechanics are completed with primitives and debug UI before production art begins.
-- Add focused automated tests for the changed behavior.
-- Add a regression test for every fixed bug.
+- Select the highest applicable validation tier from `Docs/AI/TESTING.md` based on the behavior and boundaries changed, not merely diff size.
+- Every executable behavior change receives focused automated coverage and directly affected regressions; every fixed bug receives a regression test.
 - Prefer tiny deterministic scenarios to complete match replays.
-- Run the broad suite at milestone boundaries, not after every narrow change.
+- Run Play Mode and visual checks only for affected Unity-facing or visible paths.
+- Run complete unfiltered suites only at implementation-phase endpoints, explicit hard gates, broad-risk infrastructure/schema changes, or when affected consumers cannot be confidently enumerated.
+- Documentation/source-only work uses diff, reference, traceability, and consistency validation without launching Unity.
 - Visually inspect only the presentation affected by the current milestone.
+- Record the validation tier, exact checks/results, visual or source review, and any intentionally omitted unaffected suite in the completion note.
 - After a roadmap milestone passes its acceptance checks and the living documents are updated, create a local Git commit for that completed milestone. Never push or configure a remote without separate authorization.
 
 ## Available reference material

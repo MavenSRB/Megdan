@@ -12,7 +12,7 @@ Read these files before planning or changing anything in this workspace:
 
 ## Current authorization
 
-Roadmap milestones 0.1 through 0.6 and 1.1 through 1.5 are complete: living documentation, the Unity/test shell, the card-system and effect-capability architecture contracts, the core-match-first dependency order, hex foundations, minimal rendering, one primitive hero, selectable adjacent-destination highlighting, and an authoritative adjacent-move command/event slice exist. A local Git repository is authorized and initialized.
+Roadmap milestones 0.1 through 0.7 and 1.1 through 1.5 are complete: living documentation, the Unity/test shell, the card-system and effect-capability architecture contracts, the core-match-first dependency order, the risk-tiered verification policy, hex foundations, minimal rendering, one primitive hero, selectable adjacent-destination highlighting, and an authoritative adjacent-move command/event slice exist. A local Git repository is authorized and initialized.
 
 Milestone 1.6 is proposed but not authorized. Do not begin it or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
 
@@ -26,8 +26,10 @@ Milestone 1.6 is proposed but not authorized. Do not begin it or any later gamep
 - Use the smallest implementation that proves the current behavior, while preserving the architectural constraints in `PROJECT_CONTEXT.md`.
 - Keep authoritative rules and state independent from Unity scene objects, presentation, animation, and audio.
 - Preserve the definition/instance, action-offer, command/event, pending-choice, timing, and versioning contracts in `CARD_SYSTEM_ARCHITECTURE.md`, plus the typed effect/query contracts in `CARD_EFFECT_CAPABILITIES.md`. Do not add card-name/hero-name rule branches, runtime printed-text parsing, or UI-owned card resolution.
-- Add focused automated tests for the behavior being changed. Add regression tests for bugs. Run the broader suite only at roadmap milestone boundaries unless risk requires more.
-- Do not repeatedly retest the whole game for a narrow change.
+- Follow the risk-tiered policy in `Docs/AI/TESTING.md`. Every executable behavior change gets the narrowest focused automated tests and directly affected regressions; every bug fix gets a regression test.
+- Documentation-only changes use documentation/source validation and do not launch Unity. Pure rules/data changes do not require Play Mode unless a Unity-facing path changed.
+- Reserve complete unfiltered Edit Mode and Play Mode suites for implementation-phase endpoints, explicit hard gates, the pre-build regression gate, shared test/package/assembly changes, or risk whose consumers cannot be confidently enumerated. Do not repeatedly retest the whole game for a narrow change.
+- Record the validation tier, exact tests/checks, results, and any intentionally omitted unaffected suite in the milestone handoff.
 - Preserve user-created and reference files. Do not bulk-process or reorganize the card corpus unless the current milestone requires it.
 - The local rulebook and extracted card corpus are intentionally excluded from Git. Preserve them at their documented paths and never add them to a commit or distribute them without explicit authorization and appropriate rights.
 - Keep the project private. Do not publish, upload, market, monetize, or distribute game assets or builds without explicit authorization from the user and the relevant rights holder.

@@ -66,7 +66,7 @@ Do not rebalance Life, Waves, minions, card values, economy, or Wasp merely beca
 - **Specified:** Exact digital behavior and edge cases are documented but not implemented.
 - **Implemented:** Authoritative rule behavior exists.
 - **Focused tests passing:** Narrow automated scenarios cover the implemented behavior.
-- **Milestone verified:** Relevant broad and presentation checks pass at an approved milestone boundary.
+- **Milestone verified:** The applicable focused, regression, source, presentation, and gate checks from `TESTING.md` pass for the approved milestone.
 - **Blocked:** A missing source or decision prevents faithful implementation.
 
 ## Rule-system ledger

@@ -1,4 +1,4 @@
-# Guards Digital - Automated Testing
+# Guards Digital - Verification and Testing
 
 Last updated: 2026-08-09
 
@@ -6,7 +6,72 @@ Last updated: 2026-08-09
 
 The Unity Test Framework shell contains one trivial Edit Mode test and one minimal Play Mode smoke test. Milestone 1.1 adds focused Edit Mode coverage for the pure C# hex-coordinate foundation. Milestone 1.2 adds Edit Mode layout, mesh, and saved-scene coverage plus a Play Mode scene-loading check. Milestone 1.3 adds primitive hero occupancy and placement coverage. Milestone 1.4 adds adjacent-empty destination query, selection highlighting, Input System pointer-path, saved-scene, and Play Mode coverage. Milestone 1.5 adds pure adjacent-move command/event authority coverage. These tests do not implement or verify an official game rule.
 
-Run commands from PowerShell. Each focused command opens the project, runs only its named test fixture or case, writes NUnit XML plus a Unity log under `tmp/`, and exits without producing a player build or requiring a project scene.
+Run commands from PowerShell. Each focused Unity command opens the project, runs only its named test fixture or case, writes NUnit XML plus a Unity log under `tmp/`, and exits without producing a player build. Scene-dependent filters load the saved validation scene.
+
+## Risk-tiered validation policy
+
+Choose the highest applicable tier from the behavior and boundaries changed, not from diff size or file extension. A broad suite never replaces focused evidence.
+
+| Tier | Applies when | Required evidence |
+| --- | --- | --- |
+| T0 - Documentation/source | Only Markdown, roadmap status/sequencing, source traceability, or other non-executable documentation changes | Review the diff; run `git diff --check`; verify paths/links, milestone IDs/status, cross-document references, and changed rule claims against their authority and `RULES_LEDGER.md`. Do not launch Unity. |
+| T1 - Local behavior | One bounded pure-C# rule/query/validator or executable content definition changes without a Unity-facing path | Focused Edit Mode tests for the behavior and directly impacted regressions; cover valid, invalid/stale, no-op, and boundary cases as applicable. No Play Mode. |
+| T2 - Boundary/integration | Shared capability/resolver/command-event/snapshot interaction changes, or a Unity scene/input/UI/presentation adapter changes | T1 evidence as applicable, dependent Edit Mode fixtures, and determinism/round-trip/ordering/source-linked scenarios where relevant. Run focused Play Mode only for affected Unity-facing paths; visually inspect only changed output. |
+| T3 - Gate/broad risk | Final implementation milestone of a phase, explicit hard gate, shared package/assembly/test infrastructure change, snapshot-schema migration, cross-system loop gate, pre-build regression gate, or blast radius that cannot be enumerated | T2 evidence as applicable, then both unfiltered Edit Mode and Play Mode suites. Add gate-specific end-to-end, determinism, visual, source, and build-smoke evidence where relevant. |
+
+During implementation, run the smallest focused filter first. Before completion, run new tests and directly affected regressions, then the selected tier's required breadth. Promote to a higher tier whenever affected consumers cannot be listed confidently. Executable JSON, ScriptableObject, card, or map data is not T0 merely because no C# changed.
+
+Unity test processes for this project run serially. Never open parallel batchmode test instances against the same project.
+
+### Minimum by change type
+
+| Change type | Minimum validation |
+| --- | --- |
+| Pure core model, rules authority, card definitions/effects/queries, or validators | T1 focused Edit Mode |
+| Scene, prefab, Input System, controller, UI, or presentation hookup | T2 with relevant focused Edit Mode and Play Mode |
+| Visible result | Applicable automated checks plus one targeted visual inspection of the affected view |
+| Official map or card transcription | Source/manual verification plus schema/content validation; add source-linked focused scenarios when executable |
+| Bug fix | An automated regression that reproduces the failure when practical, plus the tier required by the affected area |
+| Player build/package | Required regression gate, then build-and-launch smoke; clean-machine smoke only at milestone 10.2 |
+
+### Escalation triggers
+
+Use at least T2, and T3 when the change crosses Edit/Play boundaries, for changes to:
+
+- Authoritative state schema, snapshot serialization, migrations, Undo/restore, or deterministic replay.
+- Shared command/event, resolver, pending-choice, timing, turn/round, or capability-registration infrastructure.
+- Assembly definitions, packages, project settings, test infrastructure, scene bootstrap, or broadly reused saved-scene foundations.
+- A refactor with unexpectedly broad diffs, an unexplained failure outside the focused fixture, or a bug with uncertain blast radius.
+
+The tier may escalate during implementation; it is never lowered to avoid a failing relevant test.
+
+### Explicit integration gates
+
+The current T3 phase/hard gates are milestones `1.13`, `2.6`, `3.11`, `4.4`, `5.8`, `6.8`, `7.9`, `8.16`, and `9.16`. Milestone `8.2` must update this list if it re-baselines the end of Phase 8.
+
+Milestone `10.1` reuses the unchanged `9.16` result and adds build-and-launch smoke; rerun T3 if code or executable content changed after `9.16`. Milestone `10.2` runs the clean-machine private smoke test without redundantly rerunning Unity Test Framework against an unchanged build.
+
+Risk triggers can require an earlier T2/T3 run. Passing an earlier gate never excuses a later gate after intervening changes.
+
+## Rule and content verification
+
+Tests prove that code matches the selected interpretation; they do not establish that the interpretation is authoritative. Before a rule-dependent milestone, verify the exact rulebook, card, or official-ruling source and update `RULES_LEDGER.md`, then add source-linked positive, negative, boundary, failure/prevention, and ordering scenarios relevant to that slice. Do not encode an unresolved ambiguity as a test expectation; block completion instead.
+
+Rules tests use the smallest deterministic authoritative state that exposes the behavior. They assert accepted/rejected commands, exact state changes, ordered events, pending choices, and relevant checkpoints. Add serialization and repeatability cases when applicable. Tests explicitly choose Tie Breaker state unless setup-side selection itself is under test; do not introduce generalized gameplay randomness.
+
+Verified real cards require definition/schema validation plus a scenario for every behaviorally distinct legal invocation, capability-handler conformance, and all relevant target, state, timing, modifier, replacement, repeat, Active-effect, and continuous-source interactions. Synthetic fixtures remain visibly test-only.
+
+## Regression ownership
+
+- For a bug fix, reproduce the failure in an automated regression test when practical, then keep the test permanently.
+- Changing a shared capability runs its conformance fixture and every known directly dependent scenario; once Wasp exists, include its source-linked consumer scenarios.
+- A complete suite does not compensate for a missing focused regression.
+
+## Evidence and pass criteria
+
+A Unity run counts only when the process exits successfully, a fresh NUnit XML exists, the requested filter discovers at least one test, the XML reports zero failures/errors and no unexpected skipped/inconclusive tests, and the log contains no compile/import exception.
+
+Completion reports record the tier, exact focused filters, result totals, directly affected regressions, any complete-suite result, and source/visual/manual/build checks. They also record any unaffected suite intentionally omitted and why. Exact totals in historical `ROADMAP.md` completion notes are evidence from those runs, not permanent expected counts.
 
 ## Edit Mode shell test
 
@@ -33,7 +98,7 @@ if ($editModeProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: one test passes and the process exits with code `0`.
+Expected result: the shell fixture discovers at least one test, all discovered cases pass, and the process exits with code `0`.
 
 ## Hex-coordinate focused tests
 
@@ -60,7 +125,7 @@ if ($hexCoordinateProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: eight cases pass, covering all six directions, the complete unique neighbor set, and invalid-direction rejection.
+Expected result: all discovered cases pass, covering all six directions, the complete unique neighbor set, and invalid-direction rejection.
 
 ## Minimal-grid focused Edit Mode tests
 
@@ -87,7 +152,7 @@ if ($minimalGridEditProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: twelve cases pass, covering coordinate conversion, edge-to-edge center spacing, mesh geometry, saved-scene placement, uniform light-gray fills, darker closed tile edges, and the fixed top-down camera.
+Expected result: all discovered cases pass, covering coordinate conversion, edge-to-edge center spacing, mesh geometry, saved-scene placement, uniform light-gray fills, darker closed tile edges, and the fixed top-down camera.
 
 ## Primitive-hero focused Edit Mode tests
 
@@ -114,7 +179,7 @@ if ($primitiveHeroEditProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: ten cases pass, covering primitive hero ID validation, authoritative occupied coordinate storage, view placement from occupancy, placeholder mesh creation, and saved-scene placement.
+Expected result: all discovered cases pass, covering primitive hero ID validation, authoritative occupied coordinate storage, view placement from occupancy, placeholder mesh creation, and saved-scene placement.
 
 ## Hero-selection focused Edit Mode tests
 
@@ -141,7 +206,7 @@ if ($heroSelectionEditProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: thirteen cases pass, covering adjacent-empty destination filtering, presentation highlighting, Input System pointer-selection components, and saved-scene wiring.
+Expected result: all discovered cases pass, covering adjacent-empty destination filtering, presentation highlighting, Input System pointer-selection components, and saved-scene wiring.
 
 ## Adjacent-move authority focused Edit Mode tests
 
@@ -195,7 +260,7 @@ if ($minimalGridPlayProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: three cases pass after loading the saved scene with seven visible tile renderers, one fixed camera, one visible primitive hero placeholder, and selectable adjacent-destination highlighting.
+Expected result: all discovered cases pass after loading the saved scene with seven visible tile renderers, one fixed camera, one visible primitive hero placeholder, and selectable adjacent-destination highlighting.
 
 ## Play Mode shell test
 
@@ -222,11 +287,11 @@ if ($playModeProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: one test passes after entering Play Mode and advancing one frame; the process exits with code `0`.
+Expected result: the shell fixture discovers at least one test, all discovered cases pass after entering Play Mode and advancing one frame, and the process exits with code `0`.
 
-## Complete milestone-boundary suites
+## Complete gate suites
 
-Run both unfiltered suites after the focused checks pass and before marking a roadmap milestone complete. These commands intentionally omit `-testFilter`.
+Run both unfiltered suites only for T3 validation: a final implementation milestone of a phase, an explicit hard gate, shared test/package/assembly infrastructure, the pre-build regression gate, or a change promoted because its blast radius cannot be enumerated. Resolve focused failures before spending time on these suites. These commands intentionally omit `-testFilter`.
 
 ```powershell
 $completeEditArguments = @(
@@ -270,10 +335,11 @@ if ($completePlayProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: every currently discovered Edit Mode and Play Mode test passes, each process exits with code `0`, and the two complete NUnit XML files record the milestone-boundary result.
+Expected result at a T3 gate: every currently discovered Edit Mode and Play Mode test passes, each process exits with code `0`, and fresh complete NUnit XML files record the gate result with zero unexpected skipped or inconclusive tests.
 
 ## Test ownership
 
 - `Assets/Tests/EditMode/` contains tests that run without entering Play Mode.
 - `Assets/Tests/PlayMode/` contains tests that require Play Mode.
 - Future milestones should add the narrowest relevant tests to these assemblies or create a purpose-specific test assembly when isolation requires it.
+- T0 non-code validation is recorded in the milestone handoff rather than represented by an empty or unrelated Unity test run.
