@@ -40,7 +40,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public HexCoordinate Destination { get; }
 
-        public static MovementChoiceCommand Step(
+        public static MovementChoiceCommand SelectDestination(
             ActionResolutionId resolutionId,
             ActionResolutionStepId choiceId,
             HexCoordinate destination)
@@ -48,7 +48,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return new MovementChoiceCommand(
                 resolutionId,
                 choiceId,
-                MovementChoiceKind.Step,
+                MovementChoiceKind.Destination,
                 destination);
         }
 

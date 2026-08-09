@@ -31,6 +31,32 @@ namespace GuardsDigital.Tests.EditMode
                 new HexCoordinate(1, 0),
                 new HexCoordinate(2, 0)
             }));
+            Assert.That(destinations, Is.Not.InstanceOf<ReachableMovementDestination[]>());
+            Assert.Throws<System.NotSupportedException>(() =>
+                ((IList<ReachableMovementDestination>)destinations)[0] = farEast);
+            Assert.That(farEast.Route, Is.Not.InstanceOf<HexCoordinate[]>());
+            Assert.Throws<System.NotSupportedException>(() =>
+                ((IList<HexCoordinate>)farEast.Route)[0] = new HexCoordinate(99, 99));
+        }
+
+        [Test]
+        public void ReachableMovementDestination_RejectsMalformedRouteData()
+        {
+            var origin = new HexCoordinate(0, 0);
+            var destination = new HexCoordinate(2, 0);
+
+            Assert.Throws<System.ArgumentException>(() => new ReachableMovementDestination(
+                destination,
+                new[] { origin, new HexCoordinate(1, 0) },
+                2));
+            Assert.Throws<System.ArgumentException>(() => new ReachableMovementDestination(
+                destination,
+                new[] { origin, new HexCoordinate(1, 0), new HexCoordinate(1, -1) },
+                2));
+            Assert.Throws<System.ArgumentException>(() => new ReachableMovementDestination(
+                destination,
+                new[] { origin, destination },
+                1));
         }
 
         [Test]

@@ -8,7 +8,7 @@ This document is the effect-level companion to `CARD_SYSTEM_ARCHITECTURE.md`. It
 
 The baseline catalog is derived from the second-printing rulebook's action execution, card states, actions, progression, concepts, and keywords on printed pages 7-19. Verified card text may override a general rule or introduce a new capability. No hero-specific capability is authoritative until its card source and any applicable official correction are verified in `RULES_LEDGER.md`.
 
-This is an architecture specification, not evidence that these effects are implemented. A roadmap milestone implements only the smallest capabilities it explicitly names. Milestone 1.11 implemented the placeholder printed Movement value query/contribution seam. Milestone 1.12 implemented only the pure placeholder Movement action resolution shell for step/stop pending choices through the already-tested movement and adjacent-move authorities. Corrective milestone 1.12a made that continuation self-contained and restorable, revalidated the selected offer against current card state, and separated normal action selection from future reaction/replacement/text-granted offer windows. It did not implement Fast Travel, direct Move, modifiers, card-text effects, modal/repeat execution, reactions, timing effects, card lifecycle transitions, snapshot import/export, or broader mutation handlers.
+This is an architecture specification, not evidence that these effects are implemented. A roadmap milestone implements only the smallest capabilities it explicitly names. Milestone 1.11 implemented the placeholder printed Movement value query/contribution seam. Milestone 1.12 implemented the pure placeholder Movement pending-choice shell, corrective milestone 1.12a made its authority and continuation self-contained/restorable, and corrective milestone 1.12b now projects immutable reachable destination/route/cost candidates and commits the selected candidate's adjacent steps through the existing authorities. It did not implement Fast Travel, direct Move, alternate/non-shortest route selection, modifiers, card-text effects, modal/repeat execution, reactions, timing effects, card lifecycle transitions, snapshot import/export, or broader mutation handlers.
 
 ## Capability categories
 
@@ -72,7 +72,7 @@ If a later mandatory node returns `ImpossibleMandatory`, earlier `Applied` nodes
 1. Distinct rule terms keep distinct public capability IDs even when they share low-level occupancy helpers.
 2. Validation is side-effect free. A rejected or stale command does not partially apply an effect.
 3. A mandatory impossible step stops the remaining ordered action after preserving earlier completed steps. Optional wording follows its exact source semantics.
-4. All player decisions become authoritative pending choices. The resolver never chooses a target, distance, route, direction, mode, or token to remove on the player's behalf unless the rules make that choice automatic.
+4. All player decisions become authoritative pending choices. The resolver never chooses an undisclosed target, distance, route, direction, mode, or token to remove on the player's behalf unless the rules make that choice automatic. A candidate may bind multiple disclosed facts as one choice; the Phase 1 Movement destination candidate explicitly includes the exact route and cost selected by its one destination command.
 5. Capabilities declare whether they query intrinsic representation kind or effective rules characteristics. Type-based rules normally apply `Counts As`, immunity, and continuous modifiers; explicit miniature/representation rules use intrinsic kind.
 6. Simultaneous effects validate against the correct pre-effect state and commit as one batch. They are not converted into order-dependent single-target loops.
 7. Every capability emits semantic rule events, not animation commands. Presentation decides how `UnitPushed`, `TokenPlaced`, or `ObjectsSwapped` looks.
@@ -136,7 +136,9 @@ Zone adjacency follows the board rule: two zones are adjacent when there is an a
 
 ### Perform Movement action
 
-`PerformMovementAction` uses the selected action offer's typed Movement value, checks action-start movement limits/restrictions once, and creates a resumable stepwise route. Each step enters an adjacent empty legal space, spends one allowance, and respects obstacles. `Up to` allows zero movement and early stopping.
+`PerformMovementAction` uses the selected action offer's typed Movement value and checks action-start movement limits/restrictions once. The Phase 1 shell creates an immutable pending choice of currently reachable destinations, each bound to one disclosed deterministic adjacent route and cost. Selecting a destination revalidates that candidate, commits each route step through the adjacent-move authority, spends one allowance per step, and completes the `up to` action; Stop selects zero movement. Each step enters an adjacent empty legal space and respects obstacles.
+
+The one-click destination shell intentionally projects one deterministic shortest route per destination. It preserves route facts and ordered step events but does not yet offer alternate or deliberately non-shortest routes; exact full-map Movement must extend the candidate/interaction contract when those choices become relevant rather than silently changing the recorded route.
 
 Primary/Secondary context controls card-text application. A Movement action may be replaced by Fast Travel when eligible. It emits action, step, and completion events while leaving presentation timing separate.
 
@@ -427,7 +429,7 @@ Minimum regression pairs include:
 
 The catalog is intentionally broader than the current code, but it is not authorization to build every handler early.
 
-- Phase 1 implements only the action/choice/value seams and the minimum Movement capability needed by its approved card-driven movement slice.
+- Phase 1 implements only the action/choice/value seams and the minimum one-click destination Movement capability needed by its approved card-driven movement slice.
 - Phase 2 proves nested Attack/Defense reaction using the same capability contracts.
 - Phases 3 through 7 implement only the verified general/core capabilities needed to prove the complete match loop with synthetic definitions.
 - After that core-loop gate, milestone 8.2 maps verified Wasp content, identifies Wasp-specific capability deltas or refinements, and orders the remaining Wasp work; it does not gate general core capabilities.

@@ -42,6 +42,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentException("A restored pending resolution cannot contain a completed movement session.", nameof(pendingResolution));
             }
 
+            if (pendingResolution.MovementSessionState.CommittedStepCount != 0)
+            {
+                throw new ArgumentException(
+                    "A pending one-click destination resolution cannot contain already committed movement steps.",
+                    nameof(pendingResolution));
+            }
+
             var authority = new CardActionResolutionAuthority(adjacentMoveAuthority);
             var movementSession = new MovementSession(adjacentMoveAuthority, pendingResolution.MovementSessionState);
             var expectedStepId = CreateStepId(movementSession.CaptureState().CommittedStepCount);
@@ -160,6 +167,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var movementSession = new MovementSession(adjacentMoveAuthority, pendingResolution.MovementSessionState);
+            var authoritativeChoice = CreatePendingChoice(pendingResolution, movementSession);
+            if (!ChoicesMatch(authoritativeChoice, pendingChoice))
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.InvalidChoice,
+                    pendingResolution,
+                    pendingChoice);
+            }
+
             if (command.ChoiceKind == MovementChoiceKind.Stop)
             {
                 if (!pendingChoice.CanStop)
@@ -173,8 +189,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return CompleteResolution(movementSession);
             }
 
-            if (command.ChoiceKind != MovementChoiceKind.Step ||
-                !pendingChoice.LegalStepDestinations.Contains(command.Destination))
+            if (command.ChoiceKind != MovementChoiceKind.Destination)
             {
                 return CardActionResolutionResult.Reject(
                     CardActionResolutionRejectionReason.InvalidChoice,
@@ -182,43 +197,57 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            var stepResult = movementSession.TryCommitStep(command.Destination);
-            if (!stepResult.Accepted)
+            var matchingDestinations = authoritativeChoice.LegalDestinations
+                .Where(candidate => candidate.Destination.Equals(command.Destination))
+                .ToArray();
+            if (matchingDestinations.Length != 1)
             {
-                return CardActionResolutionResult.RejectMovementStep(
-                    stepResult,
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.InvalidChoice,
                     pendingResolution,
                     pendingChoice);
             }
 
-            var completedStepResolution = pendingResolution;
-            var movementEvent = stepResult.NewEvents.Single();
-            var nextResolution = CreatePendingResolution(completedStepResolution, movementSession.CaptureState());
-            if (movementSession.IsComplete)
+            var selectedDestination = matchingDestinations[0];
+            if (!TryValidateDestinationRoute(
+                    pendingResolution.MovementSessionState,
+                    selectedDestination,
+                    out var rejectedStep))
             {
-                var stepEvent = CardActionResolutionEvent.MovementStepCommitted(completedStepResolution, movementEvent);
-                var completedEvent = CardActionResolutionEvent.MovementActionCompleted(nextResolution);
-                pendingResolution = null;
-                pendingChoice = null;
-
-                return CardActionResolutionResult.Accept(
-                    true,
-                    null,
-                    null,
-                    new[] { stepEvent, completedEvent });
+                return CardActionResolutionResult.RejectMovementStep(
+                    rejectedStep,
+                    pendingResolution,
+                    pendingChoice);
             }
 
-            pendingResolution = nextResolution;
-            pendingChoice = CreatePendingChoice(pendingResolution, movementSession);
-            return CardActionResolutionResult.Accept(
-                false,
-                pendingResolution,
-                pendingChoice,
-                new[]
+            var resolutionEvents = new List<CardActionResolutionEvent>();
+            var stepResolution = pendingResolution;
+            for (var routeIndex = 1; routeIndex < selectedDestination.Route.Count; routeIndex++)
+            {
+                var stepResult = movementSession.TryCommitStep(selectedDestination.Route[routeIndex]);
+                if (!stepResult.Accepted)
                 {
-                    CardActionResolutionEvent.MovementStepCommitted(completedStepResolution, movementEvent),
-                    CardActionResolutionEvent.MovementChoiceRequested(pendingResolution)
-                });
+                    throw new InvalidOperationException(
+                        "An authority-projected movement route failed after side-effect-free validation.");
+                }
+
+                resolutionEvents.Add(CardActionResolutionEvent.MovementStepCommitted(
+                    stepResolution,
+                    stepResult.NewEvents.Single()));
+                stepResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
+            }
+
+            movementSession.Complete();
+            var completedResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
+            resolutionEvents.Add(CardActionResolutionEvent.MovementActionCompleted(completedResolution));
+            pendingResolution = null;
+            pendingChoice = null;
+
+            return CardActionResolutionResult.Accept(
+                true,
+                null,
+                null,
+                resolutionEvents);
         }
 
         private CardActionResolutionResult CompleteResolution(MovementSession movementSession)
@@ -242,12 +271,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             var currentOccupancy = movementSession.CurrentOccupancy;
             var legalDestinations = MovementReachabilityQuery.FindReachableDestinations(
-                    currentOccupancy,
-                    adjacentMoveAuthority.BoardCoordinates,
-                    adjacentMoveAuthority.Occupancies,
-                    adjacentMoveAuthority.ObstacleOccupancies,
-                    movementSession.RemainingAllowance > 0 ? 1 : 0)
-                .Select(destination => destination.Destination);
+                currentOccupancy,
+                adjacentMoveAuthority.BoardCoordinates,
+                adjacentMoveAuthority.Occupancies,
+                adjacentMoveAuthority.ObstacleOccupancies,
+                movementSession.RemainingAllowance);
 
             return new PendingMovementChoice(
                 resolution.ResolutionId,
@@ -258,6 +286,30 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.RemainingAllowance,
                 true,
                 legalDestinations);
+        }
+
+        private bool TryValidateDestinationRoute(
+            MovementSessionState movementState,
+            ReachableMovementDestination destination,
+            out MovementSessionStepResult rejectedStep)
+        {
+            var validationAuthority = new AdjacentMoveAuthority(
+                adjacentMoveAuthority.BoardCoordinates,
+                adjacentMoveAuthority.Occupancies,
+                adjacentMoveAuthority.ObstacleOccupancies);
+            var validationSession = new MovementSession(validationAuthority, movementState);
+            for (var routeIndex = 1; routeIndex < destination.Route.Count; routeIndex++)
+            {
+                var stepResult = validationSession.TryCommitStep(destination.Route[routeIndex]);
+                if (!stepResult.Accepted)
+                {
+                    rejectedStep = stepResult;
+                    return false;
+                }
+            }
+
+            rejectedStep = default;
+            return true;
         }
 
         private static PendingCardActionResolution CreatePendingResolution(
@@ -305,8 +357,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 expected.Origin.Equals(actual.Origin) &&
                 expected.RemainingAllowance == actual.RemainingAllowance &&
                 expected.CanStop == actual.CanStop &&
-                expected.LegalStepDestinations.Count == actual.LegalStepDestinations.Count &&
-                !expected.LegalStepDestinations.Except(actual.LegalStepDestinations).Any();
+                DestinationChoicesMatch(expected.LegalDestinations, actual.LegalDestinations);
+        }
+
+        private static bool DestinationChoicesMatch(
+            IReadOnlyList<ReachableMovementDestination> expected,
+            IReadOnlyList<ReachableMovementDestination> actual)
+        {
+            if (expected.Count != actual.Count)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < expected.Count; index++)
+            {
+                if (!expected[index].Destination.Equals(actual[index].Destination) ||
+                    expected[index].Cost != actual[index].Cost ||
+                    !expected[index].Route.SequenceEqual(actual[index].Route))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static ActionDefinition FindActionDefinition(

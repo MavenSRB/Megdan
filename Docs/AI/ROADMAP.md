@@ -359,6 +359,24 @@ Non-goals: No milestone 1.13 UI, Wasp content, action text/effects, card lifecyc
 
 Completion note (2026-08-09): Hardened the pure card/action foundation after reviewing the complete local hero-action front corpus for architectural fit. Runtime offers are now explicitly timing-window scoped with non-ordinal origin/context mapping; static repeat origins were removed; definition policies and enum values are validated; and all exposed immutable collections use read-only wrappers. `CardActionResolutionAuthority` now requires current card instances, re-derives the exact normal-play offer, rejects forged/stale/context-mismatched authority and missing actor occupancy, and stores all Movement continuation facts in immutable `MovementSessionState`. Each follow-up reconstructs from that state, while `Restore` validates the pending resolution and exact legal choice against restored board occupancy. Focused T2 validation passed after allowing Unity batchmode access to local licensing/package services: Edit Mode 55/55 (`CardActionResolutionAuthorityTests`, `ActionOfferAndPrintedValueTests`, `CardDefinitionInstanceTests`, `MovementSessionTests`, `MovementReachabilityQueryTests`, and `AdjacentMoveAuthorityTests`). Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path, package, assembly, or phase gate changed and the affected pure-rule consumers were enumerated. Milestone 1.13 was not started.
 
+### [x] 1.12b Make card-resolution Movement a one-click destination choice
+
+Observable outcome: A pending placeholder Movement action offers every currently reachable destination with its exact deterministic route and cost, then one destination command commits that route and completes the `up to` action.
+
+Acceptance checks:
+
+- Pending Movement choices expose immutable, unique destination/route/cost candidates for the complete remaining allowance rather than adjacent coordinates only.
+- Each candidate route starts at the authoritative actor coordinate, ends at its destination, contains only adjacent steps, and costs no more than the remaining allowance.
+- A destination command re-derives the exact candidates against current occupancy and obstacles before accepting the selected destination.
+- The selected route is validated without side effects, then every step commits through `MovementSession` and `AdjacentMoveAuthority` and emits its ordered movement event.
+- Selecting any reachable destination implicitly stops and completes the `up to` Movement action; Stop still completes with zero movement.
+- Blocked destinations and intermediate spaces are excluded, deterministic legal detours remain selectable, and a changed board rejects without partial actor movement.
+- Invalid, stale, forged, malformed, or restored-mismatch choices do not advance the continuation; identical starting state and command replay produce identical final occupancy and ordered events.
+
+Non-goals: No Unity card UI, visible hand, milestone 1.13 presentation hookup, alternate/non-shortest route selection, Fast Travel, movement from card text, movement-limit effects, concrete terrain/tokens/minions, Wasp content, turns, networking, or animation.
+
+Completion note (2026-08-09): Replaced adjacent step/stop card-resolution choices with immutable reachable destination/route/cost candidates. `CardActionResolutionAuthority` now re-derives the exact candidate set against current occupancy, validates the selected route on a side-effect-free authority copy, commits every internal adjacent step through the existing movement authority, emits each ordered step event, and completes after the one destination command even when allowance remains. `ReachableMovementDestination` and reachability query results are externally read-only and reject malformed route data. T2 focused validation passed after allowing Unity batchmode access to local licensing/package services: Edit Mode 70/70 (`CardActionResolutionAuthorityTests`, `ActionOfferAndPrintedValueTests`, `CardDefinitionInstanceTests`, `MovementSessionTests`, `MovementReachabilityQueryTests`, `AdjacentMoveAuthorityTests`, and `HeroSelectionControllerTests`). Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path, package, assembly, snapshot schema, or phase gate changed and every affected pure/query/presentation consumer was enumerated. Milestone 1.13 was not started.
+
 ### [ ] 1.13 Select a test card and perform card-driven movement
 
 Observable outcome: A visible placeholder hand lets the tester select one card and one available Movement offer, then complete the resumable card-driven movement on the expanded obstacle map.
@@ -366,9 +384,9 @@ Observable outcome: A visible placeholder hand lets the tester select one card a
 Acceptance checks:
 
 - The movement allowance comes only from the selected action offer's structured printed value.
-- A value-1 offer reproduces one-adjacent-space behavior and a higher value permits the corresponding explicit steps.
+- A value-1 offer reproduces one-adjacent-space behavior and a higher value offers all corresponding reachable destinations with their projected routes.
 - Primary/Secondary context remains visible to the authority and the Secondary offer does not accidentally opt into Primary-text behavior.
-- The tester may move zero spaces or stop early.
+- The tester may move zero spaces with Stop or stop early by selecting a destination whose route costs less than the allowance.
 - Obstacles block entry and passage exactly as in milestone 1.9.
 - Card, action, and pending-choice selection are visually identifiable and clear when resolution ends.
 - UI input submits commands and answers pending choices; it never owns card resolution or mutates occupancy.

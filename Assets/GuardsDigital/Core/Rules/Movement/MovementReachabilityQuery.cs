@@ -110,7 +110,7 @@ namespace GuardsDigital.Core.Rules.Movement
                 }
             }
 
-            return destinations;
+            return destinations.AsReadOnly();
         }
 
         private static IReadOnlyList<HexCoordinate> BuildRoute(

@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Corrective milestone 1.12a is complete: the milestones 1.10-1.12 card foundation now exposes genuinely read-only definition/value/choice collections, validates action origin and policy combinations, scopes runtime offers to an explicit timing window, and treats repeat as an invocation of an existing action rather than a static definition origin. Starting Movement resolution re-derives the selected offer from current authoritative definitions and card instances, rejects forged/stale offers or an unavailable actor, and stores the complete route/event/allowance continuation as plain immutable data. A new authority can validate and resume that continuation against restored board occupancy without relying on a hidden in-memory `MovementSession`. This makes the narrow shell compatible with later snapshot work without implementing snapshot import/export itself. No visible card hand, card play/reveal, card lifecycle transitions, real Wasp data/images, modal/repeat behavior, reactions, timing effects, turns, Unity presentation, animation, or broader gameplay resolution has been implemented.
+Corrective milestone 1.12b is complete: the milestones 1.10-1.12 card foundation now exposes genuinely read-only definition/value/choice collections, validates action origin and policy combinations, scopes runtime offers to an explicit timing window, and treats repeat as an invocation of an existing action rather than a static definition origin. Starting Movement resolution re-derives the selected offer from current authoritative definitions and card instances, rejects forged/stale offers or an unavailable actor, and projects every reachable destination as an immutable destination/route/cost candidate. One destination command re-derives the exact candidates against current occupancy, validates the selected route without side effects, commits its ordered adjacent steps through the existing authority, and completes the `up to` Movement action; Stop remains the zero-movement choice. A new authority can validate and resume the pending destination choice against restored board occupancy without relying on a hidden in-memory `MovementSession`. This makes the narrow shell compatible with later snapshot work without implementing snapshot import/export itself. No visible card hand, card play/reveal, card lifecycle transitions, real Wasp data/images, modal/repeat behavior, reactions, timing effects, turns, Unity presentation, animation, or broader gameplay resolution has been implemented.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -215,7 +215,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Every milestone defines one observable outcome, explicit non-goals, focused acceptance checks, and a hard stop.
 - Do not start the next milestone without explicit user approval.
 - The early board/card foundation proceeds in separate steps: adjacent selection, an authoritative adjacent-move command/event, presentation hookup, a larger placeholder grid, movement of multiple spaces, obstacle blocking immediately afterward, definition/instance separation, action definitions/runtime offers and typed values, resumable card-action choices, then visible card-driven movement.
-- Multi-space movement currently treats the player's clicked reachable destination as the explicit choice, records the deterministic internal adjacent route used to reach it, allows zero movement by stopping before a destination click, and rejects entering or passing through generic placeholder obstacles.
+- Both the primitive scene session and pure placeholder card resolver treat the player's selected reachable destination with its projected deterministic route as the explicit choice, record every internal adjacent step, allow zero movement through Stop, and reject entering or passing through generic placeholder obstacles.
 - Before Phase 1 ends, the selected test action offer's typed printed-value query must be the sole source of movement allowance.
 - Fast Travel, movement from card text, and movement-limiting effects remain later rule milestones rather than being folded into the early board test.
 - Mechanics are completed with primitives and debug UI before production art begins.
@@ -257,7 +257,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Card execution, pending choices, visible card UI, turns, or Wasp content before their exact milestone approval.
+- Card execution beyond the placeholder Movement destination shell, visible card UI, turns, or Wasp content before their exact milestone approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.
