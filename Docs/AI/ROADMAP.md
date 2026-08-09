@@ -677,6 +677,8 @@ Observable outcome: A synthetic Movement action uses its typed allowance to trav
 Acceptance checks:
 
 - The action reuses Phase 1 route choice, obstacle blocking, command/event authority, and pending resolution.
+- When multiple legal routes reach the same destination within the allowance, the player can choose among them, including a deliberately longer/non-shortest route; shortest-path projection must not make that choice on the player's behalf.
+- Focused tests prove shortest and longer legal routes to the same destination remain distinct choices and commit the selected route's exact ordered steps deterministically.
 - Action-start restrictions are evaluated at the correct checkpoint.
 - Up-to movement permits zero movement and early stopping.
 - Ordinary Movement remains distinct from direct movement written in card text.
