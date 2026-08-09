@@ -32,6 +32,11 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            if (selectionController.IsMovementSessionActive)
+            {
+                return selectionController.StopMovementSession();
+            }
+
             selectionController.SelectHero();
             return true;
         }

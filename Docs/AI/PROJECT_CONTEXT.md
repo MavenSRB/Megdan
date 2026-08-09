@@ -4,7 +4,7 @@ Last updated: 2026-08-09
 
 ## Current status
 
-Milestone 1.7 is complete: the validation scene now expands from the original seven-hex cluster into a connected radius-2 placeholder grid with 19 logical spaces. The expanded grid includes coordinate pairs at logical distances 1, 2, and 3 or greater, plus at least one pair with more than one valid two-step route. Existing primitive hero selection and adjacent click-to-move behavior still use authoritative occupancy and the milestone 1.5 adjacent-move command/event authority. No multi-space movement, obstacles, official map data, zones, terrain, cards, turns, path automation, networking, animation, or broader gameplay resolution has been implemented.
+Milestone 1.8 is complete: selecting the primitive hero now starts a configurable movement session with allowance greater than one. Each clicked destination commits exactly one adjacent step through the milestone 1.5 adjacent-move authority, spends one allowance, records the explicit chosen route, and refreshes legal next-step highlighting from the hero's current authoritative occupancy. Spending the full allowance ends the session; clicking the selected hero again stops early, including zero movement. No obstacles, official map data, zones, terrain, cards, turns, path automation, networking, animation, Fast Travel, movement from card text, movement-limiting effects, or broader gameplay resolution has been implemented.
 
 Documentation milestone 0.4 is also complete: the general card/action rules on printed rulebook pages 7-19 have been reviewed and converted into the durable implementation contract in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. This specifies future card code but implements none of it.
 
@@ -14,7 +14,7 @@ Documentation milestone 0.6 is complete: the roadmap now proves Tie Breaker stat
 
 Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-tiered validation. Every executable milestone keeps focused coverage, while Play Mode, affected/full suites, visual checks, source validation, and build smoke tests run only where the changed boundary or risk justifies them. This policy change also implements no gameplay.
 
-Milestone 1.8, moving up to a configurable number of spaces, is proposed but not authorized. Every later milestone has the same approval gate.
+Milestone 1.9, adding obstacles and enforcing movement blocking, is proposed but not authorized. Every later milestone has the same approval gate.
 
 ## Mission
 
@@ -257,7 +257,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Multi-space movement, obstacles, cards, or turns before milestone 1.8 approval.
+- Obstacles, cards, or turns before milestone 1.9 approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.

@@ -253,7 +253,7 @@ Non-goals: No official map data, movement-rule change, obstacle, zone, terrain, 
 
 Completion note (2026-08-09): Added a presentation-owned radius-2 placeholder grid expander to the existing validation scene, producing 19 rendered axial spaces while preserving the original origin-plus-six-neighbor cluster, primitive hero at the origin, and adjacent click-to-move behavior through the existing adjacent-move authority. Focused T2 validation passed after allowing Unity batchmode access to local licensing/package services: Edit Mode 19/19 (`MinimalHexGridSceneTests`, `HeroSelectionControllerTests`, `AdjacentMoveAuthorityTests`) and Play Mode 3/3 (`MinimalHexGridPlayModeTests`). Complete unfiltered suites were intentionally omitted because this is not a T3 gate and the changed Unity-facing scene/controller path is covered by the focused Edit Mode and Play Mode tests. No official map data, movement-rule change, obstacle, zone, terrain, card, turn, camera movement, networking, or animation was added.
 
-### [ ] 1.8 Move up to a configurable number of spaces
+### [x] 1.8 Move up to a configurable number of spaces
 
 Observable outcome: A movement session gives the primitive hero a configurable allowance greater than one and lets the tester choose each adjacent step until stopping early or spending the allowance.
 
@@ -268,6 +268,8 @@ Acceptance checks:
 - Focused tests cover zero movement, early stopping, exact allowance, and attempted over-movement.
 
 Non-goals: No cards, turns, Fast Travel, movement from card text, movement-limiting effects, obstacles, or animation.
+
+Completion note (2026-08-09): Added a pure `MovementSession` wrapper around the milestone 1.5 adjacent-move authority. Sessions track configured allowance, remaining allowance, explicit route, and the ordered accepted adjacent-move events; rejected or over-allowance steps do not mutate occupancy or add events. The validation scene now starts a default allowance-3 session on primitive hero selection, refreshes legal adjacent highlights after each accepted step, ends automatically when allowance is spent, and stops early when the tester clicks the selected hero again. Focused T2 validation passed after allowing Unity batchmode access to local licensing/package services: Edit Mode 25/25 (`MovementSessionTests`, `HeroSelectionControllerTests`, `AdjacentMoveAuthorityTests`, `MinimalHexGridSceneTests`) and Play Mode 3/3 (`MinimalHexGridPlayModeTests`). Complete unfiltered suites were intentionally omitted because this is not a T3 gate and the affected pure/session/controller/scene path is covered by the focused tests. No cards, turns, Fast Travel, movement from card text, movement-limiting effects, obstacles, networking, or animation was added.
 
 ### [ ] 1.9 Add obstacles and enforce movement blocking
 

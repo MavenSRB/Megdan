@@ -1209,6 +1209,7 @@ MonoBehaviour:
   - {fileID: 957022703}
   - {fileID: 1019723947}
   highlightMaterial: {fileID: 0}
+  movementAllowance: 3
 --- !u!4 &1041967342
 Transform:
   m_ObjectHideFlags: 0

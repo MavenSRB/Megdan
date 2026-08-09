@@ -62,7 +62,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_ClicksHeroThenHighlightedDestinationAndMovesPrimitiveHero()
+        public IEnumerator Scene_ClicksHeroThenHighlightedDestinationAndStopsMovementSession()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(loadOperation, Is.Not.Null);
@@ -75,6 +75,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             var hero = Object.FindFirstObjectByType<PrimitiveHeroView>();
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
             var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             var origin = hero.Coordinate;
@@ -87,12 +88,22 @@ namespace GuardsDigital.Tests.PlayMode
                 .Select(tile => tile.Coordinate)
                 .ToArray();
             var moved = pointerInput.TryHandlePointerRay(CreateDownRay(destinationTile.transform.position));
+            var activeAfterMove = controller.IsMovementSessionActive;
+            var remainingAfterMove = controller.RemainingMovementAllowance;
+            Physics.SyncTransforms();
+            yield return null;
+
+            var stopped = pointerInput.TryHandlePointerRay(CreateDownRay(hero.transform.position));
 
             Assert.That(selected, Is.True);
             Assert.That(highlightedCoordinates, Is.EquivalentTo(origin.GetNeighbors()));
             Assert.That(highlightedCoordinates, Has.Length.EqualTo(6));
             Assert.That(highlightedCoordinates, Has.No.Member(origin));
             Assert.That(moved, Is.True);
+            Assert.That(activeAfterMove, Is.True);
+            Assert.That(remainingAfterMove, Is.EqualTo(HeroSelectionController.DefaultMovementAllowance - 1));
+            Assert.That(controller.IsMovementSessionActive, Is.False);
+            Assert.That(stopped, Is.True);
             Assert.That(hero.Coordinate, Is.EqualTo(destination));
             Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
         }

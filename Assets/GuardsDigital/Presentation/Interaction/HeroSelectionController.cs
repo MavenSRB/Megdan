@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -12,6 +13,8 @@ namespace GuardsDigital.Presentation.Interaction
     [DisallowMultipleComponent]
     public sealed class HeroSelectionController : MonoBehaviour
     {
+        public const int DefaultMovementAllowance = 3;
+
         [SerializeField]
         private PrimitiveHeroView heroView;
 
@@ -21,15 +24,28 @@ namespace GuardsDigital.Presentation.Interaction
         [SerializeField]
         private Material highlightMaterial;
 
+        [SerializeField]
+        private int movementAllowance = DefaultMovementAllowance;
+
         private readonly List<HexCoordinate> highlightedCoordinates = new List<HexCoordinate>();
 
         private AdjacentMoveAuthority moveAuthority;
+        private MovementSession movementSession;
 
         public bool IsHeroSelected { get; private set; }
 
         public IReadOnlyList<HexCoordinate> HighlightedCoordinates => highlightedCoordinates;
 
         public Material HighlightMaterial => EnsureHighlightMaterial();
+
+        public int MovementAllowance => movementAllowance;
+
+        public int RemainingMovementAllowance => movementSession != null ? movementSession.RemainingAllowance : 0;
+
+        public bool IsMovementSessionActive => movementSession != null && !movementSession.IsComplete;
+
+        public IReadOnlyList<HexCoordinate> MovementRoute =>
+            movementSession != null ? movementSession.Route : System.Array.Empty<HexCoordinate>();
 
         public AdjacentMoveRejectionReason LastMoveRejectionReason { get; private set; }
 
@@ -43,21 +59,25 @@ namespace GuardsDigital.Presentation.Interaction
             }
         }
 
-        public void Configure(PrimitiveHeroView hero, IEnumerable<HexTileView> tiles, Material material)
+        public void Configure(
+            PrimitiveHeroView hero,
+            IEnumerable<HexTileView> tiles,
+            Material material,
+            int allowance = DefaultMovementAllowance)
         {
             heroView = hero;
             tileViews = tiles?.Where(tile => tile != null).ToArray();
             highlightMaterial = material;
+            movementAllowance = allowance;
+            movementSession = null;
             RebuildMoveAuthority();
-            ClearSelection();
+            ClearSelectionVisuals();
         }
 
         public void SelectHero()
         {
             EnsureBindings();
             EnsureMoveAuthority();
-            ClearTileHighlights();
-            highlightedCoordinates.Clear();
 
             if (heroView == null || tileViews == null)
             {
@@ -65,9 +85,33 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            var selectedOccupancy = GetHeroOccupancyFromAuthority();
+            movementSession = new MovementSession(
+                moveAuthority,
+                selectedOccupancy.HeroId,
+                movementAllowance);
+            RefreshSelectionHighlights(selectedOccupancy);
+        }
+
+        public bool StopMovementSession()
+        {
+            if (!IsHeroSelected || movementSession == null || movementSession.IsComplete)
+            {
+                return false;
+            }
+
+            movementSession.Complete();
+            ClearSelectionVisuals();
+            return true;
+        }
+
+        private void RefreshSelectionHighlights(HeroOccupancy selectedOccupancy)
+        {
+            ClearTileHighlights();
+            highlightedCoordinates.Clear();
+
             var availableTiles = tileViews.Where(tile => tile != null).ToArray();
             var boardCoordinates = availableTiles.Select(tile => tile.Coordinate);
-            var selectedOccupancy = GetHeroOccupancyFromAuthority();
             var destinations = AdjacentDestinationQuery.FindEmptyAdjacentDestinations(
                 selectedOccupancy,
                 boardCoordinates,
@@ -98,13 +142,17 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
-            var currentOccupancy = GetHeroOccupancyFromAuthority();
-            var result = moveAuthority.TryCommit(new AdjacentMoveCommand(
-                currentOccupancy.HeroId,
-                currentOccupancy.Coordinate,
-                destination));
+            if (movementSession == null)
+            {
+                var currentOccupancy = GetHeroOccupancyFromAuthority();
+                movementSession = new MovementSession(
+                    moveAuthority,
+                    currentOccupancy.HeroId,
+                    movementAllowance);
+            }
 
-            LastMoveRejectionReason = result.RejectionReason;
+            var result = movementSession.TryCommitStep(destination);
+            LastMoveRejectionReason = result.AdjacentMoveRejectionReason;
 
             if (!result.Accepted)
             {
@@ -113,7 +161,15 @@ namespace GuardsDigital.Presentation.Interaction
 
             var updatedOccupancy = GetHeroOccupancyFromAuthority();
             heroView.Configure(updatedOccupancy, heroView.OuterRadius);
-            ClearSelection();
+            if (result.SessionComplete)
+            {
+                ClearSelectionVisuals();
+            }
+            else
+            {
+                RefreshSelectionHighlights(updatedOccupancy);
+            }
+
             return true;
         }
 
@@ -131,6 +187,16 @@ namespace GuardsDigital.Presentation.Interaction
         }
 
         public void ClearSelection()
+        {
+            if (movementSession != null && !movementSession.IsComplete)
+            {
+                movementSession.Complete();
+            }
+
+            ClearSelectionVisuals();
+        }
+
+        private void ClearSelectionVisuals()
         {
             ClearTileHighlights();
             highlightedCoordinates.Clear();

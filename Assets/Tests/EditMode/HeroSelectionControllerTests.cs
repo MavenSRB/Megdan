@@ -121,7 +121,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TryCommitDestination_LegalHighlightedDestination_UpdatesHeroFromAuthorityAndClearsHighlights()
+        public void TryCommitDestination_LegalHighlightedDestination_UpdatesHeroFromAuthorityAndContinuesSession()
         {
             var objects = new List<GameObject>();
 
@@ -142,9 +142,11 @@ namespace GuardsDigital.Tests.EditMode
                 var moved = controller.TryCommitDestination(destination);
 
                 Assert.That(moved, Is.True);
-                Assert.That(controller.IsHeroSelected, Is.False);
-                Assert.That(controller.HighlightedCoordinates, Is.Empty);
-                Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
+                Assert.That(controller.IsHeroSelected, Is.True);
+                Assert.That(controller.IsMovementSessionActive, Is.True);
+                Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(HeroSelectionController.DefaultMovementAllowance - 1));
+                Assert.That(controller.MovementRoute, Is.EqualTo(new[] { new HexCoordinate(0, 0), destination }));
+                Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(destination.GetNeighbors().Where(coordinate => tiles.Any(tile => tile.Coordinate.Equals(coordinate)))));
                 Assert.That(controller.CurrentHeroOccupancy.Coordinate, Is.EqualTo(destination));
                 Assert.That(hero.Occupancy.Coordinate, Is.EqualTo(destination));
                 Assert.That(
@@ -152,6 +154,79 @@ namespace GuardsDigital.Tests.EditMode
                         hero.transform.localPosition,
                         HexWorldLayout.ToWorld(destination) + (Vector3.up * hero.VerticalOffset)),
                     Is.LessThan(0.0001f));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
+        public void StopMovementSession_WithoutSteps_AllowsZeroMovementAndClearsHighlights()
+        {
+            var objects = new List<GameObject>();
+
+            try
+            {
+                var origin = new HexCoordinate(0, 0);
+                var hero = CreateHero(objects, origin);
+                var tiles = origin.GetNeighbors()
+                    .Concat(new[] { origin })
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var controllerObject = new GameObject("Selection Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(hero, tiles, CreateMaterial(Color.yellow));
+
+                controller.SelectHero();
+                var stopped = controller.StopMovementSession();
+
+                Assert.That(stopped, Is.True);
+                Assert.That(controller.IsHeroSelected, Is.False);
+                Assert.That(controller.IsMovementSessionActive, Is.False);
+                Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(HeroSelectionController.DefaultMovementAllowance));
+                Assert.That(controller.MovementRoute, Is.EqualTo(new[] { origin }));
+                Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
+                Assert.That(hero.Occupancy.Coordinate, Is.EqualTo(origin));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
+        public void TryCommitDestination_ExactAllowance_ClearsSelectionAfterFinalStep()
+        {
+            var objects = new List<GameObject>();
+
+            try
+            {
+                var origin = new HexCoordinate(0, 0);
+                var firstDestination = origin.GetNeighbor(HexDirection.East);
+                var secondDestination = firstDestination.GetNeighbor(HexDirection.East);
+                var hero = CreateHero(objects, origin);
+                var tiles = CreateRadiusTwoCoordinates()
+                    .Select(coordinate => CreateTile(objects, coordinate))
+                    .ToArray();
+                var controllerObject = new GameObject("Selection Controller");
+                objects.Add(controllerObject);
+                var controller = controllerObject.AddComponent<HeroSelectionController>();
+                controller.Configure(hero, tiles, CreateMaterial(Color.yellow), 2);
+
+                controller.SelectHero();
+                var firstMoved = controller.TryCommitDestination(firstDestination);
+                var secondMoved = controller.TryCommitDestination(secondDestination);
+
+                Assert.That(firstMoved, Is.True);
+                Assert.That(secondMoved, Is.True);
+                Assert.That(controller.IsHeroSelected, Is.False);
+                Assert.That(controller.IsMovementSessionActive, Is.False);
+                Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(0));
+                Assert.That(controller.MovementRoute, Is.EqualTo(new[] { origin, firstDestination, secondDestination }));
+                Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
+                Assert.That(hero.Occupancy.Coordinate, Is.EqualTo(secondDestination));
             }
             finally
             {
@@ -193,6 +268,8 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(handled, Is.False);
                 Assert.That(controller.LastMoveRejectionReason, Is.EqualTo(AdjacentMoveRejectionReason.DestinationNotAdjacent));
                 Assert.That(controller.IsHeroSelected, Is.True);
+                Assert.That(controller.IsMovementSessionActive, Is.True);
+                Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(HeroSelectionController.DefaultMovementAllowance));
                 Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(highlightedBefore));
                 Assert.That(hero.Occupancy.Coordinate, Is.EqualTo(origin));
                 Assert.That(controller.CurrentHeroOccupancy.Coordinate, Is.EqualTo(origin));
@@ -234,6 +311,20 @@ namespace GuardsDigital.Tests.EditMode
             {
                 color = color
             };
+        }
+
+        private static IEnumerable<HexCoordinate> CreateRadiusTwoCoordinates()
+        {
+            const int radius = 2;
+            for (var q = -radius; q <= radius; q++)
+            {
+                var minimumR = System.Math.Max(-radius, -q - radius);
+                var maximumR = System.Math.Min(radius, -q + radius);
+                for (var r = minimumR; r <= maximumR; r++)
+                {
+                    yield return new HexCoordinate(q, r);
+                }
+            }
         }
 
         private static void DestroyAll(IEnumerable<GameObject> objects)

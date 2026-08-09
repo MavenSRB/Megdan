@@ -156,6 +156,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(controllers, Has.Length.EqualTo(1));
             Assert.That(selectors, Has.Length.EqualTo(1));
             Assert.That(inputs, Has.Length.EqualTo(1));
+            Assert.That(controllers[0].MovementAllowance, Is.GreaterThan(1));
             Assert.That(selectors[0].SelectionController, Is.SameAs(controllers[0]));
             Assert.That(inputs[0].EventCamera, Is.Not.Null);
             Assert.That(inputs[0].Selectors, Has.Member(selectors[0]));
