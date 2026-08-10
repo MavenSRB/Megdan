@@ -587,7 +587,7 @@ Non-goals: No Wasp inventory, printed card effects, upgrades, items, or end-of-r
 
 Completion note (2026-08-10): Extended immutable card definitions with a validated positive `InitiativeValue` and explicit `CardContentAuthority`; every Phase 3 placeholder definition is marked `SyntheticTestFixture`, retains its visible `TEST -` label, and advances to a synthetic-only content revision. The two definitions use unequal Initiative 7 and 4, while the separately owned mirrored hands provide deterministic cross-hero ties without claiming Wasp values. Added a pure `CardLifecycleAuthority` that accepts only the current legal source facts for Hand/face-up/unplayed to Turn Area/Facedown/played/unresolved, reveal to Faceup, and post-action resolution to played/resolved, plus the existing orthogonality-preserving Defense Hand-to-Discard transition. Invalid, repeated, null, and out-of-order attempts reject without state mutation; resolved, discarded, and facedown remain independently representable. Printed rulebook pages 7, 9, and 10 were visually verified. T1 validation passed with zero failed, skipped, or inconclusive cases: focused Edit Mode 19/19 (`CardLifecycleAuthorityTests`, `CardDefinitionInstanceTests`) and final directly affected Edit Mode 115/115 across lifecycle, definitions/offers, participants, Movement/Attack resolution, and existing presentation consumers. Play Mode was intentionally omitted because no Unity-facing path changed. No simultaneous card commitment/reveal orchestration, Initiative ordering, Wasp data/text, effect, upgrade, item, turn, round, or end-of-round behavior was added.
 
-### [ ] 3.2 Display both director-mode test hands
+### [x] 3.2 Display both director-mode test hands
 
 Required Codex profile: GPT-5.6 Terra with medium reasoning.
 
@@ -599,7 +599,11 @@ Acceptance checks:
 - Team identity is not conveyed by color alone.
 - Selecting a card does not play it or resolve an action.
 
+Completion note (2026-08-10): The validation HUD now projects both authoritative synthetic hands simultaneously in separate `[R] RED HERO` and `[B] BLUE HERO` rows. Each displayed entry comes from the Red/Blue hand's stable owner-bound runtime card instance and its matching immutable definition; the explicit symbol-and-text labels ensure team identity is never color-only. A director can select either side's card through the controller, which changes only the current selected card/hero presentation context and does not play, reveal, resolve, or emit a card-resolution event. T2 validation passed with zero failed, skipped, or inconclusive cases: focused Edit Mode 23/23 (`DirectorHandPresentationTests`, `CardDrivenMovementPresentationTests`, and `HeroSelectionControllerTests`) and focused Play Mode 8/8 (`MinimalHexGridPlayModeTests`), including the saved-scene Blue-hand selection/no-lifecycle-transition path. Source/layout inspection confirmed the two 32px hand rows fit inside the enlarged bottom panel, retain the top-right Tie Breaker HUD clearance, and use explicit readable team labels. Complete unfiltered suites were intentionally omitted because milestone 3.2 is not a T3 gate and the affected presentation/controller consumers are enumerated. No card commitment, Facedown transition, reveal, Initiative ordering, action resolution, turn, or round behavior was added.
+
 ### [ ] 3.3 Play and reveal one test card per side
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The controller selects and confirms one card for each side, both cards enter the correct played/unresolved state, and they reveal together.
 

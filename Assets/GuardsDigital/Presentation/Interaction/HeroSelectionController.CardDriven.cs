@@ -16,7 +16,7 @@ namespace GuardsDigital.Presentation.Interaction
     public sealed partial class HeroSelectionController
     {
         private const float CardPanelMargin = 12f;
-        private const float CardPanelHeight = 230f;
+        private const float CardPanelHeight = 270f;
         private const float TieBreakerIndicatorWidth = 200f;
         private const float TieBreakerIndicatorHeight = 96f;
 
@@ -62,6 +62,25 @@ namespace GuardsDigital.Presentation.Interaction
                 return placeholderHand != null
                     ? placeholderHand.Instances
                     : Array.Empty<CardInstance>();
+            }
+        }
+
+        public IReadOnlyList<DirectorTestHand> VisibleDirectorHands
+        {
+            get
+            {
+                InitializeCardDrivenMovementIfEnabled();
+                EnsurePlaceholderOneVsOneHands();
+                if (placeholderConfiguration == null)
+                {
+                    return Array.Empty<DirectorTestHand>();
+                }
+
+                return new[]
+                {
+                    new DirectorTestHand(TeamSide.Red, placeholderConfiguration.RedHand),
+                    new DirectorTestHand(TeamSide.Blue, placeholderConfiguration.BlueHand)
+                };
             }
         }
 
@@ -214,6 +233,27 @@ namespace GuardsDigital.Presentation.Interaction
             cardStatus = "Card selected. Choose an available action.";
             ClearSelectionVisuals();
             return true;
+        }
+
+        public bool TrySelectDirectorCard(CardInstanceId cardInstanceId)
+        {
+            InitializeCardDrivenMovementIfEnabled();
+            if (!cardDrivenMovementEnabled || IsCardResolutionPending || !cardInstanceId.IsDefined)
+            {
+                return false;
+            }
+
+            var hand = VisibleDirectorHands.SingleOrDefault(candidate =>
+                candidate.Instances.Any(instance => instance.Id.Equals(cardInstanceId)));
+            if (hand == null)
+            {
+                return false;
+            }
+
+            var ownerHero = new[] { heroView }
+                .Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>())
+                .FirstOrDefault(hero => hero != null && hero.Occupancy.HeroId.Equals(hand.OwnerId));
+            return ownerHero != null && TrySelectHero(ownerHero) && TrySelectCard(cardInstanceId);
         }
 
         public bool TrySelectAction(ActionDefinitionId actionDefinitionId)
@@ -801,34 +841,34 @@ namespace GuardsDigital.Presentation.Interaction
             var panel = GetCardPanelRect();
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));
-            var activeHeroLabel = heroView != null
-                ? $"{heroView.TeamSide.ToString().ToUpperInvariant()} HERO"
-                : "NO HERO";
-            GUILayout.Label($"PHASE 2 TEST HAND - {activeHeroLabel} - choose a card, then an action");
+            GUILayout.Label("PHASE 3 DIRECTOR TEST HANDS - select a card, then an action");
             GUILayout.Label(cardStatus);
 
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Cards", GUILayout.Width(54f));
-            foreach (var instance in VisibleCardInstances)
+            foreach (var hand in VisibleDirectorHands)
             {
-                var definition = VisibleCardDefinitions.Single(
-                    candidate => candidate.Reference.Equals(instance.DefinitionReference));
-                var previousColor = GUI.backgroundColor;
-                GUI.backgroundColor = selectedCardInstanceId.HasValue &&
-                    selectedCardInstanceId.Value.Equals(instance.Id)
-                        ? new Color(0.35f, 0.75f, 1f)
-                        : Color.white;
-                GUI.enabled = !IsCardResolutionPending;
-                if (GUILayout.Button(definition.DisplayName, GUILayout.Height(32f)))
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(hand.Label, GUILayout.Width(122f));
+                foreach (var instance in hand.Instances)
                 {
-                    TrySelectCard(instance.Id);
+                    var definition = hand.Definitions.Single(
+                        candidate => candidate.Reference.Equals(instance.DefinitionReference));
+                    var previousColor = GUI.backgroundColor;
+                    GUI.backgroundColor = selectedCardInstanceId.HasValue &&
+                        selectedCardInstanceId.Value.Equals(instance.Id)
+                            ? new Color(0.35f, 0.75f, 1f)
+                            : Color.white;
+                    GUI.enabled = !IsCardResolutionPending;
+                    if (GUILayout.Button(definition.DisplayName, GUILayout.Height(32f)))
+                    {
+                        TrySelectDirectorCard(instance.Id);
+                    }
+
+                    GUI.enabled = true;
+                    GUI.backgroundColor = previousColor;
                 }
 
-                GUI.enabled = true;
-                GUI.backgroundColor = previousColor;
+                GUILayout.EndHorizontal();
             }
-
-            GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Actions", GUILayout.Width(54f));

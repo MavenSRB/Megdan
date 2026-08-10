@@ -110,6 +110,37 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_ProjectsBothDirectorHandsAndSelectingBlueCardDoesNotPlayIt()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var hands = controller.VisibleDirectorHands;
+            var blueHand = hands.Single(hand => hand.TeamSide == TeamSide.Blue);
+            var beforeStates = hands.SelectMany(hand => hand.Instances)
+                .ToDictionary(card => card.Id, card => card.State);
+
+            var selected = controller.TrySelectDirectorCard(blueHand.Instances[0].Id);
+
+            Assert.That(hands.Select(hand => hand.Label), Is.EqualTo(new[] { "[R] RED HERO", "[B] BLUE HERO" }));
+            Assert.That(selected, Is.True);
+            Assert.That(controller.ActiveHeroView.Occupancy.HeroId, Is.EqualTo(blueHand.OwnerId));
+            Assert.That(controller.SelectedCardInstanceId, Is.EqualTo(blueHand.Instances[0].Id));
+            Assert.That(controller.IsCardResolutionPending, Is.False);
+            Assert.That(controller.CardResolutionEvents, Is.Empty);
+            Assert.That(controller.VisibleDirectorHands.SelectMany(hand => hand.Instances), Has.All.Matches<CardInstance>(card =>
+                card.State.Equals(beforeStates[card.Id])));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_SelectsVisibleCardOfferThenClicksReachableDestinationInOneClick()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
