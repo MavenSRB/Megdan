@@ -87,5 +87,29 @@ namespace GuardsDigital.Core.Cards
             return card.TryApplyLocationTransition(
                 new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
         }
+
+        public static bool TryRetrieveEligibleSyntheticCard(CardInstance card)
+        {
+            if (card == null)
+            {
+                throw new ArgumentNullException(nameof(card));
+            }
+
+            var isResolvedPlayedCard =
+                card.State.Location == CardLocation.TurnArea &&
+                card.State.HasBeenPlayed &&
+                card.State.ResolutionStatus == CardResolutionStatus.Resolved;
+            var isDiscardedDefense =
+                card.State.Location == CardLocation.DiscardPile &&
+                !card.State.HasBeenPlayed &&
+                card.State.ResolutionStatus == CardResolutionStatus.None;
+            if (!isResolvedPlayedCard && !isDiscardedDefense)
+            {
+                return false;
+            }
+
+            card.ApplyState(CardStateFacts.InitialInHand());
+            return true;
+        }
     }
 }

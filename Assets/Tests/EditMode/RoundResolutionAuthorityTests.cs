@@ -297,6 +297,157 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(redAttackCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
         }
 
+        [Test]
+        public void EndOfRound_UsesOrderedExplicitStagesRetrievesOwnersAndStartsFreshRound()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var authority = CreateAuthority(configuration);
+            var firstRoundSlots = new List<RoundTurnSlot>();
+            for (var turn = 0; turn < RoundResolutionAuthority.TurnsPerRound; turn++)
+            {
+                var red = configuration.RedHand.Instances[turn];
+                var blue = configuration.BlueHand.Instances[turn];
+                Assert.That(authority.TryCommitCard(red.OwnerId, red.Id).Accepted, Is.True);
+                Assert.That(authority.TryCommitCard(blue.OwnerId, blue.Id).Accepted, Is.True);
+                ResolveCurrentTurnWithHold(authority);
+            }
+
+            firstRoundSlots.AddRange(authority.TurnSlots);
+            var eventKinds = new List<RoundResolutionEventKind>();
+            var stageOutcomes = new List<EndOfRoundStageOutcome>();
+            while (authority.Phase == RoundResolutionPhase.EndOfRound)
+            {
+                var result = authority.TryAdvanceEndOfRound();
+                Assert.That(result.Accepted, Is.True);
+                eventKinds.AddRange(result.Events.Select(ruleEvent => ruleEvent.Kind));
+                stageOutcomes.AddRange(result.Events
+                    .Where(ruleEvent => ruleEvent.Kind == RoundResolutionEventKind.EndOfRoundStageResolved)
+                    .Select(ruleEvent => new EndOfRoundStageOutcome(
+                        ruleEvent.EndOfRoundStage.Value,
+                        ruleEvent.EndOfRoundOutcomeKind.Value)));
+            }
+
+            var orderedStages = Enum.GetValues(typeof(EndOfRoundStage))
+                .Cast<EndOfRoundStage>()
+                .Where(stage => stage != EndOfRoundStage.Complete)
+                .ToArray();
+            Assert.That(stageOutcomes.Select(outcome => outcome.Stage), Is.EqualTo(orderedStages));
+            Assert.That(stageOutcomes.Single(outcome =>
+                    outcome.Stage == EndOfRoundStage.RetrieveCardsAndCancelActiveEffects).Kind,
+                Is.EqualTo(EndOfRoundStageOutcomeKind.Completed));
+            Assert.That(stageOutcomes.Where(outcome =>
+                    outcome.Stage != EndOfRoundStage.RetrieveCardsAndCancelActiveEffects)
+                .Select(outcome => outcome.Kind),
+                Is.All.EqualTo(EndOfRoundStageOutcomeKind.NotApplicable));
+            Assert.That(eventKinds.Count(kind => kind == RoundResolutionEventKind.CardRetrieved), Is.EqualTo(8));
+            Assert.That(eventKinds.Count(kind =>
+                kind == RoundResolutionEventKind.ActiveEffectCancellationCheckpoint), Is.EqualTo(1));
+            Assert.That(eventKinds.TakeLast(2), Is.EqualTo(new[]
+            {
+                RoundResolutionEventKind.RoundCompleted,
+                RoundResolutionEventKind.NextRoundStarted
+            }));
+            Assert.That(configuration.RedHand.Instances.Take(4).Select(card => card.State),
+                Is.All.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(configuration.BlueHand.Instances.Take(4).Select(card => card.State),
+                Is.All.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(authority.RoundIndex, Is.EqualTo(2));
+            Assert.That(authority.TurnIndex, Is.EqualTo(1));
+            Assert.That(authority.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
+            Assert.That(authority.TurnSlots, Is.Empty);
+            Assert.That(authority.CompletedRounds, Has.Count.EqualTo(1));
+            Assert.That(authority.CompletedRounds[0].TurnSlots, Is.EqualTo(firstRoundSlots));
+            Assert.That(authority.CompletedRounds[0].EndOfRoundOutcomes.Select(outcome => outcome.Stage),
+                Is.EqualTo(orderedStages));
+
+            var frozenAssignments = authority.CompletedRounds[0].TurnSlots[0].Assignments
+                .Select(assignment => assignment.CardInstanceId).ToArray();
+            Assert.That(authority.TryCommitCard(
+                configuration.RedHand.Instances[0].OwnerId,
+                configuration.RedHand.Instances[0].Id).Accepted, Is.True);
+            Assert.That(authority.CompletedRounds[0].TurnSlots[0].Assignments
+                .Select(assignment => assignment.CardInstanceId), Is.EqualTo(frozenAssignments));
+        }
+
+        [Test]
+        public void EndOfRound_PausedHandlerRetainsCursorAndMissingAvailableHandlerRejectsWithoutMutation()
+        {
+            var fixture = CreateOneCardPerSideFixture(
+                new EndOfRoundFixtureCapabilities(new[] { EndOfRoundStage.MinionBattle }),
+                new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
+                {
+                    { EndOfRoundStage.MinionBattle, new PauseOnceHandler() }
+                });
+            CompleteOneCardRound(fixture);
+
+            var paused = fixture.Authority.TryAdvanceEndOfRound();
+            Assert.That(paused.Accepted, Is.True);
+            Assert.That(paused.Events.Single().EndOfRoundOutcomeKind,
+                Is.EqualTo(EndOfRoundStageOutcomeKind.Paused));
+            Assert.That(fixture.Authority.CurrentEndOfRoundStage,
+                Is.EqualTo(EndOfRoundStage.MinionBattle));
+            Assert.That(fixture.Authority.EndOfRoundOutcomes, Is.Empty);
+
+            var resumed = fixture.Authority.TryAdvanceEndOfRound();
+            Assert.That(resumed.Accepted, Is.True);
+            Assert.That(fixture.Authority.CurrentEndOfRoundStage,
+                Is.EqualTo(EndOfRoundStage.RemoveTokensAndReturnMarkers));
+            Assert.That(fixture.Authority.EndOfRoundOutcomes.Single().Kind,
+                Is.EqualTo(EndOfRoundStageOutcomeKind.Completed));
+
+            var missingFixture = CreateOneCardPerSideFixture(
+                new EndOfRoundFixtureCapabilities(new[] { EndOfRoundStage.MinionBattle }),
+                new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>());
+            CompleteOneCardRound(missingFixture);
+            var slots = missingFixture.Authority.TurnSlots.ToArray();
+            var rejected = missingFixture.Authority.TryAdvanceEndOfRound();
+            Assert.That(rejected.Accepted, Is.False);
+            Assert.That(rejected.RejectionReason,
+                Is.EqualTo(RoundResolutionRejectionReason.MissingRequiredEndOfRoundHandler));
+            Assert.That(rejected.Events, Is.Empty);
+            Assert.That(missingFixture.Authority.CurrentEndOfRoundStage,
+                Is.EqualTo(EndOfRoundStage.MinionBattle));
+            Assert.That(missingFixture.Authority.TurnSlots, Is.EqualTo(slots));
+        }
+
+        [Test]
+        public void EndOfRound_GameEndingHandlerStopsCursorAndLaterCommands()
+        {
+            var fixture = CreateOneCardPerSideFixture(
+                new EndOfRoundFixtureCapabilities(new[] { EndOfRoundStage.MinionBattle }),
+                new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
+                {
+                    { EndOfRoundStage.MinionBattle, new GameEndingHandler() }
+                });
+            CompleteOneCardRound(fixture);
+
+            var ended = fixture.Authority.TryAdvanceEndOfRound();
+
+            Assert.That(ended.Accepted, Is.True);
+            Assert.That(ended.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
+            {
+                RoundResolutionEventKind.EndOfRoundStageResolved,
+                RoundResolutionEventKind.GameEnded
+            }));
+            Assert.That(fixture.Authority.Phase, Is.EqualTo(RoundResolutionPhase.GameEnded));
+            Assert.That(fixture.Authority.CurrentEndOfRoundStage,
+                Is.EqualTo(EndOfRoundStage.MinionBattle));
+            Assert.That(fixture.Authority.CompletedRounds, Is.Empty);
+            var rejected = fixture.Authority.TryAdvanceEndOfRound();
+            Assert.That(rejected.Accepted, Is.False);
+            Assert.That(rejected.RejectionReason,
+                Is.EqualTo(RoundResolutionRejectionReason.GameAlreadyEnded));
+        }
+
+        [Test]
+        public void TwoRounds_ReusesRetrievedCardsAndPreservesTieBreakerDeterministically()
+        {
+            var first = RunTwoRoundReplay();
+            var second = RunTwoRoundReplay();
+
+            Assert.That(second, Is.EqualTo(first));
+        }
+
         private static RoundResolutionAuthority CreateAuthority(
             PlaceholderOneVsOneTestConfiguration configuration)
         {
@@ -317,7 +468,9 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        private static OneCardFixture CreateOneCardPerSideFixture()
+        private static OneCardFixture CreateOneCardPerSideFixture(
+            EndOfRoundFixtureCapabilities capabilities = null,
+            IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> handlers = null)
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
             var redDefinition = CreateDefinition("red", 7);
@@ -334,8 +487,56 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { redDefinition, blueDefinition },
                 new[] { red, blue },
                 participants,
-                new TieBreakerState(TeamSide.Red));
+                new TieBreakerState(TeamSide.Red),
+                endOfRoundCapabilities: capabilities,
+                endOfRoundHandlers: handlers);
             return new OneCardFixture(red, blue, authority);
+        }
+
+        private static void CompleteOneCardRound(OneCardFixture fixture)
+        {
+            Assert.That(fixture.Authority.TryCommitCard(fixture.Red.OwnerId, fixture.Red.Id).Accepted, Is.True);
+            Assert.That(fixture.Authority.TryCommitCard(fixture.Blue.OwnerId, fixture.Blue.Id).Accepted, Is.True);
+            ResolveCurrentTurnWithHold(fixture.Authority);
+            for (var turn = 2; turn <= RoundResolutionAuthority.TurnsPerRound; turn++)
+            {
+                Assert.That(fixture.Authority.TryPass(fixture.Red.OwnerId).Accepted, Is.True);
+                Assert.That(fixture.Authority.TryPass(fixture.Blue.OwnerId).Accepted, Is.True);
+            }
+        }
+
+        private static string RunTwoRoundReplay()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var authority = CreateAuthority(configuration);
+            var facts = new List<string>();
+            for (var round = 1; round <= 2; round++)
+            {
+                for (var turn = 0; turn < RoundResolutionAuthority.TurnsPerRound; turn++)
+                {
+                    var red = configuration.RedHand.Instances[turn];
+                    var blue = configuration.BlueHand.Instances[turn];
+                    facts.AddRange(authority.TryCommitCard(red.OwnerId, red.Id).Events
+                        .Select(ruleEvent => $"{ruleEvent.RoundIndex}:{ruleEvent.TurnIndex}:{ruleEvent.Kind}"));
+                    facts.AddRange(authority.TryCommitCard(blue.OwnerId, blue.Id).Events
+                        .Select(ruleEvent => $"{ruleEvent.RoundIndex}:{ruleEvent.TurnIndex}:{ruleEvent.Kind}"));
+                    while (authority.Phase == RoundResolutionPhase.ResolvingTurn)
+                    {
+                        facts.AddRange(authority.TryPerformHold(
+                                authority.CurrentTurnAuthority.SelectedActor.CardInstanceId).Events
+                            .Select(ruleEvent => $"{ruleEvent.RoundIndex}:{ruleEvent.TurnIndex}:{ruleEvent.Kind}"));
+                    }
+                }
+
+                while (authority.Phase == RoundResolutionPhase.EndOfRound)
+                {
+                    facts.AddRange(authority.TryAdvanceEndOfRound().Events.Select(ruleEvent =>
+                        $"{ruleEvent.RoundIndex}:{ruleEvent.TurnIndex}:{ruleEvent.Kind}:" +
+                        $"{ruleEvent.EndOfRoundStage}:{ruleEvent.EndOfRoundOutcomeKind}"));
+                }
+            }
+
+            return string.Join("|", facts) + $"|tie={authority.TieBreakerState.RevealedSide}";
         }
 
         private static CardDefinition CreateDefinition(string id, int initiative)
@@ -446,6 +647,30 @@ namespace GuardsDigital.Tests.EditMode
             public int[] EventRoundIndices { get; }
 
             public int[] EventTurnIndices { get; }
+        }
+
+        private sealed class PauseOnceHandler : IEndOfRoundStageHandler
+        {
+            private bool paused;
+
+            public EndOfRoundStageResolution TryResolve(EndOfRoundStageContext context)
+            {
+                if (!paused)
+                {
+                    paused = true;
+                    return EndOfRoundStageResolution.Paused();
+                }
+
+                return EndOfRoundStageResolution.Completed();
+            }
+        }
+
+        private sealed class GameEndingHandler : IEndOfRoundStageHandler
+        {
+            public EndOfRoundStageResolution TryResolve(EndOfRoundStageContext context)
+            {
+                return EndOfRoundStageResolution.GameEnded();
+            }
         }
     }
 }

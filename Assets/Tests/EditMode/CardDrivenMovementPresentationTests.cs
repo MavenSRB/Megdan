@@ -816,6 +816,89 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void ValidationController_AdvancesEndOfRoundAndCompletesSecondRoundWithRetrievedCards()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects, true);
+                var red = scenario.Configuration.RedHand.Instances;
+                var blue = scenario.Configuration.BlueHand.Instances;
+
+                for (var turn = 0; turn < RoundResolutionAuthority.TurnsPerRound; turn++)
+                {
+                    CommitTurn(scenario.Controller, red[turn], blue[turn]);
+                    Assert.That(scenario.Controller.TryPerformHold(red[turn].Id), Is.True);
+                    Assert.That(scenario.Controller.TryPerformHold(blue[turn].Id), Is.True);
+                }
+
+                var tieBreakerAfterFirstRound = scenario.Controller.CurrentTieBreakerState;
+                var visibleStages = new List<EndOfRoundStage>();
+                while (scenario.Controller.IsVisibleRoundEnded)
+                {
+                    visibleStages.Add(scenario.Controller.VisibleEndOfRoundStage.Value);
+                    Assert.That(scenario.Controller.TryAdvanceEndOfRound(), Is.True,
+                        scenario.Controller.CardStatus);
+                }
+
+                Assert.That(visibleStages, Is.EqualTo(System.Enum.GetValues(typeof(EndOfRoundStage))
+                    .Cast<EndOfRoundStage>()
+                    .Where(stage => stage != EndOfRoundStage.Complete)));
+                Assert.That(scenario.Controller.VisibleRoundIndex, Is.EqualTo(2));
+                Assert.That(scenario.Controller.VisibleTurnIndex, Is.EqualTo(1));
+                Assert.That(scenario.Controller.CompletedRounds, Has.Count.EqualTo(1));
+                Assert.That(scenario.Controller.CompletedTurnSlots, Is.Empty);
+                Assert.That(scenario.Controller.CurrentTieBreakerState, Is.EqualTo(tieBreakerAfterFirstRound));
+                Assert.That(red.Take(4).Select(card => card.State),
+                    Is.All.EqualTo(CardStateFacts.InitialInHand()));
+                Assert.That(blue.Take(4).Select(card => card.State),
+                    Is.All.EqualTo(CardStateFacts.InitialInHand()));
+
+                CommitTurn(scenario.Controller, red[0], blue[0]);
+                Assert.That(scenario.Controller.TryPerformHold(red[0].Id), Is.True);
+                Assert.That(scenario.Controller.TryPerformHold(blue[0].Id), Is.True);
+
+                CommitTurn(scenario.Controller, red[3], blue[3]);
+                Assert.That(scenario.Controller.TrySelectAction(
+                    new ActionDefinitionId("secondary-movement")), Is.True);
+                Assert.That(scenario.Controller.TryStopCardMovement(), Is.True);
+                Assert.That(scenario.Controller.TryPerformHold(blue[3].Id), Is.True);
+
+                CommitTurn(scenario.Controller, red[2], blue[2]);
+                Assert.That(scenario.Controller.TrySelectAction(
+                    new ActionDefinitionId("primary-ranged-attack")), Is.True);
+                Assert.That(scenario.Controller.TrySubmitAttackTarget(
+                    scenario.BlueHero.Occupancy.HeroId), Is.True);
+                Assert.That(scenario.Controller.TrySubmitDefenseCard(blue[4].Id), Is.True);
+                Assert.That(scenario.Controller.TryPerformHold(blue[2].Id), Is.True);
+
+                CommitTurn(scenario.Controller, red[1], blue[1]);
+                Assert.That(scenario.Controller.TryPerformHold(
+                    scenario.Controller.VisibleTurnActor.CardInstanceId), Is.True);
+                Assert.That(scenario.Controller.TryPerformHold(
+                    scenario.Controller.VisibleTurnActor.CardInstanceId), Is.True);
+                Assert.That(scenario.Controller.IsVisibleRoundEnded, Is.True);
+                Assert.That(scenario.Controller.VisibleRoundIndex, Is.EqualTo(2));
+                Assert.That(scenario.Controller.CompletedRounds, Has.Count.EqualTo(1));
+                while (scenario.Controller.IsVisibleRoundEnded)
+                {
+                    Assert.That(scenario.Controller.TryAdvanceEndOfRound(), Is.True);
+                }
+
+                Assert.That(scenario.Controller.VisibleRoundIndex, Is.EqualTo(3));
+                Assert.That(scenario.Controller.CompletedRounds, Has.Count.EqualTo(2));
+                Assert.That(scenario.Controller.CompletedRounds.Select(record => record.RoundIndex),
+                    Is.EqualTo(new[] { 1, 2 }));
+                Assert.That(scenario.Controller.RoundResolutionEvents.Count(ruleEvent =>
+                    ruleEvent.Kind == RoundResolutionEventKind.CardRetrieved), Is.GreaterThanOrEqualTo(17));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
         private static void CommitTurn(
             HeroSelectionController controller,
             CardInstance redCard,

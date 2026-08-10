@@ -183,6 +183,12 @@ namespace GuardsDigital.Presentation.Interaction
         public IReadOnlyList<RoundTurnSlot> CompletedTurnSlots =>
             roundResolutionAuthority?.TurnSlots ?? Array.Empty<RoundTurnSlot>();
 
+        public IReadOnlyList<CompletedRoundRecord> CompletedRounds =>
+            roundResolutionAuthority?.CompletedRounds ?? Array.Empty<CompletedRoundRecord>();
+
+        public EndOfRoundStage? VisibleEndOfRoundStage =>
+            roundResolutionAuthority?.CurrentEndOfRoundStage;
+
         public int VisibleRoundIndex => roundResolutionAuthority?.RoundIndex ?? 0;
 
         public int VisibleTurnIndex => roundResolutionAuthority?.TurnIndex ?? 0;
@@ -514,6 +520,32 @@ namespace GuardsDigital.Presentation.Interaction
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             LastTurnRejectionReason = TurnResolutionRejectionReason.None;
             RefreshVisibleRoundState("Hold completed.");
+            return true;
+        }
+
+        public bool TryAdvanceEndOfRound()
+        {
+            InitializeCardDrivenMovementIfEnabled();
+            if (!cardDrivenMovementEnabled || IsCardResolutionPending || roundResolutionAuthority == null)
+            {
+                return false;
+            }
+
+            var completedStage = roundResolutionAuthority.CurrentEndOfRoundStage;
+            var result = roundResolutionAuthority.TryAdvanceEndOfRound();
+            if (!result.Accepted)
+            {
+                RecordRoundRejection(result);
+                cardStatus = $"End-of-round progression rejected: {FormatRoundRejection(result)}.";
+                return false;
+            }
+
+            RecordRoundEvents(result.Events);
+            LastRoundRejectionReason = RoundResolutionRejectionReason.None;
+            var stageLabel = completedStage.HasValue
+                ? FormatEndOfRoundStage(completedStage.Value)
+                : "checkpoint";
+            RefreshVisibleRoundState($"End of round: {stageLabel} processed.");
             return true;
         }
 
@@ -1060,7 +1092,8 @@ namespace GuardsDigital.Presentation.Interaction
             if (roundResolutionAuthority.Phase == RoundResolutionPhase.EndOfRound)
             {
                 selectedCardInstanceId = null;
-                cardStatus = $"{statusPrefix} ROUND {VisibleRoundIndex} COMPLETE - END OF ROUND.";
+                cardStatus = $"{statusPrefix} ROUND {VisibleRoundIndex} COMPLETE - END OF ROUND. " +
+                    $"Next checkpoint: {FormatEndOfRoundStage(roundResolutionAuthority.CurrentEndOfRoundStage.Value)}.";
                 return;
             }
 
@@ -1349,6 +1382,27 @@ namespace GuardsDigital.Presentation.Interaction
             return result.RejectionReason.ToString();
         }
 
+        private static string FormatEndOfRoundStage(EndOfRoundStage stage)
+        {
+            switch (stage)
+            {
+                case EndOfRoundStage.MinionBattle:
+                    return "Minion Battle";
+                case EndOfRoundStage.RemoveTokensAndReturnMarkers:
+                    return "remove tokens / return markers";
+                case EndOfRoundStage.ResolveRequestedLanePush:
+                    return "resolve requested Lane Push";
+                case EndOfRoundStage.RetrieveCardsAndCancelActiveEffects:
+                    return "retrieve cards / cancel Active effects";
+                case EndOfRoundStage.LevelUpAndUpgrade:
+                    return "Level Up / upgrade";
+                case EndOfRoundStage.CollectPityCoins:
+                    return "collect Pity Coins";
+                default:
+                    return stage.ToString();
+            }
+        }
+
         private IReadOnlyList<CardInstance> GetAllPlaceholderCardInstances()
         {
             EnsurePlaceholderOneVsOneHands();
@@ -1631,6 +1685,12 @@ namespace GuardsDigital.Presentation.Interaction
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Actions", GUILayout.Width(54f));
+            if (IsVisibleRoundEnded &&
+                GUILayout.Button("CONTINUE END OF ROUND", GUILayout.Width(200f), GUILayout.Height(46f)))
+            {
+                TryAdvanceEndOfRound();
+            }
+
             if (IsVisibleTurnActive &&
                 selectedCardInstanceId.HasValue &&
                 GUILayout.Button("HOLD", GUILayout.Width(100f), GUILayout.Height(46f)))

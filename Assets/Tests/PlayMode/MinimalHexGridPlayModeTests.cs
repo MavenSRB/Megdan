@@ -255,7 +255,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_PlaysOneUninterruptedAuthoritativeRoundToVisibleEndOfRound()
+        public IEnumerator Scene_PlaysTwoUninterruptedAuthoritativeRoundsThroughVisibleEndOfRound()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(loadOperation, Is.Not.Null);
@@ -324,6 +324,51 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(RoundResolutionRejectionReason.RoundAlreadyEnded));
             Assert.That(controller.RoundResolutionEvents, Has.Count.EqualTo(eventCount));
             Assert.That(redHero.Occupancy, Is.EqualTo(redOccupancy));
+
+            while (controller.IsVisibleRoundEnded)
+            {
+                Assert.That(controller.TryAdvanceEndOfRound(), Is.True, controller.CardStatus);
+                yield return null;
+            }
+
+            Assert.That(controller.VisibleRoundIndex, Is.EqualTo(2));
+            Assert.That(controller.VisibleTurnIndex, Is.EqualTo(1));
+            Assert.That(controller.CompletedRounds, Has.Count.EqualTo(1));
+            Assert.That(controller.CompletedTurnSlots, Is.Empty);
+            Assert.That(controller.VisibleDirectorHands.SelectMany(hand => hand.Instances),
+                Has.Member(blue[4]));
+
+            CommitSceneTurn(controller, red[0], blue[0]);
+            Assert.That(controller.TryPerformHold(red[0].Id), Is.True);
+            Assert.That(controller.TryPerformHold(blue[0].Id), Is.True);
+
+            CommitSceneTurn(controller, red[3], blue[3]);
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("secondary-movement")), Is.True);
+            Assert.That(controller.TryStopCardMovement(), Is.True);
+            Assert.That(controller.TryPerformHold(blue[3].Id), Is.True);
+
+            CommitSceneTurn(controller, red[2], blue[2]);
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-ranged-attack")), Is.True);
+            Assert.That(controller.TrySubmitAttackTarget(blueHero.Occupancy.HeroId), Is.True);
+            Assert.That(controller.TrySubmitDefenseCard(blue[4].Id), Is.True);
+            Assert.That(controller.TryPerformHold(blue[2].Id), Is.True);
+
+            CommitSceneTurn(controller, red[1], blue[1]);
+            Assert.That(controller.TryPerformHold(controller.VisibleTurnActor.CardInstanceId), Is.True);
+            Assert.That(controller.TryPerformHold(controller.VisibleTurnActor.CardInstanceId), Is.True);
+            yield return null;
+
+            Assert.That(controller.IsVisibleRoundEnded, Is.True);
+            Assert.That(controller.VisibleRoundIndex, Is.EqualTo(2));
+            while (controller.IsVisibleRoundEnded)
+            {
+                Assert.That(controller.TryAdvanceEndOfRound(), Is.True, controller.CardStatus);
+                yield return null;
+            }
+
+            Assert.That(controller.VisibleRoundIndex, Is.EqualTo(3));
+            Assert.That(controller.CompletedRounds.Select(record => record.RoundIndex),
+                Is.EqualTo(new[] { 1, 2 }));
         }
 
         [UnityTest]

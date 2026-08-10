@@ -63,6 +63,52 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void Retrieval_ReturnsOnlyResolvedPlayedOrDiscardedDefenseCardsToFreshHandState()
+        {
+            var definition = new CardDefinitionReference(new CardDefinitionId("retrieval"), "rev-1");
+            var owner = new GuardsDigital.Core.Units.Heroes.HeroId("retrieval-owner");
+            var resolved = CardInstance.CreateInHand(new CardInstanceId("resolved"), definition, owner);
+            var discarded = CardInstance.CreateInHand(new CardInstanceId("discarded"), definition, owner);
+            var untouched = CardInstance.CreateInHand(new CardInstanceId("untouched"), definition, owner);
+            var setAside = new CardInstance(
+                new CardInstanceId("set-aside"),
+                definition,
+                owner,
+                new CardStateFacts(
+                    CardLocation.SetAside,
+                    false,
+                    CardResolutionStatus.None,
+                    CardFaceOrientation.FaceUp));
+            var item = new CardInstance(
+                new CardInstanceId("item"),
+                definition,
+                owner,
+                new CardStateFacts(
+                    CardLocation.ItemSlot,
+                    false,
+                    CardResolutionStatus.None,
+                    CardFaceOrientation.FaceUp));
+            Assert.That(CardLifecycleAuthority.TryPlayFacedown(resolved), Is.True);
+            Assert.That(CardLifecycleAuthority.TryReveal(resolved), Is.True);
+            Assert.That(CardLifecycleAuthority.TryResolveAfterAction(resolved), Is.True);
+            Assert.That(CardLifecycleAuthority.TryDiscardDefenseFromHand(discarded), Is.True);
+
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(resolved), Is.True);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(discarded), Is.True);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(untouched), Is.False);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(setAside), Is.False);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(item), Is.False);
+            Assert.That(resolved.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(discarded.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(untouched.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(setAside.State.Location, Is.EqualTo(CardLocation.SetAside));
+            Assert.That(item.State.Location, Is.EqualTo(CardLocation.ItemSlot));
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(resolved), Is.False);
+            Assert.Throws<ArgumentNullException>(() =>
+                CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(null));
+        }
+
+        [Test]
         public void ResolvedDiscardedAndFaceOrientation_RemainOrthogonalFacts()
         {
             var state = new CardStateFacts(

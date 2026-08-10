@@ -12,7 +12,8 @@ namespace GuardsDigital.Core.Cards
     {
         AwaitingCommitments = 0,
         ResolvingTurn = 1,
-        EndOfRound = 2
+        EndOfRound = 2,
+        GameEnded = 3
     }
 
     public enum RoundResolutionRejectionReason
@@ -22,7 +23,10 @@ namespace GuardsDigital.Core.Cards
         NotAwaitingCommitments = 2,
         NotResolvingTurn = 3,
         CommitmentCommandRejected = 4,
-        TurnCommandRejected = 5
+        TurnCommandRejected = 5,
+        NotResolvingEndOfRound = 6,
+        MissingRequiredEndOfRoundHandler = 7,
+        GameAlreadyEnded = 8
     }
 
     public enum RoundResolutionEventKind
@@ -32,7 +36,13 @@ namespace GuardsDigital.Core.Cards
         TurnSlotRecorded = 2,
         TurnResolutionProgressed = 3,
         TurnAdvanced = 4,
-        EndOfRoundEntered = 5
+        EndOfRoundEntered = 5,
+        EndOfRoundStageResolved = 6,
+        CardRetrieved = 7,
+        ActiveEffectCancellationCheckpoint = 8,
+        RoundCompleted = 9,
+        NextRoundStarted = 10,
+        GameEnded = 11
     }
 
     public sealed class TurnCardAssignment
@@ -201,9 +211,14 @@ namespace GuardsDigital.Core.Cards
             RoundResolutionEventKind kind,
             int roundIndex,
             int turnIndex,
-            TurnCardCommitmentEvent commitmentEvent,
-            TurnResolutionEvent turnEvent,
-            RoundTurnSlot turnSlot)
+            TurnCardCommitmentEvent commitmentEvent = default,
+            TurnResolutionEvent turnEvent = default,
+            RoundTurnSlot turnSlot = null,
+            EndOfRoundStage? endOfRoundStage = null,
+            EndOfRoundStageOutcomeKind? endOfRoundOutcomeKind = null,
+            CardInstanceId? cardInstanceId = null,
+            HeroId? cardOwnerId = null,
+            CompletedRoundRecord completedRound = null)
         {
             Kind = kind;
             RoundIndex = roundIndex;
@@ -211,19 +226,24 @@ namespace GuardsDigital.Core.Cards
             CommitmentEvent = commitmentEvent;
             TurnEvent = turnEvent;
             TurnSlot = turnSlot;
+            EndOfRoundStage = endOfRoundStage;
+            EndOfRoundOutcomeKind = endOfRoundOutcomeKind;
+            CardInstanceId = cardInstanceId;
+            CardOwnerId = cardOwnerId;
+            CompletedRound = completedRound;
         }
 
         public RoundResolutionEventKind Kind { get; }
-
         public int RoundIndex { get; }
-
         public int TurnIndex { get; }
-
         public TurnCardCommitmentEvent CommitmentEvent { get; }
-
         public TurnResolutionEvent TurnEvent { get; }
-
         public RoundTurnSlot TurnSlot { get; }
+        public EndOfRoundStage? EndOfRoundStage { get; }
+        public EndOfRoundStageOutcomeKind? EndOfRoundOutcomeKind { get; }
+        public CardInstanceId? CardInstanceId { get; }
+        public HeroId? CardOwnerId { get; }
+        public CompletedRoundRecord CompletedRound { get; }
 
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
@@ -239,9 +259,7 @@ namespace GuardsDigital.Core.Cards
                 RoundResolutionEventKind.CommitmentProgressed,
                 roundIndex,
                 turnIndex,
-                commitmentEvent,
-                default,
-                null);
+                commitmentEvent: commitmentEvent);
         }
 
         public static RoundResolutionEvent SlotRecorded(RoundTurnSlot turnSlot)
@@ -255,9 +273,7 @@ namespace GuardsDigital.Core.Cards
                 RoundResolutionEventKind.TurnSlotRecorded,
                 turnSlot.RoundIndex,
                 turnSlot.TurnIndex,
-                default,
-                default,
-                turnSlot);
+                turnSlot: turnSlot);
         }
 
         public static RoundResolutionEvent FromTurn(
@@ -274,9 +290,7 @@ namespace GuardsDigital.Core.Cards
                 RoundResolutionEventKind.TurnResolutionProgressed,
                 roundIndex,
                 turnIndex,
-                default,
-                turnEvent,
-                null);
+                turnEvent: turnEvent);
         }
 
         public static RoundResolutionEvent Boundary(
@@ -290,13 +304,78 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentOutOfRangeException(nameof(kind));
             }
 
+            return new RoundResolutionEvent(kind, roundIndex, turnIndex);
+        }
+
+        public static RoundResolutionEvent EndOfRoundStageOutcome(
+            int roundIndex,
+            EndOfRoundStage stage,
+            EndOfRoundStageOutcomeKind outcomeKind)
+        {
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.EndOfRoundStageResolved,
+                roundIndex,
+                RoundResolutionAuthority.TurnsPerRound,
+                endOfRoundStage: stage,
+                endOfRoundOutcomeKind: outcomeKind);
+        }
+
+        public static RoundResolutionEvent RetrievedCard(
+            int roundIndex,
+            EndOfRoundStage stage,
+            CardRetrievalFact retrieval)
+        {
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.CardRetrieved,
+                roundIndex,
+                RoundResolutionAuthority.TurnsPerRound,
+                endOfRoundStage: stage,
+                endOfRoundOutcomeKind: EndOfRoundStageOutcomeKind.Completed,
+                cardInstanceId: retrieval.CardInstanceId,
+                cardOwnerId: retrieval.OwnerId);
+        }
+
+        public static RoundResolutionEvent EndOfRoundBoundary(
+            RoundResolutionEventKind kind,
+            int roundIndex,
+            EndOfRoundStage stage)
+        {
+            if (kind != RoundResolutionEventKind.ActiveEffectCancellationCheckpoint &&
+                kind != RoundResolutionEventKind.GameEnded)
+            {
+                throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+
             return new RoundResolutionEvent(
                 kind,
                 roundIndex,
-                turnIndex,
-                default,
-                default,
-                null);
+                RoundResolutionAuthority.TurnsPerRound,
+                endOfRoundStage: stage);
+        }
+
+        public static RoundResolutionEvent CompletedRoundBoundary(
+            RoundResolutionEventKind kind,
+            CompletedRoundRecord completedRound,
+            int currentRoundIndex)
+        {
+            if (completedRound == null)
+            {
+                throw new ArgumentNullException(nameof(completedRound));
+            }
+
+            if (kind != RoundResolutionEventKind.RoundCompleted &&
+                kind != RoundResolutionEventKind.NextRoundStarted)
+            {
+                throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+
+            return new RoundResolutionEvent(
+                kind,
+                currentRoundIndex,
+                kind == RoundResolutionEventKind.NextRoundStarted
+                    ? 1
+                    : RoundResolutionAuthority.TurnsPerRound,
+                completedRound: completedRound);
         }
     }
 
@@ -364,6 +443,11 @@ namespace GuardsDigital.Core.Cards
         private readonly MatchParticipants participants;
         private readonly CardActionResolutionAuthority cardActions;
         private readonly List<RoundTurnSlot> turnSlots = new List<RoundTurnSlot>();
+        private readonly List<CompletedRoundRecord> completedRounds = new List<CompletedRoundRecord>();
+        private readonly List<EndOfRoundStageOutcome> endOfRoundOutcomes =
+            new List<EndOfRoundStageOutcome>();
+        private readonly EndOfRoundFixtureCapabilities endOfRoundCapabilities;
+        private readonly IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers;
         private TieBreakerState tieBreakerState;
 
         public RoundResolutionAuthority(
@@ -372,7 +456,9 @@ namespace GuardsDigital.Core.Cards
             MatchParticipants participants,
             TieBreakerState initialTieBreakerState,
             int roundIndex = 1,
-            CardActionResolutionAuthority cardActions = null)
+            CardActionResolutionAuthority cardActions = null,
+            EndOfRoundFixtureCapabilities endOfRoundCapabilities = null,
+            IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers = null)
         {
             this.definitions = Array.AsReadOnly(
                 ActionOfferQuery.BuildDefinitionLookup(definitions).Values.ToArray());
@@ -416,13 +502,36 @@ namespace GuardsDigital.Core.Cards
 
             tieBreakerState = initialTieBreakerState;
             this.cardActions = cardActions;
+            this.endOfRoundCapabilities = endOfRoundCapabilities ??
+                EndOfRoundFixtureCapabilities.SyntheticRepeatedRound();
+            var handlers = endOfRoundHandlers != null
+                ? new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>(endOfRoundHandlers)
+                : new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
+                {
+                    {
+                        EndOfRoundStage.RetrieveCardsAndCancelActiveEffects,
+                        new SyntheticCardRetrievalHandler()
+                    }
+                };
+            if (handlers.Any(pair =>
+                    pair.Key == EndOfRoundStage.Complete ||
+                    pair.Value == null))
+            {
+                throw new ArgumentException(
+                    "End-of-round handlers require executable stages and non-null handlers.",
+                    nameof(endOfRoundHandlers));
+            }
+
+            this.endOfRoundHandlers = new System.Collections.ObjectModel.ReadOnlyDictionary<
+                EndOfRoundStage,
+                IEndOfRoundStageHandler>(handlers);
             RoundIndex = roundIndex;
             TurnIndex = 1;
             Phase = RoundResolutionPhase.AwaitingCommitments;
             CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(this.instances, this.participants);
         }
 
-        public int RoundIndex { get; }
+        public int RoundIndex { get; private set; }
 
         public int TurnIndex { get; private set; }
 
@@ -432,6 +541,13 @@ namespace GuardsDigital.Core.Cards
             CurrentTurnAuthority?.TieBreakerState ?? tieBreakerState;
 
         public IReadOnlyList<RoundTurnSlot> TurnSlots => turnSlots.AsReadOnly();
+
+        public IReadOnlyList<CompletedRoundRecord> CompletedRounds => completedRounds.AsReadOnly();
+
+        public EndOfRoundStage? CurrentEndOfRoundStage { get; private set; }
+
+        public IReadOnlyList<EndOfRoundStageOutcome> EndOfRoundOutcomes =>
+            endOfRoundOutcomes.AsReadOnly();
 
         public TurnCardCommitmentAuthority CurrentCommitmentAuthority { get; private set; }
 
@@ -490,6 +606,106 @@ namespace GuardsDigital.Core.Cards
         public RoundResolutionResult TryAnswerDefenseResponse(DefenseResponseChoiceCommand command)
         {
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerDefenseResponse(command));
+        }
+
+        public RoundResolutionResult TryAdvanceEndOfRound()
+        {
+            if (Phase == RoundResolutionPhase.GameEnded)
+            {
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.GameAlreadyEnded);
+            }
+
+            if (Phase != RoundResolutionPhase.EndOfRound || !CurrentEndOfRoundStage.HasValue)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.NotResolvingEndOfRound);
+            }
+
+            var stage = CurrentEndOfRoundStage.Value;
+            EndOfRoundStageResolution resolution;
+            if (!endOfRoundCapabilities.IsAvailable(stage))
+            {
+                resolution = EndOfRoundStageResolution.NotApplicable();
+            }
+            else
+            {
+                if (!endOfRoundHandlers.TryGetValue(stage, out var handler))
+                {
+                    return RoundResolutionResult.Reject(
+                        RoundResolutionRejectionReason.MissingRequiredEndOfRoundHandler);
+                }
+
+                resolution = handler.TryResolve(new EndOfRoundStageContext(
+                    RoundIndex,
+                    instances,
+                    participants));
+            }
+
+            var events = new List<RoundResolutionEvent>();
+            foreach (var retrieval in resolution.RetrievedCards ?? Array.Empty<CardRetrievalFact>())
+            {
+                events.Add(RoundResolutionEvent.RetrievedCard(RoundIndex, stage, retrieval));
+            }
+
+            if (resolution.ActiveEffectCancellationBoundaryReached)
+            {
+                events.Add(RoundResolutionEvent.EndOfRoundBoundary(
+                    RoundResolutionEventKind.ActiveEffectCancellationCheckpoint,
+                    RoundIndex,
+                    stage));
+            }
+
+            events.Add(RoundResolutionEvent.EndOfRoundStageOutcome(
+                RoundIndex,
+                stage,
+                resolution.OutcomeKind));
+            if (resolution.OutcomeKind == EndOfRoundStageOutcomeKind.Paused)
+            {
+                return RoundResolutionResult.Accept(events);
+            }
+
+            if (resolution.OutcomeKind == EndOfRoundStageOutcomeKind.GameEnded)
+            {
+                endOfRoundOutcomes.Add(new EndOfRoundStageOutcome(stage, resolution.OutcomeKind));
+                Phase = RoundResolutionPhase.GameEnded;
+                events.Add(RoundResolutionEvent.EndOfRoundBoundary(
+                    RoundResolutionEventKind.GameEnded,
+                    RoundIndex,
+                    stage));
+                return RoundResolutionResult.Accept(events);
+            }
+
+            endOfRoundOutcomes.Add(new EndOfRoundStageOutcome(stage, resolution.OutcomeKind));
+            var nextStage = (EndOfRoundStage)((int)stage + 1);
+            if (nextStage != EndOfRoundStage.Complete)
+            {
+                CurrentEndOfRoundStage = nextStage;
+                return RoundResolutionResult.Accept(events);
+            }
+
+            var completedRound = new CompletedRoundRecord(
+                RoundIndex,
+                turnSlots,
+                endOfRoundOutcomes);
+            completedRounds.Add(completedRound);
+            events.Add(RoundResolutionEvent.CompletedRoundBoundary(
+                RoundResolutionEventKind.RoundCompleted,
+                completedRound,
+                RoundIndex));
+
+            RoundIndex++;
+            TurnIndex = 1;
+            turnSlots.Clear();
+            endOfRoundOutcomes.Clear();
+            CurrentEndOfRoundStage = null;
+            CurrentTurnAuthority = null;
+            CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(instances, participants);
+            Phase = RoundResolutionPhase.AwaitingCommitments;
+            events.Add(RoundResolutionEvent.CompletedRoundBoundary(
+                RoundResolutionEventKind.NextRoundStarted,
+                completedRound,
+                RoundIndex));
+            return RoundResolutionResult.Accept(events);
         }
 
         private RoundResolutionResult ExecuteCommitment(Func<TurnCardCommitmentResult> command)
@@ -605,6 +821,7 @@ namespace GuardsDigital.Core.Cards
             if (TurnIndex == TurnsPerRound)
             {
                 Phase = RoundResolutionPhase.EndOfRound;
+                CurrentEndOfRoundStage = EndOfRoundStage.MinionBattle;
                 events.Add(RoundResolutionEvent.Boundary(
                     RoundResolutionEventKind.EndOfRoundEntered,
                     RoundIndex,
