@@ -569,6 +569,8 @@ Phase 3 entry audit (2026-08-10): Keep milestones 3.1-3.11 as separate, unchange
 
 Approved content-readiness amendment (2026-08-10): Insert milestone 3.7b after the completed Attack/Defense turn integration and before the four-turn round shell. The current two-card mirrored synthetic fixtures cannot exercise four card selections per hero, hand depletion through Defense discards, or the rulebook-shaped five-card starting hand. Milestone 3.7b expands only synthetic data and its existing presentation/authority consumers; it does not begin verified hero content or add card-text effects. The remaining Phase 3 path is now five separately approved milestones (3.7b and 3.8-3.11), estimated at 4-7 focused implementation days excluding approval latency and environment outages.
 
+Corrective playable-round amendment (2026-08-10): Insert milestone 3.8a after the completed pure four-turn round skeleton and before snapshot serialization. Validation after milestone 3.8 confirmed that the round authority completes four deterministic turns, while the saved-scene controller still constructs and presents only an isolated revealed-card turn flow. Milestone 3.8a closes that integration gap before snapshots, Undo/restart, and the event log depend on the visible round boundary. The remaining Phase 3 path is four separately approved milestones (3.8a and 3.9-3.11), estimated at 3-5 focused implementation days excluding approval latency and environment outages.
+
 ## Phase 3 - Test-card Initiative, turns, and rounds
 
 ### [x] 3.1 Extend the test-card foundation with turn lifecycle
@@ -748,6 +750,23 @@ Acceptance checks:
 - End-of-round entry is explicit but does not yet resolve its subsystems.
 
 Completion note (2026-08-10): Added a pure `RoundResolutionAuthority` that composes a fresh commitment/reveal authority and the existing Initiative/action turn authority for each of exactly four indexed turns. Every revealed commitment is recorded in an immutable round/turn slot with a Red card or explicit Pass and a Blue card or explicit Pass; resolved/discarded/otherwise ineligible cards remain rejected by the existing lifecycle authority, and Pass remains legal only when that side has no eligible hand card. Hold, Movement, Attack/Defense, pending choices, ordered nested events, and deferred Tie Breaker flips continue through the existing authorities; the round exposes the live current-turn Tie Breaker state and carries its final value into the next turn. After turn 4 it enters a distinct end-of-round phase and emits an explicit boundary event without retrieving cards or running any later cleanup, Lane Push, leveling, or progression subsystem. Printed rulebook page 7 was source-verified. T2 validation passed focused Edit Mode 7/7 (`RoundResolutionAuthorityTests`) and directly affected Edit Mode 147/147 across round, turn, Initiative, commitment, lifecycle, offers/values, definitions, participants, Tie Breaker, Movement, Attack/Defense, occupancy, and obstacle authorities, with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path changed, all directly affected pure-authority consumers are enumerated, and milestone 3.8 is not a T3 gate. No card retrieval, new-round start, end-of-round subsystem resolution, snapshot, Undo, event-log UI, resolve-without-action, consequence, presentation, or official content was added.
+
+### [ ] 3.8a Connect the complete round to the validation controller
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: The saved validation scene uses one authoritative round instance to play all four indexed turns from commitment through action resolution and visibly reaches the explicit end-of-round phase.
+
+Acceptance checks:
+
+- The validation controller creates and retains one `RoundResolutionAuthority`; it does not replace the round with an isolated commitment, Initiative, or turn authority after reveal.
+- Red and Blue commitment, legal Pass, joint reveal, current-actor selection, Hold, Movement, Attack/Defense, and every pending answer route through the round's current turn without presentation-owned state mutation.
+- After both revealed cards resolve, the completed immutable slot remains recorded and the controller visibly advances to the next indexed turn with only currently eligible hand cards; a Defense-discarded or previously played card cannot reappear as a legal commitment or reaction.
+- Tie Breaker state carries visibly and authoritatively between turns, including a deferred flip completed during one turn before the next turn begins.
+- After turn 4, the scene clearly displays the explicit end-of-round phase and rejects further commitment or turn commands without mutating round, card, occupancy, or event state.
+- Focused Edit Mode and saved-scene Play Mode scenarios exercise one uninterrupted four-turn round containing representative Hold, Movement, Attack/Defense, Defense-driven hand depletion, and stale/invalid input preservation.
+
+Non-goals: No card retrieval, next-round start, end-of-round subsystem resolution, snapshots, Undo/restart, event-log panel, automated action choice, Attack consequences, animation, sound, official content, or production UI.
 
 ### [ ] 3.9 Serialize and restore authoritative snapshots
 
