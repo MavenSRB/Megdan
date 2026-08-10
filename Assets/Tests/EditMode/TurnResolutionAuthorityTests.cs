@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -206,9 +210,163 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentException>(() =>
                 TurnResolutionEvent.HoldPerformed(default));
             Assert.Throws<ArgumentException>(() =>
+                TurnResolutionEvent.FromCardAction(default));
+            Assert.Throws<ArgumentException>(() =>
                 TurnResolutionEvent.CardWasResolved(default, default));
             Assert.Throws<ArgumentOutOfRangeException>(() =>
                 TurnResolutionEvent.TurnCheckpoint(TurnResolutionEventKind.CardResolved));
+        }
+
+        [Test]
+        public void SelectedActor_CompletesSegmentedMovementThenResolvesAndYields()
+        {
+            var fixture = CreateMovementFixture(7, 4, 2);
+            Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
+
+            var offers = ActionOfferQuery.GetAvailableTurnActionOffers(
+                fixture.Definitions,
+                fixture.Instances,
+                fixture.Red.OwnerId,
+                fixture.Red.Id);
+            Assert.That(offers, Has.Count.EqualTo(1));
+            Assert.That(offers[0].SourceCardInstanceId, Is.EqualTo(fixture.Red.Id));
+            Assert.That(ActionOfferQuery.GetAvailableOffers(
+                fixture.Definitions,
+                fixture.Instances,
+                fixture.Red.OwnerId), Is.Empty,
+                "The legacy in-hand offer path must remain distinct from played turn offers.");
+
+            var start = fixture.Authority.TryStartMovement(
+                new ActionResolutionId("turn-red-move"),
+                offers[0]);
+
+            Assert.That(start.Accepted, Is.True);
+            Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(fixture.Authority.PendingMovementChoice, Is.Not.Null);
+            var firstChoice = fixture.Authority.PendingMovementChoice;
+            var destination = new HexCoordinate(1, 0);
+            Assert.That(firstChoice.LegalDestinations.Select(candidate => candidate.Destination),
+                Does.Contain(destination));
+
+            var partial = fixture.Authority.TryAnswerMovementChoice(
+                MovementChoiceCommand.SelectDestination(
+                    firstChoice.ResolutionId,
+                    firstChoice.ChoiceId,
+                    destination));
+
+            Assert.That(partial.Accepted, Is.True);
+            Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.Red.Id));
+            Assert.That(fixture.Board.Occupancies.Single(occupancy =>
+                occupancy.HeroId.Equals(fixture.Red.OwnerId)).Coordinate, Is.EqualTo(destination));
+            AssertRejected(
+                fixture.Authority.TryPerformHold(fixture.Red.Id),
+                TurnResolutionRejectionReason.ActionAlreadyPending);
+
+            var stopChoice = fixture.Authority.PendingMovementChoice;
+            var completed = fixture.Authority.TryAnswerMovementChoice(
+                MovementChoiceCommand.Stop(stopChoice.ResolutionId, stopChoice.ChoiceId));
+
+            Assert.That(completed.Accepted, Is.True);
+            Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(fixture.Blue.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.Blue.Id));
+            Assert.That(fixture.Authority.PendingMovementResolution, Is.Null);
+            var kinds = completed.Events.Select(ruleEvent => ruleEvent.Kind).ToArray();
+            Assert.That(System.Array.IndexOf(kinds, TurnResolutionEventKind.CardResolved),
+                Is.GreaterThan(System.Array.IndexOf(kinds, TurnResolutionEventKind.MovementActionProgressed)));
+            Assert.That(completed.Events.Last(ruleEvent =>
+                    ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed)
+                .InitiativeEvent.Kind, Is.EqualTo(InitiativeResolutionEventKind.NextActorSelected));
+        }
+
+        [Test]
+        public void MovementWithinTurn_ReusesObstacleRouteAndDeferredTieBreakerOrdering()
+        {
+            var fixture = CreateMovementFixture(7, 7, 3, true);
+            Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
+            var offer = ActionOfferQuery.GetAvailableTurnActionOffers(
+                fixture.Definitions,
+                fixture.Instances,
+                fixture.Red.OwnerId,
+                fixture.Red.Id).Single();
+            Assert.That(fixture.Authority.TryStartMovement(
+                new ActionResolutionId("turn-obstacle-move"),
+                offer).Accepted, Is.True);
+            var choice = fixture.Authority.PendingMovementChoice;
+            var destination = new HexCoordinate(2, 0);
+            var candidate = choice.LegalDestinations.Single(item => item.Destination.Equals(destination));
+            Assert.That(candidate.Cost, Is.EqualTo(3));
+            Assert.That(candidate.Route.Any(coordinate =>
+                coordinate.Equals(new HexCoordinate(1, 0))), Is.False);
+
+            var completed = fixture.Authority.TryAnswerMovementChoice(
+                MovementChoiceCommand.SelectDestination(
+                    choice.ResolutionId,
+                    choice.ChoiceId,
+                    destination));
+
+            Assert.That(completed.Accepted, Is.True);
+            Assert.That(fixture.Board.Occupancies.Single(occupancy =>
+                occupancy.HeroId.Equals(fixture.Red.OwnerId)).Coordinate, Is.EqualTo(destination));
+            Assert.That(completed.Events.Count(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.MovementActionProgressed &&
+                ruleEvent.CardActionEvent.Kind == CardActionResolutionEventKind.MovementStepCommitted),
+                Is.EqualTo(3));
+            Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(fixture.Authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.Blue.Id));
+
+            var cardResolvedIndex = completed.Events.ToList().FindIndex(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.CardResolved);
+            var flipIndex = completed.Events.ToList().FindIndex(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
+                ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.TieBreakerFlipped);
+            var nextActorIndex = completed.Events.ToList().FindIndex(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
+                ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.NextActorSelected);
+            Assert.That(flipIndex, Is.GreaterThan(cardResolvedIndex));
+            Assert.That(nextActorIndex, Is.GreaterThan(flipIndex));
+        }
+
+        [Test]
+        public void InvalidMovementCommands_DoNotMutateOccupancyCardOrPendingChoice()
+        {
+            var fixture = CreateMovementFixture(7, 4, 2);
+            Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
+            var redOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
+                fixture.Definitions,
+                fixture.Instances,
+                fixture.Red.OwnerId,
+                fixture.Red.Id).Single();
+            var blueOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
+                fixture.Definitions,
+                fixture.Instances,
+                fixture.Blue.OwnerId,
+                fixture.Blue.Id).Single();
+            AssertRejected(
+                fixture.Authority.TryStartMovement(new ActionResolutionId("wrong-actor"), blueOffer),
+                TurnResolutionRejectionReason.CardNotSelectedForAction);
+            Assert.That(fixture.Authority.TryStartMovement(
+                new ActionResolutionId("valid-actor"), redOffer).Accepted, Is.True);
+
+            var originalChoice = fixture.Authority.PendingMovementChoice;
+            var originalOccupancy = fixture.Board.Occupancies.Single(occupancy =>
+                occupancy.HeroId.Equals(fixture.Red.OwnerId));
+            AssertRejected(
+                fixture.Authority.TryAnswerMovementChoice(MovementChoiceCommand.Stop(
+                    originalChoice.ResolutionId,
+                    new ActionResolutionStepId("stale-choice"))),
+                TurnResolutionRejectionReason.MovementCommandRejected);
+
+            Assert.That(fixture.Board.Occupancies.Single(occupancy =>
+                occupancy.HeroId.Equals(fixture.Red.OwnerId)), Is.EqualTo(originalOccupancy));
+            Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(fixture.Authority.PendingMovementChoice, Is.SameAs(originalChoice));
+            Assert.That(fixture.Authority.TryAnswerMovementChoice(MovementChoiceCommand.Stop(
+                originalChoice.ResolutionId,
+                originalChoice.ChoiceId)).Accepted, Is.True);
+            Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
         }
 
         private static IEnumerable<InitiativeResolutionEventKind> EventKinds(
@@ -237,6 +395,82 @@ namespace GuardsDigital.Tests.EditMode
                     new[] { blue, red },
                     participants,
                     new TieBreakerState(initialTieBreakerSide)));
+        }
+
+        private static MovementTestFixture CreateMovementFixture(
+            int redInitiative,
+            int blueInitiative,
+            int movementAllowance,
+            bool withObstacleDetour = false)
+        {
+            var participants = CreateParticipants(1, 1);
+            var redDefinition = CreateMovementDefinition("red-move", redInitiative, movementAllowance);
+            var blueDefinition = CreateMovementDefinition("blue-move", blueInitiative, 1);
+            var red = CreateRevealedCard("red-move-card", redDefinition, "red-hero-1");
+            var blue = CreateRevealedCard("blue-move-card", blueDefinition, "blue-hero-1");
+            var coordinates = withObstacleDetour
+                ? new[]
+                {
+                    new HexCoordinate(-1, 0),
+                    new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0),
+                    new HexCoordinate(0, 1),
+                    new HexCoordinate(1, 1),
+                    new HexCoordinate(2, 0)
+                }
+                : new[]
+                {
+                    new HexCoordinate(-1, 0),
+                    new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0),
+                    new HexCoordinate(2, 0)
+                };
+            var board = new AdjacentMoveAuthority(
+                coordinates,
+                new[]
+                {
+                    new HeroOccupancy(red.OwnerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(blue.OwnerId, new HexCoordinate(-1, 0))
+                },
+                withObstacleDetour
+                    ? new[] { new ObstacleOccupancy(new ObstacleId("turn-blocker"), new HexCoordinate(1, 0)) }
+                    : System.Array.Empty<ObstacleOccupancy>());
+            var definitions = new[] { redDefinition, blueDefinition };
+            var instances = new[] { blue, red };
+            return new MovementTestFixture(
+                red,
+                blue,
+                definitions,
+                instances,
+                board,
+                new TurnResolutionAuthority(
+                    definitions,
+                    instances,
+                    participants,
+                    new TieBreakerState(TeamSide.Red),
+                    new CardActionResolutionAuthority(board)));
+        }
+
+        private static CardDefinition CreateMovementDefinition(
+            string id,
+            int initiative,
+            int movementAllowance)
+        {
+            return new CardDefinition(
+                new CardDefinitionId(id),
+                "turn-movement-test-rev-1",
+                $"TEST - {id}",
+                new InitiativeValue(initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-movement"),
+                        ActionKind.Movement,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, movementAllowance) },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true))
+                });
         }
 
         private static CardDefinition CreateDefinition(string id, int initiative)
@@ -324,6 +558,37 @@ namespace GuardsDigital.Tests.EditMode
             public CardInstance Red { get; }
 
             public CardInstance Blue { get; }
+
+            public TurnResolutionAuthority Authority { get; }
+        }
+
+        private sealed class MovementTestFixture
+        {
+            public MovementTestFixture(
+                CardInstance red,
+                CardInstance blue,
+                IReadOnlyList<CardDefinition> definitions,
+                IReadOnlyList<CardInstance> instances,
+                AdjacentMoveAuthority board,
+                TurnResolutionAuthority authority)
+            {
+                Red = red;
+                Blue = blue;
+                Definitions = definitions;
+                Instances = instances;
+                Board = board;
+                Authority = authority;
+            }
+
+            public CardInstance Red { get; }
+
+            public CardInstance Blue { get; }
+
+            public IReadOnlyList<CardDefinition> Definitions { get; }
+
+            public IReadOnlyList<CardInstance> Instances { get; }
+
+            public AdjacentMoveAuthority Board { get; }
 
             public TurnResolutionAuthority Authority { get; }
         }

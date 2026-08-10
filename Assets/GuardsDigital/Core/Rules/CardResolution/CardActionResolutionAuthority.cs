@@ -33,6 +33,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public PendingDefenseResponseChoice PendingDefenseChoice => pendingDefenseChoice;
 
+        public bool HasPendingResolution => pendingResolution != null || pendingAttackResolution != null;
+
         public static CardActionResolutionAuthority Restore(
             AdjacentMoveAuthority adjacentMoveAuthority,
             PendingCardActionResolution pendingResolution,
@@ -78,6 +80,49 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances)
         {
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var authoritativeOffers = ActionOfferQuery.GetAvailableOffers(
+                materializedDefinitions,
+                materializedInstances,
+                offer.ActorId,
+                ActionOfferWindow.NormalPlay);
+            return StartMovementResolution(
+                resolutionId,
+                offer,
+                materializedDefinitions,
+                materializedInstances,
+                authoritativeOffers);
+        }
+
+        public CardActionResolutionResult StartTurnMovementResolution(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances)
+        {
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var authoritativeOffers = ActionOfferQuery.GetAvailableTurnActionOffers(
+                materializedDefinitions,
+                materializedInstances,
+                offer.ActorId,
+                offer.SourceCardInstanceId);
+            return StartMovementResolution(
+                resolutionId,
+                offer,
+                materializedDefinitions,
+                materializedInstances,
+                authoritativeOffers);
+        }
+
+        private CardActionResolutionResult StartMovementResolution(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IReadOnlyList<CardDefinition> materializedDefinitions,
+            IReadOnlyList<CardInstance> materializedInstances,
+            IReadOnlyList<ActionOffer> authoritativeOffers)
+        {
             if (!resolutionId.IsDefined)
             {
                 throw new ArgumentException("Starting a card action resolution requires a resolution ID.", nameof(resolutionId));
@@ -100,13 +145,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
-            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var authoritativeOffers = ActionOfferQuery.GetAvailableOffers(
-                materializedDefinitions,
-                materializedInstances,
-                offer.ActorId,
-                ActionOfferWindow.NormalPlay);
             if (!offer.IsAvailable || !authoritativeOffers.Contains(offer))
             {
                 return CardActionResolutionResult.Reject(

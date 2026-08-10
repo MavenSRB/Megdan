@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -17,7 +18,11 @@ namespace GuardsDigital.Core.Cards
         CardNotSelectedForAction = 5,
         HoldNotAvailable = 6,
         CardResolutionFailed = 7,
-        InitiativeCommandRejected = 8
+        InitiativeCommandRejected = 8,
+        ActionAlreadyPending = 9,
+        MovementAuthorityUnavailable = 10,
+        MovementActionRejected = 11,
+        MovementCommandRejected = 12
     }
 
     public enum TurnResolutionEventKind
@@ -27,7 +32,8 @@ namespace GuardsDigital.Core.Cards
         HoldActionPerformed = 2,
         CardResolved = 3,
         TurnOnlyEffectsCancellationCheckpoint = 4,
-        TurnEnded = 5
+        TurnEnded = 5,
+        MovementActionProgressed = 6
     }
 
     public readonly struct TurnResolutionEvent
@@ -38,7 +44,8 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId cardInstanceId,
             HeroId actorId,
             ActionDefinitionId actionDefinitionId,
-            ActionInvocationContext invocationContext)
+            ActionInvocationContext invocationContext,
+            CardActionResolutionEvent cardActionEvent)
         {
             Kind = kind;
             InitiativeEvent = initiativeEvent;
@@ -46,6 +53,7 @@ namespace GuardsDigital.Core.Cards
             ActorId = actorId;
             ActionDefinitionId = actionDefinitionId;
             InvocationContext = invocationContext;
+            CardActionEvent = cardActionEvent;
         }
 
         public TurnResolutionEventKind Kind { get; }
@@ -60,6 +68,8 @@ namespace GuardsDigital.Core.Cards
 
         public ActionInvocationContext InvocationContext { get; }
 
+        public CardActionResolutionEvent CardActionEvent { get; }
+
         public static TurnResolutionEvent FromInitiative(InitiativeResolutionEvent initiativeEvent)
         {
             if (initiativeEvent.Kind == InitiativeResolutionEventKind.None)
@@ -73,7 +83,8 @@ namespace GuardsDigital.Core.Cards
                 default,
                 default,
                 default,
-                ActionInvocationContext.None);
+                ActionInvocationContext.None,
+                default);
         }
 
         public static TurnResolutionEvent HoldPerformed(ActionOffer offer)
@@ -93,7 +104,8 @@ namespace GuardsDigital.Core.Cards
                 offer.SourceCardInstanceId,
                 offer.ActorId,
                 offer.ActionDefinitionId,
-                offer.InvocationContext);
+                offer.InvocationContext,
+                default);
         }
 
         public static TurnResolutionEvent CardWasResolved(
@@ -111,7 +123,27 @@ namespace GuardsDigital.Core.Cards
                 cardInstanceId,
                 actorId,
                 default,
-                ActionInvocationContext.None);
+                ActionInvocationContext.None,
+                default);
+        }
+
+        public static TurnResolutionEvent FromCardAction(CardActionResolutionEvent cardActionEvent)
+        {
+            if (cardActionEvent.Kind == CardActionResolutionEventKind.None)
+            {
+                throw new ArgumentException(
+                    "A turn card-action event requires a defined card-action event.",
+                    nameof(cardActionEvent));
+            }
+
+            return new TurnResolutionEvent(
+                TurnResolutionEventKind.MovementActionProgressed,
+                default,
+                cardActionEvent.SourceCardInstanceId,
+                cardActionEvent.ActorId,
+                cardActionEvent.ActionDefinitionId,
+                ActionInvocationContext.None,
+                cardActionEvent);
         }
 
         public static TurnResolutionEvent TurnCheckpoint(TurnResolutionEventKind kind)
@@ -128,7 +160,8 @@ namespace GuardsDigital.Core.Cards
                 default,
                 default,
                 default,
-                ActionInvocationContext.None);
+                ActionInvocationContext.None,
+                default);
         }
     }
 
@@ -172,12 +205,23 @@ namespace GuardsDigital.Core.Cards
         private readonly IReadOnlyList<CardInstance> instances;
         private readonly MatchParticipants participants;
         private readonly InitiativeResolutionAuthority initiative;
+        private readonly CardActionResolutionAuthority cardActions;
 
         public TurnResolutionAuthority(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             TieBreakerState initialTieBreakerState)
+            : this(definitions, instances, participants, initialTieBreakerState, null)
+        {
+        }
+
+        public TurnResolutionAuthority(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            TieBreakerState initialTieBreakerState,
+            CardActionResolutionAuthority cardActions)
         {
             this.definitions = Array.AsReadOnly(
                 ActionOfferQuery.BuildDefinitionLookup(definitions).Values.ToArray());
@@ -210,6 +254,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             initiative = new InitiativeResolutionAuthority(initialTieBreakerState);
+            this.cardActions = cardActions;
         }
 
         public bool IsStarted { get; private set; }
@@ -221,6 +266,10 @@ namespace GuardsDigital.Core.Cards
         public PendingInitiativeChoice PendingChoice => initiative.PendingChoice;
 
         public SelectedInitiativeActor SelectedActor => initiative.SelectedActor;
+
+        public PendingCardActionResolution PendingMovementResolution => cardActions?.PendingResolution;
+
+        public PendingMovementChoice PendingMovementChoice => cardActions?.PendingChoice;
 
         public TurnResolutionResult TryStart()
         {
@@ -272,6 +321,11 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardNotSelectedForAction);
             }
 
+            if (cardActions?.HasPendingResolution == true)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+            }
+
             var offer = GeneralRuleActionOfferQuery.GetAvailableHoldOffer(
                 cardInstanceId,
                 initiative.SelectedActor.ActorId,
@@ -298,6 +352,106 @@ namespace GuardsDigital.Core.Cards
             {
                 throw new InvalidOperationException(
                     "A card resolved by the turn authority could not be acknowledged by Initiative authority.");
+            }
+
+            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
+            return AdvanceInitiative(events);
+        }
+
+        public TurnResolutionResult TryStartMovement(
+            ActionResolutionId resolutionId,
+            ActionOffer offer)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.NoActorSelected);
+            }
+
+            if (!initiative.SelectedActor.CardInstanceId.Equals(offer.SourceCardInstanceId) ||
+                !initiative.SelectedActor.ActorId.Equals(offer.ActorId))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardNotSelectedForAction);
+            }
+
+            if (cardActions == null)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementAuthorityUnavailable);
+            }
+
+            if (cardActions.HasPendingResolution)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+            }
+
+            var result = cardActions.StartTurnMovementResolution(
+                resolutionId,
+                offer,
+                definitions,
+                instances);
+            return result.Accepted
+                ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromCardAction))
+                : TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementActionRejected);
+        }
+
+        public TurnResolutionResult TryAnswerMovementChoice(MovementChoiceCommand command)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (cardActions?.PendingResolution == null || !initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementCommandRejected);
+            }
+
+            var pending = cardActions.PendingResolution;
+            if (!pending.SourceCardInstanceId.Equals(initiative.SelectedActor.CardInstanceId) ||
+                !pending.ActorId.Equals(initiative.SelectedActor.ActorId))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementCommandRejected);
+            }
+
+            var card = instances.Single(candidate => candidate.Id.Equals(pending.SourceCardInstanceId));
+            if (card.State.Location != CardLocation.TurnArea ||
+                !card.State.HasBeenPlayed ||
+                card.State.ResolutionStatus != CardResolutionStatus.Unresolved ||
+                card.State.FaceOrientation != CardFaceOrientation.FaceUp)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardResolutionFailed);
+            }
+
+            var result = cardActions.AnswerMovementChoice(command);
+            if (!result.Accepted)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementCommandRejected);
+            }
+
+            var events = result.Events.Select(TurnResolutionEvent.FromCardAction).ToList();
+            if (!result.IsComplete)
+            {
+                return TurnResolutionResult.Accept(events);
+            }
+
+            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            {
+                throw new InvalidOperationException(
+                    "A completed turn Movement could not resolve its prevalidated source card.");
+            }
+
+            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            if (!acknowledgement.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A card resolved after turn Movement could not be acknowledged by Initiative authority.");
             }
 
             events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));

@@ -4,7 +4,7 @@ Last updated: 2026-08-10
 
 ## Current status
 
-Milestone 3.5 is complete: a pure turn authority composes the existing Initiative and lifecycle boundaries so both face-up unresolved synthetic cards can perform exactly one general-rule Hold in current Initiative order, resolve, and end the turn. Hold is derived as a General Rule Secondary offer from any selected played card with source-card text suppressed rather than copied into card definitions. Cross-team deferred Tie Breaker flips occur only after the exact selected card's resolved fact and before the next current-Initiative query; same-team choices still never flip. The final card produces an explicit turn-only-effect cancellation checkpoint immediately before turn end, without implementing a concrete effect collection. Movement/Attack integration, resolve-without-action, and rounds remain unimplemented; milestone 3.6 is next and unauthorized.
+Milestone 3.6 is complete: the pure turn authority now composes the existing Phase 1 Movement resolver for the currently selected face-up unresolved synthetic card. An explicit played-turn-card query derives printed Movement offers without changing the legacy in-hand offer path. The card-action authority retains ownership of allowance, disclosed deterministic route candidates, cumulative waypoints, obstacles, adjacent-step occupancy commits, pending choice state, and semantic events; the turn authority only opens/resumes that resolution and never mutates occupancy. Partial movement keeps the same normal action pending, while Stop or allowance exhaustion completes Movement, resolves exactly its source card, consumes any deferred Tie Breaker flip, and re-queries Initiative. Attack/Defense turn integration, resolve-without-action, and rounds remain unimplemented; milestone 3.7 is next and unauthorized.
 
 Milestone 3.3 is complete: a pure authority accepts exactly one eligible own-hand card per Red/Blue side, commits it as played/unresolved/Facedown, represents a legal Pass only when that side has no eligible card, and reveals all commitments together only after both sides respond. Pre-reveal events and HUD labels disclose only that a side committed, not the card ID; reveal events and definition-backed HUD labels disclose the stable card, name, and Initiative only after authoritative Faceup transitions. Rejected cross-side, stale, repeated, missing, ineligible, and illegal-pass inputs do not mutate further state.
 
@@ -273,7 +273,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 ## Current explicit non-goals
 
-- Card execution beyond the completed standalone placeholder Movement/Attack slices and minimum Hold turn, including Movement/Attack turn integration, resolve-without-action, rounds, or Wasp content before their exact milestone approval.
+- Card execution beyond the completed standalone placeholder Movement/Attack slices and in-turn Hold/Movement actions, including Attack/Defense turn integration, resolve-without-action, rounds, or Wasp content before their exact milestone approval.
 - Public distribution or commercialization.
 - Online play during the pitch phase.
 - AI opponents.

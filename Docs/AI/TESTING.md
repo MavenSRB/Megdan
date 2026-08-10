@@ -584,6 +584,33 @@ if ($holdTurnEditProcess.ExitCode -ne 0) {
 
 Expected result: all discovered cases pass, covering a general-rule Hold offer for any current selected face-up unresolved played card; exactly one normal Hold per selected card; Initiative-ordered resolution of both synthetic cards; resolve-before-deferred-flip-before-re-query ordering; same-team choices without a flip; rejection without mutation for wrong, repeated, or post-turn Hold attempts; defined semantic event payloads; and exactly one turn-only-effect cancellation checkpoint immediately before turn end. Milestone 3.5 is T2 because it introduces shared turn/timing infrastructure. Milestone 3.5 T2 evidence passed focused Edit Mode 8/8 and directly affected Edit Mode 70/70 with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path changed, the affected pure-authority consumers are enumerated, and milestone 3.5 is not a T3 gate.
 
+## In-turn Movement resolution focused Edit Mode tests
+
+```powershell
+$turnMovementEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.InitiativeResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.TurnCardCommitmentAuthorityTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.TieBreakerSetupTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6-affected-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6-affected.log"'
+)
+
+$turnMovementEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $turnMovementEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($turnMovementEditProcess.ExitCode -ne 0) {
+    throw "In-turn Movement Edit Mode tests failed with exit code $($turnMovementEditProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering offers derived only from the current face-up unresolved played card; delegation to the Phase 1 allowance, cumulative waypoint route, obstacle, adjacent-step, pending-choice, and command/event authorities; retained unresolved card/actor state during partial Movement; rejection without mutation for wrong actor, stale choice, or another normal action while Movement is pending; exact source-card resolution on Stop or allowance exhaustion; and resolve-before-deferred-flip-before-current-Initiative-re-query ordering. Milestone 3.6 is T2 because it composes shared turn and resolver infrastructure. Milestone 3.6 evidence passed focused Edit Mode 11/11 and directly affected Edit Mode 134/134 with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no scene or presentation code changed, the affected consumers are enumerated, and milestone 3.6 is not a T3 gate.
+
 ## Action-offer and printed-value focused Edit Mode tests
 
 ```powershell

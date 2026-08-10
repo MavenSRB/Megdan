@@ -86,6 +86,79 @@ namespace GuardsDigital.Core.Cards
             return Array.AsReadOnly(offers.ToArray());
         }
 
+        public static IReadOnlyList<ActionOffer> GetAvailableTurnActionOffers(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            HeroId actorId,
+            CardInstanceId sourceCardInstanceId)
+        {
+            if (!actorId.IsDefined)
+            {
+                throw new ArgumentException("Turn action offer query requires a defined actor ID.", nameof(actorId));
+            }
+
+            if (!sourceCardInstanceId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "Turn action offer query requires a defined source card instance ID.",
+                    nameof(sourceCardInstanceId));
+            }
+
+            var definitionsByReference = BuildDefinitionLookup(definitions);
+            if (instances == null)
+            {
+                throw new ArgumentNullException(nameof(instances));
+            }
+
+            var materializedInstances = instances.ToArray();
+            if (materializedInstances.Any(instance => instance == null))
+            {
+                throw new ArgumentException("Card instances must not contain null entries.", nameof(instances));
+            }
+
+            var matchingCards = materializedInstances
+                .Where(instance => instance.Id.Equals(sourceCardInstanceId))
+                .ToArray();
+            if (matchingCards.Length != 1)
+            {
+                return Array.Empty<ActionOffer>();
+            }
+
+            var card = matchingCards[0];
+            if (!card.OwnerId.Equals(actorId) ||
+                card.State.Location != CardLocation.TurnArea ||
+                !card.State.HasBeenPlayed ||
+                card.State.ResolutionStatus != CardResolutionStatus.Unresolved ||
+                card.State.FaceOrientation != CardFaceOrientation.FaceUp)
+            {
+                return Array.Empty<ActionOffer>();
+            }
+
+            if (!definitionsByReference.TryGetValue(card.DefinitionReference, out var definition))
+            {
+                throw new ArgumentException(
+                    "Turn card instance references an unresolved definition ID or content revision.",
+                    nameof(instances));
+            }
+
+            var offers = definition.ActionDefinitions
+                .Where(actionDefinition =>
+                    IsAvailableInWindow(actionDefinition.Origin, ActionOfferWindow.NormalPlay) &&
+                    (!actionDefinition.SourceCardStateTransition.IsDefined ||
+                        card.State.Location == actionDefinition.SourceCardStateTransition.RequiredLocation))
+                .Select(actionDefinition => new ActionOffer(
+                    card.Id,
+                    card.DefinitionReference,
+                    actionDefinition.Id,
+                    actorId,
+                    ToInvocationContext(actionDefinition.Origin),
+                    true,
+                    actionDefinition.AttackRange,
+                    actionDefinition.SourceCardStateTransition))
+                .ToArray();
+            return Array.AsReadOnly(offers);
+        }
+
         internal static Dictionary<CardDefinitionReference, CardDefinition> BuildDefinitionLookup(
             IEnumerable<CardDefinition> definitions)
         {

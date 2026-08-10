@@ -649,7 +649,7 @@ Acceptance checks:
 
 Completion note (2026-08-10): Added a pure `TurnResolutionAuthority` that composes the existing Initiative and card-lifecycle authorities around a reusable general-rule Hold offer. Any current selected face-up unresolved played card can perform exactly one Hold as a General Rule Secondary action with source-card text suppressed; accepted Hold records ordered action/resolution facts, resolves only that card, acknowledges the selected actor, consumes any deferred cross-team Tie Breaker flip only after the resolved fact, and immediately re-queries the highest current unresolved Initiative. Same-team tied actors still use the owning team's authoritative choice and never flip the coin. When no unresolved cards remain, the authority records an explicit `TurnOnlyEffectsCancellationCheckpoint` immediately before `TurnEnded`; no concrete Active effect is implemented. Printed rulebook pages 7 and 12 were visually verified, including the distinct no-respawn/defeat resolve-without-action path, which remains unimplemented. T2 validation passed focused Edit Mode 8/8 and directly affected Edit Mode 70/70 across turn resolution, Initiative, general action offers/printed values, lifecycle, definitions, commitment, participants, and Tie Breaker setup, with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path changed, milestone 3.5 is not a T3 gate, and the affected pure-authority consumers are enumerated. No Movement or Attack execution within a turn, resolve-without-action transition, concrete effect cancellation, round, snapshot, or Wasp content was added.
 
-### [ ] 3.6 Resolve test-card Movement within a turn
+### [x] 3.6 Resolve test-card Movement within a turn
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -661,7 +661,11 @@ Acceptance checks:
 - The turn controller does not mutate occupancy itself.
 - Completing Movement resolves exactly the acting card and continues Initiative order.
 
+Completion note (2026-08-10): Added an explicit played-turn-card action-offer query so the current face-up unresolved card can expose its printed Primary/Secondary actions without weakening the existing in-hand offer path. `TurnResolutionAuthority` now delegates selected Movement start and every destination/Stop answer to the existing `CardActionResolutionAuthority`, which continues to own immutable pending choices, allowance, cumulative route, obstacles, adjacent-step commits, and ordered command/events. Partial waypoints keep the same actor/card unresolved and block another normal action; Stop or allowance exhaustion completes Movement, then and only then resolves exactly the source card, acknowledges any deferred Tie Breaker flip, and re-queries current Initiative. Rulebook pages 7, 10, and 11 were visually re-verified. T2 validation passed focused Edit Mode 11/11 and directly affected Edit Mode 134/134 across turn/Initiative/lifecycle/offers, Phase 1 Movement/obstacle authorities, and legacy card-driven presentation consumers, with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no scene or presentation code changed, the affected consumers are enumerated, and milestone 3.6 is not a T3 gate. No Attack/Defense turn integration, resolve-without-action, round, snapshot, effect, or Wasp content was added.
+
 ### [ ] 3.7 Resolve test-card Attack and Defense within a turn
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: A hero can perform the Phase 2 test Attack during its Initiative position, pause for the enemy Defense reaction, resume, resolve the attacking card, and continue the turn.
 
