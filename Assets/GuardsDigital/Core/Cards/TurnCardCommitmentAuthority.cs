@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -9,19 +10,21 @@ namespace GuardsDigital.Core.Cards
     {
         None = 0,
         TurnAlreadyRevealed = 1,
-        SideAlreadyResponded = 2,
+        HeroAlreadyResponded = 2,
         CardNotFound = 3,
-        CardNotOwnedBySide = 4,
+        CardNotOwnedByHero = 4,
         CardNotEligible = 5,
         PassNotAllowed = 6,
-        CommittedCardStateChanged = 7
+        CommittedCardStateChanged = 7,
+        HeroNotFound = 8,
+        InvalidInHandCardState = 9
     }
 
     public enum TurnCardCommitmentEventKind
     {
         None = 0,
         CardCommittedFacedown = 1,
-        SidePassed = 2,
+        HeroPassed = 2,
         CardRevealed = 3,
         RevealCompleted = 4
     }
@@ -38,7 +41,7 @@ namespace GuardsDigital.Core.Cards
     {
         public TurnCardCommitmentEvent(
             TurnCardCommitmentEventKind kind,
-            TeamSide teamSide,
+            HeroId heroId = default,
             CardInstanceId cardInstanceId = default)
         {
             if (kind == TurnCardCommitmentEventKind.None)
@@ -46,9 +49,12 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("A turn-card event requires a defined kind.", nameof(kind));
             }
 
-            if (teamSide != TeamSide.None && teamSide != TeamSide.Red && teamSide != TeamSide.Blue)
+            var isHeroEvent = kind != TurnCardCommitmentEventKind.RevealCompleted;
+            if (isHeroEvent != heroId.IsDefined)
             {
-                throw new ArgumentOutOfRangeException(nameof(teamSide), teamSide, "Turn-card event side is invalid.");
+                throw new ArgumentException(
+                    "Every per-hero turn-card event requires one canonical hero ID, while reveal completion does not.",
+                    nameof(heroId));
             }
 
             if (kind == TurnCardCommitmentEventKind.CardRevealed && !cardInstanceId.IsDefined)
@@ -62,15 +68,17 @@ namespace GuardsDigital.Core.Cards
             }
 
             Kind = kind;
-            TeamSide = teamSide;
+            HeroId = heroId;
             CardInstanceId = cardInstanceId;
         }
 
         public TurnCardCommitmentEventKind Kind { get; }
 
-        public TeamSide TeamSide { get; }
+        public HeroId HeroId { get; }
 
         public CardInstanceId CardInstanceId { get; }
+
+        public bool HasHeroId => HeroId.IsDefined;
 
         public bool HasCardInstanceId => CardInstanceId.IsDefined;
     }
@@ -93,8 +101,7 @@ namespace GuardsDigital.Core.Cards
 
         public IReadOnlyList<TurnCardCommitmentEvent> Events { get; }
 
-        public static TurnCardCommitmentResult Accept(
-            IEnumerable<TurnCardCommitmentEvent> events)
+        public static TurnCardCommitmentResult Accept(IEnumerable<TurnCardCommitmentEvent> events)
         {
             return new TurnCardCommitmentResult(
                 true,
@@ -102,8 +109,7 @@ namespace GuardsDigital.Core.Cards
                 Array.AsReadOnly((events ?? throw new ArgumentNullException(nameof(events))).ToArray()));
         }
 
-        public static TurnCardCommitmentResult Reject(
-            TurnCardCommitmentRejectionReason reason)
+        public static TurnCardCommitmentResult Reject(TurnCardCommitmentRejectionReason reason)
         {
             if (reason == TurnCardCommitmentRejectionReason.None)
             {
@@ -119,189 +125,13 @@ namespace GuardsDigital.Core.Cards
 
     public sealed class TurnCardCommitmentAuthority
     {
-        private readonly Dictionary<TeamSide, CardInstanceId> committedCards =
-            new Dictionary<TeamSide, CardInstanceId>();
-        private readonly HashSet<TeamSide> passedSides = new HashSet<TeamSide>();
+        private readonly IReadOnlyList<CardInstance> instances;
+        private readonly IReadOnlyList<HeroId> expectedHeroIds;
+        private readonly Dictionary<HeroId, CardInstanceId> committedCards =
+            new Dictionary<HeroId, CardInstanceId>();
+        private readonly HashSet<HeroId> passedHeroes = new HashSet<HeroId>();
 
-        public bool IsRevealed { get; private set; }
-
-        public TurnCardCommitmentStatus GetStatus(TeamSide side)
-        {
-            ValidateSide(side);
-            if (passedSides.Contains(side))
-            {
-                return TurnCardCommitmentStatus.Passed;
-            }
-
-            if (!committedCards.ContainsKey(side))
-            {
-                return TurnCardCommitmentStatus.AwaitingResponse;
-            }
-
-            return IsRevealed
-                ? TurnCardCommitmentStatus.Revealed
-                : TurnCardCommitmentStatus.CardCommittedFacedown;
-        }
-
-        public CardInstanceId? GetRevealedCardInstanceId(TeamSide side)
-        {
-            ValidateSide(side);
-            return IsRevealed && committedCards.TryGetValue(side, out var cardInstanceId)
-                ? cardInstanceId
-                : (CardInstanceId?)null;
-        }
-
-        public bool CanPass(
-            TeamSide side,
-            IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
-        {
-            ValidateSide(side);
-            var instanceArray = GetInputs(instances, participants);
-            return GetCommonRejection(side, instanceArray) ==
-                    TurnCardCommitmentRejectionReason.None &&
-                !instanceArray.Any(instance => IsEligibleForSide(instance, side, participants));
-        }
-
-        public TurnCardCommitmentResult TryCommitCard(
-            TeamSide side,
-            CardInstanceId cardInstanceId,
-            IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
-        {
-            ValidateSide(side);
-            var instanceArray = GetInputs(instances, participants);
-            var commonRejection = GetCommonRejection(side, instanceArray);
-            if (commonRejection != TurnCardCommitmentRejectionReason.None)
-            {
-                return TurnCardCommitmentResult.Reject(commonRejection);
-            }
-
-            var card = instanceArray.SingleOrDefault(candidate => candidate.Id.Equals(cardInstanceId));
-            if (card == null)
-            {
-                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotFound);
-            }
-
-            if (!IsOwnedBySide(card, side, participants))
-            {
-                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotOwnedBySide);
-            }
-
-            if (!IsEligible(card))
-            {
-                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotEligible);
-            }
-
-            if (!CardLifecycleAuthority.TryPlayFacedown(card))
-            {
-                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotEligible);
-            }
-
-            committedCards.Add(side, card.Id);
-            var events = new List<TurnCardCommitmentEvent>
-            {
-                new TurnCardCommitmentEvent(
-                    TurnCardCommitmentEventKind.CardCommittedFacedown,
-                    side)
-            };
-            CompleteRevealIfReady(instanceArray, events);
-            return TurnCardCommitmentResult.Accept(events);
-        }
-
-        public TurnCardCommitmentResult TryPass(
-            TeamSide side,
-            IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
-        {
-            ValidateSide(side);
-            var instanceArray = GetInputs(instances, participants);
-            var commonRejection = GetCommonRejection(side, instanceArray);
-            if (commonRejection != TurnCardCommitmentRejectionReason.None)
-            {
-                return TurnCardCommitmentResult.Reject(commonRejection);
-            }
-
-            if (instanceArray.Any(instance => IsEligibleForSide(instance, side, participants)))
-            {
-                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.PassNotAllowed);
-            }
-
-            passedSides.Add(side);
-            var events = new List<TurnCardCommitmentEvent>
-            {
-                new TurnCardCommitmentEvent(TurnCardCommitmentEventKind.SidePassed, side)
-            };
-            CompleteRevealIfReady(instanceArray, events);
-            return TurnCardCommitmentResult.Accept(events);
-        }
-
-        private TurnCardCommitmentRejectionReason GetCommonRejection(
-            TeamSide side,
-            IReadOnlyList<CardInstance> instances)
-        {
-            if (IsRevealed)
-            {
-                return TurnCardCommitmentRejectionReason.TurnAlreadyRevealed;
-            }
-
-            if (HasResponded(side))
-            {
-                return TurnCardCommitmentRejectionReason.SideAlreadyResponded;
-            }
-
-            foreach (var committedCardId in committedCards.Values)
-            {
-                var committedCard = instances.SingleOrDefault(card => card.Id.Equals(committedCardId));
-                if (committedCard == null || !IsFacedownCommitted(committedCard))
-                {
-                    return TurnCardCommitmentRejectionReason.CommittedCardStateChanged;
-                }
-            }
-
-            return TurnCardCommitmentRejectionReason.None;
-        }
-
-        private void CompleteRevealIfReady(
-            IReadOnlyList<CardInstance> instances,
-            ICollection<TurnCardCommitmentEvent> events)
-        {
-            if (!HasResponded(TeamSide.Red) || !HasResponded(TeamSide.Blue))
-            {
-                return;
-            }
-
-            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
-            {
-                if (!committedCards.TryGetValue(side, out var cardId))
-                {
-                    continue;
-                }
-
-                var card = instances.Single(candidate => candidate.Id.Equals(cardId));
-                if (!CardLifecycleAuthority.TryReveal(card))
-                {
-                    throw new InvalidOperationException("A validated facedown commitment could not be revealed.");
-                }
-
-                events.Add(new TurnCardCommitmentEvent(
-                    TurnCardCommitmentEventKind.CardRevealed,
-                    side,
-                    cardId));
-            }
-
-            IsRevealed = true;
-            events.Add(new TurnCardCommitmentEvent(
-                TurnCardCommitmentEventKind.RevealCompleted,
-                TeamSide.None));
-        }
-
-        private bool HasResponded(TeamSide side)
-        {
-            return committedCards.ContainsKey(side) || passedSides.Contains(side);
-        }
-
-        private static CardInstance[] GetInputs(
+        public TurnCardCommitmentAuthority(
             IEnumerable<CardInstance> instances,
             MatchParticipants participants)
         {
@@ -315,36 +145,234 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentNullException(nameof(participants));
             }
 
-            var instanceArray = instances.ToArray();
-            if (instanceArray.Any(instance => instance == null))
+            var cards = instances.ToArray();
+            if (cards.Any(card => card == null) ||
+                cards.Select(card => card.Id).Distinct().Count() != cards.Length)
             {
-                throw new ArgumentException("Turn-card instances must not contain null entries.", nameof(instances));
+                throw new ArgumentException(
+                    "Turn-card instances must be non-null and have unique IDs.",
+                    nameof(instances));
             }
 
-            return instanceArray;
-        }
-
-        private static bool IsEligibleForSide(
-            CardInstance card,
-            TeamSide side,
-            MatchParticipants participants)
-        {
-            return IsOwnedBySide(card, side, participants) && IsEligible(card);
-        }
-
-        private static bool IsOwnedBySide(
-            CardInstance card,
-            TeamSide side,
-            MatchParticipants participants)
-        {
-            try
+            foreach (var card in cards)
             {
-                return participants.GetTeamForHero(card.OwnerId).Side == side;
+                participants.GetHero(card.OwnerId);
             }
-            catch (KeyNotFoundException)
+
+            this.instances = Array.AsReadOnly(cards);
+            expectedHeroIds = Array.AsReadOnly(participants.Heroes
+                .Select(hero => hero.Id)
+                .OrderBy(heroId => heroId.Value, StringComparer.Ordinal)
+                .ToArray());
+        }
+
+        public bool IsRevealed { get; private set; }
+
+        public IReadOnlyList<HeroId> ExpectedHeroIds => expectedHeroIds;
+
+        public TurnCardCommitmentStatus GetStatus(HeroId heroId)
+        {
+            if (!IsExpectedHero(heroId))
+            {
+                throw new KeyNotFoundException($"Unknown turn-card hero ID '{heroId}'.");
+            }
+
+            if (passedHeroes.Contains(heroId))
+            {
+                return TurnCardCommitmentStatus.Passed;
+            }
+
+            if (!committedCards.ContainsKey(heroId))
+            {
+                return TurnCardCommitmentStatus.AwaitingResponse;
+            }
+
+            return IsRevealed
+                ? TurnCardCommitmentStatus.Revealed
+                : TurnCardCommitmentStatus.CardCommittedFacedown;
+        }
+
+        public CardInstanceId? GetRevealedCardInstanceId(HeroId heroId)
+        {
+            if (!IsExpectedHero(heroId))
+            {
+                throw new KeyNotFoundException($"Unknown turn-card hero ID '{heroId}'.");
+            }
+
+            return IsRevealed && committedCards.TryGetValue(heroId, out var cardInstanceId)
+                ? cardInstanceId
+                : (CardInstanceId?)null;
+        }
+
+        public bool CanPass(HeroId heroId)
+        {
+            if (GetCommonRejection(heroId) != TurnCardCommitmentRejectionReason.None)
             {
                 return false;
             }
+
+            return GetOwnedHandState(heroId) == OwnedHandState.Empty;
+        }
+
+        public TurnCardCommitmentResult TryCommitCard(
+            HeroId heroId,
+            CardInstanceId cardInstanceId)
+        {
+            var commonRejection = GetCommonRejection(heroId);
+            if (commonRejection != TurnCardCommitmentRejectionReason.None)
+            {
+                return TurnCardCommitmentResult.Reject(commonRejection);
+            }
+
+            if (GetOwnedHandState(heroId) == OwnedHandState.Invalid)
+            {
+                return TurnCardCommitmentResult.Reject(
+                    TurnCardCommitmentRejectionReason.InvalidInHandCardState);
+            }
+
+            var card = instances.SingleOrDefault(candidate => candidate.Id.Equals(cardInstanceId));
+            if (card == null)
+            {
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotFound);
+            }
+
+            if (!card.OwnerId.Equals(heroId))
+            {
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotOwnedByHero);
+            }
+
+            if (card.State.Location == CardLocation.Hand && !IsEligible(card))
+            {
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.InvalidInHandCardState);
+            }
+
+            if (!IsEligible(card) || !CardLifecycleAuthority.TryPlayFacedown(card))
+            {
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotEligible);
+            }
+
+            committedCards.Add(heroId, card.Id);
+            var events = new List<TurnCardCommitmentEvent>
+            {
+                new TurnCardCommitmentEvent(
+                    TurnCardCommitmentEventKind.CardCommittedFacedown,
+                    heroId)
+            };
+            CompleteRevealIfReady(events);
+            return TurnCardCommitmentResult.Accept(events);
+        }
+
+        public TurnCardCommitmentResult TryPass(HeroId heroId)
+        {
+            var commonRejection = GetCommonRejection(heroId);
+            if (commonRejection != TurnCardCommitmentRejectionReason.None)
+            {
+                return TurnCardCommitmentResult.Reject(commonRejection);
+            }
+
+            var handState = GetOwnedHandState(heroId);
+            if (handState == OwnedHandState.Invalid)
+            {
+                return TurnCardCommitmentResult.Reject(
+                    TurnCardCommitmentRejectionReason.InvalidInHandCardState);
+            }
+
+            if (handState == OwnedHandState.HasEligibleCard)
+            {
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.PassNotAllowed);
+            }
+
+            passedHeroes.Add(heroId);
+            var events = new List<TurnCardCommitmentEvent>
+            {
+                new TurnCardCommitmentEvent(TurnCardCommitmentEventKind.HeroPassed, heroId)
+            };
+            CompleteRevealIfReady(events);
+            return TurnCardCommitmentResult.Accept(events);
+        }
+
+        private TurnCardCommitmentRejectionReason GetCommonRejection(HeroId heroId)
+        {
+            if (IsRevealed)
+            {
+                return TurnCardCommitmentRejectionReason.TurnAlreadyRevealed;
+            }
+
+            if (!IsExpectedHero(heroId))
+            {
+                return TurnCardCommitmentRejectionReason.HeroNotFound;
+            }
+
+            if (HasResponded(heroId))
+            {
+                return TurnCardCommitmentRejectionReason.HeroAlreadyResponded;
+            }
+
+            foreach (var committedCardId in committedCards.Values)
+            {
+                var committedCard = instances.Single(card => card.Id.Equals(committedCardId));
+                if (!IsFacedownCommitted(committedCard))
+                {
+                    return TurnCardCommitmentRejectionReason.CommittedCardStateChanged;
+                }
+            }
+
+            return TurnCardCommitmentRejectionReason.None;
+        }
+
+        private void CompleteRevealIfReady(ICollection<TurnCardCommitmentEvent> events)
+        {
+            if (expectedHeroIds.Any(heroId => !HasResponded(heroId)))
+            {
+                return;
+            }
+
+            foreach (var heroId in expectedHeroIds)
+            {
+                if (!committedCards.TryGetValue(heroId, out var cardId))
+                {
+                    continue;
+                }
+
+                var card = instances.Single(candidate => candidate.Id.Equals(cardId));
+                if (!CardLifecycleAuthority.TryReveal(card))
+                {
+                    throw new InvalidOperationException("A validated facedown commitment could not be revealed.");
+                }
+
+                events.Add(new TurnCardCommitmentEvent(
+                    TurnCardCommitmentEventKind.CardRevealed,
+                    heroId,
+                    cardId));
+            }
+
+            IsRevealed = true;
+            events.Add(new TurnCardCommitmentEvent(TurnCardCommitmentEventKind.RevealCompleted));
+        }
+
+        private bool HasResponded(HeroId heroId)
+        {
+            return committedCards.ContainsKey(heroId) || passedHeroes.Contains(heroId);
+        }
+
+        private bool IsExpectedHero(HeroId heroId)
+        {
+            return heroId.IsDefined && expectedHeroIds.Contains(heroId);
+        }
+
+        private OwnedHandState GetOwnedHandState(HeroId heroId)
+        {
+            var inHand = instances
+                .Where(card => card.OwnerId.Equals(heroId) && card.State.Location == CardLocation.Hand)
+                .ToArray();
+            if (inHand.Any(card => !IsEligible(card)))
+            {
+                return OwnedHandState.Invalid;
+            }
+
+            return inHand.Length > 0
+                ? OwnedHandState.HasEligibleCard
+                : OwnedHandState.Empty;
         }
 
         private static bool IsEligible(CardInstance card)
@@ -360,12 +388,11 @@ namespace GuardsDigital.Core.Cards
                 card.State.FaceOrientation == CardFaceOrientation.FaceDown;
         }
 
-        private static void ValidateSide(TeamSide side)
+        private enum OwnedHandState
         {
-            if (side != TeamSide.Red && side != TeamSide.Blue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(side), side, "Turn-card side must be Red or Blue.");
-            }
+            Empty = 0,
+            HasEligibleCard = 1,
+            Invalid = 2
         }
     }
 }

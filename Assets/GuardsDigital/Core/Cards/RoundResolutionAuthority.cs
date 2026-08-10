@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -34,15 +35,65 @@ namespace GuardsDigital.Core.Cards
         EndOfRoundEntered = 5
     }
 
+    public sealed class TurnCardAssignment
+    {
+        public TurnCardAssignment(
+            HeroId heroId,
+            CardInstanceId? cardInstanceId,
+            bool passedWithEmptyHand)
+        {
+            if (!heroId.IsDefined)
+            {
+                throw new ArgumentException("A turn-card assignment requires a canonical hero ID.", nameof(heroId));
+            }
+
+            if (cardInstanceId.HasValue && !cardInstanceId.Value.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A turn-card assignment requires a defined card instance ID.",
+                    nameof(cardInstanceId));
+            }
+
+            var hasCard = cardInstanceId.HasValue && cardInstanceId.Value.IsDefined;
+            if (hasCard == passedWithEmptyHand)
+            {
+                throw new ArgumentException(
+                    "A turn-card assignment requires exactly one committed card or explicit empty-hand Pass.",
+                    nameof(cardInstanceId));
+            }
+
+            HeroId = heroId;
+            CardInstanceId = cardInstanceId;
+            PassedWithEmptyHand = passedWithEmptyHand;
+        }
+
+        public HeroId HeroId { get; }
+
+        public CardInstanceId? CardInstanceId { get; }
+
+        public bool PassedWithEmptyHand { get; }
+
+        public PlayerId GetControllingPlayerId(MatchParticipants participants)
+        {
+            return (participants ?? throw new ArgumentNullException(nameof(participants)))
+                .GetPlayerForHero(HeroId).Id;
+        }
+
+        public TeamSide GetTeamSide(MatchParticipants participants)
+        {
+            return (participants ?? throw new ArgumentNullException(nameof(participants)))
+                .GetTeamForHero(HeroId).Side;
+        }
+    }
+
     public sealed class RoundTurnSlot
     {
         public RoundTurnSlot(
             int roundIndex,
             int turnIndex,
-            CardInstanceId? redCardInstanceId,
-            bool redPassed,
-            CardInstanceId? blueCardInstanceId,
-            bool bluePassed)
+            IEnumerable<TurnCardAssignment> assignments,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants)
         {
             if (roundIndex < 1)
             {
@@ -54,48 +105,94 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentOutOfRangeException(nameof(turnIndex));
             }
 
-            ValidateAssignment(redCardInstanceId, redPassed, nameof(redCardInstanceId));
-            ValidateAssignment(blueCardInstanceId, bluePassed, nameof(blueCardInstanceId));
+            if (assignments == null)
+            {
+                throw new ArgumentNullException(nameof(assignments));
+            }
+
+            if (instances == null)
+            {
+                throw new ArgumentNullException(nameof(instances));
+            }
+
+            if (participants == null)
+            {
+                throw new ArgumentNullException(nameof(participants));
+            }
+
+            var assignmentArray = assignments.ToArray();
+            if (assignmentArray.Any(assignment => assignment == null))
+            {
+                throw new ArgumentException("Turn-slot assignments must not contain null entries.", nameof(assignments));
+            }
+
+            var expectedHeroIds = participants.Heroes
+                .Select(hero => hero.Id)
+                .OrderBy(heroId => heroId.Value, StringComparer.Ordinal)
+                .ToArray();
+            if (assignmentArray.Length != expectedHeroIds.Length ||
+                assignmentArray.Select(assignment => assignment.HeroId).Distinct().Count() != assignmentArray.Length ||
+                !assignmentArray.Select(assignment => assignment.HeroId).OrderBy(
+                        heroId => heroId.Value,
+                        StringComparer.Ordinal)
+                    .SequenceEqual(expectedHeroIds))
+            {
+                throw new ArgumentException(
+                    "A turn slot requires exactly one assignment for every configured hero.",
+                    nameof(assignments));
+            }
+
+            var cardArray = instances.ToArray();
+            if (cardArray.Any(card => card == null) ||
+                cardArray.Select(card => card.Id).Distinct().Count() != cardArray.Length)
+            {
+                throw new ArgumentException(
+                    "Turn-slot card instances must be non-null and have unique IDs.",
+                    nameof(instances));
+            }
+
+            var assignedCardIds = assignmentArray
+                .Where(assignment => assignment.CardInstanceId.HasValue)
+                .Select(assignment => assignment.CardInstanceId.Value)
+                .ToArray();
+            if (assignedCardIds.Distinct().Count() != assignedCardIds.Length)
+            {
+                throw new ArgumentException(
+                    "A committed card cannot be assigned to more than one hero.",
+                    nameof(assignments));
+            }
+
+            foreach (var assignment in assignmentArray)
+            {
+                participants.GetPlayerForHero(assignment.HeroId);
+                participants.GetTeamForHero(assignment.HeroId);
+                if (!assignment.CardInstanceId.HasValue)
+                {
+                    continue;
+                }
+
+                var card = cardArray.SingleOrDefault(candidate =>
+                    candidate.Id.Equals(assignment.CardInstanceId.Value));
+                if (card == null || !card.OwnerId.Equals(assignment.HeroId))
+                {
+                    throw new ArgumentException(
+                        "Every committed turn-slot card must exist and be owned by its assigned hero.",
+                        nameof(assignments));
+                }
+            }
+
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
-            RedCardInstanceId = redCardInstanceId;
-            RedPassed = redPassed;
-            BlueCardInstanceId = blueCardInstanceId;
-            BluePassed = bluePassed;
+            Assignments = Array.AsReadOnly(assignmentArray
+                .OrderBy(assignment => assignment.HeroId.Value, StringComparer.Ordinal)
+                .ToArray());
         }
 
         public int RoundIndex { get; }
 
         public int TurnIndex { get; }
 
-        public CardInstanceId? RedCardInstanceId { get; }
-
-        public bool RedPassed { get; }
-
-        public CardInstanceId? BlueCardInstanceId { get; }
-
-        public bool BluePassed { get; }
-
-        private static void ValidateAssignment(
-            CardInstanceId? cardInstanceId,
-            bool passed,
-            string parameterName)
-        {
-            if (cardInstanceId.HasValue && !cardInstanceId.Value.IsDefined)
-            {
-                throw new ArgumentException(
-                    "A turn-slot card assignment requires a defined card instance ID.",
-                    parameterName);
-            }
-
-            var hasCard = cardInstanceId.HasValue && cardInstanceId.Value.IsDefined;
-            if (hasCard == passed)
-            {
-                throw new ArgumentException(
-                    "A turn-slot side must contain exactly one played card or an explicit pass.",
-                    parameterName);
-            }
-        }
+        public IReadOnlyList<TurnCardAssignment> Assignments { get; }
     }
 
     public readonly struct RoundResolutionEvent
@@ -322,7 +419,7 @@ namespace GuardsDigital.Core.Cards
             RoundIndex = roundIndex;
             TurnIndex = 1;
             Phase = RoundResolutionPhase.AwaitingCommitments;
-            CurrentCommitmentAuthority = new TurnCardCommitmentAuthority();
+            CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(this.instances, this.participants);
         }
 
         public int RoundIndex { get; }
@@ -340,21 +437,16 @@ namespace GuardsDigital.Core.Cards
 
         public TurnResolutionAuthority CurrentTurnAuthority { get; private set; }
 
-        public RoundResolutionResult TryCommitCard(TeamSide side, CardInstanceId cardInstanceId)
+        public RoundResolutionResult TryCommitCard(HeroId heroId, CardInstanceId cardInstanceId)
         {
             return ExecuteCommitment(() => CurrentCommitmentAuthority.TryCommitCard(
-                side,
-                cardInstanceId,
-                instances,
-                participants));
+                heroId,
+                cardInstanceId));
         }
 
-        public RoundResolutionResult TryPass(TeamSide side)
+        public RoundResolutionResult TryPass(HeroId heroId)
         {
-            return ExecuteCommitment(() => CurrentCommitmentAuthority.TryPass(
-                side,
-                instances,
-                participants));
+            return ExecuteCommitment(() => CurrentCommitmentAuthority.TryPass(heroId));
         }
 
         public RoundResolutionResult TryChooseTiedActor(
@@ -473,10 +565,13 @@ namespace GuardsDigital.Core.Cards
             var slot = new RoundTurnSlot(
                 RoundIndex,
                 TurnIndex,
-                CurrentCommitmentAuthority.GetRevealedCardInstanceId(TeamSide.Red),
-                CurrentCommitmentAuthority.GetStatus(TeamSide.Red) == TurnCardCommitmentStatus.Passed,
-                CurrentCommitmentAuthority.GetRevealedCardInstanceId(TeamSide.Blue),
-                CurrentCommitmentAuthority.GetStatus(TeamSide.Blue) == TurnCardCommitmentStatus.Passed);
+                CurrentCommitmentAuthority.ExpectedHeroIds.Select(heroId =>
+                    new TurnCardAssignment(
+                        heroId,
+                        CurrentCommitmentAuthority.GetRevealedCardInstanceId(heroId),
+                        CurrentCommitmentAuthority.GetStatus(heroId) == TurnCardCommitmentStatus.Passed)),
+                instances,
+                participants);
             turnSlots.Add(slot);
             events.Add(RoundResolutionEvent.SlotRecorded(slot));
 
@@ -519,7 +614,7 @@ namespace GuardsDigital.Core.Cards
 
             TurnIndex++;
             CurrentTurnAuthority = null;
-            CurrentCommitmentAuthority = new TurnCardCommitmentAuthority();
+            CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(instances, participants);
             Phase = RoundResolutionPhase.AwaitingCommitments;
             events.Add(RoundResolutionEvent.Boundary(
                 RoundResolutionEventKind.TurnAdvanced,

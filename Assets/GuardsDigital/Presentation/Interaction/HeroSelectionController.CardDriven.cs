@@ -360,7 +360,8 @@ namespace GuardsDigital.Presentation.Interaction
             EnsurePlaceholderOneVsOneHands();
             EnsureRoundResolutionAuthority();
             return roundResolutionAuthority?.CurrentCommitmentAuthority != null
-                ? roundResolutionAuthority.CurrentCommitmentAuthority.GetStatus(side)
+                ? roundResolutionAuthority.CurrentCommitmentAuthority.GetStatus(
+                    GetSingleFixtureHeroId(side))
                 : TurnCardCommitmentStatus.AwaitingResponse;
         }
 
@@ -383,7 +384,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var cardId = roundResolutionAuthority.CurrentCommitmentAuthority
-                .GetRevealedCardInstanceId(side);
+                .GetRevealedCardInstanceId(GetSingleFixtureHeroId(side));
             var card = cardId.HasValue
                 ? GetAllPlaceholderCardInstances().Single(instance => instance.Id.Equals(cardId.Value))
                 : null;
@@ -403,9 +404,7 @@ namespace GuardsDigital.Presentation.Interaction
             EnsureRoundResolutionAuthority();
             return roundResolutionAuthority?.Phase == RoundResolutionPhase.AwaitingCommitments &&
                 roundResolutionAuthority.CurrentCommitmentAuthority.CanPass(
-                    side,
-                    GetAllPlaceholderCardInstances(),
-                    placeholderParticipants);
+                    GetSingleFixtureHeroId(side));
         }
 
         public bool TryConfirmSelectedTurnCard()
@@ -427,7 +426,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var side = placeholderParticipants.GetTeamForHero(selectedCard.OwnerId).Side;
-            var result = roundResolutionAuthority.TryCommitCard(side, selectedCard.Id);
+            var result = roundResolutionAuthority.TryCommitCard(selectedCard.OwnerId, selectedCard.Id);
             if (!result.Accepted)
             {
                 RecordRoundRejection(result);
@@ -465,7 +464,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
-            var result = roundResolutionAuthority.TryPass(side);
+            var result = roundResolutionAuthority.TryPass(GetSingleFixtureHeroId(side));
             if (!result.Accepted)
             {
                 RecordRoundRejection(result);
@@ -1475,6 +1474,12 @@ namespace GuardsDigital.Presentation.Interaction
         private static TeamSide Opposite(TeamSide side)
         {
             return side == TeamSide.Red ? TeamSide.Blue : TeamSide.Red;
+        }
+
+        private HeroId GetSingleFixtureHeroId(TeamSide side)
+        {
+            var team = placeholderParticipants.Teams.Single(candidate => candidate.Side == side);
+            return placeholderParticipants.GetHeroesForTeam(team.Id).Single().Id;
         }
 
         private bool TryGetConfiguredTeamSide(HeroId ownerId, out TeamSide side)

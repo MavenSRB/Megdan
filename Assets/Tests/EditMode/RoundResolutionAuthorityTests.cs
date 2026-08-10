@@ -25,16 +25,20 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var red = configuration.RedHand.Instances[turnIndex - 1];
                 var blue = configuration.BlueHand.Instances[turnIndex - 1];
-                allEvents.AddRange(authority.TryCommitCard(TeamSide.Red, red.Id).Events);
-                allEvents.AddRange(authority.TryCommitCard(TeamSide.Blue, blue.Id).Events);
+                allEvents.AddRange(authority.TryCommitCard(red.OwnerId, red.Id).Events);
+                allEvents.AddRange(authority.TryCommitCard(blue.OwnerId, blue.Id).Events);
 
                 Assert.That(authority.TurnSlots, Has.Count.EqualTo(turnIndex));
                 var slot = authority.TurnSlots[turnIndex - 1];
                 Assert.That(slot.RoundIndex, Is.EqualTo(1));
                 Assert.That(slot.TurnIndex, Is.EqualTo(turnIndex));
-                Assert.That(slot.RedCardInstanceId, Is.EqualTo(red.Id));
-                Assert.That(slot.BlueCardInstanceId, Is.EqualTo(blue.Id));
-                Assert.That(slot.RedPassed || slot.BluePassed, Is.False);
+                Assert.That(slot.Assignments, Has.Count.EqualTo(2));
+                Assert.That(slot.Assignments.Single(assignment => assignment.HeroId.Equals(red.OwnerId))
+                    .CardInstanceId, Is.EqualTo(red.Id));
+                Assert.That(slot.Assignments.Single(assignment => assignment.HeroId.Equals(blue.OwnerId))
+                    .CardInstanceId, Is.EqualTo(blue.Id));
+                Assert.That(slot.Assignments, Has.None.Matches<TurnCardAssignment>(assignment =>
+                    assignment.PassedWithEmptyHand));
 
                 while (authority.Phase == RoundResolutionPhase.ResolvingTurn)
                 {
@@ -71,12 +75,12 @@ namespace GuardsDigital.Tests.EditMode
             var authority = CreateAuthority(configuration);
             var red = configuration.RedHand.Instances[0];
             var blue = configuration.BlueHand.Instances[0];
-            Assert.That(authority.TryCommitCard(TeamSide.Red, red.Id).Accepted, Is.True);
-            Assert.That(authority.TryCommitCard(TeamSide.Blue, blue.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(red.OwnerId, red.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(blue.OwnerId, blue.Id).Accepted, Is.True);
             ResolveCurrentTurnWithHold(authority);
             var statesBefore = configuration.CardInstances.ToDictionary(card => card.Id, card => card.State);
 
-            var replay = authority.TryCommitCard(TeamSide.Red, red.Id);
+            var replay = authority.TryCommitCard(red.OwnerId, red.Id);
 
             Assert.That(replay.Accepted, Is.False);
             Assert.That(replay.RejectionReason,
@@ -95,22 +99,21 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = CreateOneCardPerSideFixture();
             var authority = fixture.Authority;
-            Assert.That(authority.TryCommitCard(TeamSide.Red, fixture.Red.Id).Accepted, Is.True);
-            Assert.That(authority.TryCommitCard(TeamSide.Blue, fixture.Blue.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(fixture.Red.OwnerId, fixture.Red.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(fixture.Blue.OwnerId, fixture.Blue.Id).Accepted, Is.True);
             ResolveCurrentTurnWithHold(authority);
 
             for (var turnIndex = 2; turnIndex <= RoundResolutionAuthority.TurnsPerRound; turnIndex++)
             {
-                var redPass = authority.TryPass(TeamSide.Red);
+                var redPass = authority.TryPass(fixture.Red.OwnerId);
                 Assert.That(redPass.Accepted, Is.True);
-                var bluePass = authority.TryPass(TeamSide.Blue);
+                var bluePass = authority.TryPass(fixture.Blue.OwnerId);
                 Assert.That(bluePass.Accepted, Is.True);
                 var slot = authority.TurnSlots[turnIndex - 1];
                 Assert.That(slot.TurnIndex, Is.EqualTo(turnIndex));
-                Assert.That(slot.RedPassed, Is.True);
-                Assert.That(slot.BluePassed, Is.True);
-                Assert.That(slot.RedCardInstanceId, Is.Null);
-                Assert.That(slot.BlueCardInstanceId, Is.Null);
+                Assert.That(slot.Assignments, Has.Count.EqualTo(2));
+                Assert.That(slot.Assignments, Has.All.Matches<TurnCardAssignment>(assignment =>
+                    assignment.PassedWithEmptyHand && !assignment.CardInstanceId.HasValue));
             }
 
             Assert.That(authority.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
@@ -138,37 +141,82 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = CreateOneCardPerSideFixture();
             var authority = fixture.Authority;
-            Assert.That(authority.TryCommitCard(TeamSide.Red, fixture.Red.Id).Accepted, Is.True);
-            Assert.That(authority.TryCommitCard(TeamSide.Blue, fixture.Blue.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(fixture.Red.OwnerId, fixture.Red.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(fixture.Blue.OwnerId, fixture.Blue.Id).Accepted, Is.True);
             ResolveCurrentTurnWithHold(authority);
             for (var turn = 2; turn <= RoundResolutionAuthority.TurnsPerRound; turn++)
             {
-                Assert.That(authority.TryPass(TeamSide.Red).Accepted, Is.True);
-                Assert.That(authority.TryPass(TeamSide.Blue).Accepted, Is.True);
+                Assert.That(authority.TryPass(fixture.Red.OwnerId).Accepted, Is.True);
+                Assert.That(authority.TryPass(fixture.Blue.OwnerId).Accepted, Is.True);
             }
 
             var slots = authority.TurnSlots.ToArray();
             var redState = fixture.Red.State;
-            AssertRejectedAfterRound(authority.TryPass(TeamSide.Red));
+            AssertRejectedAfterRound(authority.TryPass(fixture.Red.OwnerId));
             AssertRejectedAfterRound(authority.TryPerformHold(fixture.Red.Id));
             Assert.That(authority.TurnSlots, Is.EqualTo(slots));
             Assert.That(fixture.Red.State, Is.EqualTo(redState));
         }
 
         [Test]
-        public void TurnSlot_RequiresExactlyOneDefinedCardOrPassPerSide()
+        public void TurnSlot_RequiresOneOwnedAssignmentPerHeroAndCopiesDeterministicCollection()
         {
-            var redCardId = new CardInstanceId("red-card");
-            var blueCardId = new CardInstanceId("blue-card");
+            var participants = PlaceholderOneVsOneParticipants.Create();
+            var redHeroId = participants.GetHeroesForTeam(
+                new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue)).Single().Id;
+            var blueHeroId = participants.GetHeroesForTeam(
+                new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue)).Single().Id;
+            var definition = new CardDefinitionReference(new CardDefinitionId("slot-card"), "rev-1");
+            var redCard = CardInstance.CreateInHand(
+                new CardInstanceId("red-card"), definition, redHeroId);
+            var blueCard = CardInstance.CreateInHand(
+                new CardInstanceId("blue-card"), definition, blueHeroId);
+            var cards = new[] { redCard, blueCard };
+            var mutableAssignments = new[]
+            {
+                new TurnCardAssignment(redHeroId, redCard.Id, false),
+                new TurnCardAssignment(blueHeroId, null, true)
+            };
+
+            var slot = new RoundTurnSlot(1, 1, mutableAssignments, cards, participants);
+            mutableAssignments[0] = new TurnCardAssignment(redHeroId, null, true);
+
+            Assert.That(slot.Assignments.Select(assignment => assignment.HeroId.Value),
+                Is.EqualTo(new[] { redHeroId.Value, blueHeroId.Value }
+                    .OrderBy(value => value, StringComparer.Ordinal)));
+            Assert.That(slot.Assignments.Single(assignment => assignment.HeroId.Equals(redHeroId))
+                .CardInstanceId, Is.EqualTo(redCard.Id));
+            var redAssignment = slot.Assignments.Single(assignment => assignment.HeroId.Equals(redHeroId));
+            Assert.That(redAssignment.GetControllingPlayerId(participants),
+                Is.EqualTo(participants.GetPlayerForHero(redHeroId).Id));
+            Assert.That(redAssignment.GetTeamSide(participants), Is.EqualTo(TeamSide.Red));
+            Assert.That(slot.Assignments, Is.InstanceOf<System.Collections.ObjectModel.ReadOnlyCollection<TurnCardAssignment>>());
 
             Assert.Throws<ArgumentException>(() => new RoundTurnSlot(
-                1, 1, null, false, blueCardId, false));
+                1, 1,
+                new[] { new TurnCardAssignment(redHeroId, redCard.Id, false) },
+                cards,
+                participants));
             Assert.Throws<ArgumentException>(() => new RoundTurnSlot(
-                1, 1, redCardId, true, blueCardId, false));
+                1, 1,
+                new[]
+                {
+                    new TurnCardAssignment(redHeroId, redCard.Id, false),
+                    new TurnCardAssignment(redHeroId, null, true)
+                },
+                cards,
+                participants));
             Assert.Throws<ArgumentException>(() => new RoundTurnSlot(
-                1, 1, redCardId, false, default(CardInstanceId), true));
-            Assert.DoesNotThrow(() => new RoundTurnSlot(
-                1, 1, redCardId, false, null, true));
+                1, 1,
+                new[]
+                {
+                    new TurnCardAssignment(redHeroId, blueCard.Id, false),
+                    new TurnCardAssignment(blueHeroId, null, true)
+                },
+                cards,
+                participants));
+            Assert.Throws<ArgumentException>(() => new TurnCardAssignment(
+                redHeroId, redCard.Id, true));
         }
 
         [Test]
@@ -197,8 +245,8 @@ namespace GuardsDigital.Tests.EditMode
 
             var redMovementCard = configuration.RedHand.Instances[0];
             var blueFirstCard = configuration.BlueHand.Instances[0];
-            Assert.That(authority.TryCommitCard(TeamSide.Red, redMovementCard.Id).Accepted, Is.True);
-            Assert.That(authority.TryCommitCard(TeamSide.Blue, blueFirstCard.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(redMovementCard.OwnerId, redMovementCard.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(blueFirstCard.OwnerId, blueFirstCard.Id).Accepted, Is.True);
             var movementOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
                     configuration.CardDefinitions,
                 configuration.CardInstances,
@@ -218,8 +266,8 @@ namespace GuardsDigital.Tests.EditMode
 
             var redAttackCard = configuration.RedHand.Instances[1];
             var blueSecondCard = configuration.BlueHand.Instances[1];
-            Assert.That(authority.TryCommitCard(TeamSide.Red, redAttackCard.Id).Accepted, Is.True);
-            Assert.That(authority.TryCommitCard(TeamSide.Blue, blueSecondCard.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(redAttackCard.OwnerId, redAttackCard.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(blueSecondCard.OwnerId, blueSecondCard.Id).Accepted, Is.True);
             var attackOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
                     configuration.CardDefinitions,
                 configuration.CardInstances,
@@ -305,8 +353,8 @@ namespace GuardsDigital.Tests.EditMode
             var fixture = CreateOneCardPerSideFixture();
             var authority = fixture.Authority;
             var events = new List<RoundResolutionEvent>();
-            events.AddRange(authority.TryCommitCard(TeamSide.Blue, fixture.Blue.Id).Events);
-            events.AddRange(authority.TryCommitCard(TeamSide.Red, fixture.Red.Id).Events);
+            events.AddRange(authority.TryCommitCard(fixture.Blue.OwnerId, fixture.Blue.Id).Events);
+            events.AddRange(authority.TryCommitCard(fixture.Red.OwnerId, fixture.Red.Id).Events);
             while (authority.Phase == RoundResolutionPhase.ResolvingTurn)
             {
                 events.AddRange(authority.TryPerformHold(
@@ -315,8 +363,8 @@ namespace GuardsDigital.Tests.EditMode
 
             for (var turn = 2; turn <= RoundResolutionAuthority.TurnsPerRound; turn++)
             {
-                events.AddRange(authority.TryPass(TeamSide.Blue).Events);
-                events.AddRange(authority.TryPass(TeamSide.Red).Events);
+                events.AddRange(authority.TryPass(fixture.Blue.OwnerId).Events);
+                events.AddRange(authority.TryPass(fixture.Red.OwnerId).Events);
             }
 
             return new ReplayFacts(
@@ -326,8 +374,9 @@ namespace GuardsDigital.Tests.EditMode
                 authority.TieBreakerState.RevealedSide,
                 authority.TurnSlots.Select(slot =>
                     $"{slot.RoundIndex}:{slot.TurnIndex}:" +
-                    $"{slot.RedCardInstanceId?.Value ?? "PASS"}:" +
-                    $"{slot.BlueCardInstanceId?.Value ?? "PASS"}").ToArray(),
+                    string.Join(":" , slot.Assignments.Select(assignment =>
+                        $"{assignment.HeroId.Value}={assignment.CardInstanceId?.Value ?? "PASS"}")))
+                    .ToArray(),
                 events.Select(ruleEvent => ruleEvent.Kind).ToArray(),
                 events.Select(ruleEvent => ruleEvent.RoundIndex).ToArray(),
                 events.Select(ruleEvent => ruleEvent.TurnIndex).ToArray());
