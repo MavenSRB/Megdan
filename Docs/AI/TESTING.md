@@ -557,6 +557,33 @@ if ($initiativeEditProcess.ExitCode -ne 0) {
 
 Expected result: all discovered cases pass, covering card-wide typed printed-Initiative contributions; current highest-unresolved re-query after every resolution; Red and Blue cross-team Tie Breaker selection with a recorded flip deferred until the selected card is authoritatively resolved; same-team pending choices without a flip; multi-hero ties with more than two cards; stale-choice rejection without mutation; deterministic candidate ordering; and unchanged printed action values, lifecycle, commitment, participant ownership, card definitions, and setup-side behavior. Milestone 3.4 is T2 because it introduces shared Initiative/pending-choice/turn-boundary infrastructure. Play Mode is omitted because no Unity-facing or presentation path changes. Milestone 3.4 T2 evidence passed focused and directly affected Edit Mode 62/62 with zero failed, skipped, or inconclusive cases; Play Mode and unfiltered suites were intentionally omitted because the affected pure-authority consumers are enumerated and this is not a T3 gate.
 
+## Hold turn-resolution focused Edit Mode tests
+
+```powershell
+$holdTurnEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.InitiativeResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.TurnCardCommitmentAuthorityTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.TieBreakerSetupTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-5-affected-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-5-affected.log"'
+)
+
+$holdTurnEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $holdTurnEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($holdTurnEditProcess.ExitCode -ne 0) {
+    throw "Hold turn Edit Mode tests failed with exit code $($holdTurnEditProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering a general-rule Hold offer for any current selected face-up unresolved played card; exactly one normal Hold per selected card; Initiative-ordered resolution of both synthetic cards; resolve-before-deferred-flip-before-re-query ordering; same-team choices without a flip; rejection without mutation for wrong, repeated, or post-turn Hold attempts; defined semantic event payloads; and exactly one turn-only-effect cancellation checkpoint immediately before turn end. Milestone 3.5 is T2 because it introduces shared turn/timing infrastructure. Milestone 3.5 T2 evidence passed focused Edit Mode 8/8 and directly affected Edit Mode 70/70 with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path changed, the affected pure-authority consumers are enumerated, and milestone 3.5 is not a T3 gate.
+
 ## Action-offer and printed-value focused Edit Mode tests
 
 ```powershell

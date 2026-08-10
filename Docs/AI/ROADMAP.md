@@ -634,7 +634,7 @@ Acceptance checks:
 
 Completion note (2026-08-10): Added a pure `InitiativeResolutionAuthority` that derives each face-up unresolved card's current Initiative through a card-wide typed printed-value contribution query and re-runs that query whenever the next actor is requested. The highest current total acts next. A cross-team tie selects the current Tie Breaker side and records the flip as deferred state/event data attached to that selected resolver; acknowledging an unresolved card rejects without mutation, and the coin flips only after the exact selected card has independently reached its authoritative resolved state. A same-team tie creates an immutable team-owned pending choice with stable sorted card candidates and never flips the coin. When more than two highest cards tie across teams, the Tie Breaker first selects the team and that team then chooses among its own tied cards, preserving the deferred flip. Pending answers revalidate current Initiative, ownership, candidate membership, and tie state before acceptance. Printed rulebook pages 5, 7, and 9 were visually verified. T2 validation passed focused and directly affected Edit Mode 62/62 across Initiative, printed values, lifecycle, definitions, commitment, participants, and Tie Breaker setup, with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path changed, milestone 3.4 is not a T3 gate, and the affected pure-authority consumers are enumerated. No action execution, Hold, card resolution mutation, complete turn, round, effect, or Wasp content was added.
 
-### [ ] 3.5 Resolve Hold and complete one turn
+### [x] 3.5 Resolve Hold and complete one turn
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -647,7 +647,11 @@ Acceptance checks:
 - The next actor is re-queried from current unresolved state.
 - Turn-only effects have an explicit cancellation checkpoint even though no concrete effect is required yet.
 
+Completion note (2026-08-10): Added a pure `TurnResolutionAuthority` that composes the existing Initiative and card-lifecycle authorities around a reusable general-rule Hold offer. Any current selected face-up unresolved played card can perform exactly one Hold as a General Rule Secondary action with source-card text suppressed; accepted Hold records ordered action/resolution facts, resolves only that card, acknowledges the selected actor, consumes any deferred cross-team Tie Breaker flip only after the resolved fact, and immediately re-queries the highest current unresolved Initiative. Same-team tied actors still use the owning team's authoritative choice and never flip the coin. When no unresolved cards remain, the authority records an explicit `TurnOnlyEffectsCancellationCheckpoint` immediately before `TurnEnded`; no concrete Active effect is implemented. Printed rulebook pages 7 and 12 were visually verified, including the distinct no-respawn/defeat resolve-without-action path, which remains unimplemented. T2 validation passed focused Edit Mode 8/8 and directly affected Edit Mode 70/70 across turn resolution, Initiative, general action offers/printed values, lifecycle, definitions, commitment, participants, and Tie Breaker setup, with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path changed, milestone 3.5 is not a T3 gate, and the affected pure-authority consumers are enumerated. No Movement or Attack execution within a turn, resolve-without-action transition, concrete effect cancellation, round, snapshot, or Wasp content was added.
+
 ### [ ] 3.6 Resolve test-card Movement within a turn
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: A hero can choose its synthetic Movement offer during its Initiative position, complete the Phase 1 movement flow, resolve its card, and yield to the next actor.
 
