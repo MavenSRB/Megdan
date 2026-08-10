@@ -530,6 +530,33 @@ if ($turnCardCommitmentEditProcess.ExitCode -ne 0) {
 
 Expected result: all discovered cases pass, covering exactly one eligible own-hand commitment per Red/Blue side; Facedown played/unresolved mutation; no disclosed card ID before reveal; deterministic Red/Blue reveal events and authoritative Faceup state only after both sides respond; Pass only with no eligible card; missing, cross-side, ineligible, repeated, stale-state, and illegal-pass rejection without further mutation; deterministic replay; generic director commitment/pass labels; definition-backed revealed name/Initiative labels; and unchanged card-action/controller regressions. Run `MinimalHexGridPlayModeTests` with the existing placeholder-grid focused Play Mode command for the saved-scene joint-reveal path. Milestone 3.3 T2 evidence passed focused Edit Mode 35/35, final directly affected Edit Mode 123/123, and focused Play Mode 9/9, with zero failed, skipped, or inconclusive cases. Source/layout inspection confirmed the commitment controls and labels fit the existing bottom HUD. Complete unfiltered suites were omitted because milestone 3.3 is not a T3 gate and all affected consumers are enumerated.
 
+## Initiative and tied-Initiative focused Edit Mode tests
+
+```powershell
+$initiativeEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.InitiativeResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.TurnCardCommitmentAuthorityTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.TieBreakerSetupTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-4-focused-edit-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-4-focused-edit.log"'
+)
+
+$initiativeEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $initiativeEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($initiativeEditProcess.ExitCode -ne 0) {
+    throw "Initiative Edit Mode tests failed with exit code $($initiativeEditProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering card-wide typed printed-Initiative contributions; current highest-unresolved re-query after every resolution; Red and Blue cross-team Tie Breaker selection with a recorded flip deferred until the selected card is authoritatively resolved; same-team pending choices without a flip; multi-hero ties with more than two cards; stale-choice rejection without mutation; deterministic candidate ordering; and unchanged printed action values, lifecycle, commitment, participant ownership, card definitions, and setup-side behavior. Milestone 3.4 is T2 because it introduces shared Initiative/pending-choice/turn-boundary infrastructure. Play Mode is omitted because no Unity-facing or presentation path changes. Milestone 3.4 T2 evidence passed focused and directly affected Edit Mode 62/62 with zero failed, skipped, or inconclusive cases; Play Mode and unfiltered suites were intentionally omitted because the affected pure-authority consumers are enumerated and this is not a T3 gate.
+
 ## Action-offer and printed-value focused Edit Mode tests
 
 ```powershell

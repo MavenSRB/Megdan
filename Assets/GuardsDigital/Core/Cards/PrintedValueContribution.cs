@@ -10,6 +10,38 @@ namespace GuardsDigital.Core.Cards
             ActionDefinitionId sourceActionDefinitionId,
             PrintedValueChannel channel,
             int amount)
+            : this(
+                kind,
+                sourceCardInstanceId,
+                sourceActionDefinitionId,
+                channel,
+                amount,
+                true)
+        {
+        }
+
+        public PrintedValueContribution(
+            PrintedValueContributionKind kind,
+            CardInstanceId sourceCardInstanceId,
+            PrintedValueChannel channel,
+            int amount)
+            : this(
+                kind,
+                sourceCardInstanceId,
+                default,
+                channel,
+                amount,
+                false)
+        {
+        }
+
+        private PrintedValueContribution(
+            PrintedValueContributionKind kind,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId sourceActionDefinitionId,
+            PrintedValueChannel channel,
+            int amount,
+            bool requiresActionDefinition)
         {
             if (kind == PrintedValueContributionKind.None)
             {
@@ -21,9 +53,16 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Printed value contribution requires a source card instance ID.", nameof(sourceCardInstanceId));
             }
 
-            if (!sourceActionDefinitionId.IsDefined)
+            if (requiresActionDefinition && !sourceActionDefinitionId.IsDefined)
             {
                 throw new ArgumentException("Printed value contribution requires a source action definition ID.", nameof(sourceActionDefinitionId));
+            }
+
+            if (!requiresActionDefinition && channel != PrintedValueChannel.Initiative)
+            {
+                throw new ArgumentException(
+                    "Only a card-wide Initiative contribution may omit an action definition ID.",
+                    nameof(channel));
             }
 
             if (channel == PrintedValueChannel.None)
@@ -43,6 +82,8 @@ namespace GuardsDigital.Core.Cards
         public CardInstanceId SourceCardInstanceId { get; }
 
         public ActionDefinitionId SourceActionDefinitionId { get; }
+
+        public bool HasSourceActionDefinitionId => SourceActionDefinitionId.IsDefined;
 
         public PrintedValueChannel Channel { get; }
 

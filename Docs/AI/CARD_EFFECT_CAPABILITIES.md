@@ -308,6 +308,8 @@ These modify capability queries. They do not inject card-name branches into exec
 
 `ModifyValueEffect` references a typed value channel and contribution source, such as Initiative, Attack, Defense, Movement, Range, or Radius. Printed icons, items, card text, minions, and Active effects remain separate contributions.
 
+Milestone 3.4 establishes the current synthetic Initiative consumer: the printed card-wide Initiative icon is projected through the same typed contribution/result shape without inventing an action-definition source, and the next unresolved actor query recalculates from current contributions at every boundary. Later Initiative modifiers extend that contribution query rather than adding a cached turn-controller field.
+
 Other typed state changes include gain/spend coins, spend Lives, flip/remove Wave counters, change hero level, and assign/return ownership or control where verified text permits it. Resource effects declare minimums, failure behavior, recipient, source, and emitted contribution events; they never use negative magic numbers as hidden semantics.
 
 ## Timing, Active effects, and continuous sources

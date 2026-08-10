@@ -6,6 +6,35 @@ namespace GuardsDigital.Core.Cards
 {
     public static class PrintedValueQuery
     {
+        public static PrintedValueResult CalculatePrintedInitiative(
+            CardInstance card,
+            IEnumerable<CardDefinition> definitions)
+        {
+            if (card == null)
+            {
+                throw new ArgumentNullException(nameof(card));
+            }
+
+            var definitionsByReference = ActionOfferQuery.BuildDefinitionLookup(definitions);
+            if (!definitionsByReference.TryGetValue(card.DefinitionReference, out var definition))
+            {
+                throw new ArgumentException(
+                    "Card instance references an unresolved definition ID or content revision.",
+                    nameof(card));
+            }
+
+            return new PrintedValueResult(
+                PrintedValueChannel.Initiative,
+                new[]
+                {
+                    new PrintedValueContribution(
+                        PrintedValueContributionKind.PrintedIcon,
+                        card.Id,
+                        PrintedValueChannel.Initiative,
+                        definition.Initiative.Value)
+                });
+        }
+
         public static PrintedValueResult CalculatePrintedValue(
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
