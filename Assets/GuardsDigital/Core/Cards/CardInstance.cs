@@ -62,5 +62,10 @@ namespace GuardsDigital.Core.Cards
                 State.FaceOrientation);
             return true;
         }
+
+        internal void ApplyState(CardStateFacts state)
+        {
+            State = state;
+        }
     }
 }

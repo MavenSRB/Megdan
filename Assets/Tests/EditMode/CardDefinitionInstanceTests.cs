@@ -12,11 +12,18 @@ namespace GuardsDigital.Tests.EditMode
         {
             var definitionId = new CardDefinitionId("placeholder-move");
 
-            var definition = new CardDefinition(definitionId, "rev-1", "Placeholder Move");
+            var definition = new CardDefinition(
+                definitionId,
+                "rev-1",
+                "Placeholder Move",
+                new InitiativeValue(5),
+                CardContentAuthority.SyntheticTestFixture);
 
             Assert.That(definition.Id, Is.EqualTo(definitionId));
             Assert.That(definition.ContentRevision, Is.EqualTo("rev-1"));
             Assert.That(definition.DisplayName, Is.EqualTo("Placeholder Move"));
+            Assert.That(definition.Initiative, Is.EqualTo(new InitiativeValue(5)));
+            Assert.That(definition.ContentAuthority, Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(definition.Reference, Is.EqualTo(new CardDefinitionReference(definitionId, "rev-1")));
         }
 
@@ -24,8 +31,65 @@ namespace GuardsDigital.Tests.EditMode
         public void CardDefinition_WithBlankIdentityRevisionOrName_IsRejected()
         {
             Assert.Throws<ArgumentException>(() => new CardDefinitionId(" "));
-            Assert.Throws<ArgumentException>(() => new CardDefinition(new CardDefinitionId("card"), " ", "Name"));
-            Assert.Throws<ArgumentException>(() => new CardDefinition(new CardDefinitionId("card"), "rev-1", " "));
+            Assert.Throws<ArgumentException>(() => new CardDefinition(
+                new CardDefinitionId("card"),
+                " ",
+                "Name",
+                new InitiativeValue(5),
+                CardContentAuthority.SyntheticTestFixture));
+            Assert.Throws<ArgumentException>(() => new CardDefinition(
+                new CardDefinitionId("card"),
+                "rev-1",
+                " ",
+                new InitiativeValue(5),
+                CardContentAuthority.SyntheticTestFixture));
+            Assert.Throws<ArgumentException>(() => new CardDefinition(
+                new CardDefinitionId("card"),
+                "rev-1",
+                "Name",
+                default,
+                CardContentAuthority.SyntheticTestFixture));
+            Assert.Throws<ArgumentException>(() => new CardDefinition(
+                new CardDefinitionId("card"),
+                "rev-1",
+                "Name",
+                new InitiativeValue(5),
+                CardContentAuthority.None));
+        }
+
+        [Test]
+        public void InitiativeValue_MustBePositiveAndSupportsOrderAndTies()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new InitiativeValue(0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new InitiativeValue(-1));
+
+            var lower = new InitiativeValue(4);
+            var higher = new InitiativeValue(7);
+            var tied = new InitiativeValue(7);
+
+            Assert.That(higher.CompareTo(lower), Is.GreaterThan(0));
+            Assert.That(higher, Is.EqualTo(tied));
+        }
+
+        [Test]
+        public void SyntheticHands_ProvideUnequalInitiativesAndCrossHeroTieFixtures()
+        {
+            var redHand = PlaceholderMovementHand.Create(
+                new HeroId("red-synthetic-hero"),
+                new CardInstanceId("red-route"),
+                new CardInstanceId("red-obstacle"));
+            var blueHand = PlaceholderMovementHand.Create(
+                new HeroId("blue-synthetic-hero"),
+                new CardInstanceId("blue-route"),
+                new CardInstanceId("blue-obstacle"));
+
+            Assert.That(redHand.Definitions[0].Initiative, Is.EqualTo(new InitiativeValue(7)));
+            Assert.That(redHand.Definitions[1].Initiative, Is.EqualTo(new InitiativeValue(4)));
+            Assert.That(redHand.Definitions[0].Initiative, Is.Not.EqualTo(redHand.Definitions[1].Initiative));
+            Assert.That(redHand.Definitions[0].Initiative, Is.EqualTo(blueHand.Definitions[0].Initiative));
+            Assert.That(redHand.Definitions, Has.All.Property("ContentAuthority")
+                .EqualTo(CardContentAuthority.SyntheticTestFixture));
+            Assert.That(redHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
         }
 
         [Test]
@@ -139,7 +203,12 @@ namespace GuardsDigital.Tests.EditMode
         public void InitialSetupValidator_RejectsDuplicateDefinitionIds()
         {
             var firstDefinition = CreateDefinition();
-            var secondDefinition = new CardDefinition(firstDefinition.Id, "rev-2", "Another Placeholder");
+            var secondDefinition = new CardDefinition(
+                firstDefinition.Id,
+                "rev-2",
+                "Another Placeholder",
+                new InitiativeValue(6),
+                CardContentAuthority.SyntheticTestFixture);
 
             Assert.Throws<ArgumentException>(() => CardInitialSetupValidator.Validate(
                 new[] { firstDefinition, secondDefinition },
@@ -206,7 +275,9 @@ namespace GuardsDigital.Tests.EditMode
             return new CardDefinition(
                 new CardDefinitionId("placeholder-move"),
                 "rev-1",
-                "Placeholder Move");
+                "Placeholder Move",
+                new InitiativeValue(5),
+                CardContentAuthority.SyntheticTestFixture);
         }
     }
 }

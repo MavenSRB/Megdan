@@ -6,8 +6,19 @@ namespace GuardsDigital.Core.Cards
 {
     public sealed class CardDefinition
     {
-        public CardDefinition(CardDefinitionId id, string contentRevision, string displayName)
-            : this(id, contentRevision, displayName, Enumerable.Empty<ActionDefinition>())
+        public CardDefinition(
+            CardDefinitionId id,
+            string contentRevision,
+            string displayName,
+            InitiativeValue initiative,
+            CardContentAuthority contentAuthority)
+            : this(
+                id,
+                contentRevision,
+                displayName,
+                initiative,
+                contentAuthority,
+                Enumerable.Empty<ActionDefinition>())
         {
         }
 
@@ -15,6 +26,8 @@ namespace GuardsDigital.Core.Cards
             CardDefinitionId id,
             string contentRevision,
             string displayName,
+            InitiativeValue initiative,
+            CardContentAuthority contentAuthority,
             IEnumerable<ActionDefinition> actionDefinitions)
         {
             if (!id.IsDefined)
@@ -32,6 +45,17 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Card definition requires a display name.", nameof(displayName));
             }
 
+            if (!initiative.IsDefined)
+            {
+                throw new ArgumentException("Card definition requires a positive Initiative value.", nameof(initiative));
+            }
+
+            if (!Enum.IsDefined(typeof(CardContentAuthority), contentAuthority) ||
+                contentAuthority == CardContentAuthority.None)
+            {
+                throw new ArgumentException("Card definition requires explicit content authority.", nameof(contentAuthority));
+            }
+
             if (actionDefinitions == null)
             {
                 throw new ArgumentNullException(nameof(actionDefinitions));
@@ -40,6 +64,8 @@ namespace GuardsDigital.Core.Cards
             Id = id;
             ContentRevision = contentRevision;
             DisplayName = displayName;
+            Initiative = initiative;
+            ContentAuthority = contentAuthority;
             var materializedActionDefinitions = actionDefinitions.ToArray();
             ActionDefinitions = Array.AsReadOnly(materializedActionDefinitions);
 
@@ -59,6 +85,10 @@ namespace GuardsDigital.Core.Cards
         public string ContentRevision { get; }
 
         public string DisplayName { get; }
+
+        public InitiativeValue Initiative { get; }
+
+        public CardContentAuthority ContentAuthority { get; }
 
         public IReadOnlyList<ActionDefinition> ActionDefinitions { get; }
 

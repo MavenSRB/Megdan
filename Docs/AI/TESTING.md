@@ -351,7 +351,34 @@ if ($cardDefinitionInstanceEditProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: all discovered cases pass, covering stable card definition IDs, content revisions, display names, definition references, distinct card instance IDs, primitive-hero ownership, initial in-hand runtime state, multiple instances sharing one immutable definition, orthogonal state facts, and rejection of blank, duplicate, unresolved, stale, or invalid initial card data.
+Expected result: all discovered cases pass, covering stable card definition IDs, content revisions, display names, definition references, validated typed Initiative and synthetic-fixture authority, unequal and tied synthetic Initiative fixtures, distinct card instance IDs, primitive-hero ownership, initial in-hand runtime state, multiple instances sharing one immutable definition, orthogonal state facts, and rejection of blank, duplicate, unresolved, stale, or invalid initial card data.
+
+## Card turn-lifecycle foundation focused Edit Mode tests
+
+```powershell
+$cardLifecycleEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-1-focused-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-1-focused.log"'
+)
+
+$cardLifecycleEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $cardLifecycleEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($cardLifecycleEditProcess.ExitCode -ne 0) {
+    throw "Card lifecycle Edit Mode tests failed with exit code $($cardLifecycleEditProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering legal Facedown play, reveal, post-action resolution, and Defense discard; rejection without mutation for null, repeated, and out-of-order attempts; orthogonal resolved/discarded/orientation facts; positive typed Initiative validation; unequal and cross-hero tie fixtures; and explicit synthetic-test-fixture authority. Milestone 3.1 T1 evidence passed focused Edit Mode 19/19 and final directly affected Edit Mode 115/115 across lifecycle, definitions/offers, participants, Movement/Attack resolution, and existing presentation consumers, with zero failed, skipped, or inconclusive cases. Play Mode was intentionally omitted because no Unity-facing path changed.
 
 ## Match-participant focused Edit Mode tests
 

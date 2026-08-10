@@ -569,7 +569,7 @@ Phase 3 entry audit (2026-08-10): Keep milestones 3.1-3.11 as separate, unchange
 
 ## Phase 3 - Test-card Initiative, turns, and rounds
 
-### [ ] 3.1 Extend the test-card foundation with turn lifecycle
+### [x] 3.1 Extend the test-card foundation with turn lifecycle
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -585,7 +585,11 @@ Acceptance checks:
 
 Non-goals: No Wasp inventory, printed card effects, upgrades, items, or end-of-round subsystems.
 
+Completion note (2026-08-10): Extended immutable card definitions with a validated positive `InitiativeValue` and explicit `CardContentAuthority`; every Phase 3 placeholder definition is marked `SyntheticTestFixture`, retains its visible `TEST -` label, and advances to a synthetic-only content revision. The two definitions use unequal Initiative 7 and 4, while the separately owned mirrored hands provide deterministic cross-hero ties without claiming Wasp values. Added a pure `CardLifecycleAuthority` that accepts only the current legal source facts for Hand/face-up/unplayed to Turn Area/Facedown/played/unresolved, reveal to Faceup, and post-action resolution to played/resolved, plus the existing orthogonality-preserving Defense Hand-to-Discard transition. Invalid, repeated, null, and out-of-order attempts reject without state mutation; resolved, discarded, and facedown remain independently representable. Printed rulebook pages 7, 9, and 10 were visually verified. T1 validation passed with zero failed, skipped, or inconclusive cases: focused Edit Mode 19/19 (`CardLifecycleAuthorityTests`, `CardDefinitionInstanceTests`) and final directly affected Edit Mode 115/115 across lifecycle, definitions/offers, participants, Movement/Attack resolution, and existing presentation consumers. Play Mode was intentionally omitted because no Unity-facing path changed. No simultaneous card commitment/reveal orchestration, Initiative ordering, Wasp data/text, effect, upgrade, item, turn, round, or end-of-round behavior was added.
+
 ### [ ] 3.2 Display both director-mode test hands
+
+Required Codex profile: GPT-5.6 Terra with medium reasoning.
 
 Observable outcome: Separate Red and Blue synthetic hands are visible and independently selectable by the director-mode controller.
 

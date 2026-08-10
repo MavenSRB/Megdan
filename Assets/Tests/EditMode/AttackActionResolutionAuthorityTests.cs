@@ -148,6 +148,8 @@ namespace GuardsDigital.Tests.EditMode
                 new CardDefinitionId("range-one-test-card"),
                 "rev-1",
                 "TEST - Range One Attack",
+                new InitiativeValue(5),
+                CardContentAuthority.SyntheticTestFixture,
                 new[]
                 {
                     new ActionDefinition(

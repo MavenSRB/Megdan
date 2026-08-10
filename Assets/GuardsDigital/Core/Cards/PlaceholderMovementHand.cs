@@ -49,6 +49,7 @@ namespace GuardsDigital.Core.Cards
             var routeDrill = CreateDefinition(
                 "route-drill",
                 "Route Drill",
+                7,
                 AttackRangeKind.NonRanged,
                 3,
                 0,
@@ -56,6 +57,7 @@ namespace GuardsDigital.Core.Cards
             var obstacleCourse = CreateDefinition(
                 "obstacle-course",
                 "Obstacle Course",
+                4,
                 AttackRangeKind.Ranged,
                 2,
                 2,
@@ -79,6 +81,7 @@ namespace GuardsDigital.Core.Cards
         private static CardDefinition CreateDefinition(
             string id,
             string displayName,
+            int initiative,
             AttackRangeKind attackRange,
             int attackValue,
             int rangeValue,
@@ -105,8 +108,10 @@ namespace GuardsDigital.Core.Cards
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{id}"),
-                "phase-2-rev-2",
+                "phase-3-rev-1",
                 $"TEST - {displayName}",
+                new InitiativeValue(initiative),
+                CardContentAuthority.SyntheticTestFixture,
                 actions);
         }
 

@@ -463,6 +463,8 @@ namespace GuardsDigital.Tests.EditMode
                 firstDefinition.Id,
                 "rev-2",
                 "Another Placeholder Move",
+                new InitiativeValue(5),
+                CardContentAuthority.SyntheticTestFixture,
                 new[] { CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 3) });
             var instance = CardInstance.CreateInHand(
                 new CardInstanceId("primitive-card-1"),
@@ -500,6 +502,8 @@ namespace GuardsDigital.Tests.EditMode
                 new CardDefinitionId("placeholder-movement-card"),
                 "rev-1",
                 "Placeholder Movement Card",
+                new InitiativeValue(5),
+                CardContentAuthority.SyntheticTestFixture,
                 actionDefinitions);
         }
 

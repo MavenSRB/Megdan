@@ -750,6 +750,8 @@ namespace GuardsDigital.Tests.EditMode
                 new CardDefinitionId("placeholder-movement-card"),
                 "rev-1",
                 "Placeholder Movement Card",
+                new InitiativeValue(5),
+                CardContentAuthority.SyntheticTestFixture,
                 actionDefinitions);
         }
 
