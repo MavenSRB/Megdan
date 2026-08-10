@@ -60,7 +60,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 InitializeCardDrivenMovementIfEnabled();
                 return placeholderHand != null
-                    ? placeholderHand.Instances
+                    ? GetVisibleHandInstances(placeholderHand)
                     : Array.Empty<CardInstance>();
             }
         }
@@ -221,7 +221,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
-            if (!placeholderHand.Instances.Any(instance => instance.Id.Equals(cardInstanceId)))
+            if (!GetVisibleHandInstances(placeholderHand).Any(instance => instance.Id.Equals(cardInstanceId)))
             {
                 return false;
             }
@@ -659,6 +659,13 @@ namespace GuardsDigital.Presentation.Interaction
             return placeholderHands.Values
                 .SelectMany(hand => hand.Instances)
                 .OrderBy(instance => instance.Id.Value, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private static IReadOnlyList<CardInstance> GetVisibleHandInstances(PlaceholderMovementHand hand)
+        {
+            return hand.Instances
+                .Where(instance => instance.State.Location == CardLocation.Hand)
                 .ToArray();
         }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
@@ -17,8 +18,10 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             Definitions = hand.Definitions;
-            Instances = hand.Instances;
-            OwnerId = Instances.Count > 0 ? Instances[0].OwnerId : default;
+            OwnerId = hand.Instances.Count > 0 ? hand.Instances[0].OwnerId : default;
+            Instances = Array.AsReadOnly(hand.Instances
+                .Where(instance => instance.State.Location == CardLocation.Hand)
+                .ToArray());
         }
 
         public TeamSide TeamSide { get; }

@@ -267,6 +267,12 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.PendingAttackResolution, Is.Null);
                 Assert.That(controller.LastAttackOutcome,
                     Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended));
+                var blueDirectorHand = controller.VisibleDirectorHands.Single(hand =>
+                    hand.OwnerId.Equals(blueHero.Occupancy.HeroId));
+                Assert.That(blueDirectorHand.Instances.Select(card => card.Id),
+                    Has.No.Member(defenseOffer.SourceCardInstanceId));
+                Assert.That(blueDirectorHand.Instances, Has.All.Matches<CardInstance>(card =>
+                    card.State.Location == CardLocation.Hand));
                 Assert.That(controller.CardStatus, Does.Contain("discarded for Defense 3"));
                 Assert.That(controller.CardStatus, Does.Contain("Attack 3 vs Defense 3"));
                 Assert.That(controller.CardStatus, Does.Contain("successfully defended"));
