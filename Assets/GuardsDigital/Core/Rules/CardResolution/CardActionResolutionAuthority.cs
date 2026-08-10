@@ -622,6 +622,78 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 });
         }
 
+        public AttackActionResolutionResult ResolveAttackOutcome(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants)
+        {
+            if (participants == null)
+            {
+                throw new ArgumentNullException(nameof(participants));
+            }
+
+            if (pendingAttackResolution == null ||
+                pendingAttackResolution.Phase != AttackResolutionPhase.CompareOutcome ||
+                pendingAttackTargetChoice != null ||
+                pendingDefenseChoice != null)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.NoPendingResolution);
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var attackOffer = FindPendingAttackOffer(
+                pendingAttackResolution,
+                materializedDefinitions,
+                materializedInstances);
+            if (!attackOffer.HasValue)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
+            }
+
+            var legalTargets = FindLegalAttackTargets(
+                pendingAttackResolution.ActorId,
+                attackOffer.Value,
+                materializedDefinitions,
+                participants);
+            var expectedAttackValue = PrintedValueQuery.CalculatePrintedValue(
+                attackOffer.Value,
+                materializedDefinitions,
+                PrintedValueChannel.Attack);
+            if (!pendingAttackResolution.CurrentStepId.Equals(
+                    new ActionResolutionStepId("attack-outcome-comparison")) ||
+                !legalTargets.Contains(pendingAttackResolution.TargetHeroId) ||
+                !PrintedValuesMatch(pendingAttackResolution.AttackValue, expectedAttackValue) ||
+                !CompletedDefenseMatches(
+                    pendingAttackResolution,
+                    materializedDefinitions,
+                    materializedInstances))
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
+            }
+
+            var completedResolution = pendingAttackResolution;
+            var outcome = completedResolution.HasDefenseTotal &&
+                completedResolution.DefenseTotal.Value >= completedResolution.AttackTotal
+                    ? AttackResolutionOutcome.SuccessfullyDefended
+                    : AttackResolutionOutcome.AttackSuccessful;
+            var events = new[]
+            {
+                CardActionResolutionEvent.AttackOutcomeDetermined(completedResolution, outcome),
+                CardActionResolutionEvent.AttackResolutionCompleted(completedResolution, outcome)
+            };
+
+            pendingAttackResolution = null;
+            pendingAttackTargetChoice = null;
+            pendingDefenseChoice = null;
+            return AttackActionResolutionResult.Accept(
+                null,
+                null,
+                null,
+                events,
+                outcome);
+        }
+
         public static CardActionResolutionAuthority RestoreAttack(
             AdjacentMoveAuthority adjacentMoveAuthority,
             PendingAttackResolution pendingResolution,

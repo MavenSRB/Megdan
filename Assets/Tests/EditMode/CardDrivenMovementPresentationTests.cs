@@ -226,12 +226,14 @@ namespace GuardsDigital.Tests.EditMode
                         PrintedValueChannel.Defense).Total == 3);
                 Assert.That(controller.TrySubmitDefenseCard(defenseOffer.SourceCardInstanceId), Is.True);
                 Assert.That(controller.IsDefenseResponsePending, Is.False);
-                Assert.That(controller.IsAttackOutcomePending, Is.True);
-                Assert.That(controller.PendingAttackResolution.DefenseTotal, Is.EqualTo(3));
-                Assert.That(controller.PendingAttackResolution.DefenseOffer.Value.InvocationContext,
-                    Is.EqualTo(ActionInvocationContext.Reaction));
+                Assert.That(controller.IsAttackOutcomePending, Is.False);
+                Assert.That(controller.IsCardResolutionPending, Is.False);
+                Assert.That(controller.PendingAttackResolution, Is.Null);
+                Assert.That(controller.LastAttackOutcome,
+                    Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended));
                 Assert.That(controller.CardStatus, Does.Contain("discarded for Defense 3"));
-                Assert.That(controller.CardStatus, Does.Contain("milestone 2.5"));
+                Assert.That(controller.CardStatus, Does.Contain("Attack 3 vs Defense 3"));
+                Assert.That(controller.CardStatus, Does.Contain("successfully defended"));
                 Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
                 {
                     CardActionResolutionEventKind.AttackTargetChoiceRequested,
@@ -240,12 +242,14 @@ namespace GuardsDigital.Tests.EditMode
                     CardActionResolutionEventKind.DefenseResponseChoiceRequested,
                     CardActionResolutionEventKind.DefenseCardDiscarded,
                     CardActionResolutionEventKind.DefenseTotalCalculated,
-                    CardActionResolutionEventKind.DefenseResponseCompleted
+                    CardActionResolutionEventKind.DefenseResponseCompleted,
+                    CardActionResolutionEventKind.AttackSuccessfullyDefended,
+                    CardActionResolutionEventKind.AttackResolutionCompleted
                 }));
-                Assert.That(controller.TrySelectCard(routeDrill.Id), Is.False,
-                    "The outer Attack remains pending until milestone 2.5 compares totals.");
-                Assert.That(controller.TrySelectHero(blueHero), Is.False,
-                    "The outer Attack cannot transfer to another active hero before comparison.");
+                Assert.That(controller.TrySelectCard(routeDrill.Id), Is.True,
+                    "Completing the Attack releases card selection for another action.");
+                Assert.That(controller.TrySelectHero(blueHero), Is.True,
+                    "Completing the Attack releases actor selection.");
             }
             finally
             {
@@ -333,9 +337,11 @@ namespace GuardsDigital.Tests.EditMode
                     card.State.Location == CardLocation.Hand));
                 Assert.That(controller.TryDeclineDefense(), Is.True);
                 Assert.That(controller.IsDefenseResponsePending, Is.False);
-                Assert.That(controller.IsAttackOutcomePending, Is.True);
-                Assert.That(controller.PendingAttackResolution.HasDefenseTotal, Is.False);
+                Assert.That(controller.IsAttackOutcomePending, Is.False);
+                Assert.That(controller.PendingAttackResolution, Is.Null);
+                Assert.That(controller.LastAttackOutcome, Is.EqualTo(AttackResolutionOutcome.AttackSuccessful));
                 Assert.That(controller.CardStatus, Does.Contain("Defense declined"));
+                Assert.That(controller.CardStatus, Does.Contain("attack successful"));
                 Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
                 {
                     CardActionResolutionEventKind.AttackTargetChoiceRequested,
@@ -343,7 +349,9 @@ namespace GuardsDigital.Tests.EditMode
                     CardActionResolutionEventKind.AttackTotalCalculated,
                     CardActionResolutionEventKind.DefenseResponseChoiceRequested,
                     CardActionResolutionEventKind.DefenseDeclined,
-                    CardActionResolutionEventKind.DefenseResponseCompleted
+                    CardActionResolutionEventKind.DefenseResponseCompleted,
+                    CardActionResolutionEventKind.AttackSuccessful,
+                    CardActionResolutionEventKind.AttackResolutionCompleted
                 }));
             }
             finally

@@ -139,6 +139,8 @@ namespace GuardsDigital.Presentation.Interaction
 
         public CardActionResolutionRejectionReason LastCardRejectionReason { get; private set; }
 
+        public AttackResolutionOutcome LastAttackOutcome { get; private set; }
+
         public string CardStatus => cardStatus;
 
         public void ConfigureCardDrivenMovement(bool enabled)
@@ -163,6 +165,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             selectedCardInstanceId = cardInstanceId;
             selectedActionOffer = null;
+            LastAttackOutcome = AttackResolutionOutcome.None;
             LastCardRejectionReason = CardActionResolutionRejectionReason.None;
             cardStatus = "Card selected. Choose an available action.";
             ClearSelectionVisuals();
@@ -435,6 +438,7 @@ namespace GuardsDigital.Presentation.Interaction
             LastCardInvocationContext = ActionInvocationContext.None;
             LastCardTextApplicationPolicy = CardTextApplicationPolicy.None;
             LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            LastAttackOutcome = AttackResolutionOutcome.None;
             cardStatus = cardDrivenMovementEnabled ? "Select a test card." : string.Empty;
         }
 
@@ -520,6 +524,8 @@ namespace GuardsDigital.Presentation.Interaction
 
             cardResolutionEvents.AddRange(result.Events);
             LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            var comparisonResolution = result.PendingResolution;
+            var defenseLabel = "Defense declined";
             if (result.PendingResolution.HasDefenseTotal)
             {
                 var definition = selectedCardId.HasValue
@@ -529,14 +535,34 @@ namespace GuardsDigital.Presentation.Interaction
                             candidate.Reference.Equals(instance.DefinitionReference)))
                         .SingleOrDefault()
                     : null;
-                cardStatus = $"{definition?.DisplayName ?? "Defense card"} discarded for Defense " +
-                    $"{result.PendingResolution.DefenseTotal}. Attack comparison pending for milestone 2.5.";
-            }
-            else
-            {
-                cardStatus = "Defense declined. Attack comparison pending for milestone 2.5.";
+                defenseLabel = $"{definition?.DisplayName ?? "Defense card"} discarded for Defense " +
+                    result.PendingResolution.DefenseTotal;
             }
 
+            var outcomeResult = cardResolutionAuthority.ResolveAttackOutcome(
+                placeholderHand.Definitions,
+                GetAllPlaceholderCardInstances(),
+                placeholderParticipants);
+            if (!outcomeResult.Accepted)
+            {
+                LastCardRejectionReason = outcomeResult.RejectionReason;
+                cardStatus = $"Attack comparison rejected: {outcomeResult.RejectionReason}.";
+                return false;
+            }
+
+            cardResolutionEvents.AddRange(outcomeResult.Events);
+            LastAttackOutcome = outcomeResult.Outcome;
+            var outcomeLabel = outcomeResult.Outcome == AttackResolutionOutcome.SuccessfullyDefended
+                ? "successfully defended"
+                : "attack successful";
+            cardStatus = comparisonResolution.HasDefenseTotal
+                ? $"{defenseLabel}. Attack {comparisonResolution.AttackTotal} vs Defense " +
+                    $"{comparisonResolution.DefenseTotal}: {outcomeLabel}."
+                : $"{defenseLabel} against Attack {comparisonResolution.AttackTotal}: {outcomeLabel}.";
+            ClearSelectionVisuals();
+            selectedCardInstanceId = null;
+            selectedActionOffer = null;
+            cardResolutionAuthority = null;
             return true;
         }
 

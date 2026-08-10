@@ -12,6 +12,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution pendingResolution,
             PendingAttackTargetChoice pendingTargetChoice,
             PendingDefenseResponseChoice pendingDefenseChoice,
+            AttackResolutionOutcome outcome,
             IEnumerable<CardActionResolutionEvent> events)
         {
             Accepted = accepted;
@@ -19,6 +20,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingResolution = pendingResolution;
             PendingTargetChoice = pendingTargetChoice;
             PendingDefenseChoice = pendingDefenseChoice;
+            Outcome = outcome;
             Events = Array.AsReadOnly((events ?? throw new ArgumentNullException(nameof(events))).ToArray());
         }
 
@@ -27,13 +29,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public PendingAttackResolution PendingResolution { get; }
         public PendingAttackTargetChoice PendingTargetChoice { get; }
         public PendingDefenseResponseChoice PendingDefenseChoice { get; }
+        public AttackResolutionOutcome Outcome { get; }
         public IReadOnlyList<CardActionResolutionEvent> Events { get; }
 
         public static AttackActionResolutionResult Accept(
             PendingAttackResolution pendingResolution,
             PendingAttackTargetChoice pendingTargetChoice,
             PendingDefenseResponseChoice pendingDefenseChoice,
-            IEnumerable<CardActionResolutionEvent> events)
+            IEnumerable<CardActionResolutionEvent> events,
+            AttackResolutionOutcome outcome = AttackResolutionOutcome.None)
         {
             return new AttackActionResolutionResult(
                 true,
@@ -41,6 +45,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingResolution,
                 pendingTargetChoice,
                 pendingDefenseChoice,
+                outcome,
                 events);
         }
 
@@ -61,6 +66,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingResolution,
                 pendingTargetChoice,
                 pendingDefenseChoice,
+                AttackResolutionOutcome.None,
                 Array.Empty<CardActionResolutionEvent>());
         }
     }

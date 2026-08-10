@@ -19,6 +19,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int attackTotal,
             CardInstanceId defenseCardInstanceId,
             int defenseTotal,
+            AttackResolutionOutcome attackOutcome,
             AdjacentMoveEvent movementEvent)
         {
             if (kind == CardActionResolutionEventKind.None)
@@ -62,6 +63,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackTotal = attackTotal;
             DefenseCardInstanceId = defenseCardInstanceId;
             DefenseTotal = defenseTotal;
+            AttackOutcome = attackOutcome;
             MovementEvent = movementEvent;
         }
 
@@ -86,6 +88,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public CardInstanceId DefenseCardInstanceId { get; }
 
         public int DefenseTotal { get; }
+
+        public AttackResolutionOutcome AttackOutcome { get; }
 
         public AdjacentMoveEvent MovementEvent { get; }
 
@@ -154,6 +158,32 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return FromAttackResolution(CardActionResolutionEventKind.DefenseResponseCompleted, resolution);
         }
 
+        public static CardActionResolutionEvent AttackOutcomeDetermined(
+            PendingAttackResolution resolution,
+            AttackResolutionOutcome outcome)
+        {
+            if (outcome != AttackResolutionOutcome.SuccessfullyDefended &&
+                outcome != AttackResolutionOutcome.AttackSuccessful)
+            {
+                throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "Attack outcome must be final.");
+            }
+
+            var kind = outcome == AttackResolutionOutcome.SuccessfullyDefended
+                ? CardActionResolutionEventKind.AttackSuccessfullyDefended
+                : CardActionResolutionEventKind.AttackSuccessful;
+            return FromAttackResolution(kind, resolution, outcome);
+        }
+
+        public static CardActionResolutionEvent AttackResolutionCompleted(
+            PendingAttackResolution resolution,
+            AttackResolutionOutcome outcome)
+        {
+            return FromAttackResolution(
+                CardActionResolutionEventKind.AttackResolutionCompleted,
+                resolution,
+                outcome);
+        }
+
         public bool Equals(CardActionResolutionEvent other)
         {
             return Kind == other.Kind &&
@@ -167,6 +197,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AttackTotal == other.AttackTotal &&
                 DefenseCardInstanceId.Equals(other.DefenseCardInstanceId) &&
                 DefenseTotal == other.DefenseTotal &&
+                AttackOutcome == other.AttackOutcome &&
                 MovementEvent.Equals(other.MovementEvent);
         }
 
@@ -190,6 +221,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ AttackTotal;
                 hashCode = (hashCode * 397) ^ DefenseCardInstanceId.GetHashCode();
                 hashCode = (hashCode * 397) ^ DefenseTotal;
+                hashCode = (hashCode * 397) ^ (int)AttackOutcome;
                 hashCode = (hashCode * 397) ^ MovementEvent.GetHashCode();
                 return hashCode;
             }
@@ -217,12 +249,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 0,
                 default,
                 0,
+                AttackResolutionOutcome.None,
                 movementEvent);
         }
 
         private static CardActionResolutionEvent FromAttackResolution(
             CardActionResolutionEventKind kind,
-            PendingAttackResolution resolution)
+            PendingAttackResolution resolution,
+            AttackResolutionOutcome outcome = AttackResolutionOutcome.None)
         {
             if (resolution == null)
             {
@@ -243,6 +277,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     ? resolution.DefenseOffer.Value.SourceCardInstanceId
                     : default,
                 resolution.DefenseTotal ?? 0,
+                outcome,
                 default);
         }
     }

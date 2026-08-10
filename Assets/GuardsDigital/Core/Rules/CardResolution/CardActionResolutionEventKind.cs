@@ -14,6 +14,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         DefenseCardDiscarded = 9,
         DefenseTotalCalculated = 10,
         DefenseDeclined = 11,
-        DefenseResponseCompleted = 12
+        DefenseResponseCompleted = 12,
+        AttackSuccessfullyDefended = 13,
+        AttackSuccessful = 14,
+        AttackResolutionCompleted = 15
     }
 }

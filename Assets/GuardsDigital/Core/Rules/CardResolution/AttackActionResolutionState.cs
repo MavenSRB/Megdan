@@ -14,6 +14,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         CompareOutcome = 3
     }
 
+    public enum AttackResolutionOutcome
+    {
+        None = 0,
+        SuccessfullyDefended = 1,
+        AttackSuccessful = 2
+    }
+
     public sealed class PendingAttackResolution
     {
         public PendingAttackResolution(

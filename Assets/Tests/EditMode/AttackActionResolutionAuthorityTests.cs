@@ -749,6 +749,231 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void OutcomeComparison_EqualDefenseSuccessfullyDefendsAndCompletesSameAttack()
+        {
+            var fixture = CreateFixture();
+            var opened = OpenDefenseResponse(fixture);
+            var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
+                PrintedValueQuery.CalculatePrintedValue(
+                    offer,
+                    fixture.Configuration.CardDefinitions,
+                    PrintedValueChannel.Defense).Total == opened.PendingResolution.AttackTotal);
+            var response = fixture.Authority.AnswerDefenseResponse(
+                DefenseResponseChoiceCommand.SelectCards(
+                    opened.PendingDefenseChoice.ResolutionId,
+                    opened.PendingDefenseChoice.ChoiceId,
+                    defenseOffer.SourceCardInstanceId),
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants);
+
+            var outcome = fixture.Authority.ResolveAttackOutcome(
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants);
+
+            Assert.That(response.PendingResolution.ResolutionId, Is.EqualTo(opened.PendingResolution.ResolutionId));
+            Assert.That(response.PendingResolution.AttackTotal, Is.EqualTo(3));
+            Assert.That(response.PendingResolution.DefenseTotal, Is.EqualTo(3));
+            Assert.That(outcome.Accepted, Is.True);
+            Assert.That(outcome.Outcome, Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended));
+            Assert.That(outcome.PendingResolution, Is.Null);
+            Assert.That(fixture.Authority.PendingAttackResolution, Is.Null);
+            Assert.That(fixture.Authority.PendingDefenseChoice, Is.Null);
+            Assert.That(outcome.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
+            {
+                CardActionResolutionEventKind.AttackSuccessfullyDefended,
+                CardActionResolutionEventKind.AttackResolutionCompleted
+            }));
+            Assert.That(outcome.Events.All(ruleEvent =>
+                ruleEvent.ResolutionId.Equals(opened.PendingResolution.ResolutionId) &&
+                ruleEvent.TargetHeroId.Equals(fixture.DefenderId) &&
+                ruleEvent.AttackTotal == 3 &&
+                ruleEvent.DefenseTotal == 3 &&
+                ruleEvent.AttackOutcome == AttackResolutionOutcome.SuccessfullyDefended), Is.True);
+        }
+
+        [Test]
+        public void OutcomeComparison_GreaterDefenseSuccessfullyDefends()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var authority = new CardActionResolutionAuthority(new AdjacentMoveAuthority(
+                CreateRadiusThreeCoordinates(),
+                new[]
+                {
+                    new HeroOccupancy(attackerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(defenderId, new HexCoordinate(2, 0))
+                }));
+            var start = authority.StartAttackResolution(
+                new ActionResolutionId("greater-defense-outcome"),
+                GetRangedAttackOffer(configuration, attackerId),
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants);
+            var opened = authority.AnswerAttackTarget(
+                new AttackTargetChoiceCommand(
+                    start.PendingTargetChoice.ResolutionId,
+                    start.PendingTargetChoice.ChoiceId,
+                    defenderId),
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants);
+            var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
+                PrintedValueQuery.CalculatePrintedValue(
+                    offer,
+                    configuration.CardDefinitions,
+                    PrintedValueChannel.Defense).Total == 3);
+            authority.AnswerDefenseResponse(
+                DefenseResponseChoiceCommand.SelectCards(
+                    opened.PendingDefenseChoice.ResolutionId,
+                    opened.PendingDefenseChoice.ChoiceId,
+                    defenseOffer.SourceCardInstanceId),
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants);
+
+            var outcome = authority.ResolveAttackOutcome(
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants);
+
+            Assert.That(opened.PendingResolution.AttackTotal, Is.EqualTo(2));
+            Assert.That(outcome.Accepted, Is.True);
+            Assert.That(outcome.Outcome, Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended));
+            Assert.That(outcome.Events, Has.All.Matches<CardActionResolutionEvent>(ruleEvent =>
+                ruleEvent.AttackTotal == 2 &&
+                ruleEvent.DefenseTotal == 3 &&
+                ruleEvent.AttackOutcome == AttackResolutionOutcome.SuccessfullyDefended));
+        }
+
+        [Test]
+        public void OutcomeComparison_LowerDefenseMakesAttackSuccessful()
+        {
+            var fixture = CreateFixture();
+            var opened = OpenDefenseResponse(fixture);
+            var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
+                PrintedValueQuery.CalculatePrintedValue(
+                    offer,
+                    fixture.Configuration.CardDefinitions,
+                    PrintedValueChannel.Defense).Total < opened.PendingResolution.AttackTotal);
+            fixture.Authority.AnswerDefenseResponse(
+                DefenseResponseChoiceCommand.SelectCards(
+                    opened.PendingDefenseChoice.ResolutionId,
+                    opened.PendingDefenseChoice.ChoiceId,
+                    defenseOffer.SourceCardInstanceId),
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants);
+
+            var outcome = fixture.Authority.ResolveAttackOutcome(
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants);
+
+            Assert.That(outcome.Accepted, Is.True);
+            Assert.That(outcome.Outcome, Is.EqualTo(AttackResolutionOutcome.AttackSuccessful));
+            Assert.That(outcome.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
+            {
+                CardActionResolutionEventKind.AttackSuccessful,
+                CardActionResolutionEventKind.AttackResolutionCompleted
+            }));
+            Assert.That(outcome.Events.All(ruleEvent =>
+                ruleEvent.AttackTotal == 3 &&
+                ruleEvent.DefenseTotal == 2 &&
+                ruleEvent.AttackOutcome == AttackResolutionOutcome.AttackSuccessful), Is.True);
+        }
+
+        [Test]
+        public void OutcomeComparison_DeclineOrNoLegalDefenseMakesAttackSuccessful()
+        {
+            foreach (var removeDefenderCards in new[] { false, true })
+            {
+                var fixture = CreateFixture();
+                var instances = removeDefenderCards
+                    ? fixture.Configuration.CardInstances
+                        .Where(instance => instance.OwnerId.Equals(fixture.AttackerId))
+                        .ToArray()
+                    : fixture.Configuration.CardInstances;
+                var start = fixture.Authority.StartAttackResolution(
+                    new ActionResolutionId(removeDefenderCards
+                        ? "unable-to-defend-outcome"
+                        : "declined-defense-outcome"),
+                    fixture.AttackOffer,
+                    fixture.Configuration.CardDefinitions,
+                    instances,
+                    fixture.Configuration.Participants);
+                var opened = fixture.Authority.AnswerAttackTarget(
+                    new AttackTargetChoiceCommand(
+                        start.PendingTargetChoice.ResolutionId,
+                        start.PendingTargetChoice.ChoiceId,
+                        fixture.DefenderId),
+                    fixture.Configuration.CardDefinitions,
+                    instances,
+                    fixture.Configuration.Participants);
+                var response = fixture.Authority.AnswerDefenseResponse(
+                    DefenseResponseChoiceCommand.Decline(
+                        opened.PendingDefenseChoice.ResolutionId,
+                        opened.PendingDefenseChoice.ChoiceId),
+                    fixture.Configuration.CardDefinitions,
+                    instances,
+                    fixture.Configuration.Participants);
+
+                var outcome = fixture.Authority.ResolveAttackOutcome(
+                    fixture.Configuration.CardDefinitions,
+                    instances,
+                    fixture.Configuration.Participants);
+
+                Assert.That(opened.PendingDefenseChoice.LegalDefenseOffers.Count == 0,
+                    Is.EqualTo(removeDefenderCards));
+                Assert.That(response.PendingResolution.HasDefenseTotal, Is.False);
+                Assert.That(outcome.Accepted, Is.True);
+                Assert.That(outcome.Outcome, Is.EqualTo(AttackResolutionOutcome.AttackSuccessful));
+                Assert.That(outcome.Events, Has.All.Matches<CardActionResolutionEvent>(ruleEvent =>
+                    ruleEvent.DefenseTotal == 0 &&
+                    !ruleEvent.DefenseCardInstanceId.IsDefined &&
+                    ruleEvent.AttackOutcome == AttackResolutionOutcome.AttackSuccessful));
+            }
+        }
+
+        [Test]
+        public void OutcomeComparison_StaleDefenseStateRejectsWithoutClosingPendingAttack()
+        {
+            var fixture = CreateFixture();
+            var opened = OpenDefenseResponse(fixture);
+            var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers[0];
+            var response = fixture.Authority.AnswerDefenseResponse(
+                DefenseResponseChoiceCommand.SelectCards(
+                    opened.PendingDefenseChoice.ResolutionId,
+                    opened.PendingDefenseChoice.ChoiceId,
+                    defenseOffer.SourceCardInstanceId),
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants);
+            var staleInstances = fixture.Configuration.CardInstances.Select(instance =>
+                instance.Id.Equals(defenseOffer.SourceCardInstanceId)
+                    ? new CardInstance(
+                        instance.Id,
+                        instance.DefinitionReference,
+                        instance.OwnerId,
+                        CardStateFacts.InitialInHand())
+                    : instance).ToArray();
+
+            var rejected = fixture.Authority.ResolveAttackOutcome(
+                fixture.Configuration.CardDefinitions,
+                staleInstances,
+                fixture.Configuration.Participants);
+
+            Assert.That(rejected.Accepted, Is.False);
+            Assert.That(rejected.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.InvalidChoice));
+            Assert.That(rejected.PendingResolution, Is.SameAs(response.PendingResolution));
+            Assert.That(rejected.Outcome, Is.EqualTo(AttackResolutionOutcome.None));
+            Assert.That(rejected.Events, Is.Empty);
+            Assert.That(fixture.Authority.PendingAttackResolution, Is.SameAs(response.PendingResolution));
+        }
+
+        [Test]
         public void SameDefenseResponseCommands_ProduceSameResumedStateAndOrderedEvents()
         {
             var first = RunDefenseReplay();
@@ -760,6 +985,19 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(first.DefenseCardState, Is.EqualTo(second.DefenseCardState));
             Assert.That(first.Phase, Is.EqualTo(AttackResolutionPhase.CompareOutcome));
             Assert.That(second.Phase, Is.EqualTo(AttackResolutionPhase.CompareOutcome));
+        }
+
+        [Test]
+        public void SameOutcomeComparisons_ProduceSameResultAndOrderedEvents()
+        {
+            var first = RunOutcomeReplay();
+            var second = RunOutcomeReplay();
+
+            Assert.That(first.Outcome, Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended));
+            Assert.That(second.Outcome, Is.EqualTo(first.Outcome));
+            Assert.That(second.Events, Is.EqualTo(first.Events));
+            Assert.That(first.PendingResolution, Is.Null);
+            Assert.That(second.PendingResolution, Is.Null);
         }
 
         [Test]
@@ -889,6 +1127,29 @@ namespace GuardsDigital.Tests.EditMode
                 cardState,
                 result.PendingResolution.Phase,
                 result.Events);
+        }
+
+        private static AttackActionResolutionResult RunOutcomeReplay()
+        {
+            var fixture = CreateFixture();
+            var opened = OpenDefenseResponse(fixture);
+            var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
+                PrintedValueQuery.CalculatePrintedValue(
+                    offer,
+                    fixture.Configuration.CardDefinitions,
+                    PrintedValueChannel.Defense).Total == opened.PendingResolution.AttackTotal);
+            fixture.Authority.AnswerDefenseResponse(
+                DefenseResponseChoiceCommand.SelectCards(
+                    opened.PendingDefenseChoice.ResolutionId,
+                    opened.PendingDefenseChoice.ChoiceId,
+                    defenseOffer.SourceCardInstanceId),
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants);
+            return fixture.Authority.ResolveAttackOutcome(
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants);
         }
 
         private static ActionKind GetActionKind(

@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
@@ -253,9 +254,10 @@ namespace GuardsDigital.Tests.PlayMode
             var defenseCardId = controller.PendingDefenseChoice.LegalDefenseOffers[0].SourceCardInstanceId;
             Assert.That(controller.TrySubmitDefenseCard(defenseCardId), Is.True);
             Assert.That(controller.IsDefenseResponsePending, Is.False);
-            Assert.That(controller.IsAttackOutcomePending, Is.True);
-            Assert.That(controller.PendingAttackResolution.HasDefenseTotal, Is.True);
-            Assert.That(controller.CardStatus, Does.Contain("Attack comparison pending"));
+            Assert.That(controller.IsAttackOutcomePending, Is.False);
+            Assert.That(controller.PendingAttackResolution, Is.Null);
+            Assert.That(controller.LastAttackOutcome, Is.Not.EqualTo(AttackResolutionOutcome.None));
+            Assert.That(controller.CardStatus, Does.Match("successfully defended|attack successful"));
         }
 
         [UnityTest]
