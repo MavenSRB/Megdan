@@ -4,7 +4,7 @@ Last updated: 2026-08-10
 
 ## Current status
 
-Milestones 3.8 and 3.8a are complete: a pure authoritative round state composes exactly four indexed commitment/reveal and Initiative/action turns, and the saved validation controller now retains that one round authority through the complete visible sequence. Each turn records an immutable Red/Blue card-or-Pass slot, rejects replay from any non-hand lifecycle state, permits Pass only when that side has no eligible card, carries live Tie Breaker state across turns, and routes Hold, Movement, Attack/Defense, every pending answer, hero-focus projection, and turn advance through the current round turn. The HUD visibly labels round/turn/phase and explicit end-of-round, while post-round commands reject without mutation. Completing turn 4 still does not retrieve cards or resolve any end-of-round subsystem. Snapshots, Undo/restart, event-log UI, card retrieval, new-round start, and full end-of-round order remain unimplemented; milestone 3.9 is next and unauthorized.
+Milestones 3.8 and 3.8a are complete: a pure authoritative round state composes exactly four indexed commitment/reveal and Initiative/action turns, and the saved validation controller now retains that one round authority through the complete visible sequence. Each staged turn currently records an immutable fixed Red/Blue card-or-Pass slot, rejects replay from any non-hand lifecycle state, permits Pass only when that side has no eligible card, carries live Tie Breaker state across turns, and routes Hold, Movement, Attack/Defense, every pending answer, hero-focus projection, and turn advance through the current round turn. The HUD visibly labels round/turn/phase and explicit end-of-round, while post-round commands reject without mutation. Before snapshots, milestone 3.8b must replace the fixed two-side slot fields with an immutable ordered collection of independently owned player/hero card-or-explicit-no-card assignments so the versioned schema can later scale to six players without replacement. Completing turn 4 still does not retrieve cards or resolve any end-of-round subsystem. Snapshots, Undo/restart, event-log UI, card retrieval, new-round start, and full end-of-round order remain unimplemented; milestone 3.8b is next and unauthorized.
 
 Milestone 3.7b is complete: each current synthetic hero now owns five distinct test-only cards matching the approved value/action matrix. Every definition has exactly one printed Primary Attack, one printed Secondary Movement, and one in-hand Defense reaction, while Hold remains general-rule derived. The ten definition and instance identities are globally unique, retain the Initiative 11 cross-team tie, and flow through commitment, reveal, Initiative, Movement, Attack/Defense, lifecycle, ownership, and director presentation without fixed two-card assumptions. The HUD gives each five-card hand a dedicated bounded row and keeps all five legal Defense choices usable. Official hero content, card-text effects, consequences, and snapshots remain unimplemented.
 
@@ -63,7 +63,7 @@ A complete 3v3 match with both director and private online validation modes:
 - Three Red heroes and three Blue heroes, all different: Wasp plus five later user-approved, source-verified heroes.
 - Wasp is implemented and integrated first; a mirrored Wasp 1v1 remains an intermediate development gate, not the pitch endpoint.
 - One human controls all six heroes in director mode.
-- All six hands are available to the controller through team/hero grouping; played and revealed cards remain readable across the whole turn.
+- All six hands are available to the controller through team/hero grouping; a read-only four-turn history identifies every player/hero's authoritative revealed card or legal no-card assignment, while current Facedown commitments and private hands remain protected by the applicable projection.
 - The controller selects one card for every able hero, then resolves the turn through normal Initiative order.
 - Before production presentation begins, six invited humans can connect over the internet from Windows clients, each control exactly one owned hero, see only their authorized private projection, and complete a full match through one authoritative host/session.
 - Full official single-lane board structure and standard minion setup.
@@ -219,6 +219,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 - The board is the primary focus.
 - Director mode exposes all six hands through clear Red/Blue team and hero grouping. Private online clients expose only the local player's hand plus authorized shared played/revealed state; both modes keep the active resolver readable without presentation owning legality.
+- Show a compact read-only 6-player-by-4-turn card history grouped as three Red and three Blue player/heroes; each entry derives from the authoritative assignment and reveals no committed card before the joint reveal.
 - Show round, turn, active resolver, Lives, Waves, hero levels, and coins.
 - Use contextual prompts for actions, targets, and choices.
 - Provide internal Undo, restart, animation-speed, and camera-reset controls.
