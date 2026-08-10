@@ -229,6 +229,24 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void Scene_ContainsTopRightAuthoritativeTieBreakerIndicator()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var side = controller.CurrentTieBreakerState.RevealedSide;
+            var indicatorRect = controller.TieBreakerIndicatorRect;
+
+            Assert.That(controller.IsCardDrivenMovementEnabled, Is.True);
+            Assert.That(side, Is.EqualTo(TeamSide.Red).Or.EqualTo(TeamSide.Blue));
+            Assert.That(controller.TieBreakerIndicatorText, Does.Contain("TIE BREAKER"));
+            Assert.That(
+                controller.TieBreakerIndicatorText,
+                Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
+            Assert.That(indicatorRect.xMax, Is.EqualTo(Screen.width - 12f).Within(0.01f));
+            Assert.That(indicatorRect.yMin, Is.EqualTo(12f).Within(0.01f));
+        }
+
+        [Test]
         public void Scene_SelectingPrimaryMovementOfferHighlightsAuthoritativeCardDestinations()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);

@@ -545,6 +545,24 @@ Acceptance checks:
 
 Completion note (2026-08-10): Added immutable authoritative `TieBreakerState` whose revealed side is always Red or Blue. Normal setup performs one localized coin flip through `TieBreakerSetupAuthority`; the internal deterministic path accepts an explicit Red or Blue side and rejects `None`, without adding a reusable gameplay RNG service. The synthetic 1v1 configuration now carries the resulting state so the initial match snapshot introduced at milestone 3.9 can include it, and existing tests that construct that configuration explicitly pin Red unless setup-side selection itself is under test. Printed rulebook page 5 was visually verified. T3 validation passed with zero failed, skipped, or inconclusive cases: focused affected Edit Mode 53/53 (`TieBreakerSetupTests`, `MatchParticipantsTests`, `ActionOfferAndPrintedValueTests`, and `AttackActionResolutionAuthorityTests`); complete unfiltered Edit Mode 160/160; and complete unfiltered Play Mode 7/7.
 
+### [x] 2.6a Display the authoritative Tie Breaker side
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: The validation HUD shows a top-right Tie Breaker coin indicator that clearly identifies whether the current authoritative side is Red or Blue.
+
+Acceptance checks:
+
+- The indicator derives from `TieBreakerState`; presentation does not choose, cache independently, or mutate the side.
+- Red and Blue states are visibly distinct through explicit text/symbol treatment rather than color alone.
+- Focused Edit Mode and Play Mode tests cover both deterministic sides and the saved-scene presentation path.
+- One targeted visual inspection confirms the top-right indicator is readable and does not overlap existing content.
+- T3 corrective gate: both complete unfiltered Edit Mode and Play Mode suites pass because this changes the already-passed Phase 2 presentation boundary.
+
+Non-goals: No Initiative ordering, Tie Breaker flip timing, coin animation, production art, sound, or player control.
+
+Completion note (2026-08-10): Added a non-interactive top-right validation-HUD indicator that reads the configured immutable `TieBreakerState` directly and renders a solid side-colored panel with explicit `TIE BREAKER COIN`, `[R] RED`, or `[B] BLUE` text, so identity never depends on color alone. The controller accepts a complete authoritative placeholder configuration for deterministic presentation tests, does not choose or mutate the side, and blocks pointer input from passing through the indicator to the board. Focused Edit Mode 21/21 covered both deterministic sides, label/color/geometry projection, pointer blocking, and the saved-scene path; focused Play Mode 7/7 covered the live validation scene. Readiness-gated Game-view inspection confirmed a readable Red indicator at the top-right with no overlap. The corrective T3 gate passed complete unfiltered Edit Mode 163/163 and complete unfiltered Play Mode 8/8, all with zero failed, skipped, or inconclusive cases. No Initiative rule, Tie Breaker flip, animation, sound, or control was added.
+
 Phase-gate roadmap audit: After milestone 2.6 passes its T3 gate, audit Phase 3 before assigning the next milestone profile. Confirm that its lifecycle, Initiative, turn, round, snapshot, Undo/restart, and event-log boundaries reach one complete deterministic round through the shortest dependency-safe sequence; recommend any justified keep/merge/split/defer/remove decisions and record the remaining-effort range.
 
 Phase 3 entry audit (2026-08-10): Keep milestones 3.1-3.11 as separate, unchanged micro-milestones; no merge, split, defer, or removal is justified. The shortest dependency-safe path is lifecycle/typed Initiative data (3.1), two-hand selection presentation (3.2), simultaneous play/reveal (3.3), Initiative and Tie Breaker ordering (3.4), the minimum Hold turn (3.5), existing Movement and Attack/Defense turn integrations (3.6-3.7), the four-turn round shell (3.8), then the versioned snapshot boundary (3.9), snapshot-backed Undo/restart (3.10), and the read-only event-log projection plus T3 gate (3.11). This ordering reaches one complete deterministic round before adding persistence tools, and places serialization before every tool that restores or rebuilds history. Remaining effort is 11 separately approved micro-milestones, estimated at 7-12 focused implementation days excluding approval latency and environment outages.

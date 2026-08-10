@@ -70,6 +70,42 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [TestCase(TeamSide.Red, "[R] RED")]
+        [TestCase(TeamSide.Blue, "[B] BLUE")]
+        public void TieBreakerIndicator_DerivesTopRightLabelFromAuthoritativeSetup(
+            TeamSide side,
+            string expectedSideLabel)
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateScenario(objects, 3, false, side);
+                var indicatorRect = scenario.Controller.TieBreakerIndicatorRect;
+                var indicatorColor = scenario.Controller.TieBreakerIndicatorColor;
+                var indicatorScreenPosition = new Vector2(
+                    indicatorRect.center.x,
+                    Screen.height - indicatorRect.center.y);
+
+                Assert.That(
+                    scenario.Controller.CurrentTieBreakerState.RevealedSide,
+                    Is.EqualTo(side));
+                Assert.That(scenario.Controller.TieBreakerIndicatorText, Does.Contain("TIE BREAKER"));
+                Assert.That(
+                    scenario.Controller.TieBreakerIndicatorText,
+                    Does.Contain(expectedSideLabel));
+                Assert.That(indicatorRect.xMax, Is.EqualTo(Screen.width - 12f).Within(0.01f));
+                Assert.That(indicatorRect.yMin, Is.EqualTo(12f).Within(0.01f));
+                Assert.That(scenario.Controller.BlocksPointerAt(indicatorScreenPosition), Is.True);
+                Assert.That(
+                    side == TeamSide.Red ? indicatorColor.r : indicatorColor.b,
+                    Is.GreaterThan(side == TeamSide.Red ? indicatorColor.b : indicatorColor.r));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
         [Test]
         public void SelectingBlueHero_ExposesBlueOwnedCardsAndMovesBlueThroughSharedAuthority()
         {
@@ -563,7 +599,8 @@ namespace GuardsDigital.Tests.EditMode
         private static Scenario CreateScenario(
             ICollection<GameObject> objects,
             int legacyAllowance,
-            bool withObstacles)
+            bool withObstacles,
+            TeamSide? tieBreakerSide = null)
         {
             var heroObject = new GameObject("Hero");
             objects.Add(heroObject);
@@ -586,6 +623,13 @@ namespace GuardsDigital.Tests.EditMode
             objects.Add(controllerObject);
             var controller = controllerObject.AddComponent<HeroSelectionController>();
             controller.Configure(hero, tiles, CreateMaterial(Color.yellow), legacyAllowance, obstacles);
+            if (tieBreakerSide.HasValue)
+            {
+                controller.ConfigurePlaceholderTestMatch(
+                    PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(
+                        tieBreakerSide.Value));
+            }
+
             controller.ConfigureCardDrivenMovement(true);
 
             return new Scenario(hero, tiles, obstacles, controller);

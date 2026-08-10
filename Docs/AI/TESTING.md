@@ -407,6 +407,33 @@ if ($tieBreakerSetupEditProcess.ExitCode -ne 0) {
 
 Expected result: all discovered cases pass, covering a normal setup result that is always Red or Blue; exact deterministic internal Red and Blue overrides; undefined-side rejection; immutable value equality suitable for later snapshot reconstruction; authoritative state carried by the synthetic configuration; explicit Tie Breaker selection in unrelated tests; and directly affected participant, offer/value, and Attack-resolution regressions. Milestone 2.6 T3 evidence passed focused affected Edit Mode 53/53, complete unfiltered Edit Mode 160/160, and complete unfiltered Play Mode 7/7, all with zero failed, skipped, or inconclusive cases.
 
+## Visible Tie Breaker indicator focused tests
+
+```powershell
+$tieBreakerIndicatorEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-6a-focused-edit-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-6a-focused-edit.log"'
+)
+
+$tieBreakerIndicatorEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $tieBreakerIndicatorEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($tieBreakerIndicatorEditProcess.ExitCode -ne 0) {
+    throw "Visible Tie Breaker indicator Edit Mode tests failed with exit code $($tieBreakerIndicatorEditProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering deterministic Red and Blue authoritative configurations; explicit `[R] RED` and `[B] BLUE` labels plus distinct side tinting; top-right geometry; pointer blocking over the indicator; unchanged card-driven presentation behavior; and the saved-scene controller path. Run `MinimalHexGridPlayModeTests` with the existing placeholder-grid focused Play Mode command to cover the live scene. Milestone 2.6a corrective T3 evidence passed focused Edit Mode 21/21, focused Play Mode 7/7, complete unfiltered Edit Mode 163/163, and complete unfiltered Play Mode 8/8, all with zero failed, skipped, or inconclusive cases. Readiness-gated Game-view inspection confirmed the solid Red `TIE BREAKER COIN [R] RED` indicator is readable at the top-right without overlapping the board or bottom action HUD.
+
 ## Action-offer and printed-value focused Edit Mode tests
 
 ```powershell

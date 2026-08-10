@@ -6,6 +6,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Units.Heroes;
 using UnityEngine;
@@ -16,6 +17,8 @@ namespace GuardsDigital.Presentation.Interaction
     {
         private const float CardPanelMargin = 12f;
         private const float CardPanelHeight = 230f;
+        private const float TieBreakerIndicatorWidth = 200f;
+        private const float TieBreakerIndicatorHeight = 96f;
 
         [SerializeField]
         private bool cardDrivenMovementEnabled;
@@ -26,6 +29,7 @@ namespace GuardsDigital.Presentation.Interaction
             new Dictionary<HeroId, PlaceholderMovementHand>();
         private bool placeholderOneVsOneHandsInitialized;
         private MatchParticipants placeholderParticipants;
+        private PlaceholderOneVsOneTestConfiguration placeholderConfiguration;
 
         private PlaceholderMovementHand placeholderHand;
         private CardActionResolutionAuthority cardResolutionAuthority;
@@ -143,9 +147,49 @@ namespace GuardsDigital.Presentation.Interaction
 
         public string CardStatus => cardStatus;
 
+        public TieBreakerState CurrentTieBreakerState
+        {
+            get
+            {
+                InitializeCardDrivenMovementIfEnabled();
+                return placeholderConfiguration != null
+                    ? placeholderConfiguration.TieBreakerState
+                    : default;
+            }
+        }
+
+        public string TieBreakerIndicatorText => FormatTieBreakerIndicator(CurrentTieBreakerState);
+
+        public Color TieBreakerIndicatorColor => GetTieBreakerIndicatorColor(CurrentTieBreakerState);
+
+        public Rect TieBreakerIndicatorRect => GetTieBreakerIndicatorRect();
+
         public void ConfigureCardDrivenMovement(bool enabled)
         {
             cardDrivenMovementEnabled = enabled;
+            ResetCardDrivenMovementPresentation();
+            InitializeCardDrivenMovementIfEnabled();
+        }
+
+        public void ConfigurePlaceholderTestMatch(
+            PlaceholderOneVsOneTestConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            if (IsCardResolutionPending)
+            {
+                throw new InvalidOperationException(
+                    "Cannot replace the placeholder match while a card resolution is pending.");
+            }
+
+            placeholderConfiguration = configuration;
+            placeholderOneVsOneHandsInitialized = false;
+            placeholderHands.Clear();
+            placeholderParticipants = null;
+            placeholderHand = null;
             ResetCardDrivenMovementPresentation();
             InitializeCardDrivenMovementIfEnabled();
         }
@@ -396,7 +440,8 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var guiPosition = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
-            return GetCardPanelRect().Contains(guiPosition);
+            return GetCardPanelRect().Contains(guiPosition) ||
+                GetTieBreakerIndicatorRect().Contains(guiPosition);
         }
 
         private void InitializeCardDrivenMovementIfEnabled()
@@ -462,7 +507,9 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = placeholderConfiguration ??
+                PlaceholderOneVsOneTestConfiguration.Create();
+            placeholderConfiguration = configuration;
             placeholderParticipants = configuration.Participants;
             placeholderHands[configuration.RedHand.Instances[0].OwnerId] = configuration.RedHand;
             placeholderHands[configuration.BlueHand.Instances[0].OwnerId] = configuration.BlueHand;
@@ -675,6 +722,73 @@ namespace GuardsDigital.Presentation.Interaction
                 CardPanelHeight);
         }
 
+        private Rect GetTieBreakerIndicatorRect()
+        {
+            var width = Mathf.Min(
+                TieBreakerIndicatorWidth,
+                Mathf.Max(120f, Screen.width - (CardPanelMargin * 2f)));
+            return new Rect(
+                Mathf.Max(CardPanelMargin, Screen.width - width - CardPanelMargin),
+                CardPanelMargin,
+                width,
+                TieBreakerIndicatorHeight);
+        }
+
+        private static string FormatTieBreakerIndicator(TieBreakerState state)
+        {
+            if (!state.IsDefined)
+            {
+                return "TIE BREAKER COIN\n[?] UNKNOWN";
+            }
+
+            return state.RevealedSide == TeamSide.Red
+                ? "TIE BREAKER COIN\n[R] RED"
+                : "TIE BREAKER COIN\n[B] BLUE";
+        }
+
+        private static Color GetTieBreakerIndicatorColor(TieBreakerState state)
+        {
+            if (!state.IsDefined)
+            {
+                return new Color(0.3f, 0.3f, 0.3f);
+            }
+
+            return state.RevealedSide == TeamSide.Red
+                ? new Color(0.72f, 0.16f, 0.12f)
+                : new Color(0.12f, 0.32f, 0.72f);
+        }
+
+        private void DrawTieBreakerIndicator()
+        {
+            var state = CurrentTieBreakerState;
+            if (!state.IsDefined)
+            {
+                return;
+            }
+
+            var indicatorRect = GetTieBreakerIndicatorRect();
+            var previousColor = GUI.color;
+            var previousContentColor = GUI.contentColor;
+            GUI.color = GetTieBreakerIndicatorColor(state);
+            GUI.DrawTexture(indicatorRect, Texture2D.whiteTexture, ScaleMode.StretchToFill);
+            GUI.color = previousColor;
+            GUI.Box(indicatorRect, GUIContent.none);
+
+            var labelStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 18,
+                fontStyle = FontStyle.Bold,
+                wordWrap = true
+            };
+            GUI.contentColor = Color.white;
+            GUI.Label(
+                indicatorRect,
+                FormatTieBreakerIndicator(state),
+                labelStyle);
+            GUI.contentColor = previousContentColor;
+        }
+
         private void OnGUI()
         {
             if (!cardDrivenMovementEnabled)
@@ -683,6 +797,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             InitializeCardDrivenMovementIfEnabled();
+            DrawTieBreakerIndicator();
             var panel = GetCardPanelRect();
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));

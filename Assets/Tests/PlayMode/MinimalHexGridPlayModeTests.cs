@@ -46,6 +46,31 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_RendersTopRightAuthoritativeTieBreakerIndicator()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var side = controller.CurrentTieBreakerState.RevealedSide;
+            var indicatorRect = controller.TieBreakerIndicatorRect;
+
+            Assert.That(side, Is.EqualTo(TeamSide.Red).Or.EqualTo(TeamSide.Blue));
+            Assert.That(
+                controller.TieBreakerIndicatorText,
+                Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
+            Assert.That(indicatorRect.xMax, Is.EqualTo(Screen.width - 12f).Within(0.01f));
+            Assert.That(indicatorRect.yMin, Is.EqualTo(12f).Within(0.01f));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_LoadsVisibleRedAndBluePrimitiveHeroes()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
