@@ -12,7 +12,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PlaceholderConfiguration_CreatesOneRedAndOneBlueHeroWithStableRelationships()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var participants = configuration.Participants;
 
             Assert.That(participants.Teams, Has.Count.EqualTo(2));
@@ -31,7 +31,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PlaceholderConfiguration_GivesEachHeroADistinctOwnedMovementHand()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
 

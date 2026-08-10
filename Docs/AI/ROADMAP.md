@@ -531,7 +531,7 @@ Non-goals: A successful test attack does not yet implement full hero defeat, rem
 
 Completion note (2026-08-10): Completed the same restorable synthetic Attack after its Defense response by adding a no-choice authoritative comparison step at the existing outcome checkpoint. The authority revalidates the selected Attack offer, current legal target, printed Attack Total, comparison step, and any discarded Defense offer/value before comparing; stale completed-Defense state rejects without closing the pending Attack. A Defense Total equal to or greater than Attack Total reports `SuccessfullyDefended`; a lower Defense Total, decline, or no legal Defense reports `AttackSuccessful`. Accepted comparison clears the same pending Attack and emits ordered outcome/completion events carrying the stable resolution, actor, target, totals, Defense source when present, and typed result. The Phase 2 panel immediately performs this deterministic continuation after an accepted Defense answer, reports either `successfully defended` or `attack successful`, and releases card/actor selection without applying defeat, removal, Life, coin, respawn, or any other consequence. Printed rulebook page 14 was visually verified. T2 validation passed with zero failed, skipped, or inconclusive cases: authority-focused Edit Mode 23/23; final affected Edit Mode 126/126 across Attack, resolver, offer/value, card, participant, movement, occupancy, presentation, controller, and hex fixtures; and focused Play Mode 6/6 (`MinimalHexGridPlayModeTests`). Targeted visual inspection confirmed the saved scene clearly renders `Attack 3 vs Defense 3: successfully defended` after the Defense card leaves the hand and the Attack closes. Complete unfiltered suites were intentionally omitted because milestone 2.5 is not the Phase 2 T3 gate and all affected consumers are enumerated. No defeat/removal consequence, Block, card text, modifier, timing, turn, or animation behavior was added.
 
-### [ ] 2.6 Add Tie Breaker setup state
+### [x] 2.6 Add Tie Breaker setup state
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -543,11 +543,17 @@ Acceptance checks:
 - No general gameplay RNG subsystem is introduced.
 - T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass after the Phase 2 focused scenarios.
 
+Completion note (2026-08-10): Added immutable authoritative `TieBreakerState` whose revealed side is always Red or Blue. Normal setup performs one localized coin flip through `TieBreakerSetupAuthority`; the internal deterministic path accepts an explicit Red or Blue side and rejects `None`, without adding a reusable gameplay RNG service. The synthetic 1v1 configuration now carries the resulting state so the initial match snapshot introduced at milestone 3.9 can include it, and existing tests that construct that configuration explicitly pin Red unless setup-side selection itself is under test. Printed rulebook page 5 was visually verified. T3 validation passed with zero failed, skipped, or inconclusive cases: focused affected Edit Mode 53/53 (`TieBreakerSetupTests`, `MatchParticipantsTests`, `ActionOfferAndPrintedValueTests`, and `AttackActionResolutionAuthorityTests`); complete unfiltered Edit Mode 160/160; and complete unfiltered Play Mode 7/7.
+
 Phase-gate roadmap audit: After milestone 2.6 passes its T3 gate, audit Phase 3 before assigning the next milestone profile. Confirm that its lifecycle, Initiative, turn, round, snapshot, Undo/restart, and event-log boundaries reach one complete deterministic round through the shortest dependency-safe sequence; recommend any justified keep/merge/split/defer/remove decisions and record the remaining-effort range.
+
+Phase 3 entry audit (2026-08-10): Keep milestones 3.1-3.11 as separate, unchanged micro-milestones; no merge, split, defer, or removal is justified. The shortest dependency-safe path is lifecycle/typed Initiative data (3.1), two-hand selection presentation (3.2), simultaneous play/reveal (3.3), Initiative and Tie Breaker ordering (3.4), the minimum Hold turn (3.5), existing Movement and Attack/Defense turn integrations (3.6-3.7), the four-turn round shell (3.8), then the versioned snapshot boundary (3.9), snapshot-backed Undo/restart (3.10), and the read-only event-log projection plus T3 gate (3.11). This ordering reaches one complete deterministic round before adding persistence tools, and places serialization before every tool that restores or rebuilds history. Remaining effort is 11 separately approved micro-milestones, estimated at 7-12 focused implementation days excluding approval latency and environment outages.
 
 ## Phase 3 - Test-card Initiative, turns, and rounds
 
 ### [ ] 3.1 Extend the test-card foundation with turn lifecycle
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Synthetic card instances can represent and transition through the lifecycle facts needed to play a turn without using Wasp data.
 

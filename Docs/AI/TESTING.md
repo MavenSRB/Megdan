@@ -380,6 +380,33 @@ if ($matchParticipantProcess.ExitCode -ne 0) {
 
 Expected result: all discovered cases pass, covering nonempty unique team/player/hero IDs, collection-backed references, one hero per player, plural multi-hero team queries, one Red and one Blue test hero, preservation of the stable `primitive-hero` ID, globally unique card instances in separately owned Red/Blue synthetic Movement hands, and the directly affected Phase 1 card/offer/hero identity regressions.
 
+## Tie Breaker setup focused Edit Mode tests
+
+```powershell
+$tieBreakerSetupEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.TieBreakerSetupTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-6-focused-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-6-focused.log"'
+)
+
+$tieBreakerSetupEditProcess = Start-Process `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -ArgumentList $tieBreakerSetupEditArguments `
+    -Wait `
+    -PassThru `
+    -WindowStyle Hidden
+
+if ($tieBreakerSetupEditProcess.ExitCode -ne 0) {
+    throw "Tie Breaker setup Edit Mode tests failed with exit code $($tieBreakerSetupEditProcess.ExitCode)."
+}
+```
+
+Expected result: all discovered cases pass, covering a normal setup result that is always Red or Blue; exact deterministic internal Red and Blue overrides; undefined-side rejection; immutable value equality suitable for later snapshot reconstruction; authoritative state carried by the synthetic configuration; explicit Tie Breaker selection in unrelated tests; and directly affected participant, offer/value, and Attack-resolution regressions. Milestone 2.6 T3 evidence passed focused affected Edit Mode 53/53, complete unfiltered Edit Mode 160/160, and complete unfiltered Play Mode 7/7, all with zero failed, skipped, or inconclusive cases.
+
 ## Action-offer and printed-value focused Edit Mode tests
 
 ```powershell

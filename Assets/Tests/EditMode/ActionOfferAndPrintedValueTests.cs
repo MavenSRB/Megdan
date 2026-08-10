@@ -179,7 +179,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PlaceholderDefinitions_DeriveOwnedNonRangedAndRangedAttackAndDefenseReactionOffers()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
 

@@ -10,13 +10,13 @@ This brief is not a substitute for authoritative sources. `AGENTS.md` controls t
 
 ## Current state and authorization
 
-- Roadmap milestones 0.1 through 0.7, 1.1 through 1.13, and 2.1 through 2.5 are marked complete, including corrective milestones 1.12a, 1.12b, 1.13a, and milestone 2.3a.
-- The project has living documentation, a Unity/test shell, card-system and effect-capability architecture contracts, risk-tiered validation, hex foundations, a primitive obstacle map, placeholder card definitions/instances and offers, typed printed values, authoritative visible card-driven Movement with cumulative waypoint routes and explicit Stop, and visible basic non-Ranged and Ranged hero Attacks whose targeted hero can discard exactly one legal own-hand Defense card or decline before the same resolution reports successfully defended or attack successful.
+- Roadmap milestones 0.1 through 0.7, 1.1 through 1.13, and 2.1 through 2.6 are marked complete, including corrective milestones 1.12a, 1.12b, 1.13a, and milestone 2.3a.
+- The project has living documentation, a Unity/test shell, card-system and effect-capability architecture contracts, risk-tiered validation, hex foundations, a primitive obstacle map, placeholder card definitions/instances and offers, typed printed values, authoritative visible card-driven Movement with cumulative waypoint routes and explicit Stop, visible basic non-Ranged and Ranged hero Attacks whose targeted hero can discard exactly one legal own-hand Defense card or decline before the same resolution reports successfully defended or attack successful, and immutable authoritative initial Tie Breaker setup state selected by one normal coin flip or an explicit internal Red/Blue override.
 - The private pitch target is an official-setup 3v3 match with six different heroes: Wasp plus five later user-approved, source-verified heroes. The pitch remains single-controller director mode with no networking; mirrored Wasp 1v1 remains only an intermediate content-integration gate.
-- The current foundation does not implement broader card lifecycle, real Wasp content, card-text effects, Attack consequences, turns, rounds, snapshots, networking, animation, or later gameplay systems.
-- Milestone 2.6, adding authoritative Tie Breaker setup state and running the Phase 2 T3 gate, is proposed but **not authorized**.
-- Do not begin milestone 2.6 or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
-- Required Codex profile for milestone 2.6: **GPT-5.6 Sol with high reasoning**.
+- The current foundation does not implement broader card lifecycle, Initiative ordering or Tie Breaker flip timing, real Wasp content, card-text effects, Attack consequences, turns, rounds, snapshots, networking, animation, or later gameplay systems.
+- The Phase 3 entry audit kept milestones 3.1 through 3.11 separate and unchanged. Milestone 3.1, extending the synthetic card foundation with turn lifecycle and typed Initiative values, is proposed but **not authorized**.
+- Do not begin milestone 3.1 or any later gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
+- Required Codex profile for milestone 3.1: **GPT-5.6 Sol with medium reasoning**.
 - A local Git repository exists on `main`. No remote is configured or authorized.
 
 ## Working boundaries
