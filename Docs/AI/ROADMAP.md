@@ -571,7 +571,7 @@ Approved content-readiness amendment (2026-08-10): Insert milestone 3.7b after t
 
 Corrective playable-round amendment (2026-08-10): Insert milestone 3.8a after the completed pure four-turn round skeleton and before snapshot serialization. Validation after milestone 3.8 confirmed that the round authority completes four deterministic turns, while the saved-scene controller still constructs and presents only an isolated revealed-card turn flow. Milestone 3.8a closes that integration gap before snapshots, Undo/restart, and the event log depend on the visible round boundary. The remaining Phase 3 path is four separately approved milestones (3.8a and 3.9-3.11), estimated at 3-5 focused implementation days excluding approval latency and environment outages.
 
-Approved six-player round-history amendment (2026-08-10): Insert milestone 3.8b after the completed visible-round integration and before snapshot serialization. The staged `RoundTurnSlot` currently hard-codes one Red and one Blue assignment, while the approved pitch requires three independently owned heroes per team and a later UI that shows which player played which card in each of four turns. Generalize the authoritative slot before milestone 3.9 freezes it into a versioned snapshot schema; keep the current two-player fixture and all current rules behavior unchanged. Milestones 8.25 and 8.26 must then populate and visibly project six assignments, and milestone 9.13 must polish that same read-only history. The remaining Phase 3 path is four separately approved milestones (3.8b and 3.9-3.11), estimated at 3-6 focused implementation days excluding approval latency and environment outages.
+Approved six-player round-history amendment (2026-08-10), rule-corrected 2026-08-10: Insert milestone 3.8b after the completed visible-round integration and before snapshot serialization. The staged commitment authority and `RoundTurnSlot` currently hard-code one Red and one Blue response/assignment, while the authoritative rule requires each player independently to commit exactly one card from a nonempty hand or Pass with an empty hand, and the approved pitch requires three independently owned heroes per team plus a later UI that shows which player played which card in each of four turns. Generalize the commitment and slot authorities before milestone 3.9 freezes them into a versioned snapshot schema; preserve the current two-player fixture's observable flow while replacing its side-owned approximation. Milestones 8.25 and 8.26 must then populate and visibly project six assignments, and milestone 9.13 must polish that same read-only history. The remaining Phase 3 path is four separately approved milestones (3.8b and 3.9-3.11), estimated at 3-6 focused implementation days excluding approval latency and environment outages.
 
 ## Phase 3 - Test-card Initiative, turns, and rounds
 
@@ -772,19 +772,20 @@ Non-goals: No card retrieval, next-round start, end-of-round subsystem resolutio
 
 Completion note (2026-08-10): Replaced the validation controller's disconnected commitment and turn authorities with one retained `RoundResolutionAuthority` for the complete saved-scene round. Red/Blue commitments and legal Pass, joint reveal, Initiative-selected actor focus, general Hold, printed Movement and Attack, target/Defense answers, stale-choice rejection, deferred Tie Breaker flips, immutable completed slots, and turn advancement now route through the round boundary; hero focus changes preserve that same authority and its board resolver. The director HUD labels the authoritative round/turn/phase, exposes Hold beside the printed actions, removes played or Defense-discarded cards from later hand projections, and reports `END OF ROUND` after turn 4. Post-round commands reject without changing slots, events, cards, or occupancy. T2 validation passed focused Edit Mode 25/25 (`CardDrivenMovementPresentationTests`, `DirectorHandPresentationTests`, and `RoundResolutionAuthorityTests`), directly affected Edit Mode 186/186 across the round/turn/Initiative/commitment/lifecycle/action/value/participant/Tie Breaker/Movement/Attack/controller/scene fixtures, and saved-scene Play Mode 11/11 (`MinimalHexGridPlayModeTests`), with zero failed, skipped, or inconclusive cases. The saved-scene scenario performs one uninterrupted four-turn round containing Attack/Defense with hand depletion, Movement with stale-input preservation, Hold, a deferred Tie Breaker flip, and visible end-of-round rejection. Source/layout inspection confirmed the expanded phase header, status line, and Hold control reuse the bounded validation HUD; the batch test path provides no reliable framebuffer capture, so no screenshot evidence is claimed. Complete unfiltered suites were intentionally omitted because milestone 3.8a is T2 rather than the Phase 3 T3 gate and all directly affected consumers are enumerated. No retrieval, next round, end-of-round subsystem, snapshot, Undo, log panel, consequence, animation, sound, official content, or production UI was added.
 
-### [ ] 3.8b Generalize round slots for independently owned hero assignments
+### [ ] 3.8b Generalize turn commitments and round slots for independently owned players
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
-Observable outcome: Every indexed turn slot stores an immutable ordered collection of authoritative player/hero card-or-explicit-no-card assignments without assuming exactly one hero per team.
+Observable outcome: Every configured player independently must commit exactly one owned card when their hand is nonempty and may pass only when their hand is empty; after every player responds, each indexed turn slot stores the resulting immutable ordered player/hero assignment collection without assuming exactly one hero per team.
 
 Acceptance checks:
 
-- Replace fixed Red-card/Red-pass and Blue-card/Blue-pass members with immutable assignment entries carrying stable team, player, and hero identity plus exactly one committed card ID or explicit legal no-card outcome; the current staged Pass maps to that no-card outcome without defining future 3v3 inability reasons.
-- Assignment construction and round recording validate participant ownership, reject unknown or duplicate player/hero/card identities, and require exactly one assignment for every participant expected in the staged configuration.
-- The current synthetic 1v1 fixture produces exactly two deterministic assignments per turn and preserves all existing commitment, reveal, Initiative, action, Tie Breaker, slot-history, and end-of-round behavior.
+- Replace side-owned commitment responses with player/hero-owned responses. For each configured player, a nonempty authoritative hand requires exactly one owned card commitment and an empty hand requires an explicit Pass; hero board presence never permits Pass, and an invalid in-hand lifecycle state rejects as an authority error rather than being treated as an empty hand.
+- Joint reveal occurs only after every configured player has independently committed or passed. Commitment and assignment construction validate participant ownership, reject unknown or duplicate player/hero/card identities and responses, and require exactly one response and assignment for every expected participant.
+- Replace fixed Red-card/Red-pass and Blue-card/Blue-pass slot members with immutable assignment entries carrying stable team, player, and hero identity plus exactly one committed card ID or explicit empty-hand Pass outcome.
+- The current synthetic 1v1 fixture produces exactly two deterministic responses and assignments per turn while preserving existing reveal, Initiative, action, Tie Breaker, slot-history, and end-of-round behavior.
 - Slot and round events expose the collection without mutable aliases or Red/Blue positional assumptions, so milestone 3.9 can serialize it without a known six-player schema replacement.
-- Focused and directly affected Edit Mode tests cover deterministic ordering, immutability, malformed assignment rejection, four-turn history, and unchanged visible-round controller projections.
+- Focused and directly affected Edit Mode tests cover mandatory commitment from a nonempty hand, Pass from an empty hand, illegal Pass while any owned card remains in hand, the same requirement for an off-board hero, invalid in-hand state rejection, wait-for-every-player reveal, deterministic ordering, immutability, malformed assignment rejection, four-turn history, and unchanged visible-round controller projections.
 
 Non-goals: No six-player setup, additional heroes or cards, 3v3 turn execution, snapshot serialization, history UI, event-log UI, networking, or production presentation.
 
@@ -796,7 +797,7 @@ Observable outcome: A versioned snapshot round-trips without changing logical st
 
 Acceptance checks:
 
-- Teams, players, heroes, Tie Breaker, turn/round state including every collection-backed player/hero card-or-explicit-no-card assignment, board occupancy, card instances/state facets, and definition references survive round-trip tests.
+- Teams, players, heroes, Tie Breaker, turn/round state including every collection-backed player/hero card-or-empty-hand-Pass assignment, board occupancy, card instances/state facets, and definition references survive round-trip tests.
 - A state paused on a pending card choice or Defense reaction resumes to the same result and ordered events.
 - Snapshot schema version and card-definition content revision are checked independently; mismatches are rejected clearly until a migration exists.
 - Presentation can rebuild from restored state.
@@ -1352,7 +1353,7 @@ Observable outcome: Configuration data places three different Red heroes and thr
 Acceptance checks:
 
 - All six stable player/hero identities, ownership relationships, hero spawn positions, hands, dashboards, and hero-owned components resolve without assuming one hero per team.
-- Every authoritative turn slot contains exactly six ownership-validated assignments—one for each configured player/hero—and snapshot round-trip preserves their deterministic order, card-or-explicit-no-card facts, and stable identities.
+- Every authoritative turn slot contains exactly six ownership-validated assignments—one for each configured player/hero—and snapshot round-trip preserves their deterministic order, committed-card-or-empty-hand-Pass facts, and stable identities.
 - Setup uses three Wave counters, five Life counters per team, the normal Tie Breaker flip, and the verified official board/minion setup.
 - Wasp appears once; all six heroes are different and assigned to exactly one team/player.
 - DEV-001 and DEV-002 are marked retired; only approved director/debug deviations remain.
@@ -1366,10 +1367,10 @@ Observable outcome: One director can play and resolve a complete turn for all si
 
 Acceptance checks:
 
-- The director can access each hero's correct hand, choose one card for every able hero, reveal the complete turn, and resolve all six Initiative positions without transferring ownership.
+- The director can access each hero's correct hand; for every player/hero with a nonempty hand the director must choose exactly one owned card, while an empty hand records a Pass. The complete turn reveals only after all six respond, then resolves every played card in Initiative order without transferring ownership.
 - Friendly/enemy queries, tied Initiative decisions, assists, reactions, hero-specific pending choices, and actor switching use authoritative team/player/hero relationships.
 - Played/revealed cards and the active resolver remain readable without requiring presentation to own turn legality.
-- A read-only primitive round-history matrix groups all three Red and all three Blue player/heroes and shows each one's authoritative revealed card or legal no-card assignment for turns 1-4; current-turn Facedown commitments remain hidden until the joint reveal.
+- A read-only primitive round-history matrix groups all three Red and all three Blue player/heroes and shows each one's authoritative revealed card or empty-hand Pass for turns 1-4; current-turn Facedown commitments remain hidden until the joint reveal.
 - Every displayed history entry resolves through its stable assignment and card definition, and played or Defense-discarded cards cannot reappear merely because presentation rebuilds.
 - Undo, restart, snapshot restore, and the event log reproduce the same six-hero turn.
 
@@ -1500,7 +1501,7 @@ Observable outcome: The polished HUD keeps the complete 3v3 match state and acti
 
 Acceptance checks:
 
-- The round-history treatment groups three Red and three Blue player/heroes and shows each authoritative revealed card or legal no-card assignment in turns 1-4 without relying on color alone.
+- The round-history treatment groups three Red and three Blue player/heroes and shows each authoritative revealed card or empty-hand Pass in turns 1-4 without relying on color alone.
 - Director mode can inspect the complete history; private online clients receive only the authorized shared played/revealed projection and never another player's hidden hand or pre-reveal card identity.
 - History rebuilds identically after snapshot restore, Undo, restart, reconnect, and resynchronization without owning or mutating match state.
 - The history, active resolver, six hands, contextual prompts, round/turn, Lives, Waves, hero levels, and coins remain readable at the supported desktop resolutions.
