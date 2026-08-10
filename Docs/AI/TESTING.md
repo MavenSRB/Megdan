@@ -27,6 +27,29 @@ Unity test processes for this project run serially. Never open parallel batchmod
 
 ### Unity process and licensing resilience
 
+#### Required agent entry point
+
+All agent-started Unity test validation uses the fixed, parameterless project-local launcher `Tools/Invoke-UnityValidation.ps1`. Do not issue direct `Start-Process` commands for Unity, Unity Hub, or the licensing client, and do not vary the launcher invocation between runs. This keeps every configurable input and output in the project while allowing one narrow reusable system approval for the process boundary Unity requires.
+
+Before invoking it, write `tmp/unity-validation-request.json` with this shape:
+
+```json
+{
+  "platform": "EditMode",
+  "filter": "GuardsDigital.Tests.EditMode.ExampleTests",
+  "results": "tmp/example-results.xml",
+  "log": "tmp/example.log"
+}
+```
+
+`platform` must be `EditMode` or `PlayMode`. `filter` may be an empty string for an unfiltered suite. Both output paths must be relative paths beneath the project's `tmp` directory. Invoke the launcher with this exact command and request a persistent approval for this exact project-local entry point if no matching approval exists:
+
+```powershell
+& 'C:\Projects\Guards Digital\Guards 0.1\Tools\Invoke-UnityValidation.ps1'
+```
+
+The older command blocks below remain test-filter and historical-output references only. Agents translate the applicable values into the request file and must not execute those direct `Start-Process` examples.
+
 The PowerShell examples below intentionally use `Start-Process -Wait -PassThru`; the calling command runner must allow at least 15 minutes for Unity, or yield the still-running command and poll it without terminating the process. Do not wrap a Unity run in a two-minute timeout. Unity licensing reconnects wait in 60-second increments, so a healthy test invocation can outlive a short command wrapper before test discovery begins.
 
 Every Unity Editor, Unity licensing-client, and Unity Hub process used by an agent for validation must be launched outside the workspace sandbox with the tool's required elevated/normal-user process context. A sandboxed Editor can open the project while its child licensing client cannot access the user's persistent license data or create its named-pipe channel; Unity then misleadingly treats every package as unlicensed. Merely seeing an open Hub window or a live `Unity.Licensing.Client` process is not a licensing preflight.
@@ -670,6 +693,30 @@ Run each argument set through the standard `Start-Process -Wait -PassThru` Unity
 Use the milestone 3.7 directly affected Edit Mode filter above, adding `CardDefinitionInstanceTests`, `MatchParticipantsTests`, `TurnCardCommitmentAuthorityTests`, `InitiativeResolutionAuthorityTests`, `DirectorHandPresentationTests`, and `MinimalHexGridSceneTests`; write results to `tmp/milestone-3-7b-final-affected-edit-results.xml`. Run `MinimalHexGridPlayModeTests` with the existing saved-scene Play Mode command and write results to `tmp/milestone-3-7b-final-play-results.xml`.
 
 Expected result: all ten synthetic definition/value profiles match the approved matrix; each hero owns five globally unique in-hand instances; every slot can commit and exposes its Primary Attack, Secondary Movement, and general Hold when revealed; the Initiative 11 cross-team tie remains; Defense discard removes only the chosen instance from later commitment/reaction choices; representative non-Ranged and Ranged turn actions resolve; and both five-card hands remain usable in the bounded director HUD. Milestone 3.7b is T2 because executable card data and its shared controller/presentation consumers change. Evidence passed focused final Edit Mode 20/20, directly affected Edit Mode 150/150, and saved-scene Play Mode 10/10 with zero failed, skipped, or inconclusive cases. A follow-up live Game-view inspection by the user confirmed that both Red and Blue hands visibly show five cards; automated screenshot attempts were not retained because their capture launchers did not produce a reliable saved-scene image. Source/layout inspection confirms five minimum-width hand buttons and five minimum-width Defense buttons fit their dedicated bounded rows at the QHD validation view. Complete unfiltered suites were intentionally omitted because the affected consumers are enumerated and milestone 3.7b is not a T3 gate.
+
+## Four-turn round skeleton focused Edit Mode tests
+
+Run `RoundResolutionAuthorityTests` alone and write its results/log to `tmp/milestone-3-8-focused-results.xml` and `tmp/milestone-3-8-focused.log`. Then run this directly affected Edit Mode filter and write its outputs to `tmp/milestone-3-8-affected-results.xml` and `tmp/milestone-3-8-affected.log`:
+
+```text
+GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;
+GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;
+GuardsDigital.Tests.EditMode.InitiativeResolutionAuthorityTests;
+GuardsDigital.Tests.EditMode.TurnCardCommitmentAuthorityTests;
+GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;
+GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;
+GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;
+GuardsDigital.Tests.EditMode.MatchParticipantsTests;
+GuardsDigital.Tests.EditMode.TieBreakerSetupTests;
+GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;
+GuardsDigital.Tests.EditMode.MovementSessionTests;
+GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;
+GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;
+GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;
+GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests
+```
+
+Pass the semicolon-joined value above as the standard Edit Mode command's `-testFilter`. Expected result: exactly four deterministic indexed turns record immutable Red/Blue card-or-Pass slots; resolved or otherwise ineligible cards cannot replay; Pass is accepted only when no eligible card remains; Hold, Movement, Attack/Defense, pending choices, and deferred Tie Breaker state compose through successive turns; and turn 4 enters an explicit end-of-round phase without retrieving cards or running deferred subsystems. Milestone 3.8 is T2 because it adds shared round/turn/event infrastructure. Evidence passed focused Edit Mode 6/6 and directly affected Edit Mode 146/146 with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path changed, the affected pure-authority consumers are enumerated, and milestone 3.8 is not a T3 gate.
 
 ## Action-offer and printed-value focused Edit Mode tests
 

@@ -734,7 +734,7 @@ Non-goals: No official hero identity, official card name/value/text/art, Skill a
 
 Completion note (2026-08-10): Replaced the mirrored two-card placeholder with ten distinct synthetic definitions and globally unique owned instances matching the approved Red/Blue matrix. Every card now exposes exactly one printed Primary Attack, one printed Secondary Movement, and one in-hand Defense reaction; Hold remains a separately derived general-rule offer. The complete configuration carries both definition sets, and controller continuations resolve defender-owned cards through the complete definition collection rather than relying on mirrored IDs. Five-card commitment/action eligibility, Defense-driven depletion, the Initiative 11 cross-team tie, non-Ranged and Ranged turn resolution, and bounded two-row hand/Defense presentation are covered by focused tests. T2 validation passed focused final Edit Mode 20/20, directly affected Edit Mode 150/150, and saved-scene Play Mode 10/10 with zero failed, skipped, or inconclusive cases. A follow-up live Game-view inspection by the user confirmed that both Red and Blue hands visibly show five cards; automated screenshot attempts were not retained because their capture launchers did not produce a reliable saved-scene image. Source/layout inspection confirms five minimum-width card buttons per dedicated 820-pixel-wide hand row and five minimum-width Defense controls fit the expanded bounded panel at the QHD validation view. Complete unfiltered suites were intentionally omitted because milestone 3.7b is not a T3 gate and its data, authority, controller, and saved-scene consumers are enumerated. No official content, card-text effect, Attack consequence, round, snapshot, animation, sound, or Wasp behavior was added.
 
-### [ ] 3.8 Complete the four-turn round skeleton
+### [x] 3.8 Complete the four-turn round skeleton
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -747,7 +747,11 @@ Acceptance checks:
 - Turn and round indices are authoritative and deterministic.
 - End-of-round entry is explicit but does not yet resolve its subsystems.
 
+Completion note (2026-08-10): Added a pure `RoundResolutionAuthority` that composes a fresh commitment/reveal authority and the existing Initiative/action turn authority for each of exactly four indexed turns. Every revealed commitment is recorded in an immutable round/turn slot with a Red card or explicit Pass and a Blue card or explicit Pass; resolved/discarded/otherwise ineligible cards remain rejected by the existing lifecycle authority, and Pass remains legal only when that side has no eligible hand card. Hold, Movement, Attack/Defense, pending choices, ordered nested events, and deferred Tie Breaker flips continue through the existing authorities; the round exposes the live current-turn Tie Breaker state and carries its final value into the next turn. After turn 4 it enters a distinct end-of-round phase and emits an explicit boundary event without retrieving cards or running any later cleanup, Lane Push, leveling, or progression subsystem. Printed rulebook page 7 was source-verified. T2 validation passed focused Edit Mode 6/6 (`RoundResolutionAuthorityTests`) and directly affected Edit Mode 146/146 across round, turn, Initiative, commitment, lifecycle, offers/values, definitions, participants, Tie Breaker, Movement, Attack/Defense, occupancy, and obstacle authorities, with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no Unity-facing path changed, all directly affected pure-authority consumers are enumerated, and milestone 3.8 is not a T3 gate. No card retrieval, new-round start, end-of-round subsystem resolution, snapshot, Undo, event-log UI, resolve-without-action, consequence, presentation, or official content was added.
+
 ### [ ] 3.9 Serialize and restore authoritative snapshots
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: A versioned snapshot round-trips without changing logical state.
 
