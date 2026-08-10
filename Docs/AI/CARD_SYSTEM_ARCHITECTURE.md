@@ -78,6 +78,8 @@ A definition needs stable identity and enough structured metadata to reproduce t
 - Exact transcribed rules text and reminder text for display and audit only.
 - Source reference and verification status outside runtime gameplay logic.
 
+Card color/slot is a typed rules-facing characteristic, not a visual style and not Red/Blue team identity. Rules queries may combine it with owner/controller, location, lifecycle state, face/information availability, and other verified predicates to derive legal card candidates for choices, costs, conditions, counts, or effects such as a color-restricted discard. Upgrade relationships may use the same characteristic, but do not own or exhaust its meaning. No authority may infer card color from artwork, tint, display name, hero identity, or UI grouping.
+
 The runtime format may later be authored through JSON, ScriptableObjects, or another content tool, but authoring objects must compile into validated immutable rules definitions. A ScriptableObject must never become live authoritative match state.
 
 ### Card instances and state

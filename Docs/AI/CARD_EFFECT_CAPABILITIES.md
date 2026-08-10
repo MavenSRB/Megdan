@@ -271,6 +271,14 @@ Terrain is a space classification and obstacle, not a token or unit. Effects tha
 
 ## Card-state and progression capabilities
 
+### Card-characteristic queries
+
+`CardCharacteristicQuery` derives eligible card instances from authoritative definitions and current instance state. Its typed predicates may include card color/slot, Basic/non-Basic/Ultimate classification, tier, owner/controller, location, lifecycle facts, and rules-facing information availability. Card color is distinct from team identity and presentation color, and it is never parsed from artwork, names, or UI styling.
+
+A color-restricted choice, condition, count, cost, or effect composes this pure query with the applicable control-flow or mutation capability. For example, a verified effect that requires an opponent to discard a card of a specified color first derives the opponent-owned legal candidates in the source-allowed state, then records the correct chooser and pending choice when needed, and finally invokes `DiscardCard` on the accepted candidate. `DiscardCard` does not independently guess color eligibility, ownership, visibility, or chooser. If no candidate exists, optionality and failure behavior come from the verified effect contract.
+
+Queries must respect context-sensitive information suppression. A color unavailable to the acting rules context because of face orientation or another explicit state cannot satisfy a color predicate merely because presentation or immutable content data can still inspect the underlying definition. Identical authoritative state and query context produce the same ordered candidate set.
+
 Reusable card-state transitions include:
 
 - `PlayCard`, `RevealCard`, `ResolveCard`, and `ResolveWithoutAction`.
