@@ -601,7 +601,7 @@ Acceptance checks:
 
 Completion note (2026-08-10): The validation HUD now projects both authoritative synthetic hands simultaneously in separate `[R] RED HERO` and `[B] BLUE HERO` rows. Each displayed entry comes from the Red/Blue hand's stable owner-bound runtime card instance and its matching immutable definition; the explicit symbol-and-text labels ensure team identity is never color-only. A director can select either side's card through the controller, which changes only the current selected card/hero presentation context and does not play, reveal, resolve, or emit a card-resolution event. T2 validation passed with zero failed, skipped, or inconclusive cases: focused Edit Mode 23/23 (`DirectorHandPresentationTests`, `CardDrivenMovementPresentationTests`, and `HeroSelectionControllerTests`) and focused Play Mode 8/8 (`MinimalHexGridPlayModeTests`), including the saved-scene Blue-hand selection/no-lifecycle-transition path. Source/layout inspection confirmed the two 32px hand rows fit inside the enlarged bottom panel, retain the top-right Tie Breaker HUD clearance, and use explicit readable team labels. Complete unfiltered suites were intentionally omitted because milestone 3.2 is not a T3 gate and the affected presentation/controller consumers are enumerated. No card commitment, Facedown transition, reveal, Initiative ordering, action resolution, turn, or round behavior was added.
 
-### [ ] 3.3 Play and reveal one test card per side
+### [x] 3.3 Play and reveal one test card per side
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -616,7 +616,11 @@ Acceptance checks:
 
 Non-goals: No Initiative ordering or action execution.
 
+Completion note (2026-08-10): Added a pure two-side turn-card commitment authority over the existing orthogonal lifecycle transitions. Red and Blue may each commit only one currently eligible own-hand card; accepted commitment moves that exact instance to the Turn Area as played/unresolved/Facedown and emits a side-only event that deliberately omits the card ID. After both sides commit or legally pass, every committed card reveals in deterministic Red/Blue event order and becomes authoritatively Faceup; only those reveal events disclose stable card IDs. Pass is accepted only when that side has no eligible card. Missing, cross-side, ineligible, repeated, stale-state, and illegal-pass commands reject without further mutation, and deterministic replay produces identical states/events. The director HUD adds `CONFIRM FACEDOWN`, generic pre-reveal commitment labels, explicit no-card Pass, and definition-backed revealed name/Initiative labels while leaving Initiative ordering and action execution untouched. Printed rulebook page 7 was visually verified. T2 validation passed with zero failed, skipped, or inconclusive cases: focused Edit Mode 35/35; final directly affected Edit Mode 123/123 across commitment/lifecycle, card/participant/offer/resolver, director/controller, and saved-scene fixtures; and focused Play Mode 9/9 (`MinimalHexGridPlayModeTests`), including the saved-scene joint-reveal path. Source/layout inspection confirmed the two 42px hand rows, 190px commitment labels, confirm control, status, and optional pass control fit the existing 820x270 bottom HUD without overlapping the top-right Tie Breaker indicator. Complete unfiltered suites were intentionally omitted because milestone 3.3 is not a T3 gate and all affected consumers are enumerated. No Initiative ordering, Tie Breaker flip timing, action execution, turn completion, or round behavior was added.
+
 ### [ ] 3.4 Resolve Initiative and tied Initiative
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The authority identifies the next unresolved actor from current Initiative values and applies the Tie Breaker rules without depending on Wasp cards.
 

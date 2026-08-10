@@ -50,5 +50,91 @@ namespace GuardsDigital.Tests.EditMode
                 Object.DestroyImmediate(gameObject);
             }
         }
+
+        [Test]
+        public void ConfirmedDirectorCards_StayFacedownUntilBothSidesRespondThenRevealTogether()
+        {
+            var gameObject = new GameObject("Turn Card Controller");
+            try
+            {
+                var controller = gameObject.AddComponent<HeroSelectionController>();
+                var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                controller.ConfigurePlaceholderTestMatch(configuration);
+                controller.ConfigureCardDrivenMovement(true);
+                var redCard = configuration.RedHand.Instances[0];
+                var blueCard = configuration.BlueHand.Instances[1];
+
+                Assert.That(controller.TrySelectDirectorCard(redCard.Id), Is.True);
+                Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+
+                Assert.That(redCard.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceDown));
+                Assert.That(controller.GetTurnCardCommitmentStatus(TeamSide.Red),
+                    Is.EqualTo(TurnCardCommitmentStatus.CardCommittedFacedown));
+                Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red),
+                    Is.EqualTo("FACEDOWN COMMITTED"));
+                Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red),
+                    Does.Not.Contain("Route Drill"));
+                Assert.That(controller.TurnCardCommitmentEvents, Has.Count.EqualTo(1));
+                Assert.That(controller.TurnCardCommitmentEvents[0].HasCardInstanceId, Is.False);
+                Assert.That(controller.TrySelectDirectorCard(configuration.RedHand.Instances[1].Id), Is.False);
+
+                Assert.That(controller.TrySelectDirectorCard(blueCard.Id), Is.True);
+                Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+
+                Assert.That(controller.IsTurnCardRevealComplete, Is.True);
+                Assert.That(redCard.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceUp));
+                Assert.That(blueCard.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceUp));
+                Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red),
+                    Is.EqualTo("REVEALED: TEST - Route Drill\nINITIATIVE 7"));
+                Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Blue),
+                    Is.EqualTo("REVEALED: TEST - Obstacle Course\nINITIATIVE 4"));
+                Assert.That(controller.CardStatus, Does.Contain("revealed together"));
+                Assert.That(controller.CardResolutionEvents, Is.Empty);
+                Assert.That(controller.TurnCardCommitmentEvents.Select(ruleEvent => ruleEvent.Kind),
+                    Is.EqualTo(new[]
+                    {
+                        TurnCardCommitmentEventKind.CardCommittedFacedown,
+                        TurnCardCommitmentEventKind.CardCommittedFacedown,
+                        TurnCardCommitmentEventKind.CardRevealed,
+                        TurnCardCommitmentEventKind.CardRevealed,
+                        TurnCardCommitmentEventKind.RevealCompleted
+                    }));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void DirectorPass_IsAvailableOnlyForSideWithNoEligibleCard()
+        {
+            var gameObject = new GameObject("Turn Pass Controller");
+            try
+            {
+                var controller = gameObject.AddComponent<HeroSelectionController>();
+                var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                foreach (var redCard in configuration.RedHand.Instances)
+                {
+                    Assert.That(CardLifecycleAuthority.TryDiscardDefenseFromHand(redCard), Is.True);
+                }
+
+                controller.ConfigurePlaceholderTestMatch(configuration);
+                controller.ConfigureCardDrivenMovement(true);
+
+                Assert.That(controller.CanPassTurnCard(TeamSide.Red), Is.True);
+                Assert.That(controller.CanPassTurnCard(TeamSide.Blue), Is.False);
+                Assert.That(controller.TryPassTurnCard(TeamSide.Red), Is.True);
+                Assert.That(controller.GetTurnCardCommitmentStatus(TeamSide.Red),
+                    Is.EqualTo(TurnCardCommitmentStatus.Passed));
+                Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red),
+                    Is.EqualTo("PASS - NO CARD"));
+                Assert.That(controller.CardStatus, Does.Contain("passed with no card"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
     }
 }

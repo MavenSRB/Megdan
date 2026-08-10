@@ -141,6 +141,44 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_ConfirmsBothDirectorCardsFacedownThenRevealsThemTogether()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var redCard = controller.VisibleDirectorHands
+                .Single(hand => hand.TeamSide == TeamSide.Red).Instances[0];
+            var blueCard = controller.VisibleDirectorHands
+                .Single(hand => hand.TeamSide == TeamSide.Blue).Instances[1];
+
+            Assert.That(controller.TrySelectDirectorCard(redCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+            Assert.That(redCard.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceDown));
+            Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red),
+                Is.EqualTo("FACEDOWN COMMITTED"));
+
+            Assert.That(controller.TrySelectDirectorCard(blueCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+            yield return null;
+
+            Assert.That(controller.IsTurnCardRevealComplete, Is.True);
+            Assert.That(redCard.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceUp));
+            Assert.That(blueCard.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceUp));
+            Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red), Does.StartWith("REVEALED:"));
+            Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Blue), Does.StartWith("REVEALED:"));
+            Assert.That(controller.CardResolutionEvents, Is.Empty);
+            Assert.That(controller.CardStatus, Does.Contain("Initiative ordering is not implemented"));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_SelectsVisibleCardOfferThenClicksReachableDestinationInOneClick()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);

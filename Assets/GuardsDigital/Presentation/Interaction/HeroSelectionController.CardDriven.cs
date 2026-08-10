@@ -25,6 +25,8 @@ namespace GuardsDigital.Presentation.Interaction
 
         private readonly List<CardActionResolutionEvent> cardResolutionEvents =
             new List<CardActionResolutionEvent>();
+        private readonly List<TurnCardCommitmentEvent> turnCardCommitmentEvents =
+            new List<TurnCardCommitmentEvent>();
         private readonly Dictionary<HeroId, PlaceholderMovementHand> placeholderHands =
             new Dictionary<HeroId, PlaceholderMovementHand>();
         private bool placeholderOneVsOneHandsInitialized;
@@ -32,6 +34,7 @@ namespace GuardsDigital.Presentation.Interaction
         private PlaceholderOneVsOneTestConfiguration placeholderConfiguration;
 
         private PlaceholderMovementHand placeholderHand;
+        private TurnCardCommitmentAuthority turnCardCommitmentAuthority;
         private CardActionResolutionAuthority cardResolutionAuthority;
         private CardInstanceId? selectedCardInstanceId;
         private ActionOffer? selectedActionOffer;
@@ -148,6 +151,12 @@ namespace GuardsDigital.Presentation.Interaction
 
         public IReadOnlyList<CardActionResolutionEvent> CardResolutionEvents => cardResolutionEvents;
 
+        public IReadOnlyList<TurnCardCommitmentEvent> TurnCardCommitmentEvents =>
+            turnCardCommitmentEvents;
+
+        public bool IsTurnCardRevealComplete =>
+            turnCardCommitmentAuthority != null && turnCardCommitmentAuthority.IsRevealed;
+
         public IReadOnlyList<HexCoordinate> CardMovementRoute => lastCardMovementRoute;
 
         public int CardRemainingMovementAllowance => IsCardMovementResolutionPending
@@ -209,6 +218,8 @@ namespace GuardsDigital.Presentation.Interaction
             placeholderHands.Clear();
             placeholderParticipants = null;
             placeholderHand = null;
+            turnCardCommitmentAuthority = null;
+            turnCardCommitmentEvents.Clear();
             ResetCardDrivenMovementPresentation();
             InitializeCardDrivenMovementIfEnabled();
         }
@@ -226,11 +237,20 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            var selectedInstance = placeholderHand.Instances.Single(instance =>
+                instance.Id.Equals(cardInstanceId));
+            if (TryGetConfiguredTeamSide(selectedInstance.OwnerId, out var selectedSide) &&
+                GetTurnCardCommitmentStatus(selectedSide) !=
+                TurnCardCommitmentStatus.AwaitingResponse)
+            {
+                return false;
+            }
+
             selectedCardInstanceId = cardInstanceId;
             selectedActionOffer = null;
             LastAttackOutcome = AttackResolutionOutcome.None;
             LastCardRejectionReason = CardActionResolutionRejectionReason.None;
-            cardStatus = "Card selected. Choose an available action.";
+            cardStatus = "Card selected. Confirm it for the turn or choose an available test action.";
             ClearSelectionVisuals();
             return true;
         }
@@ -250,10 +270,143 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            if (GetTurnCardCommitmentStatus(hand.TeamSide) !=
+                TurnCardCommitmentStatus.AwaitingResponse)
+            {
+                return false;
+            }
+
             var ownerHero = new[] { heroView }
                 .Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>())
                 .FirstOrDefault(hero => hero != null && hero.Occupancy.HeroId.Equals(hand.OwnerId));
-            return ownerHero != null && TrySelectHero(ownerHero) && TrySelectCard(cardInstanceId);
+            if (ownerHero != null)
+            {
+                return TrySelectHero(ownerHero) && TrySelectCard(cardInstanceId);
+            }
+
+            placeholderHand = placeholderHands.TryGetValue(hand.OwnerId, out var ownerHand)
+                ? ownerHand
+                : null;
+            return placeholderHand != null && TrySelectCard(cardInstanceId);
+        }
+
+        public TurnCardCommitmentStatus GetTurnCardCommitmentStatus(TeamSide side)
+        {
+            InitializeCardDrivenMovementIfEnabled();
+            EnsureTurnCardCommitmentAuthority();
+            return turnCardCommitmentAuthority != null
+                ? turnCardCommitmentAuthority.GetStatus(side)
+                : TurnCardCommitmentStatus.AwaitingResponse;
+        }
+
+        public string GetDirectorCommitmentLabel(TeamSide side)
+        {
+            var status = GetTurnCardCommitmentStatus(side);
+            if (status == TurnCardCommitmentStatus.AwaitingResponse)
+            {
+                return "AWAITING CARD";
+            }
+
+            if (status == TurnCardCommitmentStatus.CardCommittedFacedown)
+            {
+                return "FACEDOWN COMMITTED";
+            }
+
+            if (status == TurnCardCommitmentStatus.Passed)
+            {
+                return "PASS - NO CARD";
+            }
+
+            var cardId = turnCardCommitmentAuthority.GetRevealedCardInstanceId(side);
+            var card = cardId.HasValue
+                ? GetAllPlaceholderCardInstances().Single(instance => instance.Id.Equals(cardId.Value))
+                : null;
+            var definition = card != null
+                ? placeholderConfiguration.CardDefinitions.Single(candidate =>
+                    candidate.Reference.Equals(card.DefinitionReference))
+                : null;
+            return definition != null
+                ? $"REVEALED: {definition.DisplayName}\nINITIATIVE {definition.Initiative.Value}"
+                : "REVEALED";
+        }
+
+        public bool CanPassTurnCard(TeamSide side)
+        {
+            InitializeCardDrivenMovementIfEnabled();
+            EnsureTurnCardCommitmentAuthority();
+            return turnCardCommitmentAuthority != null &&
+                turnCardCommitmentAuthority.CanPass(
+                    side,
+                    GetAllPlaceholderCardInstances(),
+                    placeholderParticipants);
+        }
+
+        public bool TryConfirmSelectedTurnCard()
+        {
+            InitializeCardDrivenMovementIfEnabled();
+            EnsureTurnCardCommitmentAuthority();
+            if (!cardDrivenMovementEnabled ||
+                IsCardResolutionPending ||
+                !selectedCardInstanceId.HasValue ||
+                turnCardCommitmentAuthority == null)
+            {
+                return false;
+            }
+
+            var selectedCard = GetAllPlaceholderCardInstances().SingleOrDefault(instance =>
+                instance.Id.Equals(selectedCardInstanceId.Value));
+            if (selectedCard == null)
+            {
+                return false;
+            }
+
+            var side = placeholderParticipants.GetTeamForHero(selectedCard.OwnerId).Side;
+            var result = turnCardCommitmentAuthority.TryCommitCard(
+                side,
+                selectedCard.Id,
+                GetAllPlaceholderCardInstances(),
+                placeholderParticipants);
+            if (!result.Accepted)
+            {
+                cardStatus = $"Turn card rejected: {result.RejectionReason}.";
+                return false;
+            }
+
+            turnCardCommitmentEvents.AddRange(result.Events);
+            selectedCardInstanceId = null;
+            selectedActionOffer = null;
+            cardStatus = turnCardCommitmentAuthority.IsRevealed
+                ? "Both turn cards revealed together. Initiative ordering is not implemented yet."
+                : $"{FormatSide(side)} committed a facedown card. Awaiting {FormatSide(Opposite(side))}.";
+            return true;
+        }
+
+        public bool TryPassTurnCard(TeamSide side)
+        {
+            InitializeCardDrivenMovementIfEnabled();
+            EnsureTurnCardCommitmentAuthority();
+            if (!cardDrivenMovementEnabled || IsCardResolutionPending || turnCardCommitmentAuthority == null)
+            {
+                return false;
+            }
+
+            var result = turnCardCommitmentAuthority.TryPass(
+                side,
+                GetAllPlaceholderCardInstances(),
+                placeholderParticipants);
+            if (!result.Accepted)
+            {
+                cardStatus = $"Pass rejected: {result.RejectionReason}.";
+                return false;
+            }
+
+            turnCardCommitmentEvents.AddRange(result.Events);
+            selectedCardInstanceId = null;
+            selectedActionOffer = null;
+            cardStatus = turnCardCommitmentAuthority.IsRevealed
+                ? "Turn commitments complete. Initiative ordering is not implemented yet."
+                : $"{FormatSide(side)} passed with no card. Awaiting {FormatSide(Opposite(side))}.";
+            return true;
         }
 
         public bool TrySelectAction(ActionDefinitionId actionDefinitionId)
@@ -554,6 +707,15 @@ namespace GuardsDigital.Presentation.Interaction
             placeholderHands[configuration.RedHand.Instances[0].OwnerId] = configuration.RedHand;
             placeholderHands[configuration.BlueHand.Instances[0].OwnerId] = configuration.BlueHand;
             placeholderOneVsOneHandsInitialized = true;
+            EnsureTurnCardCommitmentAuthority();
+        }
+
+        private void EnsureTurnCardCommitmentAuthority()
+        {
+            if (turnCardCommitmentAuthority == null && placeholderConfiguration != null)
+            {
+                turnCardCommitmentAuthority = new TurnCardCommitmentAuthority();
+            }
         }
 
         private bool StartVisibleAttack(ActionOffer offer)
@@ -759,6 +921,30 @@ namespace GuardsDigital.Presentation.Interaction
             return context == ActionInvocationContext.PrintedPrimary ? "Primary" : "Secondary";
         }
 
+        private static string FormatSide(TeamSide side)
+        {
+            return side == TeamSide.Red ? "[R] RED" : "[B] BLUE";
+        }
+
+        private static TeamSide Opposite(TeamSide side)
+        {
+            return side == TeamSide.Red ? TeamSide.Blue : TeamSide.Red;
+        }
+
+        private bool TryGetConfiguredTeamSide(HeroId ownerId, out TeamSide side)
+        {
+            try
+            {
+                side = placeholderParticipants.GetTeamForHero(ownerId).Side;
+                return true;
+            }
+            catch (KeyNotFoundException)
+            {
+                side = TeamSide.None;
+                return false;
+            }
+        }
+
         private Rect GetCardPanelRect()
         {
             var width = Mathf.Min(820f, Mathf.Max(320f, Screen.width - (CardPanelMargin * 2f)));
@@ -848,13 +1034,14 @@ namespace GuardsDigital.Presentation.Interaction
             var panel = GetCardPanelRect();
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));
-            GUILayout.Label("PHASE 3 DIRECTOR TEST HANDS - select a card, then an action");
+            GUILayout.Label("PHASE 3 DIRECTOR TEST HANDS - select, confirm facedown, then reveal together");
             GUILayout.Label(cardStatus);
 
             foreach (var hand in VisibleDirectorHands)
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(hand.Label, GUILayout.Width(122f));
+                var commitmentStatus = GetTurnCardCommitmentStatus(hand.TeamSide);
                 foreach (var instance in hand.Instances)
                 {
                     var previousColor = GUI.backgroundColor;
@@ -862,7 +1049,8 @@ namespace GuardsDigital.Presentation.Interaction
                         selectedCardInstanceId.Value.Equals(instance.Id)
                             ? new Color(0.35f, 0.75f, 1f)
                             : Color.white;
-                    GUI.enabled = !IsCardResolutionPending;
+                    GUI.enabled = !IsCardResolutionPending &&
+                        commitmentStatus == TurnCardCommitmentStatus.AwaitingResponse;
                     if (GUILayout.Button(hand.GetCardButtonLabel(instance), GUILayout.Height(42f)))
                     {
                         TrySelectDirectorCard(instance.Id);
@@ -872,11 +1060,25 @@ namespace GuardsDigital.Presentation.Interaction
                     GUI.backgroundColor = previousColor;
                 }
 
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(GetDirectorCommitmentLabel(hand.TeamSide), GUILayout.Width(190f));
+                if (CanPassTurnCard(hand.TeamSide) &&
+                    GUILayout.Button("PASS - NO CARD", GUILayout.Width(125f), GUILayout.Height(42f)))
+                {
+                    TryPassTurnCard(hand.TeamSide);
+                }
+
                 GUILayout.EndHorizontal();
             }
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Actions", GUILayout.Width(54f));
+            if (selectedCardInstanceId.HasValue &&
+                GUILayout.Button("CONFIRM FACEDOWN", GUILayout.Width(170f), GUILayout.Height(46f)))
+            {
+                TryConfirmSelectedTurnCard();
+            }
+
             foreach (var offer in SelectedCardOffers)
             {
                 var definition = GetActionDefinition(offer);
