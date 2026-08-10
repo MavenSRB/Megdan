@@ -71,14 +71,14 @@ Names below are conceptual contracts. Exact C# names may change, but the respons
 A definition needs stable identity and enough structured metadata to reproduce the printed card without reading its image:
 
 - Stable definition ID and explicit content revision.
-- Hero/content-set ID, display name, color/slot, tier, and Basic/non-Basic/Ultimate classification where applicable.
+- Hero/content-set ID, display name, typed `CardColor`, tier, and Basic/non-Basic/Ultimate classification where applicable.
 - Printed Initiative, item icon, and printed action/value icons.
 - Ordered action definitions with stable IDs local to the definition.
 - Structured conditions, target specifications, values, and effect definitions required by those action definitions.
 - Exact transcribed rules text and reminder text for display and audit only.
 - Source reference and verification status outside runtime gameplay logic.
 
-Card color/slot is a typed rules-facing characteristic, not a visual style and not Red/Blue team identity. Rules queries may combine it with owner/controller, location, lifecycle state, face/information availability, and other verified predicates to derive legal card candidates for choices, costs, conditions, counts, or effects such as a color-restricted discard. Upgrade relationships may use the same characteristic, but do not own or exhaust its meaning. No authority may infer card color from artwork, tint, display name, hero identity, or UI grouping.
+`CardColor` is a typed rules-facing characteristic, not a visual style, generic slot, or Red/Blue team identity. Rules queries may combine it with owner/controller, location, lifecycle state, face/information availability, and other verified predicates to derive legal card candidates for choices, costs, conditions, counts, or effects such as a color-restricted discard. Same-color progression constrains upgrade candidates, but each valid next-Tier relationship remains explicit rather than being inferred from color alone. No authority may infer card color from artwork, tint, display name, hero identity, or UI grouping.
 
 The runtime format may later be authored through JSON, ScriptableObjects, or another content tool, but authoring objects must compile into validated immutable rules definitions. A ScriptableObject must never become live authoritative match state.
 

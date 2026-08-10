@@ -1098,15 +1098,15 @@ Acceptance checks:
 
 ### [ ] 7.1 Add synthetic card colors, tiers, and upgrade relationships
 
-Observable outcome: Synthetic cards expose authoritative typed color/slot and Tier data for rules queries, while synthetic non-Basic cards model Tier I-III upgrade choices without mutating definitions or using Wasp data.
+Observable outcome: Synthetic cards expose authoritative typed `CardColor` and Tier data for rules queries, while synthetic non-Basic cards model Tier I-III same-color upgrade choices without mutating definitions or using Wasp data.
 
 Acceptance checks:
 
 - Basic cards have no Tier and are excluded from lowest-Tier and upgrade-candidate queries.
-- Every definition explicitly represents its applicable typed card color/slot or verified absence; card color is distinct from Red/Blue team identity and is never inferred from art, tint, display name, hero identity, or UI grouping.
+- Every definition explicitly represents its applicable typed `CardColor` or verified absence; card color is distinct from Red/Blue team identity and any runtime or UI slot, and is never inferred from art, tint, display name, hero identity, or UI grouping.
 - Pure context-aware queries derive deterministic card candidates by color together with owner/controller, location, lifecycle state, and rules-facing information availability for later choices, costs, conditions, counts, and effects.
 - Color-filtered card queries compose with typed pending choices and lifecycle mutations such as `DiscardCard`; the mutation cannot guess color eligibility, ownership, or chooser policy.
-- Every non-Basic definition has an explicit Tier and stable same-color next-Tier candidates where applicable, reusing the same rules-facing color characteristic rather than an upgrade-only grouping.
+- Every non-Basic definition has an explicit Tier and stable same-color next-Tier candidates where applicable; color constrains progression, while valid upgrade relationships remain explicit rather than being inferred from color alone.
 - Hand, deck, and set-aside instances retain ownership and definition revision through upgrade transitions.
 - Each synthetic hero has authoritative current-Level state initialized to Level 1.
 - Typed queries can identify a hero's current lowest non-Basic card Tier for later Life and leveling rules.

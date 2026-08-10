@@ -175,7 +175,7 @@ The pitch requires Wasp's complete progression. Before verified Wasp definitions
 
 - Stable definition ID and content revision.
 - Display name, source image path/face, edition, and starting hand/deck/set-aside membership.
-- Hero/content-set ID, color/slot, nullable tier, and upgrade/replacement relationships.
+- Hero/content-set ID, typed `CardColor`, nullable tier, and explicit same-color upgrade/replacement relationships.
 - Basic/non-basic/Ultimate/Handicap classification as applicable.
 - Stable action-definition IDs; derived Primary/Secondary/reaction/replacement offer contexts; subtype; and text-application policy.
 - Initiative, Attack, Defense, Movement, Range, and Radius values where present.
