@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
@@ -20,6 +21,8 @@ namespace GuardsDigital.Presentation.Interaction
         private const float CardPanelHeight = 310f;
         private const float TieBreakerIndicatorWidth = 200f;
         private const float TieBreakerIndicatorHeight = 96f;
+        private const float RuleEventLogPreferredWidth = 720f;
+        private const float RuleEventLogPreferredHeight = 360f;
 
         [SerializeField]
         private bool cardDrivenMovementEnabled;
@@ -35,6 +38,7 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly Dictionary<HeroId, PlaceholderMovementHand> placeholderHands =
             new Dictionary<HeroId, PlaceholderMovementHand>();
         private readonly List<string> directorUndoSnapshots = new List<string>();
+        private readonly RuleEventLogProjection ruleEventLog = new RuleEventLogProjection();
         private bool placeholderOneVsOneHandsInitialized;
         private MatchParticipants placeholderParticipants;
         private PlaceholderOneVsOneTestConfiguration placeholderConfiguration;
@@ -50,6 +54,8 @@ namespace GuardsDigital.Presentation.Interaction
         private int lastCardRemainingAllowance;
         private string cardStatus = "Select a test card.";
         private string directorInitialSnapshot;
+        private bool ruleEventLogExpanded;
+        private Vector2 ruleEventLogScrollPosition;
 
         public bool IsCardDrivenMovementEnabled => cardDrivenMovementEnabled;
 
@@ -183,6 +189,8 @@ namespace GuardsDigital.Presentation.Interaction
 
         public IReadOnlyList<RoundResolutionEvent> RoundResolutionEvents => roundResolutionEvents;
 
+        public IReadOnlyList<RuleEventLogEntry> RuleEventLogEntries => ruleEventLog.Entries;
+
         public IReadOnlyList<RoundTurnSlot> CompletedTurnSlots =>
             roundResolutionAuthority?.TurnSlots ?? Array.Empty<RoundTurnSlot>();
 
@@ -250,6 +258,10 @@ namespace GuardsDigital.Presentation.Interaction
 
         public int DirectorUndoEntryCount => directorUndoSnapshots.Count;
 
+        public bool IsRuleEventLogExpanded => ruleEventLogExpanded;
+
+        public Rect RuleEventLogPanelRect => GetRuleEventLogRect();
+
         public TieBreakerState CurrentTieBreakerState
         {
             get
@@ -311,7 +323,12 @@ namespace GuardsDigital.Presentation.Interaction
                 throw new InvalidOperationException("The visible authoritative match is not initialized.");
             }
 
-            return AuthoritativeSnapshotSerializer.Serialize(roundResolutionAuthority, moveAuthority);
+            return CaptureRuleEventLogSnapshot();
+        }
+
+        public void ToggleRuleEventLog()
+        {
+            ruleEventLogExpanded = !ruleEventLogExpanded;
         }
 
         public void RestoreAuthoritativeSnapshot(string payload)
@@ -358,8 +375,10 @@ namespace GuardsDigital.Presentation.Interaction
                 throw new InvalidOperationException("The visible placeholder rules content is not initialized.");
             }
 
+            var hasRuleEventLog = RuleEventLogSnapshotEnvelope.TryDeserialize(payload, out var envelope);
+            var authoritativePayload = hasRuleEventLog ? envelope.AuthoritativePayload : payload;
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
-                payload,
+                authoritativePayload,
                 placeholderConfiguration.CardDefinitions);
             placeholderConfiguration = PlaceholderOneVsOneTestConfiguration.Restore(
                 restored.Participants,
@@ -384,11 +403,19 @@ namespace GuardsDigital.Presentation.Interaction
             LastTurnRejectionReason = TurnResolutionRejectionReason.None;
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             LastAttackOutcome = AttackResolutionOutcome.None;
+            if (hasRuleEventLog)
+            {
+                ruleEventLog.Restore(envelope.Entries);
+            }
+            else
+            {
+                ruleEventLog.ResetToSetup(restored.Participants, restored.Round.TieBreakerState);
+            }
 
             if (resetDirectorHistory)
             {
                 directorUndoSnapshots.Clear();
-                directorInitialSnapshot = payload;
+                directorInitialSnapshot = CaptureRuleEventLogSnapshot();
             }
 
             foreach (var view in new[] { heroView }.Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>()).Where(view => view != null))
@@ -991,7 +1018,8 @@ namespace GuardsDigital.Presentation.Interaction
 
             var guiPosition = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
             return GetCardPanelRect().Contains(guiPosition) ||
-                GetTieBreakerIndicatorRect().Contains(guiPosition);
+                GetTieBreakerIndicatorRect().Contains(guiPosition) ||
+                (ruleEventLogExpanded && GetRuleEventLogRect().Contains(guiPosition));
         }
 
         private void InitializeCardDrivenMovementIfEnabled()
@@ -1033,8 +1061,11 @@ namespace GuardsDigital.Presentation.Interaction
             turnCardCommitmentEvents.Clear();
             turnResolutionEvents.Clear();
             roundResolutionEvents.Clear();
+            ruleEventLog.Restore(Array.Empty<RuleEventLogEntry>());
             directorUndoSnapshots.Clear();
             directorInitialSnapshot = null;
+            ruleEventLogExpanded = false;
+            ruleEventLogScrollPosition = Vector2.zero;
             lastCardMovementRoute = Array.Empty<HexCoordinate>();
             lastCardMovementAllowance = 0;
             lastCardRemainingAllowance = 0;
@@ -1117,6 +1148,7 @@ namespace GuardsDigital.Presentation.Interaction
                 placeholderParticipants,
                 placeholderConfiguration.TieBreakerState,
                 cardActions: cardResolutionAuthority);
+            ruleEventLog.ResetToSetup(placeholderParticipants, placeholderConfiguration.TieBreakerState);
             cardStatus = $"Round {VisibleRoundIndex}, turn {VisibleTurnIndex}/{RoundResolutionAuthority.TurnsPerRound}: " +
                 "awaiting Red and Blue commitments.";
         }
@@ -1496,6 +1528,7 @@ namespace GuardsDigital.Presentation.Interaction
             foreach (var roundEvent in events)
             {
                 roundResolutionEvents.Add(roundEvent);
+                ruleEventLog.Append(new[] { roundEvent });
                 if (roundEvent.Kind == RoundResolutionEventKind.CommitmentProgressed)
                 {
                     turnCardCommitmentEvents.Add(roundEvent.CommitmentEvent);
@@ -1520,8 +1553,16 @@ namespace GuardsDigital.Presentation.Interaction
         private string CaptureDirectorCommandBoundary()
         {
             return roundResolutionAuthority != null && moveAuthority != null
-                ? AuthoritativeSnapshotSerializer.Serialize(roundResolutionAuthority, moveAuthority)
+                ? CaptureRuleEventLogSnapshot()
                 : null;
+        }
+
+        private string CaptureRuleEventLogSnapshot()
+        {
+            var authoritativePayload = AuthoritativeSnapshotSerializer.Serialize(
+                roundResolutionAuthority,
+                moveAuthority);
+            return RuleEventLogSnapshotEnvelope.Serialize(authoritativePayload, ruleEventLog.Entries);
         }
 
         private void RecordAcceptedDirectorCommand(string snapshot)
@@ -1753,6 +1794,32 @@ namespace GuardsDigital.Presentation.Interaction
                 TieBreakerIndicatorHeight);
         }
 
+        private Rect GetRuleEventLogRect()
+        {
+            var cardPanel = GetCardPanelRect();
+            var availableRightWidth = Screen.width - cardPanel.xMax - (CardPanelMargin * 2f);
+            if (availableRightWidth >= 420f)
+            {
+                var width = Mathf.Min(RuleEventLogPreferredWidth, availableRightWidth);
+                var height = Mathf.Min(
+                    RuleEventLogPreferredHeight,
+                    Mathf.Max(160f, Screen.height - TieBreakerIndicatorHeight - (CardPanelMargin * 3f)));
+                return new Rect(
+                    Screen.width - width - CardPanelMargin,
+                    TieBreakerIndicatorHeight + (CardPanelMargin * 2f),
+                    width,
+                    height);
+            }
+
+            var availableAboveHeight = Mathf.Max(140f, cardPanel.y - (CardPanelMargin * 2f));
+            var aboveHeight = Mathf.Min(RuleEventLogPreferredHeight, availableAboveHeight);
+            return new Rect(
+                cardPanel.x,
+                Mathf.Max(CardPanelMargin, cardPanel.y - aboveHeight - CardPanelMargin),
+                cardPanel.width,
+                aboveHeight);
+        }
+
         private static string FormatTieBreakerIndicator(TieBreakerState state)
         {
             if (!state.IsDefined)
@@ -1808,6 +1875,27 @@ namespace GuardsDigital.Presentation.Interaction
             GUI.contentColor = previousContentColor;
         }
 
+        private void DrawRuleEventLog()
+        {
+            if (!ruleEventLogExpanded)
+            {
+                return;
+            }
+
+            var panel = GetRuleEventLogRect();
+            GUI.Box(panel, GUIContent.none);
+            GUILayout.BeginArea(new Rect(panel.x + 10f, panel.y + 8f, panel.width - 20f, panel.height - 16f));
+            GUILayout.Label($"INTERNAL RULE-EVENT LOG - {ruleEventLog.Entries.Count} ACCEPTED EVENTS");
+            ruleEventLogScrollPosition = GUILayout.BeginScrollView(ruleEventLogScrollPosition);
+            foreach (var entry in ruleEventLog.Entries)
+            {
+                GUILayout.Label(entry.DisplayText);
+            }
+
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+
         private void OnGUI()
         {
             if (!cardDrivenMovementEnabled)
@@ -1837,6 +1925,14 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             GUI.enabled = true;
+            if (GUILayout.Button(
+                    ruleEventLogExpanded ? "HIDE EVENT LOG" : $"EVENT LOG ({ruleEventLog.Entries.Count})",
+                    GUILayout.Width(126f),
+                    GUILayout.Height(24f)))
+            {
+                ToggleRuleEventLog();
+            }
+
             GUILayout.EndHorizontal();
             GUILayout.Label(cardStatus);
 
@@ -1981,6 +2077,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             GUILayout.EndArea();
+            DrawRuleEventLog();
         }
     }
 }

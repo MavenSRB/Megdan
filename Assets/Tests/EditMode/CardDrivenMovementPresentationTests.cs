@@ -1040,6 +1040,93 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void RuleEventLog_IsReadOnlyOrderedAndRebuildsAcrossRestoreUndoAndRestart()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects);
+                var controller = scenario.Controller;
+                var red = scenario.Configuration.RedHand.Instances[0];
+                var blue = scenario.Configuration.BlueHand.Instances[0];
+                var initialSnapshot = controller.CaptureAuthoritativeSnapshot();
+
+                Assert.That(controller.RuleEventLogEntries, Has.Count.EqualTo(1));
+                Assert.That(controller.RuleEventLogEntries[0].Sequence, Is.EqualTo(1));
+                Assert.That(controller.RuleEventLogEntries[0].EventType,
+                    Is.EqualTo("Setup.MatchInitialized"));
+                Assert.That(controller.RuleEventLogEntries[0].StableReferences,
+                    Does.Contain(red.OwnerId.Value).And.Contain(blue.OwnerId.Value));
+                Assert.That(controller.RuleEventLogEntries[0].Detail,
+                    Does.Contain("tieBreaker=Red"));
+
+                Assert.That(controller.TryPassTurnCard(TeamSide.Red), Is.False);
+                Assert.That(controller.RuleEventLogEntries, Has.Count.EqualTo(1));
+
+                controller.ToggleRuleEventLog();
+                Assert.That(controller.IsRuleEventLogExpanded, Is.True);
+                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(initialSnapshot));
+                var logPanelCenter = controller.RuleEventLogPanelRect.center;
+                Assert.That(controller.BlocksPointerAt(new Vector2(
+                    logPanelCenter.x,
+                    Screen.height - logPanelCenter.y)), Is.True);
+
+                Assert.That(controller.TrySelectDirectorCard(red.Id), Is.True);
+                Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+                Assert.That(controller.RuleEventLogEntries, Has.Count.EqualTo(2));
+                var facedownEntry = controller.RuleEventLogEntries[1];
+                Assert.That(facedownEntry.EventType,
+                    Is.EqualTo("Commitment.CardCommittedFacedown"));
+                Assert.That(facedownEntry.StableReferences, Does.Contain(red.OwnerId.Value));
+                Assert.That(facedownEntry.DisplayText, Does.Not.Contain(red.Id.Value));
+                var afterRedSnapshot = controller.CaptureAuthoritativeSnapshot();
+                var afterRedLog = controller.RuleEventLogEntries.ToArray();
+
+                Assert.That(controller.TrySelectDirectorCard(blue.Id), Is.True);
+                Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+                Assert.That(controller.RuleEventLogEntries.Count, Is.GreaterThan(afterRedLog.Length));
+                Assert.That(controller.RuleEventLogEntries.Select(entry => entry.Sequence),
+                    Is.EqualTo(Enumerable.Range(1, controller.RuleEventLogEntries.Count)));
+                Assert.That(controller.RuleEventLogEntries.Any(entry =>
+                    entry.EventType == "Commitment.CardRevealed" &&
+                    entry.StableReferences.Contains(red.Id.Value)), Is.True);
+
+                Assert.That(controller.TryUndoDirectorCommand(), Is.True);
+                Assert.That(controller.RuleEventLogEntries, Is.EqualTo(afterRedLog));
+                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(afterRedSnapshot));
+
+                Assert.That(controller.TrySelectDirectorCard(blue.Id), Is.True);
+                Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+                Assert.That(controller.TryRestartDirectorScenario(), Is.True);
+                Assert.That(controller.RuleEventLogEntries, Has.Count.EqualTo(1));
+                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(initialSnapshot));
+
+                controller.RestoreAuthoritativeSnapshot(afterRedSnapshot);
+                Assert.That(controller.RuleEventLogEntries, Is.EqualTo(afterRedLog));
+                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(afterRedSnapshot));
+
+                Assert.That(controller.TrySelectDirectorCard(blue.Id), Is.True);
+                Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+                var actingCard = controller.VisibleTurnActor.CardInstanceId;
+                Assert.That(controller.TryPerformHold(actingCard), Is.True);
+                var holdEntry = controller.RuleEventLogEntries.Single(entry =>
+                    entry.EventType == "Turn.HoldActionPerformed");
+                Assert.That(holdEntry.StableReferences,
+                    Does.Contain(actingCard.Value).And.Contain("hero=").And.Contain("action="));
+                Assert.That(holdEntry.Detail, Does.Contain("invocation="));
+                Assert.That(controller.RuleEventLogEntries,
+                    Has.All.Matches<GuardsDigital.Core.Diagnostics.RuleEventLogEntry>(entry =>
+                        !string.IsNullOrWhiteSpace(entry.EventType) &&
+                        !string.IsNullOrWhiteSpace(entry.StableReferences) &&
+                        !string.IsNullOrWhiteSpace(entry.Detail)));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
         private static void CommitTurn(
             HeroSelectionController controller,
             CardInstance redCard,

@@ -220,6 +220,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
             var initialSnapshot = controller.CaptureAuthoritativeSnapshot();
+            Assert.That(controller.RuleEventLogEntries, Has.Count.EqualTo(1));
+            Assert.That(controller.RuleEventLogEntries[0].EventType,
+                Is.EqualTo("Setup.MatchInitialized"));
             var redCard = controller.VisibleDirectorHands
                 .Single(hand => hand.TeamSide == TeamSide.Red).Instances[0];
             var blueCard = controller.VisibleDirectorHands
@@ -228,13 +231,18 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(controller.TrySelectDirectorCard(redCard.Id), Is.True);
             Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
             var afterRedCommit = controller.CaptureAuthoritativeSnapshot();
+            var afterRedLog = controller.RuleEventLogEntries.ToArray();
             Assert.That(controller.TrySelectDirectorCard(blueCard.Id), Is.True);
             Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
             Assert.That(controller.IsVisibleTurnActive, Is.True);
+            Assert.That(controller.RuleEventLogEntries.Count, Is.GreaterThan(afterRedLog.Length));
+            controller.ToggleRuleEventLog();
+            Assert.That(controller.IsRuleEventLogExpanded, Is.True);
 
             Assert.That(controller.TryUndoDirectorCommand(), Is.True);
             yield return null;
             Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(afterRedCommit));
+            Assert.That(controller.RuleEventLogEntries, Is.EqualTo(afterRedLog));
             Assert.That(controller.GetTurnCardCommitmentStatus(TeamSide.Blue),
                 Is.EqualTo(TurnCardCommitmentStatus.AwaitingResponse));
 
@@ -246,6 +254,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(controller.VisibleRoundPhase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
             Assert.That(controller.DirectorUndoEntryCount, Is.Zero);
             Assert.That(controller.CardStatus, Does.Contain("Restarted initial scenario"));
+            Assert.That(controller.RuleEventLogEntries, Has.Count.EqualTo(1));
         }
 
         [UnityTest]
