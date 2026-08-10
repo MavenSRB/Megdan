@@ -249,6 +249,13 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
             Assert.That(redHero.Coordinate, Is.EqualTo(new HexCoordinate(0, 0)));
             Assert.That(blueHero.Coordinate, Is.EqualTo(new HexCoordinate(0, -1)));
+
+            var defenseCardId = controller.PendingDefenseChoice.LegalDefenseOffers[0].SourceCardInstanceId;
+            Assert.That(controller.TrySubmitDefenseCard(defenseCardId), Is.True);
+            Assert.That(controller.IsDefenseResponsePending, Is.False);
+            Assert.That(controller.IsAttackOutcomePending, Is.True);
+            Assert.That(controller.PendingAttackResolution.HasDefenseTotal, Is.True);
+            Assert.That(controller.CardStatus, Does.Contain("Attack comparison pending"));
         }
 
         [UnityTest]

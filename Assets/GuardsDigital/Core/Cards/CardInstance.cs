@@ -47,5 +47,20 @@ namespace GuardsDigital.Core.Cards
         {
             return new CardInstance(id, definitionReference, ownerId, CardStateFacts.InitialInHand());
         }
+
+        internal bool TryApplyLocationTransition(ActionCardStateTransition transition)
+        {
+            if (!transition.IsDefined || State.Location != transition.RequiredLocation)
+            {
+                return false;
+            }
+
+            State = new CardStateFacts(
+                transition.DestinationLocation,
+                State.HasBeenPlayed,
+                State.ResolutionStatus,
+                State.FaceOrientation);
+            return true;
+        }
     }
 }

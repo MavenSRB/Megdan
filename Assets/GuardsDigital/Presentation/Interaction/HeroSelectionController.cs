@@ -159,6 +159,11 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            if (cardDrivenMovementEnabled && IsAttackOutcomePending)
+            {
+                return false;
+            }
+
             if (IsMovementSessionActive)
             {
                 return selectedHero == heroView && StopMovementSession();

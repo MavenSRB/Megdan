@@ -10,7 +10,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
     {
         None = 0,
         ChooseTarget = 1,
-        DefenseResponse = 2
+        DefenseResponse = 2,
+        CompareOutcome = 3
     }
 
     public sealed class PendingAttackResolution
@@ -25,7 +26,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionStepId currentStepId,
             AttackResolutionPhase phase,
             HeroId targetHeroId,
-            PrintedValueResult attackValue)
+            PrintedValueResult attackValue,
+            ActionOffer? defenseOffer = null,
+            PrintedValueResult defenseValue = null)
         {
             if (!resolutionId.IsDefined ||
                 !sourceCardInstanceId.IsDefined ||
@@ -45,16 +48,30 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (phase == AttackResolutionPhase.ChooseTarget)
             {
-                if (targetHeroId.IsDefined || attackValue != null)
+                if (targetHeroId.IsDefined || attackValue != null || defenseOffer.HasValue || defenseValue != null)
                 {
                     throw new ArgumentException("Target-selection state cannot already contain a target or Attack Total.");
                 }
             }
             else if (phase == AttackResolutionPhase.DefenseResponse)
             {
-                if (!targetHeroId.IsDefined || attackValue == null || attackValue.Channel != PrintedValueChannel.Attack)
+                if (!targetHeroId.IsDefined || attackValue == null || attackValue.Channel != PrintedValueChannel.Attack ||
+                    defenseOffer.HasValue || defenseValue != null)
                 {
                     throw new ArgumentException("Defense-response state requires a target and typed Attack Total.");
+                }
+            }
+            else if (phase == AttackResolutionPhase.CompareOutcome)
+            {
+                if (!targetHeroId.IsDefined || attackValue == null || attackValue.Channel != PrintedValueChannel.Attack ||
+                    defenseOffer.HasValue != (defenseValue != null) ||
+                    (defenseValue != null && defenseValue.Channel != PrintedValueChannel.Defense) ||
+                    (defenseOffer.HasValue &&
+                        (!defenseOffer.Value.IsAvailable ||
+                         !defenseOffer.Value.ActorId.Equals(targetHeroId) ||
+                         defenseOffer.Value.InvocationContext != ActionInvocationContext.Reaction)))
+                {
+                    throw new ArgumentException("Outcome-comparison state requires a target, typed Attack Total, and an optional typed Defense response.");
                 }
             }
             else
@@ -72,6 +89,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             Phase = phase;
             TargetHeroId = targetHeroId;
             AttackValue = attackValue;
+            DefenseOffer = defenseOffer;
+            DefenseValue = defenseValue;
         }
 
         public ActionResolutionId ResolutionId { get; }
@@ -85,6 +104,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public HeroId TargetHeroId { get; }
         public PrintedValueResult AttackValue { get; }
         public int AttackTotal => AttackValue?.Total ?? 0;
+        public ActionOffer? DefenseOffer { get; }
+        public PrintedValueResult DefenseValue { get; }
+        public bool HasDefenseTotal => DefenseValue != null;
+        public int? DefenseTotal => DefenseValue?.Total;
     }
 
     public sealed class PendingAttackTargetChoice
@@ -196,5 +219,61 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public ActionResolutionId ResolutionId { get; }
         public ActionResolutionStepId ChoiceId { get; }
         public HeroId TargetHeroId { get; }
+    }
+
+    public enum DefenseResponseChoiceKind
+    {
+        None = 0,
+        SelectCards = 1,
+        Decline = 2
+    }
+
+    public sealed class DefenseResponseChoiceCommand
+    {
+        private DefenseResponseChoiceCommand(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            DefenseResponseChoiceKind choiceKind,
+            IEnumerable<CardInstanceId> selectedCardInstanceIds)
+        {
+            if (!resolutionId.IsDefined || !choiceId.IsDefined)
+            {
+                throw new ArgumentException("Defense response command requires defined resolution and choice IDs.");
+            }
+
+            ResolutionId = resolutionId;
+            ChoiceId = choiceId;
+            ChoiceKind = choiceKind;
+            SelectedCardInstanceIds = Array.AsReadOnly(
+                (selectedCardInstanceIds ?? throw new ArgumentNullException(nameof(selectedCardInstanceIds))).ToArray());
+        }
+
+        public ActionResolutionId ResolutionId { get; }
+        public ActionResolutionStepId ChoiceId { get; }
+        public DefenseResponseChoiceKind ChoiceKind { get; }
+        public IReadOnlyList<CardInstanceId> SelectedCardInstanceIds { get; }
+
+        public static DefenseResponseChoiceCommand SelectCards(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            params CardInstanceId[] selectedCardInstanceIds)
+        {
+            return new DefenseResponseChoiceCommand(
+                resolutionId,
+                choiceId,
+                DefenseResponseChoiceKind.SelectCards,
+                selectedCardInstanceIds ?? Array.Empty<CardInstanceId>());
+        }
+
+        public static DefenseResponseChoiceCommand Decline(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId)
+        {
+            return new DefenseResponseChoiceCommand(
+                resolutionId,
+                choiceId,
+                DefenseResponseChoiceKind.Decline,
+                Array.Empty<CardInstanceId>());
+        }
     }
 }

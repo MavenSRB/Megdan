@@ -10,6 +10,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         AttackTargetChoiceRequested = 5,
         AttackStarted = 6,
         AttackTotalCalculated = 7,
-        DefenseResponseChoiceRequested = 8
+        DefenseResponseChoiceRequested = 8,
+        DefenseCardDiscarded = 9,
+        DefenseTotalCalculated = 10,
+        DefenseDeclined = 11,
+        DefenseResponseCompleted = 12
     }
 }

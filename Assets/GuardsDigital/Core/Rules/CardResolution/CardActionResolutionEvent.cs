@@ -17,6 +17,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionStepId stepId,
             int remainingAllowance,
             int attackTotal,
+            CardInstanceId defenseCardInstanceId,
+            int defenseTotal,
             AdjacentMoveEvent movementEvent)
         {
             if (kind == CardActionResolutionEventKind.None)
@@ -58,6 +60,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             StepId = stepId;
             RemainingAllowance = remainingAllowance;
             AttackTotal = attackTotal;
+            DefenseCardInstanceId = defenseCardInstanceId;
+            DefenseTotal = defenseTotal;
             MovementEvent = movementEvent;
         }
 
@@ -78,6 +82,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public int RemainingAllowance { get; }
 
         public int AttackTotal { get; }
+
+        public CardInstanceId DefenseCardInstanceId { get; }
+
+        public int DefenseTotal { get; }
 
         public AdjacentMoveEvent MovementEvent { get; }
 
@@ -126,6 +134,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return FromAttackResolution(CardActionResolutionEventKind.DefenseResponseChoiceRequested, resolution);
         }
 
+        public static CardActionResolutionEvent DefenseCardDiscarded(PendingAttackResolution resolution)
+        {
+            return FromAttackResolution(CardActionResolutionEventKind.DefenseCardDiscarded, resolution);
+        }
+
+        public static CardActionResolutionEvent DefenseTotalCalculated(PendingAttackResolution resolution)
+        {
+            return FromAttackResolution(CardActionResolutionEventKind.DefenseTotalCalculated, resolution);
+        }
+
+        public static CardActionResolutionEvent DefenseDeclined(PendingAttackResolution resolution)
+        {
+            return FromAttackResolution(CardActionResolutionEventKind.DefenseDeclined, resolution);
+        }
+
+        public static CardActionResolutionEvent DefenseResponseCompleted(PendingAttackResolution resolution)
+        {
+            return FromAttackResolution(CardActionResolutionEventKind.DefenseResponseCompleted, resolution);
+        }
+
         public bool Equals(CardActionResolutionEvent other)
         {
             return Kind == other.Kind &&
@@ -137,6 +165,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 StepId.Equals(other.StepId) &&
                 RemainingAllowance == other.RemainingAllowance &&
                 AttackTotal == other.AttackTotal &&
+                DefenseCardInstanceId.Equals(other.DefenseCardInstanceId) &&
+                DefenseTotal == other.DefenseTotal &&
                 MovementEvent.Equals(other.MovementEvent);
         }
 
@@ -158,6 +188,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ StepId.GetHashCode();
                 hashCode = (hashCode * 397) ^ RemainingAllowance;
                 hashCode = (hashCode * 397) ^ AttackTotal;
+                hashCode = (hashCode * 397) ^ DefenseCardInstanceId.GetHashCode();
+                hashCode = (hashCode * 397) ^ DefenseTotal;
                 hashCode = (hashCode * 397) ^ MovementEvent.GetHashCode();
                 return hashCode;
             }
@@ -183,6 +215,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.CurrentStepId,
                 resolution.RemainingAllowance,
                 0,
+                default,
+                0,
                 movementEvent);
         }
 
@@ -205,6 +239,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.CurrentStepId,
                 0,
                 resolution.AttackTotal,
+                resolution.DefenseOffer.HasValue
+                    ? resolution.DefenseOffer.Value.SourceCardInstanceId
+                    : default,
+                resolution.DefenseTotal ?? 0,
                 default);
         }
     }

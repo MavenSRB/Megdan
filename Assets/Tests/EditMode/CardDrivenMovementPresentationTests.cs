@@ -218,6 +218,34 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.VisibleCardInstances, Has.All.Matches<CardInstance>(card =>
                     card.State.Location == CardLocation.Hand));
                 Assert.That(controller.TrySelectHero(blueHero), Is.False);
+
+                var defenseOffer = controller.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
+                    PrintedValueQuery.CalculatePrintedValue(
+                        offer,
+                        controller.VisibleCardDefinitions,
+                        PrintedValueChannel.Defense).Total == 3);
+                Assert.That(controller.TrySubmitDefenseCard(defenseOffer.SourceCardInstanceId), Is.True);
+                Assert.That(controller.IsDefenseResponsePending, Is.False);
+                Assert.That(controller.IsAttackOutcomePending, Is.True);
+                Assert.That(controller.PendingAttackResolution.DefenseTotal, Is.EqualTo(3));
+                Assert.That(controller.PendingAttackResolution.DefenseOffer.Value.InvocationContext,
+                    Is.EqualTo(ActionInvocationContext.Reaction));
+                Assert.That(controller.CardStatus, Does.Contain("discarded for Defense 3"));
+                Assert.That(controller.CardStatus, Does.Contain("milestone 2.5"));
+                Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
+                {
+                    CardActionResolutionEventKind.AttackTargetChoiceRequested,
+                    CardActionResolutionEventKind.AttackStarted,
+                    CardActionResolutionEventKind.AttackTotalCalculated,
+                    CardActionResolutionEventKind.DefenseResponseChoiceRequested,
+                    CardActionResolutionEventKind.DefenseCardDiscarded,
+                    CardActionResolutionEventKind.DefenseTotalCalculated,
+                    CardActionResolutionEventKind.DefenseResponseCompleted
+                }));
+                Assert.That(controller.TrySelectCard(routeDrill.Id), Is.False,
+                    "The outer Attack remains pending until milestone 2.5 compares totals.");
+                Assert.That(controller.TrySelectHero(blueHero), Is.False,
+                    "The outer Attack cannot transfer to another active hero before comparison.");
             }
             finally
             {
@@ -303,6 +331,20 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.HighlightedCoordinates, Is.Empty);
                 Assert.That(controller.VisibleCardInstances, Has.All.Matches<CardInstance>(card =>
                     card.State.Location == CardLocation.Hand));
+                Assert.That(controller.TryDeclineDefense(), Is.True);
+                Assert.That(controller.IsDefenseResponsePending, Is.False);
+                Assert.That(controller.IsAttackOutcomePending, Is.True);
+                Assert.That(controller.PendingAttackResolution.HasDefenseTotal, Is.False);
+                Assert.That(controller.CardStatus, Does.Contain("Defense declined"));
+                Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
+                {
+                    CardActionResolutionEventKind.AttackTargetChoiceRequested,
+                    CardActionResolutionEventKind.AttackStarted,
+                    CardActionResolutionEventKind.AttackTotalCalculated,
+                    CardActionResolutionEventKind.DefenseResponseChoiceRequested,
+                    CardActionResolutionEventKind.DefenseDeclined,
+                    CardActionResolutionEventKind.DefenseResponseCompleted
+                }));
             }
             finally
             {

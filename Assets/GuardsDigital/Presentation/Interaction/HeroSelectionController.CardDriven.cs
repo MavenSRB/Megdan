@@ -15,7 +15,7 @@ namespace GuardsDigital.Presentation.Interaction
     public sealed partial class HeroSelectionController
     {
         private const float CardPanelMargin = 12f;
-        private const float CardPanelHeight = 184f;
+        private const float CardPanelHeight = 230f;
 
         [SerializeField]
         private bool cardDrivenMovementEnabled;
@@ -91,7 +91,7 @@ namespace GuardsDigital.Presentation.Interaction
         }
 
         public bool IsCardResolutionPending =>
-            IsCardMovementResolutionPending || IsAttackTargetPending || IsDefenseResponsePending;
+            IsCardMovementResolutionPending || IsAttackTargetPending || IsDefenseResponsePending || IsAttackOutcomePending;
 
         public bool IsCardMovementResolutionPending =>
             cardResolutionAuthority != null && cardResolutionAuthority.PendingChoice != null;
@@ -102,6 +102,11 @@ namespace GuardsDigital.Presentation.Interaction
         public bool IsDefenseResponsePending =>
             cardResolutionAuthority != null && cardResolutionAuthority.PendingDefenseChoice != null;
 
+        public bool IsAttackOutcomePending =>
+            cardResolutionAuthority != null &&
+            cardResolutionAuthority.PendingAttackResolution != null &&
+            cardResolutionAuthority.PendingAttackResolution.Phase == AttackResolutionPhase.CompareOutcome;
+
         public PendingMovementChoice PendingCardChoice => cardResolutionAuthority?.PendingChoice;
 
         public PendingAttackTargetChoice PendingAttackTargetChoice =>
@@ -109,6 +114,9 @@ namespace GuardsDigital.Presentation.Interaction
 
         public PendingDefenseResponseChoice PendingDefenseChoice =>
             cardResolutionAuthority?.PendingDefenseChoice;
+
+        public PendingAttackResolution PendingAttackResolution =>
+            cardResolutionAuthority?.PendingAttackResolution;
 
         public IReadOnlyList<ReachableMovementDestination> PendingCardDestinations =>
             PendingCardChoice != null
@@ -249,8 +257,33 @@ namespace GuardsDigital.Presentation.Interaction
                 ? $"{targetView.TeamSide} hero"
                 : targetHeroId.ToString();
             cardStatus = $"Attack {result.PendingResolution.AttackTotal} targets {targetLabel}. " +
-                "Defense response pending; Defense selection is introduced in milestone 2.4.";
+                "Defense response pending: discard one listed card or decline.";
             return true;
+        }
+
+        public bool TrySubmitDefenseCard(CardInstanceId cardInstanceId)
+        {
+            if (!IsDefenseResponsePending)
+            {
+                return false;
+            }
+
+            return SubmitDefenseResponse(DefenseResponseChoiceCommand.SelectCards(
+                PendingDefenseChoice.ResolutionId,
+                PendingDefenseChoice.ChoiceId,
+                cardInstanceId));
+        }
+
+        public bool TryDeclineDefense()
+        {
+            if (!IsDefenseResponsePending || !PendingDefenseChoice.CanDecline)
+            {
+                return false;
+            }
+
+            return SubmitDefenseResponse(DefenseResponseChoiceCommand.Decline(
+                PendingDefenseChoice.ResolutionId,
+                PendingDefenseChoice.ChoiceId));
         }
 
         public bool TrySubmitCardDestination(HexCoordinate destination)
@@ -467,6 +500,46 @@ namespace GuardsDigital.Presentation.Interaction
             return true;
         }
 
+        private bool SubmitDefenseResponse(DefenseResponseChoiceCommand command)
+        {
+            var selectedCardId = command.ChoiceKind == DefenseResponseChoiceKind.SelectCards &&
+                command.SelectedCardInstanceIds.Count == 1
+                    ? (CardInstanceId?)command.SelectedCardInstanceIds[0]
+                    : null;
+            var result = cardResolutionAuthority.AnswerDefenseResponse(
+                command,
+                placeholderHand.Definitions,
+                GetAllPlaceholderCardInstances(),
+                placeholderParticipants);
+            if (!result.Accepted)
+            {
+                LastCardRejectionReason = result.RejectionReason;
+                cardStatus = $"Defense response rejected: {result.RejectionReason}. Choose again.";
+                return false;
+            }
+
+            cardResolutionEvents.AddRange(result.Events);
+            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            if (result.PendingResolution.HasDefenseTotal)
+            {
+                var definition = selectedCardId.HasValue
+                    ? GetAllPlaceholderCardInstances()
+                        .Where(instance => instance.Id.Equals(selectedCardId.Value))
+                        .Select(instance => placeholderHand.Definitions.Single(candidate =>
+                            candidate.Reference.Equals(instance.DefinitionReference)))
+                        .SingleOrDefault()
+                    : null;
+                cardStatus = $"{definition?.DisplayName ?? "Defense card"} discarded for Defense " +
+                    $"{result.PendingResolution.DefenseTotal}. Attack comparison pending for milestone 2.5.";
+            }
+            else
+            {
+                cardStatus = "Defense declined. Attack comparison pending for milestone 2.5.";
+            }
+
+            return true;
+        }
+
         private IReadOnlyList<CardInstance> GetAllPlaceholderCardInstances()
         {
             EnsurePlaceholderOneVsOneHands();
@@ -661,6 +734,38 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             GUILayout.EndHorizontal();
+
+            var defenseChoice = PendingDefenseChoice;
+            if (defenseChoice != null)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Defense", GUILayout.Width(54f));
+                foreach (var offer in defenseChoice.LegalDefenseOffers)
+                {
+                    var definition = placeholderHand.Definitions.Single(candidate =>
+                        candidate.Reference.Equals(offer.SourceDefinitionReference));
+                    var defenseTotal = PrintedValueQuery.CalculatePrintedValue(
+                        offer,
+                        placeholderHand.Definitions,
+                        PrintedValueChannel.Defense).Total;
+                    if (GUILayout.Button(
+                            $"DISCARD {definition.DisplayName}\nDEFENSE {defenseTotal}",
+                            GUILayout.Height(42f)))
+                    {
+                        TrySubmitDefenseCard(offer.SourceCardInstanceId);
+                    }
+                }
+
+                GUILayout.FlexibleSpace();
+                if (defenseChoice.CanDecline &&
+                    GUILayout.Button("DECLINE DEFENSE", GUILayout.Width(170f), GUILayout.Height(42f)))
+                {
+                    TryDeclineDefense();
+                }
+
+                GUILayout.EndHorizontal();
+            }
+
             GUILayout.EndArea();
         }
     }
