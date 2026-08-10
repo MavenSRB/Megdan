@@ -611,6 +611,32 @@ if ($turnMovementEditProcess.ExitCode -ne 0) {
 
 Expected result: all discovered cases pass, covering offers derived only from the current face-up unresolved played card; delegation to the Phase 1 allowance, cumulative waypoint route, obstacle, adjacent-step, pending-choice, and command/event authorities; retained unresolved card/actor state during partial Movement; rejection without mutation for wrong actor, stale choice, or another normal action while Movement is pending; exact source-card resolution on Stop or allowance exhaustion; and resolve-before-deferred-flip-before-current-Initiative-re-query ordering. Milestone 3.6 is T2 because it composes shared turn and resolver infrastructure. Milestone 3.6 evidence passed focused Edit Mode 11/11 and directly affected Edit Mode 134/134 with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no scene or presentation code changed, the affected consumers are enumerated, and milestone 3.6 is not a T3 gate.
 
+## Visible in-turn Movement corrective focused tests
+
+```powershell
+$visibleTurnMovementEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.DirectorHandPresentationTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6a-focused-edit-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6a-focused-edit.log"'
+)
+
+$visibleTurnMovementPlayArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'PlayMode',
+    '-testFilter', 'GuardsDigital.Tests.PlayMode.MinimalHexGridPlayModeTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6a-focused-play-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6a-focused-play.log"'
+)
+```
+
+Run each argument set through the standard `Start-Process -Wait -PassThru` Unity invocation used above. Expected result: all discovered cases pass, covering automatic current-actor/card focus after joint reveal; played-card Movement-only offers; pointer destination and Stop submission through the turn authority; partial waypoint retention and refreshed highlights; exact source-card resolution followed by visible next-actor focus; and stale input preserving the actor, card, pending choice, occupancy, and highlights. Corrective milestone 3.6a is T2 because it changes the validation controller and saved-scene presentation boundary. Evidence passed focused Edit Mode 27/27, directly affected Edit Mode 149/149, and saved-scene Play Mode 9/9 with zero failed, skipped, or inconclusive cases. Targeted live Game-view inspection confirmed the readable `[R] RED` Initiative prompt, Movement buttons, legal highlights, and Stop control without overlap. Complete unfiltered suites were intentionally omitted because the affected consumers are enumerated and milestone 3.6a is not a T3 gate.
+
 ## Action-offer and printed-value focused Edit Mode tests
 
 ```powershell

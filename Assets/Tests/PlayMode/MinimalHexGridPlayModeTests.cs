@@ -175,7 +175,34 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red), Does.StartWith("REVEALED:"));
             Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Blue), Does.StartWith("REVEALED:"));
             Assert.That(controller.CardResolutionEvents, Is.Empty);
-            Assert.That(controller.CardStatus, Does.Contain("Initiative ordering is not implemented"));
+            Assert.That(controller.IsVisibleTurnActive, Is.True);
+            Assert.That(controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(redCard.Id));
+            Assert.That(controller.SelectedCardInstanceId, Is.EqualTo(redCard.Id));
+            Assert.That(controller.SelectedCardOffers, Is.Not.Empty);
+            Assert.That(controller.CardStatus, Does.Contain("[R] RED"));
+
+            var redHero = controller.ActiveHeroView;
+            var redOrigin = redHero.Coordinate;
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-movement")), Is.True);
+            var destination = controller.PendingCardDestinations
+                .OrderByDescending(candidate => candidate.Cost)
+                .First().Destination;
+            var destinationTile = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
+                .Single(tile => tile.Coordinate.Equals(destination));
+            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(destinationTile.transform.position)), Is.True);
+            Assert.That(redHero.Coordinate, Is.EqualTo(destination));
+            Assert.That(redHero.Coordinate, Is.Not.EqualTo(redOrigin));
+            if (controller.IsMovementSessionActive)
+            {
+                Assert.That(controller.TryStopCardMovement(), Is.True);
+            }
+
+            Assert.That(redCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(blueCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(blueCard.Id));
+            Assert.That(controller.ActiveHeroView.Occupancy.HeroId, Is.EqualTo(blueCard.OwnerId));
+            Assert.That(controller.SelectedCardInstanceId, Is.EqualTo(blueCard.Id));
         }
 
         [UnityTest]

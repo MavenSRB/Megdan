@@ -169,6 +169,11 @@ namespace GuardsDigital.Presentation.Interaction
                 return selectedHero == heroView && StopMovementSession();
             }
 
+            if (cardDrivenMovementEnabled && IsVisibleTurnActive)
+            {
+                return selectedHero == heroView;
+            }
+
             if (selectedHero != heroView)
             {
                 ClearSelectionVisuals();

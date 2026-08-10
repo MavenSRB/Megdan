@@ -602,6 +602,143 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void RevealedTurnCards_ExposeCurrentActorsMovementAndAdvanceAfterCompletion()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects);
+                var redCard = scenario.Configuration.RedHand.Instances[0];
+                var blueCard = scenario.Configuration.BlueHand.Instances[1];
+
+                Assert.That(scenario.Controller.TrySelectDirectorCard(redCard.Id), Is.True);
+                Assert.That(scenario.Controller.TryConfirmSelectedTurnCard(), Is.True);
+                Assert.That(scenario.Controller.TrySelectDirectorCard(blueCard.Id), Is.True);
+                Assert.That(scenario.Controller.TryConfirmSelectedTurnCard(), Is.True);
+
+                Assert.That(scenario.Controller.IsVisibleTurnActive, Is.True);
+                Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(redCard.Id));
+                Assert.That(scenario.Controller.ActiveHeroView, Is.SameAs(scenario.RedHero));
+                Assert.That(scenario.Controller.SelectedCardInstanceId, Is.EqualTo(redCard.Id));
+                Assert.That(scenario.Controller.SelectedCardOffers.Count, Is.EqualTo(2));
+                Assert.That(scenario.Controller.SelectedCardOffers.All(offer =>
+                    scenario.Configuration.CardDefinitions
+                        .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
+                        .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId)).Kind ==
+                    ActionKind.Movement), Is.True);
+
+                Assert.That(scenario.Controller.TrySelectAction(
+                    new ActionDefinitionId("primary-movement")), Is.True);
+                var destination = new HexCoordinate(2, 0);
+                Assert.That(scenario.Controller.PendingCardDestinations.Any(candidate =>
+                    candidate.Destination.Equals(destination)), Is.True);
+                Assert.That(scenario.Controller.TrySubmitCardDestination(destination), Is.True);
+
+                Assert.That(redCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+                Assert.That(blueCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+                Assert.That(scenario.RedHero.Coordinate, Is.EqualTo(destination));
+                Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(blueCard.Id));
+                Assert.That(scenario.Controller.ActiveHeroView, Is.SameAs(scenario.BlueHero));
+                Assert.That(scenario.Controller.SelectedCardInstanceId, Is.EqualTo(blueCard.Id));
+                Assert.That(scenario.Controller.CardStatus, Does.Contain("[B] BLUE"));
+                Assert.That(scenario.Controller.CardStatus, Does.Contain("Initiative 4"));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
+        public void StaleTurnMovementChoice_PreservesActorCardOccupancyAndHighlights()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects);
+                var redCard = scenario.Configuration.RedHand.Instances[0];
+                var blueCard = scenario.Configuration.BlueHand.Instances[1];
+                scenario.Controller.TrySelectDirectorCard(redCard.Id);
+                scenario.Controller.TryConfirmSelectedTurnCard();
+                scenario.Controller.TrySelectDirectorCard(blueCard.Id);
+                scenario.Controller.TryConfirmSelectedTurnCard();
+                scenario.Controller.TrySelectAction(new ActionDefinitionId("primary-movement"));
+                var pending = scenario.Controller.PendingCardChoice;
+                var origin = scenario.RedHero.Occupancy;
+                var highlights = scenario.Controller.HighlightedCoordinates.ToArray();
+
+                var accepted = scenario.Controller.SubmitCardMovementChoice(
+                    MovementChoiceCommand.Stop(
+                        pending.ResolutionId,
+                        new ActionResolutionStepId("stale-visible-turn-choice")));
+
+                Assert.That(accepted, Is.False);
+                Assert.That(scenario.Controller.LastTurnRejectionReason,
+                    Is.EqualTo(TurnResolutionRejectionReason.MovementCommandRejected));
+                Assert.That(scenario.Controller.PendingCardChoice, Is.SameAs(pending));
+                Assert.That(scenario.RedHero.Occupancy, Is.EqualTo(origin));
+                Assert.That(redCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+                Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(redCard.Id));
+                Assert.That(scenario.Controller.HighlightedCoordinates, Is.EqualTo(highlights));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        private static TurnScenario CreateTurnScenario(ICollection<GameObject> objects)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var redHero = CreateHero(
+                objects,
+                "Red Turn Hero",
+                configuration.RedHand.Instances[0].OwnerId,
+                new HexCoordinate(0, 0));
+            var blueHero = CreateHero(
+                objects,
+                "Blue Turn Hero",
+                configuration.BlueHand.Instances[0].OwnerId,
+                new HexCoordinate(-2, 0));
+            var tiles = CreateRadiusTwoCoordinates()
+                .Select(coordinate => CreateTile(objects, coordinate))
+                .ToArray();
+            var obstacles = new[]
+            {
+                CreateObstacle(objects, "turn-east-blocker", new HexCoordinate(1, 0)),
+                CreateObstacle(objects, "turn-south-east-blocker", new HexCoordinate(0, 1))
+            };
+            var controllerObject = new GameObject("In-turn Movement Controller");
+            objects.Add(controllerObject);
+            var controller = controllerObject.AddComponent<HeroSelectionController>();
+            controller.Configure(
+                redHero,
+                tiles,
+                CreateMaterial(Color.yellow),
+                99,
+                obstacles,
+                new[] { blueHero });
+            controller.ConfigurePlaceholderTestMatch(configuration);
+            controller.ConfigureCardDrivenMovement(true);
+            return new TurnScenario(redHero, blueHero, controller, configuration);
+        }
+
+        private static PrimitiveHeroView CreateHero(
+            ICollection<GameObject> objects,
+            string name,
+            HeroId heroId,
+            HexCoordinate coordinate)
+        {
+            var gameObject = new GameObject(name);
+            objects.Add(gameObject);
+            var hero = gameObject.AddComponent<PrimitiveHeroView>();
+            hero.Configure(
+                new HeroOccupancy(heroId, coordinate),
+                HexWorldLayout.DefaultOuterRadius);
+            return hero;
+        }
+
         private static Scenario CreateScenario(
             ICollection<GameObject> objects,
             int legacyAllowance,
@@ -715,6 +852,29 @@ namespace GuardsDigital.Tests.EditMode
             public HexTileView[] Tiles { get; }
             public PlaceholderObstacleView[] Obstacles { get; }
             public HeroSelectionController Controller { get; }
+        }
+
+        private readonly struct TurnScenario
+        {
+            public TurnScenario(
+                PrimitiveHeroView redHero,
+                PrimitiveHeroView blueHero,
+                HeroSelectionController controller,
+                PlaceholderOneVsOneTestConfiguration configuration)
+            {
+                RedHero = redHero;
+                BlueHero = blueHero;
+                Controller = controller;
+                Configuration = configuration;
+            }
+
+            public PrimitiveHeroView RedHero { get; }
+
+            public PrimitiveHeroView BlueHero { get; }
+
+            public HeroSelectionController Controller { get; }
+
+            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
         }
     }
 }

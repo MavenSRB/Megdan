@@ -217,6 +217,8 @@ Milestone 3.5 composes that boundary without moving its responsibilities: accept
 
 Milestone 3.6 composes the existing segmented Movement boundary in the same turn frame. A distinct played-turn-card offer query derives printed Primary/Secondary offers only from the selected face-up unresolved card; it does not broaden the legacy in-hand normal-play query. The turn authority delegates Movement start and every destination/Stop command to the card-action authority, observes its existing pending resolution/choice and semantic events, and does not mutate occupancy. Only a completed Movement transitions exactly that source card to resolved, after which Initiative consumes any deferred flip and re-queries the next actor. A partial waypoint retains the selected actor and blocks another normal action. No concrete effect collection or cancellation mutation exists yet, and Attack remains outside the turn controller until milestone 3.7.
 
+Corrective milestone 3.6a connects presentation without relocating authority: after joint reveal the controller retains the pure turn frame, focuses the selected Initiative actor/card, and queries that played card's Movement offers. Destination and Stop UI intents resume the turn-owned pending choice; presentation updates highlights and hero transforms only from the returned projection and authoritative occupancy. Completion focus comes from the newly re-queried selected actor, while invalid/stale input leaves the visible actor, card, occupancy, and choice unchanged. The controller does not choose Initiative, cache a full order, mutate occupancy/card state, or substitute its earlier standalone in-hand resolution path.
+
 An active effect instance records:
 
 - Stable effect-instance and source-card IDs.

@@ -27,6 +27,8 @@ namespace GuardsDigital.Presentation.Interaction
             new List<CardActionResolutionEvent>();
         private readonly List<TurnCardCommitmentEvent> turnCardCommitmentEvents =
             new List<TurnCardCommitmentEvent>();
+        private readonly List<TurnResolutionEvent> turnResolutionEvents =
+            new List<TurnResolutionEvent>();
         private readonly Dictionary<HeroId, PlaceholderMovementHand> placeholderHands =
             new Dictionary<HeroId, PlaceholderMovementHand>();
         private bool placeholderOneVsOneHandsInitialized;
@@ -35,6 +37,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private PlaceholderMovementHand placeholderHand;
         private TurnCardCommitmentAuthority turnCardCommitmentAuthority;
+        private TurnResolutionAuthority turnResolutionAuthority;
         private CardActionResolutionAuthority cardResolutionAuthority;
         private CardInstanceId? selectedCardInstanceId;
         private ActionOffer? selectedActionOffer;
@@ -100,6 +103,18 @@ namespace GuardsDigital.Presentation.Interaction
                     return Array.Empty<ActionOffer>();
                 }
 
+                if (IsVisibleTurnActive)
+                {
+                    return ActionOfferQuery
+                        .GetAvailableTurnActionOffers(
+                            placeholderConfiguration.CardDefinitions,
+                            GetAllPlaceholderCardInstances(),
+                            turnResolutionAuthority.SelectedActor.ActorId,
+                            turnResolutionAuthority.SelectedActor.CardInstanceId)
+                        .Where(offer => GetActionDefinition(offer).Kind == ActionKind.Movement)
+                        .ToArray();
+                }
+
                 return ActionOfferQuery
                     .GetAvailableOffers(
                         placeholderHand.Definitions,
@@ -154,6 +169,19 @@ namespace GuardsDigital.Presentation.Interaction
         public IReadOnlyList<TurnCardCommitmentEvent> TurnCardCommitmentEvents =>
             turnCardCommitmentEvents;
 
+        public IReadOnlyList<TurnResolutionEvent> TurnResolutionEvents => turnResolutionEvents;
+
+        public bool IsVisibleTurnActive =>
+            turnResolutionAuthority != null &&
+            turnResolutionAuthority.IsStarted &&
+            !turnResolutionAuthority.IsEnded;
+
+        public bool IsVisibleTurnEnded =>
+            turnResolutionAuthority != null && turnResolutionAuthority.IsEnded;
+
+        public SelectedInitiativeActor VisibleTurnActor =>
+            turnResolutionAuthority != null ? turnResolutionAuthority.SelectedActor : default;
+
         public bool IsTurnCardRevealComplete =>
             turnCardCommitmentAuthority != null && turnCardCommitmentAuthority.IsRevealed;
 
@@ -170,6 +198,8 @@ namespace GuardsDigital.Presentation.Interaction
         public CardTextApplicationPolicy LastCardTextApplicationPolicy { get; private set; }
 
         public CardActionResolutionRejectionReason LastCardRejectionReason { get; private set; }
+
+        public TurnResolutionRejectionReason LastTurnRejectionReason { get; private set; }
 
         public AttackResolutionOutcome LastAttackOutcome { get; private set; }
 
@@ -220,6 +250,8 @@ namespace GuardsDigital.Presentation.Interaction
             placeholderHand = null;
             turnCardCommitmentAuthority = null;
             turnCardCommitmentEvents.Clear();
+            turnResolutionAuthority = null;
+            turnResolutionEvents.Clear();
             ResetCardDrivenMovementPresentation();
             InitializeCardDrivenMovementIfEnabled();
         }
@@ -375,8 +407,13 @@ namespace GuardsDigital.Presentation.Interaction
             turnCardCommitmentEvents.AddRange(result.Events);
             selectedCardInstanceId = null;
             selectedActionOffer = null;
+            if (turnCardCommitmentAuthority.IsRevealed && TryStartVisibleTurn())
+            {
+                return true;
+            }
+
             cardStatus = turnCardCommitmentAuthority.IsRevealed
-                ? "Both turn cards revealed together. Initiative ordering is not implemented yet."
+                ? "Both turn cards revealed together. Board bindings are unavailable for turn actions."
                 : $"{FormatSide(side)} committed a facedown card. Awaiting {FormatSide(Opposite(side))}.";
             return true;
         }
@@ -403,8 +440,13 @@ namespace GuardsDigital.Presentation.Interaction
             turnCardCommitmentEvents.AddRange(result.Events);
             selectedCardInstanceId = null;
             selectedActionOffer = null;
+            if (turnCardCommitmentAuthority.IsRevealed && TryStartVisibleTurn())
+            {
+                return true;
+            }
+
             cardStatus = turnCardCommitmentAuthority.IsRevealed
-                ? "Turn commitments complete. Initiative ordering is not implemented yet."
+                ? "Turn commitments complete. Board bindings are unavailable for turn actions."
                 : $"{FormatSide(side)} passed with no card. Awaiting {FormatSide(Opposite(side))}.";
             return true;
         }
@@ -423,6 +465,11 @@ namespace GuardsDigital.Presentation.Interaction
             if (matchingOffers.Length != 1)
             {
                 return false;
+            }
+
+            if (IsVisibleTurnActive)
+            {
+                return StartVisibleTurnMovement(matchingOffers[0]);
             }
 
             RebuildMoveAuthority();
@@ -566,6 +613,11 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            if (IsVisibleTurnActive)
+            {
+                return SubmitVisibleTurnMovementChoice(command);
+            }
+
             var choiceBeforeSubmission = PendingCardChoice;
             ReachableMovementDestination? selectedDestination = null;
             if (command.ChoiceKind == MovementChoiceKind.Destination)
@@ -667,15 +719,18 @@ namespace GuardsDigital.Presentation.Interaction
         {
             placeholderHand = null;
             cardResolutionAuthority = null;
+            turnResolutionAuthority = null;
             selectedCardInstanceId = null;
             selectedActionOffer = null;
             cardResolutionEvents.Clear();
+            turnResolutionEvents.Clear();
             lastCardMovementRoute = Array.Empty<HexCoordinate>();
             lastCardMovementAllowance = 0;
             lastCardRemainingAllowance = 0;
             LastCardInvocationContext = ActionInvocationContext.None;
             LastCardTextApplicationPolicy = CardTextApplicationPolicy.None;
             LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            LastTurnRejectionReason = TurnResolutionRejectionReason.None;
             LastAttackOutcome = AttackResolutionOutcome.None;
             cardStatus = cardDrivenMovementEnabled ? "Select a test card." : string.Empty;
         }
@@ -716,6 +771,187 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 turnCardCommitmentAuthority = new TurnCardCommitmentAuthority();
             }
+        }
+
+        private bool TryStartVisibleTurn()
+        {
+            if (turnResolutionAuthority != null ||
+                turnCardCommitmentAuthority == null ||
+                !turnCardCommitmentAuthority.IsRevealed ||
+                placeholderConfiguration == null ||
+                placeholderParticipants == null ||
+                heroView == null ||
+                tileViews == null)
+            {
+                return false;
+            }
+
+            RebuildMoveAuthority();
+            if (moveAuthority == null)
+            {
+                return false;
+            }
+
+            cardResolutionAuthority = new CardActionResolutionAuthority(moveAuthority);
+            turnResolutionAuthority = new TurnResolutionAuthority(
+                placeholderConfiguration.CardDefinitions,
+                GetAllPlaceholderCardInstances(),
+                placeholderParticipants,
+                placeholderConfiguration.TieBreakerState,
+                cardResolutionAuthority);
+            var result = turnResolutionAuthority.TryStart();
+            if (!result.Accepted)
+            {
+                LastTurnRejectionReason = result.RejectionReason;
+                cardStatus = $"Turn start rejected: {result.RejectionReason}.";
+                turnResolutionAuthority = null;
+                cardResolutionAuthority = null;
+                return false;
+            }
+
+            turnResolutionEvents.AddRange(result.Events);
+            LastTurnRejectionReason = TurnResolutionRejectionReason.None;
+            RefreshVisibleTurnActor("Both turn cards revealed together.");
+            return true;
+        }
+
+        private bool StartVisibleTurnMovement(ActionOffer offer)
+        {
+            selectedActionOffer = offer;
+            cardResolutionSequence++;
+            cardResolutionEvents.Clear();
+            lastCardMovementRoute = Array.Empty<HexCoordinate>();
+            var result = turnResolutionAuthority.TryStartMovement(
+                new ActionResolutionId($"visible-turn-movement-{cardResolutionSequence}"),
+                offer);
+            if (!result.Accepted)
+            {
+                LastTurnRejectionReason = result.RejectionReason;
+                cardStatus = $"Turn action rejected: {result.RejectionReason}.";
+                selectedActionOffer = null;
+                return false;
+            }
+
+            turnResolutionEvents.AddRange(result.Events);
+            cardResolutionEvents.AddRange(result.Events
+                .Where(ruleEvent => ruleEvent.Kind == TurnResolutionEventKind.MovementActionProgressed)
+                .Select(ruleEvent => ruleEvent.CardActionEvent));
+            var pending = turnResolutionAuthority.PendingMovementResolution;
+            var choice = turnResolutionAuthority.PendingMovementChoice;
+            lastCardMovementAllowance = pending.MovementAllowance;
+            lastCardRemainingAllowance = pending.RemainingAllowance;
+            LastCardInvocationContext = pending.InvocationContext;
+            LastCardTextApplicationPolicy = GetActionDefinition(offer).DefaultPolicy.CardTextApplication;
+            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            LastTurnRejectionReason = TurnResolutionRejectionReason.None;
+            lastCardMovementRoute = new[] { choice.Origin };
+            cardStatus = $"{FormatContext(pending.InvocationContext)} Movement " +
+                $"{pending.MovementAllowance}: choose a highlighted destination or Stop.";
+            RefreshCardChoiceHighlights(choice);
+            return true;
+        }
+
+        private bool SubmitVisibleTurnMovementChoice(MovementChoiceCommand command)
+        {
+            var choiceBeforeSubmission = PendingCardChoice;
+            ReachableMovementDestination? selectedDestination = null;
+            if (command.ChoiceKind == MovementChoiceKind.Destination)
+            {
+                var matchingDestinations = choiceBeforeSubmission.LegalDestinations
+                    .Where(candidate => candidate.Destination.Equals(command.Destination))
+                    .ToArray();
+                if (matchingDestinations.Length == 1)
+                {
+                    selectedDestination = matchingDestinations[0];
+                }
+            }
+
+            var completedCardName = GetSelectedCardDefinition()?.DisplayName ?? "Test card";
+            var completedContext = selectedActionOffer.HasValue
+                ? FormatContext(selectedActionOffer.Value.InvocationContext)
+                : "Movement";
+            var result = turnResolutionAuthority.TryAnswerMovementChoice(command);
+            if (!result.Accepted)
+            {
+                LastTurnRejectionReason = result.RejectionReason;
+                cardStatus = $"Turn choice rejected: {result.RejectionReason}. Choose again.";
+                return false;
+            }
+
+            turnResolutionEvents.AddRange(result.Events);
+            cardResolutionEvents.AddRange(result.Events
+                .Where(ruleEvent => ruleEvent.Kind == TurnResolutionEventKind.MovementActionProgressed)
+                .Select(ruleEvent => ruleEvent.CardActionEvent));
+            lastCardRemainingAllowance = turnResolutionAuthority.PendingMovementResolution != null
+                ? turnResolutionAuthority.PendingMovementResolution.RemainingAllowance
+                : selectedDestination.HasValue
+                    ? choiceBeforeSubmission.RemainingAllowance - selectedDestination.Value.Cost
+                    : choiceBeforeSubmission.RemainingAllowance;
+            if (selectedDestination.HasValue)
+            {
+                lastCardMovementRoute = lastCardMovementRoute
+                    .Concat(selectedDestination.Value.Route.Skip(1))
+                    .ToArray();
+            }
+
+            var updatedOccupancy = GetHeroOccupancyFromAuthority();
+            heroView.Configure(updatedOccupancy, heroView.OuterRadius);
+            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            LastTurnRejectionReason = TurnResolutionRejectionReason.None;
+            if (turnResolutionAuthority.PendingMovementChoice != null)
+            {
+                cardStatus = $"{completedCardName}: {completedContext} Movement has " +
+                    $"{turnResolutionAuthority.PendingMovementChoice.RemainingAllowance} remaining. " +
+                    "Choose another destination or Stop.";
+                RefreshCardChoiceHighlights(turnResolutionAuthority.PendingMovementChoice);
+                return true;
+            }
+
+            var completedCost = lastCardMovementAllowance - lastCardRemainingAllowance;
+            ClearSelectionVisuals();
+            selectedActionOffer = null;
+            RefreshVisibleTurnActor(
+                $"{completedCardName}: {completedContext} Movement completed ({completedCost} space" +
+                (completedCost == 1 ? ")." : "s)."));
+            return true;
+        }
+
+        private void RefreshVisibleTurnActor(string statusPrefix)
+        {
+            ClearSelectionVisuals();
+            selectedActionOffer = null;
+            if (turnResolutionAuthority.IsEnded)
+            {
+                selectedCardInstanceId = null;
+                cardStatus = $"{statusPrefix} Turn ended.";
+                return;
+            }
+
+            if (!turnResolutionAuthority.SelectedActor.IsDefined)
+            {
+                selectedCardInstanceId = null;
+                cardStatus = $"{statusPrefix} Awaiting the Initiative tie choice.";
+                return;
+            }
+
+            var actor = turnResolutionAuthority.SelectedActor;
+            FocusVisibleTurnHero(actor.ActorId);
+            selectedCardInstanceId = actor.CardInstanceId;
+            cardStatus = $"{statusPrefix} {FormatSide(placeholderParticipants.GetTeamForHero(actor.ActorId).Side)} " +
+                $"acts at Initiative {actor.InitiativeTotal}. Choose a Movement action.";
+        }
+
+        private void FocusVisibleTurnHero(HeroId actorId)
+        {
+            var boundHeroes = new[] { heroView }
+                .Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>())
+                .Where(view => view != null)
+                .Distinct()
+                .ToArray();
+            var actorView = boundHeroes.Single(view => view.Occupancy.HeroId.Equals(actorId));
+            heroView = actorView;
+            otherHeroViews = boundHeroes.Where(view => view != actorView).ToArray();
+            placeholderHand = placeholderHands[actorId];
         }
 
         private bool StartVisibleAttack(ActionOffer offer)
@@ -1034,7 +1270,7 @@ namespace GuardsDigital.Presentation.Interaction
             var panel = GetCardPanelRect();
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));
-            GUILayout.Label("PHASE 3 DIRECTOR TEST HANDS - select, confirm facedown, then reveal together");
+            GUILayout.Label("PHASE 3 DIRECTOR TEST HANDS - reveal, then resolve the current Initiative actor");
             GUILayout.Label(cardStatus);
 
             foreach (var hand in VisibleDirectorHands)
@@ -1074,6 +1310,7 @@ namespace GuardsDigital.Presentation.Interaction
             GUILayout.BeginHorizontal();
             GUILayout.Label("Actions", GUILayout.Width(54f));
             if (selectedCardInstanceId.HasValue &&
+                !IsVisibleTurnActive &&
                 GUILayout.Button("CONFIRM FACEDOWN", GUILayout.Width(170f), GUILayout.Height(46f)))
             {
                 TryConfirmSelectedTurnCard();

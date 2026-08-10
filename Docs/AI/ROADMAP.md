@@ -663,6 +663,23 @@ Acceptance checks:
 
 Completion note (2026-08-10): Added an explicit played-turn-card action-offer query so the current face-up unresolved card can expose its printed Primary/Secondary actions without weakening the existing in-hand offer path. `TurnResolutionAuthority` now delegates selected Movement start and every destination/Stop answer to the existing `CardActionResolutionAuthority`, which continues to own immutable pending choices, allowance, cumulative route, obstacles, adjacent-step commits, and ordered command/events. Partial waypoints keep the same actor/card unresolved and block another normal action; Stop or allowance exhaustion completes Movement, then and only then resolves exactly the source card, acknowledges any deferred Tie Breaker flip, and re-queries current Initiative. Rulebook pages 7, 10, and 11 were visually re-verified. T2 validation passed focused Edit Mode 11/11 and directly affected Edit Mode 134/134 across turn/Initiative/lifecycle/offers, Phase 1 Movement/obstacle authorities, and legacy card-driven presentation consumers, with zero failed, skipped, or inconclusive cases. Play Mode and complete unfiltered suites were intentionally omitted because no scene or presentation code changed, the affected consumers are enumerated, and milestone 3.6 is not a T3 gate. No Attack/Defense turn integration, resolve-without-action, round, snapshot, effect, or Wasp content was added.
 
+### [x] 3.6a Connect in-turn Movement to the validation controller
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: After both synthetic cards reveal, the validation controller starts Initiative, exposes the current actor's played-card Movement offers, accepts destination/Stop input through the turn authority, moves the authoritative hero occupancy, resolves the acting card, and visibly advances to the next actor.
+
+Acceptance checks:
+
+- Presentation derives the current actor/card and Movement offers from authoritative turn state rather than restoring the standalone in-hand flow.
+- Destination and Stop input resume the same turn-owned Movement pending choice; presentation never mutates occupancy or card state.
+- Partial waypoint Movement visibly retains the same actor and refreshes legal destinations; completion updates the hero view and next-actor prompt from authoritative state.
+- Focused Edit Mode and Play Mode tests cover the saved-scene reveal-to-Movement-to-next-actor path and invalid/stale input preservation.
+
+Non-goals: No Attack/Defense turn integration, automated action choice, new Movement rules, animation, sound, round shell, or Wasp content.
+
+Completion note (2026-08-10): Corrected the playable validation flow by retaining one presentation-owned reference to the pure turn authority after joint reveal, automatically focusing its current Initiative actor and played card, and deriving only that card's available printed Movement offers through the milestone 3.6 query. Movement selection and every destination/Stop command now pass through `TurnResolutionAuthority`; the controller projects its existing pending choice/events, updates the active hero view only from authoritative occupancy, retains the same actor across partial waypoints, and focuses the next unresolved actor only after exact source-card resolution. Manual hero switching is blocked while the visible turn is active, and stale input preserves actor, card, occupancy, and highlights. T2 validation passed focused Edit Mode 27/27, directly affected Edit Mode 149/149, and saved-scene Play Mode 9/9 with zero failed, skipped, or inconclusive cases. Targeted live Game-view inspection confirmed that joint reveal visibly produces the `[R] RED` Initiative prompt, Primary/Secondary Movement buttons, highlighted legal destinations, and Stop control without overlap. Complete unfiltered suites were intentionally omitted because the affected controller, scene, and pure-authority consumers are enumerated and milestone 3.6a is not a T3 gate. No Attack/Defense turn integration, new Movement rule, animation, sound, round, or Wasp content was added.
+
 ### [ ] 3.7 Resolve test-card Attack and Defense within a turn
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
