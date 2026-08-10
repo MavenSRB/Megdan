@@ -38,7 +38,7 @@ Documentation milestone 0.7 is complete: `Docs/AI/TESTING.md` now defines risk-t
 
 Create a polished private digital prototype of *Guards of Atlantis II* that can be demonstrated to its publisher as the basis for a possible licensed, cross-platform adaptation.
 
-The private pitch prototype is a complete 3v3 director-mode match with six different heroes: Wasp plus five later user-approved, source-verified heroes. One human controls both teams for demonstration, while authoritative ownership remains one hero per player so the eventual licensed product can use online 3v3 with six humans without redesigning the rules model.
+The private pitch prototype is a complete 3v3 match with six different heroes: Wasp plus five later user-approved, source-verified heroes. It retains single-controller director mode for development and demonstration, and now also targets an invite-only pre-production internet playtest in which six humans each control their independently owned hero before production presentation begins.
 
 ## Rights and distribution boundary
 
@@ -47,6 +47,7 @@ The private pitch prototype is a complete 3v3 director-mode match with six diffe
 - "Guards Digital" is a working title. Final naming is gated on authorization and publisher agreement.
 - Do not create a public download, public repository, marketing campaign, monetization, telemetry, or store listing before authorization.
 - The initial pitch deliverable is a private Windows standalone build plus a short recorded walkthrough as backup.
+- Disposable online playtest builds may be shared only with specifically invited private testers and are not public releases.
 - Source code and builds for other platforms remain internal unless specifically requested.
 
 This is a project boundary, not a legal determination.
@@ -55,28 +56,29 @@ This is a project boundary, not a legal determination.
 
 ### Horizon 1 - Private pitch prototype
 
-A complete but intentionally director-controlled 3v3 match:
+A complete 3v3 match with both director and private online validation modes:
 
 - Three Red heroes and three Blue heroes, all different: Wasp plus five later user-approved, source-verified heroes.
 - Wasp is implemented and integrated first; a mirrored Wasp 1v1 remains an intermediate development gate, not the pitch endpoint.
 - One human controls all six heroes in director mode.
 - All six hands are available to the controller through team/hero grouping; played and revealed cards remain readable across the whole turn.
 - The controller selects one card for every able hero, then resolves the turn through normal Initiative order.
+- Before production presentation begins, six invited humans can connect over the internet from Windows clients, each control exactly one owned hero, see only their authorized private projection, and complete a full match through one authoritative host/session.
 - Full official single-lane board structure and standard minion setup.
 - Six-player Quick Game setup values: three Wave counters and five Life counters per team.
 - Full verified progression for all six heroes, including relevant card tiers, items, and Ultimate access.
 - Complete applicable game loop: cards, initiative, actions, combat, defense, minions, rounds, lane pushing, economy, leveling, respawn, and victory conditions.
-- No opponent AI, pass-and-play, networking, accounts, matchmaking, progression meta, or public services.
+- No opponent AI, pass-and-play, accounts, public matchmaking, progression meta, or public live-service operations.
 
 ### Horizon 2 - Licensed product direction
 
 Post-authorization only:
 
-- Online 3v3 as the primary mode.
+- Production-ready online 3v3 as the primary mode, building on the private pre-production validation track.
 - Six humans, each controlling one hero.
 - Cross-platform release, developed and validated in phases.
 - Larger hero roster, eventually expected to approach roughly 40 heroes.
-- Hidden information, proper per-player control, team interactions, reconnect behavior, matchmaking, accounts, and platform services are separate future work.
+- Production-scale hosting, matchmaking, accounts, platform services, moderation, anti-cheat, and operational support remain separate future work.
 - No AI-player requirement is currently planned.
 
 ## Approved prototype deviations
@@ -86,6 +88,8 @@ Everything not listed here must behave exactly like the authoritative physical g
 1. Before the final pitch integration, staged development configurations may use one hero per team and mirrored Wasp; both temporary deviations must be retired by the official six-player setup gate.
 2. One controller sees and operates all six heroes in director mode.
 3. Internal debug tools may expose hidden state, undo commands, restart matches, import/export snapshots, change animation speed, and override the initial Tie Breaker side.
+
+Director mode is an internal/demo path. The private online playtest uses normal one-player/one-hero ownership and does not expose other players' private hands or competitive debug controls.
 
 These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
@@ -111,7 +115,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Version control: Local Git repository on branch `main`, with root `.gitignore` and `.gitattributes` policies. Unity-generated data, local validation output, the private rulebook, and the extracted card corpus are ignored. Completed roadmap milestones require a local commit after acceptance and continuity updates. No remote is configured.
 - Platform rollout direction: Windows first, then macOS/Linux, then touch devices, with closed platforms considered later.
 - Use Unity's Input System and keep interactions adaptable across mouse and touch.
-- Do not choose a networking provider or SDK during the pitch phase.
+- Do not choose a networking provider or SDK before milestone 8.29 compares current support, relay/hosting, cost, licensing, privacy, and operational constraints.
 
 ## Core architecture constraints
 
@@ -137,8 +141,8 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - The UI submits commands such as play card, choose action, select target, or confirm movement.
 - A rules authority validates commands and produces ordered state-change events.
 - Multi-step actions pause on authoritative, data-shaped pending choices and resume through follow-up commands; UI callbacks never own the continuation.
-- The pitch authority runs locally in-process.
-- A future online build can move authority to a host/server without rewriting card rules.
+- Director-mode authority runs locally in-process.
+- Private online authority runs in one host/session process behind the same typed command, ordered-event, pending-choice, and versioned-snapshot contracts; clients never own rules resolution.
 - Randomness must not be generalized beyond the initial Tie Breaker setup decision.
 
 ### Undo and diagnostics
@@ -212,7 +216,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 ## Pitch HUD
 
 - The board is the primary focus.
-- All six director-controlled hands are accessible through clear Red/Blue team and hero grouping; played/revealed cards and the active resolver remain simultaneously readable without requiring six full hands to occupy the board view at once.
+- Director mode exposes all six hands through clear Red/Blue team and hero grouping. Private online clients expose only the local player's hand plus authorized shared played/revealed state; both modes keep the active resolver readable without presentation owning legality.
 - Show round, turn, active resolver, Lives, Waves, hero levels, and coins.
 - Use contextual prompts for actions, targets, and choices.
 - Provide internal Undo, restart, animation-speed, and camera-reset controls.
@@ -237,7 +241,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Both the primitive scene session and pure placeholder card resolver treat the player's selected reachable destination with its projected deterministic route as the explicit choice, record every internal adjacent step, allow zero movement through Stop, and reject entering or passing through generic placeholder obstacles.
 - Before Phase 1 ends, the selected test action offer's typed printed-value query must be the sole source of movement allowance.
 - Fast Travel, movement from card text, and movement-limiting effects remain later rule milestones rather than being folded into the early board test.
-- Mechanics are completed with primitives and debug UI before production art begins, and milestone 8.28 establishes URP as the accepted rendering baseline before any production visual asset is introduced.
+- Mechanics are completed with primitives and debug UI before production art begins. Milestone 8.28 establishes URP as the accepted rendering baseline, and milestones 8.29-8.36 prove the invite-only online flow and full friends playtest before any production visual asset is introduced.
 - Select the highest applicable validation tier from `Docs/AI/TESTING.md` based on the behavior and boundaries changed, not merely diff size.
 - Every executable behavior change receives focused automated coverage and directly affected regressions; every fixed bug receives a regression test.
 - Prefer tiny deterministic scenarios to complete match replays.
@@ -262,7 +266,8 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 ## Shared terminology
 
 - **Director mode:** One human can see and control both teams for testing and demonstration. This is not opponent AI and not the final multiplayer interaction model.
-- **Pitch prototype:** The private, polished director-mode 3v3 build with Wasp and five other distinct verified heroes described above.
+- **Pitch prototype:** The private 3v3 build with Wasp and five other distinct verified heroes, retaining director mode while also proving invite-only six-human internet play before production presentation.
+- **Private online playtest:** An invite-only pre-production Windows test in which six remote humans each control one hero through a host-authoritative session; it is not a public or production live service.
 - **Authoritative state:** The validated rules state from which all visuals are derived.
 - **Command:** A requested player or debug action sent to the rules authority.
 - **Rule event:** An ordered, validated state change produced by the rules authority and consumed by presentation.
@@ -279,10 +284,10 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 - Card execution beyond the completed standalone placeholder Movement/Attack slices and in-turn Hold/Movement/Attack actions, including Attack consequences, resolve-without-action, rounds, or Wasp content before their exact milestone approval.
 - Public distribution or commercialization.
-- Online play during the pitch phase.
+- Public online play, public server discovery, or production live-service operation.
 - AI opponents.
 - Pass-and-play.
 - Any seventh pitch hero or hero content not selected through the post-Wasp roster milestone.
 - A universal card-text parser.
-- Production visuals before both the primitive game loop is complete and the milestone 8.28 URP migration gate has passed.
-- Music, voice, tutorials, accounts, matchmaking, cloud saves, or telemetry.
+- Production visuals before the primitive game loop, milestone 8.28 URP migration gate, and milestone 8.36 private online playtest gate have passed.
+- Music, voice, tutorials, accounts, public matchmaking, cloud saves, or telemetry.

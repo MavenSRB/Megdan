@@ -1147,9 +1147,9 @@ Hard gate: The complete Wasp card inventory and Wasp-specific card implementatio
 
 Hard-gate roadmap audit: After milestone 7.9 passes its T3 gate and is reviewed, audit readiness for verified Wasp content before assigning the next milestone profile. Confirm that the synthetic core loop has retired the intended architecture and integration risks, identify unresolved prerequisites that must remain ahead of Wasp implementation, recommend any justified changes to Phase 8's inventory/mapping entry sequence, and record the remaining-effort range. This audit cannot waive milestones 8.1 or 8.2 or authorize Wasp-specific implementation.
 
-## Phase 8 - Verified hero content and deterministic 3v3 integration
+## Phase 8 - Verified hero content, deterministic 3v3, and private online validation
 
-Phase 8 begins only after the synthetic core match gate. Wasp-specific card work extends proven core systems; it does not replace them. The mirrored Wasp setup identities introduced earlier remain an intermediate configuration for the first complete hero gate, not the final pitch roster. After that gate, five additional user-approved heroes enter through source inventory and capability-delta mapping before the final six-distinct-hero 3v3 integration.
+Phase 8 begins only after the synthetic core match gate. Wasp-specific card work extends proven core systems; it does not replace them. The mirrored Wasp setup identities introduced earlier remain an intermediate configuration for the first complete hero gate, not the final pitch roster. After that gate, five additional user-approved heroes enter through source inventory and capability-delta mapping before the final six-distinct-hero 3v3 integration. Once the complete primitive match and URP baseline are proven, a separate private-online track moves the same authority behind a host/session boundary and reaches an invite-only six-human internet playtest before production presentation begins.
 
 ### [ ] 8.1 Inventory and verify Wasp's complete card set
 
@@ -1242,7 +1242,7 @@ Acceptance checks:
 - A broader source-linked Wasp integration suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16 is reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27 and the render-pipeline migration gate at milestone 8.28 are both reviewed and approved.
+Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16 is reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27, the render-pipeline migration gate at milestone 8.28, and the private online playtest gate at milestone 8.36 are reviewed and approved.
 
 ### [!] 8.17 Select the five additional pitch heroes
 
@@ -1276,7 +1276,7 @@ Acceptance checks:
 
 - A roster-wide matrix distinguishes reused core/Wasp capabilities, reusable refinements, new primitives, and genuinely unique isolated handlers for every verified hero face and component.
 - Every effect node maps to a capability ID/version, typed bindings, policy, failure/atomicity rule, checkpoints, and source-linked tests.
-- The designated roadmap audit applies the matrix to milestones 8.20-8.28 and Phase 9, recommending justified keep/merge/split/defer/remove decisions and recording an updated remaining-effort range.
+- The designated roadmap audit applies the matrix to milestones 8.20-8.36 and Phase 9, recommending justified keep/merge/split/defer/remove decisions and recording an updated remaining-effort range.
 - Approved implementation slices are dependency ordered; a shared capability precedes the first hero that needs it, and no hero-name rule branch or runtime text parsing is scheduled.
 - Any schema change is explicit and migration-tested rather than hidden inside a hero milestone.
 
@@ -1342,7 +1342,7 @@ Acceptance checks:
 - A broader source-linked six-hero integration suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: Production visual work does not begin until milestones 8.27 and 8.28 are reviewed and approved.
+Hard gate: The networking architecture decision does not begin until the deterministic 3v3 match is reviewed and approved. Production visual work remains blocked through milestone 8.36.
 
 ### [!] 8.28 Render-pipeline migration gate
 
@@ -1360,13 +1360,69 @@ Acceptance checks:
 
 Non-goals: No production board art, hero/minion production models, animation coverage, final lighting/art direction, new game rules, or player-facing build.
 
-Hard gate: Phase 9 production visual milestones do not begin until this migration is reviewed and approved.
+Hard gate: The private-online track uses this accepted URP baseline. Phase 9 production visual milestones do not begin until milestone 8.36 is also reviewed and approved.
+
+### [!] 8.29 Select the minimum private-online architecture and re-baseline the track
+
+Observable outcome: A source-backed architecture decision defines the smallest supportable way for six invited Windows players on the internet to join one private 3v3 match, with one authoritative host/session and one independently owned hero per player.
+
+Acceptance checks:
+
+- Current Unity-supported transport, relay/NAT traversal, hosting, cost, licensing, privacy, and operational constraints are compared before a provider or SDK is selected.
+- The trust boundary, host authority, seat/hero ownership, client-visible projections, version compatibility, join flow, disconnect policy, and failure model are explicit.
+- The track remains private and invite-only; accounts, public matchmaking, public server browsing, telemetry, monetization, and public distribution remain out of scope.
+- Milestones 8.30-8.36 receive evidence-based implementation slices, validation commands, and required Codex profiles before the first networking implementation is authorized.
+
+Planning note: This scope amendment adds a major cross-system track rather than one playtest task. The provisional planning range is eight micro-milestones and roughly 4-8 focused engineering weeks, excluding approval latency, external-service outages, and corrective work discovered by real internet testing. Milestone 8.29 must replace this estimate with evidence from the selected architecture.
+
+### [!] 8.30 Move match authority behind a transport-neutral session boundary
+
+Observable outcome: The existing local director adapter and a future network host can submit the same typed commands to, and consume the same ordered events and snapshots from, one authoritative match session without moving rules into Unity views or transport callbacks.
+
+### [!] 8.31 Establish the private host and six player seats
+
+Observable outcome: One host creates an invite-only session and six compatible Windows clients can occupy exactly one stable player/hero seat each, with duplicates, unauthorized seat changes, and incompatible content/schema revisions rejected.
+
+### [!] 8.32 Add owner-scoped projections and command authorization
+
+Observable outcome: Each client receives only the state it is permitted to see and can submit commands only for its owned hero or an explicitly team-owned choice; the host revalidates every command against authoritative state.
+
+### [!] 8.33 Synchronize commands, events, pending choices, and snapshots
+
+Observable outcome: All clients reproduce the host's public match state and their authorized private projection across full turns, nested Defense reactions, tied Initiative choices, and other pending resolutions without client-owned rules authority.
+
+### [!] 8.34 Add disconnect, reconnect, resynchronization, and host-loss policy
+
+Observable outcome: A temporarily disconnected player can return to the same compatible private session and rebuild the correct authorized projection; stale commands, unrecoverable host loss, and version mismatch fail explicitly without corrupting the match.
+
+### [!] 8.35 Add primitive private lobby and online match-flow UI
+
+Observable outcome: Without production styling, invited players can host/join, identify their seat and team, become ready, enter the match, see their own hand and shared public state, answer their legal prompts, and leave or reconnect with clear status feedback.
+
+Non-goals: No account system, friends list, public matchmaking, server browser, text/voice chat, spectator mode, ranking, moderation, or polished production UI.
+
+### [!] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
+
+Observable outcome: Six humans on separate clients complete an invite-only full 3v3 match over the internet using a disposable private Win64 playtest build and primitive UI before production presentation begins.
+
+Acceptance checks:
+
+- The exact build and content/schema revision are recorded and privately distributed only to the invited testers.
+- The session proves host/join, six stable seats, private hands, all normal player and team-owned choices, complete turns/rounds, reconnect/resync, match completion, and explicit failure handling across at least two external networks.
+- Host and clients converge on the same authoritative public outcome; owner-private projections and command authorization show no cross-player leakage or control transfer.
+- Crashes, desynchronization, latency symptoms, confusing flows, unreadable state, and tester feedback are recorded and triaged without changing rules or code during the milestone.
+- Any gate-blocking defect becomes a separately approved corrective milestone; the reviewed findings re-baseline Phase 9 HUD, prompt, feedback, and readability work.
+- T3 online hard gate: focused network/session tests, a multi-client integration run, the private internet playtest, and both complete unfiltered Edit Mode and Play Mode suites pass at the applicable final revision.
+
+Non-goals: No public release, dedicated production service, accounts, matchmaking, anti-cheat certification, competitive operations, or production presentation.
+
+Hard gate: Phase 9 does not begin until the private online playtest evidence and any gate-blocking corrective milestones are reviewed and approved.
 
 ## Phase 9 - Presentation and pitch polish
 
-Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline.
+Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline and milestone 8.36 proves the private six-human internet flow with primitive UI.
 
-Each visible milestone runs focused Play Mode checks for the affected presentation path plus one targeted visual inspection. The disposable internal migration-check build from milestone 8.28 is not retained, packaged, or distributed; the first retained private pitch player build remains milestone 10.1. Complete unfiltered suites wait for milestone 9.16 unless a T3 risk trigger applies earlier.
+Each visible milestone runs focused Play Mode checks for the affected presentation path plus one targeted visual inspection. The disposable migration-check build from milestone 8.28 and invited-tester online build from milestone 8.36 are not retained as pitch deliverables or publicly distributed; the first retained private pitch player build remains milestone 10.1. Complete unfiltered suites wait for milestone 9.16 unless a T3 risk trigger applies earlier.
 
 ### [ ] 9.1 Production board environment
 
@@ -1409,7 +1465,7 @@ Acceptance checks:
 - Common reference desktop resolutions preserve readable cards, values, prompts, and team identity.
 - T3 pre-build gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: The first retained private pitch player build does not begin until milestone 9.16 is reviewed and approved. The disposable internal render-pipeline smoke from milestone 8.28 is validation evidence only.
+Hard gate: The first retained private pitch player build does not begin until milestone 9.16 is reviewed and approved. The disposable render-pipeline smoke from milestone 8.28 and invited-tester online build from milestone 8.36 are pre-production evidence only.
 
 ## Phase 10 - Private publisher pitch package
 
@@ -1441,12 +1497,11 @@ Acceptance checks:
 
 Non-goals: Public distribution, installer, launcher, login, telemetry, store page, or other-platform release.
 
-## Post-authorization direction - not scheduled
+## Post-pitch production direction - not scheduled
 
 - Formalize licensed product scope and name.
-- Choose and prototype network transport/hosting based on then-current requirements.
-- Move authoritative resolution to a host/server.
-- Add per-player hidden hands and six-human online 3v3.
-- Add reconnect, lobby, matchmaking, accounts, and team communication.
+- Productionize the private-playtest networking architecture for the licensed product's availability, scale, security, privacy, and support requirements.
+- Reassess listen-host, relay, dedicated-server, and migration requirements from measured playtest evidence.
+- Productionize reconnect and lobby behavior; add matchmaking, accounts, and team communication if authorized.
 - Add heroes incrementally; every hero intake starts with a verified effect-family delta audit against the capability catalog before implementation is scheduled.
 - Validate macOS/Linux, then touch devices, then closed platforms as separately approved tracks.

@@ -291,7 +291,7 @@ The first card slice should implement only:
 - A data-shaped pending resolution/choice protocol.
 - The minimum structured Movement action needed to select disclosed destination/route segments, accumulate their already-tested adjacent steps, and Stop or continue within one allowance.
 
-Phase 2 then proves that the same foundation can open an Attack, pause for a Defense reaction from the correct hand, discard exactly one card or decline, calculate the unmodified result, and resume. Phase 3 proves generic lifecycle, Initiative, turns, rounds, snapshots, and internal tools with synthetic definitions. Phases 4 through 7 extend that synthetic foundation through the official map and the complete general core match loop. The complete Wasp card inventory and Wasp-specific card implementation begin only in Phase 8 after the milestone 7.9 core-match gate; Wasp verification may add localized capability deltas but does not own or block the general rules foundation. After the Wasp integration gate, five additional user-approved heroes each enter through source inventory and capability-delta mapping before the six distinct heroes are integrated into the official-setup director-mode 3v3 pitch match.
+Phase 2 then proves that the same foundation can open an Attack, pause for a Defense reaction from the correct hand, discard exactly one card or decline, calculate the unmodified result, and resume. Phase 3 proves generic lifecycle, Initiative, turns, rounds, snapshots, and internal tools with synthetic definitions. Phases 4 through 7 extend that synthetic foundation through the official map and the complete general core match loop. The complete Wasp card inventory and Wasp-specific card implementation begin only in Phase 8 after the milestone 7.9 core-match gate; Wasp verification may add localized capability deltas but does not own or block the general rules foundation. After the Wasp integration gate, five additional user-approved heroes each enter through source inventory and capability-delta mapping before the six distinct heroes are integrated into the official-setup director-mode 3v3 pitch match. The later private-online track transports the same typed commands, ordered events, serializable pending choices, and versioned snapshots through a host-authoritative session; transport callbacks and client projections do not become card-resolution authority.
 
 The foundation is succeeding when:
 
@@ -323,7 +323,7 @@ The following are intentionally deferred until a verified content or implementat
 - Final authoring file format and editor tooling.
 - The complete catalog of atomic effects and timing windows.
 - A corpus-wide effect taxonomy for every hero.
-- Networking transport and hidden-information projections.
+- Networking transport, session operations, and hidden-information projections remain outside the card resolver itself; the private-online track must consume these contracts without duplicating or weakening them.
 - Compatibility policy for public saved games or live-service content revisions.
 
 These decisions may extend the architecture but must preserve its deterministic definition/instance, command/event, pending-choice, timing, and serialization boundaries.
