@@ -935,6 +935,111 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void DirectorUndo_RecordsOnlyAcceptedCommandsAndRestartRestoresInitialScenario()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects);
+                var controller = scenario.Controller;
+                var initialSnapshot = controller.CaptureAuthoritativeSnapshot();
+                var red = scenario.Configuration.RedHand.Instances[0];
+                var blue = scenario.Configuration.BlueHand.Instances[0];
+
+                Assert.That(controller.TryPassTurnCard(TeamSide.Red), Is.False);
+                Assert.That(controller.DirectorUndoEntryCount, Is.Zero);
+                Assert.That(controller.CanUndoDirectorCommand, Is.False);
+
+                Assert.That(controller.TrySelectDirectorCard(red.Id), Is.True);
+                Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+                var afterRedCommit = controller.CaptureAuthoritativeSnapshot();
+                Assert.That(controller.DirectorUndoEntryCount, Is.EqualTo(1));
+                Assert.That(controller.CanUndoDirectorCommand, Is.True);
+                Assert.That(controller.CanRestartDirectorScenario, Is.True);
+
+                Assert.That(controller.TrySelectDirectorCard(blue.Id), Is.True);
+                Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+                Assert.That(controller.DirectorUndoEntryCount, Is.EqualTo(2));
+                Assert.That(controller.IsVisibleTurnActive, Is.True);
+
+                Assert.That(controller.TryUndoDirectorCommand(), Is.True);
+                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(afterRedCommit));
+                Assert.That(controller.VisibleRoundPhase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
+                Assert.That(controller.GetTurnCardCommitmentStatus(TeamSide.Red),
+                    Is.EqualTo(TurnCardCommitmentStatus.CardCommittedFacedown));
+                Assert.That(controller.GetTurnCardCommitmentStatus(TeamSide.Blue),
+                    Is.EqualTo(TurnCardCommitmentStatus.AwaitingResponse));
+                Assert.That(controller.DirectorUndoEntryCount, Is.EqualTo(1));
+
+                Assert.That(controller.TryUndoDirectorCommand(), Is.True);
+                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(initialSnapshot));
+                Assert.That(controller.DirectorUndoEntryCount, Is.Zero);
+                Assert.That(controller.TryUndoDirectorCommand(), Is.False);
+
+                CommitTurn(controller, red, blue);
+                Assert.That(controller.CanRestartDirectorScenario, Is.True);
+                Assert.That(controller.TryRestartDirectorScenario(), Is.True);
+                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(initialSnapshot));
+                Assert.That(controller.DirectorUndoEntryCount, Is.Zero);
+                Assert.That(controller.CanUndoDirectorCommand, Is.False);
+                Assert.That(controller.CanRestartDirectorScenario, Is.False);
+                Assert.That(controller.CardStatus, Does.Contain("Restarted initial scenario"));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
+        public void DirectorUndo_RestoresPendingMovementBoardAndActorPresentation()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects);
+                var controller = scenario.Controller;
+                var red = scenario.Configuration.RedHand.Instances[3];
+                var blue = scenario.Configuration.BlueHand.Instances[4];
+                CommitTurn(controller, red, blue);
+                Assert.That(controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(red.Id));
+
+                var beforeMovement = controller.CaptureAuthoritativeSnapshot();
+                Assert.That(controller.TrySelectAction(
+                    new ActionDefinitionId("secondary-movement")), Is.True);
+                var pendingSnapshot = controller.CaptureAuthoritativeSnapshot();
+                var origin = scenario.RedHero.Occupancy;
+                var destination = controller.PendingCardDestinations
+                    .First(candidate => candidate.Cost == 1)
+                    .Destination;
+                var entriesBeforeInvalid = controller.DirectorUndoEntryCount;
+
+                Assert.That(controller.TrySubmitCardDestination(new HexCoordinate(99, 99)), Is.False);
+                Assert.That(controller.DirectorUndoEntryCount, Is.EqualTo(entriesBeforeInvalid));
+                Assert.That(controller.TrySubmitCardDestination(destination), Is.True);
+                Assert.That(scenario.RedHero.Occupancy, Is.Not.EqualTo(origin));
+
+                Assert.That(controller.TryUndoDirectorCommand(), Is.True);
+                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(pendingSnapshot));
+                Assert.That(scenario.RedHero.Occupancy, Is.EqualTo(origin));
+                Assert.That(controller.IsCardMovementResolutionPending, Is.True);
+                Assert.That(controller.HighlightedCoordinates, Does.Contain(destination));
+                Assert.That(controller.SelectedCardInstanceId, Is.EqualTo(red.Id));
+
+                Assert.That(controller.TryUndoDirectorCommand(), Is.True);
+                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(beforeMovement));
+                Assert.That(controller.IsCardMovementResolutionPending, Is.False);
+                Assert.That(controller.IsVisibleTurnActive, Is.True);
+                Assert.That(controller.SelectedCardInstanceId, Is.EqualTo(red.Id));
+                Assert.That(controller.ActiveHeroView, Is.SameAs(scenario.RedHero));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
         private static void CommitTurn(
             HeroSelectionController controller,
             CardInstance redCard,

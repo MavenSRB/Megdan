@@ -827,7 +827,7 @@ Non-goals: No player-facing save slots or cloud storage.
 
 Completion note (2026-08-10): Added a pure schema-versioned authoritative snapshot codec with deterministic Base64 binary serialization. It round-trips the participant graph and enforced player/hero relationship, current Tie Breaker and Initiative state, current and completed round slots with collection-backed hero/card-or-empty-hand-Pass assignments, end-of-round cursor/outcomes, board and obstacle occupancy, card definition references plus every orthogonal card-state facet, and active commitment/turn continuations. Movement and Attack/Defense restoration reuses the existing resolver-owned validators to re-derive legal pending choices against restored board, definitions, instances, participants, and printed values; a paused target choice or Defense reaction resumes to the same ordered result events. Snapshot schema mismatches and card-definition ID/content-revision mismatches reject with distinct typed reasons until migrations exist. The validation controller can capture and restore the authoritative snapshot, replace its synthetic hands with restored instances, reposition hero/obstacle views from authority, and rebuild pending Movement/Attack highlights without presentation-owned continuation. T2 validation passed focused Edit Mode 21/21, directly affected Edit Mode 154/154, and saved-scene Play Mode 11/11 with zero failed, skipped, or inconclusive cases. Complete unfiltered suites were intentionally omitted because this is a new version-1 schema rather than a migration, affected consumers are enumerated, and milestone 3.11 remains the Phase 3 T3 gate. No player-facing save slot, cloud storage, migration, Undo/restart history, or event-log UI was added.
 
-### [ ] 3.10 Add director-mode Undo and restart
+### [x] 3.10 Add director-mode Undo and restart
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -840,7 +840,11 @@ Acceptance checks:
 
 Non-goals: No redo requirement and no competitive availability.
 
+Completion note (2026-08-10): Added full-match director history over the existing deterministic authoritative snapshot serializer. Every accepted commitment, Pass, Initiative tie choice, Hold, Movement/Attack start or pending answer, Defense response, and end-of-round continuation records the exact pre-command snapshot; rejected and presentation-only inputs add no entry. Undo pops and restores that boundary without creating a replacement entry, while restart restores the initial scenario and clears history. Restore rebuilds owned hands, board/obstacle/hero views, the current Initiative actor/card focus, pending Movement or Attack highlights, Defense controls, Tie Breaker, round/turn state, and HUD status. The saved director HUD now exposes disabled-when-unavailable `UNDO` and `RESTART` buttons in its existing header row. T2 validation passed focused Edit Mode 23/23, directly affected Edit Mode 156/156, and saved-scene Play Mode 12/12 with zero failed, skipped, or inconclusive cases and the healthy 39-package baseline. Source/layout inspection confirmed the two compact buttons share the existing header row without increasing the bounded panel height. Complete unfiltered suites were intentionally omitted because milestone 3.11 remains the Phase 3 T3 gate and all affected snapshot/authority/controller/presentation consumers are enumerated. No redo or competitive availability was added.
+
 ### [ ] 3.11 Add the internal rule-event log
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: A primitive internal panel shows accepted ordered rule events and rebuilds consistently after restore, Undo, or restart.
 

@@ -206,6 +206,49 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_UndoAndRestartRebuildDirectorStateFromAuthoritativeSnapshots()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var initialSnapshot = controller.CaptureAuthoritativeSnapshot();
+            var redCard = controller.VisibleDirectorHands
+                .Single(hand => hand.TeamSide == TeamSide.Red).Instances[0];
+            var blueCard = controller.VisibleDirectorHands
+                .Single(hand => hand.TeamSide == TeamSide.Blue).Instances[1];
+
+            Assert.That(controller.TrySelectDirectorCard(redCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+            var afterRedCommit = controller.CaptureAuthoritativeSnapshot();
+            Assert.That(controller.TrySelectDirectorCard(blueCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+            Assert.That(controller.IsVisibleTurnActive, Is.True);
+
+            Assert.That(controller.TryUndoDirectorCommand(), Is.True);
+            yield return null;
+            Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(afterRedCommit));
+            Assert.That(controller.GetTurnCardCommitmentStatus(TeamSide.Blue),
+                Is.EqualTo(TurnCardCommitmentStatus.AwaitingResponse));
+
+            Assert.That(controller.TryRestartDirectorScenario(), Is.True);
+            yield return null;
+            Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(initialSnapshot));
+            Assert.That(controller.VisibleRoundIndex, Is.EqualTo(1));
+            Assert.That(controller.VisibleTurnIndex, Is.EqualTo(1));
+            Assert.That(controller.VisibleRoundPhase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
+            Assert.That(controller.DirectorUndoEntryCount, Is.Zero);
+            Assert.That(controller.CardStatus, Does.Contain("Restarted initial scenario"));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_ResolvesRevealedTurnAttackDefenseAndFocusesNextActor()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);

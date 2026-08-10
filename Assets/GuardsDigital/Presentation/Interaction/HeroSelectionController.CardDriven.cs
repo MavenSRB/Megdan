@@ -34,6 +34,7 @@ namespace GuardsDigital.Presentation.Interaction
             new List<RoundResolutionEvent>();
         private readonly Dictionary<HeroId, PlaceholderMovementHand> placeholderHands =
             new Dictionary<HeroId, PlaceholderMovementHand>();
+        private readonly List<string> directorUndoSnapshots = new List<string>();
         private bool placeholderOneVsOneHandsInitialized;
         private MatchParticipants placeholderParticipants;
         private PlaceholderOneVsOneTestConfiguration placeholderConfiguration;
@@ -48,6 +49,7 @@ namespace GuardsDigital.Presentation.Interaction
         private int lastCardMovementAllowance;
         private int lastCardRemainingAllowance;
         private string cardStatus = "Select a test card.";
+        private string directorInitialSnapshot;
 
         public bool IsCardDrivenMovementEnabled => cardDrivenMovementEnabled;
 
@@ -242,6 +244,12 @@ namespace GuardsDigital.Presentation.Interaction
 
         public string CardStatus => cardStatus;
 
+        public bool CanUndoDirectorCommand => directorUndoSnapshots.Count > 0;
+
+        public bool CanRestartDirectorScenario => directorUndoSnapshots.Count > 0;
+
+        public int DirectorUndoEntryCount => directorUndoSnapshots.Count;
+
         public TieBreakerState CurrentTieBreakerState
         {
             get
@@ -308,6 +316,42 @@ namespace GuardsDigital.Presentation.Interaction
 
         public void RestoreAuthoritativeSnapshot(string payload)
         {
+            RestoreAuthoritativeSnapshot(payload, true);
+        }
+
+        public bool TryUndoDirectorCommand()
+        {
+            if (!CanUndoDirectorCommand)
+            {
+                return false;
+            }
+
+            var snapshotIndex = directorUndoSnapshots.Count - 1;
+            var payload = directorUndoSnapshots[snapshotIndex];
+            directorUndoSnapshots.RemoveAt(snapshotIndex);
+            RestoreAuthoritativeSnapshot(payload, false);
+            cardStatus = $"Undo restored round {VisibleRoundIndex}, turn {VisibleTurnIndex}/" +
+                $"{RoundResolutionAuthority.TurnsPerRound}: {VisibleRoundPhase}.";
+            return true;
+        }
+
+        public bool TryRestartDirectorScenario()
+        {
+            if (!CanRestartDirectorScenario || string.IsNullOrEmpty(directorInitialSnapshot))
+            {
+                return false;
+            }
+
+            var payload = directorInitialSnapshot;
+            RestoreAuthoritativeSnapshot(payload, false);
+            directorUndoSnapshots.Clear();
+            cardStatus = $"Restarted initial scenario at round {VisibleRoundIndex}, turn {VisibleTurnIndex}/" +
+                $"{RoundResolutionAuthority.TurnsPerRound}.";
+            return true;
+        }
+
+        private void RestoreAuthoritativeSnapshot(string payload, bool resetDirectorHistory)
+        {
             InitializeCardDrivenMovementIfEnabled();
             if (placeholderConfiguration == null)
             {
@@ -341,6 +385,12 @@ namespace GuardsDigital.Presentation.Interaction
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             LastAttackOutcome = AttackResolutionOutcome.None;
 
+            if (resetDirectorHistory)
+            {
+                directorUndoSnapshots.Clear();
+                directorInitialSnapshot = payload;
+            }
+
             foreach (var view in new[] { heroView }.Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>()).Where(view => view != null))
             {
                 var occupancy = restored.Board.Occupancies.Single(value => value.HeroId.Equals(view.Occupancy.HeroId));
@@ -357,6 +407,11 @@ namespace GuardsDigital.Presentation.Interaction
                 ? activeHand
                 : null;
             ClearSelectionVisuals();
+            if (IsVisibleTurnActive && VisibleTurnActor.IsDefined)
+            {
+                FocusVisibleTurnHero(VisibleTurnActor.ActorId);
+                selectedCardInstanceId = VisibleTurnActor.CardInstanceId;
+            }
             if (PendingCardChoice != null) RefreshCardChoiceHighlights(PendingCardChoice);
             if (PendingAttackTargetChoice != null) RefreshAttackTargetHighlights(PendingAttackTargetChoice);
             cardStatus = $"Restored round {VisibleRoundIndex}, turn {VisibleTurnIndex}/{RoundResolutionAuthority.TurnsPerRound}: " +
@@ -501,6 +556,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var side = placeholderParticipants.GetTeamForHero(selectedCard.OwnerId).Side;
+            var undoSnapshot = CaptureDirectorCommandBoundary();
             var result = roundResolutionAuthority.TryCommitCard(selectedCard.OwnerId, selectedCard.Id);
             if (!result.Accepted)
             {
@@ -509,6 +565,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            RecordAcceptedDirectorCommand(undoSnapshot);
             RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             selectedCardInstanceId = null;
@@ -539,6 +596,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            var undoSnapshot = CaptureDirectorCommandBoundary();
             var result = roundResolutionAuthority.TryPass(GetSingleFixtureHeroId(side));
             if (!result.Accepted)
             {
@@ -547,6 +605,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            RecordAcceptedDirectorCommand(undoSnapshot);
             RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             selectedCardInstanceId = null;
@@ -577,6 +636,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            var undoSnapshot = CaptureDirectorCommandBoundary();
             var result = roundResolutionAuthority.TryPerformHold(cardInstanceId);
             if (!result.Accepted)
             {
@@ -585,6 +645,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            RecordAcceptedDirectorCommand(undoSnapshot);
             RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             LastTurnRejectionReason = TurnResolutionRejectionReason.None;
@@ -601,6 +662,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var completedStage = roundResolutionAuthority.CurrentEndOfRoundStage;
+            var undoSnapshot = CaptureDirectorCommandBoundary();
             var result = roundResolutionAuthority.TryAdvanceEndOfRound();
             if (!result.Accepted)
             {
@@ -609,6 +671,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            RecordAcceptedDirectorCommand(undoSnapshot);
             RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             var stageLabel = completedStage.HasValue
@@ -626,6 +689,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            var undoSnapshot = CaptureDirectorCommandBoundary();
             var result = roundResolutionAuthority.TryChooseTiedActor(choosingSide, cardInstanceId);
             if (!result.Accepted)
             {
@@ -634,6 +698,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            RecordAcceptedDirectorCommand(undoSnapshot);
             RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             LastTurnRejectionReason = TurnResolutionRejectionReason.None;
@@ -659,9 +724,16 @@ namespace GuardsDigital.Presentation.Interaction
 
             if (IsVisibleTurnActive)
             {
-                return GetActionDefinition(matchingOffers[0]).Kind == ActionKind.Attack
+                var undoSnapshot = CaptureDirectorCommandBoundary();
+                var accepted = GetActionDefinition(matchingOffers[0]).Kind == ActionKind.Attack
                     ? StartVisibleTurnAttack(matchingOffers[0])
                     : StartVisibleTurnMovement(matchingOffers[0]);
+                if (accepted)
+                {
+                    RecordAcceptedDirectorCommand(undoSnapshot);
+                }
+
+                return accepted;
             }
 
             if (cardResolutionAuthority == null)
@@ -723,6 +795,7 @@ namespace GuardsDigital.Presentation.Interaction
                 targetHeroId);
             if (IsVisibleTurnActive)
             {
+                var undoSnapshot = CaptureDirectorCommandBoundary();
                 var roundResult = roundResolutionAuthority.TryAnswerAttackTarget(command);
                 if (!roundResult.Accepted)
                 {
@@ -732,6 +805,7 @@ namespace GuardsDigital.Presentation.Interaction
                     return false;
                 }
 
+                RecordAcceptedDirectorCommand(undoSnapshot);
                 RecordRoundEvents(roundResult.Events);
                 LastRoundRejectionReason = RoundResolutionRejectionReason.None;
                 LastTurnRejectionReason = TurnResolutionRejectionReason.None;
@@ -836,7 +910,14 @@ namespace GuardsDigital.Presentation.Interaction
 
             if (IsVisibleTurnActive)
             {
-                return SubmitVisibleTurnMovementChoice(command);
+                var undoSnapshot = CaptureDirectorCommandBoundary();
+                var accepted = SubmitVisibleTurnMovementChoice(command);
+                if (accepted)
+                {
+                    RecordAcceptedDirectorCommand(undoSnapshot);
+                }
+
+                return accepted;
             }
 
             var choiceBeforeSubmission = PendingCardChoice;
@@ -952,6 +1033,8 @@ namespace GuardsDigital.Presentation.Interaction
             turnCardCommitmentEvents.Clear();
             turnResolutionEvents.Clear();
             roundResolutionEvents.Clear();
+            directorUndoSnapshots.Clear();
+            directorInitialSnapshot = null;
             lastCardMovementRoute = Array.Empty<HexCoordinate>();
             lastCardMovementAllowance = 0;
             lastCardRemainingAllowance = 0;
@@ -1285,7 +1368,14 @@ namespace GuardsDigital.Presentation.Interaction
                     : null;
             if (IsVisibleTurnActive)
             {
-                return SubmitVisibleTurnDefenseResponse(command, selectedCardId);
+                var undoSnapshot = CaptureDirectorCommandBoundary();
+                var accepted = SubmitVisibleTurnDefenseResponse(command, selectedCardId);
+                if (accepted)
+                {
+                    RecordAcceptedDirectorCommand(undoSnapshot);
+                }
+
+                return accepted;
             }
 
             var result = cardResolutionAuthority.AnswerDefenseResponse(
@@ -1425,6 +1515,28 @@ namespace GuardsDigital.Presentation.Interaction
                     cardResolutionEvents.Add(turnEvent.CardActionEvent);
                 }
             }
+        }
+
+        private string CaptureDirectorCommandBoundary()
+        {
+            return roundResolutionAuthority != null && moveAuthority != null
+                ? AuthoritativeSnapshotSerializer.Serialize(roundResolutionAuthority, moveAuthority)
+                : null;
+        }
+
+        private void RecordAcceptedDirectorCommand(string snapshot)
+        {
+            if (string.IsNullOrEmpty(snapshot))
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(directorInitialSnapshot))
+            {
+                directorInitialSnapshot = snapshot;
+            }
+
+            directorUndoSnapshots.Add(snapshot);
         }
 
         private void RecordRoundRejection(RoundResolutionResult result)
@@ -1708,9 +1820,24 @@ namespace GuardsDigital.Presentation.Interaction
             var panel = GetCardPanelRect();
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));
+            GUILayout.BeginHorizontal();
             GUILayout.Label(
                 $"PHASE 3 DIRECTOR TEST ROUND {VisibleRoundIndex} - TURN {VisibleTurnIndex}/" +
                 $"{RoundResolutionAuthority.TurnsPerRound} - {VisibleRoundPhase.ToString().ToUpperInvariant()}");
+            GUI.enabled = CanUndoDirectorCommand;
+            if (GUILayout.Button("UNDO", GUILayout.Width(80f), GUILayout.Height(24f)))
+            {
+                TryUndoDirectorCommand();
+            }
+
+            GUI.enabled = CanRestartDirectorScenario;
+            if (GUILayout.Button("RESTART", GUILayout.Width(90f), GUILayout.Height(24f)))
+            {
+                TryRestartDirectorScenario();
+            }
+
+            GUI.enabled = true;
+            GUILayout.EndHorizontal();
             GUILayout.Label(cardStatus);
 
             foreach (var hand in VisibleDirectorHands)
