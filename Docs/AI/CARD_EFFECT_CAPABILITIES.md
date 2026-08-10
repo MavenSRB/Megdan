@@ -370,6 +370,8 @@ Some card effects can trigger or depend on larger systems. These remain dedicate
 
 A card effect requests or triggers these transitions through typed operation facts/checkpoints; it does not duplicate their logic in a card handler. A generic `OccupancyChanged` event is insufficient because Move, Push, Swap, Remove, and Defeat have different systemic consequences.
 
+The approved early repeated-round scaffold uses one serializable end-of-round stage cursor over these stable checkpoint identities. A handler can complete, pause on a typed pending choice, stop on a game result, or report `NotApplicable` from authoritative state. Test-only fixture capability declarations may make a future subsystem explicitly unavailable, but a subsystem declared available without its required handler is an authority error. The scaffold initially populates only owner-validated eligible-card retrieval and its Active-effect cancellation boundary; later Phase 6-7 work fills the remaining handlers without replacing the cursor, continuation, event-order, or snapshot contract. The next round begins only after all applicable stages complete, at which point the prior round becomes immutable history and only round-local state resets.
+
 ## Capability definition validation
 
 Definitions are rejected before a match starts when any of these checks fail:

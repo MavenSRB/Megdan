@@ -789,6 +789,23 @@ Acceptance checks:
 
 Non-goals: No six-player setup, additional heroes or cards, 3v3 turn execution, snapshot serialization, history UI, event-log UI, networking, or production presentation.
 
+### [ ] 3.8c Scaffold end-of-round progression and repeated synthetic rounds
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: After the fourth turn, the synthetic round advances through an explicit resumable end-of-round stage sequence, retrieves eligible cards, preserves the completed round, and starts turn 1 of the next round so the validation scene can play at least two uninterrupted rounds.
+
+Acceptance checks:
+
+- Add one authoritative end-of-round stage cursor whose ordered checkpoint identities match the verified sequence later completed by milestones 6.1-6.8 and 7.5-7.8; pending choices or a game-ending result can pause or stop the cursor without presentation-owned continuation.
+- The current visibly test-only fixture declares which later match subsystems are unavailable. A stage may report a typed `NotApplicable` outcome only from authoritative fixture capability/state facts; a missing handler for a subsystem declared available is an authority error, never a silent skip.
+- Implement the reusable owner-validated retrieval subset needed by the current fixture: every eligible resolved or Defense-discarded synthetic card returns to its owning hero's hand through explicit lifecycle events, ineligible cards do not move, and the retrieval checkpoint exposes the cancellation boundary even though the fixture has no concrete Active effects.
+- After every applicable stage completes, freeze the four indexed turn slots as an immutable completed-round record, increment the authoritative round index, create fresh empty turn slots, retain match-wide state including the current Tie Breaker, and enter turn 1 commitment without reconstructing state from presentation.
+- The saved validation scene continues from its visible end-of-round state into the next round and can complete at least two uninterrupted rounds containing representative Hold, Movement, Attack/Defense, legal card reuse after retrieval, and deterministic Tie Breaker carryover.
+- Focused pure and saved-scene tests cover stage order, resumable cursor state, explicit unavailable/not-applicable outcomes, missing-required-handler rejection, owner-safe retrieval, prior-round immutability, round-local reset, match-state carryover, and two-round deterministic replay.
+
+Non-goals: No Minion Battle behavior, token/marker cleanup behavior, Lane Push resolution, concrete End of Round effects, leveling/upgrades, Pity Coins, victory implementation, full-map setup, snapshots, Undo/restart, event-log UI, official content, networking, or production presentation. Later milestones populate the established checkpoints rather than redesigning the round boundary.
+
 ### [ ] 3.9 Serialize and restore authoritative snapshots
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
@@ -797,7 +814,7 @@ Observable outcome: A versioned snapshot round-trips without changing logical st
 
 Acceptance checks:
 
-- Teams, players, heroes and their enforced one-to-one player/hero relationship, Tie Breaker, turn/round state including every collection-backed hero card-or-empty-hand-Pass assignment, board occupancy, card instances/state facets, and definition references survive round-trip tests.
+- Teams, players, heroes and their enforced one-to-one player/hero relationship, Tie Breaker, current and completed round state including every collection-backed hero card-or-empty-hand-Pass assignment, the end-of-round stage cursor/outcomes, board occupancy, card instances/state facets, and definition references survive round-trip tests.
 - A state paused on a pending card choice or Defense reaction resumes to the same result and ordered events.
 - Snapshot schema version and card-definition content revision are checked independently; mismatches are rejected clearly until a migration exists.
 - Presentation can rebuild from restored state.
@@ -1064,13 +1081,14 @@ An end-of-round Lane-Push request remains pending until this cleanup finishes.
 
 ### [ ] 6.8 Retrieve cards and cancel applicable Active effects
 
-Observable outcome: Each hero retrieves only its own eligible resolved/discarded synthetic cards and applicable effects end through authoritative state changes.
+Observable outcome: The milestone 3.8c retrieval subset is completed and integrated with the full Phase 6 state so each hero retrieves only its own eligible cards and all applicable effects end through authoritative state changes at the established checkpoint.
 
 Acceptance checks:
 
 - Retrieval never takes another hero's card.
 - Every eligible card returns regardless of its prior eligible state, while ineligible/set-aside/item cards do not.
 - Applicable Active effects, including relevant Next Turn effects, cancel through authoritative events.
+- The populated retrieval/cancellation handler replaces the synthetic fixture's limited availability declaration without changing the end-of-round stage identity, continuation, or event-order contract.
 - Focused tests cover resolved, discarded, facedown eligible, other-owner, and active-effect cases.
 - T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass after the focused Phase 6 scenarios.
 
@@ -1168,7 +1186,7 @@ Acceptance checks:
 
 ### [ ] 7.8 Integrate the exact end-of-round sequence
 
-Observable outcome: One authoritative state machine executes the completed end-of-round systems in source order and arrives at a valid next round or game-ended state.
+Observable outcome: The milestone 3.8c end-of-round state machine has every required handler populated, executes the completed systems in source order, and arrives at a valid next round or game-ended state without any synthetic unavailable-stage declarations.
 
 Acceptance checks:
 
@@ -1177,6 +1195,7 @@ Acceptance checks:
 - A game-ending result stops later processing immediately.
 - Focused scenarios cover no Lane Push, one Lane Push, level/no-level players, retrieved effects, Pity Coin eligibility, and a game-ending Push.
 - The same state and choices produce the same state and ordered events.
+- Integration preserves the established resumable cursor, completed-round history, round-local reset, snapshot, Undo, and event-log contracts rather than introducing a second round-transition path.
 
 ### [ ] 7.9 Complete a deterministic test-card core match
 
