@@ -206,6 +206,55 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_ResolvesRevealedTurnAttackDefenseAndFocusesNextActor()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var redHero = FindRedHero(heroes);
+            var blueHero = heroes.Single(hero => hero != redHero);
+            var redAttackCard = controller.VisibleDirectorHands
+                .Single(hand => hand.TeamSide == TeamSide.Red).Instances[0];
+            var blueTurnCard = controller.VisibleDirectorHands
+                .Single(hand => hand.TeamSide == TeamSide.Blue).Instances[1];
+            var blueDefenseCard = controller.VisibleDirectorHands
+                .Single(hand => hand.TeamSide == TeamSide.Blue).Instances[0];
+            Assert.That(controller.TrySelectDirectorCard(redAttackCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+            Assert.That(controller.TrySelectDirectorCard(blueTurnCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+            yield return null;
+
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
+            Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(blueHero.transform.position)), Is.True);
+            yield return null;
+            Assert.That(controller.IsDefenseResponsePending, Is.True);
+            Assert.That(controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(redAttackCard.Id));
+            Assert.That(controller.TrySubmitDefenseCard(blueDefenseCard.Id), Is.True);
+            yield return null;
+
+            Assert.That(blueDefenseCard.State.Location, Is.EqualTo(CardLocation.DiscardPile));
+            Assert.That(redAttackCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(blueTurnCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(controller.PendingAttackResolution, Is.Null);
+            Assert.That(controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(blueTurnCard.Id));
+            Assert.That(controller.ActiveHeroView, Is.SameAs(blueHero));
+            Assert.That(controller.SelectedCardInstanceId, Is.EqualTo(blueTurnCard.Id));
+            Assert.That(controller.CardStatus, Does.Match("successfully defended|attack successful"));
+            Assert.That(controller.CardStatus, Does.Contain("[B] BLUE"));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_SelectsVisibleCardOfferThenClicksReachableDestinationInOneClick()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);

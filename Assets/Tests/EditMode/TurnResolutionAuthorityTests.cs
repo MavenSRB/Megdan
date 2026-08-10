@@ -212,6 +212,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentException>(() =>
                 TurnResolutionEvent.FromCardAction(default));
             Assert.Throws<ArgumentException>(() =>
+                TurnResolutionEvent.FromAttackAction(default));
+            Assert.Throws<ArgumentException>(() =>
                 TurnResolutionEvent.CardWasResolved(default, default));
             Assert.Throws<ArgumentOutOfRangeException>(() =>
                 TurnResolutionEvent.TurnCheckpoint(TurnResolutionEventKind.CardResolved));
@@ -369,6 +371,135 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
         }
 
+        [Test]
+        public void SelectedActor_AttackPausesForDefenseThenResolvesOnlyItsCardAndYields()
+        {
+            var fixture = CreateAttackFixture(false);
+            Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
+            var attackOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
+                    fixture.Configuration.CardDefinitions,
+                    fixture.Configuration.CardInstances,
+                    fixture.RedPlayed.OwnerId,
+                    fixture.RedPlayed.Id)
+                .Single(offer => offer.ActionDefinitionId.Equals(
+                    new ActionDefinitionId("primary-attack")));
+
+            var started = fixture.Authority.TryStartAttack(
+                new ActionResolutionId("turn-red-attack"),
+                attackOffer);
+
+            Assert.That(started.Accepted, Is.True);
+            Assert.That(fixture.Authority.PendingAttackTargetChoice, Is.Not.Null);
+            Assert.That(fixture.RedPlayed.State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.RedPlayed.Id));
+
+            var targetChoice = fixture.Authority.PendingAttackTargetChoice;
+            var targeted = fixture.Authority.TryAnswerAttackTarget(
+                new AttackTargetChoiceCommand(
+                    targetChoice.ResolutionId,
+                    targetChoice.ChoiceId,
+                    fixture.BluePlayed.OwnerId));
+
+            Assert.That(targeted.Accepted, Is.True);
+            Assert.That(fixture.Authority.PendingDefenseChoice.ChooserId,
+                Is.EqualTo(fixture.BluePlayed.OwnerId));
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.RedPlayed.Id),
+                "The nested Defense frame must not replace the outer turn actor.");
+            AssertRejected(
+                fixture.Authority.TryPerformHold(fixture.RedPlayed.Id),
+                TurnResolutionRejectionReason.ActionAlreadyPending);
+
+            var defenseChoice = fixture.Authority.PendingDefenseChoice;
+            var defenseCardId = defenseChoice.LegalDefenseOffers
+                .Single(offer => offer.SourceCardInstanceId.Equals(fixture.BlueDefense.Id))
+                .SourceCardInstanceId;
+            var completed = fixture.Authority.TryAnswerDefenseResponse(
+                DefenseResponseChoiceCommand.SelectCards(
+                    defenseChoice.ResolutionId,
+                    defenseChoice.ChoiceId,
+                    defenseCardId));
+
+            Assert.That(completed.Accepted, Is.True);
+            Assert.That(fixture.BlueDefense.State.Location, Is.EqualTo(CardLocation.DiscardPile));
+            Assert.That(fixture.BlueDefense.State.HasBeenPlayed, Is.False);
+            Assert.That(fixture.RedPlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(fixture.BluePlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(fixture.Authority.PendingAttackResolution, Is.Null);
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
+
+            var kinds = completed.Events.Select(ruleEvent => ruleEvent.Kind).ToArray();
+            Assert.That(System.Array.IndexOf(kinds, TurnResolutionEventKind.CardResolved),
+                Is.GreaterThan(System.Array.LastIndexOf(kinds, TurnResolutionEventKind.AttackActionProgressed)));
+            Assert.That(completed.Events.Last(ruleEvent =>
+                    ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed)
+                .InitiativeEvent.Kind, Is.EqualTo(InitiativeResolutionEventKind.NextActorSelected));
+
+            Assert.That(fixture.Authority.TryPerformHold(fixture.BluePlayed.Id).Accepted, Is.True,
+                "The defender's reaction must not consume its selected card's normal action.");
+        }
+
+        [Test]
+        public void AttackDefenseReaction_RejectsStaleCommandsAndRequeriesAfterDeferredFlip()
+        {
+            var fixture = CreateAttackFixture(true);
+            Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.RedPlayed.Id));
+            var attackOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
+                    fixture.Configuration.CardDefinitions,
+                    fixture.Configuration.CardInstances,
+                    fixture.RedPlayed.OwnerId,
+                    fixture.RedPlayed.Id)
+                .Single(offer => offer.ActionDefinitionId.Equals(
+                    new ActionDefinitionId("primary-attack")));
+            Assert.That(fixture.Authority.TryStartAttack(
+                new ActionResolutionId("turn-tied-attack"),
+                attackOffer).Accepted, Is.True);
+
+            var targetChoice = fixture.Authority.PendingAttackTargetChoice;
+            AssertRejected(
+                fixture.Authority.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
+                    targetChoice.ResolutionId,
+                    new ActionResolutionStepId("stale-target"),
+                    fixture.BluePlayed.OwnerId)),
+                TurnResolutionRejectionReason.AttackCommandRejected);
+            Assert.That(fixture.Authority.PendingAttackTargetChoice, Is.SameAs(targetChoice));
+            Assert.That(fixture.RedPlayed.State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Unresolved));
+
+            Assert.That(fixture.Authority.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
+                targetChoice.ResolutionId,
+                targetChoice.ChoiceId,
+                fixture.BluePlayed.OwnerId)).Accepted, Is.True);
+            var defenseChoice = fixture.Authority.PendingDefenseChoice;
+            AssertRejected(
+                fixture.Authority.TryAnswerDefenseResponse(DefenseResponseChoiceCommand.Decline(
+                    defenseChoice.ResolutionId,
+                    new ActionResolutionStepId("stale-defense"))),
+                TurnResolutionRejectionReason.AttackCommandRejected);
+            Assert.That(fixture.Authority.PendingDefenseChoice, Is.SameAs(defenseChoice));
+            Assert.That(fixture.Authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Red));
+
+            var completed = fixture.Authority.TryAnswerDefenseResponse(
+                DefenseResponseChoiceCommand.Decline(
+                    defenseChoice.ResolutionId,
+                    defenseChoice.ChoiceId));
+
+            Assert.That(completed.Accepted, Is.True);
+            Assert.That(fixture.Authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
+            var cardResolvedIndex = completed.Events.ToList().FindIndex(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.CardResolved);
+            var flipIndex = completed.Events.ToList().FindIndex(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
+                ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.TieBreakerFlipped);
+            var nextActorIndex = completed.Events.ToList().FindIndex(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
+                ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.NextActorSelected);
+            Assert.That(flipIndex, Is.GreaterThan(cardResolvedIndex));
+            Assert.That(nextActorIndex, Is.GreaterThan(flipIndex));
+        }
+
         private static IEnumerable<InitiativeResolutionEventKind> EventKinds(
             TurnResolutionResult result)
         {
@@ -448,6 +579,42 @@ namespace GuardsDigital.Tests.EditMode
                     instances,
                     participants,
                     new TieBreakerState(TeamSide.Red),
+                    new CardActionResolutionAuthority(board)));
+        }
+
+        private static AttackTestFixture CreateAttackFixture(bool tiedInitiative)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var redPlayed = configuration.RedHand.Instances[0];
+            var bluePlayed = configuration.BlueHand.Instances[tiedInitiative ? 0 : 1];
+            var blueDefense = configuration.BlueHand.Instances[tiedInitiative ? 1 : 0];
+            Assert.That(CardLifecycleAuthority.TryPlayFacedown(redPlayed), Is.True);
+            Assert.That(CardLifecycleAuthority.TryReveal(redPlayed), Is.True);
+            Assert.That(CardLifecycleAuthority.TryPlayFacedown(bluePlayed), Is.True);
+            Assert.That(CardLifecycleAuthority.TryReveal(bluePlayed), Is.True);
+            var board = new AdjacentMoveAuthority(
+                new[]
+                {
+                    new HexCoordinate(-1, 0),
+                    new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0),
+                    new HexCoordinate(2, 0)
+                },
+                new[]
+                {
+                    new HeroOccupancy(redPlayed.OwnerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(bluePlayed.OwnerId, new HexCoordinate(1, 0))
+                });
+            return new AttackTestFixture(
+                configuration,
+                redPlayed,
+                bluePlayed,
+                blueDefense,
+                new TurnResolutionAuthority(
+                    configuration.CardDefinitions,
+                    configuration.CardInstances,
+                    configuration.Participants,
+                    configuration.TieBreakerState,
                     new CardActionResolutionAuthority(board)));
         }
 
@@ -589,6 +756,33 @@ namespace GuardsDigital.Tests.EditMode
             public IReadOnlyList<CardInstance> Instances { get; }
 
             public AdjacentMoveAuthority Board { get; }
+
+            public TurnResolutionAuthority Authority { get; }
+        }
+
+        private sealed class AttackTestFixture
+        {
+            public AttackTestFixture(
+                PlaceholderOneVsOneTestConfiguration configuration,
+                CardInstance redPlayed,
+                CardInstance bluePlayed,
+                CardInstance blueDefense,
+                TurnResolutionAuthority authority)
+            {
+                Configuration = configuration;
+                RedPlayed = redPlayed;
+                BluePlayed = bluePlayed;
+                BlueDefense = blueDefense;
+                Authority = authority;
+            }
+
+            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+
+            public CardInstance RedPlayed { get; }
+
+            public CardInstance BluePlayed { get; }
+
+            public CardInstance BlueDefense { get; }
 
             public TurnResolutionAuthority Authority { get; }
         }

@@ -329,6 +329,53 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants)
         {
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var authoritativeOffers = ActionOfferQuery.GetAvailableOffers(
+                materializedDefinitions,
+                materializedInstances,
+                offer.ActorId,
+                ActionOfferWindow.NormalPlay);
+            return StartAttackResolution(
+                resolutionId,
+                offer,
+                materializedDefinitions,
+                materializedInstances,
+                participants,
+                authoritativeOffers);
+        }
+
+        public AttackActionResolutionResult StartTurnAttackResolution(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants)
+        {
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var authoritativeOffers = ActionOfferQuery.GetAvailableTurnActionOffers(
+                materializedDefinitions,
+                materializedInstances,
+                offer.ActorId,
+                offer.SourceCardInstanceId);
+            return StartAttackResolution(
+                resolutionId,
+                offer,
+                materializedDefinitions,
+                materializedInstances,
+                participants,
+                authoritativeOffers);
+        }
+
+        private AttackActionResolutionResult StartAttackResolution(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IReadOnlyList<CardDefinition> materializedDefinitions,
+            IReadOnlyList<CardInstance> materializedInstances,
+            MatchParticipants participants,
+            IReadOnlyList<ActionOffer> authoritativeOffers)
+        {
             if (!resolutionId.IsDefined)
             {
                 throw new ArgumentException("Starting an Attack resolution requires a resolution ID.", nameof(resolutionId));
@@ -350,13 +397,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.UnsupportedInvocationContext);
             }
 
-            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
-            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var authoritativeOffers = ActionOfferQuery.GetAvailableOffers(
-                materializedDefinitions,
-                materializedInstances,
-                offer.ActorId,
-                ActionOfferWindow.NormalPlay);
             if (!offer.IsAvailable || !authoritativeOffers.Contains(offer))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
@@ -901,11 +941,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances)
         {
-            return ActionOfferQuery.GetAvailableOffers(
-                    definitions,
-                    instances,
-                    resolution.ActorId,
-                    ActionOfferWindow.NormalPlay)
+            var sourceCard = instances.SingleOrDefault(candidate =>
+                candidate.Id.Equals(resolution.SourceCardInstanceId));
+            var offers = sourceCard != null &&
+                sourceCard.State.Location == CardLocation.TurnArea &&
+                sourceCard.State.HasBeenPlayed &&
+                sourceCard.State.ResolutionStatus == CardResolutionStatus.Unresolved &&
+                sourceCard.State.FaceOrientation == CardFaceOrientation.FaceUp
+                    ? ActionOfferQuery.GetAvailableTurnActionOffers(
+                        definitions,
+                        instances,
+                        resolution.ActorId,
+                        resolution.SourceCardInstanceId)
+                    : ActionOfferQuery.GetAvailableOffers(
+                        definitions,
+                        instances,
+                        resolution.ActorId,
+                        ActionOfferWindow.NormalPlay);
+            return offers
                 .Cast<ActionOffer?>()
                 .SingleOrDefault(candidate =>
                     candidate.Value.SourceCardInstanceId.Equals(resolution.SourceCardInstanceId) &&

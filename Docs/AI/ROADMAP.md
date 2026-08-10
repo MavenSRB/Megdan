@@ -680,7 +680,7 @@ Non-goals: No Attack/Defense turn integration, automated action choice, new Move
 
 Completion note (2026-08-10): Corrected the playable validation flow by retaining one presentation-owned reference to the pure turn authority after joint reveal, automatically focusing its current Initiative actor and played card, and deriving only that card's available printed Movement offers through the milestone 3.6 query. Movement selection and every destination/Stop command now pass through `TurnResolutionAuthority`; the controller projects its existing pending choice/events, updates the active hero view only from authoritative occupancy, retains the same actor across partial waypoints, and focuses the next unresolved actor only after exact source-card resolution. Manual hero switching is blocked while the visible turn is active, and stale input preserves actor, card, occupancy, and highlights. T2 validation passed focused Edit Mode 27/27, directly affected Edit Mode 149/149, and saved-scene Play Mode 9/9 with zero failed, skipped, or inconclusive cases. Targeted live Game-view inspection confirmed that joint reveal visibly produces the `[R] RED` Initiative prompt, Primary/Secondary Movement buttons, highlighted legal destinations, and Stop control without overlap. Complete unfiltered suites were intentionally omitted because the affected controller, scene, and pure-authority consumers are enumerated and milestone 3.6a is not a T3 gate. No Attack/Defense turn integration, new Movement rule, animation, sound, round, or Wasp content was added.
 
-### [ ] 3.7 Resolve test-card Attack and Defense within a turn
+### [x] 3.7 Resolve test-card Attack and Defense within a turn
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -693,7 +693,13 @@ Acceptance checks:
 - Attack completion resolves only the attacker's played card.
 - The next unresolved actor is selected from current state after the reaction closes.
 
+Non-goals: No Attack consequences, defeat/removal, automated action choice, new Attack/Defense rules, animation, sound, round shell, snapshots, or Wasp content.
+
+Completion note (2026-08-10): Composed the existing Phase 2 hero Attack/Defense resolver into the selected revealed turn-card frame without duplicating combat rules. Played-turn Attack offers now remain authority-revalidatable through target, defender-owned response, comparison, and completion checkpoints. The turn authority preserves the attacking actor/card while the Defense reaction discards at most one legal in-hand defender card or declines, then resolves only the attacker's played card, consumes any deferred Tie Breaker flip, and re-queries the next unresolved actor from current state. The validation controller exposes Movement and Attack offers for the current card, routes target and Defense input through the turn authority, retains the attacker across the nested reaction, reports the typed outcome, and visibly focuses the next actor; invalid/stale input preserves the same turn/Attack choice. T2 validation passed focused Edit Mode 13/13, directly affected Edit Mode 99/99, and saved-scene Play Mode 10/10 with zero failed, skipped, or inconclusive cases. Source/layout inspection confirmed the existing Attack, Defense, outcome, and next-actor HUD states reuse the already-validated panel geometry; an attempted automated framebuffer capture was unavailable in batch mode and the hidden live launcher blocked on its interactive save boundary, so no separate screenshot evidence is claimed. Complete unfiltered suites were intentionally omitted because the affected resolver, controller, and saved-scene consumers are enumerated and milestone 3.7 is not a T3 gate. No Attack consequence, new combat rule, animation, round, snapshot, or Wasp content was added.
+
 ### [ ] 3.8 Complete the four-turn round skeleton
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Four turns advance, cards occupy the correct turn slots, and the round reaches an explicit end-of-round phase.
 

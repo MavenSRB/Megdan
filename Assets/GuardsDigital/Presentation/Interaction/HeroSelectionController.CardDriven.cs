@@ -111,7 +111,11 @@ namespace GuardsDigital.Presentation.Interaction
                             GetAllPlaceholderCardInstances(),
                             turnResolutionAuthority.SelectedActor.ActorId,
                             turnResolutionAuthority.SelectedActor.CardInstanceId)
-                        .Where(offer => GetActionDefinition(offer).Kind == ActionKind.Movement)
+                        .Where(offer =>
+                        {
+                            var kind = GetActionDefinition(offer).Kind;
+                            return kind == ActionKind.Movement || kind == ActionKind.Attack;
+                        })
                         .ToArray();
                 }
 
@@ -469,7 +473,9 @@ namespace GuardsDigital.Presentation.Interaction
 
             if (IsVisibleTurnActive)
             {
-                return StartVisibleTurnMovement(matchingOffers[0]);
+                return GetActionDefinition(matchingOffers[0]).Kind == ActionKind.Attack
+                    ? StartVisibleTurnAttack(matchingOffers[0])
+                    : StartVisibleTurnMovement(matchingOffers[0]);
             }
 
             RebuildMoveAuthority();
@@ -519,11 +525,36 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            var command = new AttackTargetChoiceCommand(
+                PendingAttackTargetChoice.ResolutionId,
+                PendingAttackTargetChoice.ChoiceId,
+                targetHeroId);
+            if (IsVisibleTurnActive)
+            {
+                var turnResult = turnResolutionAuthority.TryAnswerAttackTarget(command);
+                if (!turnResult.Accepted)
+                {
+                    LastTurnRejectionReason = turnResult.RejectionReason;
+                    cardStatus = $"Turn Attack target rejected: {turnResult.RejectionReason}. " +
+                        "Choose a legal enemy hero.";
+                    return false;
+                }
+
+                turnResolutionEvents.AddRange(turnResult.Events);
+                cardResolutionEvents.AddRange(turnResult.Events
+                    .Where(ruleEvent => ruleEvent.Kind == TurnResolutionEventKind.AttackActionProgressed)
+                    .Select(ruleEvent => ruleEvent.CardActionEvent));
+                LastTurnRejectionReason = TurnResolutionRejectionReason.None;
+                LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+                ClearSelectionVisuals();
+                cardStatus = $"Attack {PendingAttackResolution.AttackTotal} targets " +
+                    $"{FormatSide(placeholderParticipants.GetTeamForHero(targetHeroId).Side)} hero. " +
+                    "Defense response pending: discard one listed card or decline.";
+                return true;
+            }
+
             var result = cardResolutionAuthority.AnswerAttackTarget(
-                new AttackTargetChoiceCommand(
-                    PendingAttackTargetChoice.ResolutionId,
-                    PendingAttackTargetChoice.ChoiceId,
-                    targetHeroId),
+                command,
                 placeholderHand.Definitions,
                 GetAllPlaceholderCardInstances(),
                 placeholderParticipants);
@@ -938,7 +969,7 @@ namespace GuardsDigital.Presentation.Interaction
             FocusVisibleTurnHero(actor.ActorId);
             selectedCardInstanceId = actor.CardInstanceId;
             cardStatus = $"{statusPrefix} {FormatSide(placeholderParticipants.GetTeamForHero(actor.ActorId).Side)} " +
-                $"acts at Initiative {actor.InitiativeTotal}. Choose a Movement action.";
+                $"acts at Initiative {actor.InitiativeTotal}. Choose a Movement or Attack action.";
         }
 
         private void FocusVisibleTurnHero(HeroId actorId)
@@ -989,12 +1020,54 @@ namespace GuardsDigital.Presentation.Interaction
             return true;
         }
 
+        private bool StartVisibleTurnAttack(ActionOffer offer)
+        {
+            selectedActionOffer = offer;
+            cardResolutionSequence++;
+            cardResolutionEvents.Clear();
+            var result = turnResolutionAuthority.TryStartAttack(
+                new ActionResolutionId($"visible-turn-attack-{cardResolutionSequence}"),
+                offer);
+            if (!result.Accepted)
+            {
+                LastTurnRejectionReason = result.RejectionReason;
+                cardStatus = $"Turn Attack rejected: {result.RejectionReason}.";
+                selectedActionOffer = null;
+                return false;
+            }
+
+            turnResolutionEvents.AddRange(result.Events);
+            cardResolutionEvents.AddRange(result.Events
+                .Where(ruleEvent => ruleEvent.Kind == TurnResolutionEventKind.AttackActionProgressed)
+                .Select(ruleEvent => ruleEvent.CardActionEvent));
+            LastCardInvocationContext = offer.InvocationContext;
+            LastCardTextApplicationPolicy = GetActionDefinition(offer).DefaultPolicy.CardTextApplication;
+            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            LastTurnRejectionReason = TurnResolutionRejectionReason.None;
+            var attackTotal = PrintedValueQuery.CalculatePrintedValue(
+                offer,
+                placeholderHand.Definitions,
+                PrintedValueChannel.Attack).Total;
+            cardStatus = offer.AttackRange == AttackRangeKind.Ranged
+                ? $"{FormatContext(offer.InvocationContext)} Ranged Attack {attackTotal} " +
+                    $"Range {GetPrintedRangeTotal(offer)}: click an enemy hero within range."
+                : $"{FormatContext(offer.InvocationContext)} Attack {attackTotal}: " +
+                    "click the adjacent enemy hero.";
+            RefreshAttackTargetHighlights(PendingAttackTargetChoice);
+            return true;
+        }
+
         private bool SubmitDefenseResponse(DefenseResponseChoiceCommand command)
         {
             var selectedCardId = command.ChoiceKind == DefenseResponseChoiceKind.SelectCards &&
                 command.SelectedCardInstanceIds.Count == 1
                     ? (CardInstanceId?)command.SelectedCardInstanceIds[0]
                     : null;
+            if (IsVisibleTurnActive)
+            {
+                return SubmitVisibleTurnDefenseResponse(command, selectedCardId);
+            }
+
             var result = cardResolutionAuthority.AnswerDefenseResponse(
                 command,
                 placeholderHand.Definitions,
@@ -1048,6 +1121,59 @@ namespace GuardsDigital.Presentation.Interaction
             selectedCardInstanceId = null;
             selectedActionOffer = null;
             cardResolutionAuthority = null;
+            return true;
+        }
+
+        private bool SubmitVisibleTurnDefenseResponse(
+            DefenseResponseChoiceCommand command,
+            CardInstanceId? selectedDefenseCardId)
+        {
+            var comparisonResolution = PendingAttackResolution;
+            var selectedDefenseOffer = selectedDefenseCardId.HasValue
+                ? PendingDefenseChoice.LegalDefenseOffers
+                    .Where(offer => offer.SourceCardInstanceId.Equals(selectedDefenseCardId.Value))
+                    .Cast<ActionOffer?>()
+                    .SingleOrDefault()
+                : null;
+
+            var result = turnResolutionAuthority.TryAnswerDefenseResponse(command);
+            if (!result.Accepted)
+            {
+                LastTurnRejectionReason = result.RejectionReason;
+                cardStatus = $"Turn Defense response rejected: {result.RejectionReason}. Choose again.";
+                return false;
+            }
+
+            turnResolutionEvents.AddRange(result.Events);
+            var attackEvents = result.Events
+                .Where(ruleEvent => ruleEvent.Kind == TurnResolutionEventKind.AttackActionProgressed)
+                .Select(ruleEvent => ruleEvent.CardActionEvent)
+                .ToArray();
+            cardResolutionEvents.AddRange(attackEvents);
+            LastAttackOutcome = attackEvents.Last(ruleEvent =>
+                ruleEvent.Kind == CardActionResolutionEventKind.AttackResolutionCompleted).AttackOutcome;
+            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            LastTurnRejectionReason = TurnResolutionRejectionReason.None;
+            var outcomeLabel = LastAttackOutcome == AttackResolutionOutcome.SuccessfullyDefended
+                ? "successfully defended"
+                : "attack successful";
+            var defenseLabel = "Defense declined";
+            if (selectedDefenseOffer.HasValue)
+            {
+                var defenseDefinition = placeholderHand.Definitions.Single(definition =>
+                    definition.Reference.Equals(selectedDefenseOffer.Value.SourceDefinitionReference));
+                var defenseTotal = PrintedValueQuery.CalculatePrintedValue(
+                    selectedDefenseOffer.Value,
+                    placeholderHand.Definitions,
+                    PrintedValueChannel.Defense).Total;
+                defenseLabel = $"{defenseDefinition.DisplayName} discarded for Defense {defenseTotal}";
+            }
+            var resultLabel = selectedDefenseCardId.HasValue
+                ? $"{defenseLabel}. Attack {comparisonResolution.AttackTotal} vs Defense " +
+                    $"{attackEvents.Last(ruleEvent => ruleEvent.Kind == CardActionResolutionEventKind.DefenseResponseCompleted).DefenseTotal}: " +
+                    $"{outcomeLabel}."
+                : $"{defenseLabel} against Attack {comparisonResolution.AttackTotal}: {outcomeLabel}.";
+            RefreshVisibleTurnActor(resultLabel);
             return true;
         }
 

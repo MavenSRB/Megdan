@@ -621,12 +621,13 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(redCard.Id));
                 Assert.That(scenario.Controller.ActiveHeroView, Is.SameAs(scenario.RedHero));
                 Assert.That(scenario.Controller.SelectedCardInstanceId, Is.EqualTo(redCard.Id));
-                Assert.That(scenario.Controller.SelectedCardOffers.Count, Is.EqualTo(2));
-                Assert.That(scenario.Controller.SelectedCardOffers.All(offer =>
-                    scenario.Configuration.CardDefinitions
-                        .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
-                        .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId)).Kind ==
-                    ActionKind.Movement), Is.True);
+                Assert.That(scenario.Controller.SelectedCardOffers.Select(offer =>
+                    offer.ActionDefinitionId.Value), Is.EquivalentTo(new[]
+                {
+                    "primary-movement",
+                    "secondary-movement",
+                    "primary-attack"
+                }));
 
                 Assert.That(scenario.Controller.TrySelectAction(
                     new ActionDefinitionId("primary-movement")), Is.True);
@@ -688,7 +689,63 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        private static TurnScenario CreateTurnScenario(ICollection<GameObject> objects)
+        [Test]
+        public void RevealedTurnAttack_ShowsDefenseAndAdvancesWithoutConsumingDefendersTurnCard()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects, true);
+                var redAttackCard = scenario.Configuration.RedHand.Instances[0];
+                var blueTurnCard = scenario.Configuration.BlueHand.Instances[1];
+                var blueDefenseCard = scenario.Configuration.BlueHand.Instances[0];
+                scenario.Controller.TrySelectDirectorCard(redAttackCard.Id);
+                scenario.Controller.TryConfirmSelectedTurnCard();
+                scenario.Controller.TrySelectDirectorCard(blueTurnCard.Id);
+                scenario.Controller.TryConfirmSelectedTurnCard();
+
+                Assert.That(scenario.Controller.TrySelectAction(
+                    new ActionDefinitionId("primary-attack")), Is.True);
+                Assert.That(scenario.Controller.IsAttackTargetPending, Is.True);
+                Assert.That(scenario.Controller.HighlightedCoordinates,
+                    Is.EqualTo(new[] { scenario.BlueHero.Coordinate }));
+                Assert.That(scenario.Controller.TrySubmitAttackTarget(
+                    scenario.BlueHero.Occupancy.HeroId), Is.True);
+                Assert.That(scenario.Controller.IsDefenseResponsePending, Is.True);
+                Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId,
+                    Is.EqualTo(redAttackCard.Id));
+                Assert.That(scenario.Controller.PendingDefenseChoice.LegalDefenseOffers.Any(offer =>
+                    offer.SourceCardInstanceId.Equals(blueDefenseCard.Id)), Is.True);
+                var pendingDefense = scenario.Controller.PendingDefenseChoice;
+                Assert.That(scenario.Controller.TrySubmitDefenseCard(
+                    new CardInstanceId("missing-visible-turn-defense")), Is.False);
+                Assert.That(scenario.Controller.PendingDefenseChoice, Is.SameAs(pendingDefense));
+                Assert.That(redAttackCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+
+                Assert.That(scenario.Controller.TrySubmitDefenseCard(blueDefenseCard.Id), Is.True);
+
+                Assert.That(blueDefenseCard.State.Location, Is.EqualTo(CardLocation.DiscardPile));
+                Assert.That(redAttackCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+                Assert.That(blueTurnCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+                Assert.That(scenario.Controller.PendingAttackResolution, Is.Null);
+                Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId,
+                    Is.EqualTo(blueTurnCard.Id));
+                Assert.That(scenario.Controller.ActiveHeroView, Is.SameAs(scenario.BlueHero));
+                Assert.That(scenario.Controller.SelectedCardInstanceId, Is.EqualTo(blueTurnCard.Id));
+                Assert.That(scenario.Controller.CardStatus, Does.Contain("Attack 3 vs Defense 2: attack successful"));
+                Assert.That(scenario.Controller.CardStatus, Does.Contain("[B] BLUE"));
+                Assert.That(scenario.Controller.CardResolutionEvents.Any(ruleEvent =>
+                    ruleEvent.Kind == CardActionResolutionEventKind.AttackResolutionCompleted), Is.True);
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        private static TurnScenario CreateTurnScenario(
+            ICollection<GameObject> objects,
+            bool adjacentHeroes = false)
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var redHero = CreateHero(
@@ -700,7 +757,7 @@ namespace GuardsDigital.Tests.EditMode
                 objects,
                 "Blue Turn Hero",
                 configuration.BlueHand.Instances[0].OwnerId,
-                new HexCoordinate(-2, 0));
+                adjacentHeroes ? new HexCoordinate(-1, 0) : new HexCoordinate(-2, 0));
             var tiles = CreateRadiusTwoCoordinates()
                 .Select(coordinate => CreateTile(objects, coordinate))
                 .ToArray();

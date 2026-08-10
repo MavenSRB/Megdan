@@ -22,7 +22,10 @@ namespace GuardsDigital.Core.Cards
         ActionAlreadyPending = 9,
         MovementAuthorityUnavailable = 10,
         MovementActionRejected = 11,
-        MovementCommandRejected = 12
+        MovementCommandRejected = 12,
+        AttackAuthorityUnavailable = 13,
+        AttackActionRejected = 14,
+        AttackCommandRejected = 15
     }
 
     public enum TurnResolutionEventKind
@@ -33,7 +36,8 @@ namespace GuardsDigital.Core.Cards
         CardResolved = 3,
         TurnOnlyEffectsCancellationCheckpoint = 4,
         TurnEnded = 5,
-        MovementActionProgressed = 6
+        MovementActionProgressed = 6,
+        AttackActionProgressed = 7
     }
 
     public readonly struct TurnResolutionEvent
@@ -129,6 +133,18 @@ namespace GuardsDigital.Core.Cards
 
         public static TurnResolutionEvent FromCardAction(CardActionResolutionEvent cardActionEvent)
         {
+            return FromCardAction(cardActionEvent, TurnResolutionEventKind.MovementActionProgressed);
+        }
+
+        public static TurnResolutionEvent FromAttackAction(CardActionResolutionEvent cardActionEvent)
+        {
+            return FromCardAction(cardActionEvent, TurnResolutionEventKind.AttackActionProgressed);
+        }
+
+        private static TurnResolutionEvent FromCardAction(
+            CardActionResolutionEvent cardActionEvent,
+            TurnResolutionEventKind kind)
+        {
             if (cardActionEvent.Kind == CardActionResolutionEventKind.None)
             {
                 throw new ArgumentException(
@@ -137,7 +153,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             return new TurnResolutionEvent(
-                TurnResolutionEventKind.MovementActionProgressed,
+                kind,
                 default,
                 cardActionEvent.SourceCardInstanceId,
                 cardActionEvent.ActorId,
@@ -270,6 +286,12 @@ namespace GuardsDigital.Core.Cards
         public PendingCardActionResolution PendingMovementResolution => cardActions?.PendingResolution;
 
         public PendingMovementChoice PendingMovementChoice => cardActions?.PendingChoice;
+
+        public PendingAttackResolution PendingAttackResolution => cardActions?.PendingAttackResolution;
+
+        public PendingAttackTargetChoice PendingAttackTargetChoice => cardActions?.PendingAttackTargetChoice;
+
+        public PendingDefenseResponseChoice PendingDefenseChoice => cardActions?.PendingDefenseChoice;
 
         public TurnResolutionResult TryStart()
         {
@@ -456,6 +478,132 @@ namespace GuardsDigital.Core.Cards
 
             events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
             return AdvanceInitiative(events);
+        }
+
+        public TurnResolutionResult TryStartAttack(
+            ActionResolutionId resolutionId,
+            ActionOffer offer)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.NoActorSelected);
+            }
+
+            if (!initiative.SelectedActor.CardInstanceId.Equals(offer.SourceCardInstanceId) ||
+                !initiative.SelectedActor.ActorId.Equals(offer.ActorId))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardNotSelectedForAction);
+            }
+
+            if (cardActions == null)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackAuthorityUnavailable);
+            }
+
+            if (cardActions.HasPendingResolution)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+            }
+
+            var result = cardActions.StartTurnAttackResolution(
+                resolutionId,
+                offer,
+                definitions,
+                instances,
+                participants);
+            return result.Accepted
+                ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromAttackAction))
+                : TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackActionRejected);
+        }
+
+        public TurnResolutionResult TryAnswerAttackTarget(AttackTargetChoiceCommand command)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (!IsPendingAttackForSelectedActor())
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            }
+
+            var result = cardActions.AnswerAttackTarget(
+                command,
+                definitions,
+                instances,
+                participants);
+            return result.Accepted
+                ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromAttackAction))
+                : TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+        }
+
+        public TurnResolutionResult TryAnswerDefenseResponse(DefenseResponseChoiceCommand command)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (!IsPendingAttackForSelectedActor() || cardActions.PendingDefenseChoice == null)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            }
+
+            var response = cardActions.AnswerDefenseResponse(
+                command,
+                definitions,
+                instances,
+                participants);
+            if (!response.Accepted)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            }
+
+            var events = response.Events.Select(TurnResolutionEvent.FromAttackAction).ToList();
+            var outcome = cardActions.ResolveAttackOutcome(definitions, instances, participants);
+            if (!outcome.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "An accepted turn Defense response could not resume its prevalidated Attack outcome.");
+            }
+
+            events.AddRange(outcome.Events.Select(TurnResolutionEvent.FromAttackAction));
+            var card = instances.Single(candidate =>
+                candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            {
+                throw new InvalidOperationException(
+                    "A completed turn Attack could not resolve its prevalidated source card.");
+            }
+
+            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            if (!acknowledgement.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A card resolved after turn Attack could not be acknowledged by Initiative authority.");
+            }
+
+            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
+            return AdvanceInitiative(events);
+        }
+
+        private bool IsPendingAttackForSelectedActor()
+        {
+            var pending = cardActions?.PendingAttackResolution;
+            return pending != null &&
+                initiative.SelectedActor.IsDefined &&
+                pending.SourceCardInstanceId.Equals(initiative.SelectedActor.CardInstanceId) &&
+                pending.ActorId.Equals(initiative.SelectedActor.ActorId);
         }
 
         private TurnResolutionResult AdvanceInitiative(IEnumerable<TurnResolutionEvent> priorEvents)

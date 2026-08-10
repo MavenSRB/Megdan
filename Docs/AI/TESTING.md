@@ -637,6 +637,32 @@ $visibleTurnMovementPlayArguments = @(
 
 Run each argument set through the standard `Start-Process -Wait -PassThru` Unity invocation used above. Expected result: all discovered cases pass, covering automatic current-actor/card focus after joint reveal; played-card Movement-only offers; pointer destination and Stop submission through the turn authority; partial waypoint retention and refreshed highlights; exact source-card resolution followed by visible next-actor focus; and stale input preserving the actor, card, pending choice, occupancy, and highlights. Corrective milestone 3.6a is T2 because it changes the validation controller and saved-scene presentation boundary. Evidence passed focused Edit Mode 27/27, directly affected Edit Mode 149/149, and saved-scene Play Mode 9/9 with zero failed, skipped, or inconclusive cases. Targeted live Game-view inspection confirmed the readable `[R] RED` Initiative prompt, Movement buttons, legal highlights, and Stop control without overlap. Complete unfiltered suites were intentionally omitted because the affected consumers are enumerated and milestone 3.6a is not a T3 gate.
 
+## In-turn Attack and Defense focused tests
+
+```powershell
+$turnAttackEditArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'EditMode',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-7-affected-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-7-affected.log"'
+)
+
+$turnAttackPlayArguments = @(
+    '-batchmode',
+    '-runTests',
+    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
+    '-testPlatform', 'PlayMode',
+    '-testFilter', 'GuardsDigital.Tests.PlayMode.MinimalHexGridPlayModeTests',
+    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-7-focused-play-results.xml"',
+    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-7-focused-play.log"'
+)
+```
+
+Run each argument set through the standard `Start-Process -Wait -PassThru` Unity invocation used above. Expected result: all discovered cases pass, covering played-card Attack offer revalidation; target, Defense, comparison, and outcome continuation inside the same turn frame; the defender's reaction leaving its played turn card unresolved and actionable; exact attacking-card resolution; resolve-before-deferred-flip-before-current-Initiative-re-query ordering; stale/forged input preservation; visible target/Defense/outcome/next-actor projection; and the saved-scene pointer path. Milestone 3.7 is T2 because it composes the shared turn/resolver/pending-choice boundary and changes the validation controller. Evidence passed focused `TurnResolutionAuthorityTests` 13/13, directly affected Edit Mode 99/99, and saved-scene Play Mode 10/10 with zero failed, skipped, or inconclusive cases. Source/layout inspection confirmed the existing Attack, Defense, outcome, and next-actor HUD states reuse the already-validated panel geometry. An automated batch framebuffer capture was unavailable, and a hidden live launcher capture blocked at its interactive save boundary, so no screenshot evidence is claimed. Complete unfiltered suites were intentionally omitted because the affected consumers are enumerated and milestone 3.7 is not a T3 gate.
+
 ## Action-offer and printed-value focused Edit Mode tests
 
 ```powershell
