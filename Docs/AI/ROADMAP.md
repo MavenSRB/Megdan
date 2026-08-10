@@ -567,6 +567,8 @@ Phase-gate roadmap audit: After milestone 2.6 passes its T3 gate, audit Phase 3 
 
 Phase 3 entry audit (2026-08-10): Keep milestones 3.1-3.11 as separate, unchanged micro-milestones; no merge, split, defer, or removal is justified. The shortest dependency-safe path is lifecycle/typed Initiative data (3.1), two-hand selection presentation (3.2), simultaneous play/reveal (3.3), Initiative and Tie Breaker ordering (3.4), the minimum Hold turn (3.5), existing Movement and Attack/Defense turn integrations (3.6-3.7), the four-turn round shell (3.8), then the versioned snapshot boundary (3.9), snapshot-backed Undo/restart (3.10), and the read-only event-log projection plus T3 gate (3.11). This ordering reaches one complete deterministic round before adding persistence tools, and places serialization before every tool that restores or rebuilds history. Remaining effort is 11 separately approved micro-milestones, estimated at 7-12 focused implementation days excluding approval latency and environment outages.
 
+Approved content-readiness amendment (2026-08-10): Insert milestone 3.7b after the completed Attack/Defense turn integration and before the four-turn round shell. The current two-card mirrored synthetic fixtures cannot exercise four card selections per hero, hand depletion through Defense discards, or the rulebook-shaped five-card starting hand. Milestone 3.7b expands only synthetic data and its existing presentation/authority consumers; it does not begin verified hero content or add card-text effects. The remaining Phase 3 path is now five separately approved milestones (3.7b and 3.8-3.11), estimated at 4-7 focused implementation days excluding approval latency and environment outages.
+
 ## Phase 3 - Test-card Initiative, turns, and rounds
 
 ### [x] 3.1 Extend the test-card foundation with turn lifecycle
@@ -696,6 +698,39 @@ Acceptance checks:
 Non-goals: No Attack consequences, defeat/removal, automated action choice, new Attack/Defense rules, animation, sound, round shell, snapshots, or Wasp content.
 
 Completion note (2026-08-10): Composed the existing Phase 2 hero Attack/Defense resolver into the selected revealed turn-card frame without duplicating combat rules. Played-turn Attack offers now remain authority-revalidatable through target, defender-owned response, comparison, and completion checkpoints. The turn authority preserves the attacking actor/card while the Defense reaction discards at most one legal in-hand defender card or declines, then resolves only the attacker's played card, consumes any deferred Tie Breaker flip, and re-queries the next unresolved actor from current state. The validation controller exposes Movement and Attack offers for the current card, routes target and Defense input through the turn authority, retains the attacker across the nested reaction, reports the typed outcome, and visibly focuses the next actor; invalid/stale input preserves the same turn/Attack choice. T2 validation passed focused Edit Mode 13/13, directly affected Edit Mode 99/99, and saved-scene Play Mode 10/10 with zero failed, skipped, or inconclusive cases. Source/layout inspection confirmed the existing Attack, Defense, outcome, and next-actor HUD states reuse the already-validated panel geometry; an attempted automated framebuffer capture was unavailable in batch mode and the hidden live launcher blocked on its interactive save boundary, so no separate screenshot evidence is claimed. Complete unfiltered suites were intentionally omitted because the affected resolver, controller, and saved-scene consumers are enumerated and milestone 3.7 is not a T3 gate. No Attack consequence, new combat rule, animation, round, snapshot, or Wasp content was added.
+
+### [ ] 3.7b Expand both synthetic heroes to five-card playable hands
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: Each current test hero owns five distinct synthetic cards and can commit any eligible card, then perform its supported Primary Attack, Secondary Movement, or general Hold during its Initiative position.
+
+Synthetic fixture matrix (test data only; these names and values are not official content or balance claims):
+
+| Owner | Card | Initiative | Primary action | Secondary Movement | Defense reaction |
+| --- | --- | ---: | --- | ---: | ---: |
+| Red `primitive-hero` | Red Needle | 13 | non-Ranged Attack 2 | 1 | 1 |
+| Red `primitive-hero` | Red Bulwark | 11 | non-Ranged Attack 3 | 1 | 3 |
+| Red `primitive-hero` | Red Lancer | 9 | Ranged Attack 2, Range 3 | 2 | 1 |
+| Red `primitive-hero` | Red Pursuit | 7 | non-Ranged Attack 4 | 2 | 2 |
+| Red `primitive-hero` | Red Bombard | 5 | Ranged Attack 3, Range 2 | 1 | 2 |
+| Blue `blue-test-hero` | Blue Feint | 12 | non-Ranged Attack 2 | 2 | 2 |
+| Blue `blue-test-hero` | Blue Sentinel | 11 | non-Ranged Attack 3 | 1 | 4 |
+| Blue `blue-test-hero` | Blue Scout Shot | 8 | Ranged Attack 2, Range 2 | 3 | 1 |
+| Blue `blue-test-hero` | Blue Hammer | 6 | non-Ranged Attack 5 | 1 | 1 |
+| Blue `blue-test-hero` | Blue Longbow | 4 | Ranged Attack 3, Range 3 | 2 | 2 |
+
+Acceptance checks:
+
+- Each hand contains exactly five immutable definitions and five globally unique owned instances, with no fixed two-card construction or indexing assumption in production code.
+- Every synthetic definition has exactly one printed Primary Attack, one printed Secondary Movement, one in-hand Defense reaction, and the general-rule Hold derived separately; the fixture no longer assigns both Primary Movement and Primary Attack to every card.
+- All ten definition/value profiles match the approved fixture matrix, remain explicitly marked synthetic, and preserve the Initiative 11 cross-team tie fixture.
+- Commitment, reveal, Initiative, Movement, Attack/Defense, lifecycle, and ownership authorities accept any eligible hand slot and continue to reject stale, cross-owner, discarded, played, or resolved cards without partial mutation.
+- Discarding a card for Defense removes only that instance from later normal commitment and Defense choices; the reaction still does not consume the defender's played-card action.
+- The director HUD presents both five-card hands and all legal Defense choices legibly without overlap, using wrapping, scrolling, or another bounded layout that remains usable at the validation resolution.
+- Focused pure, presentation, and saved-scene tests cover five-card construction, unique identities, the value/action matrix, cross-team Initiative tie behavior, selection from every slot, Defense-driven hand depletion, and representative non-Ranged/Ranged turn resolution.
+
+Non-goals: No official hero identity, official card name/value/text/art, Skill action, card-text effect, modifier, marker, token, Push, Place, minion target, Attack consequence, defeat/removal, balancing, card retrieval, round advancement, snapshot, animation, sound, or Wasp content.
 
 ### [ ] 3.8 Complete the four-turn round skeleton
 
