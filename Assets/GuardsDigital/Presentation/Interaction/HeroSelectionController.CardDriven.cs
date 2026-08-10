@@ -857,15 +857,13 @@ namespace GuardsDigital.Presentation.Interaction
                 GUILayout.Label(hand.Label, GUILayout.Width(122f));
                 foreach (var instance in hand.Instances)
                 {
-                    var definition = hand.Definitions.Single(
-                        candidate => candidate.Reference.Equals(instance.DefinitionReference));
                     var previousColor = GUI.backgroundColor;
                     GUI.backgroundColor = selectedCardInstanceId.HasValue &&
                         selectedCardInstanceId.Value.Equals(instance.Id)
                             ? new Color(0.35f, 0.75f, 1f)
                             : Color.white;
                     GUI.enabled = !IsCardResolutionPending;
-                    if (GUILayout.Button(definition.DisplayName, GUILayout.Height(32f)))
+                    if (GUILayout.Button(hand.GetCardButtonLabel(instance), GUILayout.Height(42f)))
                     {
                         TrySelectDirectorCard(instance.Id);
                     }

@@ -40,6 +40,10 @@ namespace GuardsDigital.Tests.EditMode
                     card.State.Location == CardLocation.Hand &&
                     !card.State.HasBeenPlayed &&
                     card.State.ResolutionStatus == CardResolutionStatus.None));
+                Assert.That(hands[0].GetCardButtonLabel(hands[0].Instances[0]),
+                    Is.EqualTo("TEST - Route Drill\nINITIATIVE 7"));
+                Assert.That(hands[0].GetCardButtonLabel(hands[0].Instances[1]),
+                    Is.EqualTo("TEST - Obstacle Course\nINITIATIVE 4"));
             }
             finally
             {

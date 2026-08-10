@@ -35,5 +35,17 @@ namespace GuardsDigital.Presentation.Interaction
         public string Label => TeamSide == GuardsDigital.Core.Participants.TeamSide.Red
             ? "[R] RED HERO"
             : "[B] BLUE HERO";
+
+        public string GetCardButtonLabel(CardInstance instance)
+        {
+            if (instance == null || !Instances.Contains(instance))
+            {
+                throw new ArgumentException("The card must be visible in this director hand.", nameof(instance));
+            }
+
+            var definition = Definitions.Single(candidate =>
+                candidate.Reference.Equals(instance.DefinitionReference));
+            return $"{definition.DisplayName}\nINITIATIVE {definition.Initiative.Value}";
+        }
     }
 }
