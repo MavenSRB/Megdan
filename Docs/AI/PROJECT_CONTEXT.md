@@ -95,6 +95,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 
 - Engine: Unity.
 - Installed and selected editor: Unity `6000.5.7f1`.
+- Rendering pipeline: Built-In Render Pipeline is retained for the current primitive-rule phases. Before production presentation begins, milestone 8.28 migrates the validated primitive match to URP and makes URP the accepted rendering baseline; do not introduce Built-In-only production visual dependencies beforehand.
 - Reference development platform: Windows desktop and Unity Editor.
 - Active reference build target: Windows 64-bit standalone (`Win64`).
 - Input: Unity Input System package `1.19.0`, with **Input System Package (New)** as the only active input handler. The legacy Input Manager is not selected for gameplay input.
@@ -228,7 +229,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Both the primitive scene session and pure placeholder card resolver treat the player's selected reachable destination with its projected deterministic route as the explicit choice, record every internal adjacent step, allow zero movement through Stop, and reject entering or passing through generic placeholder obstacles.
 - Before Phase 1 ends, the selected test action offer's typed printed-value query must be the sole source of movement allowance.
 - Fast Travel, movement from card text, and movement-limiting effects remain later rule milestones rather than being folded into the early board test.
-- Mechanics are completed with primitives and debug UI before production art begins.
+- Mechanics are completed with primitives and debug UI before production art begins, and milestone 8.28 establishes URP as the accepted rendering baseline before any production visual asset is introduced.
 - Select the highest applicable validation tier from `Docs/AI/TESTING.md` based on the behavior and boundaries changed, not merely diff size.
 - Every executable behavior change receives focused automated coverage and directly affected regressions; every fixed bug receives a regression test.
 - Prefer tiny deterministic scenarios to complete match replays.
@@ -275,5 +276,5 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Pass-and-play.
 - Any seventh pitch hero or hero content not selected through the post-Wasp roster milestone.
 - A universal card-text parser.
-- Production visuals before the primitive game loop is complete.
+- Production visuals before both the primitive game loop is complete and the milestone 8.28 URP migration gate has passed.
 - Music, voice, tutorials, accounts, matchmaking, cloud saves, or telemetry.

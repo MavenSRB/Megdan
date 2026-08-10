@@ -1166,7 +1166,7 @@ Acceptance checks:
 - A broader source-linked Wasp integration suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16 is reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27.
+Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16 is reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27 and the render-pipeline migration gate at milestone 8.28 are both reviewed and approved.
 
 ### [!] 8.17 Select the five additional pitch heroes
 
@@ -1200,7 +1200,7 @@ Acceptance checks:
 
 - A roster-wide matrix distinguishes reused core/Wasp capabilities, reusable refinements, new primitives, and genuinely unique isolated handlers for every verified hero face and component.
 - Every effect node maps to a capability ID/version, typed bindings, policy, failure/atomicity rule, checkpoints, and source-linked tests.
-- The designated roadmap audit applies the matrix to milestones 8.20-8.27 and Phase 9, recommending justified keep/merge/split/defer/remove decisions and recording an updated remaining-effort range.
+- The designated roadmap audit applies the matrix to milestones 8.20-8.28 and Phase 9, recommending justified keep/merge/split/defer/remove decisions and recording an updated remaining-effort range.
 - Approved implementation slices are dependency ordered; a shared capability precedes the first hero that needs it, and no hero-name rule branch or runtime text parsing is scheduled.
 - Any schema change is explicit and migration-tested rather than hidden inside a hero milestone.
 
@@ -1266,13 +1266,31 @@ Acceptance checks:
 - A broader source-linked six-hero integration suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: Production visual work does not begin until milestone 8.27 is reviewed and approved.
+Hard gate: Production visual work does not begin until milestones 8.27 and 8.28 are reviewed and approved.
+
+### [!] 8.28 Render-pipeline migration gate
+
+Observable outcome: The complete primitive six-hero match is ported from Unity's Built-In Render Pipeline to URP, with its existing director/debug presentation and Win64 reference path intact, before production visual assets are introduced.
+
+Planning rationale: Unity deprecated the Built-In Render Pipeline in Unity 6.5, guarantees its availability through at least Unity 6.7 LTS, and has not announced a final removal version. This project can retain Built-In rendering through the primitive-rule phases, but must not begin production presentation work on a pipeline Unity has directed new projects away from. [Unity's 2026 render-pipeline strategy](https://unity.com/topics/render-pipelines-strategy-for-2026).
+
+Acceptance checks:
+
+- URP is the active render pipeline for every configured quality level; the project no longer relies on a Built-In-only default pipeline setting.
+- The existing primitive board, miniatures/tokens, card/HUD panels, highlighting, pointer selection, fixed camera, and event-driven presentation remain readable and functional after conversion.
+- Materials, shaders, lighting, and post-processing used by the retained primitive presentation are URP-compatible; no Built-In-only visual dependency is carried into Phase 9.
+- The authoritative rules assemblies and their deterministic state/event results are unchanged; the migration does not alter game rules, command handling, or timing.
+- Focused Play Mode coverage for the affected presentation paths, a targeted visual inspection, a disposable internal Win64 development-build launch smoke, and both complete unfiltered Edit Mode and Play Mode suites pass.
+
+Non-goals: No production board art, hero/minion production models, animation coverage, final lighting/art direction, new game rules, or player-facing build.
+
+Hard gate: Phase 9 production visual milestones do not begin until this migration is reviewed and approved.
 
 ## Phase 9 - Presentation and pitch polish
 
-Every item remains a separate micro-milestone.
+Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline.
 
-Each visible milestone runs focused Play Mode checks for the affected presentation path plus one targeted visual inspection. No player build is produced before Phase 10, and complete unfiltered suites wait for milestone 9.16 unless a T3 risk trigger applies earlier.
+Each visible milestone runs focused Play Mode checks for the affected presentation path plus one targeted visual inspection. The disposable internal migration-check build from milestone 8.28 is not retained, packaged, or distributed; the first retained private pitch player build remains milestone 10.1. Complete unfiltered suites wait for milestone 9.16 unless a T3 risk trigger applies earlier.
 
 ### [ ] 9.1 Production board environment
 
@@ -1315,7 +1333,7 @@ Acceptance checks:
 - Common reference desktop resolutions preserve readable cards, values, prompts, and team identity.
 - T3 pre-build gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: The first player build does not begin until milestone 9.16 is reviewed and approved.
+Hard gate: The first retained private pitch player build does not begin until milestone 9.16 is reviewed and approved. The disposable internal render-pipeline smoke from milestone 8.28 is validation evidence only.
 
 ## Phase 10 - Private publisher pitch package
 
