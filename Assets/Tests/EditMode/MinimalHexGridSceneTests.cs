@@ -211,7 +211,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(inputs, Has.Length.EqualTo(1));
             Assert.That(controllers[0].MovementAllowance, Is.GreaterThan(1));
             Assert.That(controllers[0].IsCardDrivenMovementEnabled, Is.True);
-            Assert.That(controllers[0].VisibleCardInstances.Count, Is.EqualTo(2));
+            Assert.That(controllers[0].VisibleCardInstances.Count, Is.EqualTo(5));
             Assert.That(controllers[0].VisibleCardInstances.All(card =>
                 card.OwnerId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue), Is.True);
             Assert.That(controllers[0].VisibleCardInstances.All(card =>
@@ -247,7 +247,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_SelectingPrimaryMovementOfferHighlightsAuthoritativeCardDestinations()
+        public void Scene_SelectingSecondaryMovementOfferHighlightsAuthoritativeCardDestinations()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
@@ -260,7 +260,7 @@ namespace GuardsDigital.Tests.EditMode
             var selectedCard = controller.VisibleCardInstances[0];
             Assert.That(controller.TrySelectCard(selectedCard.Id), Is.True);
             Assert.That(controller.TrySelectAction(
-                new ActionDefinitionId("primary-movement")), Is.True);
+                new ActionDefinitionId("secondary-movement")), Is.True);
 
             var highlightedCoordinates = tiles
                 .Where(tile => tile.IsHighlighted)

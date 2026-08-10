@@ -8,6 +8,53 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class TurnCardCommitmentAuthorityTests
     {
         [Test]
+        public void EveryFiveCardHandSlot_CanCommitWhenEligibleAndCannotCommitAfterDefenseDiscard()
+        {
+            for (var index = 0; index < 5; index++)
+            {
+                var eligibleConfiguration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                var authority = new TurnCardCommitmentAuthority();
+                var selected = eligibleConfiguration.RedHand.Instances[index];
+                Assert.That(authority.TryCommitCard(
+                    TeamSide.Red,
+                    selected.Id,
+                    eligibleConfiguration.CardInstances,
+                    eligibleConfiguration.Participants).Accepted, Is.True);
+                Assert.That(CardLifecycleAuthority.TryReveal(selected), Is.True);
+                var playedOffers = ActionOfferQuery.GetAvailableTurnActionOffers(
+                    eligibleConfiguration.CardDefinitions,
+                    eligibleConfiguration.CardInstances,
+                    selected.OwnerId,
+                    selected.Id);
+                Assert.That(playedOffers.Select(offer => offer.InvocationContext),
+                    Is.EquivalentTo(new[]
+                    {
+                        ActionInvocationContext.PrintedPrimary,
+                        ActionInvocationContext.PrintedSecondary
+                    }));
+                Assert.That(GeneralRuleActionOfferQuery.GetAvailableHoldOffer(
+                    selected.Id,
+                    selected.OwnerId,
+                    eligibleConfiguration.CardDefinitions,
+                    eligibleConfiguration.CardInstances).HasValue, Is.True);
+
+                var discardedConfiguration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                var discarded = discardedConfiguration.BlueHand.Instances[index];
+                Assert.That(CardLifecycleAuthority.TryDiscardDefenseFromHand(discarded), Is.True);
+                var rejected = new TurnCardCommitmentAuthority().TryCommitCard(
+                    TeamSide.Blue,
+                    discarded.Id,
+                    discardedConfiguration.CardInstances,
+                    discardedConfiguration.Participants);
+                Assert.That(rejected.Accepted, Is.False);
+                Assert.That(rejected.RejectionReason,
+                    Is.EqualTo(TurnCardCommitmentRejectionReason.CardNotEligible));
+                Assert.That(discarded.State.Location, Is.EqualTo(CardLocation.DiscardPile));
+                Assert.That(discarded.State.HasBeenPlayed, Is.False);
+            }
+        }
+
+        [Test]
         public void CommitOneCardPerSide_PlaysFacedownThenRevealsTogether()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);

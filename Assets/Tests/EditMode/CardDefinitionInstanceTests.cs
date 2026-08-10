@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -74,22 +75,43 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SyntheticHands_ProvideUnequalInitiativesAndCrossHeroTieFixtures()
         {
-            var redHand = PlaceholderMovementHand.Create(
-                new HeroId("red-synthetic-hero"),
-                new CardInstanceId("red-route"),
-                new CardInstanceId("red-obstacle"));
-            var blueHand = PlaceholderMovementHand.Create(
-                new HeroId("blue-synthetic-hero"),
-                new CardInstanceId("blue-route"),
-                new CardInstanceId("blue-obstacle"));
+            var redHand = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var blueHand = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"));
 
-            Assert.That(redHand.Definitions[0].Initiative, Is.EqualTo(new InitiativeValue(7)));
-            Assert.That(redHand.Definitions[1].Initiative, Is.EqualTo(new InitiativeValue(4)));
-            Assert.That(redHand.Definitions[0].Initiative, Is.Not.EqualTo(redHand.Definitions[1].Initiative));
-            Assert.That(redHand.Definitions[0].Initiative, Is.EqualTo(blueHand.Definitions[0].Initiative));
+            Assert.That(redHand.Definitions.Select(definition => definition.Initiative.Value),
+                Is.EqualTo(new[] { 13, 11, 9, 7, 5 }));
+            Assert.That(blueHand.Definitions.Select(definition => definition.Initiative.Value),
+                Is.EqualTo(new[] { 12, 11, 8, 6, 4 }));
+            Assert.That(redHand.Definitions[1].Initiative, Is.EqualTo(blueHand.Definitions[1].Initiative));
             Assert.That(redHand.Definitions, Has.All.Property("ContentAuthority")
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
+            Assert.That(blueHand.Definitions, Has.All.Property("ContentAuthority")
+                .EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(redHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
+            Assert.That(blueHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
+        }
+
+        [Test]
+        public void SyntheticHands_MatchApprovedFiveCardValueAndActionMatrix()
+        {
+            var redHand = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var blueHand = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"));
+            AssertSyntheticMatrix(
+                redHand,
+                new[] { "Red Needle", "Red Bulwark", "Red Lancer", "Red Pursuit", "Red Bombard" },
+                new[] { 13, 11, 9, 7, 5 },
+                new[] { 2, 3, 2, 4, 3 },
+                new[] { 0, 0, 3, 0, 2 },
+                new[] { 1, 1, 2, 2, 1 },
+                new[] { 1, 3, 1, 2, 2 });
+            AssertSyntheticMatrix(
+                blueHand,
+                new[] { "Blue Feint", "Blue Sentinel", "Blue Scout Shot", "Blue Hammer", "Blue Longbow" },
+                new[] { 12, 11, 8, 6, 4 },
+                new[] { 2, 3, 2, 5, 3 },
+                new[] { 0, 0, 2, 0, 3 },
+                new[] { 2, 1, 3, 1, 2 },
+                new[] { 2, 4, 1, 1, 2 });
         }
 
         [Test]
@@ -278,6 +300,47 @@ namespace GuardsDigital.Tests.EditMode
                 "Placeholder Move",
                 new InitiativeValue(5),
                 CardContentAuthority.SyntheticTestFixture);
+        }
+
+        private static void AssertSyntheticMatrix(
+            PlaceholderMovementHand hand,
+            string[] names,
+            int[] initiatives,
+            int[] attacks,
+            int[] ranges,
+            int[] movements,
+            int[] defenses)
+        {
+            Assert.That(hand.Definitions, Has.Count.EqualTo(5));
+            Assert.That(hand.Instances, Has.Count.EqualTo(5));
+            for (var index = 0; index < hand.Definitions.Count; index++)
+            {
+                var definition = hand.Definitions[index];
+                Assert.That(definition.DisplayName, Is.EqualTo($"TEST - {names[index]}"));
+                Assert.That(definition.Initiative.Value, Is.EqualTo(initiatives[index]));
+                Assert.That(definition.ContentAuthority, Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
+                Assert.That(definition.ActionDefinitions, Has.Count.EqualTo(3));
+                Assert.That(definition.ActionDefinitions.Count(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedPrimary && action.Kind == ActionKind.Attack), Is.EqualTo(1));
+                Assert.That(definition.ActionDefinitions.Count(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedSecondary && action.Kind == ActionKind.Movement), Is.EqualTo(1));
+                Assert.That(definition.ActionDefinitions.Count(action =>
+                    action.Origin == ActionDefinitionOrigin.Reaction && action.Kind == ActionKind.Defense), Is.EqualTo(1));
+                Assert.That(definition.ActionDefinitions.Any(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedPrimary && action.Kind == ActionKind.Movement), Is.False);
+
+                var attack = definition.ActionDefinitions.Single(action => action.Kind == ActionKind.Attack);
+                var movement = definition.ActionDefinitions.Single(action => action.Kind == ActionKind.Movement);
+                var defense = definition.ActionDefinitions.Single(action => action.Kind == ActionKind.Defense);
+                Assert.That(attack.BaseValues.Single(value => value.Channel == PrintedValueChannel.Attack).Amount,
+                    Is.EqualTo(attacks[index]));
+                Assert.That(attack.AttackRange,
+                    Is.EqualTo(ranges[index] > 0 ? AttackRangeKind.Ranged : AttackRangeKind.NonRanged));
+                Assert.That(attack.BaseValues.Where(value => value.Channel == PrintedValueChannel.Range)
+                    .Select(value => value.Amount).SingleOrDefault(), Is.EqualTo(ranges[index]));
+                Assert.That(movement.BaseValues.Single().Amount, Is.EqualTo(movements[index]));
+                Assert.That(defense.BaseValues.Single().Amount, Is.EqualTo(defenses[index]));
+            }
         }
     }
 }

@@ -56,7 +56,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(answer.PendingDefenseChoice.AttackerId, Is.EqualTo(fixture.AttackerId));
             Assert.That(answer.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
             Assert.That(answer.PendingDefenseChoice.CanDecline, Is.True);
-            Assert.That(answer.PendingDefenseChoice.LegalDefenseOffers, Has.Count.EqualTo(2));
+            Assert.That(answer.PendingDefenseChoice.LegalDefenseOffers, Has.Count.EqualTo(5));
             Assert.That(
                 answer.PendingDefenseChoice.LegalDefenseOffers.All(offer =>
                     offer.ActorId.Equals(fixture.DefenderId) &&
@@ -249,7 +249,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(beyondRange.Events, Is.Empty);
             Assert.That(configuration.CardInstances.Select(instance => instance.State), Is.EqualTo(originalStates));
             Assert.That(accepted.Accepted, Is.True);
-            Assert.That(accepted.PendingResolution.AttackTotal, Is.EqualTo(2));
+            Assert.That(accepted.PendingResolution.AttackTotal, Is.EqualTo(3));
             Assert.That(accepted.PendingDefenseChoice.ChooserId, Is.EqualTo(maximumRangeEnemyId));
             Assert.That(accepted.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
             {
@@ -348,9 +348,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(restoredTargetChoice.LegalTargetHeroIds,
                 Is.EqualTo(new[] { defenderId }));
             Assert.That(answer.Accepted, Is.True);
-            Assert.That(answer.PendingResolution.AttackTotal, Is.EqualTo(2));
+            Assert.That(answer.PendingResolution.AttackTotal, Is.EqualTo(3));
             Assert.That(restoredDefense.PendingDefenseChoice.ChooserId, Is.EqualTo(defenderId));
-            Assert.That(restoredDefense.PendingDefenseChoice.AttackTotal, Is.EqualTo(2));
+            Assert.That(restoredDefense.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
         }
 
         [Test]
@@ -480,7 +480,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Single(offer => PrintedValueQuery.CalculatePrintedValue(
                     offer,
                     fixture.Configuration.CardDefinitions,
-                    PrintedValueChannel.Defense).Total == 3);
+                    PrintedValueChannel.Defense).Total == 4);
             var selectedCard = fixture.Configuration.CardInstances.Single(
                 instance => instance.Id.Equals(selectedOffer.SourceCardInstanceId));
             var otherStates = fixture.Configuration.CardInstances
@@ -511,7 +511,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(PrintedValueContributionKind.PrintedIcon));
             Assert.That(result.PendingResolution.DefenseValue.Contributions.Single().SourceCardInstanceId,
                 Is.EqualTo(selectedCard.Id));
-            Assert.That(result.PendingResolution.DefenseTotal, Is.EqualTo(3));
+            Assert.That(result.PendingResolution.DefenseTotal, Is.EqualTo(4));
             Assert.That(selectedCard.State, Is.EqualTo(CardStateFacts.DiscardedUnplayed()));
             Assert.That(
                 fixture.Configuration.CardInstances
@@ -526,7 +526,7 @@ namespace GuardsDigital.Tests.EditMode
             }));
             Assert.That(result.Events.All(ruleEvent =>
                 ruleEvent.DefenseCardInstanceId.Equals(selectedCard.Id) &&
-                ruleEvent.DefenseTotal == 3), Is.True);
+                ruleEvent.DefenseTotal == 4), Is.True);
             Assert.That(
                 ActionOfferQuery.GetAvailableOffers(
                     fixture.Configuration.CardDefinitions,
@@ -596,7 +596,7 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             var originalStates = fixture.Configuration.CardInstances.Select(instance => instance.State).ToArray();
             var otherAttackerCardId = fixture.Configuration.CardInstances
-                .Single(instance =>
+                .First(instance =>
                     instance.OwnerId.Equals(fixture.AttackerId) &&
                     !instance.Id.Equals(fixture.AttackOffer.SourceCardInstanceId))
                 .Id;
@@ -753,13 +753,10 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OutcomeComparison_EqualDefenseSuccessfullyDefendsAndCompletesSameAttack()
         {
-            var fixture = CreateFixture();
+            var fixture = CreateFixture("red-needle-card");
             var opened = OpenDefenseResponse(fixture);
             var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
-                PrintedValueQuery.CalculatePrintedValue(
-                    offer,
-                    fixture.Configuration.CardDefinitions,
-                    PrintedValueChannel.Defense).Total == opened.PendingResolution.AttackTotal);
+                offer.SourceCardInstanceId.Value == "blue-feint-card");
             var response = fixture.Authority.AnswerDefenseResponse(
                 DefenseResponseChoiceCommand.SelectCards(
                     opened.PendingDefenseChoice.ResolutionId,
@@ -775,8 +772,8 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Configuration.Participants);
 
             Assert.That(response.PendingResolution.ResolutionId, Is.EqualTo(opened.PendingResolution.ResolutionId));
-            Assert.That(response.PendingResolution.AttackTotal, Is.EqualTo(3));
-            Assert.That(response.PendingResolution.DefenseTotal, Is.EqualTo(3));
+            Assert.That(response.PendingResolution.AttackTotal, Is.EqualTo(2));
+            Assert.That(response.PendingResolution.DefenseTotal, Is.EqualTo(2));
             Assert.That(outcome.Accepted, Is.True);
             Assert.That(outcome.Outcome, Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended));
             Assert.That(outcome.PendingResolution, Is.Null);
@@ -790,8 +787,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(outcome.Events.All(ruleEvent =>
                 ruleEvent.ResolutionId.Equals(opened.PendingResolution.ResolutionId) &&
                 ruleEvent.TargetHeroId.Equals(fixture.DefenderId) &&
-                ruleEvent.AttackTotal == 3 &&
-                ruleEvent.DefenseTotal == 3 &&
+                ruleEvent.AttackTotal == 2 &&
+                ruleEvent.DefenseTotal == 2 &&
                 ruleEvent.AttackOutcome == AttackResolutionOutcome.SuccessfullyDefended), Is.True);
         }
 
@@ -826,7 +823,7 @@ namespace GuardsDigital.Tests.EditMode
                 PrintedValueQuery.CalculatePrintedValue(
                     offer,
                     configuration.CardDefinitions,
-                    PrintedValueChannel.Defense).Total == 3);
+                    PrintedValueChannel.Defense).Total == 4);
             authority.AnswerDefenseResponse(
                 DefenseResponseChoiceCommand.SelectCards(
                     opened.PendingDefenseChoice.ResolutionId,
@@ -841,12 +838,12 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardInstances,
                 configuration.Participants);
 
-            Assert.That(opened.PendingResolution.AttackTotal, Is.EqualTo(2));
+            Assert.That(opened.PendingResolution.AttackTotal, Is.EqualTo(3));
             Assert.That(outcome.Accepted, Is.True);
             Assert.That(outcome.Outcome, Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended));
             Assert.That(outcome.Events, Has.All.Matches<CardActionResolutionEvent>(ruleEvent =>
-                ruleEvent.AttackTotal == 2 &&
-                ruleEvent.DefenseTotal == 3 &&
+                ruleEvent.AttackTotal == 3 &&
+                ruleEvent.DefenseTotal == 4 &&
                 ruleEvent.AttackOutcome == AttackResolutionOutcome.SuccessfullyDefended));
         }
 
@@ -856,10 +853,7 @@ namespace GuardsDigital.Tests.EditMode
             var fixture = CreateFixture();
             var opened = OpenDefenseResponse(fixture);
             var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
-                PrintedValueQuery.CalculatePrintedValue(
-                    offer,
-                    fixture.Configuration.CardDefinitions,
-                    PrintedValueChannel.Defense).Total < opened.PendingResolution.AttackTotal);
+                offer.SourceCardInstanceId.Value == "blue-feint-card");
             fixture.Authority.AnswerDefenseResponse(
                 DefenseResponseChoiceCommand.SelectCards(
                     opened.PendingDefenseChoice.ResolutionId,
@@ -1043,7 +1037,7 @@ namespace GuardsDigital.Tests.EditMode
                     fixture.Configuration.CardInstances,
                     fixture.AttackerId,
                     ActionOfferWindow.NormalPlay)
-                .First(offer => offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-movement")));
+                .First(offer => offer.ActionDefinitionId.Equals(new ActionDefinitionId("secondary-movement")));
             var movement = fixture.Authority.StartMovementResolution(
                 new ActionResolutionId("movement-resolution"),
                 movementOffer,
@@ -1133,13 +1127,10 @@ namespace GuardsDigital.Tests.EditMode
 
         private static AttackActionResolutionResult RunOutcomeReplay()
         {
-            var fixture = CreateFixture();
+            var fixture = CreateFixture("red-needle-card");
             var opened = OpenDefenseResponse(fixture);
             var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
-                PrintedValueQuery.CalculatePrintedValue(
-                    offer,
-                    fixture.Configuration.CardDefinitions,
-                    PrintedValueChannel.Defense).Total == opened.PendingResolution.AttackTotal);
+                offer.SourceCardInstanceId.Value == "blue-feint-card");
             fixture.Authority.AnswerDefenseResponse(
                 DefenseResponseChoiceCommand.SelectCards(
                     opened.PendingDefenseChoice.ResolutionId,
@@ -1164,7 +1155,7 @@ namespace GuardsDigital.Tests.EditMode
                 candidate.Id.Equals(offer.ActionDefinitionId)).Kind;
         }
 
-        private static AttackFixture CreateFixture()
+        private static AttackFixture CreateFixture(string attackCardInstanceId = "red-bulwark-card")
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
@@ -1176,7 +1167,7 @@ namespace GuardsDigital.Tests.EditMode
                 defenderId,
                 boardAuthority,
                 new CardActionResolutionAuthority(boardAuthority),
-                GetAttackOffer(configuration, attackerId));
+                GetAttackOffer(configuration, attackerId, attackCardInstanceId));
         }
 
         private static AdjacentMoveAuthority CreateBoardAuthority(HeroId attackerId, HeroId defenderId)
@@ -1192,14 +1183,17 @@ namespace GuardsDigital.Tests.EditMode
 
         private static ActionOffer GetAttackOffer(
             PlaceholderOneVsOneTestConfiguration configuration,
-            HeroId attackerId)
+            HeroId attackerId,
+            string attackCardInstanceId = "red-bulwark-card")
         {
             return ActionOfferQuery.GetAvailableOffers(
                     configuration.CardDefinitions,
                     configuration.CardInstances,
                     attackerId,
                     ActionOfferWindow.NormalPlay)
-                .Single(offer => offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
+                .Single(offer =>
+                    offer.SourceCardInstanceId.Value == attackCardInstanceId &&
+                    offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
         }
 
         private static ActionOffer GetRangedAttackOffer(
@@ -1211,7 +1205,9 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     attackerId,
                     ActionOfferWindow.NormalPlay)
-                .Single(offer => offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-ranged-attack")));
+                .Single(offer =>
+                    offer.SourceCardInstanceId.Value == "red-bombard-card" &&
+                    offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-ranged-attack")));
         }
 
         private static MatchParticipants CreateFourHeroParticipants(

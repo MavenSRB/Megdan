@@ -189,6 +189,7 @@ namespace GuardsDigital.Tests.EditMode
                 redHeroId,
                 ActionOfferWindow.NormalPlay);
             var redAttack = redNormalOffers.Single(offer =>
+                offer.SourceCardInstanceId.Value == "red-bulwark-card" &&
                 offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
 
             Assert.That(redAttack.ActorId, Is.EqualTo(redHeroId));
@@ -204,9 +205,10 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(3));
 
             var redRangedAttack = redNormalOffers.Single(offer =>
+                offer.SourceCardInstanceId.Value == "red-lancer-card" &&
                 offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-ranged-attack")));
             Assert.That(redRangedAttack.ActorId, Is.EqualTo(redHeroId));
-            Assert.That(redRangedAttack.SourceCardInstanceId.Value, Is.EqualTo("red-obstacle-course-card"));
+            Assert.That(redRangedAttack.SourceCardInstanceId.Value, Is.EqualTo("red-lancer-card"));
             Assert.That(redRangedAttack.InvocationContext, Is.EqualTo(ActionInvocationContext.PrintedPrimary));
             Assert.That(redRangedAttack.AttackRange, Is.EqualTo(AttackRangeKind.Ranged));
             Assert.That(
@@ -220,7 +222,7 @@ namespace GuardsDigital.Tests.EditMode
                     redRangedAttack,
                     configuration.CardDefinitions,
                     PrintedValueChannel.Range).Total,
-                Is.EqualTo(2));
+                Is.EqualTo(3));
 
             var blueDefenseOffers = ActionOfferQuery.GetAvailableOffers(
                 configuration.CardDefinitions,
@@ -228,7 +230,7 @@ namespace GuardsDigital.Tests.EditMode
                 blueHeroId,
                 ActionOfferWindow.Reaction);
 
-            Assert.That(blueDefenseOffers.Count, Is.EqualTo(2));
+            Assert.That(blueDefenseOffers.Count, Is.EqualTo(5));
             Assert.That(blueDefenseOffers.Select(offer => offer.ActorId), Is.All.EqualTo(blueHeroId));
             Assert.That(blueDefenseOffers.Select(offer => offer.SourceCardInstanceId.Value),
                 Is.All.StartsWith("blue-"));
@@ -243,7 +245,7 @@ namespace GuardsDigital.Tests.EditMode
                         offer,
                         configuration.CardDefinitions,
                         PrintedValueChannel.Defense).Total),
-                Is.EquivalentTo(new[] { 2, 3 }));
+                Is.EquivalentTo(new[] { 2, 4, 1, 1, 2 }));
         }
 
         [Test]

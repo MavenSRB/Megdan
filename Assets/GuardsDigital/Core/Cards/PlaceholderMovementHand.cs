@@ -6,6 +6,24 @@ namespace GuardsDigital.Core.Cards
 {
     public sealed class PlaceholderMovementHand
     {
+        private static readonly SyntheticCardProfile[] RedProfiles =
+        {
+            new SyntheticCardProfile("red-needle", "Red Needle", 13, AttackRangeKind.NonRanged, 2, 0, 1, 1),
+            new SyntheticCardProfile("red-bulwark", "Red Bulwark", 11, AttackRangeKind.NonRanged, 3, 0, 1, 3),
+            new SyntheticCardProfile("red-lancer", "Red Lancer", 9, AttackRangeKind.Ranged, 2, 3, 2, 1),
+            new SyntheticCardProfile("red-pursuit", "Red Pursuit", 7, AttackRangeKind.NonRanged, 4, 0, 2, 2),
+            new SyntheticCardProfile("red-bombard", "Red Bombard", 5, AttackRangeKind.Ranged, 3, 2, 1, 2)
+        };
+
+        private static readonly SyntheticCardProfile[] BlueProfiles =
+        {
+            new SyntheticCardProfile("blue-feint", "Blue Feint", 12, AttackRangeKind.NonRanged, 2, 0, 2, 2),
+            new SyntheticCardProfile("blue-sentinel", "Blue Sentinel", 11, AttackRangeKind.NonRanged, 3, 0, 1, 4),
+            new SyntheticCardProfile("blue-scout-shot", "Blue Scout Shot", 8, AttackRangeKind.Ranged, 2, 2, 3, 1),
+            new SyntheticCardProfile("blue-hammer", "Blue Hammer", 6, AttackRangeKind.NonRanged, 5, 0, 1, 1),
+            new SyntheticCardProfile("blue-longbow", "Blue Longbow", 4, AttackRangeKind.Ranged, 3, 3, 2, 2)
+        };
+
         private PlaceholderMovementHand(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances)
@@ -20,114 +38,76 @@ namespace GuardsDigital.Core.Cards
 
         public static PlaceholderMovementHand Create(HeroId ownerId)
         {
-            return Create(
-                ownerId,
-                new CardInstanceId("route-drill-card"),
-                new CardInstanceId("obstacle-course-card"));
+            return Create(ownerId, RedProfiles, ownerId.Value);
         }
 
-        public static PlaceholderMovementHand Create(
+        public static PlaceholderMovementHand CreateRed(HeroId ownerId)
+        {
+            return Create(ownerId, RedProfiles, null);
+        }
+
+        public static PlaceholderMovementHand CreateBlue(HeroId ownerId)
+        {
+            return Create(ownerId, BlueProfiles, null);
+        }
+
+        private static PlaceholderMovementHand Create(
             HeroId ownerId,
-            CardInstanceId routeDrillInstanceId,
-            CardInstanceId obstacleCourseInstanceId)
+            IReadOnlyList<SyntheticCardProfile> profiles,
+            string instancePrefix)
         {
             if (!ownerId.IsDefined)
             {
-                throw new ArgumentException("A placeholder movement hand requires a defined owner.", nameof(ownerId));
+                throw new ArgumentException("A placeholder hand requires a defined owner.", nameof(ownerId));
             }
 
-            if (!routeDrillInstanceId.IsDefined || !obstacleCourseInstanceId.IsDefined)
+            var definitions = new CardDefinition[profiles.Count];
+            var instances = new CardInstance[profiles.Count];
+            for (var index = 0; index < profiles.Count; index++)
             {
-                throw new ArgumentException("A placeholder movement hand requires defined card instance IDs.");
+                var profile = profiles[index];
+                var definition = CreateDefinition(profile);
+                definitions[index] = definition;
+                instances[index] = CardInstance.CreateInHand(
+                    new CardInstanceId(
+                        string.IsNullOrWhiteSpace(instancePrefix)
+                            ? $"{profile.Id}-card"
+                            : $"{instancePrefix}-{profile.Id}-card"),
+                    definition.Reference,
+                    ownerId);
             }
 
-            if (routeDrillInstanceId.Equals(obstacleCourseInstanceId))
-            {
-                throw new ArgumentException("A placeholder movement hand requires unique card instance IDs.");
-            }
-
-            var routeDrill = CreateDefinition(
-                "route-drill",
-                "Route Drill",
-                7,
-                AttackRangeKind.NonRanged,
-                3,
-                0,
-                2);
-            var obstacleCourse = CreateDefinition(
-                "obstacle-course",
-                "Obstacle Course",
-                4,
-                AttackRangeKind.Ranged,
-                2,
-                2,
-                3);
-            var definitions = Array.AsReadOnly(new[] { routeDrill, obstacleCourse });
-            var instances = Array.AsReadOnly(new[]
-            {
-                CardInstance.CreateInHand(
-                    routeDrillInstanceId,
-                    routeDrill.Reference,
-                    ownerId),
-                CardInstance.CreateInHand(
-                    obstacleCourseInstanceId,
-                    obstacleCourse.Reference,
-                    ownerId)
-            });
-
-            return new PlaceholderMovementHand(definitions, instances);
+            return new PlaceholderMovementHand(
+                Array.AsReadOnly(definitions),
+                Array.AsReadOnly(instances));
         }
 
-        private static CardDefinition CreateDefinition(
-            string id,
-            string displayName,
-            int initiative,
-            AttackRangeKind attackRange,
-            int attackValue,
-            int rangeValue,
-            int defenseValue)
+        private static CardDefinition CreateDefinition(SyntheticCardProfile profile)
         {
-            var actions = new List<ActionDefinition>
+            var actions = new[]
             {
-                CreateMovementAction(
-                    "primary-movement",
-                    ActionDefinitionOrigin.PrintedPrimary,
-                    3),
-                CreateMovementAction(
-                    "secondary-movement",
-                    ActionDefinitionOrigin.PrintedSecondary,
-                    1)
+                CreateAttackAction(profile.AttackRange, profile.AttackValue, profile.RangeValue),
+                CreateMovementAction(profile.MovementValue),
+                CreateDefenseAction(profile.DefenseValue)
             };
 
-            if (attackRange != AttackRangeKind.None)
-            {
-                actions.Add(CreateAttackAction(attackRange, attackValue, rangeValue));
-            }
-
-            actions.Add(CreateDefenseAction(defenseValue));
-
             return new CardDefinition(
-                new CardDefinitionId($"placeholder-{id}"),
-                "phase-3-rev-1",
-                $"TEST - {displayName}",
-                new InitiativeValue(initiative),
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-3-rev-2",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
                 actions);
         }
 
-        private static ActionDefinition CreateMovementAction(
-            string id,
-            ActionDefinitionOrigin origin,
-            int value)
+        private static ActionDefinition CreateMovementAction(int value)
         {
             return new ActionDefinition(
-                new ActionDefinitionId(id),
+                new ActionDefinitionId("secondary-movement"),
                 ActionKind.Movement,
-                origin,
+                ActionDefinitionOrigin.PrintedSecondary,
                 new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, value) },
-                origin == ActionDefinitionOrigin.PrintedPrimary
-                    ? new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true)
-                    : new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true));
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true));
         }
 
         private static ActionDefinition CreateAttackAction(
@@ -165,6 +145,38 @@ namespace GuardsDigital.Core.Cards
                 new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, false),
                 AttackRangeKind.None,
                 new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
+        }
+
+        private sealed class SyntheticCardProfile
+        {
+            public SyntheticCardProfile(
+                string id,
+                string displayName,
+                int initiative,
+                AttackRangeKind attackRange,
+                int attackValue,
+                int rangeValue,
+                int movementValue,
+                int defenseValue)
+            {
+                Id = id;
+                DisplayName = displayName;
+                Initiative = initiative;
+                AttackRange = attackRange;
+                AttackValue = attackValue;
+                RangeValue = rangeValue;
+                MovementValue = movementValue;
+                DefenseValue = defenseValue;
+            }
+
+            public string Id { get; }
+            public string DisplayName { get; }
+            public int Initiative { get; }
+            public AttackRangeKind AttackRange { get; }
+            public int AttackValue { get; }
+            public int RangeValue { get; }
+            public int MovementValue { get; }
+            public int DefenseValue { get; }
         }
     }
 }

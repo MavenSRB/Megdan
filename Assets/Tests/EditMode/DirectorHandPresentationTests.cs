@@ -40,10 +40,13 @@ namespace GuardsDigital.Tests.EditMode
                     card.State.Location == CardLocation.Hand &&
                     !card.State.HasBeenPlayed &&
                     card.State.ResolutionStatus == CardResolutionStatus.None));
+                Assert.That(hands, Has.All.Matches<DirectorTestHand>(hand => hand.Instances.Count == 5));
                 Assert.That(hands[0].GetCardButtonLabel(hands[0].Instances[0]),
-                    Is.EqualTo("TEST - Route Drill\nINITIATIVE 7"));
-                Assert.That(hands[0].GetCardButtonLabel(hands[0].Instances[1]),
-                    Is.EqualTo("TEST - Obstacle Course\nINITIATIVE 4"));
+                    Is.EqualTo("TEST - Red Needle\nINITIATIVE 13"));
+                Assert.That(hands[0].GetCardButtonLabel(hands[0].Instances[4]),
+                    Is.EqualTo("TEST - Red Bombard\nINITIATIVE 5"));
+                Assert.That(hands[1].GetCardButtonLabel(hands[1].Instances[4]),
+                    Is.EqualTo("TEST - Blue Longbow\nINITIATIVE 4"));
             }
             finally
             {
@@ -73,7 +76,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red),
                     Is.EqualTo("FACEDOWN COMMITTED"));
                 Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red),
-                    Does.Not.Contain("Route Drill"));
+                    Does.Not.Contain("Red Needle"));
                 Assert.That(controller.TurnCardCommitmentEvents, Has.Count.EqualTo(1));
                 Assert.That(controller.TurnCardCommitmentEvents[0].HasCardInstanceId, Is.False);
                 Assert.That(controller.TrySelectDirectorCard(configuration.RedHand.Instances[1].Id), Is.False);
@@ -85,9 +88,9 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(redCard.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceUp));
                 Assert.That(blueCard.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceUp));
                 Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Red),
-                    Is.EqualTo("REVEALED: TEST - Route Drill\nINITIATIVE 7"));
+                    Is.EqualTo("REVEALED: TEST - Red Needle\nINITIATIVE 13"));
                 Assert.That(controller.GetDirectorCommitmentLabel(TeamSide.Blue),
-                    Is.EqualTo("REVEALED: TEST - Obstacle Course\nINITIATIVE 4"));
+                    Is.EqualTo("REVEALED: TEST - Blue Sentinel\nINITIATIVE 11"));
                 Assert.That(controller.CardStatus, Does.Contain("revealed together"));
                 Assert.That(controller.CardResolutionEvents, Is.Empty);
                 Assert.That(controller.TurnCardCommitmentEvents.Select(ruleEvent => ruleEvent.Kind),

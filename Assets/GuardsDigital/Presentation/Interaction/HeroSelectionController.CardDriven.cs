@@ -16,7 +16,7 @@ namespace GuardsDigital.Presentation.Interaction
     public sealed partial class HeroSelectionController
     {
         private const float CardPanelMargin = 12f;
-        private const float CardPanelHeight = 270f;
+        private const float CardPanelHeight = 310f;
         private const float TieBreakerIndicatorWidth = 200f;
         private const float TieBreakerIndicatorHeight = 96f;
 
@@ -55,7 +55,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 InitializeCardDrivenMovementIfEnabled();
                 return placeholderHand != null
-                    ? placeholderHand.Definitions
+                    ? GetAllPlaceholderCardDefinitions()
                     : Array.Empty<CardDefinition>();
             }
         }
@@ -555,7 +555,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             var result = cardResolutionAuthority.AnswerAttackTarget(
                 command,
-                placeholderHand.Definitions,
+                GetAllPlaceholderCardDefinitions(),
                 GetAllPlaceholderCardInstances(),
                 placeholderParticipants);
             if (!result.Accepted)
@@ -991,7 +991,7 @@ namespace GuardsDigital.Presentation.Interaction
             var start = cardResolutionAuthority.StartAttackResolution(
                 new ActionResolutionId($"visible-attack-{cardResolutionSequence}"),
                 offer,
-                placeholderHand.Definitions,
+                GetAllPlaceholderCardDefinitions(),
                 GetAllPlaceholderCardInstances(),
                 placeholderParticipants);
             if (!start.Accepted)
@@ -1070,7 +1070,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             var result = cardResolutionAuthority.AnswerDefenseResponse(
                 command,
-                placeholderHand.Definitions,
+                GetAllPlaceholderCardDefinitions(),
                 GetAllPlaceholderCardInstances(),
                 placeholderParticipants);
             if (!result.Accepted)
@@ -1089,7 +1089,7 @@ namespace GuardsDigital.Presentation.Interaction
                 var definition = selectedCardId.HasValue
                     ? GetAllPlaceholderCardInstances()
                         .Where(instance => instance.Id.Equals(selectedCardId.Value))
-                        .Select(instance => placeholderHand.Definitions.Single(candidate =>
+                        .Select(instance => GetAllPlaceholderCardDefinitions().Single(candidate =>
                             candidate.Reference.Equals(instance.DefinitionReference)))
                         .SingleOrDefault()
                     : null;
@@ -1098,7 +1098,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var outcomeResult = cardResolutionAuthority.ResolveAttackOutcome(
-                placeholderHand.Definitions,
+                GetAllPlaceholderCardDefinitions(),
                 GetAllPlaceholderCardInstances(),
                 placeholderParticipants);
             if (!outcomeResult.Accepted)
@@ -1160,11 +1160,11 @@ namespace GuardsDigital.Presentation.Interaction
             var defenseLabel = "Defense declined";
             if (selectedDefenseOffer.HasValue)
             {
-                var defenseDefinition = placeholderHand.Definitions.Single(definition =>
+                var defenseDefinition = GetAllPlaceholderCardDefinitions().Single(definition =>
                     definition.Reference.Equals(selectedDefenseOffer.Value.SourceDefinitionReference));
                 var defenseTotal = PrintedValueQuery.CalculatePrintedValue(
                     selectedDefenseOffer.Value,
-                    placeholderHand.Definitions,
+                    GetAllPlaceholderCardDefinitions(),
                     PrintedValueChannel.Defense).Total;
                 defenseLabel = $"{defenseDefinition.DisplayName} discarded for Defense {defenseTotal}";
             }
@@ -1183,6 +1183,17 @@ namespace GuardsDigital.Presentation.Interaction
             return placeholderHands.Values
                 .SelectMany(hand => hand.Instances)
                 .OrderBy(instance => instance.Id.Value, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private IReadOnlyList<CardDefinition> GetAllPlaceholderCardDefinitions()
+        {
+            EnsurePlaceholderOneVsOneHands();
+            return placeholderHands.Values
+                .SelectMany(hand => hand.Definitions)
+                .GroupBy(definition => definition.Reference)
+                .Select(group => group.First())
+                .OrderBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .ToArray();
         }
 
@@ -1254,7 +1265,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private ActionDefinition GetActionDefinition(ActionOffer offer)
         {
-            var definition = placeholderHand.Definitions.Single(
+            var definition = GetAllPlaceholderCardDefinitions().Single(
                 candidate => candidate.Reference.Equals(offer.SourceDefinitionReference));
             return definition.ActionDefinitions.Single(
                 candidate => candidate.Id.Equals(offer.ActionDefinitionId));
@@ -1264,7 +1275,7 @@ namespace GuardsDigital.Presentation.Interaction
         {
             return PrintedValueQuery.CalculatePrintedValue(
                 offer,
-                placeholderHand.Definitions,
+                GetAllPlaceholderCardDefinitions(),
                 kind == ActionKind.Attack
                     ? PrintedValueChannel.Attack
                     : PrintedValueChannel.Movement).Total;
@@ -1274,7 +1285,7 @@ namespace GuardsDigital.Presentation.Interaction
         {
             return PrintedValueQuery.CalculatePrintedValue(
                 offer,
-                placeholderHand.Definitions,
+                GetAllPlaceholderCardDefinitions(),
                 PrintedValueChannel.Range).Total;
         }
 
@@ -1404,6 +1415,16 @@ namespace GuardsDigital.Presentation.Interaction
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(hand.Label, GUILayout.Width(122f));
                 var commitmentStatus = GetTurnCardCommitmentStatus(hand.TeamSide);
+                GUILayout.Label(GetDirectorCommitmentLabel(hand.TeamSide));
+                if (CanPassTurnCard(hand.TeamSide) &&
+                    GUILayout.Button("PASS - NO CARD", GUILayout.Width(125f), GUILayout.Height(24f)))
+                {
+                    TryPassTurnCard(hand.TeamSide);
+                }
+
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(122f);
                 foreach (var instance in hand.Instances)
                 {
                     var previousColor = GUI.backgroundColor;
@@ -1413,21 +1434,16 @@ namespace GuardsDigital.Presentation.Interaction
                             : Color.white;
                     GUI.enabled = !IsCardResolutionPending &&
                         commitmentStatus == TurnCardCommitmentStatus.AwaitingResponse;
-                    if (GUILayout.Button(hand.GetCardButtonLabel(instance), GUILayout.Height(42f)))
+                    if (GUILayout.Button(
+                            hand.GetCardButtonLabel(instance),
+                            GUILayout.MinWidth(112f),
+                            GUILayout.Height(46f)))
                     {
                         TrySelectDirectorCard(instance.Id);
                     }
 
                     GUI.enabled = true;
                     GUI.backgroundColor = previousColor;
-                }
-
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(GetDirectorCommitmentLabel(hand.TeamSide), GUILayout.Width(190f));
-                if (CanPassTurnCard(hand.TeamSide) &&
-                    GUILayout.Button("PASS - NO CARD", GUILayout.Width(125f), GUILayout.Height(42f)))
-                {
-                    TryPassTurnCard(hand.TeamSide);
                 }
 
                 GUILayout.EndHorizontal();
@@ -1493,15 +1509,16 @@ namespace GuardsDigital.Presentation.Interaction
                 GUILayout.Label("Defense", GUILayout.Width(54f));
                 foreach (var offer in defenseChoice.LegalDefenseOffers)
                 {
-                    var definition = placeholderHand.Definitions.Single(candidate =>
+                    var definition = GetAllPlaceholderCardDefinitions().Single(candidate =>
                         candidate.Reference.Equals(offer.SourceDefinitionReference));
                     var defenseTotal = PrintedValueQuery.CalculatePrintedValue(
                         offer,
-                        placeholderHand.Definitions,
+                        GetAllPlaceholderCardDefinitions(),
                         PrintedValueChannel.Defense).Total;
                     if (GUILayout.Button(
                             $"DISCARD {definition.DisplayName}\nDEFENSE {defenseTotal}",
-                            GUILayout.Height(42f)))
+                            GUILayout.MinWidth(106f),
+                            GUILayout.Height(52f)))
                     {
                         TrySubmitDefenseCard(offer.SourceCardInstanceId);
                     }
@@ -1509,7 +1526,7 @@ namespace GuardsDigital.Presentation.Interaction
 
                 GUILayout.FlexibleSpace();
                 if (defenseChoice.CanDecline &&
-                    GUILayout.Button("DECLINE DEFENSE", GUILayout.Width(170f), GUILayout.Height(42f)))
+                    GUILayout.Button("DECLINE DEFENSE", GUILayout.Width(150f), GUILayout.Height(52f)))
                 {
                     TryDeclineDefense();
                 }

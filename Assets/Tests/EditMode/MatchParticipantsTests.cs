@@ -29,17 +29,21 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PlaceholderConfiguration_GivesEachHeroADistinctOwnedMovementHand()
+        public void PlaceholderConfiguration_GivesEachHeroFiveDistinctOwnedPlayableCards()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
 
-            Assert.That(configuration.RedHand.Instances, Has.Count.EqualTo(2));
+            Assert.That(configuration.RedHand.Definitions, Has.Count.EqualTo(5));
+            Assert.That(configuration.RedHand.Instances, Has.Count.EqualTo(5));
             Assert.That(configuration.RedHand.Instances.All(card => card.OwnerId.Equals(redHeroId)), Is.True);
-            Assert.That(configuration.BlueHand.Instances, Has.Count.EqualTo(2));
+            Assert.That(configuration.BlueHand.Definitions, Has.Count.EqualTo(5));
+            Assert.That(configuration.BlueHand.Instances, Has.Count.EqualTo(5));
             Assert.That(configuration.BlueHand.Instances.All(card => card.OwnerId.Equals(blueHeroId)), Is.True);
-            Assert.That(configuration.CardInstances.Select(card => card.Id).Distinct().Count(), Is.EqualTo(4));
+            Assert.That(configuration.CardDefinitions, Has.Count.EqualTo(10));
+            Assert.That(configuration.CardDefinitions.Select(card => card.Id).Distinct().Count(), Is.EqualTo(10));
+            Assert.That(configuration.CardInstances.Select(card => card.Id).Distinct().Count(), Is.EqualTo(10));
 
             foreach (var card in configuration.CardInstances)
             {

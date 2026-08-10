@@ -500,6 +500,37 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(nextActorIndex, Is.GreaterThan(flipIndex));
         }
 
+        [Test]
+        public void SelectedActor_RangedAttackUsesItsSupportedPrimaryAndAdvances()
+        {
+            var fixture = CreateAttackFixture(false, true);
+            Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
+            var rangedOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
+                    fixture.Configuration.CardDefinitions,
+                    fixture.Configuration.CardInstances,
+                    fixture.RedPlayed.OwnerId,
+                    fixture.RedPlayed.Id)
+                .Single(offer => offer.ActionDefinitionId.Equals(
+                    new ActionDefinitionId("primary-ranged-attack")));
+
+            Assert.That(fixture.Authority.TryStartAttack(
+                new ActionResolutionId("turn-red-ranged-attack"),
+                rangedOffer).Accepted, Is.True);
+            var target = fixture.Authority.PendingAttackTargetChoice;
+            Assert.That(fixture.Authority.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
+                target.ResolutionId,
+                target.ChoiceId,
+                fixture.BluePlayed.OwnerId)).Accepted, Is.True);
+            var defense = fixture.Authority.PendingDefenseChoice;
+            Assert.That(fixture.Authority.TryAnswerDefenseResponse(DefenseResponseChoiceCommand.Decline(
+                defense.ResolutionId,
+                defense.ChoiceId)).Accepted, Is.True);
+
+            Assert.That(fixture.RedPlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(fixture.BluePlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
+        }
+
         private static IEnumerable<InitiativeResolutionEventKind> EventKinds(
             TurnResolutionResult result)
         {
@@ -582,12 +613,14 @@ namespace GuardsDigital.Tests.EditMode
                     new CardActionResolutionAuthority(board)));
         }
 
-        private static AttackTestFixture CreateAttackFixture(bool tiedInitiative)
+        private static AttackTestFixture CreateAttackFixture(
+            bool tiedInitiative,
+            bool rangedAttack = false)
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var redPlayed = configuration.RedHand.Instances[0];
-            var bluePlayed = configuration.BlueHand.Instances[tiedInitiative ? 0 : 1];
-            var blueDefense = configuration.BlueHand.Instances[tiedInitiative ? 1 : 0];
+            var redPlayed = configuration.RedHand.Instances[rangedAttack ? 2 : tiedInitiative ? 1 : 0];
+            var bluePlayed = configuration.BlueHand.Instances[rangedAttack ? 4 : 1];
+            var blueDefense = configuration.BlueHand.Instances[rangedAttack ? 0 : 2];
             Assert.That(CardLifecycleAuthority.TryPlayFacedown(redPlayed), Is.True);
             Assert.That(CardLifecycleAuthority.TryReveal(redPlayed), Is.True);
             Assert.That(CardLifecycleAuthority.TryPlayFacedown(bluePlayed), Is.True);

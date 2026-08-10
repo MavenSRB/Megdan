@@ -18,13 +18,13 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class CardDrivenMovementPresentationTests
     {
         [Test]
-        public void PlaceholderHand_ContainsVisibleTestCardsWithTypedPrimaryAndSecondaryMovement()
+        public void PlaceholderHand_ContainsFiveVisibleTestCardsWithPrimaryAttackAndSecondaryMovement()
         {
             var ownerId = new HeroId("hero");
             var hand = PlaceholderMovementHand.Create(ownerId);
 
-            Assert.That(hand.Definitions, Has.Count.EqualTo(2));
-            Assert.That(hand.Instances, Has.Count.EqualTo(2));
+            Assert.That(hand.Definitions, Has.Count.EqualTo(5));
+            Assert.That(hand.Instances, Has.Count.EqualTo(5));
             Assert.That(hand.Definitions, Has.All.Matches<CardDefinition>(definition =>
                 definition.DisplayName.StartsWith("TEST - ")));
             Assert.That(hand.Instances.Select(instance => instance.OwnerId), Has.All.EqualTo(ownerId));
@@ -39,11 +39,7 @@ namespace GuardsDigital.Tests.EditMode
                     .Where(offer => offer.SourceCardInstanceId.Equals(instance.Id))
                     .ToArray();
                 var primary = offers.Single(offer =>
-                    offer.InvocationContext == ActionInvocationContext.PrintedPrimary &&
-                    hand.Definitions.Single(candidate =>
-                            candidate.Reference.Equals(offer.SourceDefinitionReference))
-                        .ActionDefinitions.Single(action =>
-                            action.Id.Equals(offer.ActionDefinitionId)).Kind == ActionKind.Movement);
+                    offer.InvocationContext == ActionInvocationContext.PrintedPrimary);
                 var secondary = offers.Single(offer =>
                     offer.InvocationContext == ActionInvocationContext.PrintedSecondary &&
                     hand.Definitions.Single(candidate =>
@@ -53,14 +49,13 @@ namespace GuardsDigital.Tests.EditMode
                 var definition = hand.Definitions.Single(candidate =>
                     candidate.Reference.Equals(instance.DefinitionReference));
 
-                Assert.That(PrintedValueQuery.CalculatePrintedValue(
-                    primary,
-                    hand.Definitions,
-                    PrintedValueChannel.Movement).Total, Is.EqualTo(3));
+                Assert.That(definition.ActionDefinitions.Single(action =>
+                        action.Id.Equals(primary.ActionDefinitionId)).Kind,
+                    Is.EqualTo(ActionKind.Attack));
                 Assert.That(PrintedValueQuery.CalculatePrintedValue(
                     secondary,
                     hand.Definitions,
-                    PrintedValueChannel.Movement).Total, Is.EqualTo(1));
+                    PrintedValueChannel.Movement).Total, Is.InRange(1, 2));
                 Assert.That(definition.ActionDefinitions.Single(action =>
                         action.Id.Equals(primary.ActionDefinitionId)).DefaultPolicy.CardTextApplication,
                     Is.EqualTo(CardTextApplicationPolicy.Applies));
@@ -216,12 +211,12 @@ namespace GuardsDigital.Tests.EditMode
                 controller.ConfigureCardDrivenMovement(true);
                 blueSelector.Configure(controller);
 
-                var routeDrill = controller.VisibleCardInstances.Single(card =>
-                    card.Id.Value == "red-route-drill-card");
-                Assert.That(controller.TrySelectCard(routeDrill.Id), Is.True);
+                var bulwark = controller.VisibleCardInstances.Single(card =>
+                    card.Id.Value == "red-bulwark-card");
+                Assert.That(controller.TrySelectCard(bulwark.Id), Is.True);
                 Assert.That(
                     controller.SelectedCardOffers.Select(offer => offer.ActionDefinitionId.Value),
-                    Is.EquivalentTo(new[] { "primary-movement", "secondary-movement", "primary-attack" }));
+                    Is.EquivalentTo(new[] { "secondary-movement", "primary-attack" }));
 
                 Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
                 Assert.That(controller.IsAttackTargetPending, Is.True);
@@ -240,7 +235,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.IsDefenseResponsePending, Is.True);
                 Assert.That(controller.PendingDefenseChoice.ChooserId, Is.EqualTo(blueHero.Occupancy.HeroId));
                 Assert.That(controller.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
-                Assert.That(controller.PendingDefenseChoice.LegalDefenseOffers, Has.Count.EqualTo(2));
+                Assert.That(controller.PendingDefenseChoice.LegalDefenseOffers, Has.Count.EqualTo(5));
                 Assert.That(controller.CardStatus, Does.Contain("Defense response pending"));
                 Assert.That(controller.HighlightedCoordinates, Is.Empty);
                 Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
@@ -259,7 +254,7 @@ namespace GuardsDigital.Tests.EditMode
                     PrintedValueQuery.CalculatePrintedValue(
                         offer,
                         controller.VisibleCardDefinitions,
-                        PrintedValueChannel.Defense).Total == 3);
+                        PrintedValueChannel.Defense).Total == 4);
                 Assert.That(controller.TrySubmitDefenseCard(defenseOffer.SourceCardInstanceId), Is.True);
                 Assert.That(controller.IsDefenseResponsePending, Is.False);
                 Assert.That(controller.IsAttackOutcomePending, Is.False);
@@ -273,8 +268,8 @@ namespace GuardsDigital.Tests.EditMode
                     Has.No.Member(defenseOffer.SourceCardInstanceId));
                 Assert.That(blueDirectorHand.Instances, Has.All.Matches<CardInstance>(card =>
                     card.State.Location == CardLocation.Hand));
-                Assert.That(controller.CardStatus, Does.Contain("discarded for Defense 3"));
-                Assert.That(controller.CardStatus, Does.Contain("Attack 3 vs Defense 3"));
+                Assert.That(controller.CardStatus, Does.Contain("discarded for Defense 4"));
+                Assert.That(controller.CardStatus, Does.Contain("Attack 3 vs Defense 4"));
                 Assert.That(controller.CardStatus, Does.Contain("successfully defended"));
                 Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
                 {
@@ -288,7 +283,7 @@ namespace GuardsDigital.Tests.EditMode
                     CardActionResolutionEventKind.AttackSuccessfullyDefended,
                     CardActionResolutionEventKind.AttackResolutionCompleted
                 }));
-                Assert.That(controller.TrySelectCard(routeDrill.Id), Is.True,
+                Assert.That(controller.TrySelectCard(bulwark.Id), Is.True,
                     "Completing the Attack releases card selection for another action.");
                 Assert.That(controller.TrySelectHero(blueHero), Is.True,
                     "Completing the Attack releases actor selection.");
@@ -300,7 +295,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ObstacleCourse_ExposesTypedRangedAttackAndUsesSharedVisibleDefenseFlow()
+        public void RedLancer_ExposesTypedRangedAttackAndUsesSharedVisibleDefenseFlow()
         {
             var objects = new List<GameObject>();
             try
@@ -338,9 +333,9 @@ namespace GuardsDigital.Tests.EditMode
                 controller.ConfigureCardDrivenMovement(true);
                 blueSelector.Configure(controller);
 
-                var obstacleCourse = controller.VisibleCardInstances.Single(card =>
-                    card.Id.Value == "red-obstacle-course-card");
-                Assert.That(controller.TrySelectCard(obstacleCourse.Id), Is.True);
+                var lancer = controller.VisibleCardInstances.Single(card =>
+                    card.Id.Value == "red-lancer-card");
+                Assert.That(controller.TrySelectCard(lancer.Id), Is.True);
                 var rangedOffer = controller.SelectedCardOffers.Single(offer =>
                     offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-ranged-attack")));
                 Assert.That(rangedOffer.AttackRange, Is.EqualTo(AttackRangeKind.Ranged));
@@ -351,11 +346,11 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(PrintedValueQuery.CalculatePrintedValue(
                     rangedOffer,
                     controller.VisibleCardDefinitions,
-                    PrintedValueChannel.Range).Total, Is.EqualTo(2));
+                    PrintedValueChannel.Range).Total, Is.EqualTo(3));
 
                 Assert.That(controller.TrySelectAction(rangedOffer.ActionDefinitionId), Is.True);
                 Assert.That(controller.IsAttackTargetPending, Is.True);
-                Assert.That(controller.CardStatus, Does.Contain("Ranged Attack 2 Range 2"));
+                Assert.That(controller.CardStatus, Does.Contain("Ranged Attack 2 Range 3"));
                 Assert.That(controller.CardStatus, Does.Contain("within range"));
                 Assert.That(controller.HighlightedCoordinates, Is.EqualTo(new[] { blueHero.Coordinate }));
 
@@ -439,24 +434,23 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PrimaryOffer_TwoWaypointStepsRemainPendingUntilPlayerStops()
+        public void SecondaryOffer_WaypointRemainsPendingUntilPlayerStops()
         {
             var objects = new List<GameObject>();
             try
             {
                 var scenario = CreateScenario(objects, 99, true);
                 var firstDestination = new HexCoordinate(-1, 0);
-                var secondDestination = new HexCoordinate(-2, 0);
-                var selectedCard = scenario.Controller.VisibleCardInstances[1];
+                var selectedCard = scenario.Controller.VisibleCardInstances[3];
 
                 scenario.Controller.TrySelectCard(selectedCard.Id);
-                scenario.Controller.TrySelectAction(new ActionDefinitionId("primary-movement"));
+                scenario.Controller.TrySelectAction(new ActionDefinitionId("secondary-movement"));
                 var expectedChoices = MovementReachabilityQuery.FindReachableDestinations(
                     scenario.Hero.Occupancy,
                     scenario.Tiles.Select(tile => tile.Coordinate),
                     new[] { scenario.Hero.Occupancy },
                     scenario.Obstacles.Select(obstacle => obstacle.Occupancy),
-                    3);
+                    2);
 
                 Assert.That(scenario.Controller.PendingCardDestinations.Select(choice => choice.Destination),
                     Is.EquivalentTo(expectedChoices.Select(choice => choice.Destination)));
@@ -466,24 +460,16 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(scenario.Controller.CurrentHeroOccupancy.Coordinate, Is.EqualTo(firstDestination));
                 Assert.That(scenario.Controller.CardMovementRoute,
                     Is.EqualTo(new[] { new HexCoordinate(0, 0), firstDestination }));
-                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(2));
+                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
                 Assert.That(scenario.Controller.PendingCardChoice.Origin, Is.EqualTo(firstDestination));
                 Assert.That(scenario.Controller.IsCardResolutionPending, Is.True);
                 Assert.That(scenario.Controller.SelectedCardInstanceId, Is.EqualTo(selectedCard.Id));
                 Assert.That(scenario.Controller.SelectedActionOffer, Is.Not.Null);
                 Assert.That(scenario.Controller.HighlightedCoordinates,
                     Is.EquivalentTo(scenario.Controller.PendingCardDestinations.Select(choice => choice.Destination)));
-                Assert.That(scenario.Controller.TrySubmitCardDestination(secondDestination), Is.True);
-
-                Assert.That(scenario.Hero.Coordinate, Is.EqualTo(secondDestination));
-                Assert.That(scenario.Controller.CardMovementRoute,
-                    Is.EqualTo(new[] { new HexCoordinate(0, 0), firstDestination, secondDestination }));
-                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
-                Assert.That(scenario.Controller.PendingCardChoice.Origin, Is.EqualTo(secondDestination));
-                Assert.That(scenario.Controller.IsCardResolutionPending, Is.True);
                 Assert.That(scenario.Controller.TryStopCardMovement(), Is.True);
 
-                Assert.That(scenario.Hero.Coordinate, Is.EqualTo(secondDestination));
+                Assert.That(scenario.Hero.Coordinate, Is.EqualTo(firstDestination));
                 Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
                 Assert.That(scenario.Controller.IsCardResolutionPending, Is.False);
                 Assert.That(scenario.Controller.SelectedCardInstanceId, Is.Null);
@@ -493,8 +479,6 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(new[]
                     {
                         CardActionResolutionEventKind.MovementActionStarted,
-                        CardActionResolutionEventKind.MovementChoiceRequested,
-                        CardActionResolutionEventKind.MovementStepCommitted,
                         CardActionResolutionEventKind.MovementChoiceRequested,
                         CardActionResolutionEventKind.MovementStepCommitted,
                         CardActionResolutionEventKind.MovementChoiceRequested,
@@ -517,12 +501,12 @@ namespace GuardsDigital.Tests.EditMode
                 var origin = scenario.Hero.Coordinate;
 
                 scenario.Controller.TrySelectCard(scenario.Controller.VisibleCardInstances[0].Id);
-                scenario.Controller.TrySelectAction(new ActionDefinitionId("primary-movement"));
+                scenario.Controller.TrySelectAction(new ActionDefinitionId("secondary-movement"));
                 Assert.That(scenario.Controller.TryStopCardMovement(), Is.True);
 
                 Assert.That(scenario.Hero.Coordinate, Is.EqualTo(origin));
                 Assert.That(scenario.Controller.CardMovementRoute, Is.EqualTo(new[] { origin }));
-                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(3));
+                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
                 Assert.That(scenario.Controller.IsCardResolutionPending, Is.False);
                 Assert.That(scenario.Controller.HighlightedCoordinates, Is.Empty);
             }
@@ -541,7 +525,7 @@ namespace GuardsDigital.Tests.EditMode
                 var scenario = CreateScenario(objects, 99, true);
                 var origin = scenario.Hero.Coordinate;
                 scenario.Controller.TrySelectCard(scenario.Controller.VisibleCardInstances[0].Id);
-                scenario.Controller.TrySelectAction(new ActionDefinitionId("primary-movement"));
+                scenario.Controller.TrySelectAction(new ActionDefinitionId("secondary-movement"));
                 var pending = scenario.Controller.PendingCardChoice;
                 var legalDestination = pending.LegalDestinations[0].Destination;
 
@@ -567,21 +551,21 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PointerDestination_SubmitsPendingChoiceAndCommitsObstacleDetour()
+        public void PointerDestination_SubmitsPendingChoiceAndCommitsTwoStepRoute()
         {
             var objects = new List<GameObject>();
             try
             {
                 var scenario = CreateScenario(objects, 99, true);
-                var destination = new HexCoordinate(2, 0);
+                var destination = new HexCoordinate(-2, 0);
                 var destinationTile = scenario.Tiles.Single(tile => tile.Coordinate.Equals(destination));
                 var inputObject = new GameObject("Pointer Input");
                 objects.Add(inputObject);
                 var pointerInput = inputObject.AddComponent<PrimitiveHeroPointerInput>();
                 pointerInput.Configure(null, new PrimitiveHeroPointerSelector[0]);
 
-                scenario.Controller.TrySelectCard(scenario.Controller.VisibleCardInstances[0].Id);
-                scenario.Controller.TrySelectAction(new ActionDefinitionId("primary-movement"));
+                scenario.Controller.TrySelectCard(scenario.Controller.VisibleCardInstances[3].Id);
+                scenario.Controller.TrySelectAction(new ActionDefinitionId("secondary-movement"));
                 var handled = pointerInput.TryHandlePointerRay(
                     new Ray(destinationTile.transform.position + (Vector3.up * 2f), Vector3.down));
 
@@ -590,8 +574,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(scenario.Controller.CardMovementRoute, Is.EqualTo(new[]
                 {
                     new HexCoordinate(0, 0),
-                    new HexCoordinate(1, -1),
-                    new HexCoordinate(2, -1),
+                    new HexCoordinate(-1, 0),
                     destination
                 }));
                 Assert.That(scenario.Controller.IsCardResolutionPending, Is.False);
@@ -609,8 +592,8 @@ namespace GuardsDigital.Tests.EditMode
             try
             {
                 var scenario = CreateTurnScenario(objects);
-                var redCard = scenario.Configuration.RedHand.Instances[0];
-                var blueCard = scenario.Configuration.BlueHand.Instances[1];
+                var redCard = scenario.Configuration.RedHand.Instances[3];
+                var blueCard = scenario.Configuration.BlueHand.Instances[4];
 
                 Assert.That(scenario.Controller.TrySelectDirectorCard(redCard.Id), Is.True);
                 Assert.That(scenario.Controller.TryConfirmSelectedTurnCard(), Is.True);
@@ -624,14 +607,13 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(scenario.Controller.SelectedCardOffers.Select(offer =>
                     offer.ActionDefinitionId.Value), Is.EquivalentTo(new[]
                 {
-                    "primary-movement",
                     "secondary-movement",
                     "primary-attack"
                 }));
 
                 Assert.That(scenario.Controller.TrySelectAction(
-                    new ActionDefinitionId("primary-movement")), Is.True);
-                var destination = new HexCoordinate(2, 0);
+                    new ActionDefinitionId("secondary-movement")), Is.True);
+                var destination = new HexCoordinate(-1, -1);
                 Assert.That(scenario.Controller.PendingCardDestinations.Any(candidate =>
                     candidate.Destination.Equals(destination)), Is.True);
                 Assert.That(scenario.Controller.TrySubmitCardDestination(destination), Is.True);
@@ -658,13 +640,13 @@ namespace GuardsDigital.Tests.EditMode
             try
             {
                 var scenario = CreateTurnScenario(objects);
-                var redCard = scenario.Configuration.RedHand.Instances[0];
-                var blueCard = scenario.Configuration.BlueHand.Instances[1];
+                var redCard = scenario.Configuration.RedHand.Instances[3];
+                var blueCard = scenario.Configuration.BlueHand.Instances[4];
                 scenario.Controller.TrySelectDirectorCard(redCard.Id);
                 scenario.Controller.TryConfirmSelectedTurnCard();
                 scenario.Controller.TrySelectDirectorCard(blueCard.Id);
                 scenario.Controller.TryConfirmSelectedTurnCard();
-                scenario.Controller.TrySelectAction(new ActionDefinitionId("primary-movement"));
+                scenario.Controller.TrySelectAction(new ActionDefinitionId("secondary-movement"));
                 var pending = scenario.Controller.PendingCardChoice;
                 var origin = scenario.RedHero.Occupancy;
                 var highlights = scenario.Controller.HighlightedCoordinates.ToArray();
@@ -732,7 +714,7 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(blueTurnCard.Id));
                 Assert.That(scenario.Controller.ActiveHeroView, Is.SameAs(scenario.BlueHero));
                 Assert.That(scenario.Controller.SelectedCardInstanceId, Is.EqualTo(blueTurnCard.Id));
-                Assert.That(scenario.Controller.CardStatus, Does.Contain("Attack 3 vs Defense 2: attack successful"));
+                Assert.That(scenario.Controller.CardStatus, Does.Contain("Attack 2 vs Defense 2: successfully defended"));
                 Assert.That(scenario.Controller.CardStatus, Does.Contain("[B] BLUE"));
                 Assert.That(scenario.Controller.CardResolutionEvents.Any(ruleEvent =>
                     ruleEvent.Kind == CardActionResolutionEventKind.AttackResolutionCompleted), Is.True);

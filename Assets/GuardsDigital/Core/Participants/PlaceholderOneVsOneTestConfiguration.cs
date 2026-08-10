@@ -33,8 +33,9 @@ namespace GuardsDigital.Core.Participants
                 participants.GetHero(instance.OwnerId);
             }
 
-            CardInitialSetupValidator.Validate(redHand.Definitions, cardInstances);
-            CardDefinitions = redHand.Definitions;
+            var cardDefinitions = redHand.Definitions.Concat(blueHand.Definitions).ToArray();
+            CardInitialSetupValidator.Validate(cardDefinitions, cardInstances);
+            CardDefinitions = Array.AsReadOnly(cardDefinitions);
             CardInstances = Array.AsReadOnly(cardInstances);
         }
 
@@ -66,14 +67,10 @@ namespace GuardsDigital.Core.Participants
             TieBreakerState tieBreakerState)
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
-            var redHand = PlaceholderMovementHand.Create(
-                new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
-                new CardInstanceId("red-route-drill-card"),
-                new CardInstanceId("red-obstacle-course-card"));
-            var blueHand = PlaceholderMovementHand.Create(
-                new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
-                new CardInstanceId("blue-route-drill-card"),
-                new CardInstanceId("blue-obstacle-course-card"));
+            var redHand = PlaceholderMovementHand.CreateRed(
+                new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue));
+            var blueHand = PlaceholderMovementHand.CreateBlue(
+                new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue));
 
             return new PlaceholderOneVsOneTestConfiguration(
                 participants,

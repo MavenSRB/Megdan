@@ -183,7 +183,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             var redHero = controller.ActiveHeroView;
             var redOrigin = redHero.Coordinate;
-            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-movement")), Is.True);
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("secondary-movement")), Is.True);
             var destination = controller.PendingCardDestinations
                 .OrderByDescending(candidate => candidate.Cost)
                 .First().Destination;
@@ -275,13 +275,13 @@ namespace GuardsDigital.Tests.PlayMode
             var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
             var origin = hero.Coordinate;
             var originOccupancy = hero.Occupancy;
-            var destination = new HexCoordinate(2, 0);
+            var destination = new HexCoordinate(-2, 0);
             var destinationTile = tiles.Single(tile => tile.Coordinate.Equals(destination));
 
-            var selectedCard = controller.VisibleCardInstances[0];
+            var selectedCard = controller.VisibleCardInstances[3];
             var selected = controller.TrySelectCard(selectedCard.Id);
             var selectedAction = controller.TrySelectAction(
-                new ActionDefinitionId("primary-movement"));
+                new ActionDefinitionId("secondary-movement"));
             var highlightedCoordinates = tiles
                 .Where(tile => tile.IsHighlighted)
                 .Select(tile => tile.Coordinate)
@@ -314,8 +314,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(controller.MovementRoute, Is.EqualTo(new[]
             {
                 origin,
-                new HexCoordinate(1, -1),
-                new HexCoordinate(2, -1),
+                new HexCoordinate(-1, 0),
                 destination
             }));
             Assert.That(hero.Coordinate, Is.EqualTo(destination));
@@ -353,7 +352,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(blueCards.All(card => card.OwnerId.Equals(blueHero.Occupancy.HeroId)), Is.True);
             Assert.That(blueCards.All(card => card.Id.Value.StartsWith("blue-")), Is.True);
             Assert.That(blueCards.Select(card => card.Id).Intersect(redCardIds), Is.Empty);
-            Assert.That(controller.TrySelectCard(blueCards[0].Id), Is.True);
+            Assert.That(controller.TrySelectCard(blueCards[1].Id), Is.True);
             Assert.That(controller.TrySelectAction(
                 new ActionDefinitionId("secondary-movement")), Is.True);
             Assert.That(controller.PendingCardChoice.Origin, Is.EqualTo(blueOrigin));
@@ -394,10 +393,10 @@ namespace GuardsDigital.Tests.PlayMode
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
             var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var routeDrill = controller.VisibleCardInstances.Single(card =>
-                card.Id.Value == "red-route-drill-card");
+            var bulwark = controller.VisibleCardInstances.Single(card =>
+                card.Id.Value == "red-bulwark-card");
 
-            Assert.That(controller.TrySelectCard(routeDrill.Id), Is.True);
+            Assert.That(controller.TrySelectCard(bulwark.Id), Is.True);
             Assert.That(
                 controller.SelectedCardOffers.Select(offer => offer.ActionDefinitionId.Value),
                 Has.Member("primary-attack"));
@@ -431,7 +430,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_ClicksTwoPartialMovementWaypointsThenStopsWithAllowanceRemaining()
+        public IEnumerator Scene_ClicksPartialMovementWaypointThenStopsWithAllowanceRemaining()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(loadOperation, Is.Not.Null);
@@ -449,35 +448,28 @@ namespace GuardsDigital.Tests.PlayMode
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             var origin = hero.Coordinate;
             var firstDestination = new HexCoordinate(-1, 0);
-            var secondDestination = new HexCoordinate(-2, 0);
 
-            Assert.That(controller.TrySelectCard(controller.VisibleCardInstances[0].Id), Is.True);
-            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-movement")), Is.True);
+            Assert.That(controller.TrySelectCard(controller.VisibleCardInstances[3].Id), Is.True);
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("secondary-movement")), Is.True);
             Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(
                 tiles.Single(tile => tile.Coordinate.Equals(firstDestination)).transform.position)), Is.True);
             Assert.That(controller.IsMovementSessionActive, Is.True);
-            Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(2));
+            Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(1));
             Assert.That(controller.PendingCardChoice.Origin, Is.EqualTo(firstDestination));
             Assert.That(tiles.Where(tile => tile.IsHighlighted).Select(tile => tile.Coordinate),
                 Is.EquivalentTo(controller.PendingCardDestinations.Select(destination => destination.Destination)));
 
-            Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(
-                tiles.Single(tile => tile.Coordinate.Equals(secondDestination)).transform.position)), Is.True);
-            Assert.That(hero.Coordinate, Is.EqualTo(secondDestination));
-            Assert.That(controller.IsMovementSessionActive, Is.True);
-            Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(1));
             Assert.That(controller.MovementRoute, Is.EqualTo(new[]
             {
                 origin,
-                firstDestination,
-                secondDestination
+                firstDestination
             }));
             Assert.That(controller.TryStopCardMovement(), Is.True);
 
             Physics.SyncTransforms();
             yield return null;
 
-            Assert.That(hero.Coordinate, Is.EqualTo(secondDestination));
+            Assert.That(hero.Coordinate, Is.EqualTo(firstDestination));
             Assert.That(controller.IsMovementSessionActive, Is.False);
             Assert.That(controller.RemainingMovementAllowance, Is.EqualTo(1));
             Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
