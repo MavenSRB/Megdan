@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Cards
@@ -49,6 +50,27 @@ namespace GuardsDigital.Core.Cards
         public static PlaceholderMovementHand CreateBlue(HeroId ownerId)
         {
             return Create(ownerId, BlueProfiles, null);
+        }
+
+        internal static PlaceholderMovementHand Restore(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances)
+        {
+            if (definitions == null) throw new ArgumentNullException(nameof(definitions));
+            if (instances == null) throw new ArgumentNullException(nameof(instances));
+            var definitionArray = definitions.ToArray();
+            var instanceArray = instances.ToArray();
+            if (definitionArray.Length == 0 || instanceArray.Length == 0 ||
+                instanceArray.Select(instance => instance.OwnerId).Distinct().Count() != 1 ||
+                instanceArray.Any(instance => !definitionArray.Any(definition =>
+                    definition.Reference.Equals(instance.DefinitionReference))))
+            {
+                throw new ArgumentException("A restored placeholder hand requires one owner's definition-backed cards.");
+            }
+
+            return new PlaceholderMovementHand(
+                Array.AsReadOnly(definitionArray),
+                Array.AsReadOnly(instanceArray));
         }
 
         private static PlaceholderMovementHand Create(

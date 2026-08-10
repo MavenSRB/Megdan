@@ -553,6 +553,72 @@ namespace GuardsDigital.Core.Cards
 
         public TurnResolutionAuthority CurrentTurnAuthority { get; private set; }
 
+        internal IReadOnlyList<CardDefinition> Definitions => definitions;
+
+        internal IReadOnlyList<CardInstance> Instances => instances;
+
+        internal MatchParticipants Participants => participants;
+
+        internal CardActionResolutionAuthority CardActions => cardActions;
+
+        internal static RoundResolutionAuthority Restore(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            TieBreakerState tieBreakerState,
+            int roundIndex,
+            int turnIndex,
+            RoundResolutionPhase phase,
+            IEnumerable<RoundTurnSlot> turnSlots,
+            IEnumerable<CompletedRoundRecord> completedRounds,
+            EndOfRoundStage? currentEndOfRoundStage,
+            IEnumerable<EndOfRoundStageOutcome> endOfRoundOutcomes,
+            TurnCardCommitmentAuthority commitmentAuthority,
+            TurnResolutionAuthority turnAuthority,
+            CardActionResolutionAuthority cardActions)
+        {
+            var authority = new RoundResolutionAuthority(
+                definitions,
+                instances,
+                participants,
+                tieBreakerState,
+                roundIndex,
+                cardActions);
+            if (turnIndex < 1 || turnIndex > TurnsPerRound || !Enum.IsDefined(typeof(RoundResolutionPhase), phase))
+            {
+                throw new ArgumentException("Restored round cursor is invalid.");
+            }
+
+            authority.RoundIndex = roundIndex;
+            authority.TurnIndex = turnIndex;
+            authority.Phase = phase;
+            authority.tieBreakerState = tieBreakerState;
+            authority.turnSlots.Clear();
+            authority.turnSlots.AddRange(turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)));
+            authority.completedRounds.Clear();
+            authority.completedRounds.AddRange(completedRounds ?? throw new ArgumentNullException(nameof(completedRounds)));
+            authority.endOfRoundOutcomes.Clear();
+            authority.endOfRoundOutcomes.AddRange(endOfRoundOutcomes ?? throw new ArgumentNullException(nameof(endOfRoundOutcomes)));
+            authority.CurrentEndOfRoundStage = currentEndOfRoundStage;
+            authority.CurrentCommitmentAuthority = commitmentAuthority;
+            authority.CurrentTurnAuthority = turnAuthority;
+
+            var awaitingShape = phase == RoundResolutionPhase.AwaitingCommitments &&
+                commitmentAuthority != null && turnAuthority == null && !currentEndOfRoundStage.HasValue;
+            var resolvingShape = phase == RoundResolutionPhase.ResolvingTurn &&
+                commitmentAuthority != null && turnAuthority != null && !turnAuthority.IsEnded &&
+                !currentEndOfRoundStage.HasValue;
+            var endShape = (phase == RoundResolutionPhase.EndOfRound || phase == RoundResolutionPhase.GameEnded) &&
+                commitmentAuthority != null && turnAuthority != null && turnAuthority.IsEnded &&
+                currentEndOfRoundStage.HasValue;
+            if (!awaitingShape && !resolvingShape && !endShape)
+            {
+                throw new ArgumentException("Restored round phase does not match its active authority or cursor.");
+            }
+
+            return authority;
+        }
+
         public RoundResolutionResult TryCommitCard(HeroId heroId, CardInstanceId cardInstanceId)
         {
             return ExecuteCommitment(() => CurrentCommitmentAuthority.TryCommitCard(

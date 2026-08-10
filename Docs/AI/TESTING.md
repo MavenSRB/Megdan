@@ -740,6 +740,14 @@ Expected result: one authoritative resumable cursor records the ordered Minion B
 
 Milestone 3.8c evidence passed focused pure Edit Mode 17/17, focused integrated Edit Mode 36/36, directly affected Edit Mode 193/193, and saved-scene Play Mode 11/11 with zero failed, skipped, or inconclusive cases. The final runs registered the healthy 39-package baseline. Source/layout inspection confirmed the continuation control shares the existing action row inside the bounded HUD; the batch path did not provide a reliable framebuffer capture, so no screenshot evidence is claimed. Complete unfiltered suites were intentionally omitted because the affected consumers are enumerated and milestone 3.11 remains the Phase 3 gate.
 
+## Authoritative snapshot serialization and restore tests
+
+Run `AuthoritativeSnapshotSerializerTests` and `CardDrivenMovementPresentationTests` together and write outputs to `tmp/milestone-3-9-focused-results.xml` and `tmp/milestone-3-9-focused.log`. For directly affected Edit Mode coverage, run `AuthoritativeSnapshotSerializerTests`, `RoundResolutionAuthorityTests`, `TurnResolutionAuthorityTests`, `InitiativeResolutionAuthorityTests`, `TurnCardCommitmentAuthorityTests`, `CardLifecycleAuthorityTests`, `CardDefinitionInstanceTests`, `MatchParticipantsTests`, `CardActionResolutionAuthorityTests`, `AttackActionResolutionAuthorityTests`, `CardDrivenMovementPresentationTests`, `DirectorHandPresentationTests`, `HeroSelectionControllerTests`, and `MinimalHexGridSceneTests`; write outputs to `tmp/milestone-3-9-affected-results.xml` and `tmp/milestone-3-9-affected.log`. Run `MinimalHexGridPlayModeTests` and write outputs to `tmp/milestone-3-9-play-results.xml` and `tmp/milestone-3-9-play.log`.
+
+Expected result: deterministic schema-versioned round trips preserve participants, the enforced one-player/one-hero relationship, Tie Breaker/Initiative state, current and completed collection-backed round assignments, end-of-round cursor/outcomes, board/obstacle occupancy, definition references, every card-state facet, partial commitments, and pending Movement or Attack/Defense continuations. Unchanged restored state serializes identically; schema and definition content-revision mismatches reject with distinct reasons. Resumed target and Defense commands produce the same ordered events, and the validation controller rebuilds restored hands, occupancies, pending highlights, and status from authority.
+
+Milestone 3.9 T2 evidence passed focused Edit Mode 21/21, directly affected Edit Mode 154/154, and saved-scene Play Mode 11/11 with zero failed, skipped, or inconclusive cases. The healthy 39-package baseline was registered. Complete unfiltered suites were intentionally omitted because this introduces schema version 1 rather than migrating an existing schema, affected consumers are enumerated, and milestone 3.11 remains the Phase 3 T3 gate.
+
 ## Action-offer and printed-value focused Edit Mode tests
 
 ```powershell

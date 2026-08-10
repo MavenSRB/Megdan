@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Units.Heroes;
 using UnityEngine;
@@ -292,6 +293,74 @@ namespace GuardsDigital.Presentation.Interaction
             turnResolutionEvents.Clear();
             ResetCardDrivenMovementPresentation();
             InitializeCardDrivenMovementIfEnabled();
+        }
+
+        public string CaptureAuthoritativeSnapshot()
+        {
+            InitializeCardDrivenMovementIfEnabled();
+            if (roundResolutionAuthority == null || moveAuthority == null)
+            {
+                throw new InvalidOperationException("The visible authoritative match is not initialized.");
+            }
+
+            return AuthoritativeSnapshotSerializer.Serialize(roundResolutionAuthority, moveAuthority);
+        }
+
+        public void RestoreAuthoritativeSnapshot(string payload)
+        {
+            InitializeCardDrivenMovementIfEnabled();
+            if (placeholderConfiguration == null)
+            {
+                throw new InvalidOperationException("The visible placeholder rules content is not initialized.");
+            }
+
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                payload,
+                placeholderConfiguration.CardDefinitions);
+            placeholderConfiguration = PlaceholderOneVsOneTestConfiguration.Restore(
+                restored.Participants,
+                placeholderConfiguration.CardDefinitions,
+                restored.Cards,
+                restored.Round.TieBreakerState);
+            placeholderParticipants = restored.Participants;
+            placeholderHands.Clear();
+            placeholderHands[placeholderConfiguration.RedHand.Instances[0].OwnerId] = placeholderConfiguration.RedHand;
+            placeholderHands[placeholderConfiguration.BlueHand.Instances[0].OwnerId] = placeholderConfiguration.BlueHand;
+            placeholderOneVsOneHandsInitialized = true;
+            moveAuthority = restored.Board;
+            cardResolutionAuthority = restored.CardActions;
+            roundResolutionAuthority = restored.Round;
+            selectedCardInstanceId = null;
+            selectedActionOffer = null;
+            cardResolutionEvents.Clear();
+            turnCardCommitmentEvents.Clear();
+            turnResolutionEvents.Clear();
+            roundResolutionEvents.Clear();
+            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
+            LastTurnRejectionReason = TurnResolutionRejectionReason.None;
+            LastRoundRejectionReason = RoundResolutionRejectionReason.None;
+            LastAttackOutcome = AttackResolutionOutcome.None;
+
+            foreach (var view in new[] { heroView }.Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>()).Where(view => view != null))
+            {
+                var occupancy = restored.Board.Occupancies.Single(value => value.HeroId.Equals(view.Occupancy.HeroId));
+                view.Configure(occupancy, view.OuterRadius);
+            }
+            foreach (var view in obstacleViews ?? Array.Empty<GuardsDigital.Presentation.Board.PlaceholderObstacleView>())
+            {
+                if (view == null) continue;
+                var occupancy = restored.Board.ObstacleOccupancies.Single(value => value.ObstacleId.Equals(view.Occupancy.ObstacleId));
+                view.Configure(occupancy, view.OuterRadius);
+            }
+
+            placeholderHand = heroView != null && placeholderHands.TryGetValue(heroView.Occupancy.HeroId, out var activeHand)
+                ? activeHand
+                : null;
+            ClearSelectionVisuals();
+            if (PendingCardChoice != null) RefreshCardChoiceHighlights(PendingCardChoice);
+            if (PendingAttackTargetChoice != null) RefreshAttackTargetHighlights(PendingAttackTargetChoice);
+            cardStatus = $"Restored round {VisibleRoundIndex}, turn {VisibleTurnIndex}/{RoundResolutionAuthority.TurnsPerRound}: " +
+                $"{VisibleRoundPhase}.";
         }
 
         public bool TrySelectCard(CardInstanceId cardInstanceId)

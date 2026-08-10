@@ -220,7 +220,7 @@ namespace GuardsDigital.Core.Cards
         private readonly IReadOnlyList<CardDefinition> definitions;
         private readonly IReadOnlyList<CardInstance> instances;
         private readonly MatchParticipants participants;
-        private readonly InitiativeResolutionAuthority initiative;
+        private InitiativeResolutionAuthority initiative;
         private readonly CardActionResolutionAuthority cardActions;
 
         public TurnResolutionAuthority(
@@ -292,6 +292,41 @@ namespace GuardsDigital.Core.Cards
         public PendingAttackTargetChoice PendingAttackTargetChoice => cardActions?.PendingAttackTargetChoice;
 
         public PendingDefenseResponseChoice PendingDefenseChoice => cardActions?.PendingDefenseChoice;
+
+        internal CardActionResolutionAuthority CardActions => cardActions;
+
+        internal static TurnResolutionAuthority Restore(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            CardActionResolutionAuthority cardActions,
+            bool isStarted,
+            bool isEnded,
+            TieBreakerState tieBreakerState,
+            PendingInitiativeChoice pendingChoice,
+            SelectedInitiativeActor selectedActor)
+        {
+            var authority = new TurnResolutionAuthority(
+                definitions,
+                instances,
+                participants,
+                tieBreakerState,
+                cardActions)
+            {
+                IsStarted = isStarted,
+                IsEnded = isEnded,
+                initiative = InitiativeResolutionAuthority.Restore(
+                    tieBreakerState,
+                    pendingChoice,
+                    selectedActor)
+            };
+            if (!isStarted || (!isEnded && pendingChoice == null && !selectedActor.IsDefined))
+            {
+                throw new ArgumentException("Restored active turn state is incomplete.");
+            }
+
+            return authority;
+        }
 
         public TurnResolutionResult TryStart()
         {

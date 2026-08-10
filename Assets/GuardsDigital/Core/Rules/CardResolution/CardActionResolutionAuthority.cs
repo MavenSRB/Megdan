@@ -74,6 +74,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return authority;
         }
 
+        public static CardActionResolutionAuthority Restore(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            PendingCardActionResolution pendingResolution)
+        {
+            if (pendingResolution == null)
+            {
+                throw new ArgumentNullException(nameof(pendingResolution));
+            }
+
+            var authority = new CardActionResolutionAuthority(adjacentMoveAuthority);
+            var movementSession = new MovementSession(adjacentMoveAuthority, pendingResolution.MovementSessionState);
+            return Restore(
+                adjacentMoveAuthority,
+                pendingResolution,
+                authority.CreatePendingChoice(pendingResolution, movementSession));
+        }
+
         public CardActionResolutionResult StartMovementResolution(
             ActionResolutionId resolutionId,
             ActionOffer offer,
@@ -869,6 +886,58 @@ namespace GuardsDigital.Core.Rules.CardResolution
             authority.pendingAttackTargetChoice = pendingTargetChoice;
             authority.pendingDefenseChoice = pendingDefenseChoice;
             return authority;
+        }
+
+        public static CardActionResolutionAuthority RestoreAttack(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            PendingAttackResolution pendingResolution,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants)
+        {
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var authority = new CardActionResolutionAuthority(adjacentMoveAuthority);
+            var offer = FindPendingAttackOffer(pendingResolution, materializedDefinitions, materializedInstances);
+            if (!offer.HasValue)
+            {
+                throw new ArgumentException("Pending Attack resolution no longer references an available offer.", nameof(pendingResolution));
+            }
+
+            PendingAttackTargetChoice targetChoice = null;
+            PendingDefenseResponseChoice defenseChoice = null;
+            if (pendingResolution.Phase == AttackResolutionPhase.ChooseTarget)
+            {
+                targetChoice = authority.CreateAttackTargetChoice(
+                    pendingResolution, offer.Value, materializedDefinitions, participants);
+            }
+            else if (pendingResolution.Phase == AttackResolutionPhase.DefenseResponse)
+            {
+                var defenseOffers = ActionOfferQuery.GetAvailableOffers(
+                        materializedDefinitions,
+                        materializedInstances,
+                        pendingResolution.TargetHeroId,
+                        ActionOfferWindow.Reaction)
+                    .Where(candidate => FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
+                    .ToArray();
+                defenseChoice = new PendingDefenseResponseChoice(
+                    pendingResolution.ResolutionId,
+                    pendingResolution.CurrentStepId,
+                    pendingResolution.TargetHeroId,
+                    pendingResolution.ActorId,
+                    pendingResolution.AttackTotal,
+                    defenseOffers,
+                    true);
+            }
+
+            return RestoreAttack(
+                adjacentMoveAuthority,
+                pendingResolution,
+                targetChoice,
+                defenseChoice,
+                materializedDefinitions,
+                materializedInstances,
+                participants);
         }
 
         private AttackActionResolutionResult RejectAttack(CardActionResolutionRejectionReason reason)

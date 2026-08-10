@@ -13,7 +13,8 @@ namespace GuardsDigital.Core.Participants
             MatchParticipants participants,
             PlaceholderMovementHand redHand,
             PlaceholderMovementHand blueHand,
-            TieBreakerState tieBreakerState)
+            TieBreakerState tieBreakerState,
+            bool validateInitialCardState = true)
         {
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
             RedHand = redHand ?? throw new ArgumentNullException(nameof(redHand));
@@ -34,7 +35,10 @@ namespace GuardsDigital.Core.Participants
             }
 
             var cardDefinitions = redHand.Definitions.Concat(blueHand.Definitions).ToArray();
-            CardInitialSetupValidator.Validate(cardDefinitions, cardInstances);
+            if (validateInitialCardState)
+            {
+                CardInitialSetupValidator.Validate(cardDefinitions, cardInstances);
+            }
             CardDefinitions = Array.AsReadOnly(cardDefinitions);
             CardInstances = Array.AsReadOnly(cardInstances);
         }
@@ -61,6 +65,37 @@ namespace GuardsDigital.Core.Participants
         {
             return Create(
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide));
+        }
+
+        public static PlaceholderOneVsOneTestConfiguration Restore(
+            MatchParticipants participants,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            TieBreakerState tieBreakerState)
+        {
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            var definitionArray = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var instanceArray = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var redHero = participants.Heroes.Single(hero =>
+                participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            var blueHero = participants.Heroes.Single(hero =>
+                participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue).Id;
+            PlaceholderMovementHand BuildHand(HeroId ownerId)
+            {
+                var ownedInstances = instanceArray.Where(instance => instance.OwnerId.Equals(ownerId)).ToArray();
+                var ownedReferences = new HashSet<CardDefinitionReference>(
+                    ownedInstances.Select(instance => instance.DefinitionReference));
+                return PlaceholderMovementHand.Restore(
+                    definitionArray.Where(definition => ownedReferences.Contains(definition.Reference)),
+                    ownedInstances);
+            }
+
+            return new PlaceholderOneVsOneTestConfiguration(
+                participants,
+                BuildHand(redHero),
+                BuildHand(blueHero),
+                tieBreakerState,
+                false);
         }
 
         private static PlaceholderOneVsOneTestConfiguration Create(

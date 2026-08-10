@@ -899,6 +899,42 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void ValidationController_RestoresSnapshotAndRebuildsPendingMovementPresentation()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects, true);
+                var red = scenario.Configuration.RedHand.Instances[3];
+                var blue = scenario.Configuration.BlueHand.Instances[4];
+                CommitTurn(scenario.Controller, red, blue);
+                Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(red.Id));
+                Assert.That(scenario.Controller.TrySelectAction(
+                    new ActionDefinitionId("secondary-movement")), Is.True);
+                var origin = scenario.RedHero.Occupancy;
+                var pending = scenario.Controller.PendingCardChoice;
+                var destination = pending.LegalDestinations.First(candidate => candidate.Cost == 1).Destination;
+                var payload = scenario.Controller.CaptureAuthoritativeSnapshot();
+
+                Assert.That(scenario.Controller.TrySubmitCardDestination(destination), Is.True);
+                Assert.That(scenario.RedHero.Occupancy, Is.Not.EqualTo(origin));
+                scenario.Controller.RestoreAuthoritativeSnapshot(payload);
+
+                Assert.That(scenario.RedHero.Occupancy, Is.EqualTo(origin));
+                Assert.That(scenario.Controller.IsCardMovementResolutionPending, Is.True);
+                Assert.That(scenario.Controller.PendingCardDestinations.Select(candidate => candidate.Destination),
+                    Does.Contain(destination));
+                Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(red.Id));
+                Assert.That(scenario.Controller.CardStatus, Does.Contain("Restored round 1, turn 1"));
+                Assert.That(scenario.Controller.TrySubmitCardDestination(destination), Is.True);
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
         private static void CommitTurn(
             HeroSelectionController controller,
             CardInstance redCard,

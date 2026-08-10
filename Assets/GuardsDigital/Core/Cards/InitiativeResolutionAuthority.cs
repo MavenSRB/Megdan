@@ -188,6 +188,24 @@ namespace GuardsDigital.Core.Cards
 
         public SelectedInitiativeActor SelectedActor { get; private set; }
 
+        internal static InitiativeResolutionAuthority Restore(
+            TieBreakerState tieBreakerState,
+            PendingInitiativeChoice pendingChoice,
+            SelectedInitiativeActor selectedActor)
+        {
+            if (pendingChoice != null && selectedActor.IsDefined)
+            {
+                throw new ArgumentException("Restored Initiative state cannot contain both a pending choice and selected actor.");
+            }
+
+            var authority = new InitiativeResolutionAuthority(tieBreakerState)
+            {
+                PendingChoice = pendingChoice,
+                SelectedActor = selectedActor
+            };
+            return authority;
+        }
+
         public InitiativeResolutionResult TrySelectNextActor(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,

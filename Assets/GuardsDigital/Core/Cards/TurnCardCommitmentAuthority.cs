@@ -170,6 +170,47 @@ namespace GuardsDigital.Core.Cards
 
         public IReadOnlyList<HeroId> ExpectedHeroIds => expectedHeroIds;
 
+        internal IReadOnlyDictionary<HeroId, CardInstanceId> CommittedCards => committedCards;
+
+        internal IReadOnlyCollection<HeroId> PassedHeroes => passedHeroes;
+
+        internal static TurnCardCommitmentAuthority Restore(
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            IEnumerable<KeyValuePair<HeroId, CardInstanceId>> commitments,
+            IEnumerable<HeroId> passes,
+            bool isRevealed)
+        {
+            var authority = new TurnCardCommitmentAuthority(instances, participants);
+            foreach (var pair in commitments ?? throw new ArgumentNullException(nameof(commitments)))
+            {
+                if (!authority.IsExpectedHero(pair.Key) || !pair.Value.IsDefined ||
+                    authority.committedCards.ContainsKey(pair.Key))
+                {
+                    throw new ArgumentException("Restored commitments contain invalid or duplicate identities.", nameof(commitments));
+                }
+
+                authority.committedCards.Add(pair.Key, pair.Value);
+            }
+
+            foreach (var heroId in passes ?? throw new ArgumentNullException(nameof(passes)))
+            {
+                if (!authority.IsExpectedHero(heroId) || authority.committedCards.ContainsKey(heroId) ||
+                    !authority.passedHeroes.Add(heroId))
+                {
+                    throw new ArgumentException("Restored passes contain invalid or duplicate identities.", nameof(passes));
+                }
+            }
+
+            if (isRevealed && authority.expectedHeroIds.Any(heroId => !authority.HasResponded(heroId)))
+            {
+                throw new ArgumentException("A revealed restored commitment requires every hero response.", nameof(isRevealed));
+            }
+
+            authority.IsRevealed = isRevealed;
+            return authority;
+        }
+
         public TurnCardCommitmentStatus GetStatus(HeroId heroId)
         {
             if (!IsExpectedHero(heroId))
