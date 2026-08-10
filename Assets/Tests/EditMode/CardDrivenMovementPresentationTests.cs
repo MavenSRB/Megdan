@@ -725,6 +725,108 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void ValidationController_PlaysOneAuthoritativeFourTurnRoundAndRejectsPostRoundInput()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects, true);
+                var red = scenario.Configuration.RedHand.Instances;
+                var blue = scenario.Configuration.BlueHand.Instances;
+
+                CommitTurn(scenario.Controller, red[0], blue[0]);
+                Assert.That(scenario.Controller.TrySelectAction(
+                    new ActionDefinitionId("primary-attack")), Is.True,
+                    scenario.Controller.CardStatus);
+                Assert.That(scenario.Controller.TrySubmitAttackTarget(
+                    scenario.BlueHero.Occupancy.HeroId), Is.True);
+                Assert.That(scenario.Controller.TrySubmitDefenseCard(blue[4].Id), Is.True);
+                Assert.That(blue[4].State.Location, Is.EqualTo(CardLocation.DiscardPile));
+                Assert.That(scenario.Controller.VisibleDirectorHands[1].Instances,
+                    Has.No.Member(blue[4]));
+                Assert.That(scenario.Controller.TryPerformHold(blue[0].Id), Is.True);
+
+                Assert.That(scenario.Controller.VisibleTurnIndex, Is.EqualTo(2));
+                Assert.That(scenario.Controller.CompletedTurnSlots, Has.Count.EqualTo(1));
+                CommitTurn(scenario.Controller, red[3], blue[3]);
+                Assert.That(scenario.Controller.TrySelectAction(
+                    new ActionDefinitionId("secondary-movement")), Is.True);
+                var pendingMovement = scenario.Controller.PendingCardChoice;
+                var occupancyBeforeStaleInput = scenario.RedHero.Occupancy;
+                Assert.That(scenario.Controller.SubmitCardMovementChoice(
+                    MovementChoiceCommand.Stop(
+                        pendingMovement.ResolutionId,
+                        new ActionResolutionStepId("stale-round-controller-choice"))), Is.False);
+                Assert.That(scenario.Controller.LastRoundRejectionReason,
+                    Is.EqualTo(RoundResolutionRejectionReason.TurnCommandRejected));
+                Assert.That(scenario.RedHero.Occupancy, Is.EqualTo(occupancyBeforeStaleInput));
+                Assert.That(scenario.Controller.PendingCardChoice, Is.SameAs(pendingMovement));
+                var oneSpaceDestination = pendingMovement.LegalDestinations.First(candidate =>
+                    candidate.Cost == 1);
+                Assert.That(scenario.Controller.TrySubmitCardDestination(
+                    oneSpaceDestination.Destination), Is.True);
+                if (scenario.Controller.IsCardMovementResolutionPending)
+                {
+                    Assert.That(scenario.Controller.TryStopCardMovement(), Is.True);
+                }
+
+                Assert.That(scenario.Controller.TryPerformHold(blue[3].Id), Is.True);
+
+                CommitTurn(scenario.Controller, red[1], blue[1]);
+                Assert.That(scenario.Controller.CurrentTieBreakerState.RevealedSide,
+                    Is.EqualTo(TeamSide.Red));
+                Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId,
+                    Is.EqualTo(red[1].Id));
+                Assert.That(scenario.Controller.TryPerformHold(red[1].Id), Is.True);
+                Assert.That(scenario.Controller.CurrentTieBreakerState.RevealedSide,
+                    Is.EqualTo(TeamSide.Blue));
+                Assert.That(scenario.Controller.VisibleTurnActor.CardInstanceId,
+                    Is.EqualTo(blue[1].Id));
+                Assert.That(scenario.Controller.TryPerformHold(blue[1].Id), Is.True);
+
+                CommitTurn(scenario.Controller, red[2], blue[2]);
+                Assert.That(scenario.Controller.TryPerformHold(red[2].Id), Is.True);
+                Assert.That(scenario.Controller.TryPerformHold(blue[2].Id), Is.True);
+
+                Assert.That(scenario.Controller.IsVisibleRoundEnded, Is.True);
+                Assert.That(scenario.Controller.VisibleRoundPhase,
+                    Is.EqualTo(RoundResolutionPhase.EndOfRound));
+                Assert.That(scenario.Controller.CompletedTurnSlots, Has.Count.EqualTo(4));
+                Assert.That(scenario.Controller.CompletedTurnSlots.Select(slot => slot.TurnIndex),
+                    Is.EqualTo(new[] { 1, 2, 3, 4 }));
+                Assert.That(scenario.Controller.CardStatus, Does.Contain("END OF ROUND"));
+                Assert.That(scenario.Controller.CurrentTieBreakerState.RevealedSide,
+                    Is.EqualTo(TeamSide.Blue));
+
+                var slotCount = scenario.Controller.CompletedTurnSlots.Count;
+                var eventCount = scenario.Controller.RoundResolutionEvents.Count;
+                var redOccupancy = scenario.RedHero.Occupancy;
+                Assert.That(scenario.Controller.TryPassTurnCard(TeamSide.Red), Is.False);
+                Assert.That(scenario.Controller.LastRoundRejectionReason,
+                    Is.EqualTo(RoundResolutionRejectionReason.RoundAlreadyEnded));
+                Assert.That(scenario.Controller.TryPerformHold(red[4].Id), Is.False);
+                Assert.That(scenario.Controller.CompletedTurnSlots, Has.Count.EqualTo(slotCount));
+                Assert.That(scenario.Controller.RoundResolutionEvents, Has.Count.EqualTo(eventCount));
+                Assert.That(scenario.RedHero.Occupancy, Is.EqualTo(redOccupancy));
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        private static void CommitTurn(
+            HeroSelectionController controller,
+            CardInstance redCard,
+            CardInstance blueCard)
+        {
+            Assert.That(controller.TrySelectDirectorCard(redCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+            Assert.That(controller.TrySelectDirectorCard(blueCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+        }
+
         private static TurnScenario CreateTurnScenario(
             ICollection<GameObject> objects,
             bool adjacentHeroes = false)

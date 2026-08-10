@@ -255,6 +255,78 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_PlaysOneUninterruptedAuthoritativeRoundToVisibleEndOfRound()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            Assert.That(loadOperation, Is.Not.Null);
+
+            while (!loadOperation.isDone)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
+            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var redHero = FindRedHero(heroes);
+            var blueHero = heroes.Single(hero => hero != redHero);
+            var red = controller.VisibleDirectorHands
+                .Single(hand => hand.TeamSide == TeamSide.Red).Instances.ToArray();
+            var blue = controller.VisibleDirectorHands
+                .Single(hand => hand.TeamSide == TeamSide.Blue).Instances.ToArray();
+
+            CommitSceneTurn(controller, red[0], blue[0]);
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
+            Assert.That(controller.TrySubmitAttackTarget(blueHero.Occupancy.HeroId), Is.True);
+            Assert.That(controller.TrySubmitDefenseCard(blue[4].Id), Is.True);
+            Assert.That(controller.TryPerformHold(blue[0].Id), Is.True);
+            yield return null;
+            Assert.That(blue[4].State.Location, Is.EqualTo(CardLocation.DiscardPile));
+            Assert.That(controller.VisibleTurnIndex, Is.EqualTo(2));
+
+            CommitSceneTurn(controller, red[3], blue[3]);
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("secondary-movement")), Is.True);
+            var destination = controller.PendingCardDestinations.First(candidate => candidate.Cost == 1);
+            Assert.That(controller.TrySubmitCardDestination(destination.Destination), Is.True);
+            if (controller.IsCardMovementResolutionPending)
+            {
+                Assert.That(controller.TryStopCardMovement(), Is.True);
+            }
+
+            Assert.That(controller.TryPerformHold(blue[3].Id), Is.True);
+            yield return null;
+
+            CommitSceneTurn(controller, red[1], blue[1]);
+            var tieBreakerBeforeDeferredFlip = controller.CurrentTieBreakerState.RevealedSide;
+            var firstTiedActor = controller.VisibleTurnActor.CardInstanceId;
+            var secondTiedActor = firstTiedActor.Equals(red[1].Id) ? blue[1].Id : red[1].Id;
+            Assert.That(controller.TryPerformHold(firstTiedActor), Is.True);
+            Assert.That(controller.CurrentTieBreakerState.RevealedSide,
+                Is.EqualTo(tieBreakerBeforeDeferredFlip == TeamSide.Red ? TeamSide.Blue : TeamSide.Red));
+            Assert.That(controller.TryPerformHold(secondTiedActor), Is.True);
+
+            CommitSceneTurn(controller, red[2], blue[2]);
+            Assert.That(controller.TryPerformHold(red[2].Id), Is.True);
+            Assert.That(controller.TryPerformHold(blue[2].Id), Is.True);
+            yield return null;
+
+            Assert.That(controller.IsVisibleRoundEnded, Is.True);
+            Assert.That(controller.VisibleRoundPhase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
+            Assert.That(controller.CompletedTurnSlots, Has.Count.EqualTo(4));
+            Assert.That(controller.CardStatus, Does.Contain("END OF ROUND"));
+            Assert.That(controller.VisibleDirectorHands.SelectMany(hand => hand.Instances),
+                Has.No.Member(blue[4]));
+            var eventCount = controller.RoundResolutionEvents.Count;
+            var redOccupancy = redHero.Occupancy;
+            Assert.That(controller.TryPassTurnCard(TeamSide.Red), Is.False);
+            Assert.That(controller.LastRoundRejectionReason,
+                Is.EqualTo(RoundResolutionRejectionReason.RoundAlreadyEnded));
+            Assert.That(controller.RoundResolutionEvents, Has.Count.EqualTo(eventCount));
+            Assert.That(redHero.Occupancy, Is.EqualTo(redOccupancy));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_SelectsVisibleCardOfferThenClicksReachableDestinationInOneClick()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
@@ -478,6 +550,17 @@ namespace GuardsDigital.Tests.PlayMode
         private static Ray CreateDownRay(Vector3 target)
         {
             return new Ray(target + (Vector3.up * 2f), Vector3.down);
+        }
+
+        private static void CommitSceneTurn(
+            HeroSelectionController controller,
+            CardInstance redCard,
+            CardInstance blueCard)
+        {
+            Assert.That(controller.TrySelectDirectorCard(redCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+            Assert.That(controller.TrySelectDirectorCard(blueCard.Id), Is.True);
+            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
         }
 
         private static PrimitiveHeroView FindRedHero(PrimitiveHeroView[] heroes)

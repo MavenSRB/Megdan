@@ -180,11 +180,28 @@ namespace GuardsDigital.Presentation.Interaction
                 heroView = selectedHero;
                 otherHeroViews = boundHeroes.Where(hero => hero != selectedHero).ToArray();
                 movementSession = null;
-                RebuildMoveAuthority();
+                if (!cardDrivenMovementEnabled || roundResolutionAuthority == null)
+                {
+                    RebuildMoveAuthority();
+                }
 
                 if (cardDrivenMovementEnabled)
                 {
-                    ResetCardDrivenMovementPresentation();
+                    if (roundResolutionAuthority == null)
+                    {
+                        ResetCardDrivenMovementPresentation();
+                    }
+                    else
+                    {
+                        placeholderHand = placeholderHands.TryGetValue(
+                            heroView.Occupancy.HeroId,
+                            out var selectedHand)
+                                ? selectedHand
+                                : null;
+                        selectedCardInstanceId = null;
+                        selectedActionOffer = null;
+                    }
+
                     InitializeCardDrivenMovementIfEnabled();
                     cardStatus = $"{heroView.TeamSide} hero selected. Choose a test card.";
                 }
