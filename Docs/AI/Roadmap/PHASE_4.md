@@ -197,7 +197,7 @@ Non-goals: No production optimization target, DOTS/ECS rewrite, production UI mi
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44d-close-phase-4-runtime-hygiene-and-architecture-gate-completion-evidence).
 
-### [ ] 4.4e Independently review the Phase 4 architecture baseline
+### [x] 4.4e Independently review the Phase 4 architecture baseline
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -212,5 +212,7 @@ Acceptance checks:
 - The review re-evaluates the Phase 5 sequence and records whether the shortest dependency-safe path remains valid.
 
 Non-goals: No gameplay or presentation change, refactor, optimization implementation, new abstraction, networking work, production performance target, or weakening of the Phase 4 evidence.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44e-independently-review-the-phase-4-architecture-baseline-completion-evidence).
 
 Hard gate: Phase 5 does not begin until milestone 4.4e is reviewed and every finding classified as gate-blocking has an approved disposition and, when required, a completed corrective milestone.

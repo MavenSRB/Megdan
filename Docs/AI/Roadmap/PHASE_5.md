@@ -6,7 +6,11 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Phase 5 uses verified general rules and synthetic test definitions. It does not depend on the complete Wasp card set, inventory that set, or implement it.
 
-### [ ] 5.1 Integrate and verify exact card-based Movement on the full map
+### [!] 5.1 Integrate and verify exact card-based Movement on the full map
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Blocked by: Milestone 4.4e findings `F44E-01` through `F44E-05` require approved dispositions and the applicable completed corrective milestones. The current documentation validator also requires an approved governance amendment before those additive corrective milestone definitions can be recorded safely.
 
 Observable outcome: A synthetic Movement action uses its typed allowance to traverse a chosen legal route on the official placeholder map.
 

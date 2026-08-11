@@ -7,7 +7,7 @@ This inventory accounts for the governed categories required by milestone 3.11a.
 | Category ID | Before evidence | After evidence | Result |
 | --- | --- | --- | --- |
 | `milestone-definitions` | 147 milestone ID/status headings in pre-governance `ROADMAP.md` | 147 definitions in indexed `Roadmap/*.md`; 3.11a changed to complete and 4.3 changed from blocked to proposed for this handoff | `PASS` |
-| `milestone-profiles` | 35 exact `Required Codex profile` declarations | 36 exact declarations; milestone 4.4e now carries its required profile and the next route/config agree on 4.4e, GPT-5.6 Sol, high | `PASS` |
+| `milestone-profiles` | 35 exact `Required Codex profile` declarations | 37 exact declarations; milestones 4.4e and 5.1 carry their required profiles and the blocked next route/config agree on 5.1, GPT-5.6 Sol, high | `PASS` |
 | `acceptance-checks` | 110 exact `Acceptance checks` blocks | 110 exact blocks in indexed roadmap shards | `PASS` |
 | `non-goals` | 77 exact milestone `Non-goals` declarations | 77 exact declarations in indexed roadmap shards | `PASS` |
 | `rule-authority-and-status` | Baseline `RULES_LEDGER.md`, 52,554 bytes, SHA-256 `13bc55a1c65ff315ac6af441cdb9a67373b4de236a984bf46ec0b6ba7c1d7c3a` | Active ledger is byte-identical | `PASS` |
