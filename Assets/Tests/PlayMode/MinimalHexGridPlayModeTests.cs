@@ -30,10 +30,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var markers = Object.FindObjectsByType<BoardMapSpawnMarkerView>(FindObjectsSortMode.None);
-            var cameras = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
-            var mapView = Object.FindFirstObjectByType<PlaceholderTestGridView>();
+            var tiles = Object.FindObjectsByType<HexTileView>();
+            var markers = Object.FindObjectsByType<BoardMapSpawnMarkerView>();
+            var cameras = Object.FindObjectsByType<Camera>();
+            var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
 
             Assert.That(mapView.RenderedDefinition.Reference, Is.EqualTo(OfficialBoardMapCatalog.SelectedMap));
             Assert.That(tiles, Has.Length.EqualTo(292));
@@ -70,7 +70,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
             var side = controller.CurrentTieBreakerState.RevealedSide;
             var indicatorRect = controller.TieBreakerIndicatorRect;
 
@@ -95,7 +95,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
 
             Assert.That(heroes, Has.Length.EqualTo(2));
             Assert.That(
@@ -134,7 +134,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
             var hands = controller.VisibleDirectorHands;
             var blueHand = hands.Single(hand => hand.TeamSide == TeamSide.Blue);
             var beforeStates = hands.SelectMany(hand => hand.Instances)
@@ -165,7 +165,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
             var redCard = controller.VisibleDirectorHands
                 .Single(hand => hand.TeamSide == TeamSide.Red).Instances[0];
             var blueCard = controller.VisibleDirectorHands
@@ -199,9 +199,9 @@ namespace GuardsDigital.Tests.PlayMode
             var destination = controller.PendingCardDestinations
                 .OrderByDescending(candidate => candidate.Cost)
                 .First().Destination;
-            var destinationTile = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
+            var destinationTile = Object.FindObjectsByType<HexTileView>()
                 .Single(tile => tile.Coordinate.Equals(destination));
-            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(destinationTile.transform.position)), Is.True);
             Assert.That(redHero.Coordinate, Is.EqualTo(destination));
             Assert.That(redHero.Coordinate, Is.Not.EqualTo(redOrigin));
@@ -230,7 +230,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
             var initialSnapshot = controller.CaptureAuthoritativeSnapshot();
             Assert.That(controller.RuleEventLogEntries, Has.Count.EqualTo(1));
             Assert.That(controller.RuleEventLogEntries[0].EventType,
@@ -282,8 +282,8 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
             var redHero = FindRedHero(heroes);
             var blueHero = heroes.Single(hero => hero != redHero);
             var redAttackCard = controller.VisibleDirectorHands
@@ -324,8 +324,8 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
             var redHero = FindRedHero(heroes);
             var blueHero = heroes.Single(hero => hero != redHero);
             var red = controller.VisibleDirectorHands
@@ -434,12 +434,12 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
             var hero = FindRedHero(heroes);
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
-            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var tiles = Object.FindObjectsByType<HexTileView>();
+            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>();
             var origin = hero.Coordinate;
             var originOccupancy = hero.Occupancy;
             var selectedCard = controller.VisibleCardInstances[3];
@@ -495,12 +495,12 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
             var redHero = FindRedHero(heroes);
             var blueHero = heroes.Single(hero => hero != redHero);
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
-            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var tiles = Object.FindObjectsByType<HexTileView>();
             var redCardIds = controller.VisibleCardInstances.Select(card => card.Id).ToArray();
             var blueOrigin = blueHero.Coordinate;
 
@@ -549,10 +549,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
             var redHero = FindRedHero(heroes);
             var blueHero = heroes.Single(hero => hero != redHero);
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
             var bulwark = controller.VisibleCardInstances.Single(card =>
                 card.Id.Value == "red-bulwark-card");
 
@@ -582,10 +582,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            var hero = FindRedHero(Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None));
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
-            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var hero = FindRedHero(Object.FindObjectsByType<PrimitiveHeroView>());
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var tiles = Object.FindObjectsByType<HexTileView>();
             var origin = hero.Coordinate;
             Assert.That(controller.TrySelectCard(controller.VisibleCardInstances[3].Id), Is.True);
             Assert.That(controller.TrySelectAction(new ActionDefinitionId("secondary-movement")), Is.True);

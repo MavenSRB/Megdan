@@ -59,7 +59,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var screenPosition = Pointer.current.position.ReadValue();
-            var selectionController = FindFirstObjectByType<HeroSelectionController>();
+            var selectionController = FindAnyObjectByType<HeroSelectionController>();
             if (selectionController != null && selectionController.BlocksPointerAt(screenPosition))
             {
                 return false;
@@ -82,7 +82,7 @@ namespace GuardsDigital.Presentation.Interaction
                 }
             }
 
-            var selectionController = FindFirstObjectByType<HeroSelectionController>();
+            var selectionController = FindAnyObjectByType<HeroSelectionController>();
             if (selectionController != null && selectionController.TryCommitDestinationFromPointerRay(pointerRay))
             {
                 return true;
@@ -95,12 +95,12 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (eventCamera == null)
             {
-                eventCamera = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+                eventCamera = Camera.main != null ? Camera.main : FindAnyObjectByType<Camera>();
             }
 
             if (selectors == null || selectors.Length == 0)
             {
-                selectors = FindObjectsByType<PrimitiveHeroPointerSelector>(FindObjectsSortMode.None);
+                selectors = FindObjectsByType<PrimitiveHeroPointerSelector>();
             }
         }
     }

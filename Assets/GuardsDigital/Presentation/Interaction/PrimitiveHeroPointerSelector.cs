@@ -23,7 +23,7 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (selectionController == null)
             {
-                selectionController = FindFirstObjectByType<HeroSelectionController>();
+                selectionController = FindAnyObjectByType<HeroSelectionController>();
             }
 
             var capsule = GetComponent<CapsuleCollider>();
@@ -48,7 +48,7 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (selectionController == null)
             {
-                selectionController = FindFirstObjectByType<HeroSelectionController>();
+                selectionController = FindAnyObjectByType<HeroSelectionController>();
             }
 
             EnsureColliderShape();

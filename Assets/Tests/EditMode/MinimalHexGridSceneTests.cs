@@ -26,7 +26,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var mapView = RebuildOfficialMap();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var tiles = Object.FindObjectsByType<HexTileView>();
             var definition = mapView.RenderedDefinition;
 
             Assert.That(definition.Reference, Is.EqualTo(OfficialBoardMapCatalog.SelectedMap));
@@ -54,8 +54,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var mapView = RebuildOfficialMap();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var markers = Object.FindObjectsByType<BoardMapSpawnMarkerView>(FindObjectsSortMode.None);
+            var tiles = Object.FindObjectsByType<HexTileView>();
+            var markers = Object.FindObjectsByType<BoardMapSpawnMarkerView>();
             var definition = mapView.RenderedDefinition;
             var tilesByCoordinate = tiles.ToDictionary(tile => tile.Coordinate);
 
@@ -111,7 +111,7 @@ namespace GuardsDigital.Tests.EditMode
         public void Scene_UsesOneFixedTopDownCameraWithPointerInputAndNoCameraController()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            var cameras = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            var cameras = Object.FindObjectsByType<Camera>();
 
             Assert.That(cameras, Has.Length.EqualTo(1));
             Assert.That(cameras[0].name, Is.EqualTo("Fixed Camera"));
@@ -120,7 +120,7 @@ namespace GuardsDigital.Tests.EditMode
             RebuildOfficialMap();
             Assert.That(cameras[0].orthographic, Is.True);
             Assert.That(Vector3.Angle(cameras[0].transform.forward, Vector3.down), Is.LessThan(Tolerance));
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var tiles = Object.FindObjectsByType<HexTileView>();
             Assert.That(tiles.All(tile =>
             {
                 var viewport = cameras[0].WorldToViewportPoint(tile.transform.position);
@@ -133,7 +133,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var mapView = RebuildOfficialMap();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var tiles = Object.FindObjectsByType<HexTileView>();
             var playableMaterialsByZone = tiles.Where(tile => tile.IsPlayable)
                 .GroupBy(tile => tile.ZoneId.Value)
                 .ToDictionary(group => group.Key, group => group.Select(tile =>
@@ -153,7 +153,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             RebuildOfficialMap();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var tiles = Object.FindObjectsByType<HexTileView>();
             var darkestFill = tiles.Min(tile => tile.GetComponent<MeshRenderer>().sharedMaterial.color.grayscale);
             var edgeRenderers = tiles.Select(tile => tile.GetComponentInChildren<LineRenderer>()).ToArray();
 
@@ -172,8 +172,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             RebuildOfficialMap();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var tiles = Object.FindObjectsByType<HexTileView>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
 
             Assert.That(heroes, Has.Length.EqualTo(2));
             Assert.That(
@@ -193,7 +193,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(blueHero.TeamSide, Is.EqualTo(TeamSide.Blue));
             Assert.That(redHero.ConfiguredSpawnPointId, Is.EqualTo(new SpawnPointId("red-hero-01")));
             Assert.That(blueHero.ConfiguredSpawnPointId, Is.EqualTo(new SpawnPointId("blue-hero-01")));
-            var definition = Object.FindFirstObjectByType<PlaceholderTestGridView>().RenderedDefinition;
+            var definition = Object.FindAnyObjectByType<PlaceholderTestGridView>().RenderedDefinition;
             Assert.That(redHero.Coordinate, Is.EqualTo(definition.Spaces.Single(space => space.Id.Equals(
                 definition.SpawnPoints.Single(spawn => spawn.Id.Equals(redHero.ConfiguredSpawnPointId.Value)).SpaceId)).Coordinate));
             Assert.That(blueHero.Coordinate, Is.EqualTo(definition.Spaces.Single(space => space.Id.Equals(
@@ -224,7 +224,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             RebuildOfficialMap();
-            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
+            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>();
 
             Assert.That(obstacles, Is.Empty);
         }
@@ -237,10 +237,10 @@ namespace GuardsDigital.Tests.EditMode
         public void Scene_ContainsInputSystemPointerSelectionPath()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            var controllers = Object.FindObjectsByType<HeroSelectionController>(FindObjectsSortMode.None);
-            var selectors = Object.FindObjectsByType<PrimitiveHeroPointerSelector>(FindObjectsSortMode.None);
-            var inputs = Object.FindObjectsByType<PrimitiveHeroPointerInput>(FindObjectsSortMode.None);
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var controllers = Object.FindObjectsByType<HeroSelectionController>();
+            var selectors = Object.FindObjectsByType<PrimitiveHeroPointerSelector>();
+            var inputs = Object.FindObjectsByType<PrimitiveHeroPointerInput>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
 
             Assert.That(controllers, Has.Length.EqualTo(1));
             Assert.That(selectors, Has.Length.EqualTo(2));
@@ -268,7 +268,7 @@ namespace GuardsDigital.Tests.EditMode
         public void Scene_ContainsTopRightAuthoritativeTieBreakerIndicator()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
             var side = controller.CurrentTieBreakerState.RevealedSide;
             var indicatorRect = controller.TieBreakerIndicatorRect;
 
@@ -287,11 +287,11 @@ namespace GuardsDigital.Tests.EditMode
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             RebuildOfficialMap();
-            var controller = Object.FindFirstObjectByType<HeroSelectionController>();
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
             var hero = heroes.Single(candidate =>
                 candidate.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var tiles = Object.FindObjectsByType<HexTileView>();
 
             var selectedCard = controller.VisibleCardInstances[0];
             Assert.That(controller.TrySelectCard(selectedCard.Id), Is.True);
@@ -304,7 +304,7 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
 
             Assert.That(controller.IsHeroSelected, Is.True);
-            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
+            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>();
             var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
                     hero.Occupancy,
                     tiles.Where(tile => tile.IsPlayable).Select(tile => tile.Coordinate),
@@ -324,7 +324,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static PlaceholderTestGridView RebuildOfficialMap()
         {
-            var mapView = Object.FindFirstObjectByType<PlaceholderTestGridView>();
+            var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
             var definition = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             mapView.Rebuild(definition);
             return mapView;

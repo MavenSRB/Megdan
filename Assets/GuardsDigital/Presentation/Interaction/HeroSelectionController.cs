@@ -398,7 +398,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void EnsureBindings()
         {
-            var discoveredHeroes = FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
+            var discoveredHeroes = FindObjectsByType<PrimitiveHeroView>();
             if (heroView == null)
             {
                 heroView = discoveredHeroes.FirstOrDefault(
@@ -414,7 +414,7 @@ namespace GuardsDigital.Presentation.Interaction
                 otherHeroViews = discoveredHeroes.Where(hero => hero != heroView).ToArray();
             }
 
-            var discoveredTiles = FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var discoveredTiles = FindObjectsByType<HexTileView>();
             if (discoveredTiles.Length > 0 &&
                 (tileViews == null ||
                  tileViews.Length == 0 ||
@@ -424,7 +424,7 @@ namespace GuardsDigital.Presentation.Interaction
                 tileViews = discoveredTiles;
             }
 
-            var discoveredObstacles = FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
+            var discoveredObstacles = FindObjectsByType<PlaceholderObstacleView>();
             if (discoveredObstacles.Length > 0 &&
                 (obstacleViews == null ||
                  obstacleViews.Length == 0 ||
@@ -444,7 +444,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var selectedMap = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var mapView = FindFirstObjectByType<PlaceholderTestGridView>();
+            var mapView = FindAnyObjectByType<PlaceholderTestGridView>();
             if (mapView != null &&
                 (mapView.RenderedDefinition == null ||
                  !mapView.RenderedDefinition.Reference.Equals(selectedMap.Reference)))

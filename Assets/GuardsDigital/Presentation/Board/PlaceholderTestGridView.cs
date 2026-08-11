@@ -171,7 +171,7 @@ namespace GuardsDigital.Presentation.Board
 
         private static void PlaceConfiguredHeroes(BoardMapDefinition definition)
         {
-            foreach (var hero in FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None))
+            foreach (var hero in FindObjectsByType<PrimitiveHeroView>())
             {
                 hero.PlaceAtConfiguredSpawnPoint(definition);
             }
