@@ -7,7 +7,7 @@ namespace GuardsDigital.Presentation.Board
     {
         HeroCircle = 1,
         MeleeDiamond = 2,
-        RangedTriangle = 3,
+        RangedVerticalLine = 3,
         HeavyHexagon = 4
     }
 
@@ -38,7 +38,6 @@ namespace GuardsDigital.Presentation.Board
             var renderer = GetComponent<LineRenderer>();
             renderer.sharedMaterial = material;
             renderer.useWorldSpace = false;
-            renderer.loop = true;
             renderer.startWidth = outerRadius * 0.075f;
             renderer.endWidth = renderer.startWidth;
             renderer.numCornerVertices = 2;
@@ -52,7 +51,7 @@ namespace GuardsDigital.Presentation.Board
             {
                 case "hero": return SpawnMarkerShape.HeroCircle;
                 case "melee-minion": return SpawnMarkerShape.MeleeDiamond;
-                case "ranged-minion": return SpawnMarkerShape.RangedTriangle;
+                case "ranged-minion": return SpawnMarkerShape.RangedVerticalLine;
                 case "heavy-minion": return SpawnMarkerShape.HeavyHexagon;
                 default: throw new System.ArgumentException($"Unsupported spawn-point unit type '{type}'.", nameof(type));
             }
@@ -68,11 +67,11 @@ namespace GuardsDigital.Presentation.Board
                 case SpawnMarkerShape.MeleeDiamond:
                     ConfigureRegularPolygon(renderer, 4, radius, 0f);
                     break;
-                case SpawnMarkerShape.RangedTriangle:
-                    renderer.positionCount = 3;
-                    renderer.SetPosition(0, new Vector3(radius, 0.04f, 0f));
-                    renderer.SetPosition(1, new Vector3(-radius * 0.65f, 0.04f, radius * 0.85f));
-                    renderer.SetPosition(2, new Vector3(-radius * 0.65f, 0.04f, -radius * 0.85f));
+                case SpawnMarkerShape.RangedVerticalLine:
+                    renderer.loop = false;
+                    renderer.positionCount = 2;
+                    renderer.SetPosition(0, new Vector3(0f, 0.04f, -radius));
+                    renderer.SetPosition(1, new Vector3(0f, 0.04f, radius));
                     break;
                 case SpawnMarkerShape.HeavyHexagon:
                     ConfigureRegularPolygon(renderer, 6, radius, 30f);
@@ -84,6 +83,7 @@ namespace GuardsDigital.Presentation.Board
 
         private static void ConfigureRegularPolygon(LineRenderer renderer, int vertexCount, float radius, float rotationDegrees)
         {
+            renderer.loop = true;
             renderer.positionCount = vertexCount;
             for (var index = 0; index < vertexCount; index++)
             {

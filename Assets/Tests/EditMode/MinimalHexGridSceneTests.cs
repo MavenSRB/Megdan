@@ -86,10 +86,24 @@ namespace GuardsDigital.Tests.EditMode
                 Has.All.Matches<BoardMapSpawnMarkerView>(marker =>
                     marker.MarkerShape == SpawnMarkerShape.MeleeDiamond &&
                     marker.GetComponent<LineRenderer>().positionCount == 4));
-            Assert.That(markers.Where(marker => marker.UnitType == "ranged-minion"),
+            var rangedMarkers = markers.Where(marker => marker.UnitType == "ranged-minion").ToArray();
+            Assert.That(rangedMarkers,
                 Has.All.Matches<BoardMapSpawnMarkerView>(marker =>
-                    marker.MarkerShape == SpawnMarkerShape.RangedTriangle &&
-                    marker.GetComponent<LineRenderer>().positionCount == 3));
+                    marker.MarkerShape == SpawnMarkerShape.RangedVerticalLine &&
+                    marker.GetComponent<LineRenderer>().positionCount == 2 &&
+                    !marker.GetComponent<LineRenderer>().loop));
+            foreach (var marker in rangedMarkers)
+            {
+                var renderer = marker.GetComponent<LineRenderer>();
+                var start = renderer.GetPosition(0);
+                var end = renderer.GetPosition(1);
+                Assert.That(start.x, Is.EqualTo(0f).Within(Tolerance));
+                Assert.That(end.x, Is.EqualTo(0f).Within(Tolerance));
+                Assert.That(start.z, Is.LessThan(0f));
+                Assert.That(end.z, Is.GreaterThan(0f));
+                Assert.That(start.z, Is.EqualTo(-end.z).Within(Tolerance));
+                Assert.That(start.y, Is.EqualTo(end.y).Within(Tolerance));
+            }
             Assert.That(markers.Where(marker => marker.UnitType == "heavy-minion"),
                 Has.All.Matches<BoardMapSpawnMarkerView>(marker =>
                     marker.MarkerShape == SpawnMarkerShape.HeavyHexagon &&
