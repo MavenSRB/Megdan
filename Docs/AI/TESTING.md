@@ -129,9 +129,9 @@ Completion reports record the tier, exact focused filters, result totals, direct
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1
 ```
 
-Expected result: the validator exits with code `0` and reports 292 cells, 210 playable spaces, 82 terrain cells, seven zones, 809 physical connections, 530 playable connections, and 40 spawn points split evenly between Red and Blue. It also verifies canonical map-local space IDs, `MapId`-composed global identity, zone membership, exact spawn types/locations, and the reviewed inventory digest.
+Expected result: the validator exits with code `0` and reports that reusable invariants and synthetic map-local identity isolation pass, followed by 292 cells, 210 playable spaces, 82 terrain cells, seven zones, 809 physical connections, 530 playable connections, and 40 spawn points split evenly between Red and Blue. The reusable layer verifies map-local `SpaceId`, `ZoneId`, and `SpawnPointId` contracts, immutable `(MapId, revision)` selection, selected-map-local coordinate queries, references, and structural invariants without official-map constants. Bounded in-memory fixtures reuse all three child IDs and their coordinate under different synthetic `MapId` values. The official layer separately verifies every reviewed count/location and the zone/space/spawn digest, including all rules-relevant zone metadata.
 
-This is the T0 schema/content check for milestone 4.1. Because that milestone changes only source data and documentation, Unity Edit Mode and Play Mode suites are intentionally omitted.
+This is the T0 schema/content check for milestones 4.1 and 4.1a. Neither milestone changes a Unity runtime or presentation path, so Unity Edit Mode and Play Mode suites are intentionally omitted.
 
 ## Edit Mode shell test
 

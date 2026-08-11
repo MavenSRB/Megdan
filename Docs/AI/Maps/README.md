@@ -7,8 +7,9 @@
 The schema is map-scoped so future maps can coexist:
 
 - `mapId` identifies the map and `revision` identifies its content revision.
-- `spaceId` is stable only within its map and is canonically derived from the axial coordinate as `q{q}_r{r}`.
-- A globally unambiguous space reference is the pair `(mapId, spaceId)`. Code must not treat a bare `spaceId`, coordinate, or one static map as globally unique.
+- `spaceId`, `zoneId`, and `spawnPointId` are stable only within their owning map. `spaceId` is canonically derived from the axial coordinate as `q{q}_r{r}`.
+- A globally unambiguous child reference composes `mapId` with the applicable child ID. Persisted, catalog, external, and cross-map references must not treat a bare child ID, coordinate, or one static map as globally unique.
+- A match selects one immutable definition by `(mapId, revision)`. Coordinate-based rules and queries then operate locally within that selected definition instead of qualifying every internal coordinate individually.
 - Zones and spawn points are collections owned by the selected map specification. A future map receives its own zone and spawn collections rather than extending this map through name-based branches.
 
 Milestone 4.1 defines the data and its validation contract only. Loading it into authoritative Unity state and placeholder presentation belongs to milestone 4.2. Zone adjacency and the ordered Lane relationship belong to milestone 4.3.
@@ -58,4 +59,6 @@ Run the narrow schema/content validator from the project root:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1
 ```
 
-The validator requires unique canonical map-local IDs and coordinates, valid zone references, exact per-zone and terrain totals, standard axial direction metadata, derived connection totals, valid playable spawn locations, exact team/type symmetry, and the reviewed inventory digest. A digest change requires another source review rather than an automatic acceptance.
+The validator first applies reusable schema and invariant checks from `Tools/BoardMapSpecification.Validation.ps1`; that layer contains no official map ID, reviewed count, location, or digest. Two bounded in-memory fixtures deliberately reuse coordinates plus `spaceId`, `zoneId`, and `spawnPointId` under different synthetic `mapId` values to prove map scoping without retaining another playable map.
+
+The official source-review layer then requires exact per-zone and terrain totals, direction metadata, derived connection totals, playable spawn locations, exact team/type symmetry, and the reviewed inventory digest. The digest protects all zone identity/kind/team/Throne/starting-Battle-Zone metadata, every space classification and membership, and every spawn identity/location/team/type. A digest change requires another source review rather than automatic acceptance.

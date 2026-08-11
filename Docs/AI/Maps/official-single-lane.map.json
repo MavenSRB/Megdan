@@ -15,12 +15,28 @@
   },
   "identity": {
     "spaceIdScope": "map-local",
+    "zoneIdScope": "map-local",
+    "spawnPointIdScope": "map-local",
     "spaceIdFormat": "q{signed-integer}_r{signed-integer}",
     "globalSpaceReference": [
       "mapId",
       "spaceId"
     ],
-    "note": "Map-local IDs allow another map to reuse axial coordinates without collisions."
+    "globalZoneReference": [
+      "mapId",
+      "zoneId"
+    ],
+    "globalSpawnPointReference": [
+      "mapId",
+      "spawnPointId"
+    ],
+    "selectedMapReference": [
+      "mapId",
+      "revision"
+    ],
+    "selectionMutability": "immutable-per-match",
+    "coordinateQueryScope": "selected-map-local",
+    "note": "Map-local child IDs and coordinates may repeat in another map. Persisted, catalog, external, and cross-map references compose mapId with the applicable child ID; one match instead carries the immutable selected mapId and revision."
   },
   "coordinateSystem": {
     "type": "axial",
@@ -75,6 +91,7 @@
       "displayName": "Red Throne",
       "kind": "throne",
       "teamId": "red",
+      "isThrone": true,
       "isStartingBattleZone": false
     },
     {
@@ -82,6 +99,7 @@
       "displayName": "Red Approach",
       "kind": "lane",
       "teamId": "red",
+      "isThrone": false,
       "isStartingBattleZone": false
     },
     {
@@ -89,6 +107,7 @@
       "displayName": "Starting Battle Zone",
       "kind": "lane",
       "teamId": null,
+      "isThrone": false,
       "isStartingBattleZone": true
     },
     {
@@ -96,6 +115,7 @@
       "displayName": "Blue Approach",
       "kind": "lane",
       "teamId": "blue",
+      "isThrone": false,
       "isStartingBattleZone": false
     },
     {
@@ -103,6 +123,7 @@
       "displayName": "Blue Throne",
       "kind": "throne",
       "teamId": "blue",
+      "isThrone": true,
       "isStartingBattleZone": false
     },
     {
@@ -110,6 +131,7 @@
       "displayName": "Top Jungle",
       "kind": "jungle",
       "teamId": null,
+      "isThrone": false,
       "isStartingBattleZone": false
     },
     {
@@ -117,6 +139,7 @@
       "displayName": "Bottom Jungle",
       "kind": "jungle",
       "teamId": null,
+      "isThrone": false,
       "isStartingBattleZone": false
     }
   ],

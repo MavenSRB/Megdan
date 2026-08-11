@@ -886,7 +886,7 @@ Non-goals: No production board art or models.
 
 Completion note (2026-08-11): Added the reviewed, schema-versioned, map-scoped `official-single-lane` revision 1 JSON specification from the user-supplied axial-coordinate diagram, with all 292 stable map-local coordinate IDs, 210 playable spaces, 82 terrain cells, seven zone memberships and boundaries, both Throne zones, and the starting Battle Zone. Standard axial touching derives 809 undirected physical connections and 530 playable-to-playable connections. All 40 spawn markers are inventoried at exact coordinates and split symmetrically: each team has three Hero, eleven Melee minion, three Ranged minion, and three Heavy minion points. The identity contract composes `MapId` plus map-local `SpaceId`, keeps zones/spawns owned by the selected map revision, and forbids singleton-map or globally unique-coordinate assumptions so future maps can coexist. Source review used the preserved private diagram, rulebook page 3 terminology, row/color and marker-shape cross-checks, and a regenerated debug view. T0 schema/content validation passed through `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1`, including exact counts, references, connection derivation, team/type symmetry, and reviewed digest `addb4cdea8f2e0733233bd7fc047bc6cdd3b934102b48990699a524cfb7158bb`. Unity suites were intentionally omitted because no executable Unity or presentation path changed. No loader, scene geometry, production art/models, zone adjacency, or ordered Lane relationship was added. The post-completion multi-map audit identified explicit child-identity, reusable-validation, and selected-map snapshot gaps; corrective milestone 4.1a and the split 4.2/4.2a sequence own those follow-ups without invalidating this reviewed inventory.
 
-### [ ] 4.1a Harden map-scoped identity and validation contracts
+### [x] 4.1a Harden map-scoped identity and validation contracts
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -903,7 +903,11 @@ Acceptance checks:
 
 Non-goals: No authoritative map loader, snapshot schema change, Unity scene geometry, second playable map, zone adjacency, ordered Lane relationship, or production art.
 
+Completion note (2026-08-11): Extended the schema identity contract so `SpaceId`, `ZoneId`, and `SpawnPointId` are explicitly map-local; globally persisted/catalog/external/cross-map child references compose `MapId`, while a match selects one immutable `(MapId, revision)` and keeps coordinate queries local to it. Extracted reusable schema/invariant validation into `Tools/BoardMapSpecification.Validation.ps1`, with no official map ID, reviewed count/location, or digest in that layer. The official validator retains exact reviewed map assertions and now protects zone identity, kind, team, explicit Throne status, starting-Battle-Zone status, space classification/membership, and spawn identity/location/team/type under digest `5b4e3a2a36aeabaaa7db73083088174ca60978fd10d5e09c90e6a67b0a1733f0`. Two bounded in-memory synthetic definitions reuse the same coordinate and all three child IDs under distinct synthetic `MapId` values, proving composed-reference isolation without retaining another playable map. T0 source validation and `git diff --check` passed; Unity suites were intentionally omitted because no Unity runtime or presentation path changed. No loader, snapshot change, scene geometry, second playable map, zone adjacency, Lane order, or production art was added.
+
 ### [ ] 4.2 Load the selected map definition into authoritative state
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: A match loads one selected map definition through a reusable boundary, and authoritative state plus snapshots retain and validate that map's stable identity and content revision.
 
