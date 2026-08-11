@@ -49,6 +49,8 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(view.GetComponent<SpriteRenderer>().sprite.name, Is.EqualTo("blue-melee"));
                 Assert.That(view.transform.localPosition,
                     Is.EqualTo(HexWorldLayout.ToWorld(state.Coordinate) + (Vector3.up * StandardMinionView.DefaultVerticalOffset)));
+                Assert.That(Vector3.Angle(view.transform.localRotation * Vector3.up, Vector3.forward),
+                    Is.LessThan(0.0001f));
             }
             finally
             {

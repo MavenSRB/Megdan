@@ -255,7 +255,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minions.Select(view => view.SetupState.OccupiedSpace).Distinct().Count(), Is.EqualTo(12));
             Assert.That(minions, Has.All.Matches<StandardMinionView>(view =>
                 view.GetComponent<SpriteRenderer>().sprite != null &&
-                mapView.RenderedDefinition.GetZoneForSpace(view.SetupState.OccupiedSpace.SpaceId).IsStartingBattleZone));
+                mapView.RenderedDefinition.GetZoneForSpace(view.SetupState.OccupiedSpace.SpaceId).IsStartingBattleZone &&
+                Vector3.Angle(view.transform.TransformDirection(Vector3.up), Vector3.forward) < Tolerance));
             Assert.That(minions.Where(view => view.SetupState.TeamSide == TeamSide.Red),
                 Has.All.Matches<StandardMinionView>(view => view.GetComponent<SpriteRenderer>().sprite.name.StartsWith("red-")));
             Assert.That(minions.Where(view => view.SetupState.TeamSide == TeamSide.Blue),

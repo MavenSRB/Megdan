@@ -21,7 +21,8 @@ namespace GuardsDigital.Presentation.Units.Minions
             gameObject.name = $"{state.TeamSide} {state.MinionType} Minion {state.MinionId.Value}";
             transform.localPosition = HexWorldLayout.ToWorld(state.Coordinate, outerRadius) +
                 (Vector3.up * DefaultVerticalOffset);
-            transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            transform.localRotation = Quaternion.Euler(-90f, 0f, 0f) *
+                Quaternion.AngleAxis(180f, Vector3.forward);
             transform.localScale = Vector3.one * DefaultScale;
 
             var renderer = GetComponent<SpriteRenderer>();
