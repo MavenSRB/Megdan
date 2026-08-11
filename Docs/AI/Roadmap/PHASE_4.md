@@ -117,7 +117,7 @@ Non-goals: No complete Wasp card inventory or Wasp-specific behavior.
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44-place-the-1v1-quick-game-setup-completion-evidence).
 
-### [ ] 4.4a Establish the transport-neutral match application service
+### [x] 4.4a Establish the transport-neutral match application service
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -134,6 +134,8 @@ Acceptance checks:
 - Bounded invariant/property fixtures use reported fixed seeds and prove at minimum that rejected commands mutate no state/history/events/version, ownership and occupancy remain valid, pending choices reference live stable identities, reveal never exposes an incomplete commitment set, and replay appends no extra accepted command.
 
 Non-goals: No gameplay-rule change, visual redesign, networking provider, client authorization/projection policy, save UI, production dependency-injection framework, service locator, or global event bus.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44a-establish-the-transport-neutral-match-application-service-completion-evidence).
 
 ### [ ] 4.4b Decompose card-action resolution behind typed strategy handlers
 

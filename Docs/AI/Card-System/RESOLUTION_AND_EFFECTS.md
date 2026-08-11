@@ -156,7 +156,7 @@ Rule events should describe facts such as card played, action selected, choice r
 
 ## Application orchestration and presentation boundary
 
-Rules authorities do not serve directly as Unity controllers or network endpoints. After the complete configured Phase 4 setup, one pure C# match application service becomes the orchestration port used by live director input, deterministic command replay, and later host transports. It owns the current authority composition, accepts typed commands and explicit choices, and publishes accepted/rejected results, ordered events, and an immutable versioned match projection without duplicating card legality or resolution rules.
+Rules authorities do not serve directly as Unity controllers or network endpoints. The configured match now uses one pure C# `GuardsDigital.Application` match-session port for live director input, deterministic command replay, and later host transports. It owns the current authority composition, accepts typed commands and explicit choices, and publishes accepted/rejected results, ordered events, and an immutable versioned match projection without duplicating card legality or resolution rules. Legacy unconfigured card-action presentation drills remain a bounded compatibility path until the feature-MVP decomposition milestone; they are not a second configured-match orchestration boundary.
 
 Live play, replay, Undo, and restart must use the same command-dispatch path. The application service may coordinate command history, snapshot capture/restore, and diagnostic projections, but those remain separate collaborators with explicit ownership; they do not become card-effect handlers or presentation state. Rejection is atomic and never publishes a partially advanced projection.
 

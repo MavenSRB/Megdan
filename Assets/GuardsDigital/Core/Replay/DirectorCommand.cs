@@ -2,6 +2,7 @@ using System;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Replay
@@ -29,7 +30,9 @@ namespace GuardsDigital.Core.Replay
             CardInstanceId cardInstanceId = default,
             TeamSide teamSide = default,
             ActionDefinitionId actionDefinitionId = default,
-            HexCoordinate coordinate = default)
+            HexCoordinate coordinate = default,
+            ActionResolutionId resolutionId = default,
+            ActionResolutionStepId choiceId = default)
         {
             Kind = kind;
             HeroId = heroId;
@@ -37,6 +40,8 @@ namespace GuardsDigital.Core.Replay
             TeamSide = teamSide;
             ActionDefinitionId = actionDefinitionId;
             Coordinate = coordinate;
+            ResolutionId = resolutionId;
+            ChoiceId = choiceId;
         }
 
         public DirectorCommandKind Kind { get; }
@@ -45,6 +50,8 @@ namespace GuardsDigital.Core.Replay
         public TeamSide TeamSide { get; }
         public ActionDefinitionId ActionDefinitionId { get; }
         public HexCoordinate Coordinate { get; }
+        public ActionResolutionId ResolutionId { get; }
+        public ActionResolutionStepId ChoiceId { get; }
 
         public static DirectorCommand CommitCard(HeroId heroId, CardInstanceId cardInstanceId) =>
             new DirectorCommand(DirectorCommandKind.CommitCard, heroId, cardInstanceId);
@@ -64,17 +71,63 @@ namespace GuardsDigital.Core.Replay
         public static DirectorCommand ChooseMovementDestination(HexCoordinate destination) =>
             new DirectorCommand(DirectorCommandKind.ChooseMovementDestination, coordinate: destination);
 
+        public static DirectorCommand ChooseMovementDestination(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            HexCoordinate destination) =>
+            new DirectorCommand(
+                DirectorCommandKind.ChooseMovementDestination,
+                coordinate: destination,
+                resolutionId: resolutionId,
+                choiceId: choiceId);
+
         public static DirectorCommand StopMovement() =>
             new DirectorCommand(DirectorCommandKind.StopMovement);
+
+        public static DirectorCommand StopMovement(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId) =>
+            new DirectorCommand(
+                DirectorCommandKind.StopMovement,
+                resolutionId: resolutionId,
+                choiceId: choiceId);
 
         public static DirectorCommand ChooseAttackTarget(HeroId heroId) =>
             new DirectorCommand(DirectorCommandKind.ChooseAttackTarget, heroId);
 
+        public static DirectorCommand ChooseAttackTarget(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            HeroId heroId) =>
+            new DirectorCommand(
+                DirectorCommandKind.ChooseAttackTarget,
+                heroId,
+                resolutionId: resolutionId,
+                choiceId: choiceId);
+
         public static DirectorCommand ChooseDefenseCard(CardInstanceId cardInstanceId) =>
             new DirectorCommand(DirectorCommandKind.ChooseDefenseCard, cardInstanceId: cardInstanceId);
 
+        public static DirectorCommand ChooseDefenseCard(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            CardInstanceId cardInstanceId) =>
+            new DirectorCommand(
+                DirectorCommandKind.ChooseDefenseCard,
+                cardInstanceId: cardInstanceId,
+                resolutionId: resolutionId,
+                choiceId: choiceId);
+
         public static DirectorCommand DeclineDefense() =>
             new DirectorCommand(DirectorCommandKind.DeclineDefense);
+
+        public static DirectorCommand DeclineDefense(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId) =>
+            new DirectorCommand(
+                DirectorCommandKind.DeclineDefense,
+                resolutionId: resolutionId,
+                choiceId: choiceId);
 
         public static DirectorCommand AdvanceEndOfRound() =>
             new DirectorCommand(DirectorCommandKind.AdvanceEndOfRound);
@@ -83,7 +136,8 @@ namespace GuardsDigital.Core.Replay
         {
             return other != null && Kind == other.Kind && HeroId.Equals(other.HeroId) &&
                 CardInstanceId.Equals(other.CardInstanceId) && TeamSide == other.TeamSide &&
-                ActionDefinitionId.Equals(other.ActionDefinitionId) && Coordinate.Equals(other.Coordinate);
+                ActionDefinitionId.Equals(other.ActionDefinitionId) && Coordinate.Equals(other.Coordinate) &&
+                ResolutionId.Equals(other.ResolutionId) && ChoiceId.Equals(other.ChoiceId);
         }
 
         public override bool Equals(object obj) => Equals(obj as DirectorCommand);
@@ -97,7 +151,9 @@ namespace GuardsDigital.Core.Replay
                 hash = (hash * 397) ^ CardInstanceId.GetHashCode();
                 hash = (hash * 397) ^ (int)TeamSide;
                 hash = (hash * 397) ^ ActionDefinitionId.GetHashCode();
-                return (hash * 397) ^ Coordinate.GetHashCode();
+                hash = (hash * 397) ^ Coordinate.GetHashCode();
+                hash = (hash * 397) ^ ResolutionId.GetHashCode();
+                return (hash * 397) ^ ChoiceId.GetHashCode();
             }
         }
 

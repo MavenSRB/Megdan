@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
@@ -39,14 +42,12 @@ namespace GuardsDigital.Presentation.Interaction
             new List<RoundResolutionEvent>();
         private readonly Dictionary<HeroId, PlaceholderMovementHand> placeholderHands =
             new Dictionary<HeroId, PlaceholderMovementHand>();
-        private readonly DirectorCommandHistory directorCommandHistory = new DirectorCommandHistory();
-        private readonly RuleEventLogProjection ruleEventLog = new RuleEventLogProjection();
         private bool placeholderOneVsOneHandsInitialized;
         private MatchParticipants placeholderParticipants;
         private PlaceholderOneVsOneTestConfiguration placeholderConfiguration;
 
         private PlaceholderMovementHand placeholderHand;
-        private RoundResolutionAuthority roundResolutionAuthority;
+        private IMatchSession matchSession;
         private CardActionResolutionAuthority cardResolutionAuthority;
         private CardInstanceId? selectedCardInstanceId;
         private ActionOffer? selectedActionOffer;
@@ -55,9 +56,6 @@ namespace GuardsDigital.Presentation.Interaction
         private int lastCardMovementAllowance;
         private int lastCardRemainingAllowance;
         private string cardStatus = "Select a test card.";
-        private InitialScenarioDescription directorInitialScenario;
-        private bool isReplayingDirectorCommands;
-        private string lastDirectorReplayFailure;
         private bool ruleEventLogExpanded;
         private Vector2 ruleEventLogScrollPosition;
 
@@ -68,7 +66,9 @@ namespace GuardsDigital.Presentation.Interaction
             get
             {
                 InitializeCardDrivenMovementIfEnabled();
-                return placeholderHand != null
+                return matchSession != null
+                    ? matchSession.Projection.Definitions
+                    : placeholderHand != null
                     ? GetAllPlaceholderCardDefinitions()
                     : Array.Empty<CardDefinition>();
             }
@@ -79,7 +79,12 @@ namespace GuardsDigital.Presentation.Interaction
             get
             {
                 InitializeCardDrivenMovementIfEnabled();
-                return placeholderHand != null
+                return matchSession != null && heroView != null
+                    ? matchSession.Projection.Cards
+                        .Where(instance => instance.OwnerId.Equals(heroView.Occupancy.HeroId) &&
+                            instance.State.Location == CardLocation.Hand)
+                        .ToArray()
+                    : placeholderHand != null
                     ? GetVisibleHandInstances(placeholderHand)
                     : Array.Empty<CardInstance>();
             }
@@ -97,10 +102,25 @@ namespace GuardsDigital.Presentation.Interaction
                     return Array.Empty<DirectorTestHand>();
                 }
 
+                var usesStandaloneCardResolution = cardResolutionAuthority != null && !IsVisibleTurnActive;
+                var definitions = usesStandaloneCardResolution
+                    ? GetAllPlaceholderCardDefinitions()
+                    : placeholderConfiguration.CardDefinitions;
+                var instances = usesStandaloneCardResolution
+                    ? GetAllPlaceholderCardInstances()
+                    : placeholderConfiguration.CardInstances;
                 return new[]
                 {
-                    new DirectorTestHand(TeamSide.Red, placeholderConfiguration.RedHand, GetSetupHeroDisplayName(TeamSide.Red)),
-                    new DirectorTestHand(TeamSide.Blue, placeholderConfiguration.BlueHand, GetSetupHeroDisplayName(TeamSide.Blue))
+                    new DirectorTestHand(
+                        TeamSide.Red,
+                        definitions,
+                        instances.Where(instance => TryGetConfiguredTeamSide(instance.OwnerId, out var side) && side == TeamSide.Red),
+                        GetSetupHeroDisplayName(TeamSide.Red)),
+                    new DirectorTestHand(
+                        TeamSide.Blue,
+                        definitions,
+                        instances.Where(instance => TryGetConfiguredTeamSide(instance.OwnerId, out var side) && side == TeamSide.Blue),
+                        GetSetupHeroDisplayName(TeamSide.Blue))
                 };
             }
         }
@@ -120,13 +140,7 @@ namespace GuardsDigital.Presentation.Interaction
 
                 if (IsVisibleTurnActive)
                 {
-                    var turnAuthority = roundResolutionAuthority.CurrentTurnAuthority;
-                    return ActionOfferQuery
-                        .GetAvailableTurnActionOffers(
-                            placeholderConfiguration.CardDefinitions,
-                            GetAllPlaceholderCardInstances(),
-                            turnAuthority.SelectedActor.ActorId,
-                            turnAuthority.SelectedActor.CardInstanceId)
+                    return matchSession.Projection.AvailableTurnActions
                         .Where(offer =>
                         {
                             var kind = GetActionDefinition(offer).Kind;
@@ -155,29 +169,35 @@ namespace GuardsDigital.Presentation.Interaction
             IsCardMovementResolutionPending || IsAttackTargetPending || IsDefenseResponsePending || IsAttackOutcomePending;
 
         public bool IsCardMovementResolutionPending =>
+            matchSession?.Projection.PendingMovementChoice != null ||
             cardResolutionAuthority != null && cardResolutionAuthority.PendingChoice != null;
 
         public bool IsAttackTargetPending =>
+            matchSession?.Projection.PendingAttackTargetChoice != null ||
             cardResolutionAuthority != null && cardResolutionAuthority.PendingAttackTargetChoice != null;
 
         public bool IsDefenseResponsePending =>
+            matchSession?.Projection.PendingDefenseChoice != null ||
             cardResolutionAuthority != null && cardResolutionAuthority.PendingDefenseChoice != null;
 
         public bool IsAttackOutcomePending =>
-            cardResolutionAuthority != null &&
-            cardResolutionAuthority.PendingAttackResolution != null &&
-            cardResolutionAuthority.PendingAttackResolution.Phase == AttackResolutionPhase.CompareOutcome;
+            (matchSession?.Projection.PendingAttackResolution != null &&
+             matchSession.Projection.PendingAttackResolution.Phase == AttackResolutionPhase.CompareOutcome) ||
+            (cardResolutionAuthority != null &&
+             cardResolutionAuthority.PendingAttackResolution != null &&
+             cardResolutionAuthority.PendingAttackResolution.Phase == AttackResolutionPhase.CompareOutcome);
 
-        public PendingMovementChoice PendingCardChoice => cardResolutionAuthority?.PendingChoice;
+        public PendingMovementChoice PendingCardChoice =>
+            matchSession?.Projection.PendingMovementChoice ?? cardResolutionAuthority?.PendingChoice;
 
         public PendingAttackTargetChoice PendingAttackTargetChoice =>
-            cardResolutionAuthority?.PendingAttackTargetChoice;
+            matchSession?.Projection.PendingAttackTargetChoice ?? cardResolutionAuthority?.PendingAttackTargetChoice;
 
         public PendingDefenseResponseChoice PendingDefenseChoice =>
-            cardResolutionAuthority?.PendingDefenseChoice;
+            matchSession?.Projection.PendingDefenseChoice ?? cardResolutionAuthority?.PendingDefenseChoice;
 
         public PendingAttackResolution PendingAttackResolution =>
-            cardResolutionAuthority?.PendingAttackResolution;
+            matchSession?.Projection.PendingAttackResolution ?? cardResolutionAuthority?.PendingAttackResolution;
 
         public IReadOnlyList<ReachableMovementDestination> PendingCardDestinations =>
             PendingCardChoice != null
@@ -193,46 +213,42 @@ namespace GuardsDigital.Presentation.Interaction
 
         public IReadOnlyList<RoundResolutionEvent> RoundResolutionEvents => roundResolutionEvents;
 
-        public IReadOnlyList<RuleEventLogEntry> RuleEventLogEntries => ruleEventLog.Entries;
+        public IReadOnlyList<RuleEventLogEntry> RuleEventLogEntries =>
+            matchSession?.Projection.DiagnosticEvents ?? Array.Empty<RuleEventLogEntry>();
 
         public IReadOnlyList<RoundTurnSlot> CompletedTurnSlots =>
-            roundResolutionAuthority?.TurnSlots ?? Array.Empty<RoundTurnSlot>();
+            matchSession?.Projection.TurnSlots ?? Array.Empty<RoundTurnSlot>();
 
         public IReadOnlyList<CompletedRoundRecord> CompletedRounds =>
-            roundResolutionAuthority?.CompletedRounds ?? Array.Empty<CompletedRoundRecord>();
+            matchSession?.Projection.CompletedRounds ?? Array.Empty<CompletedRoundRecord>();
 
         public EndOfRoundStage? VisibleEndOfRoundStage =>
-            roundResolutionAuthority?.CurrentEndOfRoundStage;
+            matchSession?.Projection.CurrentEndOfRoundStage;
 
-        public int VisibleRoundIndex => roundResolutionAuthority?.RoundIndex ?? 0;
+        public int VisibleRoundIndex => matchSession?.Projection.RoundIndex ?? 0;
 
-        public int VisibleTurnIndex => roundResolutionAuthority?.TurnIndex ?? 0;
+        public int VisibleTurnIndex => matchSession?.Projection.TurnIndex ?? 0;
 
         public RoundResolutionPhase VisibleRoundPhase =>
-            roundResolutionAuthority?.Phase ?? RoundResolutionPhase.AwaitingCommitments;
+            matchSession?.Projection.Phase ?? RoundResolutionPhase.AwaitingCommitments;
 
         public bool IsVisibleRoundEnded =>
-            roundResolutionAuthority != null &&
-            roundResolutionAuthority.Phase == RoundResolutionPhase.EndOfRound;
+            matchSession?.Projection.Phase == RoundResolutionPhase.EndOfRound;
 
         public bool IsVisibleTurnActive =>
-            roundResolutionAuthority?.Phase == RoundResolutionPhase.ResolvingTurn &&
-            roundResolutionAuthority.CurrentTurnAuthority != null &&
-            roundResolutionAuthority.CurrentTurnAuthority.IsStarted &&
-            !roundResolutionAuthority.CurrentTurnAuthority.IsEnded;
+            matchSession?.Projection.IsTurnActive == true;
 
         public bool IsVisibleTurnEnded =>
-            roundResolutionAuthority?.CurrentTurnAuthority != null &&
-            roundResolutionAuthority.CurrentTurnAuthority.IsEnded;
+            matchSession?.Projection.IsTurnEnded == true;
 
         public SelectedInitiativeActor VisibleTurnActor =>
-            roundResolutionAuthority?.CurrentTurnAuthority != null
-                ? roundResolutionAuthority.CurrentTurnAuthority.SelectedActor
+            matchSession != null
+                ? matchSession.Projection.SelectedActor
                 : default;
 
         public bool IsTurnCardRevealComplete =>
-            roundResolutionAuthority?.CurrentCommitmentAuthority != null &&
-            roundResolutionAuthority.CurrentCommitmentAuthority.IsRevealed;
+            matchSession != null && matchSession.Projection.Commitments.All(value =>
+                value.Status == TurnCardCommitmentStatus.Revealed || value.Status == TurnCardCommitmentStatus.Passed);
 
         public IReadOnlyList<HexCoordinate> CardMovementRoute => lastCardMovementRoute;
 
@@ -256,15 +272,16 @@ namespace GuardsDigital.Presentation.Interaction
 
         public string CardStatus => cardStatus;
 
-        public bool CanUndoDirectorCommand => directorCommandHistory.Count > 0;
+        public bool CanUndoDirectorCommand => matchSession?.Projection.AcceptedCommands.Count > 0;
 
-        public bool CanRestartDirectorScenario => directorCommandHistory.Count > 0;
+        public bool CanRestartDirectorScenario => matchSession?.Projection.AcceptedCommands.Count > 0;
 
-        public int DirectorUndoEntryCount => directorCommandHistory.Count;
+        public int DirectorUndoEntryCount => matchSession?.Projection.AcceptedCommands.Count ?? 0;
 
-        public IReadOnlyList<DirectorCommand> DirectorCommandHistory => directorCommandHistory.Commands;
+        public IReadOnlyList<DirectorCommand> DirectorCommandHistory =>
+            matchSession?.Projection.AcceptedCommands ?? Array.Empty<DirectorCommand>();
 
-        public string LastDirectorReplayFailure => lastDirectorReplayFailure;
+        public string LastDirectorReplayFailure { get; private set; }
 
         public bool IsRuleEventLogExpanded => ruleEventLogExpanded;
 
@@ -275,8 +292,8 @@ namespace GuardsDigital.Presentation.Interaction
             get
             {
                 InitializeCardDrivenMovementIfEnabled();
-                return roundResolutionAuthority != null
-                    ? roundResolutionAuthority.TieBreakerState
+                return matchSession != null
+                    ? matchSession.Projection.TieBreakerState
                     : placeholderConfiguration != null
                     ? placeholderConfiguration.TieBreakerState
                     : default;
@@ -316,7 +333,7 @@ namespace GuardsDigital.Presentation.Interaction
             placeholderParticipants = null;
             placeholderHand = null;
             turnCardCommitmentEvents.Clear();
-            roundResolutionAuthority = null;
+            matchSession = null;
             roundResolutionEvents.Clear();
             turnResolutionEvents.Clear();
             ResetCardDrivenMovementPresentation();
@@ -326,12 +343,12 @@ namespace GuardsDigital.Presentation.Interaction
         public string CaptureAuthoritativeSnapshot()
         {
             InitializeCardDrivenMovementIfEnabled();
-            if (roundResolutionAuthority == null || moveAuthority == null)
+            if (matchSession == null)
             {
                 throw new InvalidOperationException("The visible authoritative match is not initialized.");
             }
 
-            return CaptureRuleEventLogSnapshot();
+            return matchSession.CaptureSnapshot();
         }
 
         public void ToggleRuleEventLog()
@@ -346,18 +363,22 @@ namespace GuardsDigital.Presentation.Interaction
 
         public bool TryUndoDirectorCommand()
         {
-            if (!CanUndoDirectorCommand)
+            if (!CanUndoDirectorCommand || matchSession == null)
             {
                 return false;
             }
 
-            var retainedCommands = directorCommandHistory.WithoutLatest();
-            if (!TryReconstructDirectorScenario(retainedCommands))
+            var result = matchSession.Undo();
+            if (!result.Accepted)
             {
+                LastDirectorReplayFailure = result.Detail;
+                cardStatus = result.Detail;
                 return false;
             }
 
-            directorCommandHistory.ReplaceWith(retainedCommands);
+            LastDirectorReplayFailure = null;
+            SyncSessionProjectionToPresentation(true);
+            RebuildSessionInteractionProjection();
             cardStatus = $"Undo restored round {VisibleRoundIndex}, turn {VisibleTurnIndex}/" +
                 $"{RoundResolutionAuthority.TurnsPerRound}: {VisibleRoundPhase}.";
             return true;
@@ -365,17 +386,22 @@ namespace GuardsDigital.Presentation.Interaction
 
         public bool TryRestartDirectorScenario()
         {
-            if (!CanRestartDirectorScenario || directorInitialScenario == null)
+            if (!CanRestartDirectorScenario || matchSession == null)
             {
                 return false;
             }
 
-            if (!TryReconstructDirectorScenario(Array.Empty<DirectorCommand>()))
+            var result = matchSession.Restart();
+            if (!result.Accepted)
             {
+                LastDirectorReplayFailure = result.Detail;
+                cardStatus = result.Detail;
                 return false;
             }
 
-            directorCommandHistory.Clear();
+            LastDirectorReplayFailure = null;
+            SyncSessionProjectionToPresentation(true);
+            RebuildSessionInteractionProjection();
             cardStatus = $"Restarted initial scenario at round {VisibleRoundIndex}, turn {VisibleTurnIndex}/" +
                 $"{RoundResolutionAuthority.TurnsPerRound}.";
             return true;
@@ -384,72 +410,18 @@ namespace GuardsDigital.Presentation.Interaction
         private void RestoreAuthoritativeSnapshot(string payload, bool resetDirectorHistory)
         {
             InitializeCardDrivenMovementIfEnabled();
-            if (placeholderConfiguration == null)
+            if (matchSession == null)
             {
-                throw new InvalidOperationException("The visible placeholder rules content is not initialized.");
+                throw new InvalidOperationException("The visible match session is not initialized.");
             }
 
-            var hasRuleEventLog = RuleEventLogSnapshotEnvelope.TryDeserialize(payload, out var envelope);
-            var authoritativePayload = hasRuleEventLog ? envelope.AuthoritativePayload : payload;
-            var restored = AuthoritativeSnapshotSerializer.Deserialize(
-                authoritativePayload,
-                placeholderConfiguration.CardDefinitions,
-                OfficialBoardMapCatalog.Load().Definitions);
-            placeholderConfiguration = PlaceholderOneVsOneTestConfiguration.Restore(
-                restored.Participants,
-                placeholderConfiguration.CardDefinitions,
-                restored.Cards,
-                restored.Round.TieBreakerState);
-            placeholderParticipants = restored.Participants;
-            placeholderHands.Clear();
-            placeholderHands[placeholderConfiguration.RedHand.Instances[0].OwnerId] = placeholderConfiguration.RedHand;
-            placeholderHands[placeholderConfiguration.BlueHand.Instances[0].OwnerId] = placeholderConfiguration.BlueHand;
-            placeholderOneVsOneHandsInitialized = true;
-            moveAuthority = restored.Board;
-            cardResolutionAuthority = restored.CardActions;
-            roundResolutionAuthority = restored.Round;
-            selectedCardInstanceId = null;
-            selectedActionOffer = null;
-            cardResolutionEvents.Clear();
-            turnCardCommitmentEvents.Clear();
-            turnResolutionEvents.Clear();
-            roundResolutionEvents.Clear();
-            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
-            LastTurnRejectionReason = TurnResolutionRejectionReason.None;
-            LastRoundRejectionReason = RoundResolutionRejectionReason.None;
-            LastAttackOutcome = AttackResolutionOutcome.None;
-            if (hasRuleEventLog)
+            var result = matchSession.RestoreSnapshot(payload);
+            if (!result.Accepted)
             {
-                ruleEventLog.Restore(envelope.Entries);
-            }
-            else
-            {
-                ruleEventLog.ResetToSetup(restored.Participants, restored.Round.TieBreakerState);
+                throw new InvalidOperationException(result.Detail);
             }
 
-            if (resetDirectorHistory)
-            {
-                directorCommandHistory.Clear();
-                directorInitialScenario = CanCaptureDirectorInitialScenario()
-                    ? CaptureInitialScenarioDescription()
-                    : null;
-            }
-
-            foreach (var view in new[] { heroView }.Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>()).Where(view => view != null))
-            {
-                var occupancy = restored.Board.Occupancies.Single(value => value.HeroId.Equals(view.Occupancy.HeroId));
-                view.Configure(occupancy, view.OuterRadius);
-            }
-            foreach (var view in obstacleViews ?? Array.Empty<GuardsDigital.Presentation.Board.PlaceholderObstacleView>())
-            {
-                if (view == null) continue;
-                var occupancy = restored.Board.ObstacleOccupancies.Single(value => value.ObstacleId.Equals(view.Occupancy.ObstacleId));
-                view.Configure(occupancy, view.OuterRadius);
-            }
-
-            placeholderHand = heroView != null && placeholderHands.TryGetValue(heroView.Occupancy.HeroId, out var activeHand)
-                ? activeHand
-                : null;
+            SyncSessionProjectionToPresentation(true);
             ClearSelectionVisuals();
             if (IsVisibleTurnActive && VisibleTurnActor.IsDefined)
             {
@@ -533,9 +505,8 @@ namespace GuardsDigital.Presentation.Interaction
             InitializeCardDrivenMovementIfEnabled();
             EnsurePlaceholderOneVsOneHands();
             EnsureRoundResolutionAuthority();
-            return roundResolutionAuthority?.CurrentCommitmentAuthority != null
-                ? roundResolutionAuthority.CurrentCommitmentAuthority.GetStatus(
-                    GetSingleFixtureHeroId(side))
+            return matchSession != null
+                ? matchSession.Projection.GetCommitment(GetSingleFixtureHeroId(side)).Status
                 : TurnCardCommitmentStatus.AwaitingResponse;
         }
 
@@ -557,8 +528,8 @@ namespace GuardsDigital.Presentation.Interaction
                 return "PASS - NO CARD";
             }
 
-            var cardId = roundResolutionAuthority.CurrentCommitmentAuthority
-                .GetRevealedCardInstanceId(GetSingleFixtureHeroId(side));
+            var cardId = matchSession?.Projection
+                .GetCommitment(GetSingleFixtureHeroId(side)).RevealedCardInstanceId;
             var card = cardId.HasValue
                 ? GetAllPlaceholderCardInstances().Single(instance => instance.Id.Equals(cardId.Value))
                 : null;
@@ -576,9 +547,8 @@ namespace GuardsDigital.Presentation.Interaction
             InitializeCardDrivenMovementIfEnabled();
             EnsurePlaceholderOneVsOneHands();
             EnsureRoundResolutionAuthority();
-            return roundResolutionAuthority?.Phase == RoundResolutionPhase.AwaitingCommitments &&
-                roundResolutionAuthority.CurrentCommitmentAuthority.CanPass(
-                    GetSingleFixtureHeroId(side));
+            return matchSession?.Projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
+                matchSession.Projection.GetCommitment(GetSingleFixtureHeroId(side)).CanPass;
         }
 
         public bool TryConfirmSelectedTurnCard()
@@ -587,7 +557,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (!cardDrivenMovementEnabled ||
                 IsCardResolutionPending ||
                 !selectedCardInstanceId.HasValue ||
-                roundResolutionAuthority == null)
+                matchSession == null)
             {
                 return false;
             }
@@ -600,21 +570,18 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var side = placeholderParticipants.GetTeamForHero(selectedCard.OwnerId).Side;
-            EnsureDirectorInitialScenario();
-            var result = roundResolutionAuthority.TryCommitCard(selectedCard.OwnerId, selectedCard.Id);
+            var result = ExecuteSessionCommand(DirectorCommand.CommitCard(selectedCard.OwnerId, selectedCard.Id));
             if (!result.Accepted)
             {
-                RecordRoundRejection(result);
-                cardStatus = $"Turn card rejected: {FormatRoundRejection(result)}.";
+                RecordSessionRejection(result);
+                cardStatus = $"Turn card rejected: {result.Detail}.";
                 return false;
             }
 
-            RecordAcceptedDirectorCommand(DirectorCommand.CommitCard(selectedCard.OwnerId, selectedCard.Id));
-            RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             selectedCardInstanceId = null;
             selectedActionOffer = null;
-            if (roundResolutionAuthority.Phase == RoundResolutionPhase.ResolvingTurn)
+            if (VisibleRoundPhase == RoundResolutionPhase.ResolvingTurn)
             {
                 if (HasCompletePlaceholderRoundBindings())
                 {
@@ -635,27 +602,24 @@ namespace GuardsDigital.Presentation.Interaction
         public bool TryPassTurnCard(TeamSide side)
         {
             InitializeCardDrivenMovementIfEnabled();
-            if (!cardDrivenMovementEnabled || IsCardResolutionPending || roundResolutionAuthority == null)
+            if (!cardDrivenMovementEnabled || IsCardResolutionPending || matchSession == null)
             {
                 return false;
             }
 
             var heroId = GetSingleFixtureHeroId(side);
-            EnsureDirectorInitialScenario();
-            var result = roundResolutionAuthority.TryPass(heroId);
+            var result = ExecuteSessionCommand(DirectorCommand.Pass(heroId));
             if (!result.Accepted)
             {
-                RecordRoundRejection(result);
-                cardStatus = $"Pass rejected: {FormatRoundRejection(result)}.";
+                RecordSessionRejection(result);
+                cardStatus = $"Pass rejected: {result.Detail}.";
                 return false;
             }
 
-            RecordAcceptedDirectorCommand(DirectorCommand.Pass(heroId));
-            RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             selectedCardInstanceId = null;
             selectedActionOffer = null;
-            if (roundResolutionAuthority.Phase == RoundResolutionPhase.ResolvingTurn)
+            if (VisibleRoundPhase == RoundResolutionPhase.ResolvingTurn)
             {
                 if (HasCompletePlaceholderRoundBindings())
                 {
@@ -676,22 +640,19 @@ namespace GuardsDigital.Presentation.Interaction
         public bool TryPerformHold(CardInstanceId cardInstanceId)
         {
             InitializeCardDrivenMovementIfEnabled();
-            if (!cardDrivenMovementEnabled || IsCardResolutionPending || roundResolutionAuthority == null)
+            if (!cardDrivenMovementEnabled || IsCardResolutionPending || matchSession == null)
             {
                 return false;
             }
 
-            EnsureDirectorInitialScenario();
-            var result = roundResolutionAuthority.TryPerformHold(cardInstanceId);
+            var result = ExecuteSessionCommand(DirectorCommand.PerformHold(cardInstanceId));
             if (!result.Accepted)
             {
-                RecordRoundRejection(result);
-                cardStatus = $"Hold rejected: {FormatRoundRejection(result)}.";
+                RecordSessionRejection(result);
+                cardStatus = $"Hold rejected: {result.Detail}.";
                 return false;
             }
 
-            RecordAcceptedDirectorCommand(DirectorCommand.PerformHold(cardInstanceId));
-            RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             LastTurnRejectionReason = TurnResolutionRejectionReason.None;
             RefreshVisibleRoundState("Hold completed.");
@@ -701,23 +662,20 @@ namespace GuardsDigital.Presentation.Interaction
         public bool TryAdvanceEndOfRound()
         {
             InitializeCardDrivenMovementIfEnabled();
-            if (!cardDrivenMovementEnabled || IsCardResolutionPending || roundResolutionAuthority == null)
+            if (!cardDrivenMovementEnabled || IsCardResolutionPending || matchSession == null)
             {
                 return false;
             }
 
-            var completedStage = roundResolutionAuthority.CurrentEndOfRoundStage;
-            EnsureDirectorInitialScenario();
-            var result = roundResolutionAuthority.TryAdvanceEndOfRound();
+            var completedStage = matchSession.Projection.CurrentEndOfRoundStage;
+            var result = ExecuteSessionCommand(DirectorCommand.AdvanceEndOfRound());
             if (!result.Accepted)
             {
-                RecordRoundRejection(result);
-                cardStatus = $"End-of-round progression rejected: {FormatRoundRejection(result)}.";
+                RecordSessionRejection(result);
+                cardStatus = $"End-of-round progression rejected: {result.Detail}.";
                 return false;
             }
 
-            RecordAcceptedDirectorCommand(DirectorCommand.AdvanceEndOfRound());
-            RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             var stageLabel = completedStage.HasValue
                 ? FormatEndOfRoundStage(completedStage.Value)
@@ -729,22 +687,19 @@ namespace GuardsDigital.Presentation.Interaction
         public bool TryChooseTiedActor(TeamSide choosingSide, CardInstanceId cardInstanceId)
         {
             InitializeCardDrivenMovementIfEnabled();
-            if (!cardDrivenMovementEnabled || IsCardResolutionPending || roundResolutionAuthority == null)
+            if (!cardDrivenMovementEnabled || IsCardResolutionPending || matchSession == null)
             {
                 return false;
             }
 
-            EnsureDirectorInitialScenario();
-            var result = roundResolutionAuthority.TryChooseTiedActor(choosingSide, cardInstanceId);
+            var result = ExecuteSessionCommand(DirectorCommand.ChooseTiedActor(choosingSide, cardInstanceId));
             if (!result.Accepted)
             {
-                RecordRoundRejection(result);
-                cardStatus = $"Initiative choice rejected: {FormatRoundRejection(result)}.";
+                RecordSessionRejection(result);
+                cardStatus = $"Initiative choice rejected: {result.Detail}.";
                 return false;
             }
 
-            RecordAcceptedDirectorCommand(DirectorCommand.ChooseTiedActor(choosingSide, cardInstanceId));
-            RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             LastTurnRejectionReason = TurnResolutionRejectionReason.None;
             RefreshVisibleRoundState("Initiative tie resolved.");
@@ -769,16 +724,9 @@ namespace GuardsDigital.Presentation.Interaction
 
             if (IsVisibleTurnActive)
             {
-                EnsureDirectorInitialScenario();
-                var accepted = GetActionDefinition(matchingOffers[0]).Kind == ActionKind.Attack
+                return GetActionDefinition(matchingOffers[0]).Kind == ActionKind.Attack
                     ? StartVisibleTurnAttack(matchingOffers[0])
                     : StartVisibleTurnMovement(matchingOffers[0]);
-                if (accepted)
-                {
-                    RecordAcceptedDirectorCommand(DirectorCommand.StartAction(actionDefinitionId));
-                }
-
-                return accepted;
             }
 
             if (cardResolutionAuthority == null)
@@ -806,7 +754,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 LastCardRejectionReason = start.RejectionReason;
                 cardStatus = $"Action rejected: {start.RejectionReason}";
-                if (roundResolutionAuthority == null)
+                if (matchSession == null)
                 {
                     cardResolutionAuthority = null;
                 }
@@ -840,18 +788,18 @@ namespace GuardsDigital.Presentation.Interaction
                 targetHeroId);
             if (IsVisibleTurnActive)
             {
-                EnsureDirectorInitialScenario();
-                var roundResult = roundResolutionAuthority.TryAnswerAttackTarget(command);
-                if (!roundResult.Accepted)
+                var sessionResult = ExecuteSessionCommand(DirectorCommand.ChooseAttackTarget(
+                    command.ResolutionId,
+                    command.ChoiceId,
+                    targetHeroId));
+                if (!sessionResult.Accepted)
                 {
-                    RecordRoundRejection(roundResult);
-                    cardStatus = $"Turn Attack target rejected: {FormatRoundRejection(roundResult)}. " +
+                    RecordSessionRejection(sessionResult);
+                    cardStatus = $"Turn Attack target rejected: {sessionResult.Detail}. " +
                         "Choose a legal enemy hero.";
                     return false;
                 }
 
-                RecordAcceptedDirectorCommand(DirectorCommand.ChooseAttackTarget(targetHeroId));
-                RecordRoundEvents(roundResult.Events);
                 LastRoundRejectionReason = RoundResolutionRejectionReason.None;
                 LastTurnRejectionReason = TurnResolutionRejectionReason.None;
                 LastCardRejectionReason = CardActionResolutionRejectionReason.None;
@@ -955,16 +903,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             if (IsVisibleTurnActive)
             {
-                EnsureDirectorInitialScenario();
-                var accepted = SubmitVisibleTurnMovementChoice(command);
-                if (accepted)
-                {
-                    RecordAcceptedDirectorCommand(command.ChoiceKind == MovementChoiceKind.Stop
-                        ? DirectorCommand.StopMovement()
-                        : DirectorCommand.ChooseMovementDestination(command.Destination));
-                }
-
-                return accepted;
+                return SubmitVisibleTurnMovementChoice(command);
             }
 
             var choiceBeforeSubmission = PendingCardChoice;
@@ -1020,7 +959,7 @@ namespace GuardsDigital.Presentation.Interaction
             ClearSelectionVisuals();
             selectedCardInstanceId = null;
             selectedActionOffer = null;
-            if (roundResolutionAuthority == null)
+            if (matchSession == null)
             {
                 cardResolutionAuthority = null;
             }
@@ -1074,18 +1013,14 @@ namespace GuardsDigital.Presentation.Interaction
         {
             placeholderHand = null;
             cardResolutionAuthority = null;
-            roundResolutionAuthority = null;
+            matchSession = null;
             selectedCardInstanceId = null;
             selectedActionOffer = null;
             cardResolutionEvents.Clear();
             turnCardCommitmentEvents.Clear();
             turnResolutionEvents.Clear();
             roundResolutionEvents.Clear();
-            ruleEventLog.Restore(Array.Empty<RuleEventLogEntry>());
-            directorCommandHistory.Clear();
-            directorInitialScenario = null;
-            isReplayingDirectorCommands = false;
-            lastDirectorReplayFailure = null;
+            LastDirectorReplayFailure = null;
             quickGameSetupState = null;
             ruleEventLogExpanded = false;
             ruleEventLogScrollPosition = Vector2.zero;
@@ -1132,7 +1067,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void EnsureRoundResolutionAuthority()
         {
-            if (roundResolutionAuthority != null ||
+            if (matchSession != null ||
                 placeholderConfiguration == null ||
                 placeholderParticipants == null)
             {
@@ -1162,16 +1097,35 @@ namespace GuardsDigital.Presentation.Interaction
                 RebuildMoveAuthority();
             }
 
-            cardResolutionAuthority = moveAuthority != null
-                ? new CardActionResolutionAuthority(moveAuthority)
-                : null;
-            roundResolutionAuthority = new RoundResolutionAuthority(
-                placeholderConfiguration.CardDefinitions,
-                GetAllPlaceholderCardInstances(),
+            if (moveAuthority == null || quickGameSetupState == null)
+            {
+                var selectedMap = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+                quickGameSetupState = QuickGameSetupAuthority.Create(
+                    QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                    placeholderConfiguration.Participants,
+                    selectedMap,
+                    placeholderConfiguration.TieBreakerState);
+                moveAuthority = new AdjacentMoveAuthority(
+                    selectedMap,
+                    quickGameSetupState.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                    Array.Empty<ObstacleOccupancy>());
+            }
+
+            var scenario = new InitialScenarioDescription(
                 placeholderParticipants,
+                placeholderConfiguration.CardDefinitions,
+                placeholderConfiguration.CardInstances,
                 placeholderConfiguration.TieBreakerState,
-                cardActions: cardResolutionAuthority);
-            ruleEventLog.ResetToSetup(placeholderParticipants, placeholderConfiguration.TieBreakerState);
+                moveAuthority.SelectedMap,
+                moveAuthority.Occupancies,
+                moveAuthority.ObstacleOccupancies);
+            matchSession = new MatchSession(new MatchSessionInitialState(
+                scenario,
+                quickGameSetupState,
+                OfficialBoardMapCatalog.Load().Definitions,
+                placeholderConfiguration));
+            cardResolutionAuthority = null;
+            SyncSessionProjectionToPresentation();
             cardStatus = $"Round {VisibleRoundIndex}, turn {VisibleTurnIndex}/{RoundResolutionAuthority.TurnsPerRound}: " +
                 "awaiting Red and Blue commitments.";
         }
@@ -1196,25 +1150,20 @@ namespace GuardsDigital.Presentation.Interaction
         private bool StartVisibleTurnMovement(ActionOffer offer)
         {
             selectedActionOffer = offer;
-            cardResolutionSequence++;
             cardResolutionEvents.Clear();
             lastCardMovementRoute = Array.Empty<HexCoordinate>();
-            var result = roundResolutionAuthority.TryStartMovement(
-                new ActionResolutionId($"visible-turn-movement-{cardResolutionSequence}"),
-                offer);
+            var result = ExecuteSessionCommand(DirectorCommand.StartAction(offer.ActionDefinitionId));
             if (!result.Accepted)
             {
-                RecordRoundRejection(result);
-                cardStatus = $"Turn action rejected: {FormatRoundRejection(result)}.";
+                RecordSessionRejection(result);
+                cardStatus = $"Turn action rejected: {result.Detail}.";
                 selectedActionOffer = null;
                 return false;
             }
 
-            RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
-            var turnAuthority = roundResolutionAuthority.CurrentTurnAuthority;
-            var pending = turnAuthority.PendingMovementResolution;
-            var choice = turnAuthority.PendingMovementChoice;
+            var pending = matchSession.Projection.PendingMovementResolution;
+            var choice = matchSession.Projection.PendingMovementChoice;
             lastCardMovementAllowance = pending.MovementAllowance;
             lastCardRemainingAllowance = pending.RemainingAllowance;
             LastCardInvocationContext = pending.InvocationContext;
@@ -1231,6 +1180,15 @@ namespace GuardsDigital.Presentation.Interaction
         private bool SubmitVisibleTurnMovementChoice(MovementChoiceCommand command)
         {
             var choiceBeforeSubmission = PendingCardChoice;
+            if (!command.ResolutionId.Equals(choiceBeforeSubmission.ResolutionId) ||
+                !command.ChoiceId.Equals(choiceBeforeSubmission.ChoiceId))
+            {
+                LastRoundRejectionReason = RoundResolutionRejectionReason.TurnCommandRejected;
+                LastTurnRejectionReason = TurnResolutionRejectionReason.MovementCommandRejected;
+                cardStatus = "Turn choice rejected: stale Movement choice. Choose again.";
+                return false;
+            }
+
             ReachableMovementDestination? selectedDestination = null;
             if (command.ChoiceKind == MovementChoiceKind.Destination)
             {
@@ -1247,19 +1205,24 @@ namespace GuardsDigital.Presentation.Interaction
             var completedContext = selectedActionOffer.HasValue
                 ? FormatContext(selectedActionOffer.Value.InvocationContext)
                 : "Movement";
-            var result = roundResolutionAuthority.TryAnswerMovementChoice(command);
+            var sessionCommand = command.ChoiceKind == MovementChoiceKind.Stop
+                ? DirectorCommand.StopMovement(command.ResolutionId, command.ChoiceId)
+                : DirectorCommand.ChooseMovementDestination(
+                    command.ResolutionId,
+                    command.ChoiceId,
+                    command.Destination);
+            var result = ExecuteSessionCommand(sessionCommand);
             if (!result.Accepted)
             {
-                RecordRoundRejection(result);
-                cardStatus = $"Turn choice rejected: {FormatRoundRejection(result)}. Choose again.";
+                RecordSessionRejection(result);
+                cardStatus = $"Turn choice rejected: {result.Detail}. Choose again.";
                 return false;
             }
 
-            RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
-            var turnAuthority = roundResolutionAuthority.CurrentTurnAuthority;
-            lastCardRemainingAllowance = turnAuthority?.PendingMovementResolution != null
-                ? turnAuthority.PendingMovementResolution.RemainingAllowance
+            var projection = matchSession.Projection;
+            lastCardRemainingAllowance = projection.PendingMovementResolution != null
+                ? projection.PendingMovementResolution.RemainingAllowance
                 : selectedDestination.HasValue
                     ? choiceBeforeSubmission.RemainingAllowance - selectedDestination.Value.Cost
                     : choiceBeforeSubmission.RemainingAllowance;
@@ -1274,12 +1237,12 @@ namespace GuardsDigital.Presentation.Interaction
             heroView.Configure(updatedOccupancy, heroView.OuterRadius);
             LastCardRejectionReason = CardActionResolutionRejectionReason.None;
             LastTurnRejectionReason = TurnResolutionRejectionReason.None;
-            if (turnAuthority?.PendingMovementChoice != null)
+            if (projection.PendingMovementChoice != null)
             {
                 cardStatus = $"{completedCardName}: {completedContext} Movement has " +
-                    $"{turnAuthority.PendingMovementChoice.RemainingAllowance} remaining. " +
+                    $"{projection.PendingMovementChoice.RemainingAllowance} remaining. " +
                     "Choose another destination or Stop.";
-                RefreshCardChoiceHighlights(turnAuthority.PendingMovementChoice);
+                RefreshCardChoiceHighlights(projection.PendingMovementChoice);
                 return true;
             }
 
@@ -1296,15 +1259,16 @@ namespace GuardsDigital.Presentation.Interaction
         {
             ClearSelectionVisuals();
             selectedActionOffer = null;
-            if (roundResolutionAuthority.Phase == RoundResolutionPhase.EndOfRound)
+            var projection = matchSession.Projection;
+            if (projection.Phase == RoundResolutionPhase.EndOfRound)
             {
                 selectedCardInstanceId = null;
                 cardStatus = $"{statusPrefix} ROUND {VisibleRoundIndex} COMPLETE - END OF ROUND. " +
-                    $"Next checkpoint: {FormatEndOfRoundStage(roundResolutionAuthority.CurrentEndOfRoundStage.Value)}.";
+                    $"Next checkpoint: {FormatEndOfRoundStage(projection.CurrentEndOfRoundStage.Value)}.";
                 return;
             }
 
-            if (roundResolutionAuthority.Phase == RoundResolutionPhase.AwaitingCommitments)
+            if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
             {
                 selectedCardInstanceId = null;
                 cardStatus = $"{statusPrefix} Round {VisibleRoundIndex}, turn {VisibleTurnIndex}/" +
@@ -1312,15 +1276,14 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            var turnAuthority = roundResolutionAuthority.CurrentTurnAuthority;
-            if (!turnAuthority.SelectedActor.IsDefined)
+            if (!projection.SelectedActor.IsDefined)
             {
                 selectedCardInstanceId = null;
                 cardStatus = $"{statusPrefix} Awaiting the Initiative tie choice.";
                 return;
             }
 
-            var actor = turnAuthority.SelectedActor;
+            var actor = projection.SelectedActor;
             FocusVisibleTurnHero(actor.ActorId);
             selectedCardInstanceId = actor.CardInstanceId;
             cardStatus = $"{statusPrefix} Round {VisibleRoundIndex}, turn {VisibleTurnIndex}/" +
@@ -1355,7 +1318,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 LastCardRejectionReason = start.RejectionReason;
                 cardStatus = $"Attack rejected: {start.RejectionReason}";
-                if (roundResolutionAuthority == null)
+                if (matchSession == null)
                 {
                     cardResolutionAuthority = null;
                 }
@@ -1383,20 +1346,16 @@ namespace GuardsDigital.Presentation.Interaction
         private bool StartVisibleTurnAttack(ActionOffer offer)
         {
             selectedActionOffer = offer;
-            cardResolutionSequence++;
             cardResolutionEvents.Clear();
-            var result = roundResolutionAuthority.TryStartAttack(
-                new ActionResolutionId($"visible-turn-attack-{cardResolutionSequence}"),
-                offer);
+            var result = ExecuteSessionCommand(DirectorCommand.StartAction(offer.ActionDefinitionId));
             if (!result.Accepted)
             {
-                RecordRoundRejection(result);
-                cardStatus = $"Turn Attack rejected: {FormatRoundRejection(result)}.";
+                RecordSessionRejection(result);
+                cardStatus = $"Turn Attack rejected: {result.Detail}.";
                 selectedActionOffer = null;
                 return false;
             }
 
-            RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             LastCardInvocationContext = offer.InvocationContext;
             LastCardTextApplicationPolicy = GetActionDefinition(offer).DefaultPolicy.CardTextApplication;
@@ -1423,16 +1382,7 @@ namespace GuardsDigital.Presentation.Interaction
                     : null;
             if (IsVisibleTurnActive)
             {
-                EnsureDirectorInitialScenario();
-                var accepted = SubmitVisibleTurnDefenseResponse(command, selectedCardId);
-                if (accepted)
-                {
-                    RecordAcceptedDirectorCommand(selectedCardId.HasValue
-                        ? DirectorCommand.ChooseDefenseCard(selectedCardId.Value)
-                        : DirectorCommand.DeclineDefense());
-                }
-
-                return accepted;
+                return SubmitVisibleTurnDefenseResponse(command, selectedCardId);
             }
 
             var result = cardResolutionAuthority.AnswerDefenseResponse(
@@ -1487,7 +1437,7 @@ namespace GuardsDigital.Presentation.Interaction
             ClearSelectionVisuals();
             selectedCardInstanceId = null;
             selectedActionOffer = null;
-            if (roundResolutionAuthority == null)
+            if (matchSession == null)
             {
                 cardResolutionAuthority = null;
             }
@@ -1506,15 +1456,20 @@ namespace GuardsDigital.Presentation.Interaction
                     .SingleOrDefault()
                 : null;
 
-            var result = roundResolutionAuthority.TryAnswerDefenseResponse(command);
+            var sessionCommand = selectedDefenseCardId.HasValue
+                ? DirectorCommand.ChooseDefenseCard(
+                    command.ResolutionId,
+                    command.ChoiceId,
+                    selectedDefenseCardId.Value)
+                : DirectorCommand.DeclineDefense(command.ResolutionId, command.ChoiceId);
+            var result = ExecuteSessionCommand(sessionCommand);
             if (!result.Accepted)
             {
-                RecordRoundRejection(result);
-                cardStatus = $"Turn Defense response rejected: {FormatRoundRejection(result)}. Choose again.";
+                RecordSessionRejection(result);
+                cardStatus = $"Turn Defense response rejected: {result.Detail}. Choose again.";
                 return false;
             }
 
-            RecordRoundEvents(result.Events);
             LastRoundRejectionReason = RoundResolutionRejectionReason.None;
             var attackEvents = result.Events
                 .Where(ruleEvent => ruleEvent.Kind == RoundResolutionEventKind.TurnResolutionProgressed &&
@@ -1553,7 +1508,6 @@ namespace GuardsDigital.Presentation.Interaction
             foreach (var roundEvent in events)
             {
                 roundResolutionEvents.Add(roundEvent);
-                ruleEventLog.Append(new[] { roundEvent });
                 if (roundEvent.Kind == RoundResolutionEventKind.CommitmentProgressed)
                 {
                     turnCardCommitmentEvents.Add(roundEvent.CommitmentEvent);
@@ -1575,205 +1529,108 @@ namespace GuardsDigital.Presentation.Interaction
             }
         }
 
-        private string CaptureRuleEventLogSnapshot()
+
+        private MatchCommandResult ExecuteSessionCommand(DirectorCommand command)
         {
-            var authoritativePayload = AuthoritativeSnapshotSerializer.Serialize(
-                roundResolutionAuthority,
-                moveAuthority);
-            return RuleEventLogSnapshotEnvelope.Serialize(authoritativePayload, ruleEventLog.Entries);
+            if (matchSession == null)
+            {
+                throw new InvalidOperationException("The configured match session is not initialized.");
+            }
+
+            var result = matchSession.Execute(command);
+            if (result.Accepted)
+            {
+                SyncSessionProjectionToPresentation();
+            }
+
+            return result;
         }
 
-        private void EnsureDirectorInitialScenario()
+        private void SyncSessionProjectionToPresentation(bool replaceConfiguration = false)
         {
-            if (!isReplayingDirectorCommands &&
-                directorInitialScenario == null &&
-                placeholderConfiguration != null &&
-                roundResolutionAuthority != null &&
-                moveAuthority != null &&
-                CanCaptureDirectorInitialScenario())
+            if (matchSession == null)
             {
-                directorInitialScenario = CaptureInitialScenarioDescription();
-            }
-        }
-
-        private bool CanCaptureDirectorInitialScenario()
-        {
-            return roundResolutionAuthority != null &&
-                roundResolutionAuthority.RoundIndex == 1 &&
-                roundResolutionAuthority.TurnIndex == 1 &&
-                roundResolutionAuthority.Phase == RoundResolutionPhase.AwaitingCommitments &&
-                roundResolutionAuthority.TurnSlots.Count == 0 &&
-                roundResolutionAuthority.CompletedRounds.Count == 0 &&
-                ruleEventLog.Entries.Count == 1;
-        }
-
-        private InitialScenarioDescription CaptureInitialScenarioDescription()
-        {
-            if (placeholderConfiguration == null || roundResolutionAuthority == null || moveAuthority == null)
-            {
-                throw new InvalidOperationException("The initial director scenario is not fully initialized.");
+                return;
             }
 
-            return new InitialScenarioDescription(
-                placeholderParticipants,
-                placeholderConfiguration.CardDefinitions,
-                GetAllPlaceholderCardInstances(),
-                roundResolutionAuthority.TieBreakerState,
-                moveAuthority.SelectedMap,
-                moveAuthority.Occupancies,
-                moveAuthority.ObstacleOccupancies);
-        }
-
-        private void RecordAcceptedDirectorCommand(DirectorCommand command)
-        {
-            if (!isReplayingDirectorCommands && directorInitialScenario != null)
+            var projection = matchSession.Projection;
+            if (replaceConfiguration || placeholderConfiguration == null)
             {
-                directorCommandHistory.Append(command);
+                placeholderConfiguration = PlaceholderOneVsOneTestConfiguration.Restore(
+                    projection.Participants,
+                    projection.Definitions,
+                    projection.Cards,
+                    projection.TieBreakerState);
             }
-        }
-
-        private bool TryReconstructDirectorScenario(IReadOnlyList<DirectorCommand> retainedCommands)
-        {
-            if (directorInitialScenario == null)
-            {
-                lastDirectorReplayFailure = "The immutable initial scenario is unavailable.";
-                cardStatus = $"Director replay failed: {lastDirectorReplayFailure}";
-                return false;
-            }
-
-            var rollbackPayload = CaptureRuleEventLogSnapshot();
-            try
-            {
-                var first = RebuildAndReplayDirectorCommands(retainedCommands);
-                var second = RebuildAndReplayDirectorCommands(retainedCommands);
-                if (!string.Equals(first, second, StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException(
-                        "Replaying the same initial scenario and command prefix produced different authoritative state or events.");
-                }
-
-                lastDirectorReplayFailure = null;
-                return true;
-            }
-            catch (Exception exception)
-            {
-                RestoreAuthoritativeSnapshot(rollbackPayload, false);
-                lastDirectorReplayFailure = exception.Message;
-                cardStatus = $"Director replay failed without changing the match: {exception.Message}";
-                return false;
-            }
-            finally
-            {
-                isReplayingDirectorCommands = false;
-            }
-        }
-
-        private string RebuildAndReplayDirectorCommands(IEnumerable<DirectorCommand> commands)
-        {
-            RebuildDirectorInitialScenario();
-            isReplayingDirectorCommands = true;
-            var index = 0;
-            foreach (var command in commands)
-            {
-                index++;
-                if (!ReplayDirectorCommand(command))
-                {
-                    throw new InvalidOperationException(
-                        $"Accepted director command {index} ({command.Kind}) was rejected during replay.");
-                }
-            }
-
-            return CaptureRuleEventLogSnapshot();
-        }
-
-        private void RebuildDirectorInitialScenario()
-        {
-            var configuration = directorInitialScenario.CreateConfiguration();
-            placeholderConfiguration = configuration;
-            placeholderParticipants = configuration.Participants;
+            placeholderParticipants = projection.Participants;
             placeholderHands.Clear();
-            placeholderHands[configuration.RedHand.Instances[0].OwnerId] = configuration.RedHand;
-            placeholderHands[configuration.BlueHand.Instances[0].OwnerId] = configuration.BlueHand;
+            placeholderHands[placeholderConfiguration.RedHand.Instances[0].OwnerId] = placeholderConfiguration.RedHand;
+            placeholderHands[placeholderConfiguration.BlueHand.Instances[0].OwnerId] = placeholderConfiguration.BlueHand;
             placeholderOneVsOneHandsInitialized = true;
+            quickGameSetupState = projection.Setup;
+
+            cardResolutionEvents.Clear();
+            turnCardCommitmentEvents.Clear();
+            turnResolutionEvents.Clear();
+            roundResolutionEvents.Clear();
+            RecordRoundEvents(projection.RoundEvents);
 
             foreach (var view in new[] { heroView }
                 .Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>())
                 .Where(view => view != null))
             {
-                var occupancy = directorInitialScenario.InitialHeroes.Single(value =>
+                var occupancy = projection.Heroes.Single(value =>
                     value.HeroId.Equals(view.Occupancy.HeroId));
                 view.Configure(occupancy, view.OuterRadius);
             }
+
             foreach (var view in obstacleViews ?? Array.Empty<PlaceholderObstacleView>())
             {
-                if (view == null) continue;
-                var occupancy = directorInitialScenario.InitialObstacles.Single(value =>
-                    value.ObstacleId.Equals(view.Occupancy.ObstacleId));
-                view.Configure(occupancy, view.OuterRadius);
+                if (view == null)
+                {
+                    continue;
+                }
+
+                var matches = projection.Obstacles.Where(value =>
+                    value.ObstacleId.Equals(view.Occupancy.ObstacleId)).ToArray();
+                if (matches.Length == 1)
+                {
+                    view.Configure(matches[0], view.OuterRadius);
+                }
             }
 
-            moveAuthority = directorInitialScenario.CreateBoard(OfficialBoardMapCatalog.Load().Definitions);
-            cardResolutionAuthority = new CardActionResolutionAuthority(moveAuthority);
-            roundResolutionAuthority = new RoundResolutionAuthority(
-                GetAllPlaceholderCardDefinitions(),
-                GetAllPlaceholderCardInstances(),
-                configuration.Participants,
-                directorInitialScenario.InitialTieBreakerState,
-                cardActions: cardResolutionAuthority);
-            selectedCardInstanceId = null;
-            selectedActionOffer = null;
-            cardResolutionEvents.Clear();
-            turnCardCommitmentEvents.Clear();
-            turnResolutionEvents.Clear();
-            roundResolutionEvents.Clear();
-            cardResolutionSequence = 0;
-            lastCardMovementRoute = Array.Empty<HexCoordinate>();
-            lastCardMovementAllowance = 0;
-            lastCardRemainingAllowance = 0;
-            LastCardInvocationContext = ActionInvocationContext.None;
-            LastCardTextApplicationPolicy = CardTextApplicationPolicy.None;
-            LastCardRejectionReason = CardActionResolutionRejectionReason.None;
-            LastTurnRejectionReason = TurnResolutionRejectionReason.None;
-            LastRoundRejectionReason = RoundResolutionRejectionReason.None;
-            LastAttackOutcome = AttackResolutionOutcome.None;
-            ruleEventLog.ResetToSetup(configuration.Participants, directorInitialScenario.InitialTieBreakerState);
-            placeholderHand = heroView != null && placeholderHands.TryGetValue(heroView.Occupancy.HeroId, out var hand)
-                ? hand
-                : null;
-            ClearSelectionVisuals();
-            cardStatus = $"Round {VisibleRoundIndex}, turn {VisibleTurnIndex}/{RoundResolutionAuthority.TurnsPerRound}: " +
-                "awaiting Red and Blue commitments.";
+            placeholderHand = heroView != null && placeholderHands.TryGetValue(
+                heroView.Occupancy.HeroId,
+                out var activeHand)
+                    ? activeHand
+                    : null;
         }
 
-        private bool ReplayDirectorCommand(DirectorCommand command)
+        private void RebuildSessionInteractionProjection()
         {
-            switch (command.Kind)
+            ClearSelectionVisuals();
+            selectedActionOffer = null;
+            selectedCardInstanceId = null;
+            if (IsVisibleTurnActive && VisibleTurnActor.IsDefined)
             {
-                case DirectorCommandKind.CommitCard:
-                    return TrySelectDirectorCard(command.CardInstanceId) && TryConfirmSelectedTurnCard();
-                case DirectorCommandKind.Pass:
-                    return TryPassTurnCard(placeholderParticipants.GetTeamForHero(command.HeroId).Side);
-                case DirectorCommandKind.ChooseTiedActor:
-                    return TryChooseTiedActor(command.TeamSide, command.CardInstanceId);
-                case DirectorCommandKind.PerformHold:
-                    return TryPerformHold(command.CardInstanceId);
-                case DirectorCommandKind.StartAction:
-                    return TrySelectAction(command.ActionDefinitionId);
-                case DirectorCommandKind.ChooseMovementDestination:
-                    return TrySubmitCardDestination(command.Coordinate);
-                case DirectorCommandKind.StopMovement:
-                    return TryStopCardMovement();
-                case DirectorCommandKind.ChooseAttackTarget:
-                    return TrySubmitAttackTarget(command.HeroId);
-                case DirectorCommandKind.ChooseDefenseCard:
-                    return TrySubmitDefenseCard(command.CardInstanceId);
-                case DirectorCommandKind.DeclineDefense:
-                    return TryDeclineDefense();
-                case DirectorCommandKind.AdvanceEndOfRound:
-                    return TryAdvanceEndOfRound();
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(command), command.Kind, "Unknown director command kind.");
+                FocusVisibleTurnHero(VisibleTurnActor.ActorId);
+                selectedCardInstanceId = VisibleTurnActor.CardInstanceId;
             }
+
+            if (PendingCardChoice != null)
+            {
+                RefreshCardChoiceHighlights(PendingCardChoice);
+            }
+            else if (PendingAttackTargetChoice != null)
+            {
+                RefreshAttackTargetHighlights(PendingAttackTargetChoice);
+            }
+        }
+
+        private void RecordSessionRejection(MatchCommandResult result)
+        {
+            LastRoundRejectionReason = result.RoundRejectionReason;
+            LastTurnRejectionReason = result.TurnRejectionReason;
         }
 
         private void RecordRoundRejection(RoundResolutionResult result)
@@ -1823,6 +1680,11 @@ namespace GuardsDigital.Presentation.Interaction
 
         private IReadOnlyList<CardInstance> GetAllPlaceholderCardInstances()
         {
+            if (matchSession != null)
+            {
+                return matchSession.Projection.Cards;
+            }
+
             EnsurePlaceholderOneVsOneHands();
             return placeholderHands.Values
                 .SelectMany(hand => hand.Instances)
@@ -1832,6 +1694,11 @@ namespace GuardsDigital.Presentation.Interaction
 
         private IReadOnlyList<CardDefinition> GetAllPlaceholderCardDefinitions()
         {
+            if (matchSession != null)
+            {
+                return matchSession.Projection.Definitions;
+            }
+
             EnsurePlaceholderOneVsOneHands();
             return placeholderHands.Values
                 .SelectMany(hand => hand.Definitions)
@@ -2018,6 +1885,11 @@ namespace GuardsDigital.Presentation.Interaction
 
         private string GetSetupHeroDisplayName(TeamSide teamSide)
         {
+            if (heroView == null && (otherHeroViews == null || otherHeroViews.All(view => view == null)))
+            {
+                return "Hero";
+            }
+
             return quickGameSetupState?.Heroes.SingleOrDefault(value => value.TeamSide == teamSide)?.DisplayName ?? "Hero";
         }
 
@@ -2089,9 +1961,9 @@ namespace GuardsDigital.Presentation.Interaction
             var panel = GetRuleEventLogRect();
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 10f, panel.y + 8f, panel.width - 20f, panel.height - 16f));
-            GUILayout.Label($"INTERNAL RULE-EVENT LOG - {ruleEventLog.Entries.Count} ACCEPTED EVENTS");
+            GUILayout.Label($"INTERNAL RULE-EVENT LOG - {RuleEventLogEntries.Count} ACCEPTED EVENTS");
             ruleEventLogScrollPosition = GUILayout.BeginScrollView(ruleEventLogScrollPosition);
-            foreach (var entry in ruleEventLog.Entries)
+            foreach (var entry in RuleEventLogEntries)
             {
                 GUILayout.Label(entry.DisplayText);
             }
@@ -2130,7 +2002,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             GUI.enabled = true;
             if (GUILayout.Button(
-                    ruleEventLogExpanded ? "HIDE EVENT LOG" : $"EVENT LOG ({ruleEventLog.Entries.Count})",
+                    ruleEventLogExpanded ? "HIDE EVENT LOG" : $"EVENT LOG ({RuleEventLogEntries.Count})",
                     GUILayout.Width(126f),
                     GUILayout.Height(24f)))
             {

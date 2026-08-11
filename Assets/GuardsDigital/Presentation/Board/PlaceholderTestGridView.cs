@@ -278,7 +278,7 @@ namespace GuardsDigital.Presentation.Board
 
         private static void DestroyObject(GameObject target)
         {
-            if (Application.isPlaying) Destroy(target); else DestroyImmediate(target);
+            if (UnityEngine.Application.isPlaying) Destroy(target); else DestroyImmediate(target);
         }
 
     }

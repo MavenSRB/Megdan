@@ -8,7 +8,7 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through the configured mirrored-Wasp 1v1 Quick Game setup, including all Phase 0-3 milestones and corrective inserts, deterministic command-replay Director Undo, the internal rule-event log, the reviewed `official-single-lane` revision 1 map specification, selected-map authoritative loading/snapshot binding, complete placeholder map presentation, derived rulebook shared-border zone adjacency, typed same/adjacent/non-adjacent queries, the validated ordered Throne-to-Throne Lane, and milestone 4.4's exact-map setup authority. Documentation-governance milestone 3.11a is complete.
+The project has completed roadmap milestones through the transport-neutral match application service, including all Phase 0-3 milestones and corrective inserts, deterministic command-replay Director Undo, the internal rule-event log, the reviewed `official-single-lane` revision 1 map specification, selected-map authoritative loading/snapshot binding, complete placeholder map presentation, derived rulebook shared-border zone adjacency, typed same/adjacent/non-adjacent queries, the validated ordered Throne-to-Throne Lane, milestone 4.4's exact-map setup authority, and milestone 4.4a's pure `GuardsDigital.Application` match-session port. The configured match now routes live typed commands, deterministic replay, Undo/restart, snapshot restore, ordered events, and immutable versioned projections through one dispatcher without moving rules into Unity presentation. Documentation-governance milestone 3.11a is complete.
 
 Authoritative pure C# state currently covers map-scoped identity, the immutable selected map revision, participant `PlayerId`/`HeroId` relationships, initial Tie Breaker, five-card synthetic hands, owned commitment or empty-hand Pass for every configured hero, joint reveal, Initiative and tied-Initiative choice, Hold, printed Movement with cumulative waypoint routes and Stop, adjacent/Ranged Attack with one legal Defense discard or decline, immutable four-turn assignment history, and a resumable end-of-round cursor whose test fixture implements retrieval and emits typed `NotApplicable` outcomes for unavailable stages. Eligible cards return to canonical owners; two uninterrupted synthetic rounds and reuse are visible in the saved validation scene.
 
@@ -20,10 +20,10 @@ The project does not yet implement Fast Travel, current-Battle-Zone changes, Lan
 
 ## Current authorization and next route
 
-- Current completed milestone: **4.4**.
-- Next proposed milestone: **4.4a**.
-- Required Codex profile for next milestone: **GPT-5.6 Sol with high reasoning**.
-- Milestone 4.4a is proposed only. Do not begin it or any later gameplay, presentation, card, online, or build milestone without explicit approval of that exact micro-milestone.
+- Current completed milestone: **4.4a**.
+- Next proposed milestone: **4.4b**.
+- Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
+- Milestone 4.4b is proposed only. Do not begin it or any later gameplay, presentation, card, online, or build milestone without explicit approval of that exact micro-milestone.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries

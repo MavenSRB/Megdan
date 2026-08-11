@@ -70,7 +70,9 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 EnsureBindings();
                 EnsureMoveAuthority();
-                return moveAuthority != null
+                return cardDrivenMovementEnabled && matchSession != null && cardResolutionAuthority == null
+                    ? matchSession.Projection.Heroes
+                    : moveAuthority != null
                     ? moveAuthority.Occupancies
                     : System.Array.Empty<HeroOccupancy>();
             }
@@ -84,7 +86,9 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 EnsureBindings();
                 EnsureMoveAuthority();
-                return moveAuthority?.MapDefinition;
+                return cardDrivenMovementEnabled && matchSession != null
+                    ? matchSession.Projection.SelectedMap
+                    : moveAuthority?.MapDefinition;
             }
         }
 
@@ -94,7 +98,9 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 EnsureBindings();
                 EnsureMoveAuthority();
-                return quickGameSetupState;
+                return cardDrivenMovementEnabled && matchSession != null
+                    ? matchSession.Projection.Setup
+                    : quickGameSetupState;
             }
         }
 
@@ -202,14 +208,14 @@ namespace GuardsDigital.Presentation.Interaction
                 heroView = selectedHero;
                 otherHeroViews = boundHeroes.Where(hero => hero != selectedHero).ToArray();
                 movementSession = null;
-                if (!cardDrivenMovementEnabled || roundResolutionAuthority == null)
+                if (!cardDrivenMovementEnabled || matchSession == null)
                 {
                     RebuildMoveAuthority();
                 }
 
                 if (cardDrivenMovementEnabled)
                 {
-                    if (roundResolutionAuthority == null)
+                    if (matchSession == null)
                     {
                         ResetCardDrivenMovementPresentation();
                     }
@@ -517,6 +523,12 @@ namespace GuardsDigital.Presentation.Interaction
 
         private HeroOccupancy GetHeroOccupancyFromAuthority()
         {
+            if (cardDrivenMovementEnabled && matchSession != null && cardResolutionAuthority == null)
+            {
+                return matchSession.Projection.Heroes.Single(occupancy =>
+                    occupancy.HeroId.Equals(heroView.Occupancy.HeroId));
+            }
+
             return moveAuthority.Occupancies.Single(occupancy => occupancy.HeroId.Equals(heroView.Occupancy.HeroId));
         }
 

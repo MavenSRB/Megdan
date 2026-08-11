@@ -10,16 +10,30 @@ namespace GuardsDigital.Presentation.Interaction
     public sealed class DirectorTestHand
     {
         public DirectorTestHand(TeamSide teamSide, PlaceholderMovementHand hand, string heroDisplayName = "Hero")
+            : this(teamSide, hand?.Definitions, hand?.Instances, heroDisplayName)
+        {
+        }
+
+        public DirectorTestHand(
+            TeamSide teamSide,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            string heroDisplayName = "Hero")
         {
             TeamSide = teamSide;
-            if (hand == null)
+            if (definitions == null)
             {
-                throw new ArgumentNullException(nameof(hand));
+                throw new ArgumentNullException(nameof(definitions));
+            }
+            if (instances == null)
+            {
+                throw new ArgumentNullException(nameof(instances));
             }
 
-            Definitions = hand.Definitions;
-            OwnerId = hand.Instances.Count > 0 ? hand.Instances[0].OwnerId : default;
-            Instances = Array.AsReadOnly(hand.Instances
+            Definitions = Array.AsReadOnly(definitions.ToArray());
+            var values = instances.ToArray();
+            OwnerId = values.Length > 0 ? values[0].OwnerId : default;
+            Instances = Array.AsReadOnly(values
                 .Where(instance => instance.State.Location == CardLocation.Hand)
                 .ToArray());
             HeroDisplayName = string.IsNullOrWhiteSpace(heroDisplayName) ? "Hero" : heroDisplayName;
