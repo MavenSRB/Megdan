@@ -51,9 +51,18 @@ Observable outcome: Synthetic effects can occupy named timing windows and serial
 Acceptance checks:
 
 - Before/After Attack, action start/end, turn end, round end, and defeat/card-state cancellation hooks are explicit.
+- Every timed effect definition explicitly declares its affected scope/controller, duration kind (`This Turn`, `This Round`, `Next Turn`, or `Next Turn after Playing Cards`), creation/activation anchor, exact expiration checkpoint, early-cancellation conditions, and whether it carries across an end-of-round boundary; the engine never infers those facts from display text or collection order.
+- A `This Turn` effect created at action start or partway through a turn applies only for its declared remaining window and expires exactly once at the authoritative turn-only cancellation checkpoint before `TurnEnded`, with no off-by-one carry into the next turn.
+- A `This Round` effect survives intervening turns and expires exactly once at its declared authoritative round-end checkpoint.
+- A `Next Turn` effect remains dormant until the exact affected hero/controller's next applicable turn, is not retargeted by Initiative reordering, and expires exactly once after its declared window. Focused same-round and cross-round cases assert the definition's explicit carry-or-cancel policy rather than assuming all Next Turn effects cross the round boundary.
+- `Next Turn after Playing Cards` remains distinct from ordinary `Next Turn` and cannot activate before the exact authoritative play/reveal checkpoint declared by its definition.
+- Creation partway through a turn, source-card state change, applicable hero defeat, early cancellation, normal expiry, and simultaneous expiry/trigger ordering cannot double-apply or double-cancel an effect.
+- Active-effect state, dormant/active phase, anchors, and remaining lifetime round-trip through the versioned snapshot boundary and produce equivalent state/events through live execution, restore plus continuation, replay, and retained-prefix Undo.
 - Active effects and passive/continuous sources remain distinct.
 - Simultaneous ordering uses the official tie procedure without flipping the Tie Breaker.
 - Presentation timing cannot delay or reorder rules checkpoints.
+
+Non-goals: No Wasp-specific text or duration interpretation, runtime printed-text parsing, full Phase 6 card-retrieval/cancellation integration, networking, or presentation-owned timing.
 
 ### [ ] 5.5 Add coin awards and assist-ready accounting
 
