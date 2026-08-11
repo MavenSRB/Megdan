@@ -32,6 +32,8 @@ namespace GuardsDigital.Presentation.Interaction
         [SerializeField]
         private Material highlightMaterial;
 
+        private bool ownsGeneratedHighlightMaterial;
+
         [SerializeField]
         private PlaceholderTestGridView mapView;
 
@@ -51,6 +53,8 @@ namespace GuardsDigital.Presentation.Interaction
         public IReadOnlyList<HexCoordinate> HighlightedCoordinates => highlightedCoordinates;
 
         public Material HighlightMaterial => EnsureHighlightMaterial();
+
+        public bool OwnsGeneratedHighlightMaterial => ownsGeneratedHighlightMaterial;
 
         public IReadOnlyList<PlaceholderObstacleView> ObstacleViews =>
             obstacleViews != null ? obstacleViews.Where(obstacle => obstacle != null).ToArray() : System.Array.Empty<PlaceholderObstacleView>();
@@ -144,7 +148,11 @@ namespace GuardsDigital.Presentation.Interaction
             otherHeroViews = otherHeroes?.Where(otherHero => otherHero != null && otherHero != hero).ToArray();
             tileViews = tiles?.Where(tile => tile != null).ToArray();
             obstacleViews = obstacles?.Where(obstacle => obstacle != null).ToArray();
-            highlightMaterial = material;
+            if (!ReferenceEquals(highlightMaterial, material))
+            {
+                ReleaseGeneratedHighlightMaterial();
+                highlightMaterial = material;
+            }
             movementAllowance = allowance;
             movementSession = null;
             reachableDestinations.Clear();
@@ -559,7 +567,39 @@ namespace GuardsDigital.Presentation.Interaction
                 name = "Adjacent Destination Highlight",
                 color = new Color(1f, 0.78f, 0.18f, 1f)
             };
+            ownsGeneratedHighlightMaterial = true;
             return highlightMaterial;
+        }
+
+        private void ReleaseGeneratedHighlightMaterial()
+        {
+            if (!ownsGeneratedHighlightMaterial || highlightMaterial == null)
+            {
+                ownsGeneratedHighlightMaterial = false;
+                return;
+            }
+
+            var ownedMaterial = highlightMaterial;
+            highlightMaterial = null;
+            ownsGeneratedHighlightMaterial = false;
+            if (UnityEngine.Application.isPlaying)
+            {
+                Destroy(ownedMaterial);
+            }
+            else
+            {
+                DestroyImmediate(ownedMaterial);
+            }
+        }
+
+        public void DisposeGeneratedHighlightMaterial()
+        {
+            ReleaseGeneratedHighlightMaterial();
+        }
+
+        private void OnDestroy()
+        {
+            DisposeGeneratedHighlightMaterial();
         }
 
         private void Awake()

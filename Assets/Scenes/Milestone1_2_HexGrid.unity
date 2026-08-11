@@ -451,7 +451,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5ac89f53834b9b4bab6e22211b1e614, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Interaction.PrimitiveHeroPointerSelector
-  selectionController: {fileID: 1041967341}
+  selectionController: {fileID: 0}
 --- !u!136 &311300005
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -601,7 +601,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5ac89f53834b9b4bab6e22211b1e614, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Interaction.PrimitiveHeroPointerSelector
-  selectionController: {fileID: 1041967341}
+  selectionController: {fileID: 0}
 --- !u!136 &311310007
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1332,41 +1332,15 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1041967342}
-  - component: {fileID: 1041967341}
   - component: {fileID: 1041967343}
+  - component: {fileID: 1041967344}
   m_Layer: 0
-  m_Name: Hero Selection Controller
+  m_Name: Configured Match Composition
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1041967341
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1041967340}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dfc32a097684982449279851bed7aab5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Interaction.HeroSelectionController
-  heroView: {fileID: 311300003}
-  otherHeroViews:
-  - {fileID: 311310003}
-  tileViews:
-  - {fileID: 158622240}
-  - {fileID: 2045171745}
-  - {fileID: 1003179191}
-  - {fileID: 1994522869}
-  - {fileID: 1985514169}
-  - {fileID: 957022703}
-  - {fileID: 1019723947}
-  highlightMaterial: {fileID: 0}
-  movementAllowance: 3
-  cardDrivenMovementEnabled: 1
 --- !u!114 &1041967343
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1379,7 +1353,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e175f8893df543869e41ab5f42efc0ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Interaction.MatchSceneCompositionRoot
-  controller: {fileID: 1041967341}
   mapView: {fileID: 1012504444}
   pointerInput: {fileID: 1029945707}
   eventCamera: {fileID: 1029945705}
@@ -1389,6 +1362,19 @@ MonoBehaviour:
   pointerSelectors:
   - {fileID: 311300004}
   - {fileID: 311310006}
+  assignedHighlightMaterial: {fileID: 0}
+--- !u!114 &1041967344
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1041967340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 926572b67b5c43ae88abb1568bd9f54a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Match.ConfiguredMatchHudRenderer
 --- !u!4 &1041967342
 Transform:
   m_ObjectHideFlags: 0

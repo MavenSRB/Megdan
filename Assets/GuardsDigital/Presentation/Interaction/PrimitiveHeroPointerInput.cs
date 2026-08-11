@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Match;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,6 +19,10 @@ namespace GuardsDigital.Presentation.Interaction
         [SerializeField]
         private HeroSelectionController selectionController;
 
+        private BoardInteractionUnityView boardView;
+        private HexTileView[] tiles;
+        private System.Func<Vector2, bool> blocksPointer;
+
         private readonly InputAction pointerPress = new InputAction(
             "Select Hero",
             InputActionType.Button,
@@ -31,10 +37,33 @@ namespace GuardsDigital.Presentation.Interaction
             IEnumerable<PrimitiveHeroPointerSelector> pointerSelectors,
             HeroSelectionController controller = null)
         {
+            boardView = null;
+            tiles = System.Array.Empty<HexTileView>();
+            blocksPointer = null;
             eventCamera = camera;
             selectors = pointerSelectors?.Where(selector => selector != null).ToArray();
             selectionController = controller ?? selectors?.Select(value => value.SelectionController)
                 .FirstOrDefault(value => value != null);
+        }
+
+        public void Configure(
+            Camera camera,
+            IEnumerable<PrimitiveHeroPointerSelector> pointerSelectors,
+            BoardInteractionUnityView passiveBoardView,
+            IEnumerable<HexTileView> boardTiles,
+            System.Func<Vector2, bool> pointerBlocker)
+        {
+            eventCamera = camera ?? throw new System.ArgumentNullException(nameof(camera));
+            selectors = (pointerSelectors ?? throw new System.ArgumentNullException(nameof(pointerSelectors)))
+                .Where(selector => selector != null)
+                .ToArray();
+            boardView = passiveBoardView ?? throw new System.ArgumentNullException(nameof(passiveBoardView));
+            tiles = (boardTiles ?? throw new System.ArgumentNullException(nameof(boardTiles)))
+                .Where(tile => tile != null)
+                .Distinct()
+                .ToArray();
+            blocksPointer = pointerBlocker;
+            selectionController = null;
         }
 
         private void OnEnable()
@@ -72,7 +101,8 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var screenPosition = Pointer.current.position.ReadValue();
-            if (selectionController != null && selectionController.BlocksPointerAt(screenPosition))
+            if ((blocksPointer != null && blocksPointer(screenPosition)) ||
+                (selectionController != null && selectionController.BlocksPointerAt(screenPosition)))
             {
                 return false;
             }
@@ -94,6 +124,12 @@ namespace GuardsDigital.Presentation.Interaction
                 }
             }
 
+            if (boardView != null)
+            {
+                var tile = FindTileUnderPointer(pointerRay);
+                return tile != null && boardView.TryForwardDestinationIntent(tile.Coordinate);
+            }
+
             if (selectionController != null && selectionController.TryCommitDestinationFromPointerRay(pointerRay))
             {
                 return true;
@@ -109,7 +145,7 @@ namespace GuardsDigital.Presentation.Interaction
                 selectors = System.Array.Empty<PrimitiveHeroPointerSelector>();
             }
 
-            if (selectionController == null)
+            if (boardView == null && selectionController == null)
             {
                 for (var index = 0; index < selectors.Length; index++)
                 {
@@ -121,6 +157,32 @@ namespace GuardsDigital.Presentation.Interaction
                     }
                 }
             }
+        }
+
+        private HexTileView FindTileUnderPointer(Ray pointerRay)
+        {
+            if (tiles == null || tiles.Length == 0)
+            {
+                return null;
+            }
+
+            var boardPlane = new Plane(Vector3.up, Vector3.zero);
+            if (!boardPlane.Raycast(pointerRay, out var enter))
+            {
+                return null;
+            }
+
+            var hitPoint = pointerRay.GetPoint(enter);
+            return tiles
+                .Where(tile => tile != null && tile.IsPlayable)
+                .OrderBy(tile => Vector3.Distance(tile.transform.position, hitPoint))
+                .FirstOrDefault(tile =>
+                {
+                    var flatDistance = Vector2.Distance(
+                        new Vector2(tile.transform.position.x, tile.transform.position.z),
+                        new Vector2(hitPoint.x, hitPoint.z));
+                    return flatDistance <= tile.OuterRadius;
+                });
         }
     }
 }

@@ -16,6 +16,8 @@ namespace GuardsDigital.Presentation.Match
         private readonly IReadOnlyList<PrimitiveHeroView> heroes;
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly Material highlightMaterial;
+        private Func<HeroId, bool> heroIntentHandler;
+        private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
 
         public BoardInteractionUnityView(
             IEnumerable<PrimitiveHeroView> heroes,
@@ -33,6 +35,15 @@ namespace GuardsDigital.Presentation.Match
 
         public event Action<HeroId> HeroSubmitted;
         public event Action<GuardsDigital.Core.Board.HexCoordinate> DestinationSubmitted;
+
+        public void BindIntentHandlers(
+            Func<HeroId, bool> submitHero,
+            Func<GuardsDigital.Core.Board.HexCoordinate, bool> submitDestination)
+        {
+            heroIntentHandler = submitHero ?? throw new ArgumentNullException(nameof(submitHero));
+            destinationIntentHandler = submitDestination ??
+                throw new ArgumentNullException(nameof(submitDestination));
+        }
 
         public void Render(BoardInteractionViewModel model)
         {
@@ -68,12 +79,44 @@ namespace GuardsDigital.Presentation.Match
 
         public void ForwardHeroIntent(HeroId heroId)
         {
-            HeroSubmitted?.Invoke(heroId);
+            TryForwardHeroIntent(heroId);
         }
 
         public void ForwardDestinationIntent(GuardsDigital.Core.Board.HexCoordinate destination)
         {
-            DestinationSubmitted?.Invoke(destination);
+            TryForwardDestinationIntent(destination);
+        }
+
+        public bool TryForwardHeroIntent(HeroId heroId)
+        {
+            if (heroIntentHandler != null)
+            {
+                return heroIntentHandler(heroId);
+            }
+
+            if (HeroSubmitted == null)
+            {
+                return false;
+            }
+
+            HeroSubmitted.Invoke(heroId);
+            return true;
+        }
+
+        public bool TryForwardDestinationIntent(GuardsDigital.Core.Board.HexCoordinate destination)
+        {
+            if (destinationIntentHandler != null)
+            {
+                return destinationIntentHandler(destination);
+            }
+
+            if (DestinationSubmitted == null)
+            {
+                return false;
+            }
+
+            DestinationSubmitted.Invoke(destination);
+            return true;
         }
     }
 

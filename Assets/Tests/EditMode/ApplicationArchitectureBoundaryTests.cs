@@ -53,10 +53,10 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ConfiguredPresentation_OwnsOnlyTheSessionPortForMatchOrchestrationState()
         {
-            var fields = typeof(HeroSelectionController)
+            var fields = typeof(ConfiguredMatchSceneRuntime)
                 .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
-            Assert.That(fields.Single(field => field.Name == "matchSession").FieldType,
+            Assert.That(fields.Single(field => field.Name == "session").FieldType,
                 Is.EqualTo(typeof(IMatchSession)));
             Assert.That(fields.Any(field => field.FieldType == typeof(RoundResolutionAuthority)), Is.False);
             Assert.That(fields.Any(field => field.FieldType == typeof(DirectorCommandHistory)), Is.False);
@@ -86,7 +86,8 @@ namespace GuardsDigital.Tests.EditMode
                 typeof(DirectorHandsUnityView),
                 typeof(RoundActionUnityView),
                 typeof(UndoRestartUnityView),
-                typeof(DiagnosticLogUnityView)
+                typeof(DiagnosticLogUnityView),
+                typeof(ConfiguredMatchHudRenderer)
             };
             var viewFields = passiveViewTypes.SelectMany(type =>
                 type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic));

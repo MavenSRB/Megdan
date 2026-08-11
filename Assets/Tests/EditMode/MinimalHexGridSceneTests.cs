@@ -291,21 +291,17 @@ namespace GuardsDigital.Tests.EditMode
             var compositionRoots = Object.FindObjectsByType<MatchSceneCompositionRoot>();
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
 
-            Assert.That(controllers, Has.Length.EqualTo(1));
+            Assert.That(controllers, Is.Empty,
+                "The configured scene must not retain the unconfigured legacy controller drill.");
             Assert.That(selectors, Has.Length.EqualTo(2));
             Assert.That(inputs, Has.Length.EqualTo(1));
             Assert.That(compositionRoots, Has.Length.EqualTo(1));
-            Assert.That(controllers[0].MovementAllowance, Is.GreaterThan(1));
-            Assert.That(controllers[0].IsCardDrivenMovementEnabled, Is.True);
-            Assert.That(controllers[0].VisibleCardInstances.Count, Is.EqualTo(5));
-            Assert.That(controllers[0].VisibleCardInstances.All(card =>
-                card.OwnerId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue), Is.True);
-            Assert.That(controllers[0].VisibleCardInstances.All(card =>
-                card.Id.Value.StartsWith("red-")), Is.True);
-            Assert.That(controllers[0].OtherHeroViews.Count, Is.EqualTo(1));
-            Assert.That(controllers[0].HeroOccupancies.Count, Is.EqualTo(2));
+            Assert.That(compositionRoots[0].Runtime, Is.Not.Null);
+            Assert.That(compositionRoots[0].Session, Is.Not.Null);
+            Assert.That(compositionRoots[0].Session.Projection.Cards, Has.Count.EqualTo(10));
+            Assert.That(compositionRoots[0].Session.Projection.Heroes, Has.Count.EqualTo(2));
             Assert.That(selectors, Has.All.Matches<PrimitiveHeroPointerSelector>(selector =>
-                selector.SelectionController == controllers[0]));
+                selector.SelectionController == null));
             Assert.That(inputs[0].EventCamera, Is.Not.Null);
             Assert.That(inputs[0].Selectors.Count, Is.EqualTo(2));
             Assert.That(inputs[0].Selectors, Is.EquivalentTo(selectors));
@@ -318,15 +314,14 @@ namespace GuardsDigital.Tests.EditMode
         public void Scene_ContainsTopRightAuthoritativeTieBreakerIndicator()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
-            var side = controller.CurrentTieBreakerState.RevealedSide;
-            var indicatorRect = controller.TieBreakerIndicatorRect;
+            var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            var side = root.Session.Projection.TieBreakerState.RevealedSide;
+            var indicatorRect = root.Hud.TieBreakerIndicatorRect;
 
-            Assert.That(controller.IsCardDrivenMovementEnabled, Is.True);
             Assert.That(side, Is.EqualTo(TeamSide.Red).Or.EqualTo(TeamSide.Blue));
-            Assert.That(controller.TieBreakerIndicatorText, Does.Contain("TIE BREAKER"));
+            Assert.That(root.Hud.Header.Text, Does.Contain("TIE BREAKER"));
             Assert.That(
-                controller.TieBreakerIndicatorText,
+                root.Hud.Header.Text,
                 Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
             Assert.That(indicatorRect.xMax, Is.EqualTo(Screen.width - 12f).Within(0.01f));
             Assert.That(indicatorRect.yMin, Is.EqualTo(12f).Within(0.01f));
@@ -337,39 +332,47 @@ namespace GuardsDigital.Tests.EditMode
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             RebuildOfficialMap();
-            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
-            var hero = heroes.Single(candidate =>
-                candidate.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            var runtime = root.Runtime;
             var tiles = Object.FindObjectsByType<HexTileView>();
 
-            var selectedCard = controller.VisibleCardInstances[0];
-            Assert.That(controller.TrySelectCard(selectedCard.Id), Is.True);
-            Assert.That(controller.TrySelectAction(
-                new ActionDefinitionId("secondary-movement")), Is.True);
+            foreach (var hand in runtime.HandsView.Model.Hands)
+            {
+                Assert.That(runtime.SelectCommitmentCard(hand.Cards[0].Id), Is.True);
+                Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            }
+
+            if (runtime.Projection.PendingInitiativeChoice != null)
+            {
+                Assert.That(runtime.SubmitInitiativeChoice(
+                    runtime.Projection.PendingInitiativeChoice.CandidateCardInstanceIds[0]), Is.True);
+            }
+
+            var movement = runtime.Projection.AvailableTurnActions.Single(offer =>
+                runtime.Projection.Definitions.Single(definition =>
+                        definition.Reference.Equals(offer.SourceDefinitionReference))
+                    .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId)).Kind ==
+                ActionKind.Movement);
+            Assert.That(runtime.SubmitAction(movement.ActionDefinitionId), Is.True);
 
             var highlightedCoordinates = tiles
                 .Where(tile => tile.IsHighlighted)
                 .Select(tile => tile.Coordinate)
                 .ToArray();
 
-            Assert.That(controller.IsHeroSelected, Is.True);
-            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>();
-            var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
-                    hero.Occupancy,
-                    tiles.Where(tile => tile.IsPlayable).Select(tile => tile.Coordinate),
-                    heroes.Select(candidate => candidate.Occupancy),
-                    obstacles.Select(obstacle => obstacle.Occupancy),
-                    controller.LastCardMovementAllowance)
+            var expectedDestinations = runtime.Projection.PendingMovementChoice.LegalDestinations
                 .Select(destination => destination.Destination)
                 .ToArray();
-
-            Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
-            Assert.That(tiles.Single(tile => tile.Coordinate.Equals(hero.Coordinate)).IsHighlighted, Is.False);
+
+            Assert.That(
+                tiles.Single(tile => tile.Coordinate.Equals(runtime.Projection.PendingMovementChoice.Origin))
+                    .IsHighlighted,
+                Is.False);
+            var actor = runtime.Projection.SelectedActor.ActorId;
             Assert.That(
                 highlightedCoordinates,
-                Has.No.Member(heroes.Single(candidate => candidate != hero).Coordinate));
+                Has.No.Member(runtime.Projection.Heroes.Single(hero => !hero.HeroId.Equals(actor)).Coordinate));
         }
 
         private static PlaceholderTestGridView RebuildOfficialMap()

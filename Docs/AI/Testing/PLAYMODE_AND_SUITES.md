@@ -27,7 +27,7 @@ if ($minimalGridPlayProcess.ExitCode -ne 0) {
 }
 ```
 
-Expected result: all discovered cases pass after loading the saved scene with 19 visible tile renderers, visible placeholder obstacle renderers, one fixed camera, one visible primitive hero placeholder, selectable reachable-destination highlighting that excludes blockers, accepted one-click movement to a non-adjacent reachable destination by legal detour, two partial waypoint clicks that preserve the pending action and remaining allowance, explicit Stop, and cleared highlights only after completion.
+Expected result: all discovered cases pass after loading the complete 292-space selected map with twelve configured minions, two configured heroes, one fixed camera, one composition-owned match session, passive feature views, and no legacy controller. The cases cover the configured director hands/commitments and Initiative path, contextual Hold and Movement Stop, passive-board-callback/presenter destination input, authoritative Movement mutation and cleared highlights, unavailable Attack rejection without mutation, Undo/restart/snapshot restore, diagnostic-log projection, two complete uninterrupted rounds, HUD pointer blocking, and exact generated-highlight counts across scene reload.
 
 ## Play Mode shell test
 

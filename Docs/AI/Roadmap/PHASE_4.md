@@ -217,7 +217,7 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 Hard gate: Phase 5 does not begin until milestone 4.4e is reviewed and every finding classified as gate-blocking has an approved disposition and, when required, a completed corrective milestone.
 
-### [ ] 4.4f Complete the configured MVP cutover and highlight-resource ownership
+### [x] 4.4f Complete the configured MVP cutover and highlight-resource ownership
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -234,11 +234,11 @@ Acceptance checks:
 
 Non-goals: No gameplay, action-strategy refactor, production HUD redesign, UI Toolkit migration, animation, sound, networking, object pooling, or polished art.
 
-### [!] 4.4g Extract the production Movement and Attack/Defense strategy backends
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44f-complete-the-configured-mvp-cutover-and-highlight-resource-ownership).
+
+### [ ] 4.4g Extract the production Movement and Attack/Defense strategy backends
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
-
-Blocked by: Milestone 4.4f must complete first so the presentation and resource correction has an independent Unity-facing validation boundary.
 
 Observable outcome: Production Movement and Attack/Defense behavior is owned by distinct typed strategy backends rather than delegating both handlers back into the combined card-action authority.
 
@@ -256,7 +256,7 @@ Non-goals: No new action kind, Fast Travel, card text, effect capability, Attack
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
-Blocked by: Milestones 4.4f and 4.4g must complete first.
+Blocked by: Milestone 4.4g must complete first.
 
 Observable outcome: The corrected Phase 4 foundation has direct projection-cost evidence, all 4.4e findings have completed dispositions, and the T3 gate is green at one final revision before Phase 5.
 

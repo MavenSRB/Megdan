@@ -8,6 +8,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using Unity.Profiling;
@@ -40,9 +41,10 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
             }
 
-            var controller = UnityEngine.Object.FindAnyObjectByType<HeroSelectionController>();
+            var root = UnityEngine.Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            var runtime = root?.Runtime;
             var mapView = UnityEngine.Object.FindAnyObjectByType<PlaceholderTestGridView>();
-            Assert.That(controller, Is.Not.Null);
+            Assert.That(runtime, Is.Not.Null);
             Assert.That(mapView, Is.Not.Null);
             Assert.That(mapView.RenderedDefinition.Spaces, Has.Count.EqualTo(292));
 
@@ -77,7 +79,7 @@ namespace GuardsDigital.Tests.PlayMode
             const int rebuildCount = 5;
             for (var index = 0; index < rebuildCount; index++)
             {
-                mapView.Rebuild(mapView.RenderedDefinition, controller.QuickGameSetupState);
+                mapView.Rebuild(mapView.RenderedDefinition, runtime.Setup);
                 yield return null;
                 Assert.That(mapView.OwnedNativeResourceCount, Is.EqualTo(initialOwnedResources));
                 Assert.That(CountOwnedMaterials(), Is.EqualTo(initialOwnedMaterials));
@@ -92,39 +94,35 @@ namespace GuardsDigital.Tests.PlayMode
 
             for (var round = 0; round < 2; round++)
             {
-                var red = controller.VisibleDirectorHands.Single(value => value.TeamSide == TeamSide.Red)
-                    .Instances.ToArray();
-                var blue = controller.VisibleDirectorHands.Single(value => value.TeamSide == TeamSide.Blue)
-                    .Instances.ToArray();
-                var order = new[] { 0, 3, 1, 2 };
-                foreach (var cardIndex in order)
+                for (var turn = 0; turn < 4; turn++)
                 {
-                    Commit(controller, red[cardIndex], blue[cardIndex]);
-                    Assert.That(controller.TryPerformHold(controller.VisibleTurnActor.CardInstanceId), Is.True);
-                    Assert.That(controller.TryPerformHold(controller.VisibleTurnActor.CardInstanceId), Is.True);
+                    Commit(runtime);
+                    Assert.That(runtime.SubmitEndTurn(), Is.True);
+                    Assert.That(runtime.SubmitEndTurn(), Is.True);
                     yield return null;
                 }
 
-                Assert.That(controller.IsVisibleRoundEnded, Is.True);
-                while (controller.IsVisibleRoundEnded)
+                Assert.That(runtime.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
+                while (runtime.Phase == RoundResolutionPhase.EndOfRound)
                 {
-                    Assert.That(controller.TryAdvanceEndOfRound(), Is.True, controller.CardStatus);
+                    Assert.That(runtime.ContinueEndOfRound(), Is.True);
                     yield return null;
                 }
             }
 
-            Assert.That(controller.CompletedRounds.Select(value => value.RoundIndex), Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(runtime.CompletedRounds.Select(value => value.RoundIndex),
+                Is.EqualTo(new[] { 1, 2 }));
             var snapshot = Stopwatch.StartNew();
             const int snapshotCount = 20;
             for (var index = 0; index < snapshotCount; index++)
             {
-                Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.Not.Empty);
+                Assert.That(runtime.CaptureSnapshot(), Is.Not.Empty);
             }
 
             snapshot.Stop();
             var averageSnapshotMilliseconds = snapshot.Elapsed.TotalMilliseconds / snapshotCount;
             var undo = Stopwatch.StartNew();
-            Assert.That(controller.TryUndoDirectorCommand(), Is.True);
+            Assert.That(runtime.Undo(), Is.True);
             undo.Stop();
 
             var sortedGc = steadyGc.OrderBy(value => value).ToArray();
@@ -187,12 +185,19 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
-        private static void Commit(HeroSelectionController controller, CardInstance red, CardInstance blue)
+        private static void Commit(ConfiguredMatchSceneRuntime runtime)
         {
-            Assert.That(controller.TrySelectDirectorCard(red.Id), Is.True);
-            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
-            Assert.That(controller.TrySelectDirectorCard(blue.Id), Is.True);
-            Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+            var red = runtime.HandsView.Model.Hands.Single(value => value.TeamSide == TeamSide.Red).Cards[0];
+            var blue = runtime.HandsView.Model.Hands.Single(value => value.TeamSide == TeamSide.Blue).Cards[0];
+            Assert.That(runtime.SelectCommitmentCard(red.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            Assert.That(runtime.SelectCommitmentCard(blue.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            if (runtime.PendingInitiativeChoice != null)
+            {
+                Assert.That(runtime.SubmitInitiativeChoice(
+                    runtime.PendingInitiativeChoice.CandidateCardInstanceIds[0]), Is.True);
+            }
         }
 
         private static int CountOwnedMaterials()
@@ -200,7 +205,8 @@ namespace GuardsDigital.Tests.PlayMode
             return Resources.FindObjectsOfTypeAll<Material>().Count(value =>
                 value != null && value.hideFlags == HideFlags.DontSave &&
                 (value.name.EndsWith(" Debug", StringComparison.Ordinal) ||
-                 value.name.EndsWith(" Placeholder", StringComparison.Ordinal)));
+                 value.name.EndsWith(" Placeholder", StringComparison.Ordinal) ||
+                 value.name == DestinationHighlightMaterialOwner.GeneratedMaterialName));
         }
 
         private static int CountOwnedMeshes()
