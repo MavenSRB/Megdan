@@ -564,7 +564,10 @@ namespace GuardsDigital.Tests.EditMode
                 var inputObject = new GameObject("Pointer Input");
                 objects.Add(inputObject);
                 var pointerInput = inputObject.AddComponent<PrimitiveHeroPointerInput>();
-                pointerInput.Configure(null, new PrimitiveHeroPointerSelector[0]);
+                pointerInput.Configure(
+                    null,
+                    new PrimitiveHeroPointerSelector[0],
+                    scenario.Controller);
 
                 scenario.Controller.TrySelectCard(scenario.Controller.VisibleCardInstances[3].Id);
                 scenario.Controller.TrySelectAction(new ActionDefinitionId("secondary-movement"));

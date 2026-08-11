@@ -288,11 +288,13 @@ namespace GuardsDigital.Tests.EditMode
             var controllers = Object.FindObjectsByType<HeroSelectionController>();
             var selectors = Object.FindObjectsByType<PrimitiveHeroPointerSelector>();
             var inputs = Object.FindObjectsByType<PrimitiveHeroPointerInput>();
+            var compositionRoots = Object.FindObjectsByType<MatchSceneCompositionRoot>();
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
 
             Assert.That(controllers, Has.Length.EqualTo(1));
             Assert.That(selectors, Has.Length.EqualTo(2));
             Assert.That(inputs, Has.Length.EqualTo(1));
+            Assert.That(compositionRoots, Has.Length.EqualTo(1));
             Assert.That(controllers[0].MovementAllowance, Is.GreaterThan(1));
             Assert.That(controllers[0].IsCardDrivenMovementEnabled, Is.True);
             Assert.That(controllers[0].VisibleCardInstances.Count, Is.EqualTo(5));

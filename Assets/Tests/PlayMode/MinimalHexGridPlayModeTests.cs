@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
@@ -347,6 +348,8 @@ namespace GuardsDigital.Tests.PlayMode
                 .Single(hand => hand.TeamSide == TeamSide.Blue).Instances.ToArray();
 
             CommitSceneTurn(controller, red[0], blue[0]);
+            Assert.That(controller.RoundActionViewModel.EndTurnInvocation.Command.Kind,
+                Is.EqualTo(DirectorCommandKind.PerformHold));
             Assert.That(controller.TryPerformHold(red[0].Id), Is.True);
             Assert.That(controller.TryPerformHold(blue[0].Id), Is.True);
             yield return null;
@@ -354,6 +357,8 @@ namespace GuardsDigital.Tests.PlayMode
 
             CommitSceneTurn(controller, red[3], blue[3]);
             Assert.That(controller.TrySelectAction(new ActionDefinitionId("secondary-movement")), Is.True);
+            Assert.That(controller.RoundActionViewModel.EndTurnInvocation.Command.Kind,
+                Is.EqualTo(DirectorCommandKind.StopMovement));
             var destination = controller.PendingCardDestinations.First(candidate => candidate.Cost == 1);
             Assert.That(controller.TrySubmitCardDestination(destination.Destination), Is.True);
             if (controller.IsCardMovementResolutionPending)

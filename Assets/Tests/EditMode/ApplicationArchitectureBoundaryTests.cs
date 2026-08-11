@@ -6,7 +6,9 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace GuardsDigital.Tests.EditMode
 {
@@ -59,6 +61,38 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fields.Any(field => field.FieldType == typeof(RoundResolutionAuthority)), Is.False);
             Assert.That(fields.Any(field => field.FieldType == typeof(DirectorCommandHistory)), Is.False);
             Assert.That(fields.Any(field => field.FieldType == typeof(RuleEventLogProjection)), Is.False);
+        }
+
+        [Test]
+        public void FeaturePresentersAndPassiveViews_KeepRulesAndUnityOnOppositeSidesOfPorts()
+        {
+            var presenterTypes = new[]
+            {
+                typeof(BoardInteractionPresenter),
+                typeof(DirectorHandsPresenter),
+                typeof(RoundActionPresenter),
+                typeof(UndoRestartPresenter),
+                typeof(DiagnosticLogPresenter)
+            };
+            Assert.That(presenterTypes, Has.All.Matches<Type>(type =>
+                !typeof(MonoBehaviour).IsAssignableFrom(type)));
+            Assert.That(presenterTypes.SelectMany(type =>
+                    type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic))
+                .Any(field => field.FieldType.Name.EndsWith("Presenter", StringComparison.Ordinal)), Is.False);
+
+            var passiveViewTypes = new[]
+            {
+                typeof(BoardInteractionUnityView),
+                typeof(DirectorHandsUnityView),
+                typeof(RoundActionUnityView),
+                typeof(UndoRestartUnityView),
+                typeof(DiagnosticLogUnityView)
+            };
+            var viewFields = passiveViewTypes.SelectMany(type =>
+                type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic));
+            Assert.That(viewFields.Any(field => field.FieldType == typeof(IMatchSession)), Is.False);
+            Assert.That(viewFields.Any(field => field.FieldType == typeof(RoundResolutionAuthority)), Is.False);
+            Assert.That(viewFields.Any(field => field.FieldType == typeof(DirectorCommandHistory)), Is.False);
         }
 
         private static Type[] GetSignatureTypes(MemberInfo member)

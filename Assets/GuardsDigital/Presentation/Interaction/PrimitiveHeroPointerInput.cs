@@ -14,6 +14,9 @@ namespace GuardsDigital.Presentation.Interaction
         [SerializeField]
         private PrimitiveHeroPointerSelector[] selectors;
 
+        [SerializeField]
+        private HeroSelectionController selectionController;
+
         private readonly InputAction pointerPress = new InputAction(
             "Select Hero",
             InputActionType.Button,
@@ -23,10 +26,15 @@ namespace GuardsDigital.Presentation.Interaction
 
         public IReadOnlyList<PrimitiveHeroPointerSelector> Selectors => selectors;
 
-        public void Configure(Camera camera, IEnumerable<PrimitiveHeroPointerSelector> pointerSelectors)
+        public void Configure(
+            Camera camera,
+            IEnumerable<PrimitiveHeroPointerSelector> pointerSelectors,
+            HeroSelectionController controller = null)
         {
             eventCamera = camera;
             selectors = pointerSelectors?.Where(selector => selector != null).ToArray();
+            selectionController = controller ?? selectors?.Select(value => value.SelectionController)
+                .FirstOrDefault(value => value != null);
         }
 
         private void OnEnable()
@@ -59,7 +67,6 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var screenPosition = Pointer.current.position.ReadValue();
-            var selectionController = FindAnyObjectByType<HeroSelectionController>();
             if (selectionController != null && selectionController.BlocksPointerAt(screenPosition))
             {
                 return false;
@@ -82,7 +89,6 @@ namespace GuardsDigital.Presentation.Interaction
                 }
             }
 
-            var selectionController = FindAnyObjectByType<HeroSelectionController>();
             if (selectionController != null && selectionController.TryCommitDestinationFromPointerRay(pointerRay))
             {
                 return true;
@@ -93,15 +99,9 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void EnsureBindings()
         {
-            if (eventCamera == null)
-            {
-                eventCamera = Camera.main != null ? Camera.main : FindAnyObjectByType<Camera>();
-            }
-
-            if (selectors == null || selectors.Length == 0)
-            {
-                selectors = FindObjectsByType<PrimitiveHeroPointerSelector>();
-            }
+            selectors = selectors?.Where(selector => selector != null).ToArray();
+            selectionController ??= selectors?.Select(value => value.SelectionController)
+                .FirstOrDefault(value => value != null);
         }
     }
 }

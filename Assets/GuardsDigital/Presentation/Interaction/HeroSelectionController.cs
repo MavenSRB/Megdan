@@ -33,6 +33,9 @@ namespace GuardsDigital.Presentation.Interaction
         private Material highlightMaterial;
 
         [SerializeField]
+        private PlaceholderTestGridView mapView;
+
+        [SerializeField]
         private int movementAllowance = DefaultMovementAllowance;
 
         private readonly List<HexCoordinate> highlightedCoordinates = new List<HexCoordinate>();
@@ -149,6 +152,27 @@ namespace GuardsDigital.Presentation.Interaction
             ClearSelectionVisuals();
             ResetCardDrivenMovementPresentation();
             InitializeCardDrivenMovementIfEnabled();
+        }
+
+        public void ConfigureSceneBindings(
+            PlaceholderTestGridView sceneMapView,
+            IEnumerable<PrimitiveHeroView> sceneHeroViews)
+        {
+            mapView = sceneMapView ?? throw new System.ArgumentNullException(nameof(sceneMapView));
+            var heroes = (sceneHeroViews ?? throw new System.ArgumentNullException(nameof(sceneHeroViews)))
+                .Where(value => value != null)
+                .Distinct()
+                .ToArray();
+            if (heroes.Length == 0)
+            {
+                throw new System.ArgumentException("Scene composition requires at least one hero view.", nameof(sceneHeroViews));
+            }
+
+            heroView = heroes.FirstOrDefault(hero =>
+                hero.Occupancy.HeroId.Value == PrimitiveHeroView.DefaultHeroId) ?? heroes[0];
+            otherHeroViews = heroes.Where(hero => hero != heroView).ToArray();
+            tileViews = mapView.GetComponentsInChildren<HexTileView>(true);
+            obstacleViews = mapView.GetComponentsInChildren<PlaceholderObstacleView>(true);
         }
 
         public void SelectHero()
@@ -416,41 +440,9 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void EnsureBindings()
         {
-            var discoveredHeroes = FindObjectsByType<PrimitiveHeroView>();
-            if (heroView == null)
-            {
-                heroView = discoveredHeroes.FirstOrDefault(
-                        hero => hero.Occupancy.HeroId.Value == PrimitiveHeroView.DefaultHeroId) ??
-                    discoveredHeroes.FirstOrDefault();
-            }
-
-            if (discoveredHeroes.Length > 0 &&
-                (otherHeroViews == null ||
-                 otherHeroViews.Any(hero => hero == null) ||
-                 otherHeroViews.Length != discoveredHeroes.Count(hero => hero != heroView)))
-            {
-                otherHeroViews = discoveredHeroes.Where(hero => hero != heroView).ToArray();
-            }
-
-            var discoveredTiles = FindObjectsByType<HexTileView>();
-            if (discoveredTiles.Length > 0 &&
-                (tileViews == null ||
-                 tileViews.Length == 0 ||
-                 tileViews.Any(tile => tile == null) ||
-                 discoveredTiles.Length != tileViews.Length))
-            {
-                tileViews = discoveredTiles;
-            }
-
-            var discoveredObstacles = FindObjectsByType<PlaceholderObstacleView>();
-            if (discoveredObstacles.Length > 0 &&
-                (obstacleViews == null ||
-                 obstacleViews.Length == 0 ||
-                 obstacleViews.Any(obstacle => obstacle == null) ||
-                 discoveredObstacles.Length != obstacleViews.Length))
-            {
-                obstacleViews = discoveredObstacles;
-            }
+            otherHeroViews = otherHeroViews?.Where(hero => hero != null && hero != heroView).Distinct().ToArray();
+            tileViews = tileViews?.Where(tile => tile != null).Distinct().ToArray();
+            obstacleViews = obstacleViews?.Where(obstacle => obstacle != null).Distinct().ToArray();
         }
 
         private void RebuildMoveAuthority()
@@ -481,9 +473,10 @@ namespace GuardsDigital.Presentation.Interaction
                 quickGameSetupState = null;
             }
 
-            var mapView = FindAnyObjectByType<PlaceholderTestGridView>();
             if (mapView != null)
             {
+                mapView.ConfigureHeroViews(
+                    new[] { heroView }.Concat(otherHeroViews ?? System.Array.Empty<PrimitiveHeroView>()));
                 if (mapView.RenderedDefinition == null ||
                     !mapView.RenderedDefinition.Reference.Equals(selectedMap.Reference))
                 {

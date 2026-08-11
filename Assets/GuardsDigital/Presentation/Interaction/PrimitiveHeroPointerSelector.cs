@@ -23,11 +23,11 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (selectionController == null)
             {
-                selectionController = FindAnyObjectByType<HeroSelectionController>();
+                return false;
             }
 
             var capsule = GetComponent<CapsuleCollider>();
-            if (selectionController == null || !capsule.Raycast(pointerRay, out _, maxDistance))
+            if (!capsule.Raycast(pointerRay, out _, maxDistance))
             {
                 return false;
             }
@@ -46,11 +46,6 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void Awake()
         {
-            if (selectionController == null)
-            {
-                selectionController = FindAnyObjectByType<HeroSelectionController>();
-            }
-
             EnsureColliderShape();
         }
     }

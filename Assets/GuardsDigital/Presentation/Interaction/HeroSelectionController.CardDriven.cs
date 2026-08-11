@@ -15,6 +15,7 @@ using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
 using UnityEngine;
 
@@ -58,6 +59,17 @@ namespace GuardsDigital.Presentation.Interaction
         private string cardStatus = "Select a test card.";
         private bool ruleEventLogExpanded;
         private Vector2 ruleEventLogScrollPosition;
+        private BoardInteractionUnityView boardFeatureView;
+        private DirectorHandsUnityView directorHandsFeatureView;
+        private RoundActionUnityView roundActionFeatureView;
+        private UndoRestartUnityView undoRestartFeatureView;
+        private DiagnosticLogUnityView diagnosticLogFeatureView;
+        private BoardInteractionPresenter boardFeaturePresenter;
+        private DirectorHandsPresenter directorHandsFeaturePresenter;
+        private RoundActionPresenter roundActionFeaturePresenter;
+        private UndoRestartPresenter undoRestartFeaturePresenter;
+        private DiagnosticLogPresenter diagnosticLogFeaturePresenter;
+        private MatchFeatureCoordinator featureCoordinator;
 
         public bool IsCardDrivenMovementEnabled => cardDrivenMovementEnabled;
 
@@ -283,7 +295,8 @@ namespace GuardsDigital.Presentation.Interaction
 
         public string LastDirectorReplayFailure { get; private set; }
 
-        public bool IsRuleEventLogExpanded => ruleEventLogExpanded;
+        public bool IsRuleEventLogExpanded =>
+            diagnosticLogFeatureView?.Model?.IsExpanded ?? ruleEventLogExpanded;
 
         public Rect RuleEventLogPanelRect => GetRuleEventLogRect();
 
@@ -305,6 +318,16 @@ namespace GuardsDigital.Presentation.Interaction
         public Color TieBreakerIndicatorColor => GetTieBreakerIndicatorColor(CurrentTieBreakerState);
 
         public Rect TieBreakerIndicatorRect => GetTieBreakerIndicatorRect();
+
+        public RoundActionViewModel RoundActionViewModel
+        {
+            get
+            {
+                InitializeCardDrivenMovementIfEnabled();
+                EnsureFeatureMvp();
+                return roundActionFeatureView?.Model;
+            }
+        }
 
         public void ConfigureCardDrivenMovement(bool enabled)
         {
@@ -354,6 +377,11 @@ namespace GuardsDigital.Presentation.Interaction
         public void ToggleRuleEventLog()
         {
             ruleEventLogExpanded = !ruleEventLogExpanded;
+            if (diagnosticLogFeaturePresenter != null &&
+                diagnosticLogFeatureView.Model.IsExpanded != ruleEventLogExpanded)
+            {
+                diagnosticLogFeaturePresenter.Toggle();
+            }
         }
 
         public void RestoreAuthoritativeSnapshot(string payload)
@@ -379,6 +407,7 @@ namespace GuardsDigital.Presentation.Interaction
             LastDirectorReplayFailure = null;
             SyncSessionProjectionToPresentation(true);
             RebuildSessionInteractionProjection();
+            featureCoordinator?.RefreshAll();
             cardStatus = $"Undo restored round {VisibleRoundIndex}, turn {VisibleTurnIndex}/" +
                 $"{RoundResolutionAuthority.TurnsPerRound}: {VisibleRoundPhase}.";
             return true;
@@ -402,6 +431,7 @@ namespace GuardsDigital.Presentation.Interaction
             LastDirectorReplayFailure = null;
             SyncSessionProjectionToPresentation(true);
             RebuildSessionInteractionProjection();
+            featureCoordinator?.RefreshAll();
             cardStatus = $"Restarted initial scenario at round {VisibleRoundIndex}, turn {VisibleTurnIndex}/" +
                 $"{RoundResolutionAuthority.TurnsPerRound}.";
             return true;
@@ -430,6 +460,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
             if (PendingCardChoice != null) RefreshCardChoiceHighlights(PendingCardChoice);
             if (PendingAttackTargetChoice != null) RefreshAttackTargetHighlights(PendingAttackTargetChoice);
+            featureCoordinator?.RefreshAll();
             cardStatus = $"Restored round {VisibleRoundIndex}, turn {VisibleTurnIndex}/{RoundResolutionAuthority.TurnsPerRound}: " +
                 $"{VisibleRoundPhase}.";
         }
@@ -978,7 +1009,7 @@ namespace GuardsDigital.Presentation.Interaction
             var guiPosition = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
             return GetCardPanelRect().Contains(guiPosition) ||
                 GetTieBreakerIndicatorRect().Contains(guiPosition) ||
-                (ruleEventLogExpanded && GetRuleEventLogRect().Contains(guiPosition));
+                (IsRuleEventLogExpanded && GetRuleEventLogRect().Contains(guiPosition));
         }
 
         private void InitializeCardDrivenMovementIfEnabled()
@@ -1024,6 +1055,17 @@ namespace GuardsDigital.Presentation.Interaction
             quickGameSetupState = null;
             ruleEventLogExpanded = false;
             ruleEventLogScrollPosition = Vector2.zero;
+            boardFeatureView = null;
+            directorHandsFeatureView = null;
+            roundActionFeatureView = null;
+            undoRestartFeatureView = null;
+            diagnosticLogFeatureView = null;
+            boardFeaturePresenter = null;
+            directorHandsFeaturePresenter = null;
+            roundActionFeaturePresenter = null;
+            undoRestartFeaturePresenter = null;
+            diagnosticLogFeaturePresenter = null;
+            featureCoordinator = null;
             lastCardMovementRoute = Array.Empty<HexCoordinate>();
             lastCardMovementAllowance = 0;
             lastCardRemainingAllowance = 0;
@@ -1126,6 +1168,7 @@ namespace GuardsDigital.Presentation.Interaction
                 placeholderConfiguration));
             cardResolutionAuthority = null;
             SyncSessionProjectionToPresentation();
+            EnsureFeatureMvp();
             cardStatus = $"Round {VisibleRoundIndex}, turn {VisibleTurnIndex}/{RoundResolutionAuthority.TurnsPerRound}: " +
                 "awaiting Red and Blue commitments.";
         }
@@ -1541,6 +1584,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (result.Accepted)
             {
                 SyncSessionProjectionToPresentation();
+                featureCoordinator?.RefreshAll();
             }
 
             return result;
@@ -1604,6 +1648,61 @@ namespace GuardsDigital.Presentation.Interaction
                 out var activeHand)
                     ? activeHand
                     : null;
+        }
+
+        private void EnsureFeatureMvp()
+        {
+            if (featureCoordinator != null || matchSession == null || heroView == null || tileViews == null)
+            {
+                return;
+            }
+
+            var boundHeroes = new[] { heroView }
+                .Concat(otherHeroViews ?? Array.Empty<PrimitiveHeroView>())
+                .Where(view => view != null)
+                .Distinct()
+                .ToArray();
+            boardFeatureView = new BoardInteractionUnityView(
+                boundHeroes,
+                tileViews,
+                EnsureHighlightMaterial());
+            directorHandsFeatureView = new DirectorHandsUnityView();
+            roundActionFeatureView = new RoundActionUnityView();
+            undoRestartFeatureView = new UndoRestartUnityView();
+            diagnosticLogFeatureView = new DiagnosticLogUnityView();
+
+            boardFeaturePresenter = new BoardInteractionPresenter(matchSession, boardFeatureView);
+            directorHandsFeaturePresenter = new DirectorHandsPresenter(matchSession, directorHandsFeatureView);
+            roundActionFeaturePresenter = new RoundActionPresenter(matchSession, roundActionFeatureView);
+            undoRestartFeaturePresenter = new UndoRestartPresenter(matchSession, undoRestartFeatureView);
+            diagnosticLogFeaturePresenter = new DiagnosticLogPresenter(matchSession, diagnosticLogFeatureView);
+
+            boardFeatureView.HeroSubmitted += heroId => boardFeaturePresenter.SubmitHero(heroId);
+            boardFeatureView.DestinationSubmitted += destination =>
+                boardFeaturePresenter.SubmitDestination(destination);
+            directorHandsFeatureView.CardSelected += cardId =>
+                directorHandsFeaturePresenter.SelectCommitmentCard(cardId);
+            directorHandsFeatureView.ConfirmRequested += () =>
+                directorHandsFeaturePresenter.ConfirmSelectedCard();
+            directorHandsFeatureView.PassRequested += heroId => directorHandsFeaturePresenter.Pass(heroId);
+            roundActionFeatureView.InvocationSubmitted += invocation =>
+                roundActionFeaturePresenter.Submit(invocation);
+            undoRestartFeatureView.UndoRequested += () => undoRestartFeaturePresenter.Undo();
+            undoRestartFeatureView.RestartRequested += () => undoRestartFeaturePresenter.Restart();
+            diagnosticLogFeatureView.ToggleRequested += () => diagnosticLogFeaturePresenter.Toggle();
+
+            featureCoordinator = new MatchFeatureCoordinator(
+                boardFeaturePresenter,
+                directorHandsFeaturePresenter,
+                roundActionFeaturePresenter,
+                undoRestartFeaturePresenter,
+                diagnosticLogFeaturePresenter,
+                _ =>
+                {
+                    SyncSessionProjectionToPresentation();
+                    RebuildSessionInteractionProjection();
+                });
+            featureCoordinator.RefreshAll();
         }
 
         private void RebuildSessionInteractionProjection()
@@ -1972,6 +2071,25 @@ namespace GuardsDigital.Presentation.Interaction
             GUILayout.EndArea();
         }
 
+        private void DrawFeatureMvpHud()
+        {
+            DrawTieBreakerIndicator();
+            var panel = GetCardPanelRect();
+            GUI.Box(panel, GUIContent.none);
+            GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(
+                $"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {VisibleRoundIndex} - TURN {VisibleTurnIndex}/" +
+                $"{RoundResolutionAuthority.TurnsPerRound} - {VisibleRoundPhase.ToString().ToUpperInvariant()}");
+            undoRestartFeatureView.Draw();
+            diagnosticLogFeatureView.DrawToggle();
+            GUILayout.EndHorizontal();
+            directorHandsFeatureView.Draw();
+            roundActionFeatureView.Draw();
+            GUILayout.EndArea();
+            diagnosticLogFeatureView.DrawPanel(GetRuleEventLogRect());
+        }
+
         private void OnGUI()
         {
             if (!cardDrivenMovementEnabled)
@@ -1980,6 +2098,13 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             InitializeCardDrivenMovementIfEnabled();
+            EnsureFeatureMvp();
+            if (featureCoordinator != null)
+            {
+                DrawFeatureMvpHud();
+                return;
+            }
+
             DrawTieBreakerIndicator();
             var panel = GetCardPanelRect();
             GUI.Box(panel, GUIContent.none);
@@ -2059,13 +2184,6 @@ namespace GuardsDigital.Presentation.Interaction
                 TryAdvanceEndOfRound();
             }
 
-            if (IsVisibleTurnActive &&
-                selectedCardInstanceId.HasValue &&
-                GUILayout.Button("HOLD", GUILayout.Width(100f), GUILayout.Height(46f)))
-            {
-                TryPerformHold(selectedCardInstanceId.Value);
-            }
-
             if (selectedCardInstanceId.HasValue &&
                 !IsVisibleTurnActive &&
                 GUILayout.Button("CONFIRM FACEDOWN", GUILayout.Width(170f), GUILayout.Height(46f)))
@@ -2104,18 +2222,6 @@ namespace GuardsDigital.Presentation.Interaction
 
                 GUI.enabled = true;
                 GUI.backgroundColor = previousColor;
-            }
-
-            if (IsCardMovementResolutionPending)
-            {
-                GUILayout.FlexibleSpace();
-                GUI.backgroundColor = new Color(0.95f, 0.45f, 0.35f);
-                if (GUILayout.Button("STOP - move 0 spaces", GUILayout.Width(170f), GUILayout.Height(46f)))
-                {
-                    TryStopCardMovement();
-                }
-
-                GUI.backgroundColor = Color.white;
             }
 
             GUILayout.EndHorizontal();

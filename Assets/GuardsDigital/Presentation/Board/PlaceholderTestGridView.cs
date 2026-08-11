@@ -27,6 +27,8 @@ namespace GuardsDigital.Presentation.Board
 
         [SerializeField] private float outerRadius = HexWorldLayout.DefaultOuterRadius;
         [SerializeField] private float cameraPadding = 1.5f;
+        [SerializeField] private Camera sceneCamera;
+        [SerializeField] private PrimitiveHeroView[] heroViews;
 
         private readonly Dictionary<ZoneId, Material> zoneMaterials = new Dictionary<ZoneId, Material>();
         private BoardMapDefinition renderedDefinition;
@@ -42,6 +44,20 @@ namespace GuardsDigital.Presentation.Board
         public IReadOnlyCollection<HexCoordinate> Coordinates => renderedDefinition != null
             ? renderedDefinition.Spaces.Select(space => space.Coordinate).ToArray()
             : System.Array.Empty<HexCoordinate>();
+
+        public void ConfigureSceneBindings(Camera camera, IEnumerable<PrimitiveHeroView> heroes)
+        {
+            sceneCamera = camera;
+            ConfigureHeroViews(heroes);
+        }
+
+        public void ConfigureHeroViews(IEnumerable<PrimitiveHeroView> heroes)
+        {
+            heroViews = (heroes ?? throw new System.ArgumentNullException(nameof(heroes)))
+                .Where(value => value != null)
+                .Distinct()
+                .ToArray();
+        }
 
         public void Rebuild(BoardMapDefinition definition)
         {
@@ -82,7 +98,7 @@ namespace GuardsDigital.Presentation.Board
             EnsureSpawnMarkers(definition);
             RemoveLegacyObstacles();
             ClearConfiguredMinions();
-            FrameWholeMap(Camera.main, definition);
+            FrameWholeMap(sceneCamera, definition);
         }
 
         public void Rebuild(BoardMapDefinition definition, QuickGameSetupState setupState)
@@ -198,7 +214,7 @@ namespace GuardsDigital.Presentation.Board
 
         private void PlaceConfiguredHeroes(BoardMapDefinition definition, QuickGameSetupState setupState)
         {
-            var views = FindObjectsByType<PrimitiveHeroView>();
+            var views = heroViews ?? System.Array.Empty<PrimitiveHeroView>();
             foreach (var setupHero in setupState.Heroes)
             {
                 var view = views.SingleOrDefault(hero => hero.Occupancy.HeroId.Equals(setupHero.HeroId));

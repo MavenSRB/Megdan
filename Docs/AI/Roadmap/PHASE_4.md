@@ -155,7 +155,7 @@ Non-goals: No new action kind, card text, effect capability, Attack consequence,
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44b-decompose-card-action-resolution-behind-typed-strategy-handlers-completion-evidence).
 
-### [ ] 4.4c Replace the validation god-controller with feature MVP
+### [x] 4.4c Replace the validation god-controller with feature MVP
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -172,6 +172,8 @@ Acceptance checks:
 - Focused Edit Mode and saved-scene Play Mode tests prove behavior and visible layout equivalence across all existing interaction paths.
 
 Non-goals: No production HUD, UI Toolkit migration, animation, sound, networking, new gameplay, broader presentation redesign beyond the approved contextual End Turn consolidation, or generic framework beyond the current match needs.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44c-replace-the-validation-god-controller-with-feature-mvp-completion-evidence).
 
 ### [ ] 4.4d Close Phase 4 runtime hygiene and architecture gate
 
