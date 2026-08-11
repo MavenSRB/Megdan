@@ -87,6 +87,10 @@ namespace GuardsDigital.Tests.EditMode
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(blueHand.Definitions, Has.All.Property("ContentAuthority")
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
+            Assert.That(redHand.Definitions, Has.All.Property("ContentRevision")
+                .EqualTo("phase-5-1a-rev-3"));
+            Assert.That(blueHand.Definitions, Has.All.Property("ContentRevision")
+                .EqualTo("phase-5-1a-rev-3"));
             Assert.That(redHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
             Assert.That(blueHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
         }
@@ -102,7 +106,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { 13, 11, 9, 7, 5 },
                 new[] { 2, 3, 2, 4, 3 },
                 new[] { 0, 0, 3, 0, 2 },
-                new[] { 1, 1, 2, 2, 1 },
+                new[] { 2, 2, 3, 3, 2 },
                 new[] { 1, 3, 1, 2, 2 });
             AssertSyntheticMatrix(
                 blueHand,
@@ -110,7 +114,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { 12, 11, 8, 6, 4 },
                 new[] { 2, 3, 2, 5, 3 },
                 new[] { 0, 0, 2, 0, 3 },
-                new[] { 2, 1, 3, 1, 2 },
+                new[] { 3, 2, 4, 2, 3 },
                 new[] { 2, 4, 1, 1, 2 });
         }
 

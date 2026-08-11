@@ -22,10 +22,10 @@ namespace GuardsDigital.Tests.EditMode
     {
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v2", "9183da7e496e26da7bcb38348b15bd34f0b0c1f723cd8d257f7afc6a2ee3d1be"),
-            new CompatibilityFixture("active-turn-v2", "dadf6c008190d5a3994083f94d7d39f753c04f3ca07fa7baf2126a5556bd950e"),
-            new CompatibilityFixture("pending-choice-v2", "ef644b2dfddde4dfd359e411e2242628c77e806f73a8f8c82e323fd9a6ff65a5"),
-            new CompatibilityFixture("end-of-round-v2", "6ac1214ae54f6294ada32f24b3c3a868e56c9cf81e3c6746a5a5a11b864abf7e")
+            new CompatibilityFixture("setup-v2", "6449e26a2ccd979bc7894751ab324bb07ea04504c3ab7aae16ff432232eae0c4"),
+            new CompatibilityFixture("active-turn-v2", "351143ca42b155fcc9093dbb341621c2fed7f919382586dd5f8330f5560b5b53"),
+            new CompatibilityFixture("pending-choice-v2", "ec849c04f6c8598d7a8ea6783e9d7bbef7ccbc097f8c98c2028bdca2b06a0cfa"),
+            new CompatibilityFixture("end-of-round-v2", "3fc57fa79723be078118ab1e651ce38d865ee765a08da05f5f95433a134d0766")
         };
 
         [Test]
@@ -34,14 +34,18 @@ namespace GuardsDigital.Tests.EditMode
             var snapshots = CreateSupportedSnapshots();
             Assert.That(snapshots.Keys, Is.EquivalentTo(SupportedFixtures.Select(value => value.Name)));
 
+            var actualHashes = SupportedFixtures
+                .Select(fixture => Sha256(snapshots[fixture.Name]))
+                .ToArray();
+            Assert.That(
+                actualHashes,
+                Is.EqualTo(SupportedFixtures.Select(fixture => fixture.Sha256).ToArray()),
+                $"Compatibility corpus changed. Actual SHA-256 values: {string.Join(", ", actualHashes)}. " +
+                "Record an explicit migrate-or-reject decision before updating the corpus.");
+
             foreach (var fixture in SupportedFixtures)
             {
                 var snapshot = snapshots[fixture.Name];
-                var actualHash = Sha256(snapshot);
-                Assert.That(actualHash, Is.EqualTo(fixture.Sha256),
-                    $"Compatibility fixture '{fixture.Name}' changed. Actual SHA-256: {actualHash}. " +
-                    "Record an explicit migrate-or-reject decision before updating the corpus.");
-
                 var restored = CreateSession();
                 var result = restored.RestoreSnapshot(snapshot);
                 Assert.That(result.Accepted, Is.True, $"{fixture.Name}: {result.Detail}");

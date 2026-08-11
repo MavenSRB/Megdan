@@ -54,8 +54,10 @@ namespace GuardsDigital.Presentation.Match
         private DiagnosticLogUnityView diagnostics;
         private MatchHudHeaderViewModel header;
         private GUIStyle tieBreakerStyle;
+        private Vector2 cardPanelScrollPosition;
 
         public MatchHudHeaderViewModel Header => header;
+        public Rect CardPanelRect => GetCardPanelRect();
         public Rect TieBreakerIndicatorRect => GetTieBreakerIndicatorRect();
         public Rect RuleEventLogPanelRect => GetRuleEventLogRect();
 
@@ -101,8 +103,10 @@ namespace GuardsDigital.Presentation.Match
             undoRestart.Draw();
             diagnostics.DrawToggle();
             GUILayout.EndHorizontal();
+            cardPanelScrollPosition = GUILayout.BeginScrollView(cardPanelScrollPosition);
             hands.Draw();
             round.Draw();
+            GUILayout.EndScrollView();
             GUILayout.EndArea();
             diagnostics.DrawPanel(GetRuleEventLogRect());
         }
@@ -135,12 +139,18 @@ namespace GuardsDigital.Presentation.Match
 
         private static Rect GetCardPanelRect()
         {
-            var width = Mathf.Min(820f, Mathf.Max(320f, Screen.width - (Margin * 2f)));
+            return CalculateCardPanelRect(Screen.width, Screen.height);
+        }
+
+        public static Rect CalculateCardPanelRect(float viewportWidth, float viewportHeight)
+        {
+            var width = Mathf.Min(820f, Mathf.Max(0f, viewportWidth - (Margin * 2f)));
+            var height = Mathf.Min(CardPanelHeight, Mathf.Max(0f, viewportHeight - (Margin * 2f)));
             return new Rect(
                 Margin,
-                Mathf.Max(Margin, Screen.height - CardPanelHeight - Margin),
+                Mathf.Max(Margin, viewportHeight - height - Margin),
                 width,
-                CardPanelHeight);
+                height);
         }
 
         private static Rect GetTieBreakerIndicatorRect()

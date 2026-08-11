@@ -23,6 +23,23 @@ Acceptance checks:
 
 Historical evidence: [milestone 5.1 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-51-integrate-and-verify-exact-card-based-movement-on-the-full-map-completion-evidence).
 
+### [x] 5.1a Increase synthetic Movement and keep Defense controls accessible
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: The ten synthetic test cards provide slightly more board traversal, and every pending Defense response remains reachable in the configured HUD at a 778-by-300 viewport.
+
+Acceptance checks:
+
+- Every Red and Blue synthetic card's printed Movement value increases by exactly one; Initiative, Attack, Range, Defense, stable IDs, ownership, and content authority remain unchanged, while the content revision advances so older snapshots cannot silently acquire the new values.
+- The configured card panel stays within the viewport and scrolls its hands/action body when the available height cannot display every row.
+- Defense selection and decline remain typed projected invocations rendered by the passive view; presentation does not infer legality or own resolution.
+- Focused definition/session and snapshot-compatibility tests lock the revised synthetic matrix and revision boundary, a deterministic layout regression proves the reported 778-by-300 viewport boundary, and configured saved-scene Play Mode covers the runtime HUD path.
+
+Non-goals: No official card values, Fast Travel, direct Move, Defense rules, legacy-controller compatibility UI, production styling, or broader responsive-layout system.
+
+Historical evidence: [milestone 5.1a handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-51a-increase-synthetic-movement-and-keep-defense-controls-accessible-completion-evidence).
+
 ### [ ] 5.2 Implement Fast Travel replacement
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.

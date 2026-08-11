@@ -73,6 +73,20 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_KeepsConfiguredCardPanelInsideRuntimeViewport()
+        {
+            yield return LoadScene();
+
+            var panel = Root().Hud.CardPanelRect;
+            Assert.That(panel.xMin, Is.GreaterThanOrEqualTo(0f));
+            Assert.That(panel.yMin, Is.GreaterThanOrEqualTo(0f));
+            Assert.That(panel.xMax, Is.LessThanOrEqualTo(Screen.width));
+            Assert.That(panel.yMax, Is.LessThanOrEqualTo(Screen.height));
+            Assert.That(panel.height,
+                Is.EqualTo(Mathf.Min(310f, Mathf.Max(0f, Screen.height - 24f))).Within(0.01f));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_LoadsVisibleConfiguredHeroesAndPassiveBoardCallbacks()
         {
             yield return LoadScene();

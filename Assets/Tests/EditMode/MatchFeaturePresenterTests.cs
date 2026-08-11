@@ -21,6 +21,16 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class MatchFeaturePresenterTests
     {
         [Test]
+        public void ConfiguredHudLayout_KeepsCardPanelInsideReportedShortViewport()
+        {
+            var panel = ConfiguredMatchHudRenderer.CalculateCardPanelRect(778f, 300f);
+
+            Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(12f, 12f, 754f, 276f)));
+            Assert.That(panel.xMax, Is.LessThanOrEqualTo(778f));
+            Assert.That(panel.yMax, Is.LessThanOrEqualTo(300f));
+        }
+
+        [Test]
         public void FeaturePresenters_DependOnlyOnSessionAndTheirViewPort()
         {
             AssertPresenterDependencies<BoardInteractionPresenter, IBoardInteractionView>();

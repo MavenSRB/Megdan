@@ -46,6 +46,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - **End Turn** is presentation terminology, not a generic rules command. Its view model carries the exact currently legal typed offer or pending-choice invocation supplied by authority; the view never infers legality from its own phase state. Future turn-ending functionality reuses the control by projecting its own typed invocation, without making Hold, Movement Stop, or later rule operations interchangeable.
 - Provide internal Undo, restart, animation-speed, and camera-reset controls.
 - Provide a collapsible event log.
+- The configured prototype card panel remains inside the viewport and scrolls its hands/action body when vertical space is insufficient, keeping projected Defense-card and Decline controls reachable on short desktop viewports.
 - No main menu, settings suite, tutorial, collection screen, or account UI is required for the pitch.
 
 ## Accessibility baseline

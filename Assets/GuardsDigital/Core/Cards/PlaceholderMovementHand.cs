@@ -9,20 +9,20 @@ namespace GuardsDigital.Core.Cards
     {
         private static readonly SyntheticCardProfile[] RedProfiles =
         {
-            new SyntheticCardProfile("red-needle", "Red Needle", 13, AttackRangeKind.NonRanged, 2, 0, 1, 1),
-            new SyntheticCardProfile("red-bulwark", "Red Bulwark", 11, AttackRangeKind.NonRanged, 3, 0, 1, 3),
-            new SyntheticCardProfile("red-lancer", "Red Lancer", 9, AttackRangeKind.Ranged, 2, 3, 2, 1),
-            new SyntheticCardProfile("red-pursuit", "Red Pursuit", 7, AttackRangeKind.NonRanged, 4, 0, 2, 2),
-            new SyntheticCardProfile("red-bombard", "Red Bombard", 5, AttackRangeKind.Ranged, 3, 2, 1, 2)
+            new SyntheticCardProfile("red-needle", "Red Needle", 13, AttackRangeKind.NonRanged, 2, 0, 2, 1),
+            new SyntheticCardProfile("red-bulwark", "Red Bulwark", 11, AttackRangeKind.NonRanged, 3, 0, 2, 3),
+            new SyntheticCardProfile("red-lancer", "Red Lancer", 9, AttackRangeKind.Ranged, 2, 3, 3, 1),
+            new SyntheticCardProfile("red-pursuit", "Red Pursuit", 7, AttackRangeKind.NonRanged, 4, 0, 3, 2),
+            new SyntheticCardProfile("red-bombard", "Red Bombard", 5, AttackRangeKind.Ranged, 3, 2, 2, 2)
         };
 
         private static readonly SyntheticCardProfile[] BlueProfiles =
         {
-            new SyntheticCardProfile("blue-feint", "Blue Feint", 12, AttackRangeKind.NonRanged, 2, 0, 2, 2),
-            new SyntheticCardProfile("blue-sentinel", "Blue Sentinel", 11, AttackRangeKind.NonRanged, 3, 0, 1, 4),
-            new SyntheticCardProfile("blue-scout-shot", "Blue Scout Shot", 8, AttackRangeKind.Ranged, 2, 2, 3, 1),
-            new SyntheticCardProfile("blue-hammer", "Blue Hammer", 6, AttackRangeKind.NonRanged, 5, 0, 1, 1),
-            new SyntheticCardProfile("blue-longbow", "Blue Longbow", 4, AttackRangeKind.Ranged, 3, 3, 2, 2)
+            new SyntheticCardProfile("blue-feint", "Blue Feint", 12, AttackRangeKind.NonRanged, 2, 0, 3, 2),
+            new SyntheticCardProfile("blue-sentinel", "Blue Sentinel", 11, AttackRangeKind.NonRanged, 3, 0, 2, 4),
+            new SyntheticCardProfile("blue-scout-shot", "Blue Scout Shot", 8, AttackRangeKind.Ranged, 2, 2, 4, 1),
+            new SyntheticCardProfile("blue-hammer", "Blue Hammer", 6, AttackRangeKind.NonRanged, 5, 0, 2, 1),
+            new SyntheticCardProfile("blue-longbow", "Blue Longbow", 4, AttackRangeKind.Ranged, 3, 3, 3, 2)
         };
 
         private PlaceholderMovementHand(
@@ -115,7 +115,7 @@ namespace GuardsDigital.Core.Cards
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
-                "phase-3-rev-2",
+                "phase-5-1a-rev-3",
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,

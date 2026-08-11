@@ -152,7 +152,7 @@ namespace GuardsDigital.Tests.EditMode
         public void OfficialMapMovement_RulebookPage11CommitsShortestAndLongerWaypointRoutesToSameDestination()
         {
             var shortestSession = CreateSession();
-            StartOfficialMapMovementThree(shortestSession);
+            StartOfficialMapMovementFour(shortestSession);
             var shortestStart = shortestSession.Projection.PendingMovementChoice;
             var origin = shortestStart.Origin;
             var target = shortestStart.LegalDestinations
@@ -172,7 +172,7 @@ namespace GuardsDigital.Tests.EditMode
                 null);
 
             var longerSession = CreateSession();
-            StartOfficialMapMovementThree(longerSession);
+            StartOfficialMapMovementFour(longerSession);
             var longerStart = longerSession.Projection.PendingMovementChoice;
             var waypoint = longerStart.LegalDestinations
                 .Where(value => value.Cost == 1 && !value.Destination.Equals(target.Destination))
@@ -415,7 +415,7 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
         }
 
-        private static void StartOfficialMapMovementThree(MatchSession session)
+        private static void StartOfficialMapMovementFour(MatchSession session)
         {
             var redCard = GetCardByInitiative(session, TeamSide.Red, 5);
             var blueCard = GetCardByInitiative(session, TeamSide.Blue, 8);
@@ -423,7 +423,7 @@ namespace GuardsDigital.Tests.EditMode
             Accept(session, DirectorCommand.CommitCard(blueCard.OwnerId, blueCard.Id), null);
             Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(blueCard.OwnerId));
             StartCurrentAction(session, ActionKind.Movement, null);
-            Assert.That(session.Projection.PendingMovementResolution.MovementAllowance, Is.EqualTo(3));
+            Assert.That(session.Projection.PendingMovementResolution.MovementAllowance, Is.EqualTo(4));
         }
 
         private static CardInstance GetCardByInitiative(
