@@ -216,3 +216,59 @@ Non-goals: No gameplay or presentation change, refactor, optimization implementa
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44e-independently-review-the-phase-4-architecture-baseline-completion-evidence).
 
 Hard gate: Phase 5 does not begin until milestone 4.4e is reviewed and every finding classified as gate-blocking has an approved disposition and, when required, a completed corrective milestone.
+
+### [ ] 4.4f Complete the configured MVP cutover and highlight-resource ownership
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: The configured saved scene routes every board intent through the feature MVP boundary, the legacy controller no longer owns configured-match orchestration/rendering, and every generated highlight resource has explicit lifetime ownership.
+
+Acceptance checks:
+
+- Configured hero-target and Movement-destination pointer input enters through explicit passive board-view callbacks, is translated by `BoardInteractionPresenter`, and reaches only `IMatchSession`; no saved-scene input adapter or legacy controller submits a configured command directly.
+- Configured session creation, feature presenter/view composition, projection refresh, and feature HUD drawing move to bounded scene-composition ownership. Any retained unconfigured presentation drill is explicitly isolated and cannot supply configured-match input, orchestration, projection, or rendering.
+- No replacement type combines session authority, command history, pointer/GUI input, all feature projections, and rendering. Feature presenters remain peer-independent and passive views remain authority-free.
+- The destination-highlight Material records whether it was generated, reuses one owned instance, destroys only that instance at teardown, and never destroys a saved/assigned asset. Repeated controller/scene lifecycles return the exact owned highlight/native-resource counts to baseline.
+- Configured commitment, Initiative, Hold/Movement Stop, Movement, Attack/Defense, end-of-round, Undo/restart, snapshot restore, diagnostic log, layout, and input-blocking behavior remain equivalent through focused Edit Mode and saved-scene Play Mode tests.
+- Architecture/source checks fail if configured board input bypasses its presenter, configured session/feature ownership returns to the legacy controller, a replacement god object appears, or generated highlight ownership loses its teardown contract.
+
+Non-goals: No gameplay, action-strategy refactor, production HUD redesign, UI Toolkit migration, animation, sound, networking, object pooling, or polished art.
+
+### [!] 4.4g Extract the production Movement and Attack/Defense strategy backends
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Blocked by: Milestone 4.4f must complete first so the presentation and resource correction has an independent Unity-facing validation boundary.
+
+Observable outcome: Production Movement and Attack/Defense behavior is owned by distinct typed strategy backends rather than delegating both handlers back into the combined card-action authority.
+
+Acceptance checks:
+
+- Concrete Movement and Attack/Defense backends independently own their handler-specific pending state, validation, restoration, mutation, and typed results; the central dispatcher does not implement either backend interface or contain their action-specific algorithms.
+- The dispatcher retains only cross-action invariants: one active resolution, stable resolution/step identity, authoritative offer revalidation, atomic rejection, serializable pending-choice publication, restoration coordination, and ordered event publication.
+- Production registry composition maps the stable `movement-v1` and `attack-defense-v1` identities to the distinct concrete handlers without reflection, service location, display-name/printed-text branching, or an untyped universal payload.
+- Snapshot schema/version and serialized Movement/Attack continuation meaning remain unchanged; supported compatibility fixtures round-trip byte-identically and replay/Undo/snapshot continuation remain equivalent.
+- Focused tests prove production composition is genuinely decomposed, each handler rejects foreign or stale continuations without mutation, and all current Movement, Attack/Defense, turn, round, application-session, snapshot, replay, and architecture regressions pass.
+
+Non-goals: No new action kind, Fast Travel, card text, effect capability, Attack consequence, timing system, snapshot migration, reflection plugin framework, or speculative scripting language.
+
+### [!] 4.4h Re-close the corrected Phase 4 architecture and performance gate
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Blocked by: Milestones 4.4f and 4.4g must complete first.
+
+Observable outcome: The corrected Phase 4 foundation has direct projection-cost evidence, all 4.4e findings have completed dispositions, and the T3 gate is green at one final revision before Phase 5.
+
+Acceptance checks:
+
+- The performance fixture retains the prior snapshot-only measurements and separately records a noise-tolerant complete-map application-projection or representative accepted-command refresh cost that includes immutable projection construction and its authoritative/diagnostic snapshot work.
+- Capture environment, sample count, baseline revision, metric ownership, prior measurement, new measurement, threshold, and threshold rationale are recorded without claiming a production target or prescribing speculative optimization.
+- The corrected configured input/MVP/resource-lifetime and production strategy-decomposition architecture checks plus their focused Edit Mode and saved-scene Play Mode regressions pass.
+- Snapshot compatibility, live/replay/Undo/restart/restore equivalence, pending-choice identity, event ordering, warning/API state, map/setup presentation, and generated-resource lifecycle evidence remain green.
+- Both complete unfiltered Edit Mode and Play Mode suites pass at the final revision, followed by targeted visual inspection of the unchanged complete configured setup and validation controls.
+- The 4.4e finding-disposition addendum links `F44E-01` through `F44E-04` to their completion/validation evidence; no gate-blocking row remains open before 5.1 is proposed.
+
+Non-goals: No gameplay, production optimization target, pooling, DOTS/ECS, production UI migration, networking, build, or polished art.
+
+Hard gate: Phase 5 does not begin until milestone 4.4h completes and every 4.4e finding has its required completion evidence.

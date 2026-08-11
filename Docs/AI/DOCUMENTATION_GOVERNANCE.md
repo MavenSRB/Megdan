@@ -57,7 +57,7 @@ Every removed, relocated, or rewritten governed section is listed in `Archive/MI
 - `authoritative shard`: precise current material moves to an indexed canonical leaf; structural wrapper text may differ, but the section body remains exact unless separately mapped.
 - `non-authoritative routing-summary replacement`: replaceable overview or routing prose is rewritten and points to the canonical destination. This treatment cannot be the sole destination for authority, rules, sources, deviations, open questions, acceptance/non-goal checks, exact active recipes, historical pass/failure evidence, or rights/privacy boundaries.
 
-The preservation inventory accounts for milestone IDs/statuses/profiles and acceptance/non-goal checks; rule entries/citations/statuses/deviations/open questions; card/effect contract entries; test commands and gates; historical pass/failure evidence; and rights/privacy boundaries. Manual review complements the validator and compares the baseline, manifest, active leaves, and archives for semantic preservation.
+The preservation inventory accounts for milestone IDs/statuses/profiles and acceptance/non-goal checks; rule entries/citations/statuses/deviations/open questions; card/effect contract entries; test commands and gates; historical pass/failure evidence; and rights/privacy boundaries. Structural baseline counts are preservation floors: later explicitly authorized milestones, profiles, acceptance checks, and non-goals may increase them, while any count below the immutable baseline remains a validation failure. Manual review complements the validator and compares the baseline, manifest, active leaves, and archives for semantic preservation.
 
 ## Required handoff and phase-gate review
 

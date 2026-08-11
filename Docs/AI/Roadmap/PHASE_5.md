@@ -10,7 +10,7 @@ Phase 5 uses verified general rules and synthetic test definitions. It does not 
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
-Blocked by: Milestone 4.4e findings `F44E-01` through `F44E-05` require approved dispositions and the applicable completed corrective milestones. The current documentation validator also requires an approved governance amendment before those additive corrective milestone definitions can be recorded safely.
+Blocked by: Milestone 4.4h must re-close the corrected Phase 4 architecture and performance gate.
 
 Observable outcome: A synthetic Movement action uses its typed allowance to traverse a chosen legal route on the official placeholder map.
 

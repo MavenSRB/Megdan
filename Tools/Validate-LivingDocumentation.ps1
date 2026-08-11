@@ -135,8 +135,7 @@ function Test-DuplicateBodies([string[]] $Bodies, [string] $ActiveCorpus) {
 }
 
 function Test-PreservationCount([string] $Name, [int] $Before, [int] $After) {
-    if ($Name -eq 'profiles') { return $After -ge $Before }
-    return $After -eq $Before
+    return $After -ge $Before
 }
 
 function Invoke-SelfTests {
@@ -167,7 +166,13 @@ function Invoke-SelfTests {
     $requiredInventory = @('milestones','rules','tests')
     $fixtureInventory = @('milestones','rules')
     Expect 'missing preservation-inventory item' (@($requiredInventory | Where-Object { $fixtureInventory -notcontains $_ }).Count -eq 1)
-    Expect 'exact structural preservation count' (Test-PreservationCount 'milestones' 10 10)
+    Expect 'preserved structural baseline' (Test-PreservationCount 'milestones' 10 10)
+    Expect 'additive milestone definition' (Test-PreservationCount 'milestones' 10 11)
+    Expect 'additive acceptance check' (Test-PreservationCount 'acceptance' 10 11)
+    Expect 'additive non-goal' (Test-PreservationCount 'non-goals' 10 11)
+    Expect 'lost milestone definition' (-not (Test-PreservationCount 'milestones' 10 9))
+    Expect 'lost acceptance check' (-not (Test-PreservationCount 'acceptance' 10 9))
+    Expect 'lost non-goal' (-not (Test-PreservationCount 'non-goals' 10 9))
     Expect 'new milestone profile declaration' (Test-PreservationCount 'profiles' 10 11)
     Expect 'lost milestone profile declaration' (-not (Test-PreservationCount 'profiles' 10 9))
 
@@ -321,7 +326,7 @@ else {
     }
 }
 
-# Exact structural counts and a nondecreasing profile count prove that sharding did not delete milestone checks or assigned profiles. New profile declarations are allowed as future milestones receive their required execution route.
+# Structural baseline floors prove that sharding did not delete milestone checks or assigned profiles while allowing newly authorized milestones, acceptance checks, non-goals, and profile declarations to be added.
 $baselineRoadmap = Read-Utf8 (Join-Path $baselineRoot 'ROADMAP.md')
 $countPatterns = @{
     'milestones' = '(?m)^### \[[x!~ ]\] \S+'
