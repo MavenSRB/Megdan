@@ -51,6 +51,7 @@ The current implementation, authorization, next milestone, and required Codex pr
 - Treat the second-printing rulebook, verified card data, and published official rulings as authoritative according to the hierarchy in `Docs/AI/RULES_LEDGER.md`.
 - Do not invent, simplify, rebalance, or silently reinterpret a rule. Record every approved deviation in `Docs/AI/RULES_LEDGER.md`.
 - Work on exactly one user-approved micro-milestone at a time. Satisfy its acceptance checks, update the living documents, report the result, and stop for approval.
+- Before declaring any approved milestone complete, perform a review-only pass from the player-experience, rules-authority, maintainability, and project-risk perspectives. Distinguish demonstrated defects from measured or plausible risks and from optional improvements. Report the review in the milestone handoff even when it finds no issues. Correct only demonstrated defects that fall within the approved milestone and are required for its acceptance; do not implement optional improvements or expand scope without separate user approval.
 - After every completed user-approved roadmap milestone, create a local Git commit containing that milestone and its continuity updates. Do not configure a remote or push without explicit user authorization.
 - Do not continue into adjacent features merely because they appear easy or logically related.
 - Use the smallest implementation that proves the current behavior, while preserving the architectural constraints in `Docs/AI/PROJECT_CONTEXT.md`.
