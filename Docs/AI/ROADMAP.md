@@ -962,6 +962,7 @@ Acceptance checks:
 - Every configured occupied space and spawn point resolves within that selected map; map-local IDs are never resolved against another map.
 - Three Wave counters and four Life counters per team.
 - Standard single-lane minions are created from configuration with stable identity, team, type, and occupied-space data.
+- The visible standard minions use the circular artwork in the private reference atlas `Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/g713916_s799373.sprite0__45.jpg`: Steam/orange maps to project Red and Crystal/light-blue maps to project Blue; within each team, the round riveted/broad spiked face is Heavy, the narrow helmet with cheek guards/armored shoulders is Melee, and the two-pronged helmet/narrow crystal crest is Ranged. The source manifest incorrectly labels the Crystal melee sprite `Melee_Steam`; implementation must use this reviewed mapping, select art from authoritative team/type data, and never infer rules identity from the image or manifest label alone.
 - The initial Tie Breaker result comes from milestone 2.6.
 - Only the approved player-count, mirrored-hero, and director-mode deviations are present.
 - T3 phase gate: source/data validation, focused setup-scene inspection, and both complete unfiltered Unity suites pass.
@@ -1565,9 +1566,13 @@ Each visible milestone runs focused Play Mode checks for the affected presentati
 
 ### [ ] 9.3 Minion miniatures
 
+Production minion miniatures preserve the milestone 4.4 atlas-derived circular minion tokens as each unit's 2D representation rather than replacing or redrawing that source.
+
 ### [ ] 9.4 Bounded pan, orbit, zoom, and reset camera
 
 ### [ ] 9.5 Automatic 3D miniature / 2D token switching
+
+Top-down switching uses the reviewed milestone 4.4 Steam/orange-to-Red and Crystal/light-blue-to-Blue Heavy/Melee/Ranged token mapping from `Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/g713916_s799373.sprite0__45.jpg`, including the correction for the manifest's mislabeled Crystal melee sprite, while the same authoritative minion instance continues to own both its 3D and 2D presentation.
 
 ### [ ] 9.6 Six-hero idle animation coverage
 

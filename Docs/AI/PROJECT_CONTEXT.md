@@ -198,6 +198,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - When the camera approaches top-down, units automatically crossfade to readable 2D tokens.
 - Separate enter and exit thresholds prevent visual flicker near the switching angle.
 - One logical unit owns interchangeable 3D-miniature and 2D-token representations.
+- Standard minions use the circular artwork embedded along the top of the private reference atlas `Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/g713916_s799373.sprite0__45.jpg` when they first become visible in milestone 4.4. Steam/orange maps to project Red and Crystal/light-blue maps to project Blue; the round riveted/broad spiked face is Heavy, the narrow helmet with cheek guards/armored shoulders is Melee, and the two-pronged helmet/narrow crystal crest is Ranged. The source manifest's `Melee_Steam` label on the Crystal melee sprite is a known metadata error. Milestones 9.3 and 9.5 retain these images as the 2D side of each minion's interchangeable presentation; authoritative team/type data selects the image, and rules identity is never inferred from art or the incorrect source label.
 
 ### Camera
 
