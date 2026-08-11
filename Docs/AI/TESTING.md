@@ -97,6 +97,8 @@ The current T3 phase/hard gates are milestones `1.13`, `2.6`, `3.11`, `4.4d`, `5
 
 Milestone `8.28` performs a disposable internal Win64 development-build launch smoke after the URP migration. Milestone `8.36` produces a separately identified disposable private Win64 build for the invited six-human internet gate. Those artifacts are validation/playtest-only and are not publicly distributed or retained as the pitch deliverable; milestone `10.1` remains the first retained private pitch player build.
 
+Milestone `7.9` also performs an earlier disposable Win64 development-build smoke of the complete synthetic core. It launches outside the Editor, completes a deterministic scripted match path, writes usable diagnostics, and exits cleanly. It detects Editor-only API, stripping, assembly, initialization, serialization, or content-inclusion failures without becoming a retained or distributed build.
+
 Milestone `8.29` must add the exact focused network/session and multi-client integration commands once the provider, SDK, process topology, and test harness are selected. Milestone `8.36` then runs those focused checks, a six-client integration path, the recorded multi-network private playtest, and both unfiltered Unity suites at the applicable final revision. A successful local multi-process run alone is not evidence that relay/NAT traversal, reconnect, latency handling, or internet failure behavior works.
 
 Milestone `10.1` reuses the unchanged `9.16` result and adds build-and-launch smoke; rerun T3 if code or executable content changed after `9.16`. Milestone `10.2` runs the clean-machine private smoke test without redundantly rerunning Unity Test Framework against an unchanged build.
@@ -144,6 +146,18 @@ Milestones `4.4e`, `5.8a`, `7.9a`, `8.16a`, `8.28a`, `8.36a`, and `9.16a` are an
 The reviewer may run focused existing tests, source checks, profiler captures, log inspection, snapshot/replay comparisons, build inspection, or other non-mutating diagnostics needed to test a specific concern. Record the exact command or capture, revision, result, and why it was needed. A diagnostic failure is a finding, not permission to repair it during the review. If reproducing or isolating a problem requires new test code, instrumentation, fixtures, content, scenes, packages, or configuration, propose a separately approved corrective/diagnostic milestone instead.
 
 Every review report records the inspected surfaces and preserved strengths, then classifies findings under the roadmap's independent-review categories. An actionable finding includes evidence, impact, severity/timing, the smallest correction, and proposed validation. A stylistic preference alone cannot block a gate. The review completes only when every gate-blocking finding has an explicit proposed disposition and the affected future milestone sequence has been re-evaluated; implementation remains separately authorized.
+
+## Cross-cutting technical-risk controls
+
+Architecture-conformance checks use deterministic assembly-reference or source rules rather than heuristic semantic judgments. Their fixtures must prove both allowed and forbidden dependency examples. A failure blocks the owning gate; weakening an enforced boundary requires an explicit architecture amendment rather than an allow-list added only to make the check pass.
+
+The deterministic replay oracle compares accepted command identity/order, rejected results, ordered semantic events, immutable projection after each accepted command, final authoritative snapshot, and completed history across live, fresh replay, retained-prefix Undo replay, and snapshot restore plus continuation. Property/invariant scenarios are bounded and print the fixed seed and smallest reproducible command prefix on failure. At minimum they protect atomic rejection, ownership, occupancy, live pending-choice identities, complete-set reveal privacy, and replay history cardinality.
+
+The snapshot compatibility corpus is small, version controlled, and representative rather than a dump of routine test output. Every fixture declares its schema and referenced content revisions plus whether it must round-trip, migrate, or reject. A durable schema/content-identity change updates the decision and fixtures in the same milestone; silently accepting changed meaning is a failure.
+
+Performance thresholds are recorded with capture environment, duration/sample count, baseline revision, tolerated noise, and metric ownership. They cover steady-state managed allocation, owned-resource growth, map rebuild, snapshot/projection, and replay at the applicable milestone scale. A threshold crossing fails the focused check or gate until investigated and explicitly fixed, re-baselined with rationale, or accepted by the user; it does not by itself prescribe pooling, DOTS/ECS, or another optimization.
+
+Networking fault and authorization tests remain deterministic where possible and record selected transport/service versions. They cover unauthorized, duplicate, replayed, stale, malformed, oversized, lost, delayed, reordered, and incompatible inputs plus disconnect/reconnect at each pending-choice family. Expected outcomes are host convergence, one documented recoverable state, or one documented terminal state, never partial authoritative replacement or owner-private leakage. Diagnostic fixtures assert that logs correlate session/content/schema, command, projection, and recovery identities without including another seat's hidden hand or pre-reveal commitment.
 
 ## Official board-map specification validation
 
