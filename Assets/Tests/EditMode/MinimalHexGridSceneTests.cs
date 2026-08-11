@@ -168,7 +168,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_ContainsVisibleRedAndBlueHeroesAtAuthoritativeAdjacentCoordinates()
+        public void Scene_ContainsVisibleRedAndBlueHeroesAtConfiguredTeamHeroSpawnPoints()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             RebuildOfficialMap();
@@ -191,7 +191,13 @@ namespace GuardsDigital.Tests.EditMode
                 hero.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.BlueHeroIdValue);
             Assert.That(redHero.TeamSide, Is.EqualTo(TeamSide.Red));
             Assert.That(blueHero.TeamSide, Is.EqualTo(TeamSide.Blue));
-            Assert.That(HexDistance(redHero.Coordinate, blueHero.Coordinate), Is.EqualTo(1));
+            Assert.That(redHero.ConfiguredSpawnPointId, Is.EqualTo(new SpawnPointId("red-hero-01")));
+            Assert.That(blueHero.ConfiguredSpawnPointId, Is.EqualTo(new SpawnPointId("blue-hero-01")));
+            var definition = Object.FindFirstObjectByType<PlaceholderTestGridView>().RenderedDefinition;
+            Assert.That(redHero.Coordinate, Is.EqualTo(definition.Spaces.Single(space => space.Id.Equals(
+                definition.SpawnPoints.Single(spawn => spawn.Id.Equals(redHero.ConfiguredSpawnPointId.Value)).SpaceId)).Coordinate));
+            Assert.That(blueHero.Coordinate, Is.EqualTo(definition.Spaces.Single(space => space.Id.Equals(
+                definition.SpawnPoints.Single(spawn => spawn.Id.Equals(blueHero.ConfiguredSpawnPointId.Value)).SpaceId)).Coordinate));
 
             foreach (var hero in heroes)
             {
@@ -222,6 +228,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(obstacles, Is.Empty);
         }
+
 
 
 
@@ -310,8 +317,6 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(tiles.Single(tile => tile.Coordinate.Equals(hero.Coordinate)).IsHighlighted, Is.False);
-            Assert.That(highlightedCoordinates, Has.Member(new HexCoordinate(1, 0)));
-            Assert.That(highlightedCoordinates, Has.Member(new HexCoordinate(0, 1)));
             Assert.That(
                 highlightedCoordinates,
                 Has.No.Member(heroes.Single(candidate => candidate != hero).Coordinate));

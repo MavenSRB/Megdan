@@ -1,3 +1,4 @@
+using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
@@ -25,6 +26,9 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private TeamSide teamSide = TeamSide.Red;
 
         [SerializeField]
+        private string spawnPointId;
+
+        [SerializeField]
         private int q;
 
         [SerializeField]
@@ -46,6 +50,10 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
         public TeamSide TeamSide => teamSide;
 
+        public SpawnPointId? ConfiguredSpawnPointId => string.IsNullOrWhiteSpace(spawnPointId)
+            ? (SpawnPointId?)null
+            : new SpawnPointId(spawnPointId);
+
         public HexCoordinate Coordinate => new HexCoordinate(q, r);
 
         public float OuterRadius => outerRadius;
@@ -59,6 +67,31 @@ namespace GuardsDigital.Presentation.Units.Heroes
             r = occupancy.Coordinate.R;
             outerRadius = radius;
             ApplyLayout();
+        }
+
+        public bool PlaceAtConfiguredSpawnPoint(BoardMapDefinition definition)
+        {
+            if (definition == null) throw new System.ArgumentNullException(nameof(definition));
+            if (!ConfiguredSpawnPointId.HasValue) return false;
+
+            var selectedSpawnPoint = definition.SpawnPoints.SingleOrDefault(spawnPoint =>
+                spawnPoint.Id.Equals(ConfiguredSpawnPointId.Value));
+            if (selectedSpawnPoint == null)
+            {
+                throw new System.InvalidOperationException(
+                    $"Configured spawn point '{ConfiguredSpawnPointId.Value}' is unavailable on map '{definition.Reference}'.");
+            }
+
+            var expectedTeam = teamSide == TeamSide.Red ? "red" : "blue";
+            if (selectedSpawnPoint.TeamId != expectedTeam || selectedSpawnPoint.UnitType != "hero")
+            {
+                throw new System.InvalidOperationException(
+                    $"Spawn point '{selectedSpawnPoint.Id}' is not a {expectedTeam} hero spawn point.");
+            }
+
+            var selectedSpace = definition.Spaces.Single(space => space.Id.Equals(selectedSpawnPoint.SpaceId));
+            Configure(new HeroOccupancy(Occupancy.HeroId, selectedSpace.Coordinate), outerRadius);
+            return true;
         }
 
         public void ApplyLayout()

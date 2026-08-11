@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Presentation.Units.Heroes;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Board
@@ -73,6 +74,7 @@ namespace GuardsDigital.Presentation.Board
 
             EnsureSpawnMarkers(definition);
             RemoveLegacyObstacles();
+            PlaceConfiguredHeroes(definition);
             FrameWholeMap(Camera.main, definition);
         }
 
@@ -164,6 +166,14 @@ namespace GuardsDigital.Presentation.Board
             foreach (var obstacle in GetComponentsInChildren<PlaceholderObstacleView>(true))
             {
                 DestroyObject(obstacle.gameObject);
+            }
+        }
+
+        private static void PlaceConfiguredHeroes(BoardMapDefinition definition)
+        {
+            foreach (var hero in FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None))
+            {
+                hero.PlaceAtConfiguredSpawnPoint(definition);
             }
         }
 

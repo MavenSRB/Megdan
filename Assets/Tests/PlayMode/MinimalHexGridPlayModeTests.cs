@@ -270,7 +270,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_ResolvesRevealedTurnAttackDefenseAndFocusesNextActor()
+        public IEnumerator Scene_ResolvesRevealedTurnHoldAndFocusesNextActorFromTeamSpawns()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(loadOperation, Is.Not.Null);
@@ -283,7 +283,6 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
-            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
             var redHero = FindRedHero(heroes);
             var blueHero = heroes.Single(hero => hero != redHero);
@@ -299,22 +298,16 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
             yield return null;
 
-            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
-            Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(blueHero.transform.position)), Is.True);
-            yield return null;
-            Assert.That(controller.IsDefenseResponsePending, Is.True);
-            Assert.That(controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(redAttackCard.Id));
-            Assert.That(controller.TrySubmitDefenseCard(blueDefenseCard.Id), Is.True);
+            Assert.That(controller.TryPerformHold(redAttackCard.Id), Is.True);
             yield return null;
 
-            Assert.That(blueDefenseCard.State.Location, Is.EqualTo(CardLocation.DiscardPile));
+            Assert.That(blueDefenseCard.State.Location, Is.EqualTo(CardLocation.Hand));
             Assert.That(redAttackCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(blueTurnCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
             Assert.That(controller.PendingAttackResolution, Is.Null);
             Assert.That(controller.VisibleTurnActor.CardInstanceId, Is.EqualTo(blueTurnCard.Id));
             Assert.That(controller.ActiveHeroView, Is.SameAs(blueHero));
             Assert.That(controller.SelectedCardInstanceId, Is.EqualTo(blueTurnCard.Id));
-            Assert.That(controller.CardStatus, Does.Match("successfully defended|attack successful"));
             Assert.That(controller.CardStatus, Does.Contain("[B] BLUE"));
         }
 
@@ -341,12 +334,9 @@ namespace GuardsDigital.Tests.PlayMode
                 .Single(hand => hand.TeamSide == TeamSide.Blue).Instances.ToArray();
 
             CommitSceneTurn(controller, red[0], blue[0]);
-            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
-            Assert.That(controller.TrySubmitAttackTarget(blueHero.Occupancy.HeroId), Is.True);
-            Assert.That(controller.TrySubmitDefenseCard(blue[4].Id), Is.True);
+            Assert.That(controller.TryPerformHold(red[0].Id), Is.True);
             Assert.That(controller.TryPerformHold(blue[0].Id), Is.True);
             yield return null;
-            Assert.That(blue[4].State.Location, Is.EqualTo(CardLocation.DiscardPile));
             Assert.That(controller.VisibleTurnIndex, Is.EqualTo(2));
 
             CommitSceneTurn(controller, red[3], blue[3]);
@@ -379,8 +369,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(controller.VisibleRoundPhase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
             Assert.That(controller.CompletedTurnSlots, Has.Count.EqualTo(4));
             Assert.That(controller.CardStatus, Does.Contain("END OF ROUND"));
-            Assert.That(controller.VisibleDirectorHands.SelectMany(hand => hand.Instances),
-                Has.No.Member(blue[4]));
             var eventCount = controller.RoundResolutionEvents.Count;
             var redOccupancy = redHero.Occupancy;
             Assert.That(controller.TryPassTurnCard(TeamSide.Red), Is.False);
@@ -412,9 +400,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(controller.TryPerformHold(blue[3].Id), Is.True);
 
             CommitSceneTurn(controller, red[2], blue[2]);
-            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-ranged-attack")), Is.True);
-            Assert.That(controller.TrySubmitAttackTarget(blueHero.Occupancy.HeroId), Is.True);
-            Assert.That(controller.TrySubmitDefenseCard(blue[4].Id), Is.True);
+            Assert.That(controller.TryPerformHold(red[2].Id), Is.True);
             Assert.That(controller.TryPerformHold(blue[2].Id), Is.True);
 
             CommitSceneTurn(controller, red[1], blue[1]);
@@ -456,13 +442,13 @@ namespace GuardsDigital.Tests.PlayMode
             var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
             var origin = hero.Coordinate;
             var originOccupancy = hero.Occupancy;
-            var destination = new HexCoordinate(-2, 0);
-            var destinationTile = tiles.Single(tile => tile.Coordinate.Equals(destination));
-
             var selectedCard = controller.VisibleCardInstances[3];
             var selected = controller.TrySelectCard(selectedCard.Id);
             var selectedAction = controller.TrySelectAction(
                 new ActionDefinitionId("secondary-movement"));
+            var destinationChoice = controller.PendingCardDestinations.First(candidate => candidate.Cost == 2);
+            var destination = destinationChoice.Destination;
+            var destinationTile = tiles.Single(tile => tile.Coordinate.Equals(destination));
             var highlightedCoordinates = tiles
                 .Where(tile => tile.IsHighlighted)
                 .Select(tile => tile.Coordinate)
@@ -486,19 +472,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(selectedAction, Is.True);
             Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(highlightedCoordinates, Has.No.Member(origin));
-            Assert.That(highlightedCoordinates, Has.Member(new HexCoordinate(1, 0)));
-            Assert.That(highlightedCoordinates, Has.Member(new HexCoordinate(0, 1)));
             Assert.That(highlightedCoordinates, Has.No.Member(heroes.Single(candidate => candidate != hero).Coordinate));
             Assert.That(moved, Is.True);
             Assert.That(activeAfterMove, Is.False);
             Assert.That(remainingAfterMove, Is.EqualTo(0));
             Assert.That(controller.IsMovementSessionActive, Is.False);
-            Assert.That(controller.MovementRoute, Is.EqualTo(new[]
-            {
-                origin,
-                new HexCoordinate(-1, 0),
-                destination
-            }));
+            Assert.That(controller.MovementRoute, Is.EqualTo(destinationChoice.Route));
             Assert.That(hero.Coordinate, Is.EqualTo(destination));
             Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
         }
@@ -540,7 +519,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(controller.PendingCardChoice.Origin, Is.EqualTo(blueOrigin));
             Assert.That(controller.HighlightedCoordinates, Has.No.Member(redHero.Coordinate));
 
-            var destination = new HexCoordinate(1, -1);
+            var destinationChoice = controller.PendingCardDestinations.First(candidate => candidate.Cost == 1);
+            var destination = destinationChoice.Destination;
             var destinationTile = tiles.Single(tile => tile.Coordinate.Equals(destination));
             Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(destinationTile.transform.position)), Is.True);
 
@@ -548,16 +528,16 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             Assert.That(blueHero.Coordinate, Is.EqualTo(destination));
-            Assert.That(redHero.Coordinate, Is.EqualTo(new HexCoordinate(0, 0)));
+            Assert.That(redHero.Coordinate, Is.EqualTo(new HexCoordinate(-2, -5)));
             Assert.That(controller.IsCardResolutionPending, Is.False);
-            Assert.That(controller.MovementRoute, Is.EqualTo(new[] { blueOrigin, destination }));
+            Assert.That(controller.MovementRoute, Is.EqualTo(destinationChoice.Route));
             Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(redHero.transform.position)), Is.True);
             Assert.That(controller.ActiveHeroView, Is.SameAs(redHero));
             Assert.That(controller.VisibleCardInstances.Select(card => card.Id), Is.EquivalentTo(redCardIds));
         }
 
         [UnityTest]
-        public IEnumerator Scene_SelectsVisibleAttackAndClicksAdjacentEnemyHero()
+        public IEnumerator Scene_RejectsNonRangedAttackBetweenOpposingTeamHeroSpawns()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(loadOperation, Is.Not.Null);
@@ -573,8 +553,6 @@ namespace GuardsDigital.Tests.PlayMode
             var redHero = FindRedHero(heroes);
             var blueHero = heroes.Single(hero => hero != redHero);
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
-            var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             var bulwark = controller.VisibleCardInstances.Single(card =>
                 card.Id.Value == "red-bulwark-card");
 
@@ -582,33 +560,13 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(
                 controller.SelectedCardOffers.Select(offer => offer.ActionDefinitionId.Value),
                 Has.Member("primary-attack"));
-            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.True);
-            Assert.That(controller.IsAttackTargetPending, Is.True);
-            Assert.That(controller.HighlightedCoordinates, Is.EqualTo(new[] { blueHero.Coordinate }));
-            Assert.That(tiles.Single(tile => tile.Coordinate.Equals(blueHero.Coordinate)).IsHighlighted, Is.True);
-
-            var targeted = pointerInput.TryHandlePointerRay(CreateDownRay(blueHero.transform.position));
-            Physics.SyncTransforms();
-            yield return null;
-
-            Assert.That(targeted, Is.True);
+            Assert.That(controller.TrySelectAction(new ActionDefinitionId("primary-attack")), Is.False);
             Assert.That(controller.ActiveHeroView, Is.SameAs(redHero));
-            Assert.That(controller.IsDefenseResponsePending, Is.True);
-            Assert.That(controller.PendingDefenseChoice.ChooserId, Is.EqualTo(blueHero.Occupancy.HeroId));
-            Assert.That(controller.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
-            Assert.That(controller.CardStatus, Does.Contain("Defense response pending"));
-            Assert.That(controller.HighlightedCoordinates, Is.Empty);
-            Assert.That(tiles, Has.All.Matches<HexTileView>(tile => !tile.IsHighlighted));
-            Assert.That(redHero.Coordinate, Is.EqualTo(new HexCoordinate(0, 0)));
-            Assert.That(blueHero.Coordinate, Is.EqualTo(new HexCoordinate(0, -1)));
-
-            var defenseCardId = controller.PendingDefenseChoice.LegalDefenseOffers[0].SourceCardInstanceId;
-            Assert.That(controller.TrySubmitDefenseCard(defenseCardId), Is.True);
+            Assert.That(controller.IsAttackTargetPending, Is.False);
             Assert.That(controller.IsDefenseResponsePending, Is.False);
-            Assert.That(controller.IsAttackOutcomePending, Is.False);
-            Assert.That(controller.PendingAttackResolution, Is.Null);
-            Assert.That(controller.LastAttackOutcome, Is.Not.EqualTo(AttackResolutionOutcome.None));
-            Assert.That(controller.CardStatus, Does.Match("successfully defended|attack successful"));
+            Assert.That(controller.HighlightedCoordinates, Is.Empty);
+            Assert.That(redHero.Coordinate, Is.EqualTo(new HexCoordinate(-2, -5)));
+            Assert.That(blueHero.Coordinate, Is.EqualTo(new HexCoordinate(-3, 10)));
         }
 
         [UnityTest]
@@ -629,10 +587,9 @@ namespace GuardsDigital.Tests.PlayMode
             var pointerInput = Object.FindFirstObjectByType<PrimitiveHeroPointerInput>();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             var origin = hero.Coordinate;
-            var firstDestination = new HexCoordinate(-1, 0);
-
             Assert.That(controller.TrySelectCard(controller.VisibleCardInstances[3].Id), Is.True);
             Assert.That(controller.TrySelectAction(new ActionDefinitionId("secondary-movement")), Is.True);
+            var firstDestination = controller.PendingCardDestinations.First(candidate => candidate.Cost == 1).Destination;
             Assert.That(pointerInput.TryHandlePointerRay(CreateDownRay(
                 tiles.Single(tile => tile.Coordinate.Equals(firstDestination)).transform.position)), Is.True);
             Assert.That(controller.IsMovementSessionActive, Is.True);

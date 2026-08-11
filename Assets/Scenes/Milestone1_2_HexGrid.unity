@@ -412,7 +412,7 @@ Transform:
   m_GameObject: {fileID: 311300001}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.03, z: 0}
+  m_LocalPosition: {x: -7.7942286, y: 0.03, z: 7.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -432,8 +432,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Units.Heroes.PrimitiveHeroView
   heroId: primitive-hero
   teamSide: 1
-  q: 0
-  r: 0
+  spawnPointId: red-hero-01
+  q: -2
+  r: -5
   outerRadius: 1
   baseRadius: 0.32
   height: 0.5
@@ -561,7 +562,7 @@ Transform:
   m_GameObject: {fileID: 311310001}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.8660254, y: 0.03, z: 1.5}
+  m_LocalPosition: {x: 3.4641016, y: 0.03, z: -15}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -581,8 +582,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Units.Heroes.PrimitiveHeroView
   heroId: blue-test-hero
   teamSide: 2
-  q: 0
-  r: -1
+  spawnPointId: blue-hero-01
+  q: -3
+  r: 10
   outerRadius: 1
   baseRadius: 0.32
   height: 0.5
