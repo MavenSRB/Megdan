@@ -275,7 +275,7 @@ Hard gate: Phase 5 does not begin until milestone 4.4h completes and every 4.4e 
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44h-re-close-the-corrected-phase-4-architecture-and-performance-gate-completion-evidence).
 
-### [ ] 4.4i Independently verify the corrected Phase 4 foundation
+### [x] 4.4i Independently verify the corrected Phase 4 foundation
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -293,3 +293,5 @@ Acceptance checks:
 Non-goals: No gameplay, presentation, runtime, test, scene, content, package, assembly, optimization, networking, build, or polished-art change; no automatic rerun of unchanged complete Unity suites; no reopening a closed 4.4e finding without new evidence.
 
 Hard gate: Phase 5 does not begin until milestone 4.4i is reviewed and every finding classified as gate-blocking has an approved disposition and, when required, completed corrective evidence. If 4.4i requires any pre-Phase-5 corrective micro-milestone, the recursive review-correction closure rule automatically requires a separately numbered fresh-task independent verification after the final correction; Phase 5 remains blocked through that latest required verification.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44i-independently-verify-the-corrected-phase-4-foundation-completion-evidence).

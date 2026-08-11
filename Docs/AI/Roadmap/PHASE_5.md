@@ -6,9 +6,7 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Phase 5 uses verified general rules and synthetic test definitions. It does not depend on the complete Wasp card set, inventory that set, or implement it.
 
-### [!] 5.1 Integrate and verify exact card-based Movement on the full map
-
-Blocked by: Milestone 4.4i must independently verify the corrected Phase 4 foundation and every gate-blocking finding must receive its required disposition and completion evidence.
+### [ ] 5.1 Integrate and verify exact card-based Movement on the full map
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
