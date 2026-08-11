@@ -5,9 +5,11 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -34,12 +36,20 @@ namespace GuardsDigital.Tests.PlayMode
             var markers = Object.FindObjectsByType<BoardMapSpawnMarkerView>();
             var cameras = Object.FindObjectsByType<Camera>();
             var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
+            var minions = Object.FindObjectsByType<StandardMinionView>();
+            var controller = Object.FindAnyObjectByType<HeroSelectionController>();
 
             Assert.That(mapView.RenderedDefinition.Reference, Is.EqualTo(OfficialBoardMapCatalog.SelectedMap));
             Assert.That(tiles, Has.Length.EqualTo(292));
             Assert.That(tiles.Count(tile => tile.IsPlayable), Is.EqualTo(210));
             Assert.That(tiles.Count(tile => tile.SpaceKind == BoardMapSpaceKind.Terrain), Is.EqualTo(82));
             Assert.That(markers, Has.Length.EqualTo(40));
+            Assert.That(minions, Has.Length.EqualTo(12));
+            Assert.That(minions, Has.All.Matches<StandardMinionView>(view =>
+                view.GetComponent<SpriteRenderer>().sprite != null));
+            Assert.That(controller.QuickGameSetupState.WaveCount, Is.EqualTo(3));
+            Assert.That(controller.QuickGameSetupState.Teams,
+                Has.All.Matches<QuickGameTeamSetupState>(team => team.LifeCount == 4));
             Assert.That(cameras, Has.Length.EqualTo(1));
             Assert.That(cameras[0].orthographic, Is.True);
             Assert.That(tiles.All(tile =>
@@ -75,9 +85,12 @@ namespace GuardsDigital.Tests.PlayMode
             var indicatorRect = controller.TieBreakerIndicatorRect;
 
             Assert.That(side, Is.EqualTo(TeamSide.Red).Or.EqualTo(TeamSide.Blue));
+            Assert.That(controller.QuickGameSetupState.TieBreakerState, Is.EqualTo(controller.CurrentTieBreakerState));
             Assert.That(
                 controller.TieBreakerIndicatorText,
                 Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
+            Assert.That(controller.TieBreakerIndicatorText, Does.Contain("WAVES 3"));
+            Assert.That(controller.TieBreakerIndicatorText, Does.Contain("LIVES  [R] 4  [B] 4"));
             Assert.That(indicatorRect.xMax, Is.EqualTo(Screen.width - 12f).Within(0.01f));
             Assert.That(indicatorRect.yMin, Is.EqualTo(12f).Within(0.01f));
         }
@@ -142,7 +155,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             var selected = controller.TrySelectDirectorCard(blueHand.Instances[0].Id);
 
-            Assert.That(hands.Select(hand => hand.Label), Is.EqualTo(new[] { "[R] RED HERO", "[B] BLUE HERO" }));
+            Assert.That(hands.Select(hand => hand.Label), Is.EqualTo(new[] { "[R] RED WASP", "[B] BLUE WASP" }));
             Assert.That(selected, Is.True);
             Assert.That(controller.ActiveHeroView.Occupancy.HeroId, Is.EqualTo(blueHand.OwnerId));
             Assert.That(controller.SelectedCardInstanceId, Is.EqualTo(blueHand.Instances[0].Id));

@@ -1,6 +1,7 @@
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using UnityEngine;
@@ -29,6 +30,12 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private string spawnPointId;
 
         [SerializeField]
+        private string heroContentId;
+
+        [SerializeField]
+        private string heroDisplayName;
+
+        [SerializeField]
         private int q;
 
         [SerializeField]
@@ -50,6 +57,12 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
         public TeamSide TeamSide => teamSide;
 
+        public HeroContentId? HeroContentId => string.IsNullOrWhiteSpace(heroContentId)
+            ? (HeroContentId?)null
+            : new HeroContentId(heroContentId);
+
+        public string HeroDisplayName => heroDisplayName;
+
         public SpawnPointId? ConfiguredSpawnPointId => string.IsNullOrWhiteSpace(spawnPointId)
             ? (SpawnPointId?)null
             : new SpawnPointId(spawnPointId);
@@ -67,6 +80,36 @@ namespace GuardsDigital.Presentation.Units.Heroes
             r = occupancy.Coordinate.R;
             outerRadius = radius;
             ApplyLayout();
+        }
+
+        public void ConfigureFromSetup(QuickGameHeroSetupState setupState, BoardMapDefinition definition, float radius)
+        {
+            if (setupState == null) throw new System.ArgumentNullException(nameof(setupState));
+            if (definition == null) throw new System.ArgumentNullException(nameof(definition));
+            if (!setupState.HeroId.Equals(Occupancy.HeroId))
+            {
+                throw new System.InvalidOperationException(
+                    $"Setup hero '{setupState.HeroId}' does not match view hero '{Occupancy.HeroId}'.");
+            }
+
+            var spawn = definition.SpawnPoints.SingleOrDefault(value =>
+                value.Id.Equals(setupState.SpawnPoint.SpawnPointId));
+            var space = definition.Spaces.SingleOrDefault(value =>
+                value.Id.Equals(setupState.OccupiedSpace.SpaceId));
+            if (!setupState.SpawnPoint.MapId.Equals(definition.Id) ||
+                !setupState.OccupiedSpace.MapId.Equals(definition.Id) ||
+                spawn == null || space == null || !spawn.SpaceId.Equals(space.Id) ||
+                !space.Coordinate.Equals(setupState.Coordinate))
+            {
+                throw new System.InvalidOperationException("Hero setup placement is not valid for the rendered map.");
+            }
+
+            teamSide = setupState.TeamSide;
+            spawnPointId = setupState.SpawnPoint.SpawnPointId.Value;
+            heroContentId = setupState.ContentId.Value;
+            heroDisplayName = setupState.DisplayName;
+            Configure(new HeroOccupancy(setupState.HeroId, setupState.Coordinate), radius);
+            gameObject.name = $"{teamSide} {heroDisplayName} ({setupState.HeroId.Value})";
         }
 
         public bool PlaceAtConfiguredSpawnPoint(BoardMapDefinition definition)

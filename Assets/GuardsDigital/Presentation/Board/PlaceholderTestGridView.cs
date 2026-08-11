@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Board
@@ -26,6 +28,7 @@ namespace GuardsDigital.Presentation.Board
 
         private readonly Dictionary<ZoneId, Material> zoneMaterials = new Dictionary<ZoneId, Material>();
         private BoardMapDefinition renderedDefinition;
+        private QuickGameSetupState renderedSetup;
         private Material terrainMaterial;
         private Material edgeMaterial;
         private Material redSpawnMaterial;
@@ -33,6 +36,7 @@ namespace GuardsDigital.Presentation.Board
 
         public float OuterRadius => outerRadius;
         public BoardMapDefinition RenderedDefinition => renderedDefinition;
+        public QuickGameSetupState RenderedSetup => renderedSetup;
         public IReadOnlyCollection<HexCoordinate> Coordinates => renderedDefinition != null
             ? renderedDefinition.Spaces.Select(space => space.Coordinate).ToArray()
             : System.Array.Empty<HexCoordinate>();
@@ -46,6 +50,7 @@ namespace GuardsDigital.Presentation.Board
             }
 
             renderedDefinition = definition;
+            renderedSetup = null;
             EnsureMaterials(definition);
 
             var spacesByCoordinate = definition.Spaces.ToDictionary(space => space.Coordinate);
@@ -74,8 +79,28 @@ namespace GuardsDigital.Presentation.Board
 
             EnsureSpawnMarkers(definition);
             RemoveLegacyObstacles();
-            PlaceConfiguredHeroes(definition);
+            ClearConfiguredMinions();
             FrameWholeMap(Camera.main, definition);
+        }
+
+        public void Rebuild(BoardMapDefinition definition, QuickGameSetupState setupState)
+        {
+            Rebuild(definition);
+            ApplySetup(setupState);
+        }
+
+        public void ApplySetup(QuickGameSetupState setupState)
+        {
+            if (setupState == null) throw new System.ArgumentNullException(nameof(setupState));
+            if (renderedDefinition == null || !renderedDefinition.Reference.Equals(setupState.SelectedMap))
+            {
+                throw new System.InvalidOperationException(
+                    $"Setup map '{setupState.SelectedMap}' does not match the rendered map '{renderedDefinition?.Reference}'.");
+            }
+
+            renderedSetup = setupState;
+            PlaceConfiguredHeroes(renderedDefinition, setupState);
+            EnsureConfiguredMinions(setupState);
         }
 
         public void EnsureGrid()
@@ -169,11 +194,40 @@ namespace GuardsDigital.Presentation.Board
             }
         }
 
-        private static void PlaceConfiguredHeroes(BoardMapDefinition definition)
+        private void PlaceConfiguredHeroes(BoardMapDefinition definition, QuickGameSetupState setupState)
         {
-            foreach (var hero in FindObjectsByType<PrimitiveHeroView>())
+            var views = FindObjectsByType<PrimitiveHeroView>();
+            foreach (var setupHero in setupState.Heroes)
             {
-                hero.PlaceAtConfiguredSpawnPoint(definition);
+                var view = views.SingleOrDefault(hero => hero.Occupancy.HeroId.Equals(setupHero.HeroId));
+                if (view == null)
+                {
+                    throw new System.InvalidOperationException(
+                        $"No primitive hero view is bound to configured hero '{setupHero.HeroId}'.");
+                }
+
+                view.ConfigureFromSetup(setupHero, definition, outerRadius);
+            }
+        }
+
+        private void EnsureConfiguredMinions(QuickGameSetupState setupState)
+        {
+            ClearConfiguredMinions();
+
+            foreach (var setupMinion in setupState.Minions.OrderBy(value => value.MinionId.Value))
+            {
+                var minionObject = new GameObject();
+                minionObject.transform.SetParent(transform, false);
+                var view = minionObject.AddComponent<StandardMinionView>();
+                view.Configure(setupMinion, outerRadius);
+            }
+        }
+
+        private void ClearConfiguredMinions()
+        {
+            foreach (var minion in GetComponentsInChildren<StandardMinionView>(true))
+            {
+                DestroyObject(minion.gameObject);
             }
         }
 

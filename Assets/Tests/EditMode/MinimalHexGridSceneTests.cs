@@ -4,9 +4,11 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -191,6 +193,10 @@ namespace GuardsDigital.Tests.EditMode
                 hero.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.BlueHeroIdValue);
             Assert.That(redHero.TeamSide, Is.EqualTo(TeamSide.Red));
             Assert.That(blueHero.TeamSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(redHero.HeroContentId, Is.EqualTo(new HeroContentId("wasp")));
+            Assert.That(blueHero.HeroContentId, Is.EqualTo(new HeroContentId("wasp")));
+            Assert.That(redHero.HeroDisplayName, Is.EqualTo("Wasp"));
+            Assert.That(blueHero.HeroDisplayName, Is.EqualTo("Wasp"));
             Assert.That(redHero.ConfiguredSpawnPointId, Is.EqualTo(new SpawnPointId("red-hero-01")));
             Assert.That(blueHero.ConfiguredSpawnPointId, Is.EqualTo(new SpawnPointId("blue-hero-01")));
             var definition = Object.FindAnyObjectByType<PlaceholderTestGridView>().RenderedDefinition;
@@ -217,6 +223,29 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 redHero.GetComponent<MeshFilter>().sharedMesh.vertexCount,
                 Is.Not.EqualTo(blueHero.GetComponent<MeshFilter>().sharedMesh.vertexCount));
+        }
+
+        [Test]
+        public void Scene_ProjectsConfiguredQuickGameCountersAndTwelveReviewedStandardMinions()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var mapView = RebuildOfficialMap();
+            var setup = mapView.RenderedSetup;
+            var minions = Object.FindObjectsByType<StandardMinionView>();
+
+            Assert.That(setup, Is.Not.Null);
+            Assert.That(setup.WaveCount, Is.EqualTo(3));
+            Assert.That(setup.Teams, Has.All.Matches<QuickGameTeamSetupState>(team => team.LifeCount == 4));
+            Assert.That(minions, Has.Length.EqualTo(12));
+            Assert.That(minions.Select(view => view.SetupState.MinionId).Distinct().Count(), Is.EqualTo(12));
+            Assert.That(minions.Select(view => view.SetupState.OccupiedSpace).Distinct().Count(), Is.EqualTo(12));
+            Assert.That(minions, Has.All.Matches<StandardMinionView>(view =>
+                view.GetComponent<SpriteRenderer>().sprite != null &&
+                mapView.RenderedDefinition.GetZoneForSpace(view.SetupState.OccupiedSpace.SpaceId).IsStartingBattleZone));
+            Assert.That(minions.Where(view => view.SetupState.TeamSide == TeamSide.Red),
+                Has.All.Matches<StandardMinionView>(view => view.GetComponent<SpriteRenderer>().sprite.name.StartsWith("red-")));
+            Assert.That(minions.Where(view => view.SetupState.TeamSide == TeamSide.Blue),
+                Has.All.Matches<StandardMinionView>(view => view.GetComponent<SpriteRenderer>().sprite.name.StartsWith("blue-")));
         }
 
         [Test]
@@ -326,7 +355,12 @@ namespace GuardsDigital.Tests.EditMode
         {
             var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
             var definition = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            mapView.Rebuild(definition);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                PlaceholderOneVsOneParticipants.Create(),
+                definition,
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Red));
+            mapView.Rebuild(definition, setup);
             return mapView;
         }
 

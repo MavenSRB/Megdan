@@ -4,6 +4,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -40,6 +41,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private AdjacentMoveAuthority moveAuthority;
         private MovementSession movementSession;
+        private QuickGameSetupState quickGameSetupState;
 
         public bool IsHeroSelected { get; private set; }
 
@@ -83,6 +85,16 @@ namespace GuardsDigital.Presentation.Interaction
                 EnsureBindings();
                 EnsureMoveAuthority();
                 return moveAuthority?.MapDefinition;
+            }
+        }
+
+        public QuickGameSetupState QuickGameSetupState
+        {
+            get
+            {
+                EnsureBindings();
+                EnsureMoveAuthority();
+                return quickGameSetupState;
             }
         }
 
@@ -444,12 +456,38 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var selectedMap = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var mapView = FindAnyObjectByType<PlaceholderTestGridView>();
-            if (mapView != null &&
-                (mapView.RenderedDefinition == null ||
-                 !mapView.RenderedDefinition.Reference.Equals(selectedMap.Reference)))
+            if (cardDrivenMovementEnabled)
             {
-                mapView.Rebuild(selectedMap);
+                EnsurePlaceholderOneVsOneHands();
+                if (quickGameSetupState == null ||
+                    !quickGameSetupState.SelectedMap.Equals(selectedMap.Reference) ||
+                    !quickGameSetupState.TieBreakerState.Equals(placeholderConfiguration.TieBreakerState))
+                {
+                    quickGameSetupState = QuickGameSetupAuthority.Create(
+                        QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                        placeholderConfiguration.Participants,
+                        selectedMap,
+                        placeholderConfiguration.TieBreakerState);
+                }
+            }
+            else
+            {
+                quickGameSetupState = null;
+            }
+
+            var mapView = FindAnyObjectByType<PlaceholderTestGridView>();
+            if (mapView != null)
+            {
+                if (mapView.RenderedDefinition == null ||
+                    !mapView.RenderedDefinition.Reference.Equals(selectedMap.Reference))
+                {
+                    if (quickGameSetupState != null) mapView.Rebuild(selectedMap, quickGameSetupState);
+                    else mapView.Rebuild(selectedMap);
+                }
+                else if (quickGameSetupState != null && !ReferenceEquals(mapView.RenderedSetup, quickGameSetupState))
+                {
+                    mapView.ApplySetup(quickGameSetupState);
+                }
                 tileViews = mapView.GetComponentsInChildren<HexTileView>(true);
                 obstacleViews = mapView.GetComponentsInChildren<PlaceholderObstacleView>(true);
             }

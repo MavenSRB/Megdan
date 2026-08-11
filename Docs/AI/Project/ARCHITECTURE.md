@@ -19,6 +19,8 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Rules state is plain, deterministic game data, not Unity scene state.
 - Logical hexes use integer axial `(q, r)` coordinates; generic adjacency is the six standard axial offsets exposed as named directions.
 - The model uses collections and stable IDs for teams, players, heroes, cards, units, spaces, zones, and effects.
+- Executable setup configuration declares its required immutable `MapId` plus content revision. Every configured external space/spawn reference composes that `MapId` with the map-local child ID, and setup authority resolves all placements only against the exact selected definition before exposing immutable team resources and unit state.
+- The staged mirrored-Wasp 1v1 Quick Game setup creates reusable stable minion identity, team, type, spawn, occupied-space, and coordinate data. Later minion obstacle, Defense, battle, removal, respawn, and Lane behavior extends that one representation rather than creating parallel setup-only units.
 - The model must support exactly three independently owned heroes per team for the pitch without hard-coding that team size into general rule APIs.
 - Authoritative state must be serializable and schema-versioned.
 

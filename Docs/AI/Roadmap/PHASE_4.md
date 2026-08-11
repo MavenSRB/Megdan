@@ -95,7 +95,7 @@ Non-goals: No Fast Travel validation, current-Battle-Zone changes, lane pushing,
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-43-define-and-validate-zones-and-zone-adjacency-completion-evidence).
 
-### [ ] 4.4 Place the 1v1 Quick Game setup
+### [x] 4.4 Place the 1v1 Quick Game setup
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -114,6 +114,8 @@ Acceptance checks:
 - Source/data validation, focused setup-scene inspection, and directly affected Edit Mode and Play Mode suites pass. The complete unfiltered Phase 4 gate moves to milestone 4.4d so it validates the same configured setup after the behavior-preserving architecture refactor.
 
 Non-goals: No complete Wasp card inventory or Wasp-specific behavior.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44-place-the-1v1-quick-game-setup-completion-evidence).
 
 ### [ ] 4.4a Establish the transport-neutral match application service
 

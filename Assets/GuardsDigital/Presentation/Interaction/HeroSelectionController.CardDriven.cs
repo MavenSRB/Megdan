@@ -99,8 +99,8 @@ namespace GuardsDigital.Presentation.Interaction
 
                 return new[]
                 {
-                    new DirectorTestHand(TeamSide.Red, placeholderConfiguration.RedHand),
-                    new DirectorTestHand(TeamSide.Blue, placeholderConfiguration.BlueHand)
+                    new DirectorTestHand(TeamSide.Red, placeholderConfiguration.RedHand, GetSetupHeroDisplayName(TeamSide.Red)),
+                    new DirectorTestHand(TeamSide.Blue, placeholderConfiguration.BlueHand, GetSetupHeroDisplayName(TeamSide.Blue))
                 };
             }
         }
@@ -283,7 +283,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
         }
 
-        public string TieBreakerIndicatorText => FormatTieBreakerIndicator(CurrentTieBreakerState);
+        public string TieBreakerIndicatorText => FormatTieBreakerIndicator(CurrentTieBreakerState, quickGameSetupState);
 
         public Color TieBreakerIndicatorColor => GetTieBreakerIndicatorColor(CurrentTieBreakerState);
 
@@ -1086,6 +1086,7 @@ namespace GuardsDigital.Presentation.Interaction
             directorInitialScenario = null;
             isReplayingDirectorCommands = false;
             lastDirectorReplayFailure = null;
+            quickGameSetupState = null;
             ruleEventLogExpanded = false;
             ruleEventLogScrollPosition = Vector2.zero;
             lastCardMovementRoute = Array.Empty<HexCoordinate>();
@@ -2015,16 +2016,24 @@ namespace GuardsDigital.Presentation.Interaction
                 aboveHeight);
         }
 
-        private static string FormatTieBreakerIndicator(TieBreakerState state)
+        private string GetSetupHeroDisplayName(TeamSide teamSide)
         {
+            return quickGameSetupState?.Heroes.SingleOrDefault(value => value.TeamSide == teamSide)?.DisplayName ?? "Hero";
+        }
+
+        private static string FormatTieBreakerIndicator(TieBreakerState state, QuickGameSetupState setupState)
+        {
+            var setupLine = setupState == null
+                ? string.Empty
+                : $"QUICK GAME  WAVES {setupState.WaveCount}\nLIVES  [R] {setupState.Teams.Single(value => value.TeamSide == TeamSide.Red).LifeCount}  [B] {setupState.Teams.Single(value => value.TeamSide == TeamSide.Blue).LifeCount}\n";
             if (!state.IsDefined)
             {
-                return "TIE BREAKER COIN\n[?] UNKNOWN";
+                return setupLine + "TIE BREAKER  [?] UNKNOWN";
             }
 
             return state.RevealedSide == TeamSide.Red
-                ? "TIE BREAKER COIN\n[R] RED"
-                : "TIE BREAKER COIN\n[B] BLUE";
+                ? setupLine + "TIE BREAKER  [R] RED"
+                : setupLine + "TIE BREAKER  [B] BLUE";
         }
 
         private static Color GetTieBreakerIndicatorColor(TieBreakerState state)
@@ -2058,14 +2067,14 @@ namespace GuardsDigital.Presentation.Interaction
             var labelStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 18,
+                fontSize = quickGameSetupState == null ? 18 : 14,
                 fontStyle = FontStyle.Bold,
                 wordWrap = true
             };
             GUI.contentColor = Color.white;
             GUI.Label(
                 indicatorRect,
-                FormatTieBreakerIndicator(state),
+                FormatTieBreakerIndicator(state, quickGameSetupState),
                 labelStyle);
             GUI.contentColor = previousContentColor;
         }
@@ -2105,7 +2114,7 @@ namespace GuardsDigital.Presentation.Interaction
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));
             GUILayout.BeginHorizontal();
             GUILayout.Label(
-                $"PHASE 3 DIRECTOR TEST ROUND {VisibleRoundIndex} - TURN {VisibleTurnIndex}/" +
+                $"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {VisibleRoundIndex} - TURN {VisibleTurnIndex}/" +
                 $"{RoundResolutionAuthority.TurnsPerRound} - {VisibleRoundPhase.ToString().ToUpperInvariant()}");
             GUI.enabled = CanUndoDirectorCommand;
             if (GUILayout.Button("UNDO", GUILayout.Width(80f), GUILayout.Height(24f)))

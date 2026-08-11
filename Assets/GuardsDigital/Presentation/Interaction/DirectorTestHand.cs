@@ -9,7 +9,7 @@ namespace GuardsDigital.Presentation.Interaction
 {
     public sealed class DirectorTestHand
     {
-        public DirectorTestHand(TeamSide teamSide, PlaceholderMovementHand hand)
+        public DirectorTestHand(TeamSide teamSide, PlaceholderMovementHand hand, string heroDisplayName = "Hero")
         {
             TeamSide = teamSide;
             if (hand == null)
@@ -22,6 +22,7 @@ namespace GuardsDigital.Presentation.Interaction
             Instances = Array.AsReadOnly(hand.Instances
                 .Where(instance => instance.State.Location == CardLocation.Hand)
                 .ToArray());
+            HeroDisplayName = string.IsNullOrWhiteSpace(heroDisplayName) ? "Hero" : heroDisplayName;
         }
 
         public TeamSide TeamSide { get; }
@@ -32,9 +33,11 @@ namespace GuardsDigital.Presentation.Interaction
 
         public IReadOnlyList<CardInstance> Instances { get; }
 
+        public string HeroDisplayName { get; }
+
         public string Label => TeamSide == GuardsDigital.Core.Participants.TeamSide.Red
-            ? "[R] RED HERO"
-            : "[B] BLUE HERO";
+            ? $"[R] RED {HeroDisplayName.ToUpperInvariant()}"
+            : $"[B] BLUE {HeroDisplayName.ToUpperInvariant()}";
 
         public string GetCardButtonLabel(CardInstance instance)
         {
