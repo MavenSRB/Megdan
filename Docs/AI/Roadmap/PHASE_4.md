@@ -77,7 +77,7 @@ Non-goals: No second playable map, polished environment, Fast Travel, lane pushi
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-42a-upgrade-the-test-grid-to-the-full-official-placeholder-map-completion-evidence).
 
-### [ ] 4.3 Define and validate zones and zone adjacency
+### [x] 4.3 Define and validate zones and zone adjacency
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -92,6 +92,8 @@ Acceptance checks:
 - The ordered lane relationship between the two Thrones is represented for later lane movement.
 
 Non-goals: No Fast Travel validation, current-Battle-Zone changes, lane pushing, minion respawn, or victory logic.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-43-define-and-validate-zones-and-zone-adjacency-completion-evidence).
 
 ### [ ] 4.4 Place the 1v1 Quick Game setup
 

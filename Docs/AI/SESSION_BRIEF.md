@@ -8,20 +8,20 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through the primitive complete-map foundation, including all Phase 0-3 milestones and corrective inserts, deterministic command-replay Director Undo, the internal rule-event log, the reviewed `official-single-lane` revision 1 map specification, selected-map authoritative loading/snapshot binding, and complete placeholder map presentation through milestone 4.2a. Documentation-governance milestone 3.11a is complete.
+The project has completed roadmap milestones through the authoritative complete-map zone foundation, including all Phase 0-3 milestones and corrective inserts, deterministic command-replay Director Undo, the internal rule-event log, the reviewed `official-single-lane` revision 1 map specification, selected-map authoritative loading/snapshot binding, complete placeholder map presentation, derived rulebook shared-border zone adjacency, typed same/adjacent/non-adjacent queries, and the validated ordered Throne-to-Throne Lane through milestone 4.3. Documentation-governance milestone 3.11a is complete.
 
 Authoritative pure C# state currently covers map-scoped identity, the immutable selected map revision, participant `PlayerId`/`HeroId` relationships, initial Tie Breaker, five-card synthetic hands, owned commitment or empty-hand Pass for every configured hero, joint reveal, Initiative and tied-Initiative choice, Hold, printed Movement with cumulative waypoint routes and Stop, adjacent/Ranged Attack with one legal Defense discard or decline, immutable four-turn assignment history, and a resumable end-of-round cursor whose test fixture implements retrieval and emits typed `NotApplicable` outcomes for unavailable stages. Eligible cards return to canonical owners; two uninterrupted synthetic rounds and reuse are visible in the saved validation scene.
 
 Schema-versioned snapshots cover participants, selected map ID/revision, board occupancy, card facets, Initiative/Tie Breaker, current/completed assignments, end-of-round state, and pending Movement or Attack/Defense continuations. Director Undo retains immutable initial scenario inputs plus accepted typed commands, rebuilds fresh authority, replays the retained prefix through live command paths, and verifies byte-identical state/events across two rebuilds. Snapshots remain the separate persistence/diagnostics/resynchronization boundary. The read-only HUD exposes Tie Breaker, Undo, Restart, and the rule-event log.
 
-The project does not yet implement zone adjacency/ordered lane authority, the configured official Quick Game setup, resolve-without-action, real Wasp content, general card-text effects, Attack consequences, concrete end-of-round subsystems beyond retrieval, networking, production animation/audio, or build/distribution work.
+The project does not yet implement Fast Travel, current-Battle-Zone changes, Lane Push, the configured official Quick Game setup, resolve-without-action, real Wasp content, general card-text effects, Attack consequences, concrete end-of-round subsystems beyond retrieval, networking, production animation/audio, or build/distribution work.
 
 ## Current authorization and next route
 
-- Current completed milestone: **3.11a**.
-- Next proposed milestone: **4.3**.
-- Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
-- Milestone 4.3 is proposed only. Do not begin it or any later gameplay, presentation, card, online, or build milestone without explicit approval of that exact micro-milestone.
+- Current completed milestone: **4.3**.
+- Next proposed milestone: **4.4**.
+- Required Codex profile for next milestone: **GPT-5.6 Sol with high reasoning**.
+- Milestone 4.4 is proposed only. Do not begin it or any later gameplay, presentation, card, online, or build milestone without explicit approval of that exact micro-milestone.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries

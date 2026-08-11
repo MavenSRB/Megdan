@@ -50,6 +50,7 @@ function New-SyntheticMapFixture {
             isThrone = $false
             isStartingBattleZone = $true
         })
+        orderedLaneZoneIds = @()
         spaces = @([pscustomobject]@{
             spaceId = 'q0_r0'
             q = 0
@@ -109,6 +110,20 @@ Assert-MapCondition (@($validation.Spaces | Where-Object { $_.kind -eq 'terrain'
 Assert-MapCondition ($validation.PhysicalConnectionCount -eq 809) "Expected 809 undirected physical connections; found $($validation.PhysicalConnectionCount)."
 Assert-MapCondition ($validation.PlayableConnectionCount -eq 530) "Expected 530 undirected playable connections; found $($validation.PlayableConnectionCount)."
 
+$expectedZoneAdjacency = @(
+    'blue-approach|blue-throne',
+    'blue-approach|starting-battle-zone',
+    'blue-throne|bottom-jungle',
+    'bottom-jungle|starting-battle-zone',
+    'red-approach|red-throne',
+    'red-approach|starting-battle-zone',
+    'red-throne|top-jungle',
+    'starting-battle-zone|top-jungle'
+)
+Assert-MapCondition (($validation.ZoneAdjacencyKeys -join ';') -eq ($expectedZoneAdjacency -join ';')) 'Official zone adjacency changed.'
+$expectedOrderedLane = @('red-throne', 'red-approach', 'starting-battle-zone', 'blue-approach', 'blue-throne')
+Assert-MapCondition (($validation.OrderedLaneZoneIds -join ';') -eq ($expectedOrderedLane -join ';')) 'Official ordered Lane changed.'
+
 $expectedSpawnCounts = @{
     'red|hero' = 3
     'red|melee-minion' = 11
@@ -139,6 +154,10 @@ $canonicalLines = @()
 foreach ($zone in $validation.Zones) {
     $canonicalLines += "$($zone.zoneId)|$($zone.kind)|$($zone.teamId)|$($zone.isThrone)|$($zone.isStartingBattleZone)"
 }
+$canonicalLines += "ordered-lane|$($validation.OrderedLaneZoneIds -join '|')"
+foreach ($adjacencyKey in $validation.ZoneAdjacencyKeys) {
+    $canonicalLines += "zone-adjacency|$adjacencyKey"
+}
 foreach ($space in $validation.Spaces) {
     $canonicalLines += "$($space.spaceId)|$($space.kind)|$($space.zoneId)"
 }
@@ -153,8 +172,8 @@ try {
 finally {
     $sha256.Dispose()
 }
-$expectedReviewDigest = '5b4e3a2a36aeabaaa7db73083088174ca60978fd10d5e09c90e6a67b0a1733f0'
-Assert-MapCondition ($reviewDigest -eq $expectedReviewDigest) "The reviewed zone/space/spawn inventory digest changed to '$reviewDigest'; repeat source review before accepting it."
+$expectedReviewDigest = '185b600d381d05953f3896999866cff4b48ab6afe212994606bb2b7a3f1b9378'
+Assert-MapCondition ($reviewDigest -eq $expectedReviewDigest) "The reviewed zone/space/spawn/Lane inventory digest changed to '$reviewDigest'; repeat source review before accepting it."
 
 Assert-MapCondition ($map.inventoryTotals.cells -eq $validation.Spaces.Count) 'Recorded cell total is stale.'
 Assert-MapCondition ($map.inventoryTotals.playableSpaces -eq 210) 'Recorded playable-space total is stale.'
@@ -177,4 +196,4 @@ Write-Output 'Reusable invariants: PASS; synthetic map-local identity isolation:
 Write-Output 'Cells: 292 total, 210 playable, 82 terrain'
 Write-Output 'Zones: 7; connections: 809 physical, 530 playable'
 Write-Output 'Spawn points: 40 total, 20 Red, 20 Blue'
-Write-Output "Reviewed zone/space/spawn inventory digest: $reviewDigest"
+Write-Output "Reviewed zone/space/spawn/Lane inventory digest: $reviewDigest"

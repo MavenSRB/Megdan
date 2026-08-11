@@ -101,6 +101,7 @@ function Test-BoardMapSpecificationInvariant {
     $positiveDirections = @(@(1, 0), @(1, -1), @(0, -1))
     $physicalConnectionCount = 0
     $playableConnectionCount = 0
+    $zoneAdjacencyKeys = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($space in $spaces) {
         foreach ($offset in $positiveDirections) {
             $neighborKey = Get-CoordinateKey -Q ($space.q + $offset[0]) -R ($space.r + $offset[1])
@@ -108,12 +109,39 @@ function Test-BoardMapSpecificationInvariant {
                 $physicalConnectionCount++
                 if ($space.kind -eq 'playable' -and $spacesByCoordinate[$neighborKey].kind -eq 'playable') {
                     $playableConnectionCount++
+                    $neighbor = $spacesByCoordinate[$neighborKey]
+                    if ($space.zoneId -ne $neighbor.zoneId) {
+                        $orderedZoneIds = @($space.zoneId, $neighbor.zoneId) | Sort-Object
+                        [void]$zoneAdjacencyKeys.Add("$($orderedZoneIds[0])|$($orderedZoneIds[1])")
+                    }
                 }
             }
         }
     }
     Assert-MapCondition ($Map.connectionPolicy.undirectedPhysicalConnectionCount -eq $physicalConnectionCount) "$Label recorded physical connection total is stale."
     Assert-MapCondition ($Map.connectionPolicy.undirectedPlayableConnectionCount -eq $playableConnectionCount) "$Label recorded playable connection total is stale."
+
+    $orderedLaneZoneIds = @($Map.orderedLaneZoneIds)
+    Assert-MapCondition (@($orderedLaneZoneIds | Select-Object -Unique).Count -eq $orderedLaneZoneIds.Count) "$Label ordered Lane ZoneId values must be unique."
+    foreach ($laneZoneId in $orderedLaneZoneIds) {
+        Assert-MapCondition ($zoneIds -contains $laneZoneId) "$Label ordered Lane references unknown ZoneId '$laneZoneId'."
+    }
+    if ($orderedLaneZoneIds.Count -gt 0) {
+        Assert-MapCondition ($orderedLaneZoneIds.Count -ge 2) "$Label ordered Lane must contain at least two zones."
+        $zonesById = @{}
+        foreach ($zone in $zones) { $zonesById[$zone.zoneId] = $zone }
+        Assert-MapCondition $zonesById[$orderedLaneZoneIds[0]].isThrone "$Label ordered Lane must begin at a Throne."
+        Assert-MapCondition $zonesById[$orderedLaneZoneIds[-1]].isThrone "$Label ordered Lane must end at a Throne."
+        Assert-MapCondition (@($orderedLaneZoneIds | Where-Object { $zonesById[$_].isStartingBattleZone }).Count -eq 1) "$Label ordered Lane must contain the starting Battle Zone."
+        $expectedLaneZoneIds = @($zones | Where-Object { $_.isThrone -or $_.kind -eq 'lane' } | ForEach-Object { $_.zoneId })
+        Assert-MapCondition (($orderedLaneZoneIds.Count -eq $expectedLaneZoneIds.Count) -and
+            (@($orderedLaneZoneIds | Where-Object { $expectedLaneZoneIds -notcontains $_ }).Count -eq 0)) "$Label ordered Lane must contain every Throne and lane zone exactly once."
+        for ($index = 0; $index -lt $orderedLaneZoneIds.Count - 1; $index++) {
+            $orderedPair = @($orderedLaneZoneIds[$index], $orderedLaneZoneIds[$index + 1]) | Sort-Object
+            $adjacencyKey = "$($orderedPair[0])|$($orderedPair[1])"
+            Assert-MapCondition ($zoneAdjacencyKeys.Contains($adjacencyKey)) "$Label consecutive ordered Lane zones '$($orderedLaneZoneIds[$index])' and '$($orderedLaneZoneIds[$index + 1])' do not share a playable border."
+        }
+    }
 
     $spawnPoints = @($Map.spawnPoints)
     Assert-MapCondition (@($spawnPoints.spawnPointId | Select-Object -Unique).Count -eq $spawnPoints.Count) "$Label SpawnPointId values must be unique within the map."
@@ -133,5 +161,7 @@ function Test-BoardMapSpecificationInvariant {
         SpawnPoints = $spawnPoints
         PhysicalConnectionCount = $physicalConnectionCount
         PlayableConnectionCount = $playableConnectionCount
+        ZoneAdjacencyKeys = @($zoneAdjacencyKeys | Sort-Object)
+        OrderedLaneZoneIds = $orderedLaneZoneIds
     }
 }

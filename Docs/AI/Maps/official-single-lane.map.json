@@ -9,7 +9,9 @@
     "coordinateDiagramStatus": "User-supplied reviewed milestone 4.1 reference; intentionally excluded from Git.",
     "rulebook": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf",
     "rulebookPages": [
-      3
+      3,
+      11,
+      19
     ],
     "reviewedOn": "2026-08-11"
   },
@@ -142,6 +144,13 @@
       "isThrone": false,
       "isStartingBattleZone": false
     }
+  ],
+  "orderedLaneZoneIds": [
+    "red-throne",
+    "red-approach",
+    "starting-battle-zone",
+    "blue-approach",
+    "blue-throne"
   ],
   "spaces": [
     {
@@ -2445,10 +2454,6 @@
     "milestone4_2a": [
       "placeholder geometry",
       "debug presentation"
-    ],
-    "milestone4_3": [
-      "zone adjacency",
-      "ordered lane relationship"
     ]
   }
 }

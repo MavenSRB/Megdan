@@ -169,7 +169,8 @@ namespace GuardsDigital.Tests.EditMode
 
             var currentMap = fixture.Board.MapDefinition;
             var changedMap = new BoardMapDefinition(currentMap.Id, currentMap.ContentRevision + 1,
-                currentMap.DisplayName, currentMap.Spaces, currentMap.Zones, currentMap.SpawnPoints);
+                currentMap.DisplayName, currentMap.Spaces, currentMap.Zones, currentMap.SpawnPoints,
+                currentMap.OrderedLaneZoneIds);
             var mapRevisionException = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(payload, fixture.Configuration.CardDefinitions,
                     new[] { changedMap }));

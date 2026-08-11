@@ -23,10 +23,12 @@ namespace GuardsDigital.Presentation.Board
                 string.IsNullOrWhiteSpace(value.zoneId) ? (ZoneId?)null : new ZoneId(value.zoneId)));
             var spawns = (source.spawnPoints ?? Array.Empty<SpawnDto>()).Select(value => new BoardMapSpawnPoint(
                 new SpawnPointId(value.spawnPointId), new SpaceId(value.spaceId), value.teamId, value.unitType));
-            return new BoardMapDefinition(new MapId(source.mapId), source.revision, source.displayName, spaces, zones, spawns);
+            var orderedLane = (source.orderedLaneZoneIds ?? Array.Empty<string>()).Select(value => new ZoneId(value));
+            return new BoardMapDefinition(new MapId(source.mapId), source.revision, source.displayName,
+                spaces, zones, spawns, orderedLane);
         }
 
-        [Serializable] private sealed class MapDto { public string mapId; public int revision; public string displayName; public ZoneDto[] zones; public SpaceDto[] spaces; public SpawnDto[] spawnPoints; }
+        [Serializable] private sealed class MapDto { public string mapId; public int revision; public string displayName; public ZoneDto[] zones; public SpaceDto[] spaces; public SpawnDto[] spawnPoints; public string[] orderedLaneZoneIds; }
         [Serializable] private sealed class ZoneDto { public string zoneId; public string displayName; public string kind; public string teamId; public bool isThrone; public bool isStartingBattleZone; }
         [Serializable] private sealed class SpaceDto { public string spaceId; public int q; public int r; public string kind; public string zoneId; }
         [Serializable] private sealed class SpawnDto { public string spawnPointId; public string spaceId; public string teamId; public string unitType; }
