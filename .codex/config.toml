@@ -1,4 +1,4 @@
 # Active new-task default for the next proposed roadmap milestone.
-# Milestone: 4.2
+# Milestone: 4.1a
 model = "gpt-5.6-sol"
 model_reasoning_effort = "medium"

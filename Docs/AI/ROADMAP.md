@@ -866,6 +866,8 @@ Phase-gate roadmap audit: After milestone 3.11 passes its T3 gate, audit Phases 
 
 Phase 4-7 audit (2026-08-10): Keep milestones 4.1-4.4, 5.1-5.8, 6.1-6.8, and 7.1-7.9 separate and in their current order. No merge is justified because each item owns a distinct source/data, rules-authority, continuation, presentation, or validation boundary; the deliberately non-executable Lane-Push prefix at 6.5 must remain separate from the live transition at 6.6. No further split is justified now that Phase 3 has proven stable snapshot, Undo, event-log, round-cursor, and pending-choice seams. Nothing can be deferred or removed without weakening milestone 7.9's required full-map Movement/combat, minion/token/Lane-Push, defeat/respawn, progression, victory, or exact end-of-round evidence. The shortest dependency-safe path is therefore the existing sequential path through the Phase 4 map/setup gate, Phase 5 general combat gate, Phase 6 Lane/end-of-round component gate, Phase 7 progression/victory integration, and milestone 7.9 hard gate. Remaining effort is 29 separately approved micro-milestones, estimated at 26-43 focused implementation days excluding approval latency, source ambiguity, and environment outages.
 
+Post-4.1 multi-map readiness correction (2026-08-11): The reviewed inventory is valid, but an independent audit found that the executable board/snapshot state does not yet carry selected-map identity, the data contract explicitly scopes only `SpaceId` rather than every map-owned child identity, and the validator combines reusable structural checks with `official-single-lane`-specific counts and digest checks while omitting rules-relevant zone metadata from that digest. Split the former milestone 4.2 into corrective milestone 4.1a for the general identity/validation boundary, milestone 4.2 for selected-map authoritative loading and snapshot binding, and milestone 4.2a for Unity placeholder presentation. This adds no second playable map: bounded synthetic definitions may reuse coordinates and child IDs only as automated collision/singleton tests. The revised shortest dependency-safe path contains 30 remaining separately approved micro-milestones through 7.9, estimated at 28-46 focused implementation days under the same exclusions.
+
 ## Phase 4 - Full official multi-zone board
 
 ### [x] 4.1 Inventory the complete single-lane board reference
@@ -882,22 +884,54 @@ Acceptance checks:
 
 Non-goals: No production board art or models.
 
-Completion note (2026-08-11): Added the reviewed, schema-versioned, map-scoped `official-single-lane` revision 1 JSON specification from the user-supplied axial-coordinate diagram, with all 292 stable map-local coordinate IDs, 210 playable spaces, 82 terrain cells, seven zone memberships and boundaries, both Throne zones, and the starting Battle Zone. Standard axial touching derives 809 undirected physical connections and 530 playable-to-playable connections. All 40 spawn markers are inventoried at exact coordinates and split symmetrically: each team has three Hero, eleven Melee minion, three Ranged minion, and three Heavy minion points. The identity contract composes `MapId` plus map-local `SpaceId`, keeps zones/spawns owned by the selected map revision, and forbids singleton-map or globally unique-coordinate assumptions so future maps can coexist. Source review used the preserved private diagram, rulebook page 3 terminology, row/color and marker-shape cross-checks, and a regenerated debug view. T0 schema/content validation passed through `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1`, including exact counts, references, connection derivation, team/type symmetry, and reviewed digest `addb4cdea8f2e0733233bd7fc047bc6cdd3b934102b48990699a524cfb7158bb`. Unity suites were intentionally omitted because no executable Unity or presentation path changed. No loader, scene geometry, production art/models, zone adjacency, or ordered Lane relationship was added.
+Completion note (2026-08-11): Added the reviewed, schema-versioned, map-scoped `official-single-lane` revision 1 JSON specification from the user-supplied axial-coordinate diagram, with all 292 stable map-local coordinate IDs, 210 playable spaces, 82 terrain cells, seven zone memberships and boundaries, both Throne zones, and the starting Battle Zone. Standard axial touching derives 809 undirected physical connections and 530 playable-to-playable connections. All 40 spawn markers are inventoried at exact coordinates and split symmetrically: each team has three Hero, eleven Melee minion, three Ranged minion, and three Heavy minion points. The identity contract composes `MapId` plus map-local `SpaceId`, keeps zones/spawns owned by the selected map revision, and forbids singleton-map or globally unique-coordinate assumptions so future maps can coexist. Source review used the preserved private diagram, rulebook page 3 terminology, row/color and marker-shape cross-checks, and a regenerated debug view. T0 schema/content validation passed through `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1`, including exact counts, references, connection derivation, team/type symmetry, and reviewed digest `addb4cdea8f2e0733233bd7fc047bc6cdd3b934102b48990699a524cfb7158bb`. Unity suites were intentionally omitted because no executable Unity or presentation path changed. No loader, scene geometry, production art/models, zone adjacency, or ordered Lane relationship was added. The post-completion multi-map audit identified explicit child-identity, reusable-validation, and selected-map snapshot gaps; corrective milestone 4.1a and the split 4.2/4.2a sequence own those follow-ups without invalidating this reviewed inventory.
 
-### [ ] 4.2 Upgrade the test grid to the full official placeholder map
+### [ ] 4.1a Harden map-scoped identity and validation contracts
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
-Observable outcome: The temporary Phases 1-3 test grid is replaced in the main validation scene by placeholder geometry for the complete official multi-zone single-lane map.
+Observable outcome: The map specification and source-validation boundary can admit additional future map definitions without weakening the reviewed `official-single-lane` evidence or relying on globally unique child IDs.
 
 Acceptance checks:
 
+- `SpaceId`, `ZoneId`, and `SpawnPointId` are explicitly map-local; any persisted, cross-map, catalog, or external reference composes the stable `MapId` with the applicable child ID.
+- The selected map is identified by an immutable `MapId` plus content revision, and coordinate-based rule/query APIs are explicitly local to that one selected match map rather than globally qualified individually.
+- Reusable schema/invariant validation is separated from `official-single-lane` source-review checks; the reusable layer contains no official-map IDs, counts, or digest.
+- Official-map validation still enforces every reviewed count/location and protects all rules-relevant zone metadata, including zone identity, kind, team, Throne status, and starting-Battle-Zone status.
+- A bounded synthetic validation fixture may reuse coordinates and child IDs under a different synthetic `MapId` to prove scoping, but it is not retained or presented as another playable map.
+- T0 documentation/source validation passes; no Unity suite is required because no Unity runtime or presentation path changes.
+
+Non-goals: No authoritative map loader, snapshot schema change, Unity scene geometry, second playable map, zone adjacency, ordered Lane relationship, or production art.
+
+### [ ] 4.2 Load the selected map definition into authoritative state
+
+Observable outcome: A match loads one selected map definition through a reusable boundary, and authoritative state plus snapshots retain and validate that map's stable identity and content revision.
+
+Acceptance checks:
+
+- A reusable loader/catalog boundary resolves a requested `MapId` and content revision without a singleton instance, fixed official-map resource path in rules code, or map-name branches.
+- The loaded immutable map definition owns its spaces, terrain, zones, and spawn points; existing coordinate-based movement/query authorities operate within that selected definition.
+- The authoritative match/board exposes its immutable selected-map reference rather than requiring every internal coordinate value to repeat `MapId`.
+- The versioned authoritative snapshot serializes `MapId` and map content revision, resolves them through the supplied current map definitions, and rejects missing or mismatched map content with a typed reason.
+- Focused pure tests use bounded synthetic definitions that reuse coordinates and map-local child IDs to prove isolation, selection, and snapshot mismatch rejection without adding another playable map.
+- Existing movement, Attack, round, snapshot, Undo, restart, and event-log regressions remain green with the official map definition selected.
+
+Non-goals: No Unity scene replacement, second playable map, zone adjacency queries, Fast Travel, lane pushing, setup placement, or production art.
+
+### [ ] 4.2a Upgrade the test grid to the full official placeholder map
+
+Observable outcome: The temporary Phases 1-3 test grid is replaced in the main validation scene by placeholder geometry driven by the selected complete official multi-zone single-lane map definition.
+
+Acceptance checks:
+
+- The scene consumes the selected loaded map definition rather than rebuilding topology from a radius or a hard-coded official-map coordinate list.
 - Logical adjacency matches the reviewed board specification.
 - Terrain and spawn-point classifications are inspectable.
 - Every official zone is visibly distinguishable in debug presentation without implying final art.
 - The complete map can be framed and inspected under the current fixed-camera test setup.
+- Focused Edit Mode and saved-scene Play Mode checks prove presentation rebuilds from the selected map and does not own authoritative topology or map selection.
 
-Non-goals: No polished environment, Fast Travel, lane pushing, or production camera controls.
+Non-goals: No second playable map, polished environment, Fast Travel, lane pushing, or production camera controls.
 
 ### [ ] 4.3 Define and validate zones and zone adjacency
 
