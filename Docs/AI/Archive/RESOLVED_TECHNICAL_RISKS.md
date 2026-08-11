@@ -10,6 +10,14 @@ Lossless resolved-risk records are appended here when retired from [the active r
 
 Resolution note (2026-08-11): Milestone 4.4b added stable typed `movement-v1` and `attack-defense-v1` strategy identities, explicit action-kind mappings, composition-time uniqueness validation, and generic typed registry dispatch. The complete existing Movement and nested Attack/Defense authority, turn/round, snapshot, replay, and application-session regression set remained green. A bounded synthetic Skill fixture registered and executed through the same typed registry control flow without changing it. The risk is retired because later capabilities now have one explicit registration/dispatch seam; milestone 4.4e still independently reassesses the resulting architecture.
 
+## RISK-RUNTIME-001
+
+| ID | Concrete failure mode and impact | Evidence / confidence | Trigger or detection | Earliest affected milestone | Retirement or reassessment | Approved mitigation or explicit acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| `RISK-RUNTIME-001` | Per-repaint allocations, generated Unity-resource lifetime, and malformed diagnostic-envelope handling can create avoidable frame cost, leaked resources, or brittle diagnostics as the scene grows. | Source inspection after 4.2a; medium confidence until measured, with malformed-envelope behavior directly observable by focused fixtures. | Allocation/resource baseline crosses the milestone threshold, generated resources survive teardown, or malformed envelopes throw/partially project. | 4.4d | Retire or explicitly re-baseline in 4.4d; independently reassess at 4.4e. | Add focused parser/resource tests and a noise-tolerant prototype performance baseline in 4.4d. Accept current prototype exposure until that scheduled gate. |
+
+Resolution note (2026-08-11): Milestone 4.4d gave runtime-created map, hero, obstacle, mesh, material, and Input Action resources explicit reuse/disposal ownership; repeated complete-map rebuild and scene-lifecycle fixtures show zero owned-resource growth. Unchanged presenter/view repaint paths reuse immutable models, definitions, offers, lookup collections, labels, and one cached GUI style. The diagnostic envelope now has bounded non-throwing typed rejection for malformed, truncated, unsupported, trailing, invalid-count, invalid-entry, and oversized inputs, and session restore remains atomic. The measured complete-map/two-round baseline is protected by noise-tolerant thresholds and passed at the final Phase 4 gate. The risk is retired; milestone 4.4e still independently reassesses the evidence and implementation.
+
 ## RISK-APP-001
 
 | ID | Concrete failure mode and impact | Evidence / confidence | Trigger or detection | Earliest affected milestone | Retirement or reassessment | Approved mitigation or explicit acceptance |

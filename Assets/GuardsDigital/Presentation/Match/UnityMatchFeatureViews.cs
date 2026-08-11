@@ -36,6 +36,11 @@ namespace GuardsDigital.Presentation.Match
 
         public void Render(BoardInteractionViewModel model)
         {
+            if (ReferenceEquals(Model, model))
+            {
+                return;
+            }
+
             Model = model ?? throw new ArgumentNullException(nameof(model));
             foreach (var hero in heroes)
             {
@@ -82,6 +87,11 @@ namespace GuardsDigital.Presentation.Match
 
         public void Render(DirectorHandsViewModel model)
         {
+            if (ReferenceEquals(Model, model))
+            {
+                return;
+            }
+
             Model = model ?? throw new ArgumentNullException(nameof(model));
         }
 
@@ -95,12 +105,8 @@ namespace GuardsDigital.Presentation.Match
             foreach (var hand in Model.Hands)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label(
-                    hand.TeamSide == TeamSide.Red
-                        ? $"[R] RED {hand.HeroDisplayName.ToUpperInvariant()}"
-                        : $"[B] BLUE {hand.HeroDisplayName.ToUpperInvariant()}",
-                    GUILayout.Width(122f));
-                GUILayout.Label(FormatCommitment(hand));
+                GUILayout.Label(hand.HeaderLabel, GUILayout.Width(122f));
+                GUILayout.Label(hand.CommitmentLabel);
                 if (hand.CanPass && GUILayout.Button("PASS - NO CARD", GUILayout.Width(125f), GUILayout.Height(24f)))
                 {
                     PassRequested?.Invoke(hand.HeroId);
@@ -111,15 +117,13 @@ namespace GuardsDigital.Presentation.Match
                 GUILayout.Space(122f);
                 foreach (var card in hand.Cards)
                 {
-                    var definition = hand.Definitions.Single(value =>
-                        value.Reference.Equals(card.DefinitionReference));
                     var previous = GUI.backgroundColor;
                     GUI.backgroundColor = hand.SelectedCardInstanceId.HasValue &&
                         hand.SelectedCardInstanceId.Value.Equals(card.Id)
                             ? new Color(0.35f, 0.75f, 1f)
                             : Color.white;
                     if (GUILayout.Button(
-                        $"{definition.DisplayName}\nINITIATIVE {definition.Initiative.Value}",
+                        hand.CardButtonLabels[card.Id],
                         GUILayout.MinWidth(112f),
                         GUILayout.Height(46f)))
                     {
@@ -132,7 +136,17 @@ namespace GuardsDigital.Presentation.Match
                 GUILayout.EndHorizontal();
             }
 
-            if (Model.Hands.Any(hand => hand.SelectedCardInstanceId.HasValue))
+            var hasSelection = false;
+            for (var index = 0; index < Model.Hands.Count; index++)
+            {
+                if (Model.Hands[index].SelectedCardInstanceId.HasValue)
+                {
+                    hasSelection = true;
+                    break;
+                }
+            }
+
+            if (hasSelection)
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Space(122f);
@@ -145,29 +159,6 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
-        private static string FormatCommitment(DirectorHandViewModel hand)
-        {
-            switch (hand.CommitmentStatus)
-            {
-                case TurnCardCommitmentStatus.AwaitingResponse:
-                    return "AWAITING CARD";
-                case TurnCardCommitmentStatus.CardCommittedFacedown:
-                    return "FACEDOWN COMMITTED";
-                case TurnCardCommitmentStatus.Passed:
-                    return "PASS - NO CARD";
-                case TurnCardCommitmentStatus.Revealed:
-                    if (hand.RevealedCard != null)
-                    {
-                        var definition = hand.Definitions.Single(value =>
-                            value.Reference.Equals(hand.RevealedCard.DefinitionReference));
-                        return $"REVEALED: {definition.DisplayName}\nINITIATIVE {definition.Initiative.Value}";
-                    }
-
-                    return "REVEALED";
-                default:
-                    return hand.CommitmentStatus.ToString().ToUpperInvariant();
-            }
-        }
     }
 
     public sealed class RoundActionUnityView : IRoundActionView
@@ -178,6 +169,11 @@ namespace GuardsDigital.Presentation.Match
 
         public void Render(RoundActionViewModel model)
         {
+            if (ReferenceEquals(Model, model))
+            {
+                return;
+            }
+
             Model = model ?? throw new ArgumentNullException(nameof(model));
         }
 
@@ -253,6 +249,11 @@ namespace GuardsDigital.Presentation.Match
 
         public void Render(UndoRestartViewModel model)
         {
+            if (ReferenceEquals(Model, model))
+            {
+                return;
+            }
+
             Model = model ?? throw new ArgumentNullException(nameof(model));
         }
 
@@ -289,13 +290,18 @@ namespace GuardsDigital.Presentation.Match
 
         public void Render(DiagnosticLogViewModel model)
         {
+            if (ReferenceEquals(Model, model))
+            {
+                return;
+            }
+
             Model = model ?? throw new ArgumentNullException(nameof(model));
         }
 
         public void DrawToggle()
         {
             if (Model != null && GUILayout.Button(
-                Model.IsExpanded ? "HIDE EVENT LOG" : $"EVENT LOG ({Model.Entries.Count})",
+                Model.ToggleLabel,
                 GUILayout.Width(126f),
                 GUILayout.Height(24f)))
             {
@@ -312,7 +318,7 @@ namespace GuardsDigital.Presentation.Match
 
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 10f, panel.y + 8f, panel.width - 20f, panel.height - 16f));
-            GUILayout.Label($"INTERNAL RULE-EVENT LOG - {Model.Entries.Count} ACCEPTED EVENTS");
+            GUILayout.Label(Model.PanelLabel);
             scrollPosition = GUILayout.BeginScrollView(scrollPosition);
             foreach (var entry in Model.Entries)
             {

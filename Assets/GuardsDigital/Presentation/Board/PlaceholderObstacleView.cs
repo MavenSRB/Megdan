@@ -33,6 +33,9 @@ namespace GuardsDigital.Presentation.Board
         [SerializeField]
         private float verticalOffset = DefaultVerticalOffset;
 
+        private Mesh ownedMesh;
+        private Material ownedMaterial;
+
         public ObstacleOccupancy Occupancy => new ObstacleOccupancy(new ObstacleId(obstacleId), Coordinate);
 
         public HexCoordinate Coordinate => new HexCoordinate(q, r);
@@ -66,7 +69,8 @@ namespace GuardsDigital.Presentation.Board
 
             if (meshFilter.sharedMesh == null)
             {
-                meshFilter.sharedMesh = CreateBlockMesh(width, height);
+                ownedMesh = CreateBlockMesh(width, height);
+                meshFilter.sharedMesh = ownedMesh;
             }
 
             var meshRenderer = GetComponent<MeshRenderer>();
@@ -77,7 +81,8 @@ namespace GuardsDigital.Presentation.Board
 
             if (meshRenderer.sharedMaterial == null)
             {
-                meshRenderer.sharedMaterial = CreatePlaceholderMaterial();
+                ownedMaterial = CreatePlaceholderMaterial();
+                meshRenderer.sharedMaterial = ownedMaterial;
             }
         }
 
@@ -130,6 +135,31 @@ namespace GuardsDigital.Presentation.Board
         {
             ApplyLayout();
             EnsurePrimitiveVisual();
+        }
+
+        private void OnDestroy()
+        {
+            DestroyOwnedResource(ownedMesh);
+            DestroyOwnedResource(ownedMaterial);
+            ownedMesh = null;
+            ownedMaterial = null;
+        }
+
+        private static void DestroyOwnedResource(Object resource)
+        {
+            if (resource == null)
+            {
+                return;
+            }
+
+            if (UnityEngine.Application.isPlaying)
+            {
+                Destroy(resource);
+            }
+            else
+            {
+                DestroyImmediate(resource);
+            }
         }
 
 #if UNITY_EDITOR

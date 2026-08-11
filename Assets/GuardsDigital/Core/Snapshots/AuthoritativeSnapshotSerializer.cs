@@ -60,6 +60,8 @@ namespace GuardsDigital.Core.Snapshots
     public static class AuthoritativeSnapshotSerializer
     {
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
+        private const int MaximumDecodedBytes = 4 * 1024 * 1024;
+        private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
         public const int CurrentSchemaVersion = 2;
 
         public static string Serialize(RoundResolutionAuthority round, AdjacentMoveAuthority board)
@@ -94,9 +96,22 @@ namespace GuardsDigital.Core.Snapshots
                     "Snapshot payload must not be blank.");
             }
 
+            if (payload.Length > MaximumBase64Characters)
+            {
+                throw new SnapshotLoadException(
+                    SnapshotLoadRejectionReason.MalformedPayload,
+                    "Snapshot payload exceeds the supported size limit.");
+            }
+
             try
             {
                 var bytes = Convert.FromBase64String(payload);
+                if (bytes.Length > MaximumDecodedBytes)
+                {
+                    throw new SnapshotLoadException(
+                        SnapshotLoadRejectionReason.MalformedPayload,
+                        "Snapshot payload exceeds the supported size limit.");
+                }
                 using (var stream = new MemoryStream(bytes, false))
                 using (var reader = new BinaryReader(stream))
                 {

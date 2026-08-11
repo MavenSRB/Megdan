@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
@@ -47,6 +48,8 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchSession session;
         private readonly IBoardInteractionView view;
+        private MatchSessionProjection lastProjection;
+        private BoardInteractionViewModel lastViewModel;
 
         public BoardInteractionPresenter(IMatchSession session, IBoardInteractionView view)
         {
@@ -59,13 +62,19 @@ namespace GuardsDigital.Presentation.Match
         public void Refresh()
         {
             var projection = session.Projection;
-            view.Render(new BoardInteractionViewModel(
-                projection.Version,
-                projection.Heroes,
-                projection.PendingMovementChoice?.LegalDestinations.Select(value => value.Destination) ??
-                    Enumerable.Empty<HexCoordinate>(),
-                projection.PendingAttackTargetChoice?.LegalTargetHeroIds ?? Array.Empty<HeroId>(),
-                projection.SelectedActor.IsDefined ? projection.SelectedActor.ActorId : default));
+            if (!ReferenceEquals(projection, lastProjection))
+            {
+                lastProjection = projection;
+                lastViewModel = new BoardInteractionViewModel(
+                    projection.Version,
+                    projection.Heroes,
+                    projection.PendingMovementChoice?.LegalDestinations.Select(value => value.Destination) ??
+                        Enumerable.Empty<HexCoordinate>(),
+                    projection.PendingAttackTargetChoice?.LegalTargetHeroIds ?? Array.Empty<HeroId>(),
+                    projection.SelectedActor.IsDefined ? projection.SelectedActor.ActorId : default);
+            }
+
+            view.Render(lastViewModel);
         }
 
         public bool SubmitDestination(HexCoordinate destination)
@@ -132,6 +141,18 @@ namespace GuardsDigital.Presentation.Match
             Cards = Array.AsReadOnly((cards ?? throw new ArgumentNullException(nameof(cards))).ToArray());
             Definitions = Array.AsReadOnly((definitions ?? throw new ArgumentNullException(nameof(definitions))).ToArray());
             SelectedCardInstanceId = selectedCardInstanceId;
+            HeaderLabel = teamSide == TeamSide.Red
+                ? $"[R] RED {HeroDisplayName.ToUpperInvariant()}"
+                : $"[B] BLUE {HeroDisplayName.ToUpperInvariant()}";
+            CommitmentLabel = FormatCommitmentLabel();
+            var labels = new Dictionary<CardInstanceId, string>();
+            foreach (var card in Cards)
+            {
+                var definition = Definitions.Single(value => value.Reference.Equals(card.DefinitionReference));
+                labels.Add(card.Id, $"{definition.DisplayName}\nINITIATIVE {definition.Initiative.Value}");
+            }
+
+            CardButtonLabels = new ReadOnlyDictionary<CardInstanceId, string>(labels);
         }
 
         public TeamSide TeamSide { get; }
@@ -144,6 +165,33 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<CardInstance> Cards { get; }
         public IReadOnlyList<CardDefinition> Definitions { get; }
         public CardInstanceId? SelectedCardInstanceId { get; }
+        public string HeaderLabel { get; }
+        public string CommitmentLabel { get; }
+        public IReadOnlyDictionary<CardInstanceId, string> CardButtonLabels { get; }
+
+        private string FormatCommitmentLabel()
+        {
+            switch (CommitmentStatus)
+            {
+                case TurnCardCommitmentStatus.AwaitingResponse:
+                    return "AWAITING CARD";
+                case TurnCardCommitmentStatus.CardCommittedFacedown:
+                    return "FACEDOWN COMMITTED";
+                case TurnCardCommitmentStatus.Passed:
+                    return "PASS - NO CARD";
+                case TurnCardCommitmentStatus.Revealed:
+                    if (RevealedCard != null)
+                    {
+                        var definition = Definitions.Single(value =>
+                            value.Reference.Equals(RevealedCard.DefinitionReference));
+                        return $"REVEALED: {definition.DisplayName}\nINITIATIVE {definition.Initiative.Value}";
+                    }
+
+                    return "REVEALED";
+                default:
+                    return CommitmentStatus.ToString().ToUpperInvariant();
+            }
+        }
     }
 
     public sealed class DirectorHandsViewModel
@@ -168,6 +216,9 @@ namespace GuardsDigital.Presentation.Match
         private readonly IMatchSession session;
         private readonly IDirectorHandsView view;
         private CardInstanceId? selectedCardInstanceId;
+        private MatchSessionProjection lastProjection;
+        private CardInstanceId? lastSelectedCardInstanceId;
+        private DirectorHandsViewModel lastViewModel;
 
         public DirectorHandsPresenter(IMatchSession session, IDirectorHandsView view)
         {
@@ -186,29 +237,37 @@ namespace GuardsDigital.Presentation.Match
                 selectedCardInstanceId = null;
             }
 
-            var hands = projection.Setup.Heroes
-                .OrderBy(hero => hero.TeamSide)
-                .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
-                .Select(hero =>
-                {
-                    var commitment = projection.GetCommitment(hero.HeroId);
-                    return new DirectorHandViewModel(
-                        hero.TeamSide,
-                        hero.HeroId,
-                        hero.DisplayName,
-                        commitment.Status,
-                        commitment.CanPass,
-                        commitment.RevealedCardInstanceId,
-                        commitment.RevealedCardInstanceId.HasValue
-                            ? projection.Cards.Single(card =>
-                                card.Id.Equals(commitment.RevealedCardInstanceId.Value))
-                            : null,
-                        projection.Cards.Where(card =>
-                            card.OwnerId.Equals(hero.HeroId) && card.State.Location == CardLocation.Hand),
-                        projection.Definitions,
-                        selectedCardInstanceId);
-                });
-            view.Render(new DirectorHandsViewModel(projection.Version, hands));
+            if (!ReferenceEquals(projection, lastProjection) ||
+                !Nullable.Equals(selectedCardInstanceId, lastSelectedCardInstanceId))
+            {
+                var hands = projection.Setup.Heroes
+                    .OrderBy(hero => hero.TeamSide)
+                    .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                    .Select(hero =>
+                    {
+                        var commitment = projection.GetCommitment(hero.HeroId);
+                        return new DirectorHandViewModel(
+                            hero.TeamSide,
+                            hero.HeroId,
+                            hero.DisplayName,
+                            commitment.Status,
+                            commitment.CanPass,
+                            commitment.RevealedCardInstanceId,
+                            commitment.RevealedCardInstanceId.HasValue
+                                ? projection.Cards.Single(card =>
+                                    card.Id.Equals(commitment.RevealedCardInstanceId.Value))
+                                : null,
+                            projection.Cards.Where(card =>
+                                card.OwnerId.Equals(hero.HeroId) && card.State.Location == CardLocation.Hand),
+                            projection.Definitions,
+                            selectedCardInstanceId);
+                    });
+                lastProjection = projection;
+                lastSelectedCardInstanceId = selectedCardInstanceId;
+                lastViewModel = new DirectorHandsViewModel(projection.Version, hands);
+            }
+
+            view.Render(lastViewModel);
         }
 
         public bool SelectCommitmentCard(CardInstanceId cardInstanceId)
@@ -309,6 +368,8 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentNullException(nameof(initiativeChoices))).ToArray());
             DefenseChoices = Array.AsReadOnly((defenseChoices ??
                 throw new ArgumentNullException(nameof(defenseChoices))).ToArray());
+            HudHeader = $"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
+                $"TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound} - {phase.ToString().ToUpperInvariant()}";
         }
 
         public long Version { get; }
@@ -321,6 +382,7 @@ namespace GuardsDigital.Presentation.Match
         public TypedInvocationViewModel ContinueEndOfRoundInvocation { get; }
         public IReadOnlyList<TypedInvocationViewModel> InitiativeChoices { get; }
         public IReadOnlyList<TypedInvocationViewModel> DefenseChoices { get; }
+        public string HudHeader { get; }
     }
 
     public interface IRoundActionView
@@ -332,6 +394,8 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchSession session;
         private readonly IRoundActionView view;
+        private MatchSessionProjection lastProjection;
+        private RoundActionViewModel lastViewModel;
 
         public RoundActionPresenter(IMatchSession session, IRoundActionView view)
         {
@@ -343,7 +407,7 @@ namespace GuardsDigital.Presentation.Match
 
         public void Refresh()
         {
-            view.Render(CreateViewModel(session.Projection));
+            view.Render(GetOrCreateViewModel(session.Projection));
         }
 
         public bool Submit(TypedInvocationViewModel invocation)
@@ -353,7 +417,7 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            var current = CreateViewModel(session.Projection);
+            var current = GetOrCreateViewModel(session.Projection);
             var legal = current.Actions
                 .Concat(current.InitiativeChoices)
                 .Concat(current.DefenseChoices)
@@ -421,6 +485,17 @@ namespace GuardsDigital.Presentation.Match
                     : null,
                 initiativeChoices,
                 defenseChoices);
+        }
+
+        private RoundActionViewModel GetOrCreateViewModel(MatchSessionProjection projection)
+        {
+            if (!ReferenceEquals(projection, lastProjection))
+            {
+                lastProjection = projection;
+                lastViewModel = CreateViewModel(projection);
+            }
+
+            return lastViewModel;
         }
 
         private static TypedInvocationViewModel CreateEndTurnInvocation(MatchSessionProjection projection)
@@ -579,6 +654,8 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchSession session;
         private readonly IUndoRestartView view;
+        private MatchSessionProjection lastProjection;
+        private UndoRestartViewModel lastViewModel;
 
         public UndoRestartPresenter(IMatchSession session, IUndoRestartView view)
         {
@@ -591,11 +668,17 @@ namespace GuardsDigital.Presentation.Match
         public void Refresh()
         {
             var projection = session.Projection;
-            view.Render(new UndoRestartViewModel(
-                projection.Version,
-                projection.AcceptedCommands.Count > 0,
-                projection.AcceptedCommands.Count > 0,
-                projection.AcceptedCommands.Count));
+            if (!ReferenceEquals(projection, lastProjection))
+            {
+                lastProjection = projection;
+                lastViewModel = new UndoRestartViewModel(
+                    projection.Version,
+                    projection.AcceptedCommands.Count > 0,
+                    projection.AcceptedCommands.Count > 0,
+                    projection.AcceptedCommands.Count);
+            }
+
+            view.Render(lastViewModel);
         }
 
         public bool Undo()
@@ -628,11 +711,15 @@ namespace GuardsDigital.Presentation.Match
             Version = version;
             IsExpanded = isExpanded;
             Entries = Array.AsReadOnly((entries ?? throw new ArgumentNullException(nameof(entries))).ToArray());
+            ToggleLabel = IsExpanded ? "HIDE EVENT LOG" : $"EVENT LOG ({Entries.Count})";
+            PanelLabel = $"INTERNAL RULE-EVENT LOG - {Entries.Count} ACCEPTED EVENTS";
         }
 
         public long Version { get; }
         public bool IsExpanded { get; }
         public IReadOnlyList<RuleEventLogEntry> Entries { get; }
+        public string ToggleLabel { get; }
+        public string PanelLabel { get; }
     }
 
     public interface IDiagnosticLogView
@@ -645,6 +732,9 @@ namespace GuardsDigital.Presentation.Match
         private readonly IMatchSession session;
         private readonly IDiagnosticLogView view;
         private bool isExpanded;
+        private MatchSessionProjection lastProjection;
+        private bool lastExpanded;
+        private DiagnosticLogViewModel lastViewModel;
 
         public DiagnosticLogPresenter(IMatchSession session, IDiagnosticLogView view)
         {
@@ -655,10 +745,17 @@ namespace GuardsDigital.Presentation.Match
         public void Refresh()
         {
             var projection = session.Projection;
-            view.Render(new DiagnosticLogViewModel(
-                projection.Version,
-                isExpanded,
-                projection.DiagnosticEvents));
+            if (!ReferenceEquals(projection, lastProjection) || isExpanded != lastExpanded)
+            {
+                lastProjection = projection;
+                lastExpanded = isExpanded;
+                lastViewModel = new DiagnosticLogViewModel(
+                    projection.Version,
+                    isExpanded,
+                    projection.DiagnosticEvents);
+            }
+
+            view.Render(lastViewModel);
         }
 
         public void Toggle()

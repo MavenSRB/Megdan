@@ -53,6 +53,9 @@ namespace GuardsDigital.Presentation.Units.Heroes
         [SerializeField]
         private float verticalOffset = DefaultVerticalOffset;
 
+        private Mesh ownedMesh;
+        private Material ownedMaterial;
+
         public HeroOccupancy Occupancy => new HeroOccupancy(new HeroId(heroId), Coordinate);
 
         public TeamSide TeamSide => teamSide;
@@ -152,7 +155,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
             if (meshFilter.sharedMesh == null)
             {
-                meshFilter.sharedMesh = CreatePrismMesh(baseRadius, height, GetSideCount());
+                ownedMesh = CreatePrismMesh(baseRadius, height, GetSideCount());
+                meshFilter.sharedMesh = ownedMesh;
             }
 
             var meshRenderer = GetComponent<MeshRenderer>();
@@ -163,7 +167,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
             if (meshRenderer.sharedMaterial == null)
             {
-                meshRenderer.sharedMaterial = CreatePlaceholderMaterial(teamSide);
+                ownedMaterial = CreatePlaceholderMaterial(teamSide);
+                meshRenderer.sharedMaterial = ownedMaterial;
             }
         }
 
@@ -242,6 +247,31 @@ namespace GuardsDigital.Presentation.Units.Heroes
         {
             ApplyLayout();
             EnsurePrimitiveVisual();
+        }
+
+        private void OnDestroy()
+        {
+            DestroyOwnedResource(ownedMesh);
+            DestroyOwnedResource(ownedMaterial);
+            ownedMesh = null;
+            ownedMaterial = null;
+        }
+
+        private static void DestroyOwnedResource(Object resource)
+        {
+            if (resource == null)
+            {
+                return;
+            }
+
+            if (UnityEngine.Application.isPlaying)
+            {
+                Destroy(resource);
+            }
+            else
+            {
+                DestroyImmediate(resource);
+            }
         }
 
 #if UNITY_EDITOR

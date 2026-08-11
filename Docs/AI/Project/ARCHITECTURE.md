@@ -40,6 +40,8 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Unity presentation follows Model-View-Presenter inside a ports-and-adapters boundary. Feature presenters translate view intent and immutable session projections; passive views render immutable view models and never own legality, pending continuations, snapshots, or authoritative state.
 - One small scene composition root performs Unity object discovery and dependency wiring. Feature components do not use a singleton, service locator, global event bus, or direct cross-presenter calls.
 - Board interaction, director hands/commitments, round/action state, Undo/restart controls, and diagnostic log projection remain separate presenter/view responsibilities. No replacement component may combine all session ownership, history, input, projection, and rendering responsibilities.
+- Unity-native resources created by presentation have one explicit owner, are reused while that owner lives, and are destroyed or disposed with it. Saved asset references are never destroyed as if generated. Repeated configured-map rebuilds reuse stable tiles, markers, minion views, materials, and fallback meshes rather than creating monotonic native-object growth.
+- Unchanged feature refresh/repaint paths reuse immutable view models, definitions, offers, lookup collections, labels, and GUI styles. Mechanical architecture tests protect pure-assembly Unity independence, session-port/presenter/view dependency direction, composition-root-only discovery, supported Unity discovery APIs, and the prohibition on rules branching or parsing by display name/printed text.
 - The future private-online host/session boundary and owner-authorized projections build on this application port; network callbacks do not become rules authorities, and local director-only tools remain outside competitive client projections.
 
 ### Undo and diagnostics
@@ -51,6 +53,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - The implemented history contains typed accepted commands only. Invalid and presentation-only inputs create no entry; restart clears the command log and rebuilds the immutable initial scenario. Redo is intentionally absent.
 - A player-facing save system is not part of the pitch.
 - Internal authoritative snapshot capture/restore and the collapsible read-only event log remain implemented. Snapshots remain available for persistence, diagnostics, and later network resynchronization, while Undo/restart uses command replay. Planned tools still include animation-speed control.
+- Diagnostic snapshot envelopes use bounded, non-throwing typed rejection and never partially restore malformed input. The durable schema-version-2 compatibility corpus pins representative setup, active-turn, pending-choice, and end-of-round meanings; completed-match data remains explicitly unsupported until its authority exists, and every incompatible durable schema/content-identity change requires a same-milestone migrate-or-reject decision.
 
 ### Card system
 

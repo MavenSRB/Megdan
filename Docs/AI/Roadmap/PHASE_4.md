@@ -175,7 +175,7 @@ Non-goals: No production HUD, UI Toolkit migration, animation, sound, networking
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44c-replace-the-validation-god-controller-with-feature-mvp-completion-evidence).
 
-### [ ] 4.4d Close Phase 4 runtime hygiene and architecture gate
+### [x] 4.4d Close Phase 4 runtime hygiene and architecture gate
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -195,9 +195,11 @@ Acceptance checks:
 
 Non-goals: No production optimization target, DOTS/ECS rewrite, production UI migration, object pooling without measured need, gameplay change, networking, build, or polished art.
 
-### [!] 4.4e Independently review the Phase 4 architecture baseline
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44d-close-phase-4-runtime-hygiene-and-architecture-gate-completion-evidence).
 
-Blocked by: Milestone 4.4d must pass its final Phase 4 architecture and runtime-hygiene gate.
+### [ ] 4.4e Independently review the Phase 4 architecture baseline
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: A fresh analysis-only review determines whether the completed application-service, command-replay, action-strategy, MVP, resource-lifetime, diagnostic-envelope, and performance-baseline work is a sound foundation for expanding the general action system.
 

@@ -47,6 +47,11 @@ namespace GuardsDigital.Presentation.Interaction
             pointerPress.Disable();
         }
 
+        private void OnDestroy()
+        {
+            pointerPress.Dispose();
+        }
+
         private void Update()
         {
             if (!pointerPress.WasPressedThisFrame())
@@ -99,9 +104,23 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void EnsureBindings()
         {
-            selectors = selectors?.Where(selector => selector != null).ToArray();
-            selectionController ??= selectors?.Select(value => value.SelectionController)
-                .FirstOrDefault(value => value != null);
+            if (selectors == null)
+            {
+                selectors = System.Array.Empty<PrimitiveHeroPointerSelector>();
+            }
+
+            if (selectionController == null)
+            {
+                for (var index = 0; index < selectors.Length; index++)
+                {
+                    var selector = selectors[index];
+                    if (selector != null && selector.SelectionController != null)
+                    {
+                        selectionController = selector.SelectionController;
+                        break;
+                    }
+                }
+            }
         }
     }
 }

@@ -56,6 +56,13 @@ namespace GuardsDigital.Tests.EditMode
 
             coordinator.RefreshAll();
 
+            var firstBoard = board.Model;
+            var firstHands = hands.Model;
+            var firstRound = round.Model;
+            var firstUndo = undo.Model;
+            var firstDiagnostics = diagnostics.Model;
+            coordinator.RefreshAll();
+
             Assert.That(board.Model.Version, Is.EqualTo(session.Projection.Version));
             Assert.That(hands.Model.Version, Is.EqualTo(session.Projection.Version));
             Assert.That(round.Model.Version, Is.EqualTo(session.Projection.Version));
@@ -63,6 +70,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(diagnostics.Model.Version, Is.EqualTo(session.Projection.Version));
             Assert.That(hands.Model.Hands, Has.Count.EqualTo(2));
             Assert.That(diagnostics.Model.Entries, Has.Count.EqualTo(1));
+            Assert.That(board.Model, Is.SameAs(firstBoard));
+            Assert.That(hands.Model, Is.SameAs(firstHands));
+            Assert.That(round.Model, Is.SameAs(firstRound));
+            Assert.That(undo.Model, Is.SameAs(firstUndo));
+            Assert.That(diagnostics.Model, Is.SameAs(firstDiagnostics));
         }
 
         [Test]

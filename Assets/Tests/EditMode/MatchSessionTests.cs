@@ -44,6 +44,26 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void RestoreSnapshot_MalformedEnvelopeRejectsWithoutPartialRestore()
+        {
+            var session = CreateSession();
+            var redCard = GetCards(session, TeamSide.Red)[0];
+            Assert.That(session.Execute(DirectorCommand.CommitCard(redCard.OwnerId, redCard.Id)).Accepted, Is.True);
+            var before = session.Projection;
+            var bytes = Convert.FromBase64String(session.CaptureSnapshot());
+            var malformed = Convert.ToBase64String(bytes.Concat(new byte[] { 0x4d }).ToArray());
+
+            var result = session.RestoreSnapshot(malformed);
+
+            Assert.That(result.Accepted, Is.False);
+            Assert.That(result.RejectionReason, Is.EqualTo(MatchSessionRejectionReason.SnapshotRejected));
+            Assert.That(session.Projection.Version, Is.EqualTo(before.Version));
+            Assert.That(session.Projection.AuthoritativeSnapshot, Is.EqualTo(before.AuthoritativeSnapshot));
+            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(before.DiagnosticSnapshot));
+            Assert.That(session.Projection.AcceptedCommands, Is.EqualTo(before.AcceptedCommands));
+        }
+
+        [Test]
         public void Session_DispatchesEveryConfiguredLiveCommandFamilyThroughOnePort()
         {
             var session = CreateSession(useAdjacentSyntheticBoard: true);

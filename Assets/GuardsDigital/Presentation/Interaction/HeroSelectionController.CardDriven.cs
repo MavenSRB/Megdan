@@ -70,6 +70,13 @@ namespace GuardsDigital.Presentation.Interaction
         private UndoRestartPresenter undoRestartFeaturePresenter;
         private DiagnosticLogPresenter diagnosticLogFeaturePresenter;
         private MatchFeatureCoordinator featureCoordinator;
+        private GUIStyle tieBreakerLabelStyle;
+        private bool tieBreakerHudCacheInitialized;
+        private bool cachedTieBreakerDefined;
+        private TeamSide cachedTieBreakerSide;
+        private QuickGameSetupState cachedTieBreakerSetup;
+        private string cachedTieBreakerText;
+        private Color cachedTieBreakerColor;
 
         public bool IsCardDrivenMovementEnabled => cardDrivenMovementEnabled;
 
@@ -313,9 +320,23 @@ namespace GuardsDigital.Presentation.Interaction
             }
         }
 
-        public string TieBreakerIndicatorText => FormatTieBreakerIndicator(CurrentTieBreakerState, quickGameSetupState);
+        public string TieBreakerIndicatorText
+        {
+            get
+            {
+                EnsureTieBreakerHudCache();
+                return cachedTieBreakerText;
+            }
+        }
 
-        public Color TieBreakerIndicatorColor => GetTieBreakerIndicatorColor(CurrentTieBreakerState);
+        public Color TieBreakerIndicatorColor
+        {
+            get
+            {
+                EnsureTieBreakerHudCache();
+                return cachedTieBreakerColor;
+            }
+        }
 
         public Rect TieBreakerIndicatorRect => GetTieBreakerIndicatorRect();
 
@@ -2019,6 +2040,25 @@ namespace GuardsDigital.Presentation.Interaction
                 : new Color(0.12f, 0.32f, 0.72f);
         }
 
+        private void EnsureTieBreakerHudCache()
+        {
+            var state = CurrentTieBreakerState;
+            if (tieBreakerHudCacheInitialized &&
+                cachedTieBreakerDefined == state.IsDefined &&
+                (!state.IsDefined || cachedTieBreakerSide == state.RevealedSide) &&
+                ReferenceEquals(cachedTieBreakerSetup, quickGameSetupState))
+            {
+                return;
+            }
+
+            tieBreakerHudCacheInitialized = true;
+            cachedTieBreakerDefined = state.IsDefined;
+            cachedTieBreakerSide = state.RevealedSide;
+            cachedTieBreakerSetup = quickGameSetupState;
+            cachedTieBreakerText = FormatTieBreakerIndicator(state, quickGameSetupState);
+            cachedTieBreakerColor = GetTieBreakerIndicatorColor(state);
+        }
+
         private void DrawTieBreakerIndicator()
         {
             var state = CurrentTieBreakerState;
@@ -2030,23 +2070,28 @@ namespace GuardsDigital.Presentation.Interaction
             var indicatorRect = GetTieBreakerIndicatorRect();
             var previousColor = GUI.color;
             var previousContentColor = GUI.contentColor;
-            GUI.color = GetTieBreakerIndicatorColor(state);
+            EnsureTieBreakerHudCache();
+            GUI.color = cachedTieBreakerColor;
             GUI.DrawTexture(indicatorRect, Texture2D.whiteTexture, ScaleMode.StretchToFill);
             GUI.color = previousColor;
             GUI.Box(indicatorRect, GUIContent.none);
 
-            var labelStyle = new GUIStyle(GUI.skin.label)
+            if (tieBreakerLabelStyle == null)
             {
-                alignment = TextAnchor.MiddleCenter,
-                fontSize = quickGameSetupState == null ? 18 : 14,
-                fontStyle = FontStyle.Bold,
-                wordWrap = true
-            };
+                tieBreakerLabelStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontStyle = FontStyle.Bold,
+                    wordWrap = true
+                };
+            }
+
+            tieBreakerLabelStyle.fontSize = quickGameSetupState == null ? 18 : 14;
             GUI.contentColor = Color.white;
             GUI.Label(
                 indicatorRect,
-                FormatTieBreakerIndicator(state, quickGameSetupState),
-                labelStyle);
+                cachedTieBreakerText,
+                tieBreakerLabelStyle);
             GUI.contentColor = previousContentColor;
         }
 
@@ -2078,9 +2123,7 @@ namespace GuardsDigital.Presentation.Interaction
             GUI.Box(panel, GUIContent.none);
             GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));
             GUILayout.BeginHorizontal();
-            GUILayout.Label(
-                $"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {VisibleRoundIndex} - TURN {VisibleTurnIndex}/" +
-                $"{RoundResolutionAuthority.TurnsPerRound} - {VisibleRoundPhase.ToString().ToUpperInvariant()}");
+            GUILayout.Label(roundActionFeatureView.Model.HudHeader);
             undoRestartFeatureView.Draw();
             diagnosticLogFeatureView.DrawToggle();
             GUILayout.EndHorizontal();

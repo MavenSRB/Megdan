@@ -134,6 +134,11 @@ function Test-DuplicateBodies([string[]] $Bodies, [string] $ActiveCorpus) {
     return $true
 }
 
+function Test-PreservationCount([string] $Name, [int] $Before, [int] $After) {
+    if ($Name -eq 'profiles') { return $After -ge $Before }
+    return $After -eq $Before
+}
+
 function Invoke-SelfTests {
     $failed = New-Object System.Collections.Generic.List[string]
     function Expect([string] $Name, [bool] $Condition) {
@@ -162,9 +167,12 @@ function Invoke-SelfTests {
     $requiredInventory = @('milestones','rules','tests')
     $fixtureInventory = @('milestones','rules')
     Expect 'missing preservation-inventory item' (@($requiredInventory | Where-Object { $fixtureInventory -notcontains $_ }).Count -eq 1)
+    Expect 'exact structural preservation count' (Test-PreservationCount 'milestones' 10 10)
+    Expect 'new milestone profile declaration' (Test-PreservationCount 'profiles' 10 11)
+    Expect 'lost milestone profile declaration' (-not (Test-PreservationCount 'profiles' 10 9))
 
     if ($failed.Count -gt 0) { throw "Living-document validator self-test failure: $($failed -join ', ')" }
-    Write-Host 'Self-tests: 10/10 fixture classes passed.'
+    Write-Host 'Self-tests: 11/11 fixture classes passed.'
 }
 
 if (-not $SkipSelfTests) { Invoke-SelfTests }
@@ -313,7 +321,7 @@ else {
     }
 }
 
-# Exact roadmap definition counts prove that sharding did not delete milestone checks.
+# Exact structural counts and a nondecreasing profile count prove that sharding did not delete milestone checks or assigned profiles. New profile declarations are allowed as future milestones receive their required execution route.
 $baselineRoadmap = Read-Utf8 (Join-Path $baselineRoot 'ROADMAP.md')
 $countPatterns = @{
     'milestones' = '(?m)^### \[[x!~ ]\] \S+'
@@ -324,7 +332,7 @@ $countPatterns = @{
 foreach ($name in $countPatterns.Keys) {
     $before = ([regex]::Matches($baselineRoadmap, $countPatterns[$name])).Count
     $after = ([regex]::Matches($roadmapCorpus, $countPatterns[$name])).Count
-    if ($before -ne $after) { Add-Issue 'ERROR' 'roadmap-preservation' "$name count changed from $before to $after." }
+    if (-not (Test-PreservationCount $name $before $after)) { Add-Issue 'ERROR' 'roadmap-preservation' "$name count changed from $before to $after." }
 }
 if ($completionBodies.Count -ne ([regex]::Matches($baselineRoadmap, '(?m)^Completion note')).Count) { Add-Issue 'ERROR' 'history-preservation' 'Not every baseline completion note has a hashed archive manifest row.' }
 

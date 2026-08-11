@@ -37,6 +37,8 @@ namespace GuardsDigital.Presentation.Board
         private Material edgeMaterial;
         private Material redSpawnMaterial;
         private Material blueSpawnMaterial;
+        private Mesh generatedTileMesh;
+        private MapDefinitionReference materialMapReference;
 
         public float OuterRadius => outerRadius;
         public BoardMapDefinition RenderedDefinition => renderedDefinition;
@@ -44,6 +46,12 @@ namespace GuardsDigital.Presentation.Board
         public IReadOnlyCollection<HexCoordinate> Coordinates => renderedDefinition != null
             ? renderedDefinition.Spaces.Select(space => space.Coordinate).ToArray()
             : System.Array.Empty<HexCoordinate>();
+        public int OwnedNativeResourceCount => zoneMaterials.Count +
+            (terrainMaterial != null ? 1 : 0) +
+            (edgeMaterial != null ? 1 : 0) +
+            (redSpawnMaterial != null ? 1 : 0) +
+            (blueSpawnMaterial != null ? 1 : 0) +
+            (generatedTileMesh != null ? 1 : 0);
 
         public void ConfigureSceneBindings(Camera camera, IEnumerable<PrimitiveHeroView> heroes)
         {
@@ -60,6 +68,11 @@ namespace GuardsDigital.Presentation.Board
         }
 
         public void Rebuild(BoardMapDefinition definition)
+        {
+            RebuildMap(definition, true);
+        }
+
+        private void RebuildMap(BoardMapDefinition definition, bool clearConfiguredMinions)
         {
             if (definition == null) throw new System.ArgumentNullException(nameof(definition));
             if (outerRadius <= 0f || float.IsNaN(outerRadius) || float.IsInfinity(outerRadius))
@@ -97,13 +110,16 @@ namespace GuardsDigital.Presentation.Board
 
             EnsureSpawnMarkers(definition);
             RemoveLegacyObstacles();
-            ClearConfiguredMinions();
+            if (clearConfiguredMinions)
+            {
+                ClearConfiguredMinions();
+            }
             FrameWholeMap(sceneCamera, definition);
         }
 
         public void Rebuild(BoardMapDefinition definition, QuickGameSetupState setupState)
         {
-            Rebuild(definition);
+            RebuildMap(definition, false);
             ApplySetup(setupState);
         }
 
@@ -148,7 +164,7 @@ namespace GuardsDigital.Presentation.Board
             var meshFilter = tileObject.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = templateTile != null && templateTile.GetComponent<MeshFilter>() != null
                 ? templateTile.GetComponent<MeshFilter>().sharedMesh
-                : FlatHexMeshBuilder.Create(outerRadius);
+                : GetOrCreateGeneratedTileMesh();
 
             tileObject.AddComponent<MeshRenderer>();
             var tile = tileObject.AddComponent<HexTileView>();
@@ -181,26 +197,47 @@ namespace GuardsDigital.Presentation.Board
 
         private void EnsureSpawnMarkers(BoardMapDefinition definition)
         {
+            var markersById = new Dictionary<SpawnPointId, BoardMapSpawnMarkerView>();
             foreach (var marker in GetComponentsInChildren<BoardMapSpawnMarkerView>(true))
             {
-                DestroyObject(marker.gameObject);
+                if (markersById.ContainsKey(marker.SpawnPointId))
+                {
+                    DestroyObject(marker.gameObject);
+                }
+                else
+                {
+                    markersById.Add(marker.SpawnPointId, marker);
+                }
             }
 
             var spacesById = definition.Spaces.ToDictionary(space => space.Id);
             foreach (var spawnPoint in definition.SpawnPoints.OrderBy(spawnPoint => spawnPoint.Id.Value))
             {
                 var space = spacesById[spawnPoint.SpaceId];
-                var markerObject = new GameObject($"Spawn {spawnPoint.Id.Value}");
-                markerObject.transform.SetParent(transform, false);
-                markerObject.transform.localPosition = HexWorldLayout.ToWorld(space.Coordinate, outerRadius);
-                var marker = markerObject.AddComponent<BoardMapSpawnMarkerView>();
-                markerObject.AddComponent<LineRenderer>();
+                if (!markersById.TryGetValue(spawnPoint.Id, out var marker))
+                {
+                    var markerObject = new GameObject($"Spawn {spawnPoint.Id.Value}");
+                    markerObject.transform.SetParent(transform, false);
+                    marker = markerObject.AddComponent<BoardMapSpawnMarkerView>();
+                    markerObject.AddComponent<LineRenderer>();
+                }
+
+                var targetObject = marker.gameObject;
+                targetObject.name = $"Spawn {spawnPoint.Id.Value}";
+                targetObject.transform.SetParent(transform, false);
+                targetObject.transform.localPosition = HexWorldLayout.ToWorld(space.Coordinate, outerRadius);
                 marker.Configure(
                     spawnPoint,
                     outerRadius,
                     string.Equals(spawnPoint.TeamId, "red", System.StringComparison.OrdinalIgnoreCase)
                         ? redSpawnMaterial
                         : blueSpawnMaterial);
+                markersById.Remove(spawnPoint.Id);
+            }
+
+            foreach (var staleMarker in markersById.Values)
+            {
+                DestroyObject(staleMarker.gameObject);
             }
         }
 
@@ -230,14 +267,35 @@ namespace GuardsDigital.Presentation.Board
 
         private void EnsureConfiguredMinions(QuickGameSetupState setupState)
         {
-            ClearConfiguredMinions();
+            var viewsById = new Dictionary<MinionId, StandardMinionView>();
+            foreach (var view in GetComponentsInChildren<StandardMinionView>(true))
+            {
+                if (!view.enabled || view.SetupState == null || viewsById.ContainsKey(view.SetupState.MinionId))
+                {
+                    DestroyObject(view.gameObject);
+                }
+                else
+                {
+                    viewsById.Add(view.SetupState.MinionId, view);
+                }
+            }
 
             foreach (var setupMinion in setupState.Minions.OrderBy(value => value.MinionId.Value))
             {
-                var minionObject = new GameObject();
-                minionObject.transform.SetParent(transform, false);
-                var view = minionObject.AddComponent<StandardMinionView>();
+                if (!viewsById.TryGetValue(setupMinion.MinionId, out var view))
+                {
+                    var minionObject = new GameObject();
+                    minionObject.transform.SetParent(transform, false);
+                    view = minionObject.AddComponent<StandardMinionView>();
+                }
+
                 view.Configure(setupMinion, outerRadius);
+                viewsById.Remove(setupMinion.MinionId);
+            }
+
+            foreach (var staleView in viewsById.Values)
+            {
+                DestroyObject(staleView.gameObject);
             }
         }
 
@@ -245,6 +303,7 @@ namespace GuardsDigital.Presentation.Board
         {
             foreach (var minion in GetComponentsInChildren<StandardMinionView>(true))
             {
+                minion.enabled = false;
                 DestroyObject(minion.gameObject);
             }
         }
@@ -255,12 +314,42 @@ namespace GuardsDigital.Presentation.Board
             edgeMaterial ??= CreateMaterial("Map Edge Debug", new Color(0.10f, 0.11f, 0.13f, 1f));
             redSpawnMaterial ??= CreateMaterial("Red Spawn Debug", new Color(1f, 0.18f, 0.12f, 1f));
             blueSpawnMaterial ??= CreateMaterial("Blue Spawn Debug", new Color(0.12f, 0.55f, 1f, 1f));
-            zoneMaterials.Clear();
+            if (materialMapReference.Equals(definition.Reference) && zoneMaterials.Count == definition.Zones.Count)
+            {
+                return;
+            }
+
+            DestroyZoneMaterials();
             for (var index = 0; index < definition.Zones.Count; index++)
             {
                 var zone = definition.Zones[index];
                 zoneMaterials.Add(zone.Id, CreateMaterial($"Zone {zone.DisplayName} Debug", ZoneColors[index % ZoneColors.Length]));
             }
+
+            materialMapReference = definition.Reference;
+        }
+
+        private Mesh GetOrCreateGeneratedTileMesh()
+        {
+            if (generatedTileMesh == null)
+            {
+                generatedTileMesh = FlatHexMeshBuilder.Create(outerRadius);
+                generatedTileMesh.name = "Owned Placeholder Grid Hex Mesh";
+                generatedTileMesh.hideFlags = HideFlags.DontSave;
+            }
+
+            return generatedTileMesh;
+        }
+
+        private void DestroyZoneMaterials()
+        {
+            foreach (var material in zoneMaterials.Values)
+            {
+                DestroyOwnedResource(material);
+            }
+
+            zoneMaterials.Clear();
+            materialMapReference = default;
         }
 
         private Material GetSpaceMaterial(BoardMapSpace space) =>
@@ -295,6 +384,38 @@ namespace GuardsDigital.Presentation.Board
         private static void DestroyObject(GameObject target)
         {
             if (UnityEngine.Application.isPlaying) Destroy(target); else DestroyImmediate(target);
+        }
+
+        private void OnDestroy()
+        {
+            DestroyZoneMaterials();
+            DestroyOwnedResource(terrainMaterial);
+            DestroyOwnedResource(edgeMaterial);
+            DestroyOwnedResource(redSpawnMaterial);
+            DestroyOwnedResource(blueSpawnMaterial);
+            DestroyOwnedResource(generatedTileMesh);
+            terrainMaterial = null;
+            edgeMaterial = null;
+            redSpawnMaterial = null;
+            blueSpawnMaterial = null;
+            generatedTileMesh = null;
+        }
+
+        private static void DestroyOwnedResource(Object resource)
+        {
+            if (resource == null)
+            {
+                return;
+            }
+
+            if (UnityEngine.Application.isPlaying)
+            {
+                Destroy(resource);
+            }
+            else
+            {
+                DestroyImmediate(resource);
+            }
         }
 
     }

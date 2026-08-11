@@ -7,7 +7,7 @@ This inventory accounts for the governed categories required by milestone 3.11a.
 | Category ID | Before evidence | After evidence | Result |
 | --- | --- | --- | --- |
 | `milestone-definitions` | 147 milestone ID/status headings in pre-governance `ROADMAP.md` | 147 definitions in indexed `Roadmap/*.md`; 3.11a changed to complete and 4.3 changed from blocked to proposed for this handoff | `PASS` |
-| `milestone-profiles` | 35 exact `Required Codex profile` declarations | 35 exact declarations; next route/config agree on 4.3, GPT-5.6 Sol, medium | `PASS` |
+| `milestone-profiles` | 35 exact `Required Codex profile` declarations | 36 exact declarations; milestone 4.4e now carries its required profile and the next route/config agree on 4.4e, GPT-5.6 Sol, high | `PASS` |
 | `acceptance-checks` | 110 exact `Acceptance checks` blocks | 110 exact blocks in indexed roadmap shards | `PASS` |
 | `non-goals` | 77 exact milestone `Non-goals` declarations | 77 exact declarations in indexed roadmap shards | `PASS` |
 | `rule-authority-and-status` | Baseline `RULES_LEDGER.md`, 52,554 bytes, SHA-256 `13bc55a1c65ff315ac6af441cdb9a67373b4de236a984bf46ec0b6ba7c1d7c3a` | Active ledger is byte-identical | `PASS` |
@@ -38,16 +38,16 @@ Word counting uses the validator's stable Unicode token expression. Byte values 
 | Active leaf | Words | Bytes | Family hard limit |
 | --- | ---: | ---: | --- |
 | `DOCUMENTATION_GOVERNANCE.md` | 994 | 8,131 | 4,500 / 40 KiB |
-| `TECHNICAL_RISKS.md` | 499 | 4,217 | 4,500 / 40 KiB |
+| `TECHNICAL_RISKS.md` | 272 | 2,404 | 4,500 / 40 KiB |
 | `Project/PRODUCT.md` | 987 | 7,213 | 4,500 / 40 KiB |
-| `Project/ARCHITECTURE.md` | 1,547 | 11,659 | 4,500 / 40 KiB |
+| `Project/ARCHITECTURE.md` | 1,790 | 13,659 | 4,500 / 40 KiB |
 | `Project/PRESENTATION.md` | 582 | 4,109 | 4,500 / 40 KiB |
 | `Project/WORKFLOW_AND_TERMS.md` | 1,373 | 10,752 | 4,500 / 40 KiB |
 | `Roadmap/PHASE_0.md` | 978 | 8,202 | 15,000 / 128 KiB |
 | `Roadmap/PHASE_1.md` | 2,353 | 19,187 | 15,000 / 128 KiB |
 | `Roadmap/PHASE_2.md` | 1,887 | 14,244 | 15,000 / 128 KiB |
 | `Roadmap/PHASE_3.md` | 4,795 | 38,067 | 15,000 / 128 KiB |
-| `Roadmap/PHASE_4.md` | 2,500 | 19,881 | 15,000 / 128 KiB |
+| `Roadmap/PHASE_4.md` | 2,641 | 21,500 | 15,000 / 128 KiB |
 | `Roadmap/PHASE_5.md` | 1,011 | 7,559 | 15,000 / 128 KiB |
 | `Roadmap/PHASE_6.md` | 738 | 5,389 | 15,000 / 128 KiB |
 | `Roadmap/PHASE_7.md` | 1,548 | 11,548 | 15,000 / 128 KiB |
@@ -56,7 +56,7 @@ Word counting uses the validator's stable Unicode token expression. Byte values 
 | `Roadmap/PHASE_10.md` | 217 | 1,717 | 15,000 / 128 KiB |
 | `Roadmap/POST_PITCH.md` | 106 | 949 | 15,000 / 128 KiB |
 | `Testing/POLICY.md` | 3,659 | 27,554 | 7,000 / 80 KiB |
-| `Testing/FUTURE_GATES.md` | 991 | 9,137 | 7,000 / 80 KiB |
+| `Testing/FUTURE_GATES.md` | 1,418 | 13,093 | 7,000 / 80 KiB |
 | `Testing/RECIPES_FOUNDATION.md` | 897 | 10,948 | 7,000 / 80 KiB |
 | `Testing/RECIPES_TURNS.md` | 4,255 | 41,613 | 7,000 / 80 KiB |
 | `Testing/RECIPES_COMBAT_AND_MOVEMENT.md` | 1,536 | 17,953 | 7,000 / 80 KiB |
