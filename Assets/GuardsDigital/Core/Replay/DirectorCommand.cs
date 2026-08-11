@@ -1,0 +1,106 @@
+using System;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Units.Heroes;
+
+namespace GuardsDigital.Core.Replay
+{
+    public enum DirectorCommandKind
+    {
+        CommitCard = 0,
+        Pass = 1,
+        ChooseTiedActor = 2,
+        PerformHold = 3,
+        StartAction = 4,
+        ChooseMovementDestination = 5,
+        StopMovement = 6,
+        ChooseAttackTarget = 7,
+        ChooseDefenseCard = 8,
+        DeclineDefense = 9,
+        AdvanceEndOfRound = 10
+    }
+
+    public sealed class DirectorCommand : IEquatable<DirectorCommand>
+    {
+        private DirectorCommand(
+            DirectorCommandKind kind,
+            HeroId heroId = default,
+            CardInstanceId cardInstanceId = default,
+            TeamSide teamSide = default,
+            ActionDefinitionId actionDefinitionId = default,
+            HexCoordinate coordinate = default)
+        {
+            Kind = kind;
+            HeroId = heroId;
+            CardInstanceId = cardInstanceId;
+            TeamSide = teamSide;
+            ActionDefinitionId = actionDefinitionId;
+            Coordinate = coordinate;
+        }
+
+        public DirectorCommandKind Kind { get; }
+        public HeroId HeroId { get; }
+        public CardInstanceId CardInstanceId { get; }
+        public TeamSide TeamSide { get; }
+        public ActionDefinitionId ActionDefinitionId { get; }
+        public HexCoordinate Coordinate { get; }
+
+        public static DirectorCommand CommitCard(HeroId heroId, CardInstanceId cardInstanceId) =>
+            new DirectorCommand(DirectorCommandKind.CommitCard, heroId, cardInstanceId);
+
+        public static DirectorCommand Pass(HeroId heroId) =>
+            new DirectorCommand(DirectorCommandKind.Pass, heroId);
+
+        public static DirectorCommand ChooseTiedActor(TeamSide side, CardInstanceId cardInstanceId) =>
+            new DirectorCommand(DirectorCommandKind.ChooseTiedActor, cardInstanceId: cardInstanceId, teamSide: side);
+
+        public static DirectorCommand PerformHold(CardInstanceId cardInstanceId) =>
+            new DirectorCommand(DirectorCommandKind.PerformHold, cardInstanceId: cardInstanceId);
+
+        public static DirectorCommand StartAction(ActionDefinitionId actionDefinitionId) =>
+            new DirectorCommand(DirectorCommandKind.StartAction, actionDefinitionId: actionDefinitionId);
+
+        public static DirectorCommand ChooseMovementDestination(HexCoordinate destination) =>
+            new DirectorCommand(DirectorCommandKind.ChooseMovementDestination, coordinate: destination);
+
+        public static DirectorCommand StopMovement() =>
+            new DirectorCommand(DirectorCommandKind.StopMovement);
+
+        public static DirectorCommand ChooseAttackTarget(HeroId heroId) =>
+            new DirectorCommand(DirectorCommandKind.ChooseAttackTarget, heroId);
+
+        public static DirectorCommand ChooseDefenseCard(CardInstanceId cardInstanceId) =>
+            new DirectorCommand(DirectorCommandKind.ChooseDefenseCard, cardInstanceId: cardInstanceId);
+
+        public static DirectorCommand DeclineDefense() =>
+            new DirectorCommand(DirectorCommandKind.DeclineDefense);
+
+        public static DirectorCommand AdvanceEndOfRound() =>
+            new DirectorCommand(DirectorCommandKind.AdvanceEndOfRound);
+
+        public bool Equals(DirectorCommand other)
+        {
+            return other != null && Kind == other.Kind && HeroId.Equals(other.HeroId) &&
+                CardInstanceId.Equals(other.CardInstanceId) && TeamSide == other.TeamSide &&
+                ActionDefinitionId.Equals(other.ActionDefinitionId) && Coordinate.Equals(other.Coordinate);
+        }
+
+        public override bool Equals(object obj) => Equals(obj as DirectorCommand);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = (int)Kind;
+                hash = (hash * 397) ^ HeroId.GetHashCode();
+                hash = (hash * 397) ^ CardInstanceId.GetHashCode();
+                hash = (hash * 397) ^ (int)TeamSide;
+                hash = (hash * 397) ^ ActionDefinitionId.GetHashCode();
+                return (hash * 397) ^ Coordinate.GetHashCode();
+            }
+        }
+
+        public override string ToString() => Kind.ToString();
+    }
+}

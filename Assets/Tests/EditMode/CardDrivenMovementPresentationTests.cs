@@ -4,6 +4,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Units.Heroes;
@@ -1042,6 +1043,93 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void DirectorReplay_ReconstructsEveryLivePrefixAcrossRepeatedRoundFlow()
+        {
+            var objects = new List<GameObject>();
+            try
+            {
+                var scenario = CreateTurnScenario(objects, true);
+                var controller = scenario.Controller;
+                var red = scenario.Configuration.RedHand.Instances;
+                var blue = scenario.Configuration.BlueHand.Instances;
+                var expectedPrefixes = new List<string> { controller.CaptureAuthoritativeSnapshot() };
+
+                void Accept(System.Func<bool> command)
+                {
+                    Assert.That(command(), Is.True, controller.CardStatus);
+                    expectedPrefixes.Add(controller.CaptureAuthoritativeSnapshot());
+                }
+
+                void Commit(CardInstance redCard, CardInstance blueCard)
+                {
+                    Assert.That(controller.TrySelectDirectorCard(redCard.Id), Is.True);
+                    Accept(controller.TryConfirmSelectedTurnCard);
+                    Assert.That(controller.TrySelectDirectorCard(blueCard.Id), Is.True);
+                    Accept(controller.TryConfirmSelectedTurnCard);
+                }
+
+                Commit(red[3], blue[3]);
+                Accept(() => controller.TrySelectAction(new ActionDefinitionId("secondary-movement")));
+                var destination = controller.PendingCardDestinations.First(candidate => candidate.Cost == 1).Destination;
+                Accept(() => controller.TrySubmitCardDestination(destination));
+                if (controller.IsCardMovementResolutionPending)
+                {
+                    Accept(controller.TryStopCardMovement);
+                }
+                Accept(() => controller.TryPerformHold(blue[3].Id));
+
+                Commit(red[2], blue[2]);
+                Accept(() => controller.TrySelectAction(new ActionDefinitionId("primary-ranged-attack")));
+                Accept(() => controller.TrySubmitAttackTarget(scenario.BlueHero.Occupancy.HeroId));
+                Accept(() => controller.TrySubmitDefenseCard(blue[4].Id));
+                Accept(() => controller.TryPerformHold(blue[2].Id));
+
+                Commit(red[0], blue[0]);
+                Accept(() => controller.TryPerformHold(controller.VisibleTurnActor.CardInstanceId));
+                Accept(() => controller.TryPerformHold(controller.VisibleTurnActor.CardInstanceId));
+                Commit(red[1], blue[1]);
+                Accept(() => controller.TryPerformHold(controller.VisibleTurnActor.CardInstanceId));
+                Accept(() => controller.TryPerformHold(controller.VisibleTurnActor.CardInstanceId));
+
+                while (controller.IsVisibleRoundEnded)
+                {
+                    Accept(controller.TryAdvanceEndOfRound);
+                }
+
+                Commit(red[3], blue[3]);
+                Accept(() => controller.TrySelectAction(new ActionDefinitionId("secondary-movement")));
+                Accept(controller.TryStopCardMovement);
+                Accept(() => controller.TryPerformHold(blue[3].Id));
+
+                Assert.That(controller.VisibleRoundIndex, Is.EqualTo(2));
+                var commandKinds = controller.DirectorCommandHistory.Select(command => command.Kind).ToArray();
+                Assert.That(commandKinds, Has.Member(DirectorCommandKind.CommitCard));
+                Assert.That(commandKinds, Has.Member(DirectorCommandKind.StartAction));
+                Assert.That(commandKinds, Has.Member(DirectorCommandKind.ChooseMovementDestination));
+                Assert.That(commandKinds, Has.Member(DirectorCommandKind.StopMovement));
+                Assert.That(commandKinds, Has.Member(DirectorCommandKind.ChooseAttackTarget));
+                Assert.That(commandKinds, Has.Member(DirectorCommandKind.ChooseDefenseCard));
+                Assert.That(commandKinds, Has.Member(DirectorCommandKind.PerformHold));
+                Assert.That(commandKinds, Has.Member(DirectorCommandKind.AdvanceEndOfRound));
+                Assert.That(expectedPrefixes, Has.Count.EqualTo(controller.DirectorUndoEntryCount + 1));
+
+                for (var prefixIndex = expectedPrefixes.Count - 2; prefixIndex >= 0; prefixIndex--)
+                {
+                    Assert.That(controller.TryUndoDirectorCommand(), Is.True, controller.LastDirectorReplayFailure);
+                    Assert.That(controller.CaptureAuthoritativeSnapshot(), Is.EqualTo(expectedPrefixes[prefixIndex]),
+                        $"Replay diverged at accepted command prefix {prefixIndex}.");
+                }
+
+                Assert.That(controller.DirectorUndoEntryCount, Is.Zero);
+                Assert.That(controller.TryUndoDirectorCommand(), Is.False);
+            }
+            finally
+            {
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
         public void RuleEventLog_IsReadOnlyOrderedAndRebuildsAcrossRestoreUndoAndRestart()
         {
             var objects = new List<GameObject>();
@@ -1109,6 +1197,8 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(controller.TrySelectDirectorCard(blue.Id), Is.True);
                 Assert.That(controller.TryConfirmSelectedTurnCard(), Is.True);
+                Assert.That(controller.DirectorUndoEntryCount, Is.Zero,
+                    "A standalone mid-match snapshot has no command ancestry and must not become a lossy replay baseline.");
                 var actingCard = controller.VisibleTurnActor.CardInstanceId;
                 Assert.That(controller.TryPerformHold(actingCard), Is.True);
                 var holdEntry = controller.RuleEventLogEntries.Single(entry =>
