@@ -199,7 +199,7 @@ namespace GuardsDigital.Presentation.Match
 
             foreach (var action in Model.Actions)
             {
-                DrawInvocation(action, 130f);
+                DrawInvocation(action);
             }
 
             GUILayout.FlexibleSpace();
@@ -230,6 +230,14 @@ namespace GuardsDigital.Presentation.Match
         private void DrawInvocation(TypedInvocationViewModel invocation, float width)
         {
             if (invocation != null && GUILayout.Button(invocation.Label, GUILayout.Width(width), GUILayout.Height(46f)))
+            {
+                ForwardInvocation(invocation);
+            }
+        }
+
+        private void DrawInvocation(TypedInvocationViewModel invocation)
+        {
+            if (invocation != null && GUILayout.Button(invocation.Label, GUILayout.Height(46f)))
             {
                 ForwardInvocation(invocation);
             }

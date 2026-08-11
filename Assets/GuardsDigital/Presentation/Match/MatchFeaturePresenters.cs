@@ -500,8 +500,13 @@ namespace GuardsDigital.Presentation.Match
             var policy = action.DefaultPolicy.CardTextApplication == CardTextApplicationPolicy.Applies
                 ? "text applies"
                 : "text suppressed";
-            return $"{offer.InvocationContext.ToString().ToUpperInvariant()} " +
+            return $"{FormatInvocationContext(offer.InvocationContext)} " +
                 $"{action.Kind.ToString().ToUpperInvariant()}{value}{range}\n{policy}";
+        }
+
+        private static string FormatInvocationContext(ActionInvocationContext context)
+        {
+            return context == ActionInvocationContext.PrintedPrimary ? "PRIMARY" : "SECONDARY";
         }
 
         private static string GetCardDisplayName(MatchSessionProjection projection, CardInstanceId cardId)

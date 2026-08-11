@@ -110,6 +110,10 @@ namespace GuardsDigital.Tests.EditMode
             var holdSession = CreateSession();
             StartTiedTurn(holdSession, ActionKind.Movement);
             var holdModel = RoundActionPresenter.CreateViewModel(holdSession.Projection);
+            Assert.That(holdModel.Actions.Any(action => action.Label.StartsWith("PRIMARY ")), Is.True);
+            Assert.That(holdModel.Actions.Any(action => action.Label.StartsWith("SECONDARY ")), Is.True);
+            Assert.That(holdModel.Actions.All(action => !action.Label.Contains("PRINTED")), Is.True,
+                "Player-facing action labels must not expose invocation-context enum names.");
             Assert.That(holdModel.EndTurnInvocation, Is.Not.Null);
             Assert.That(holdModel.EndTurnInvocation.Label, Is.EqualTo("END TURN"));
             Assert.That(holdModel.EndTurnInvocation.Command.Kind, Is.EqualTo(DirectorCommandKind.PerformHold));
