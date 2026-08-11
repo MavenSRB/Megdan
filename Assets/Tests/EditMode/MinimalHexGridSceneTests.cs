@@ -189,28 +189,15 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_ContainsVisiblePlaceholderObstaclesOnUniqueEmptySpaces()
+        public void Scene_RemovesLegacyPlaceholderObstaclesFromOfficialMap()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             RebuildOfficialMap();
-            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
             var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
-            var expectedCoordinates = new[] { new HexCoordinate(1, 0), new HexCoordinate(0, 1) };
 
-            Assert.That(obstacles, Has.Length.EqualTo(2));
-            Assert.That(obstacles.Select(obstacle => obstacle.Coordinate), Is.EquivalentTo(expectedCoordinates));
-            Assert.That(
-                obstacles.Select(obstacle => obstacle.Coordinate)
-                    .Intersect(heroes.Select(hero => hero.Coordinate))
-                    .Any(),
-                Is.False);
-            Assert.That(obstacles.Select(obstacle => obstacle.Coordinate).Distinct().Count(), Is.EqualTo(obstacles.Length));
-            Assert.That(tiles.Select(tile => tile.Coordinate), Is.SupersetOf(expectedCoordinates));
-            Assert.That(obstacles, Has.All.Matches<PlaceholderObstacleView>(obstacle =>
-                obstacle.GetComponent<MeshRenderer>().enabled &&
-                obstacle.GetComponent<MeshFilter>().sharedMesh != null));
+            Assert.That(obstacles, Is.Empty);
         }
+
 
 
         [Test]
@@ -297,8 +284,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(controller.HighlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(tiles.Single(tile => tile.Coordinate.Equals(hero.Coordinate)).IsHighlighted, Is.False);
-            Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(1, 0)));
-            Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(0, 1)));
+            Assert.That(highlightedCoordinates, Has.Member(new HexCoordinate(1, 0)));
+            Assert.That(highlightedCoordinates, Has.Member(new HexCoordinate(0, 1)));
             Assert.That(
                 highlightedCoordinates,
                 Has.No.Member(heroes.Single(candidate => candidate != hero).Coordinate));

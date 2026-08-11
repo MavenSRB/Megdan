@@ -486,8 +486,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(selectedAction, Is.True);
             Assert.That(highlightedCoordinates, Is.EquivalentTo(expectedDestinations));
             Assert.That(highlightedCoordinates, Has.No.Member(origin));
-            Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(1, 0)));
-            Assert.That(highlightedCoordinates, Has.No.Member(new HexCoordinate(0, 1)));
+            Assert.That(highlightedCoordinates, Has.Member(new HexCoordinate(1, 0)));
+            Assert.That(highlightedCoordinates, Has.Member(new HexCoordinate(0, 1)));
             Assert.That(highlightedCoordinates, Has.No.Member(heroes.Single(candidate => candidate != hero).Coordinate));
             Assert.That(moved, Is.True);
             Assert.That(activeAfterMove, Is.False);

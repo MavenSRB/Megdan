@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
-using GuardsDigital.Core.Obstacles;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Board
@@ -23,11 +22,6 @@ namespace GuardsDigital.Presentation.Board
 
         [SerializeField] private float outerRadius = HexWorldLayout.DefaultOuterRadius;
         [SerializeField] private float cameraPadding = 1.5f;
-        [SerializeField] private ObstacleCoordinate[] obstacleCoordinates =
-        {
-            new ObstacleCoordinate(1, 0),
-            new ObstacleCoordinate(0, 1)
-        };
 
         private readonly Dictionary<ZoneId, Material> zoneMaterials = new Dictionary<ZoneId, Material>();
         private BoardMapDefinition renderedDefinition;
@@ -41,10 +35,6 @@ namespace GuardsDigital.Presentation.Board
         public IReadOnlyCollection<HexCoordinate> Coordinates => renderedDefinition != null
             ? renderedDefinition.Spaces.Select(space => space.Coordinate).ToArray()
             : System.Array.Empty<HexCoordinate>();
-        public IReadOnlyCollection<HexCoordinate> ObstacleCoordinates =>
-            (obstacleCoordinates ?? System.Array.Empty<ObstacleCoordinate>())
-                .Select(coordinate => coordinate.Coordinate)
-                .ToArray();
 
         public void Rebuild(BoardMapDefinition definition)
         {
@@ -82,7 +72,7 @@ namespace GuardsDigital.Presentation.Board
             }
 
             EnsureSpawnMarkers(definition);
-            EnsureObstacles(new HashSet<HexCoordinate>(definition.PlayableCoordinates));
+            RemoveLegacyObstacles();
             FrameWholeMap(Camera.main, definition);
         }
 
@@ -169,50 +159,13 @@ namespace GuardsDigital.Presentation.Board
             }
         }
 
-        private void EnsureObstacles(IReadOnlyCollection<HexCoordinate> playableCoordinates)
+        private void RemoveLegacyObstacles()
         {
-            var desiredCoordinates = new HashSet<HexCoordinate>(
-                (obstacleCoordinates ?? System.Array.Empty<ObstacleCoordinate>())
-                    .Select(coordinate => coordinate.Coordinate)
-                    .Where(playableCoordinates.Contains));
-            var obstaclesByCoordinate = new Dictionary<HexCoordinate, PlaceholderObstacleView>();
-            PlaceholderObstacleView templateObstacle = null;
             foreach (var obstacle in GetComponentsInChildren<PlaceholderObstacleView>(true))
             {
-                templateObstacle ??= obstacle;
-                if (!desiredCoordinates.Contains(obstacle.Coordinate) || obstaclesByCoordinate.ContainsKey(obstacle.Coordinate))
-                {
-                    DestroyObject(obstacle.gameObject);
-                    continue;
-                }
-
-                obstacle.Configure(CreateObstacleOccupancy(obstacle.Coordinate), outerRadius);
-                obstaclesByCoordinate.Add(obstacle.Coordinate, obstacle);
-            }
-
-            foreach (var coordinate in desiredCoordinates.OrderBy(coordinate => coordinate.Q).ThenBy(coordinate => coordinate.R))
-            {
-                if (!obstaclesByCoordinate.ContainsKey(coordinate))
-                {
-                    CreateObstacle(coordinate, templateObstacle);
-                }
+                DestroyObject(obstacle.gameObject);
             }
         }
-
-        private void CreateObstacle(HexCoordinate coordinate, PlaceholderObstacleView templateObstacle)
-        {
-            var obstacleObject = new GameObject($"Obstacle {coordinate.Q},{coordinate.R}");
-            obstacleObject.transform.SetParent(transform, false);
-            var meshFilter = obstacleObject.AddComponent<MeshFilter>();
-            meshFilter.sharedMesh = templateObstacle != null ? templateObstacle.GetComponent<MeshFilter>().sharedMesh : null;
-            var renderer = obstacleObject.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = templateObstacle != null ? templateObstacle.GetComponent<MeshRenderer>().sharedMaterial : null;
-            var obstacle = obstacleObject.AddComponent<PlaceholderObstacleView>();
-            obstacle.Configure(CreateObstacleOccupancy(coordinate), outerRadius);
-        }
-
-        private static ObstacleOccupancy CreateObstacleOccupancy(HexCoordinate coordinate) =>
-            new ObstacleOccupancy(new ObstacleId($"placeholder-obstacle-{coordinate.Q}-{coordinate.R}"), coordinate);
 
         private void EnsureMaterials(BoardMapDefinition definition)
         {
@@ -262,13 +215,5 @@ namespace GuardsDigital.Presentation.Board
             if (Application.isPlaying) Destroy(target); else DestroyImmediate(target);
         }
 
-        [System.Serializable]
-        private struct ObstacleCoordinate
-        {
-            public ObstacleCoordinate(int q, int r) { this.q = q; this.r = r; }
-            [SerializeField] private int q;
-            [SerializeField] private int r;
-            public HexCoordinate Coordinate => new HexCoordinate(q, r);
-        }
     }
 }
