@@ -19,7 +19,9 @@ namespace GuardsDigital.Core.Snapshots
         None = 0,
         MalformedPayload = 1,
         UnsupportedSchemaVersion = 2,
-        CardDefinitionContentRevisionMismatch = 3
+        CardDefinitionContentRevisionMismatch = 3,
+        MapDefinitionMissing = 4,
+        MapDefinitionContentRevisionMismatch = 5
     }
 
     public sealed class SnapshotLoadException : Exception
@@ -58,7 +60,7 @@ namespace GuardsDigital.Core.Snapshots
     public static class AuthoritativeSnapshotSerializer
     {
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
 
         public static string Serialize(RoundResolutionAuthority round, AdjacentMoveAuthority board)
         {
@@ -82,7 +84,8 @@ namespace GuardsDigital.Core.Snapshots
 
         public static RestoredAuthoritativeMatch Deserialize(
             string payload,
-            IEnumerable<CardDefinition> currentDefinitions)
+            IEnumerable<CardDefinition> currentDefinitions,
+            IEnumerable<BoardMapDefinition> currentMapDefinitions)
         {
             if (string.IsNullOrWhiteSpace(payload))
             {
@@ -110,9 +113,11 @@ namespace GuardsDigital.Core.Snapshots
                             $"Snapshot schema version {schemaVersion} is unsupported; expected {CurrentSchemaVersion}.");
                     }
 
+                    var mapCatalog = new BoardMapCatalog(
+                        currentMapDefinitions ?? throw new ArgumentNullException(nameof(currentMapDefinitions)));
                     var definitions = ValidateDefinitions(reader, currentDefinitions);
                     var participants = ReadParticipants(reader);
-                    var board = ReadBoard(reader);
+                    var board = ReadBoard(reader, mapCatalog);
                     var cards = ReadCards(reader, definitions, participants);
                     var round = ReadRound(reader, definitions, cards, participants, board);
                     if (stream.Position != stream.Length)
@@ -220,7 +225,8 @@ namespace GuardsDigital.Core.Snapshots
 
         private static void WriteBoard(BinaryWriter writer, AdjacentMoveAuthority board)
         {
-            WriteCoordinates(writer, board.BoardCoordinates.OrderBy(value => value.Q).ThenBy(value => value.R));
+            writer.Write(board.SelectedMap.MapId.Value);
+            writer.Write(board.SelectedMap.ContentRevision);
             writer.Write(board.Occupancies.Count);
             foreach (var occupancy in board.Occupancies.OrderBy(value => value.HeroId.Value, StringComparer.Ordinal))
             {
@@ -236,16 +242,28 @@ namespace GuardsDigital.Core.Snapshots
             }
         }
 
-        private static AdjacentMoveAuthority ReadBoard(BinaryReader reader)
+        private static AdjacentMoveAuthority ReadBoard(BinaryReader reader, BoardMapCatalog mapCatalog)
         {
-            var coordinates = ReadCoordinates(reader, "board coordinates");
+            var reference = new MapDefinitionReference(new MapId(reader.ReadString()), reader.ReadInt32());
+            BoardMapDefinition mapDefinition;
+            try
+            {
+                mapDefinition = mapCatalog.Load(reference);
+            }
+            catch (BoardMapLoadException exception)
+            {
+                var reason = exception.Reason == BoardMapLoadRejectionReason.MissingMap
+                    ? SnapshotLoadRejectionReason.MapDefinitionMissing
+                    : SnapshotLoadRejectionReason.MapDefinitionContentRevisionMismatch;
+                throw new SnapshotLoadException(reason, exception.Message, exception);
+            }
             var heroes = ReadMany(reader, "hero occupancies", () => new HeroOccupancy(
                 new HeroId(reader.ReadString()),
                 ReadCoordinate(reader)));
             var obstacles = ReadMany(reader, "obstacle occupancies", () => new ObstacleOccupancy(
                 new ObstacleId(reader.ReadString()),
                 ReadCoordinate(reader)));
-            return new AdjacentMoveAuthority(coordinates, heroes, obstacles);
+            return new AdjacentMoveAuthority(mapDefinition, heroes, obstacles);
         }
 
         private static void WriteCards(BinaryWriter writer, IReadOnlyList<CardInstance> cards)

@@ -905,7 +905,7 @@ Non-goals: No authoritative map loader, snapshot schema change, Unity scene geom
 
 Completion note (2026-08-11): Extended the schema identity contract so `SpaceId`, `ZoneId`, and `SpawnPointId` are explicitly map-local; globally persisted/catalog/external/cross-map child references compose `MapId`, while a match selects one immutable `(MapId, revision)` and keeps coordinate queries local to it. Extracted reusable schema/invariant validation into `Tools/BoardMapSpecification.Validation.ps1`, with no official map ID, reviewed count/location, or digest in that layer. The official validator retains exact reviewed map assertions and now protects zone identity, kind, team, explicit Throne status, starting-Battle-Zone status, space classification/membership, and spawn identity/location/team/type under digest `5b4e3a2a36aeabaaa7db73083088174ca60978fd10d5e09c90e6a67b0a1733f0`. Two bounded in-memory synthetic definitions reuse the same coordinate and all three child IDs under distinct synthetic `MapId` values, proving composed-reference isolation without retaining another playable map. T0 source validation and `git diff --check` passed; Unity suites were intentionally omitted because no Unity runtime or presentation path changed. No loader, snapshot change, scene geometry, second playable map, zone adjacency, Lane order, or production art was added.
 
-### [ ] 4.2 Load the selected map definition into authoritative state
+### [x] 4.2 Load the selected map definition into authoritative state
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -922,7 +922,11 @@ Acceptance checks:
 
 Non-goals: No Unity scene replacement, second playable map, zone adjacency queries, Fast Travel, lane pushing, setup placement, or production art.
 
+Completion note (2026-08-11): Added immutable pure map identity/content models for map-local spaces, zones, and spawn points plus an exact `(MapId, content revision)` catalog boundary. A generic Unity JSON adapter loads the reviewed `official-single-lane` revision 1 resource without putting an official-map path or map-name branch in rules code; the executable resource is byte-identical to the reviewed specification. `AdjacentMoveAuthority` now owns and exposes the selected immutable map definition/reference and derives its legal coordinate set from that definition's 210 playable spaces, excluding its 82 terrain cells while retaining all 292 owned cells, seven zones, and 40 spawn points. Snapshot schema version 2 writes the selected map ID/revision instead of duplicating map coordinates, resolves that reference only through supplied current definitions, and rejects missing-map and map-revision mismatch cases with distinct typed reasons. Bounded synthetic fixtures reuse the same coordinate, `SpaceId`, `ZoneId`, and `SpawnPointId` under different map IDs to prove selection isolation. Existing temporary-scene geometry remains unchanged, but its authority now selects the official definition; two stale test expectations were corrected so official terrain is no longer treated as playable. T2 validation passed: source map validation and `git diff --check`; focused Edit Mode 6/6 (`BoardMapDefinitionTests`, `AuthoritativeSnapshotSerializerTests`); directly affected Edit Mode 138/138 across map, adjacent movement, reachability/session, Attack/action, turn/round, snapshot, Undo/restart, event-log/controller, and scene fixtures; and focused Play Mode 12/12 (`MinimalHexGridPlayModeTests`), all with zero failed, skipped, or inconclusive cases. Complete unfiltered suites were intentionally omitted because this is not a phase gate or backward snapshot migration and the affected consumers were enumerated. No scene replacement, second playable map, zone adjacency query, Fast Travel, Lane Push, setup placement, or production art was added.
+
 ### [ ] 4.2a Upgrade the test grid to the full official placeholder map
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The temporary Phases 1-3 test grid is replaced in the main validation scene by placeholder geometry driven by the selected complete official multi-zone single-lane map definition.
 

@@ -16,7 +16,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         public AdjacentMoveAuthority(
             IEnumerable<HexCoordinate> boardCoordinates,
             IEnumerable<HeroOccupancy> initialOccupancies)
-            : this(boardCoordinates, initialOccupancies, Enumerable.Empty<ObstacleOccupancy>())
+            : this(BoardMapDefinition.CreateSynthetic(new MapId("synthetic-coordinate-board"), 1, boardCoordinates), initialOccupancies, Enumerable.Empty<ObstacleOccupancy>())
         {
         }
 
@@ -24,11 +24,16 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<HexCoordinate> boardCoordinates,
             IEnumerable<HeroOccupancy> initialOccupancies,
             IEnumerable<ObstacleOccupancy> initialObstacleOccupancies)
+            : this(BoardMapDefinition.CreateSynthetic(new MapId("synthetic-coordinate-board"), 1, boardCoordinates), initialOccupancies, initialObstacleOccupancies)
         {
-            if (boardCoordinates == null)
-            {
-                throw new ArgumentNullException(nameof(boardCoordinates));
-            }
+        }
+
+        public AdjacentMoveAuthority(
+            BoardMapDefinition mapDefinition,
+            IEnumerable<HeroOccupancy> initialOccupancies,
+            IEnumerable<ObstacleOccupancy> initialObstacleOccupancies)
+        {
+            MapDefinition = mapDefinition ?? throw new ArgumentNullException(nameof(mapDefinition));
 
             if (initialOccupancies == null)
             {
@@ -40,7 +45,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new ArgumentNullException(nameof(initialObstacleOccupancies));
             }
 
-            this.boardCoordinates = new HashSet<HexCoordinate>(boardCoordinates);
+            this.boardCoordinates = new HashSet<HexCoordinate>(mapDefinition.PlayableCoordinates);
             occupancies = new List<HeroOccupancy>();
             obstacleOccupancies = new List<ObstacleOccupancy>();
 
@@ -87,6 +92,10 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         }
 
         public IReadOnlyList<HeroOccupancy> Occupancies => occupancies.ToArray();
+
+        public BoardMapDefinition MapDefinition { get; }
+
+        public MapDefinitionReference SelectedMap => MapDefinition.Reference;
 
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupancies.ToArray();
 

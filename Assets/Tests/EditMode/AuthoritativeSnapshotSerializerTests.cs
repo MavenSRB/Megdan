@@ -26,7 +26,8 @@ namespace GuardsDigital.Tests.EditMode
             var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
                 payload,
-                fixture.Configuration.CardDefinitions);
+                fixture.Configuration.CardDefinitions,
+                new[] { fixture.Board.MapDefinition });
 
             Assert.That(restored.Participants.Teams.Select(team => (team.Id.Value, team.Side)),
                 Is.EqualTo(fixture.Configuration.Participants.Teams.Select(team => (team.Id.Value, team.Side))));
@@ -72,7 +73,8 @@ namespace GuardsDigital.Tests.EditMode
             var targetSnapshot = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
             var targetRestore = AuthoritativeSnapshotSerializer.Deserialize(
                 targetSnapshot,
-                fixture.Configuration.CardDefinitions);
+                fixture.Configuration.CardDefinitions,
+                new[] { fixture.Board.MapDefinition });
             var target = fixture.Round.CurrentTurnAuthority.PendingAttackTargetChoice.LegalTargetHeroIds.Single();
             var originalTargetEvents = fixture.Round.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
                 new ActionResolutionId("snapshot-attack"),
@@ -88,7 +90,8 @@ namespace GuardsDigital.Tests.EditMode
             var defenseSnapshot = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
             var defenseRestore = AuthoritativeSnapshotSerializer.Deserialize(
                 defenseSnapshot,
-                fixture.Configuration.CardDefinitions);
+                fixture.Configuration.CardDefinitions,
+                new[] { fixture.Board.MapDefinition });
             var originalDefense = fixture.Round.CurrentTurnAuthority.PendingDefenseChoice;
             var restoredDefense = defenseRestore.Round.CurrentTurnAuthority.PendingDefenseChoice;
             var originalDefenseEvents = fixture.Round.TryAnswerDefenseResponse(
@@ -112,7 +115,8 @@ namespace GuardsDigital.Tests.EditMode
 
             var cursorRestore = AuthoritativeSnapshotSerializer.Deserialize(
                 AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board),
-                fixture.Configuration.CardDefinitions);
+                fixture.Configuration.CardDefinitions,
+                new[] { fixture.Board.MapDefinition });
             Assert.That(cursorRestore.Round.CurrentEndOfRoundStage,
                 Is.EqualTo(fixture.Round.CurrentEndOfRoundStage));
             Assert.That(cursorRestore.Round.EndOfRoundOutcomes.Select(value => (value.Stage, value.Kind)),
@@ -123,7 +127,8 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(fixture.Round.TryAdvanceEndOfRound().Accepted, Is.True);
             var completedRestore = AuthoritativeSnapshotSerializer.Deserialize(
                 AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board),
-                fixture.Configuration.CardDefinitions);
+                fixture.Configuration.CardDefinitions,
+                new[] { fixture.Board.MapDefinition });
             Assert.That(completedRestore.Round.CompletedRounds.Count, Is.EqualTo(1));
             Assert.That(SlotFacts(completedRestore.Round.CompletedRounds[0].TurnSlots),
                 Is.EqualTo(SlotFacts(fixture.Round.CompletedRounds[0].TurnSlots)));
@@ -132,13 +137,14 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Deserialize_RejectsSchemaAndDefinitionRevisionMismatchesIndependently()
+        public void Deserialize_RejectsSchemaCardAndMapContentMismatchesIndependently()
         {
             var fixture = CreateFixture();
             var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
             var wrongSchema = RewriteSchemaVersion(payload, AuthoritativeSnapshotSerializer.CurrentSchemaVersion + 1);
             var schemaException = Assert.Throws<SnapshotLoadException>(() =>
-                AuthoritativeSnapshotSerializer.Deserialize(wrongSchema, fixture.Configuration.CardDefinitions));
+                AuthoritativeSnapshotSerializer.Deserialize(wrongSchema, fixture.Configuration.CardDefinitions,
+                    new[] { fixture.Board.MapDefinition }));
             Assert.That(schemaException.Reason, Is.EqualTo(SnapshotLoadRejectionReason.UnsupportedSchemaVersion));
 
             var definitions = fixture.Configuration.CardDefinitions.ToArray();
@@ -151,9 +157,24 @@ namespace GuardsDigital.Tests.EditMode
                 original.ContentAuthority,
                 original.ActionDefinitions);
             var revisionException = Assert.Throws<SnapshotLoadException>(() =>
-                AuthoritativeSnapshotSerializer.Deserialize(payload, definitions));
+                AuthoritativeSnapshotSerializer.Deserialize(payload, definitions,
+                    new[] { fixture.Board.MapDefinition }));
             Assert.That(revisionException.Reason,
                 Is.EqualTo(SnapshotLoadRejectionReason.CardDefinitionContentRevisionMismatch));
+
+            var missingMapException = Assert.Throws<SnapshotLoadException>(() =>
+                AuthoritativeSnapshotSerializer.Deserialize(payload, fixture.Configuration.CardDefinitions,
+                    Array.Empty<BoardMapDefinition>()));
+            Assert.That(missingMapException.Reason, Is.EqualTo(SnapshotLoadRejectionReason.MapDefinitionMissing));
+
+            var currentMap = fixture.Board.MapDefinition;
+            var changedMap = new BoardMapDefinition(currentMap.Id, currentMap.ContentRevision + 1,
+                currentMap.DisplayName, currentMap.Spaces, currentMap.Zones, currentMap.SpawnPoints);
+            var mapRevisionException = Assert.Throws<SnapshotLoadException>(() =>
+                AuthoritativeSnapshotSerializer.Deserialize(payload, fixture.Configuration.CardDefinitions,
+                    new[] { changedMap }));
+            Assert.That(mapRevisionException.Reason,
+                Is.EqualTo(SnapshotLoadRejectionReason.MapDefinitionContentRevisionMismatch));
         }
 
         private static SnapshotFixture CreateFixture()

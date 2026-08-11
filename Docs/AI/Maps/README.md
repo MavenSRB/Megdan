@@ -12,7 +12,7 @@ The schema is map-scoped so future maps can coexist:
 - A match selects one immutable definition by `(mapId, revision)`. Coordinate-based rules and queries then operate locally within that selected definition instead of qualifying every internal coordinate individually.
 - Zones and spawn points are collections owned by the selected map specification. A future map receives its own zone and spawn collections rather than extending this map through name-based branches.
 
-Milestone 4.1 defines the data and its validation contract only. Loading it into authoritative Unity state and placeholder presentation belongs to milestone 4.2. Zone adjacency and the ordered Lane relationship belong to milestone 4.3.
+Milestones 4.1-4.1a define and harden the data/validation contract. Milestone 4.2 loads an immutable selected definition through the reusable catalog boundary, binds it to authoritative board state, and stores its `mapId`/revision in snapshot schema version 2. `Assets/Resources/Maps/official-single-lane.json` is the byte-identical executable copy consumed by the generic Unity JSON adapter. Replacing the temporary scene geometry belongs to milestone 4.2a. Zone adjacency and the ordered Lane relationship belong to milestone 4.3.
 
 ## Reviewed inventory
 

@@ -433,10 +433,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            var boardCoordinates = tileViews
-                .Where(tile => tile != null)
-                .Select(tile => tile.Coordinate)
-                .ToArray();
+            var selectedMap = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var obstacleOccupancies = obstacleViews != null
                 ? obstacleViews
                     .Where(obstacle => obstacle != null)
@@ -450,7 +447,7 @@ namespace GuardsDigital.Presentation.Interaction
                 .Select(hero => hero.Occupancy)
                 .ToArray();
 
-            moveAuthority = new AdjacentMoveAuthority(boardCoordinates, heroOccupancies, obstacleOccupancies);
+            moveAuthority = new AdjacentMoveAuthority(selectedMap, heroOccupancies, obstacleOccupancies);
         }
 
         private void EnsureMoveAuthority()

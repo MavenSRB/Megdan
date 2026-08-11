@@ -10,6 +10,7 @@ using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
 using UnityEngine;
 
@@ -379,7 +380,8 @@ namespace GuardsDigital.Presentation.Interaction
             var authoritativePayload = hasRuleEventLog ? envelope.AuthoritativePayload : payload;
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
                 authoritativePayload,
-                placeholderConfiguration.CardDefinitions);
+                placeholderConfiguration.CardDefinitions,
+                OfficialBoardMapCatalog.Load().Definitions);
             placeholderConfiguration = PlaceholderOneVsOneTestConfiguration.Restore(
                 restored.Participants,
                 placeholderConfiguration.CardDefinitions,

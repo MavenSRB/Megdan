@@ -455,9 +455,10 @@ namespace GuardsDigital.Tests.PlayMode
                 .Where(tile => tile.IsHighlighted)
                 .Select(tile => tile.Coordinate)
                 .ToArray();
+            var selectedMap = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
                     originOccupancy,
-                    tiles.Select(tile => tile.Coordinate),
+                    selectedMap.PlayableCoordinates,
                     heroes.Select(candidate => candidate.Occupancy),
                     obstacles.Select(obstacle => obstacle.Occupancy),
                     controller.LastCardMovementAllowance)

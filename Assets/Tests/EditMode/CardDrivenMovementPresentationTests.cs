@@ -445,9 +445,10 @@ namespace GuardsDigital.Tests.EditMode
 
                 scenario.Controller.TrySelectCard(selectedCard.Id);
                 scenario.Controller.TrySelectAction(new ActionDefinitionId("secondary-movement"));
+                var selectedMap = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
                 var expectedChoices = MovementReachabilityQuery.FindReachableDestinations(
                     scenario.Hero.Occupancy,
-                    scenario.Tiles.Select(tile => tile.Coordinate),
+                    selectedMap.PlayableCoordinates,
                     new[] { scenario.Hero.Occupancy },
                     scenario.Obstacles.Select(obstacle => obstacle.Occupancy),
                     2);

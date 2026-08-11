@@ -2439,7 +2439,10 @@
   },
   "deferredContracts": {
     "milestone4_2": [
-      "Unity data loading",
+      "authoritative selected-map loading",
+      "snapshot identity and revision binding"
+    ],
+    "milestone4_2a": [
       "placeholder geometry",
       "debug presentation"
     ],
