@@ -75,6 +75,31 @@ namespace GuardsDigital.Tests.EditMode
                 spawn.SpaceId.Equals(marker.SpaceId) &&
                 spawn.TeamId == marker.TeamId &&
                 spawn.UnitType == marker.UnitType)), Is.True);
+            Assert.That(markers.GroupBy(marker => (marker.TeamId, marker.UnitType)).Count(), Is.EqualTo(8));
+            Assert.That(markers.Where(marker => marker.UnitType == "hero"),
+                Has.All.Matches<BoardMapSpawnMarkerView>(marker =>
+                    marker.MarkerShape == SpawnMarkerShape.HeroCircle &&
+                    marker.GetComponent<LineRenderer>().positionCount == 16));
+            Assert.That(markers.Where(marker => marker.UnitType == "melee-minion"),
+                Has.All.Matches<BoardMapSpawnMarkerView>(marker =>
+                    marker.MarkerShape == SpawnMarkerShape.MeleeDiamond &&
+                    marker.GetComponent<LineRenderer>().positionCount == 4));
+            Assert.That(markers.Where(marker => marker.UnitType == "ranged-minion"),
+                Has.All.Matches<BoardMapSpawnMarkerView>(marker =>
+                    marker.MarkerShape == SpawnMarkerShape.RangedTriangle &&
+                    marker.GetComponent<LineRenderer>().positionCount == 3));
+            Assert.That(markers.Where(marker => marker.UnitType == "heavy-minion"),
+                Has.All.Matches<BoardMapSpawnMarkerView>(marker =>
+                    marker.MarkerShape == SpawnMarkerShape.HeavyHexagon &&
+                    marker.GetComponent<LineRenderer>().positionCount == 6));
+            Assert.That(markers.Where(marker => marker.TeamId == "red"),
+                Has.All.Matches<BoardMapSpawnMarkerView>(marker =>
+                    marker.GetComponent<LineRenderer>().sharedMaterial.color.r >
+                    marker.GetComponent<LineRenderer>().sharedMaterial.color.b));
+            Assert.That(markers.Where(marker => marker.TeamId == "blue"),
+                Has.All.Matches<BoardMapSpawnMarkerView>(marker =>
+                    marker.GetComponent<LineRenderer>().sharedMaterial.color.b >
+                    marker.GetComponent<LineRenderer>().sharedMaterial.color.r));
             Assert.That(tiles.Sum(tile => tile.Coordinate.GetNeighbors().Count(tilesByCoordinate.ContainsKey)) / 2,
                 Is.EqualTo(809));
             Assert.That(tiles.Where(tile => tile.IsPlayable).Sum(tile => tile.Coordinate.GetNeighbors().Count(
@@ -197,6 +222,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(obstacles, Is.Empty);
         }
+
 
 
 
