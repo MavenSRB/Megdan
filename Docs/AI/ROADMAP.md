@@ -917,7 +917,7 @@ Phase 4-7 audit (2026-08-10): Keep milestones 4.1-4.4, 5.1-5.8, 6.1-6.8, and 7.1
 
 Post-4.1 multi-map readiness correction (2026-08-11): The reviewed inventory is valid, but an independent audit found that the executable board/snapshot state does not yet carry selected-map identity, the data contract explicitly scopes only `SpaceId` rather than every map-owned child identity, and the validator combines reusable structural checks with `official-single-lane`-specific counts and digest checks while omitting rules-relevant zone metadata from that digest. Split the former milestone 4.2 into corrective milestone 4.1a for the general identity/validation boundary, milestone 4.2 for selected-map authoritative loading and snapshot binding, and milestone 4.2a for Unity placeholder presentation. This adds no second playable map: bounded synthetic definitions may reuse coordinates and child IDs only as automated collision/singleton tests. The revised shortest dependency-safe path contains 30 remaining separately approved micro-milestones through 7.9, estimated at 28-46 focused implementation days under the same exclusions.
 
-Post-4.2a architecture, performance, and documentation-governance audit (2026-08-11): Preserve the verified pure rules, command/event, pending-choice, snapshot, and map boundaries, but do not carry the current validation-controller shape or duplicated living-document history into Phase 5. Milestone 3.11a first consolidates canonical active documentation after corrective Undo milestone 3.10a. The controller has accumulated fixture construction, low-level authority ownership, command translation, Undo/restart, event-log projection, selection, and immediate-mode HUD rendering, while the shared card-action authority now contains both Movement and Attack/Defense orchestration. Insert behavior-preserving milestones 4.4a-4.4d after the complete configured Phase 4 setup and before Phase 5: establish a transport-neutral match application service, decompose card actions behind typed strategy handlers, replace the god-controller with feature presenters and passive Unity views, then close the identified allocation/resource/parser/API-warning debt at the final Phase 4 architecture gate. This ordering gives the refactor the complete Phase 4 state shape, keeps each seam independently testable, and prevents Phase 5 effects from deepening the temporary controller/resolver concentration. The shortest dependency-safe path now contains 33 remaining separately approved micro-milestones through 7.9, estimated at 33-55 focused implementation days excluding approval latency, source ambiguity, and environment outages. This amendment plans no runtime change and authorizes none of the inserted milestones.
+Post-4.2a architecture, performance, and documentation-governance audit (2026-08-11): Preserve the verified pure rules, command/event, pending-choice, snapshot, and map boundaries, but do not carry the current validation-controller shape or duplicated living-document history into Phase 5. Milestone 3.11a first consolidates canonical active documentation after corrective Undo milestone 3.10a. The controller has accumulated fixture construction, low-level authority ownership, command translation, Undo/restart, event-log projection, selection, and immediate-mode HUD rendering, while the shared card-action authority now contains both Movement and Attack/Defense orchestration. Insert behavior-preserving milestones 4.4a-4.4d after the complete configured Phase 4 setup and before Phase 5: establish a transport-neutral match application service, decompose card actions behind typed strategy handlers, replace the god-controller with feature presenters and passive Unity views, then close the identified allocation/resource/parser debt and preserve the already-corrected supported Unity object-discovery baseline at the final Phase 4 architecture gate. Independent review milestones 4.4e, 5.8a, and 7.9a then inspect the accumulated implementation before Phase 5, Phase 6, and verified hero content respectively. This ordering gives the refactor the complete Phase 4 state shape, keeps each seam independently testable, and prevents Phase 5 effects from deepening the temporary controller/resolver concentration. The shortest dependency-safe path now contains 36 remaining separately approved micro-milestones through 7.9a, estimated at 35-60 focused implementation/review days excluding approval latency, source ambiguity, and environment outages. This amendment plans no further runtime change and authorizes none of the inserted milestones.
 
 ## Phase 4 - Full official multi-zone board
 
@@ -1091,7 +1091,7 @@ Acceptance checks:
 
 - Generated Materials, Meshes, Input Actions, and other owned Unity/native resources have explicit reuse and teardown; repeated map rebuild/scene lifecycle tests do not monotonically increase owned native-object counts.
 - Unchanged HUD repaint/update paths reuse cached styles, immutable view models, labels, definitions, offers, and lookup collections rather than rebuilding project-owned LINQ arrays or GUI objects each event. A Unity Profiler or `ProfilerRecorder` capture records the managed-allocation and frame-time baseline for the complete 292-cell map and a representative two-round director flow.
-- Project-authored runtime and test code uses the supported Unity 6.5 object-discovery APIs and compiles without the currently known `CS0618` warnings; scene discovery remains confined to the composition root.
+- Project-authored runtime and test code remains on the supported Unity 6.5 object-discovery APIs and compiles without `CS0618` warnings; scene discovery remains confined to the composition root.
 - Rule-event-log envelope parsing handles invalid Base64, truncated headers/bodies, invalid counts, unsupported versions, trailing data, and oversized/malformed inputs through the documented non-throwing or typed snapshot-rejection contract, with no partial restore.
 - The application/session, strategy-handler, presenter/view, snapshot, command-replay, event-log, map/setup, and saved-scene focused regressions pass, followed by both complete unfiltered Edit Mode and Play Mode suites.
 - Targeted visual inspection confirms the complete Phase 4 configured setup and validation controls remain readable and behaviorally unchanged.
@@ -1675,7 +1675,7 @@ Acceptance checks:
 - A broader source-linked six-hero integration suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: The networking architecture decision does not begin until the deterministic 3v3 match is reviewed and approved. Production visual work remains blocked through milestone 8.36.
+Hard gate: The networking architecture decision does not begin until the deterministic 3v3 match, URP migration, and independent readiness review at milestone 8.28a are reviewed and approved. Production visual work remains blocked through milestone 8.36a.
 
 ### [!] 8.28 Render-pipeline migration gate
 
@@ -1693,7 +1693,7 @@ Acceptance checks:
 
 Non-goals: No production board art, hero/minion production models, animation coverage, final lighting/art direction, new game rules, or player-facing build.
 
-Hard gate: The private-online track uses this accepted URP baseline. Phase 9 production visual milestones do not begin until milestone 8.36 is also reviewed and approved.
+Hard gate: The private-online track uses this accepted URP baseline after milestone 8.28a independently reviews its six-hero and networking-readiness implications. Phase 9 production visual milestones do not begin until milestone 8.36a is also reviewed and approved.
 
 ### [!] 8.28a Independently review six-hero, URP, and networking readiness
 
@@ -1787,7 +1787,7 @@ Hard gate: Phase 9 does not begin until milestone 8.36a and every gate-blocking 
 
 ## Phase 9 - Presentation and pitch polish
 
-Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline and milestone 8.36 proves the private six-human internet flow with primitive UI.
+Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline, milestone 8.36 proves the private six-human internet flow with primitive UI, and independent reviews 8.28a and 8.36a dispose of every gate-blocking finding.
 
 Each visible milestone runs focused Play Mode checks for the affected presentation path plus one targeted visual inspection. The disposable migration-check build from milestone 8.28 and invited-tester online build from milestone 8.36 are not retained as pitch deliverables or publicly distributed; the first retained private pitch player build remains milestone 10.1. Complete unfiltered suites wait for milestone 9.16 unless a T3 risk trigger applies earlier.
 

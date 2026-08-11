@@ -137,6 +137,14 @@ Manual T0 review complements the mechanical check. First preserve every governed
 
 After 3.11a, run the validator at every milestone handoff and phase-gate audit. A warning threshold requires the same handoff to review ownership: archive duplicated/completed material losslessly or shard irreducible current material authoritatively. A hard-threshold failure blocks handoff unless routing is corrected or the user explicitly approves a governance amendment and corresponding validator update; deleting or weakening precise content is never a valid correction.
 
+## Independent engineering review evidence
+
+Milestones `4.4e`, `5.8a`, `7.9a`, `8.16a`, `8.28a`, `8.36a`, and `9.16a` are analysis-only review gates. Their review record and any approved roadmap/continuity edits are T0 changes: review the diff, run `git diff --check`, validate milestone IDs/statuses/dependencies and cross-document routes, and, after milestone 3.11a, run the living-document validator. Do not rerun both complete Unity suites merely because a review follows a T3 gate; use the preceding gate's exact revision and fresh evidence unless the review identifies a concrete evidence gap or the implementation changed.
+
+The reviewer may run focused existing tests, source checks, profiler captures, log inspection, snapshot/replay comparisons, build inspection, or other non-mutating diagnostics needed to test a specific concern. Record the exact command or capture, revision, result, and why it was needed. A diagnostic failure is a finding, not permission to repair it during the review. If reproducing or isolating a problem requires new test code, instrumentation, fixtures, content, scenes, packages, or configuration, propose a separately approved corrective/diagnostic milestone instead.
+
+Every review report records the inspected surfaces and preserved strengths, then classifies findings under the roadmap's independent-review categories. An actionable finding includes evidence, impact, severity/timing, the smallest correction, and proposed validation. A stylistic preference alone cannot block a gate. The review completes only when every gate-blocking finding has an explicit proposed disposition and the affected future milestone sequence has been re-evaluated; implementation remains separately authorized.
+
 ## Official board-map specification validation
 
 ```powershell
@@ -177,7 +185,7 @@ For milestone 4.4d, first run focused resource-lifecycle, unchanged-HUD projecti
 
 Record one development-Editor Unity Profiler or `ProfilerRecorder` baseline for the complete 292-cell map and a representative two-round director flow. Report frame-time and managed-allocation observations, repeated map-rebuild/native-object counts, test environment, capture duration, and whether project-owned unchanged-HUD code creates styles, collections, definitions/offers, or labels per event. This is a regression baseline, not a production performance target.
 
-Expected result: generated Unity/native resources are reused or destroyed through explicit ownership; repeated rebuild/lifecycle checks do not show monotonic owned-object growth; malformed diagnostic envelopes reject through the documented safe contract without partial restore; project-authored runtime and tests are clear of the known Unity 6.5 `CS0618` object-discovery warnings; focused and complete suites pass; and targeted visual inspection confirms the complete configured Phase 4 setup and validation controls remain readable. This is the final Phase 4 T3 gate; no unaffected Unity suite is omitted.
+Expected result: generated Unity/native resources are reused or destroyed through explicit ownership; repeated rebuild/lifecycle checks do not show monotonic owned-object growth; malformed diagnostic envelopes reject through the documented safe contract without partial restore; project-authored runtime and tests remain clear of Unity 6.5 `CS0618` object-discovery warnings; focused and complete suites pass; and targeted visual inspection confirms the complete configured Phase 4 setup and validation controls remain readable. This is the final Phase 4 T3 gate; no unaffected Unity suite is omitted.
 
 ## Edit Mode shell test
 
