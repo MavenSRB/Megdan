@@ -48,6 +48,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Provide a collapsible event log.
 - The configured prototype card panel remains inside the viewport and scrolls its hands/action body when vertical space is insufficient, keeping projected Defense-card and Decline controls reachable on short desktop viewports.
 - Each configured legal Defense-card invocation identifies its authoritative card and labels the offer-bound value as `PRINTED DEFENSE`; the exact typed command remains in the projected invocation, while modified Defense Total, eligibility, and response resolution remain outside presentation.
+- Defense-choice controls must size or wrap from their complete rendered label so the card name and printed value remain readable; a model containing complete text does not satisfy this requirement when the configured control clips it.
 - No main menu, settings suite, tutorial, collection screen, or account UI is required for the pitch.
 
 ## Accessibility baseline
