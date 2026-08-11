@@ -167,7 +167,7 @@ Unity presentation uses feature Model-View-Presenter over that port:
 - One composition root performs scene discovery and dependency wiring. Presenters do not call one another directly, and the architecture does not use a singleton, service locator, or global event bus.
 - Board interaction, director hands/commitments, round/action flow, Undo/restart, and diagnostics remain separate presenter/view responsibilities.
 
-Within card resolution, one typed strategy registry maps supported action/capability identities to pure handlers. The dispatcher owns shared invariants such as stable resolution/step identity, offer revalidation, one active resolution, atomic rejection, serializable pending choices, and ordered events. Movement, Attack/Defense, and later verified capabilities own only their typed behavior and cannot branch on display names or use untyped universal payloads.
+Within card resolution, one typed strategy registry maps supported action/capability identities to pure handlers. Milestone 4.4b implements stable `movement-v1` and `attack-defense-v1` strategy identities, exact action-kind mappings, composition-time uniqueness checks, and generic typed dispatch; Movement and nested Attack/Defense entry and continuation paths use that registry without reflection discovery, display-name branches, a service locator, or an untyped universal payload. The dispatcher retains stable resolution/step identity, authoritative offer revalidation, one active resolution, atomic rejection, serializable pending choices, restoration validation, and ordered events. Later verified capabilities add a typed registered handler rather than new action-kind control flow across unrelated handlers.
 
 ## Definition validation and versioning
 

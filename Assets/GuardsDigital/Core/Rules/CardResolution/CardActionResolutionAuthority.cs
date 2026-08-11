@@ -9,9 +9,14 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
-    public sealed class CardActionResolutionAuthority
+    public sealed class CardActionResolutionAuthority :
+        IMovementCardActionStrategyBackend,
+        IAttackDefenseCardActionStrategyBackend
     {
         private readonly AdjacentMoveAuthority adjacentMoveAuthority;
+        private readonly CardActionStrategyRegistry strategyRegistry;
+        private readonly MovementCardActionStrategyHandler movementHandler;
+        private readonly AttackDefenseCardActionStrategyHandler attackDefenseHandler;
         private PendingCardActionResolution pendingResolution;
         private PendingMovementChoice pendingChoice;
         private PendingAttackResolution pendingAttackResolution;
@@ -21,6 +26,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public CardActionResolutionAuthority(AdjacentMoveAuthority adjacentMoveAuthority)
         {
             this.adjacentMoveAuthority = adjacentMoveAuthority ?? throw new ArgumentNullException(nameof(adjacentMoveAuthority));
+            movementHandler = new MovementCardActionStrategyHandler(this);
+            attackDefenseHandler = new AttackDefenseCardActionStrategyHandler(this);
+            strategyRegistry = new CardActionStrategyRegistry(new ICardActionStrategyHandler[]
+            {
+                movementHandler,
+                attackDefenseHandler
+            });
         }
 
         public PendingCardActionResolution PendingResolution => pendingResolution;
@@ -95,6 +107,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances) =>
+            strategyRegistry.Dispatch<MovementCardActionStrategyHandler, CardActionResolutionResult>(
+                ActionKind.Movement,
+                handler => handler.Start(resolutionId, offer, definitions, instances));
+
+        CardActionResolutionResult IMovementCardActionStrategyBackend.StartMovement(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
@@ -113,6 +134,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         public CardActionResolutionResult StartTurnMovementResolution(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances) =>
+            strategyRegistry.Dispatch<MovementCardActionStrategyHandler, CardActionResolutionResult>(
+                ActionKind.Movement,
+                handler => handler.StartTurn(resolutionId, offer, definitions, instances));
+
+        CardActionResolutionResult IMovementCardActionStrategyBackend.StartTurnMovement(
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
@@ -206,7 +236,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 });
         }
 
-        public CardActionResolutionResult AnswerMovementChoice(MovementChoiceCommand command)
+        public CardActionResolutionResult AnswerMovementChoice(MovementChoiceCommand command) =>
+            strategyRegistry.Dispatch<MovementCardActionStrategyHandler, CardActionResolutionResult>(
+                CardActionStrategyIds.Movement,
+                handler => handler.Answer(command));
+
+        CardActionResolutionResult IMovementCardActionStrategyBackend.AnswerMovement(MovementChoiceCommand command)
         {
             if (pendingResolution == null || pendingChoice == null)
             {
@@ -344,6 +379,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
+            MatchParticipants participants) =>
+            strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
+                ActionKind.Attack,
+                handler => handler.Start(resolutionId, offer, definitions, instances, participants));
+
+        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.StartAttack(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
             MatchParticipants participants)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
@@ -363,6 +408,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         public AttackActionResolutionResult StartTurnAttackResolution(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants) =>
+            strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
+                ActionKind.Attack,
+                handler => handler.StartTurn(resolutionId, offer, definitions, instances, participants));
+
+        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.StartTurnAttack(
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
@@ -481,6 +536,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackTargetChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
+            MatchParticipants participants) =>
+            strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
+                CardActionStrategyIds.AttackDefense,
+                handler => handler.AnswerTarget(command, definitions, instances, participants));
+
+        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.AnswerAttackTarget(
+            AttackTargetChoiceCommand command,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
             MatchParticipants participants)
         {
             if (participants == null)
@@ -574,6 +638,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         public AttackActionResolutionResult AnswerDefenseResponse(
+            DefenseResponseChoiceCommand command,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants) =>
+            strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
+                CardActionStrategyIds.AttackDefense,
+                handler => handler.AnswerDefense(command, definitions, instances, participants));
+
+        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.AnswerDefense(
             DefenseResponseChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
@@ -718,6 +791,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         public AttackActionResolutionResult ResolveAttackOutcome(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants) =>
+            strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
+                ActionKind.Attack,
+                handler => handler.ResolveOutcome(definitions, instances, participants));
+
+        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.ResolveOutcome(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants)

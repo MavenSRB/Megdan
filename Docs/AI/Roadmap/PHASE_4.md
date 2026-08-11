@@ -137,7 +137,7 @@ Non-goals: No gameplay-rule change, visual redesign, networking provider, client
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44a-establish-the-transport-neutral-match-application-service-completion-evidence).
 
-### [ ] 4.4b Decompose card-action resolution behind typed strategy handlers
+### [x] 4.4b Decompose card-action resolution behind typed strategy handlers
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -152,6 +152,8 @@ Acceptance checks:
 - Before/after equivalence tests compare accepted and rejected scenarios, authoritative snapshots, event projections, turn/round integration, and deterministic replay for every currently supported action path.
 
 Non-goals: No new action kind, card text, effect capability, Attack consequence, Fast Travel, timing system, schema migration, reflection-based plugin system, or speculative general scripting language.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44b-decompose-card-action-resolution-behind-typed-strategy-handlers-completion-evidence).
 
 ### [ ] 4.4c Replace the validation god-controller with feature MVP
 
