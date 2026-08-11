@@ -953,6 +953,9 @@ Observable outcome: Red Wasp, Blue Wasp, standard minions, Lives, Waves, and Tie
 
 Acceptance checks:
 
+- The setup configuration declares its required `MapId` and map content revision.
+- Setup creation requires the exact selected map definition and rejects an unavailable or mismatched map identity/revision.
+- Every configured occupied space and spawn point resolves within that selected map; map-local IDs are never resolved against another map.
 - Three Wave counters and four Life counters per team.
 - Standard single-lane minions are created from configuration with stable identity, team, type, and occupied-space data.
 - The initial Tie Breaker result comes from milestone 2.6.
