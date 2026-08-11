@@ -145,7 +145,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_VisiblyDistinguishesEveryZoneAndTerrainForDebugInspection()
+        public void Scene_UsesSharedJungleColorAndDistinctNonJungleAndTerrainColors()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var mapView = RebuildOfficialMap();
@@ -159,9 +159,13 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(playableMaterialsByZone.Keys,
                 Is.EquivalentTo(mapView.RenderedDefinition.Zones.Select(zone => zone.Id)));
-            Assert.That(playableMaterialsByZone.Values.Distinct().Count(), Is.EqualTo(7));
+            Assert.That(playableMaterialsByZone[new ZoneId("bottom-jungle")].color,
+                Is.EqualTo(playableMaterialsByZone[new ZoneId("top-jungle")].color));
+            Assert.That(playableMaterialsByZone.Values.Select(material => material.color).Distinct().Count(),
+                Is.EqualTo(6));
             Assert.That(terrainMaterials, Has.Length.EqualTo(1));
-            Assert.That(playableMaterialsByZone.Values, Has.No.Member(terrainMaterials[0]));
+            Assert.That(playableMaterialsByZone.Values.Select(material => material.color),
+                Has.No.Member(terrainMaterials[0].color));
         }
 
         [Test]

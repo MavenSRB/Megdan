@@ -12,6 +12,8 @@ namespace GuardsDigital.Presentation.Board
     [DisallowMultipleComponent]
     public sealed class PlaceholderTestGridView : MonoBehaviour
     {
+        private static readonly Color JungleColor = new Color(0.38f, 0.66f, 0.42f, 1f);
+
         private static readonly Color[] ZoneColors =
         {
             new Color(0.72f, 0.34f, 0.30f, 1f),
@@ -19,8 +21,8 @@ namespace GuardsDigital.Presentation.Board
             new Color(0.78f, 0.72f, 0.32f, 1f),
             new Color(0.34f, 0.63f, 0.78f, 1f),
             new Color(0.30f, 0.42f, 0.72f, 1f),
-            new Color(0.38f, 0.66f, 0.42f, 1f),
-            new Color(0.54f, 0.40f, 0.68f, 1f)
+            JungleColor,
+            JungleColor
         };
 
         [SerializeField] private float outerRadius = HexWorldLayout.DefaultOuterRadius;
