@@ -14,6 +14,18 @@ Do not automatically read the full continuity documents. Use `rg` to find the re
 
 Expand to a full-document read only when the task is genuinely cross-cutting, targeted sections reveal an unresolved dependency, or the living documents may conflict. Reread a loaded section only when it changed, the task expands into a new area, its exact contents are unavailable after a context reset, or conflict verification requires it. A delegated agent may rely on applicable inherited context; otherwise it reads only the missing relevant sections once.
 
+## Interim living-document hygiene
+
+Corrective milestone 3.11a will establish the permanent ownership matrix, per-file routing thresholds, lossless archive/shard structure, and automated documentation validator. Its thresholds limit the size of one routinely loaded file; they never cap the total authoritative corpus or permit deletion, lossy compression, or reduced precision. Until that milestone is explicitly approved and completed:
+
+- Record detailed milestone outcome and validation evidence only in that milestone's `ROADMAP.md` completion note. Other living documents may carry only the minimum current-state or durable-contract delta and should link or route to the canonical section instead of copying the narrative.
+- Keep `SESSION_BRIEF.md` limited to current implementation, current authorization, the exact next milestone/profile, hard boundaries, and targeted routing. Do not add chronological milestone history or duplicate test totals there.
+- Keep `PROJECT_CONTEXT.md` limited to current product scope, durable constraints, architecture, terminology, and workflow. Do not add milestone-by-milestone implementation history unless it changes a current durable contract.
+- Keep `TESTING.md` limited to current validation policy, reusable launch instructions, active/future exact test recipes, and current gate definitions. Do not copy completion narratives into it; historical run totals remain in roadmap completion evidence until 3.11a archives them.
+- Keep card/effect architecture documents limited to durable contracts and extension boundaries, and keep `RULES_LEDGER.md` limited to authority, verification, implementation/test status, open questions, and approved deviations.
+- When an update would repeat existing information, replace or tighten the stale summary rather than append another version. Preserve authoritative evidence; do not delete, archive, or reorganize existing history before milestone 3.11a defines and validates its destination.
+- Do not shorten a current rule, contract, acceptance check, source citation, deviation, open question, exact active test recipe, or historical result merely to reduce file size. If precise canonical content legitimately outgrows one file, milestone 3.11a must route it through indexed authoritative shards; completed historical evidence must move losslessly to an indexed archive.
+
 ## Milestone model selection
 
 The exact current or proposed roadmap milestone declares its `Required Codex profile`. The project-local `.codex/config.toml` must mirror that profile as the default for the next new Codex task. State the active milestone, model, and reasoning effort in the first milestone-work update.

@@ -248,6 +248,21 @@ Validation is side-effect free. An accepted command advances one authoritative t
 
 Rule events should describe facts such as card played, action selected, choice requested, unit moved, attack opened, defense card discarded, value contribution applied, active effect created/canceled, card resolved, or action ended. They are not animation instructions.
 
+## Application orchestration and presentation boundary
+
+Rules authorities do not serve directly as Unity controllers or network endpoints. After the complete configured Phase 4 setup, one pure C# match application service becomes the orchestration port used by live director input, deterministic command replay, and later host transports. It owns the current authority composition, accepts typed commands and explicit choices, and publishes accepted/rejected results, ordered events, and an immutable versioned match projection without duplicating card legality or resolution rules.
+
+Live play, replay, Undo, and restart must use the same command-dispatch path. The application service may coordinate command history, snapshot capture/restore, and diagnostic projections, but those remain separate collaborators with explicit ownership; they do not become card-effect handlers or presentation state. Rejection is atomic and never publishes a partially advanced projection.
+
+Unity presentation uses feature Model-View-Presenter over that port:
+
+- Presenters translate user intent into typed commands and translate immutable match projections into bounded immutable view models.
+- Passive views render view models and forward callbacks. They never query low-level authorities, decide action legality, own pending choices, create snapshots, or continue card resolution.
+- One composition root performs scene discovery and dependency wiring. Presenters do not call one another directly, and the architecture does not use a singleton, service locator, or global event bus.
+- Board interaction, director hands/commitments, round/action flow, Undo/restart, and diagnostics remain separate presenter/view responsibilities.
+
+Within card resolution, one typed strategy registry maps supported action/capability identities to pure handlers. The dispatcher owns shared invariants such as stable resolution/step identity, offer revalidation, one active resolution, atomic rejection, serializable pending choices, and ordered events. Movement, Attack/Defense, and later verified capabilities own only their typed behavior and cannot branch on display names or use untyped universal payloads.
+
 ## Definition validation and versioning
 
 Card definitions are validated before a match can start. At minimum, validation covers:
@@ -295,7 +310,7 @@ The first card slice should implement only:
 - A data-shaped pending resolution/choice protocol.
 - The minimum structured Movement action needed to select disclosed destination/route segments, accumulate their already-tested adjacent steps, and Stop or continue within one allowance.
 
-Phase 2 then proves that the same foundation can open an Attack, pause for a Defense reaction from the correct hand, discard exactly one card or decline, calculate the unmodified result, and resume. Phase 3 proves generic lifecycle, Initiative, turns, rounds, snapshots, and internal tools with synthetic definitions. Phases 4 through 7 extend that synthetic foundation through the official map and the complete general core match loop. The complete Wasp card inventory and Wasp-specific card implementation begin only in Phase 8 after the milestone 7.9 core-match gate; Wasp verification may add localized capability deltas but does not own or block the general rules foundation. After the Wasp integration gate, five additional user-approved heroes each enter through source inventory and capability-delta mapping before the six distinct heroes are integrated into the official-setup director-mode 3v3 pitch match. The later private-online track transports the same typed commands, ordered events, serializable pending choices, and versioned snapshots through a host-authoritative session; transport callbacks and client projections do not become card-resolution authority.
+Phase 2 then proves that the same foundation can open an Attack, pause for a Defense reaction from the correct hand, discard exactly one card or decline, calculate the unmodified result, and resume. Phase 3 proves generic lifecycle, Initiative, turns, rounds, snapshots, and internal tools with synthetic definitions. Phase 4 establishes the complete configured map/setup shape, then milestones 4.4a-4.4d interpose the application-service port, typed strategy handlers, and passive-view MVP before Phase 5 expands action/effect behavior. Phases 5 through 7 extend that synthetic foundation through the complete general core match loop. The complete Wasp card inventory and Wasp-specific card implementation begin only in Phase 8 after the milestone 7.9 core-match gate; Wasp verification may add localized capability deltas but does not own or block the general rules foundation. After the Wasp integration gate, five additional user-approved heroes each enter through source inventory and capability-delta mapping before the six distinct heroes are integrated into the official-setup director-mode 3v3 pitch match. The later private-online track transports the same typed commands, ordered events, serializable pending choices, immutable projections, and versioned snapshots through a host-authoritative session; transport callbacks and client projections do not become card-resolution authority.
 
 The foundation is succeeding when:
 

@@ -30,6 +30,10 @@ Milestones may be split further if implementation reveals more than one independ
 
 At each designated phase-gate roadmap audit, reassess the affected unstarted milestones against the evidence produced so far. The audit is a required handoff activity, not a separately numbered milestone, and does not authorize implementation. For each affected milestone, recommend whether to keep it unchanged, merge it with adjacent work that shares the same authority and validation boundary, split independently risky behavior, or defer/remove work that is not required for the private publisher pitch. Record an approximate remaining-effort range and identify the shortest dependency-safe path to the next hard integration outcome. Any resulting roadmap change requires explicit user approval and the applicable continuity updates before the next milestone profile is assigned. An audit must not weaken verified rules, architecture contracts, acceptance evidence, validation gates, or the one-approved-micro-milestone-at-a-time rule.
 
+Separately numbered independent engineering review milestones inspect the implementation accumulated by their preceding gate. Each runs in a fresh Codex task, is analysis-only, and may update only the approved review record and proposed roadmap/continuity documentation; it does not implement a fix. The reviewer must inspect actual source, tests, warnings, runtime paths, and applicable profiling or diagnostic evidence rather than relying on completion notes or assuming earlier decisions were correct. It assesses correctness, dependency direction, determinism and persistence/replay boundaries, performance and resource lifetime, Unity/presentation ownership, test quality, concrete maintainability/style consequences, temporary structures, and roadmap fitness as applicable to that gate.
+
+Every independent engineering review classifies each observation as a confirmed defect, demonstrated performance/resource problem, architectural growth risk, maintainability/test-quality problem, or stylistic preference only. Each actionable finding records evidence, impact, severity/timing, the smallest appropriate correction, and focused validation; it also records inspected areas that should be preserved. Gate-blocking or scheduled fixes become separately approved corrective micro-milestones. The review may recommend keeping, merging, splitting, deferring, or removing future work, but neither its findings nor its proposed roadmap changes authorize implementation. It is acceptable and valid for a review to conclude that no corrective work is justified.
+
 Acceptance checks define what must be proved; `Docs/AI/TESTING.md` defines the required breadth. Unless a milestone is an explicit gate or qualifies as broad risk, completion does not require both unfiltered Unity suites.
 
 Every card-related milestone must preserve the contracts in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` and `Docs/AI/CARD_EFFECT_CAPABILITIES.md`. A narrow milestone implements only the required subset of those contracts; it must not introduce a shortcut that the next card milestone is expected to replace.
@@ -863,7 +867,7 @@ Acceptance checks:
 
 Non-goals: No Redo, inverse-action framework, competitive Undo, gameplay-rule changes, snapshot removal, save-slot UI, networking, or production presentation.
 
-Corrective sequencing amendment (2026-08-11): The user rejected snapshot-stack Undo in favor of deterministic initial-setup plus accepted-command replay. Milestone 3.10a is therefore the next required milestone after completed 4.2a and before 4.3; prior 3.10 and 3.11 completion notes remain historical evidence of the currently implemented behavior, not the target architecture. This roadmap change does not authorize implementation.
+Corrective sequencing amendment (2026-08-11): The user rejected snapshot-stack Undo in favor of deterministic initial-setup plus accepted-command replay. Milestone 3.10a is therefore the next required milestone after completed 4.2a; documentation-governance milestone 3.11a follows it before 4.3. Prior 3.10 and 3.11 completion notes remain historical evidence of the currently implemented behavior, not the target architecture. This roadmap change does not authorize implementation.
 
 ### [x] 3.11 Add the internal rule-event log
 
@@ -883,11 +887,37 @@ Non-goals: No final visual styling, export format, analytics, telemetry, or play
 
 Completion note (2026-08-10): Added a deterministic read-only projection over accepted ordered round, commitment, Initiative, turn, Movement, Attack/Defense, and end-of-round events. Every immutable entry carries a contiguous sequence, the most specific semantic event type, stable round/turn and applicable hero/card/action/resolution references, and the key value, choice, route, total, outcome, or checkpoint needed for diagnosis; Facedown commitments continue to hide their card identity until reveal. Rejected commands remain only in the existing separate status path and never append an accepted event. The unchanged authoritative snapshot serializer is wrapped by a versioned controller envelope containing the projection, so external restore and accepted-command Undo reproduce the exact prior log while restart returns to the initial setup entry; the projection cannot mutate or continue rules resolution. The saved validation HUD exposes a compact `EVENT LOG (N)` / `HIDE EVENT LOG` control and a scrollable primitive internal panel whose expanded bounds block board input. T2 evidence passed focused Edit Mode 24/24, directly affected Edit Mode 157/157, and saved-scene Play Mode 12/12; the T3 Phase 3 gate passed complete unfiltered Edit Mode 228/228 and Play Mode 13/13, all with zero failed, skipped, or inconclusive cases and the healthy 39-package baseline. Source/layout inspection confirmed the panel uses unused right-side space when available, falls back above the director panel, remains collapsible, and preserves the existing bounded director panel; two batch framebuffer attempts produced no image because the batch player exposes no capturable end-of-frame/framebuffer, so no screenshot evidence is claimed. No final styling, export, analytics, telemetry, editable history, or player-facing match history was added.
 
+### [ ] 3.11a Consolidate living-document ownership, history, and routing controls
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: Routine startup and targeted context loading stays bounded by explicit per-file routing thresholds, while the complete precise current authority remains in indexed active documents and detailed historical completion/test evidence remains losslessly preserved in indexed phase archives excluded from normal startup loading.
+
+Acceptance checks:
+
+- One version-controlled `Docs/AI/DOCUMENTATION_GOVERNANCE.md` ownership matrix names exactly one canonical home for current authorization/routing, roadmap sequencing, product/architecture contracts, rule authority, card/effect contracts, testing policy/active recipes, and historical evidence. A canonical home may be a compact index plus subject/phase shards; noncanonical documents use short routing summaries and stable links rather than copied narratives.
+- `SESSION_BRIEF.md` is compacted to current implementation, authorization, next milestone/profile, boundaries, and routing; `PROJECT_CONTEXT.md` retains only current durable scope/architecture/workflow; card/effect documents retain only durable contracts; `RULES_LEDGER.md` retains source authority, rule status, open questions, and deviations.
+- Before consolidation edits, `Docs/AI/Archive/Pre-Governance/` receives an immutable copy of every governed source document plus a SHA-256 inventory. This preservation baseline is not the post-migration canonical authority, but it makes the complete original text recoverable without relying on Git history.
+- `ROADMAP.md` remains the compact status/sequencing index and route to exact active/unstarted milestone definitions; those definitions may move intact into indexed phase shards when needed. Detailed completed-milestone narratives and validation evidence move verbatim to indexed `Docs/AI/Archive/` phase handoff files with stable backlinks; no evidence is deleted, reduced to a summary, or left only in Git history.
+- `TESTING.md` retains or indexes current policy, launcher resilience, active/future exact recipes, gate definitions, and test ownership. If that precise current material outgrows one file, it splits into indexed authoritative subject shards. Superseded command blocks and historical run totals move verbatim to the applicable indexed archive without weakening reproducibility or the fixed-launcher rule.
+- The governance contract establishes measured per-file word/byte routing thresholds, with a warning at 85 percent and a handoff-blocking hard threshold. Initial hard thresholds for each active leaf file are: `SESSION_BRIEF.md` 2,000 words/20 KiB; `PROJECT_CONTEXT.md` 4,500 words/40 KiB; `ROADMAP.md` 15,000 words/128 KiB; `TESTING.md` 7,000 words/80 KiB; each card/effect architecture leaf 7,000 words/64 KiB; and each rules-ledger leaf 9,000 words/80 KiB. These are not aggregate corpus limits. Before enforcement, inventory the irreducible precise content; if one proposed threshold is inadequate, create an indexed authoritative shard or obtain an explicit governance amendment rather than abbreviating content or silently relaxing the validator.
+- `Docs/AI/Archive/MIGRATION_MANIFEST.md` maps every removed, relocated, or rewritten source section by original path/heading to its destination anchor, information category, and treatment (`verbatim archive`, `authoritative shard`, or `non-authoritative routing-summary replacement`). Verbatim entries include source/destination integrity hashes. No manifest entry may use a summary as the sole destination for authority, rules, sources, deviations, open questions, milestone acceptance/non-goals, exact active recipes, or historical result/failure evidence.
+- A before/after preservation inventory accounts for milestone IDs/statuses/profiles and exact acceptance/non-goal checks; rule entries, citations, statuses, deviations, and open questions; card/effect contract entries; test commands and gate definitions; historical pass/failure records; and rights/privacy boundaries. Every item remains exact in an active canonical shard or a lossless archive destination as appropriate.
+- A project-local `Tools/Validate-LivingDocumentation.ps1` check enforces per-file thresholds, required headings, unique current/next milestone and profile routing, roadmap/session/config agreement, valid internal paths/anchors where mechanically checkable, archive indexes/backlinks, migration-manifest destinations and hashes, preservation-inventory coverage, and absence of copied completion-note bodies in noncanonical active documents. The check must not become passable merely by deleting an oversized section.
+- `AGENTS.md` routes agents through the ownership matrix and requires ownership review at phase gates or whenever an active leaf reaches its warning threshold. Completed history is archived losslessly; irreducible current material is sharded authoritatively. Neither operation changes authority, rule meaning, milestone status, validation evidence, or Git history.
+- Manual review compares the preservation baseline, manifest, inventories, active shards, and archives and confirms that no source claim, approved deviation, open question, acceptance/non-goal check, exact active test recipe, historical pass/failure evidence, or rights/privacy boundary was lost or semantically changed. The validator and `git diff --check` pass; Unity is not launched because this is documentation/tooling-only work.
+
+Non-goals: No gameplay, Unity runtime, test expectation, roadmap feature scope, rule interpretation, snapshot, build, or presentation change; no deletion or lossy summarization of authoritative or historical evidence; no aggregate cap on the documentation corpus; no external documentation service or generated website.
+
+Sequencing amendment (2026-08-11): The living documents have grown by repeating chronological completion evidence across active startup, context, roadmap, card-contract, and testing files; `ROADMAP.md` is already approximately 26,600 words and `TESTING.md` approximately 10,300. Milestone 3.11a is required immediately after 3.10a and before 4.3 so future milestone work reads smaller canonical active documents and appends evidence to one governed destination. This amendment plans the consolidation but does not perform or authorize it.
+
 Phase-gate roadmap audit: After milestone 3.11 passes its T3 gate, audit Phases 4-7 before assigning the next milestone profile. Reassess milestone packaging and sequencing around the shortest dependency-safe path to milestone 7.9's complete deterministic synthetic match, while preserving the full-map, general-rule, snapshot, progression, and victory evidence required by that hard gate; recommend any justified keep/merge/split/defer/remove decisions and record the remaining-effort range.
 
 Phase 4-7 audit (2026-08-10): Keep milestones 4.1-4.4, 5.1-5.8, 6.1-6.8, and 7.1-7.9 separate and in their current order. No merge is justified because each item owns a distinct source/data, rules-authority, continuation, presentation, or validation boundary; the deliberately non-executable Lane-Push prefix at 6.5 must remain separate from the live transition at 6.6. No further split is justified now that Phase 3 has proven stable snapshot, Undo, event-log, round-cursor, and pending-choice seams. Nothing can be deferred or removed without weakening milestone 7.9's required full-map Movement/combat, minion/token/Lane-Push, defeat/respawn, progression, victory, or exact end-of-round evidence. The shortest dependency-safe path is therefore the existing sequential path through the Phase 4 map/setup gate, Phase 5 general combat gate, Phase 6 Lane/end-of-round component gate, Phase 7 progression/victory integration, and milestone 7.9 hard gate. Remaining effort is 29 separately approved micro-milestones, estimated at 26-43 focused implementation days excluding approval latency, source ambiguity, and environment outages.
 
 Post-4.1 multi-map readiness correction (2026-08-11): The reviewed inventory is valid, but an independent audit found that the executable board/snapshot state does not yet carry selected-map identity, the data contract explicitly scopes only `SpaceId` rather than every map-owned child identity, and the validator combines reusable structural checks with `official-single-lane`-specific counts and digest checks while omitting rules-relevant zone metadata from that digest. Split the former milestone 4.2 into corrective milestone 4.1a for the general identity/validation boundary, milestone 4.2 for selected-map authoritative loading and snapshot binding, and milestone 4.2a for Unity placeholder presentation. This adds no second playable map: bounded synthetic definitions may reuse coordinates and child IDs only as automated collision/singleton tests. The revised shortest dependency-safe path contains 30 remaining separately approved micro-milestones through 7.9, estimated at 28-46 focused implementation days under the same exclusions.
+
+Post-4.2a architecture, performance, and documentation-governance audit (2026-08-11): Preserve the verified pure rules, command/event, pending-choice, snapshot, and map boundaries, but do not carry the current validation-controller shape or duplicated living-document history into Phase 5. Milestone 3.11a first consolidates canonical active documentation after corrective Undo milestone 3.10a. The controller has accumulated fixture construction, low-level authority ownership, command translation, Undo/restart, event-log projection, selection, and immediate-mode HUD rendering, while the shared card-action authority now contains both Movement and Attack/Defense orchestration. Insert behavior-preserving milestones 4.4a-4.4d after the complete configured Phase 4 setup and before Phase 5: establish a transport-neutral match application service, decompose card actions behind typed strategy handlers, replace the god-controller with feature presenters and passive Unity views, then close the identified allocation/resource/parser/API-warning debt at the final Phase 4 architecture gate. This ordering gives the refactor the complete Phase 4 state shape, keeps each seam independently testable, and prevents Phase 5 effects from deepening the temporary controller/resolver concentration. The shortest dependency-safe path now contains 33 remaining separately approved micro-milestones through 7.9, estimated at 33-55 focused implementation days excluding approval latency, source ambiguity, and environment outages. This amendment plans no runtime change and authorizes none of the inserted milestones.
 
 ## Phase 4 - Full official multi-zone board
 
@@ -962,13 +992,13 @@ Acceptance checks:
 
 Non-goals: No second playable map, polished environment, Fast Travel, lane pushing, or production camera controls.
 
-Completion note (2026-08-11): Replaced the radius-2 scene generator with a selected-definition-fed placeholder map view. The validation controller supplies the same immutable `official-single-lane` revision 1 definition used by authoritative movement; the view creates all 292 definition-owned cells at axial-derived positions, exposes stable space/kind/zone metadata, keeps only the definition's 210 playable cells interactive, and renders its 82 terrain cells separately. All seven official zones receive distinct debug-only fills, and 40 typed spawn markers expose their stable spawn/space/team/unit classifications. The markers reproduce the reviewed legend's eight team/type combinations: Red/Blue outline colors paired with Hero circles, Melee diamonds, right-pointing Ranged triangles, and Heavy hexagons. The unchanged fixed top-down camera is automatically centered and orthographically framed from the selected definition's bounds, while the existing heroes, cards, movement, Attack/Defense, round, Undo/restart, and event-log presentation continue to operate. Post-handoff corrections removed the two legacy Phase 1 placeholder obstacles at `(1,0)` and `(0,1)`, replaced the initial shared-diamond spawn rendering with the reviewed four-shape legend, and bound the Red/Blue synthetic hero views through stable `red-hero-01`/`blue-hero-01` references to definition-owned coordinates `(-2,-5)`/`(-3,10)` instead of the obsolete adjacent center cells. Saved-scene regressions require zero placeholder obstacles, all eight marker combinations, and exact team Hero-spawn placement; distant-spawn scene flows use Hold/Movement while pure focused fixtures retain adjacent Attack/Defense evidence. T2 validation passed focused Edit Mode 10/10 (`MinimalHexGridSceneTests`), directly affected Edit Mode 45/45 (`BoardMapDefinitionTests`, `PrimitiveHeroViewTests`, `HeroSelectionControllerTests`, `CardDrivenMovementPresentationTests`, and `MinimalHexGridSceneTests`), and saved-scene Play Mode 12/12 (`MinimalHexGridPlayModeTests`), all with zero failed, skipped, or inconclusive cases and the healthy 39-package baseline. The final hero-spawn correction additionally passed combined `PrimitiveHeroViewTests`/`MinimalHexGridSceneTests` Edit Mode 12/12 and the complete saved-scene Play Mode fixture 12/12. Targeted 1600x1200 camera renders were inspected after correction: the complete footprint is framed, every zone and terrain remain distinguishable, all eight spawn types are legible, both hero primitives are centered on their configured team Hero markers, and no legacy obstacle placeholders appear. Complete unfiltered suites were intentionally omitted because milestone 4.4 remains the Phase 4 T3 gate and the affected map/view/controller/scene consumers are enumerated. No second map, authoritative topology/selection in presentation, Fast Travel, Lane Push, production camera control, or polished environment was added.
+Completion note (2026-08-11): Replaced the radius-2 scene generator with a selected-definition-fed placeholder map view. The validation controller supplies the same immutable `official-single-lane` revision 1 definition used by authoritative movement; the view creates all 292 definition-owned cells at axial-derived positions, exposes stable space/kind/zone metadata, keeps only the definition's 210 playable cells interactive, and renders its 82 terrain cells separately. All seven official zones receive distinct debug-only fills, and 40 typed spawn markers expose their stable spawn/space/team/unit classifications. The markers reproduce the reviewed legend's eight team/type combinations: Red/Blue outline colors paired with Hero circles, Melee diamonds, right-pointing Ranged triangles, and Heavy hexagons. The unchanged fixed top-down camera is automatically centered and orthographically framed from the selected definition's bounds, while the existing heroes, cards, movement, Attack/Defense, round, Undo/restart, and event-log presentation continue to operate. Post-handoff corrections removed the two legacy Phase 1 placeholder obstacles at `(1,0)` and `(0,1)`, replaced the initial shared-diamond spawn rendering with the reviewed four-shape legend, and bound the Red/Blue synthetic hero views through stable `red-hero-01`/`blue-hero-01` references to definition-owned coordinates `(-2,-5)`/`(-3,10)` instead of the obsolete adjacent center cells. Saved-scene regressions require zero placeholder obstacles, all eight marker combinations, and exact team Hero-spawn placement; distant-spawn scene flows use Hold/Movement while pure focused fixtures retain adjacent Attack/Defense evidence. T2 validation passed focused Edit Mode 10/10 (`MinimalHexGridSceneTests`), directly affected Edit Mode 45/45 (`BoardMapDefinitionTests`, `PrimitiveHeroViewTests`, `HeroSelectionControllerTests`, `CardDrivenMovementPresentationTests`, and `MinimalHexGridSceneTests`), and saved-scene Play Mode 12/12 (`MinimalHexGridPlayModeTests`), all with zero failed, skipped, or inconclusive cases and the healthy 39-package baseline. The final hero-spawn correction additionally passed combined `PrimitiveHeroViewTests`/`MinimalHexGridSceneTests` Edit Mode 12/12 and the complete saved-scene Play Mode fixture 12/12. Targeted 1600x1200 camera renders were inspected after correction: the complete footprint is framed, every zone and terrain remain distinguishable, all eight spawn types are legible, both hero primitives are centered on their configured team Hero markers, and no legacy obstacle placeholders appear. Complete unfiltered suites were intentionally omitted because the complete configured setup and the later milestone 4.4d Phase 4 architecture gate remain ahead, and the affected map/view/controller/scene consumers were enumerated. No second map, authoritative topology/selection in presentation, Fast Travel, Lane Push, production camera control, or polished environment was added.
 
 ### [!] 4.3 Define and validate zones and zone adjacency
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
-Blocked by: Corrective milestone 3.10a must replace snapshot-history Undo with deterministic command replay first.
+Blocked by: Corrective milestone 3.10a must replace snapshot-history Undo with deterministic command replay, then milestone 3.11a must establish governed compact living-document boundaries.
 
 Observable outcome: Every board space belongs to the correct official zone, and authoritative queries can distinguish the same zone, an adjacent zone, and a non-adjacent zone.
 
@@ -984,6 +1014,8 @@ Non-goals: No Fast Travel validation, current-Battle-Zone changes, lane pushing,
 
 ### [ ] 4.4 Place the 1v1 Quick Game setup
 
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
 Observable outcome: Red Wasp, Blue Wasp, standard minions, Lives, Waves, and Tie Breaker state are placed from configuration data while their hands still use synthetic test cards.
 
 Acceptance checks:
@@ -996,9 +1028,93 @@ Acceptance checks:
 - The visible standard minions use the circular artwork in the private reference atlas `Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/g713916_s799373.sprite0__45.jpg`: Steam/orange maps to project Red and Crystal/light-blue maps to project Blue; within each team, the round riveted/broad spiked face is Heavy, the narrow helmet with cheek guards/armored shoulders is Melee, and the two-pronged helmet/narrow crystal crest is Ranged. The source manifest incorrectly labels the Crystal melee sprite `Melee_Steam`; implementation must use this reviewed mapping, select art from authoritative team/type data, and never infer rules identity from the image or manifest label alone.
 - The initial Tie Breaker result comes from milestone 2.6.
 - Only the approved player-count, mirrored-hero, and director-mode deviations are present.
-- T3 phase gate: source/data validation, focused setup-scene inspection, and both complete unfiltered Unity suites pass.
+- Source/data validation, focused setup-scene inspection, and directly affected Edit Mode and Play Mode suites pass. The complete unfiltered Phase 4 gate moves to milestone 4.4d so it validates the same configured setup after the behavior-preserving architecture refactor.
 
 Non-goals: No complete Wasp card inventory or Wasp-specific behavior.
+
+### [ ] 4.4a Establish the transport-neutral match application service
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: One pure C# application-service boundary owns the configured authoritative match and accepts typed gameplay commands for both live director input and deterministic replay, while Unity components no longer coordinate low-level rules authorities directly.
+
+Acceptance checks:
+
+- A `GuardsDigital.Application`-equivalent assembly has no Unity dependency and exposes one explicit match-session port over immutable initial scenario inputs, current authoritative state, typed commands/choices, accepted or rejected results, ordered events, and a monotonically changing immutable projection/version.
+- The session composes the existing participant, selected-map, board, card-action, turn/round, Tie Breaker, snapshot, command-replay history, and diagnostic-event boundaries without duplicating their rules or moving authority into presentation.
+- Live director commands, milestone 3.10a replay, Undo, and restart use the same command dispatcher and public rules-authority paths. Rejected commands expose no partial state or projection and never enter accepted history.
+- Presentation and future transports depend on the session port rather than concrete Movement, Attack/Defense, Initiative, turn, round, snapshot, or history implementations.
+- Focused equivalence tests cover every currently supported command family and prove unchanged serialized authoritative state, ordered events, pending choices, Undo/restart results, and event-log projection.
+
+Non-goals: No gameplay-rule change, visual redesign, networking provider, client authorization/projection policy, save UI, production dependency-injection framework, service locator, or global event bus.
+
+### [ ] 4.4b Decompose card-action resolution behind typed strategy handlers
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: The shared card-action dispatcher preserves one deterministic resumable resolution boundary while Movement and Attack/Defense behavior live behind separately testable typed handlers rather than continuing to grow one action-kind authority.
+
+Acceptance checks:
+
+- One explicit registry maps supported typed action/capability identities to pure handlers without reflection, card-name/hero-name branches, runtime printed-text parsing, a service locator, or an untyped universal payload.
+- The dispatcher retains cross-action invariants: one active resolution, stable resolution/step identity, authoritative offer revalidation, atomic rejection, serializable pending choice, and ordered event publication.
+- Movement and Attack/Defense handlers retain their existing typed commands, results, state transitions, pending continuations, restoration validators, and deterministic event order.
+- Adding a bounded synthetic handler fixture proves a new supported strategy can be registered and tested without changing dispatcher control flow or unrelated handlers.
+- Before/after equivalence tests compare accepted and rejected scenarios, authoritative snapshots, event projections, turn/round integration, and deterministic replay for every currently supported action path.
+
+Non-goals: No new action kind, card text, effect capability, Attack consequence, Fast Travel, timing system, schema migration, reflection-based plugin system, or speculative general scripting language.
+
+### [ ] 4.4c Replace the validation god-controller with feature MVP
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: The validation scene uses Model-View-Presenter over the match-session port: feature presenters translate user intent and immutable projections, passive Unity views render view models, and one small composition root owns scene wiring.
+
+Acceptance checks:
+
+- The current `HeroSelectionController` responsibilities are separated into bounded board-interaction, director-hand/commitment, round/action, Undo/restart, and diagnostic-log presenters plus passive views; no replacement type owns all of session authority, history, input, projection, and rendering.
+- Presenters are plain testable C# collaborators, depend only on the match-session port and their view port, and never call one another directly. Cross-feature change flows through a new immutable session projection.
+- Unity views receive immutable view models and forward user intent through explicit callbacks. They do not query or mutate rules authorities, create snapshots, decide legality, own pending continuations, or reconstruct match state.
+- Scene-object discovery and dependency wiring are restricted to one composition root; feature views and presenters do not use global object discovery, a singleton, or a service locator.
+- Snapshot restore, command-replay Undo/restart, hero/obstacle placement, pending highlights, Defense controls, hands, round/turn status, Tie Breaker, and the event log rebuild identically through the new projection path.
+- Focused Edit Mode and saved-scene Play Mode tests prove behavior and visible layout equivalence across all existing interaction paths.
+
+Non-goals: No production HUD, UI Toolkit migration, animation, sound, networking, new gameplay, presentation redesign, or generic framework beyond the current match needs.
+
+### [ ] 4.4d Close Phase 4 runtime hygiene and architecture gate
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: The refactored Phase 4 match runs with explicit generated-resource ownership, no known project-authored hot-path allocation churn or obsolete Unity object-discovery APIs, robust malformed-envelope rejection, and a recorded performance baseline before Phase 5 expands the action system.
+
+Acceptance checks:
+
+- Generated Materials, Meshes, Input Actions, and other owned Unity/native resources have explicit reuse and teardown; repeated map rebuild/scene lifecycle tests do not monotonically increase owned native-object counts.
+- Unchanged HUD repaint/update paths reuse cached styles, immutable view models, labels, definitions, offers, and lookup collections rather than rebuilding project-owned LINQ arrays or GUI objects each event. A Unity Profiler or `ProfilerRecorder` capture records the managed-allocation and frame-time baseline for the complete 292-cell map and a representative two-round director flow.
+- Project-authored runtime and test code uses the supported Unity 6.5 object-discovery APIs and compiles without the currently known `CS0618` warnings; scene discovery remains confined to the composition root.
+- Rule-event-log envelope parsing handles invalid Base64, truncated headers/bodies, invalid counts, unsupported versions, trailing data, and oversized/malformed inputs through the documented non-throwing or typed snapshot-rejection contract, with no partial restore.
+- The application/session, strategy-handler, presenter/view, snapshot, command-replay, event-log, map/setup, and saved-scene focused regressions pass, followed by both complete unfiltered Edit Mode and Play Mode suites.
+- Targeted visual inspection confirms the complete Phase 4 configured setup and validation controls remain readable and behaviorally unchanged.
+
+Non-goals: No production optimization target, DOTS/ECS rewrite, production UI migration, object pooling without measured need, gameplay change, networking, build, or polished art.
+
+### [!] 4.4e Independently review the Phase 4 architecture baseline
+
+Blocked by: Milestone 4.4d must pass its final Phase 4 architecture and runtime-hygiene gate.
+
+Observable outcome: A fresh analysis-only review determines whether the completed application-service, command-replay, action-strategy, MVP, resource-lifetime, diagnostic-envelope, and performance-baseline work is a sound foundation for expanding the general action system.
+
+Acceptance checks:
+
+- The review traces representative live, replay, Undo/restart, snapshot, event, pending-choice, and presentation paths through the actual implementation and checks that authority and dependency direction match the durable contracts.
+- It checks whether the former controller and combined resolver responsibilities were genuinely decomposed rather than moved into replacement god objects or hidden service-location paths.
+- It evaluates abstraction proportionality, generated-resource ownership, allocation/frame-time evidence, supported Unity APIs, warning state, and the ability of existing tests to detect behavioral drift.
+- Findings follow the independent-review classification and evidence contract in the roadmap execution rule; any justified fix is proposed as a separate corrective micro-milestone with no runtime implementation in this review.
+- The review re-evaluates the Phase 5 sequence and records whether the shortest dependency-safe path remains valid.
+
+Non-goals: No gameplay or presentation change, refactor, optimization implementation, new abstraction, networking work, production performance target, or weakening of the Phase 4 evidence.
+
+Hard gate: Phase 5 does not begin until milestone 4.4e is reviewed and every finding classified as gate-blocking has an approved disposition and, when required, a completed corrective milestone.
 
 ## Phase 5 - Core full-map actions and combat
 
@@ -1098,6 +1214,24 @@ Acceptance checks:
 - A successful Attack records a staged Defeat outcome for Phase 7 consequences.
 - Wasp card text, values, items, and special effects are not used.
 - T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass after the focused combat scenarios.
+
+### [!] 5.8a Independently review the full-map action and combat foundation
+
+Blocked by: Milestone 5.8 must pass its Phase 5 gate.
+
+Observable outcome: A fresh analysis-only review determines whether full-map Movement, Fast Travel, minion interactions, Attack/Defense, timing readiness, and their shared action-resolution seams can safely support the end-of-round systems in Phase 6.
+
+Acceptance checks:
+
+- The review inspects actual action dispatch, typed handlers, queries, pending continuations, atomic rejection, event ordering, and full-map scaling for representative accepted, rejected, resumed, restored, and replayed paths.
+- It looks for duplicated resolution routes, cross-handler leakage, growing conditional complexity, hidden state ownership, repeated full-map queries or allocations, and tests that prove isolated examples without protecting shared invariants.
+- It distinguishes verified defects and measured costs from speculative risks or stylistic preferences, following the common independent-review evidence contract.
+- Any justified fix is proposed as a separate corrective micro-milestone; the review itself changes no runtime, tests, content, or rules.
+- The Phase 6 sequence is re-evaluated against the evidence, including whether any prerequisite must move ahead of Minion Battle, token/marker, Lane Push, or retrieval work.
+
+Non-goals: No Wasp inventory or behavior, end-of-round implementation, combat redesign, speculative optimization, runtime fix, or relaxation of verified rules and validation gates.
+
+Hard gate: Phase 6 does not begin until milestone 5.8a is reviewed and every gate-blocking finding has an approved disposition.
 
 ## Phase 6 - Tokens, minions, Lane Push, and end-of-round components
 
@@ -1307,9 +1441,25 @@ Acceptance checks:
 - A broader deterministic core-loop suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: The complete Wasp card inventory and Wasp-specific card implementation do not begin until milestone 7.9 is reviewed and approved.
+### [!] 7.9a Independently review the complete synthetic core
 
-Hard-gate roadmap audit: After milestone 7.9 passes its T3 gate and is reviewed, audit readiness for verified Wasp content before assigning the next milestone profile. Confirm that the synthetic core loop has retired the intended architecture and integration risks, identify unresolved prerequisites that must remain ahead of Wasp implementation, recommend any justified changes to Phase 8's inventory/mapping entry sequence, and record the remaining-effort range. This audit cannot waive milestones 8.1 or 8.2 or authorize Wasp-specific implementation.
+Blocked by: Milestone 7.9 must pass its deterministic synthetic-match T3 gate.
+
+Observable outcome: A fresh analysis-only review determines whether the complete synthetic rules loop is correct, maintainable, deterministic, performant enough for the prototype, and architecturally ready for verified hero content.
+
+Acceptance checks:
+
+- The review follows complete-match paths across setup, turns, pending choices, combat, minions, tokens/markers, Lane Push, progression, victory, snapshots, deterministic replay, Undo/restart, and the event log using actual source and gate evidence.
+- It checks for state duplication, hidden coupling, temporary Phase 1-7 structures that outlived their purpose, rules or presentation authority leakage, persistence/replay divergence, complete-match allocation or resource-growth risks, and test suites that could provide false confidence.
+- It explicitly assesses whether the generic card/effect contracts remain suitable for real verified content without claiming that unknown cards require no extension.
+- Findings and preserved strengths follow the common independent-review evidence contract; fixes become separately approved corrective milestones and are not implemented here.
+- The existing hard-gate roadmap audit of Phase 8 entry is completed as a distinct section of the same review record, including remaining-effort range and shortest dependency-safe path.
+
+Non-goals: No Wasp inventory, source interpretation, card implementation, runtime fix, architecture rewrite, production optimization, or weakening of the synthetic-core gate.
+
+Hard gate: The complete Wasp inventory and Wasp-specific implementation do not begin until milestone 7.9a and every gate-blocking corrective milestone are reviewed and approved.
+
+Hard-gate roadmap audit: As part of milestone 7.9a, audit readiness for verified Wasp content before assigning the next milestone profile. Confirm that the synthetic core loop has retired the intended architecture and integration risks, identify unresolved prerequisites that must remain ahead of Wasp implementation, recommend any justified changes to Phase 8's inventory/mapping entry sequence, and record the remaining-effort range. This audit cannot waive milestones 8.1 or 8.2 or authorize Wasp-specific implementation.
 
 ## Phase 8 - Verified hero content, deterministic 3v3, and private online validation
 
@@ -1406,7 +1556,23 @@ Acceptance checks:
 - A broader source-linked Wasp integration suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16 is reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27, the render-pipeline migration gate at milestone 8.28, and the private online playtest gate at milestone 8.36 are reviewed and approved.
+### [!] 8.16a Independently review Wasp-driven card-engine extensibility
+
+Blocked by: Milestone 8.16 must pass its source-linked Wasp integration gate.
+
+Observable outcome: A fresh analysis-only review identifies what the first complete verified hero revealed about the generic card/effect architecture before five additional heroes multiply its extension costs.
+
+Acceptance checks:
+
+- The review traces every implemented Wasp capability to its source, typed contract, handler or composition, serialized continuation/state, ordered events, and focused/integration evidence.
+- It searches for card-name or hero-name branching, runtime printed-text parsing, untyped universal payloads, Wasp-specific behavior disguised as a generic capability, duplicated patterns that now justify a shared capability, and speculative abstractions supported by only one exceptional card.
+- It evaluates effect/query/modifier/continuous-source performance and test maintainability using actual Wasp scenarios rather than synthetic assumptions alone.
+- Findings follow the common independent-review evidence contract and distinguish legitimate isolated custom handlers from leakage that would make the next five heroes increasingly expensive.
+- Any correction is proposed separately; the review changes no rules, content, runtime implementation, card values, or source interpretation.
+
+Non-goals: No selection, inventory, or implementation of another hero; no Wasp rebalance; no generic framework merely to eliminate every custom handler.
+
+Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16a and every gate-blocking corrective milestone are reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27, the render-pipeline migration gate at milestone 8.28, and the private online playtest gate at milestone 8.36 are reviewed and approved.
 
 ### [!] 8.17 Select the five additional pitch heroes
 
@@ -1529,6 +1695,24 @@ Non-goals: No production board art, hero/minion production models, animation cov
 
 Hard gate: The private-online track uses this accepted URP baseline. Phase 9 production visual milestones do not begin until milestone 8.36 is also reviewed and approved.
 
+### [!] 8.28a Independently review six-hero, URP, and networking readiness
+
+Blocked by: Milestones 8.27 and 8.28 must pass the deterministic six-hero and URP migration gates.
+
+Observable outcome: A fresh analysis-only review converts measured six-hero match, projection, replay/snapshot, and URP behavior into explicit technical constraints for the private-online architecture decision.
+
+Acceptance checks:
+
+- The review measures or verifies representative command/event volume, immutable projection and snapshot size, restore/replay cost, full-match allocation/resource behavior, and frame-time characteristics for the complete primitive 3v3 configuration.
+- It inspects sources of nondeterminism, Unity-thread or scene coupling, host-authority suitability, stable identity/version boundaries, pending-choice transport needs, and current public/private information ownership.
+- It distinguishes actual scaling or confidentiality blockers from concerns that the later networking milestones already own, and does not select a provider or invent a transport design prematurely.
+- Findings follow the common independent-review evidence contract and supply concrete constraints and risks to milestone 8.29's source-backed architecture comparison.
+- Any prerequisite correction is proposed as a separate milestone; no networking, optimization, rendering, rules, or projection implementation occurs here.
+
+Non-goals: No provider/SDK selection, network prototype, public service, production rendering work, speculative scale target beyond the six invited players, or implementation fix.
+
+Hard gate: Milestone 8.29 does not begin until milestone 8.28a and every networking-readiness blocker are reviewed and given an approved disposition.
+
 ### [!] 8.29 Select the minimum private-online architecture and re-baseline the track
 
 Observable outcome: A source-backed architecture decision defines the smallest supportable way for six invited Windows players on the internet to join one private 3v3 match, with one authoritative host/session and one independently owned hero per player.
@@ -1583,7 +1767,23 @@ Acceptance checks:
 
 Non-goals: No public release, dedicated production service, accounts, matchmaking, anti-cheat certification, competitive operations, or production presentation.
 
-Hard gate: Phase 9 does not begin until the private online playtest evidence and any gate-blocking corrective milestones are reviewed and approved.
+### [!] 8.36a Independently review the private-online implementation and playtest evidence
+
+Blocked by: Milestone 8.36 must complete the invited six-human internet gate and record its unmodified playtest evidence.
+
+Observable outcome: A fresh analysis-only review correlates observed playtest failures and friction with the networking, authorization, synchronization, reconnect, diagnostics, and primitive presentation implementation before production polish begins.
+
+Acceptance checks:
+
+- The review examines actual session logs, test/build identity, tester observations, failure handling, host/client convergence evidence, reconnect/resync behavior, latency-sensitive choices, and relevant source paths.
+- It checks private-information leakage, command authorization, stale/version-mismatched input, host-loss policy, diagnostic sufficiency, runtime stability, and whether symptoms indicate correctness, architecture, performance, operational, or presentation causes.
+- Findings follow the common independent-review evidence contract; uncertain causes remain explicitly uncertain rather than being converted into unsupported fixes.
+- Gate-blocking defects and later presentation/UX findings are separated into appropriately scoped proposed corrective or Phase 9 milestones.
+- No code, rules, networking configuration, build, or presentation implementation changes during the review.
+
+Non-goals: No second playtest, production hosting/service design, accounts, matchmaking, telemetry, public distribution, or bundled fix implementation.
+
+Hard gate: Phase 9 does not begin until milestone 8.36a and every gate-blocking corrective milestone are reviewed and approved.
 
 ## Phase 9 - Presentation and pitch polish
 
@@ -1647,7 +1847,23 @@ Acceptance checks:
 - Common reference desktop resolutions preserve readable cards, values, prompts, and team identity.
 - T3 pre-build gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-Hard gate: The first retained private pitch player build does not begin until milestone 9.16 is reviewed and approved. The disposable render-pipeline smoke from milestone 8.28 and invited-tester online build from milestone 8.36 are pre-production evidence only.
+### [!] 9.16a Independently review pre-build engineering readiness
+
+Blocked by: Milestone 9.16 must pass its presentation and pre-build T3 gate.
+
+Observable outcome: A fresh, narrowly scoped analysis-only review determines whether the unchanged pitch revision is technically safe to package and demonstrate on a clean Windows machine.
+
+Acceptance checks:
+
+- The review checks runtime warnings/errors, repeated-match resource and memory behavior, frame-time or allocation spikes, unsupported/editor-only dependencies, build-setting assumptions, failure handling, and diagnostic usefulness using the actual final revision and existing gate evidence.
+- It checks for dead or unsafe debug paths, fragile scene/content references, and presentation/runtime coupling likely to fail outside the development Editor.
+- Findings follow the common independent-review evidence contract; purely aesthetic or broad maintainability preferences do not block the build without a concrete reliability consequence.
+- Any required correction becomes a separately approved milestone and invalidates/re-runs only the applicable evidence under `TESTING.md`; the review itself changes no code, content, scene, configuration, or build.
+- The review records an explicit proceed/block recommendation for milestone 10.1.
+
+Non-goals: No build creation, visual redesign, general refactor, new feature, installer/updater work, production optimization program, or public-release readiness assessment.
+
+Hard gate: The first retained private pitch player build does not begin until milestone 9.16a recommends proceeding and every gate-blocking corrective milestone is complete. The disposable render-pipeline smoke from milestone 8.28 and invited-tester online build from milestone 8.36 are pre-production evidence only.
 
 ## Phase 10 - Private publisher pitch package
 

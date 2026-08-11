@@ -449,8 +449,10 @@ The catalog is intentionally broader than the current code, but it is not author
 
 - Phase 1 implements only the action/choice/value seams and the minimum segmented-destination Movement capability needed by its approved card-driven movement slice.
 - Phase 2 proves nested Attack/Defense reaction using the same capability contracts.
-- Phases 3 through 7 implement only the verified general/core capabilities needed to prove the complete match loop with synthetic definitions.
+- Phases 3 through 7 implement only the verified general/core capabilities needed to prove the complete match loop with synthetic definitions. Before Phase 5 expands those capabilities, milestone 4.4b establishes the typed strategy-handler registry and preserves shared dispatcher invariants so later handlers extend one explicit seam rather than enlarging a single action-kind authority.
 - After that core-loop gate, milestone 8.2 maps verified Wasp content, identifies Wasp-specific capability deltas or refinements, and orders the remaining Wasp work; it does not gate general core capabilities.
 - After Wasp is complete, the five additional pitch heroes are selected and inventoried before a roster-wide delta map re-baselines their implementation. Each hero extends the catalog with verified reusable capabilities or isolated handlers without rewriting card instances, action offers, pending choices, commands/events, or snapshot foundations.
 
 The foundation is considered successful when Object Push, source-relative direct Move, Place, tokens, or another future effect can be introduced by registering/mapping the exact capability and tests, rather than adding branches across unrelated systems.
+
+The handler registry is explicit and typed. Registration uses stable action/capability identity and the capability's declared input/output contract; it does not use reflection discovery, display-name branches, a service locator, an untyped dictionary payload, or a universal expression language. Handlers remain pure rules collaborators and never reference match-session presenters, Unity views, transport callbacks, or animation state.
