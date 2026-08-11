@@ -40,6 +40,24 @@ Non-goals: No official card values, Fast Travel, direct Move, Defense rules, leg
 
 Historical evidence: [milestone 5.1a handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-51a-increase-synthetic-movement-and-keep-defense-controls-accessible-completion-evidence).
 
+### [x] 5.1b Show printed Defense values on legal Defense choices
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: While a Defense response is pending, every selectable Defense-card button shows that card's authoritative printed Defense value before the player chooses whether to discard it.
+
+Acceptance checks:
+
+- Each legal Defense-card invocation label contains the card display name and the typed printed Defense total derived from its authoritative action offer and definition.
+- The label distinguishes the value as `PRINTED DEFENSE`; it does not imply that unimplemented items, minions, active effects, Block, or other modifiers are included.
+- A card remains legal based only on the existing reaction-window ownership, in-hand, unplayed, typed Defense-action, and Hand-to-Discard-Pile requirements; the presentation change does not broaden eligibility or decide whether the Defense succeeds.
+- `DECLINE DEFENSE` remains unchanged, and every button continues to carry its existing typed Defense command without presentation-owned legality or resolution.
+- Focused presenter tests cover multiple legal cards with distinct values and the unchanged decline command; configured saved-scene Play Mode covers the passive HUD path.
+
+Non-goals: No Defense-rule, value-calculation, card-content, snapshot, modifier, minion, Block, Attack-outcome, legacy-controller UI, or broader card-detail redesign.
+
+Historical evidence: [milestone 5.1b handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-51b-show-printed-defense-values-on-legal-defense-choices-completion-evidence).
+
 ### [ ] 5.2 Implement Fast Travel replacement
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.

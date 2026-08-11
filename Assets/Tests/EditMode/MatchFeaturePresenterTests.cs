@@ -194,6 +194,50 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void RoundPresenter_ProjectsPrintedDefenseValuesWithoutChangingTypedChoices()
+        {
+            var session = CreateAdjacentSession();
+            StartTiedTurn(session, ActionKind.Attack);
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Attack);
+            Assert.That(session.Execute(DirectorCommand.StartAction(attack.ActionDefinitionId)).Accepted, Is.True);
+            var targetChoice = session.Projection.PendingAttackTargetChoice;
+            Assert.That(session.Execute(DirectorCommand.ChooseAttackTarget(
+                targetChoice.ResolutionId,
+                targetChoice.ChoiceId,
+                targetChoice.LegalTargetHeroIds.Single())).Accepted, Is.True);
+
+            var choice = session.Projection.PendingDefenseChoice;
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+            var cardChoices = model.DefenseChoices.Where(value =>
+                value.Command.Kind == DirectorCommandKind.ChooseDefenseCard).ToArray();
+
+            Assert.That(cardChoices, Has.Length.EqualTo(choice.LegalDefenseOffers.Count));
+            Assert.That(cardChoices.Select(value => value.Command.CardInstanceId),
+                Is.EquivalentTo(choice.LegalDefenseOffers.Select(value => value.SourceCardInstanceId)));
+            Assert.That(cardChoices.Select(value => PrintedDefenseValue(session.Projection, value.Command.CardInstanceId))
+                .Distinct().Count(), Is.GreaterThan(1));
+            foreach (var invocation in cardChoices)
+            {
+                var card = session.Projection.Cards.Single(value =>
+                    value.Id.Equals(invocation.Command.CardInstanceId));
+                var definition = session.Projection.Definitions.Single(value =>
+                    value.Reference.Equals(card.DefinitionReference));
+                Assert.That(invocation.Label, Is.EqualTo(
+                    $"DISCARD {definition.DisplayName.ToUpperInvariant()}\n" +
+                    $"PRINTED DEFENSE {PrintedDefenseValue(session.Projection, card.Id)}"));
+                Assert.That(invocation.Command.ResolutionId, Is.EqualTo(choice.ResolutionId));
+                Assert.That(invocation.Command.ChoiceId, Is.EqualTo(choice.ChoiceId));
+            }
+
+            var decline = model.DefenseChoices.Single(value =>
+                value.Command.Kind == DirectorCommandKind.DeclineDefense);
+            Assert.That(decline.Label, Is.EqualTo("DECLINE DEFENSE"));
+            Assert.That(decline.Command.ResolutionId, Is.EqualTo(choice.ResolutionId));
+            Assert.That(decline.Command.ChoiceId, Is.EqualTo(choice.ChoiceId));
+        }
+
+        [Test]
         public void UndoRestartAndDiagnostics_PresentersKeepOperationsAndLogProjectionSeparate()
         {
             var session = CreateSession();
@@ -343,6 +387,15 @@ namespace GuardsDigital.Tests.EditMode
             return projection.Definitions.Single(value =>
                     value.Reference.Equals(offer.SourceDefinitionReference))
                 .ActionDefinitions.Single(value => value.Id.Equals(offer.ActionDefinitionId)).Kind;
+        }
+
+        private static int PrintedDefenseValue(MatchSessionProjection projection, CardInstanceId cardId)
+        {
+            var card = projection.Cards.Single(value => value.Id.Equals(cardId));
+            return projection.Definitions.Single(value => value.Reference.Equals(card.DefinitionReference))
+                .ActionDefinitions.Single(value => value.Kind == ActionKind.Defense)
+                .BaseValues.Single(value => value.Channel == PrintedValueChannel.Defense)
+                .Amount;
         }
 
         private sealed class CapturingBoardView : IBoardInteractionView

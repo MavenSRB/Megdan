@@ -540,7 +540,9 @@ namespace GuardsDigital.Presentation.Match
 
             var values = choice.LegalDefenseOffers
                 .Select(offer => new TypedInvocationViewModel(
-                    $"DISCARD {GetCardDisplayName(projection, offer.SourceCardInstanceId)}",
+                    $"DISCARD {GetCardDisplayName(projection, offer.SourceCardInstanceId)}\n" +
+                    $"PRINTED DEFENSE " +
+                    $"{PrintedValueQuery.CalculatePrintedValue(offer, projection.Definitions, PrintedValueChannel.Defense).Total}",
                     DirectorCommand.ChooseDefenseCard(
                         choice.ResolutionId,
                         choice.ChoiceId,

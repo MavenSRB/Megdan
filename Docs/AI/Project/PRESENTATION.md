@@ -47,6 +47,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Provide internal Undo, restart, animation-speed, and camera-reset controls.
 - Provide a collapsible event log.
 - The configured prototype card panel remains inside the viewport and scrolls its hands/action body when vertical space is insufficient, keeping projected Defense-card and Decline controls reachable on short desktop viewports.
+- Each configured legal Defense-card invocation identifies its authoritative card and labels the offer-bound value as `PRINTED DEFENSE`; the exact typed command remains in the projected invocation, while modified Defense Total, eligibility, and response resolution remain outside presentation.
 - No main menu, settings suite, tutorial, collection screen, or account UI is required for the pitch.
 
 ## Accessibility baseline

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -193,6 +194,40 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandCount));
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
             Assert.That(runtime.PendingDefenseChoice, Is.Null);
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_PassiveRoundViewPreservesPrintedDefenseInvocationAndCommand()
+        {
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+            var defenseCard = Hand(runtime, TeamSide.Blue).Cards[0];
+            var command = DirectorCommand.ChooseDefenseCard(defenseCard.Id);
+            var invocation = new TypedInvocationViewModel(
+                "DISCARD TEST - BLUE FEINT\nPRINTED DEFENSE 2",
+                command);
+            var model = runtime.RoundView.Model;
+            TypedInvocationViewModel submitted = null;
+            runtime.RoundView.InvocationSubmitted += value => submitted = value;
+            runtime.RoundView.Render(new RoundActionViewModel(
+                model.Version,
+                model.RoundIndex,
+                model.TurnIndex,
+                model.Phase,
+                model.Status,
+                model.Actions,
+                model.EndTurnInvocation,
+                model.ContinueEndOfRoundInvocation,
+                model.InitiativeChoices,
+                new List<TypedInvocationViewModel> { invocation }));
+
+            yield return null;
+
+            Assert.That(runtime.RoundView.Model.DefenseChoices.Single().Label,
+                Is.EqualTo("DISCARD TEST - BLUE FEINT\nPRINTED DEFENSE 2"));
+            runtime.RoundView.ForwardInvocation(invocation);
+            Assert.That(submitted, Is.SameAs(invocation));
+            Assert.That(submitted.Command, Is.EqualTo(command));
         }
 
         [UnityTest]
