@@ -15,6 +15,7 @@
 # Private local rule and card references; preserve in place, never commit or distribute
 /Docs/Guards of Atlantis II - 2nd Printing_web.pdf
 /Docs/Guards of Atlantis II - Tabletopia Cards/
+/Docs/Guards of Atlantis II - Map References/
 
 # IDE and generated solution files
 /.vs/

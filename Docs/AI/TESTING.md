@@ -1,6 +1,6 @@
 # Guards Digital - Verification and Testing
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 ## Scope
 
@@ -122,6 +122,16 @@ Verified real cards require definition/schema validation plus a scenario for eve
 A Unity run counts only when the process exits successfully, a fresh NUnit XML exists, the requested filter discovers at least one test, the XML reports zero failures/errors and no unexpected skipped/inconclusive tests, and the log contains no compile/import exception.
 
 Completion reports record the tier, exact focused filters, result totals, directly affected regressions, any complete-suite result, and source/visual/manual/build checks. They also record any unaffected suite intentionally omitted and why. Exact totals in historical `ROADMAP.md` completion notes are evidence from those runs, not permanent expected counts.
+
+## Official board-map specification validation
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1
+```
+
+Expected result: the validator exits with code `0` and reports 292 cells, 210 playable spaces, 82 terrain cells, seven zones, 809 physical connections, 530 playable connections, and 40 spawn points split evenly between Red and Blue. It also verifies canonical map-local space IDs, `MapId`-composed global identity, zone membership, exact spawn types/locations, and the reviewed inventory digest.
+
+This is the T0 schema/content check for milestone 4.1. Because that milestone changes only source data and documentation, Unity Edit Mode and Play Mode suites are intentionally omitted.
 
 ## Edit Mode shell test
 

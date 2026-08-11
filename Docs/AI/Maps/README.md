@@ -1,0 +1,61 @@
+# Board map specifications
+
+## Scope and identity
+
+`official-single-lane.map.json` is the milestone 4.1 reviewed inventory for the complete official single-lane map. The user-supplied coordinate diagram is preserved locally at `Docs/Guards of Atlantis II - Map References/official-single-lane-axial-reference.jpg`; that private reference directory is intentionally excluded from Git.
+
+The schema is map-scoped so future maps can coexist:
+
+- `mapId` identifies the map and `revision` identifies its content revision.
+- `spaceId` is stable only within its map and is canonically derived from the axial coordinate as `q{q}_r{r}`.
+- A globally unambiguous space reference is the pair `(mapId, spaceId)`. Code must not treat a bare `spaceId`, coordinate, or one static map as globally unique.
+- Zones and spawn points are collections owned by the selected map specification. A future map receives its own zone and spawn collections rather than extending this map through name-based branches.
+
+Milestone 4.1 defines the data and its validation contract only. Loading it into authoritative Unity state and placeholder presentation belongs to milestone 4.2. Zone adjacency and the ordered Lane relationship belong to milestone 4.3.
+
+## Reviewed inventory
+
+The diagram uses pointy-top integer axial `(q, r)` coordinates and shows 292 cells. Every touching pair of inventoried cells is a physical connection under the six existing standard axial directions. A playable connection is a physical connection whose two endpoints are playable; terrain endpoints are excluded.
+
+| Classification | Cells |
+| --- | ---: |
+| Red Throne | 19 |
+| Red Approach | 41 |
+| Starting Battle Zone | 60 |
+| Blue Approach | 41 |
+| Blue Throne | 19 |
+| Top Jungle | 15 |
+| Bottom Jungle | 15 |
+| Terrain | 82 |
+| **Total** | **292** |
+
+The seven colored classifications are represented as stable zones. Rulebook page 3 establishes that the board is divided into Zones, each Throne is a Zone, the Lane connects the two Thrones, and the middle Lane Zone starts as the Battle Zone. This inventory records zone membership and the starting-Battle-Zone flag without pre-implementing zone adjacency or Lane order.
+
+The coordinate inventory derives 809 undirected physical connections and 530 undirected playable connections.
+
+## Spawn points
+
+The diagram contains exactly 40 spawn markers, split symmetrically as 20 Red and 20 Blue. Each team has three Hero, eleven Melee minion, three Ranged minion, and three Heavy minion spawn points.
+
+| Team / type | Coordinates |
+| --- | --- |
+| Red Hero | `(-2,-5)`, `(-6,-4)`, `(-4,-4)` |
+| Blue Hero | `(-3,10)`, `(-1,10)`, `(-5,11)` |
+| Red Melee minion | `(-8,-2)`, `(-6,-1)`, `(-5,-1)`, `(-1,-1)`, `(-1,0)`, `(3,2)`, `(-11,4)`, `(-8,4)`, `(-4,4)`, `(2,4)`, `(-1,6)` |
+| Blue Melee minion | `(-6,0)`, `(-9,2)`, `(-3,2)`, `(1,2)`, `(4,2)`, `(-10,4)`, `(-6,6)`, `(-6,7)`, `(-2,7)`, `(-1,7)`, `(1,8)` |
+| Red Ranged minion | `(-9,1)`, `(-4,2)`, `(0,4)` |
+| Blue Ranged minion | `(-7,2)`, `(-3,4)`, `(2,5)` |
+| Red Heavy minion | `(-8,0)`, `(1,5)`, `(-7,6)` |
+| Blue Heavy minion | `(0,0)`, `(-8,1)`, `(1,6)` |
+
+## Review and validation
+
+The source review covered every coordinate row, color classification, terrain interruption, zone boundary, and spawn symbol. Mechanical pixel/color and symbol-shape checks were used as transcription aids; the JSON, counts, and regenerated debug view remain the reviewed artifacts rather than the image-processing heuristics.
+
+Run the narrow schema/content validator from the project root:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1
+```
+
+The validator requires unique canonical map-local IDs and coordinates, valid zone references, exact per-zone and terrain totals, standard axial direction metadata, derived connection totals, valid playable spawn locations, exact team/type symmetry, and the reviewed inventory digest. A digest change requires another source review rather than an automatic acceptance.

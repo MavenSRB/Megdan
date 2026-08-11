@@ -1,6 +1,6 @@
 # Guards Digital - Roadmap
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 ## Status legend
 
@@ -868,7 +868,7 @@ Phase 4-7 audit (2026-08-10): Keep milestones 4.1-4.4, 5.1-5.8, 6.1-6.8, and 7.1
 
 ## Phase 4 - Full official multi-zone board
 
-### [ ] 4.1 Inventory the complete single-lane board reference
+### [x] 4.1 Inventory the complete single-lane board reference
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -882,7 +882,11 @@ Acceptance checks:
 
 Non-goals: No production board art or models.
 
+Completion note (2026-08-11): Added the reviewed, schema-versioned, map-scoped `official-single-lane` revision 1 JSON specification from the user-supplied axial-coordinate diagram, with all 292 stable map-local coordinate IDs, 210 playable spaces, 82 terrain cells, seven zone memberships and boundaries, both Throne zones, and the starting Battle Zone. Standard axial touching derives 809 undirected physical connections and 530 playable-to-playable connections. All 40 spawn markers are inventoried at exact coordinates and split symmetrically: each team has three Hero, eleven Melee minion, three Ranged minion, and three Heavy minion points. The identity contract composes `MapId` plus map-local `SpaceId`, keeps zones/spawns owned by the selected map revision, and forbids singleton-map or globally unique-coordinate assumptions so future maps can coexist. Source review used the preserved private diagram, rulebook page 3 terminology, row/color and marker-shape cross-checks, and a regenerated debug view. T0 schema/content validation passed through `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1`, including exact counts, references, connection derivation, team/type symmetry, and reviewed digest `addb4cdea8f2e0733233bd7fc047bc6cdd3b934102b48990699a524cfb7158bb`. Unity suites were intentionally omitted because no executable Unity or presentation path changed. No loader, scene geometry, production art/models, zone adjacency, or ordered Lane relationship was added.
+
 ### [ ] 4.2 Upgrade the test grid to the full official placeholder map
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The temporary Phases 1-3 test grid is replaced in the main validation scene by placeholder geometry for the complete official multi-zone single-lane map.
 
