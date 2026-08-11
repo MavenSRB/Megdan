@@ -14,7 +14,7 @@ The independent 4.4e review confirmed the session, replay, snapshot, event, pend
 
 Corrective milestone 5.1a increases each of the ten explicitly synthetic test-card Movement values by one while preserving every other card value and stable definition ID. Its content revision advances so older synthetic snapshots reject instead of silently acquiring the new values. The configured passive HUD now clamps its card panel to the available viewport and scrolls the hands/action body below its fixed header, keeping projected Defense-card and Decline controls reachable for the reported 778-by-300 geometry without changing Defense legality or command authority.
 
-Corrective milestone 5.1b makes every configured legal Defense-card invocation label contain the authoritative card display name and typed printed Defense value under the explicit `PRINTED DEFENSE` qualifier. The same projected typed commands, legal offer set, and unchanged `DECLINE DEFENSE` invocation remain authoritative; presentation does not calculate a modified Defense Total, infer eligibility, or resolve the reaction. A post-handoff screenshot demonstrated that the passive view still forces Defense choices through its 150-pixel fixed-width overload, visibly clipping longer card names despite the complete underlying label. The model/command behavior remains valid, but rendered readability is a confirmed presentation defect assigned to proposed corrective milestone 5.1c.
+Corrective milestone 5.1b makes every configured legal Defense-card invocation label contain the authoritative card display name and typed printed Defense value under the explicit `PRINTED DEFENSE` qualifier. Corrective milestone 5.1c removes the configured passive view's clipping 150-pixel Defense width, derives each Defense-choice minimum width from the complete label and current GUI button style, and expands the normal desktop card panel to 1280-by-360 while preserving viewport clamping and scrolling on short windows. The same projected typed commands, legal offer set, unchanged `DECLINE DEFENSE` invocation, and compact fallback remain authoritative; presentation does not calculate a modified Defense Total, infer eligibility, or resolve the reaction. Deterministic layout coverage and a visible non-batch 2048-by-1152 Game View capture confirm the four-card turn-one Defense set plus Decline are simultaneously readable without clipping, overlap, or scrollbars.
 
 Fresh-task independent verification milestone 4.4i inspected the final corrected Phase 4 source, saved-scene route, tests, warnings, runtime paths, raw 4.4h XML/logs, and exact profiling fixture at commit `bfd7258`. It independently confirmed `F44E-01` through `F44E-05`, found no new actionable or gate-blocking observation, and reused the unchanged 4.4h T3 evidence as required. Milestone 5.1 then integrated the segmented typed Movement continuation on the exact selected map: shortest and deliberately longer cumulative waypoint routes to the same destination commit their selected ordered adjacent steps through the configured match session, a typed evaluator applies prevention or a distance limit once at Movement-action start, and the effective allowance is captured in existing pending state for continuation, restore, replay, and Undo boundaries. The permanent recursive review-correction closure rule requires every future independent review's pre-gate corrective sequence to end in a fresh-task independent verification; if that verification requires further corrections, the correction-plus-verification cycle repeats before downstream work can begin.
 
@@ -28,12 +28,11 @@ The project does not yet implement Fast Travel, current-Battle-Zone changes, Lan
 
 ## Current authorization and next route
 
-- Current completed milestone: **5.1b**.
+- Current completed milestone: **5.1c**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **5.1c**.
+- Next proposed milestone: **5.2**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
-- Milestone 5.1c is documentation-scheduled only; implementation requires explicit approval of that exact corrective micro-milestone.
-- Milestone 5.2 remains unauthorized and blocked until 5.1c completes.
+- Milestone 5.2 is documentation-scheduled only; implementation requires explicit approval of that exact micro-milestone.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries

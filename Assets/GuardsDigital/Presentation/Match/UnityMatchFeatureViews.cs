@@ -251,7 +251,7 @@ namespace GuardsDigital.Presentation.Match
                 GUILayout.Label("Defense", GUILayout.Width(54f));
                 foreach (var defense in Model.DefenseChoices)
                 {
-                    DrawInvocation(defense, 150f);
+                    DrawContentSizedDefenseInvocation(defense);
                 }
 
                 GUILayout.EndHorizontal();
@@ -280,6 +280,38 @@ namespace GuardsDigital.Presentation.Match
             {
                 ForwardInvocation(invocation);
             }
+        }
+
+        private void DrawContentSizedDefenseInvocation(TypedInvocationViewModel invocation)
+        {
+            if (invocation == null)
+            {
+                return;
+            }
+
+            var minimumWidth = CalculateContentWidth(invocation.Label, GUI.skin.button);
+            if (GUILayout.Button(
+                invocation.Label,
+                GUILayout.MinWidth(minimumWidth),
+                GUILayout.Height(46f)))
+            {
+                ForwardInvocation(invocation);
+            }
+        }
+
+        public static float CalculateContentWidth(string label, GUIStyle style)
+        {
+            if (label == null)
+            {
+                throw new ArgumentNullException(nameof(label));
+            }
+
+            if (style == null)
+            {
+                throw new ArgumentNullException(nameof(style));
+            }
+
+            return Mathf.Ceil(style.CalcSize(new GUIContent(label)).x);
         }
     }
 

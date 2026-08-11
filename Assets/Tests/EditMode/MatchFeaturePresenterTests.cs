@@ -31,6 +31,50 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ConfiguredHudLayout_UsesExpandedDesktopPanelForCompleteDefenseRow()
+        {
+            var panel = ConfiguredMatchHudRenderer.CalculateCardPanelRect(2048f, 1152f);
+
+            Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(12f, 780f, 1280f, 360f)));
+        }
+
+        [Test]
+        public void DefenseChoiceLayout_AllocatesAtLeastTheMeasuredFullLabelWidth()
+        {
+            const string longestCurrentLabel =
+                "DISCARD TEST - BLUE SCOUT SHOT\nPRINTED DEFENSE 1";
+            var style = new UnityEngine.GUIStyle
+            {
+                font = UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf"),
+                fontSize = 12,
+                padding = new UnityEngine.RectOffset(6, 6, 4, 4),
+                wordWrap = false
+            };
+
+            var measuredWidth = style.CalcSize(new UnityEngine.GUIContent(longestCurrentLabel)).x;
+            var allocatedMinimumWidth = RoundActionUnityView.CalculateContentWidth(
+                longestCurrentLabel,
+                style);
+
+            Assert.That(allocatedMinimumWidth, Is.GreaterThanOrEqualTo(measuredWidth));
+            Assert.That(allocatedMinimumWidth, Is.GreaterThan(150f),
+                "The longest current Defense label must not regress to the clipping fixed width.");
+
+            var turnOneLabels = new[]
+            {
+                "DISCARD TEST - BLUE FEINT\nPRINTED DEFENSE 2",
+                "DISCARD TEST - BLUE SENTINEL\nPRINTED DEFENSE 4",
+                longestCurrentLabel,
+                "DISCARD TEST - BLUE HAMMER\nPRINTED DEFENSE 1",
+                "DECLINE DEFENSE"
+            };
+            var completeRowWidth = 54f + turnOneLabels.Sum(label =>
+                RoundActionUnityView.CalculateContentWidth(label, style));
+            Assert.That(completeRowWidth, Is.LessThanOrEqualTo(1256f),
+                "The expanded desktop panel must fit four Defense cards plus Decline without horizontal scrolling.");
+        }
+
+        [Test]
         public void FeaturePresenters_DependOnlyOnSessionAndTheirViewPort()
         {
             AssertPresenterDependencies<BoardInteractionPresenter, IBoardInteractionView>();

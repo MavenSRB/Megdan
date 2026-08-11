@@ -83,8 +83,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(panel.yMin, Is.GreaterThanOrEqualTo(0f));
             Assert.That(panel.xMax, Is.LessThanOrEqualTo(Screen.width));
             Assert.That(panel.yMax, Is.LessThanOrEqualTo(Screen.height));
+            Assert.That(panel.width,
+                Is.EqualTo(Mathf.Min(1280f, Mathf.Max(0f, Screen.width - 24f))).Within(0.01f));
             Assert.That(panel.height,
-                Is.EqualTo(Mathf.Min(310f, Mathf.Max(0f, Screen.height - 24f))).Within(0.01f));
+                Is.EqualTo(Mathf.Min(360f, Mathf.Max(0f, Screen.height - 24f))).Within(0.01f));
         }
 
         [UnityTest]
@@ -197,15 +199,31 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_PassiveRoundViewPreservesPrintedDefenseInvocationAndCommand()
+        public IEnumerator Scene_PassiveRoundViewPreservesFourPrintedDefenseInvocationsAndDeclineCommands()
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
-            var defenseCard = Hand(runtime, TeamSide.Blue).Cards[0];
-            var command = DirectorCommand.ChooseDefenseCard(defenseCard.Id);
-            var invocation = new TypedInvocationViewModel(
-                "DISCARD TEST - BLUE FEINT\nPRINTED DEFENSE 2",
-                command);
+            var defenseCards = Hand(runtime, TeamSide.Blue).Cards.Take(4).ToArray();
+            var invocations = new[]
+            {
+                new TypedInvocationViewModel(
+                    "DISCARD TEST - BLUE FEINT\nPRINTED DEFENSE 2",
+                    DirectorCommand.ChooseDefenseCard(defenseCards[0].Id)),
+                new TypedInvocationViewModel(
+                    "DISCARD TEST - BLUE SENTINEL\nPRINTED DEFENSE 4",
+                    DirectorCommand.ChooseDefenseCard(defenseCards[1].Id)),
+                new TypedInvocationViewModel(
+                    "DISCARD TEST - BLUE SCOUT SHOT\nPRINTED DEFENSE 1",
+                    DirectorCommand.ChooseDefenseCard(defenseCards[2].Id)),
+                new TypedInvocationViewModel(
+                    "DISCARD TEST - BLUE HAMMER\nPRINTED DEFENSE 1",
+                    DirectorCommand.ChooseDefenseCard(defenseCards[3].Id))
+            };
+            var declineCommand = DirectorCommand.DeclineDefense();
+            var declineInvocation = new TypedInvocationViewModel(
+                "DECLINE DEFENSE",
+                declineCommand);
+            var choices = invocations.Concat(new[] { declineInvocation }).ToArray();
             var model = runtime.RoundView.Model;
             TypedInvocationViewModel submitted = null;
             runtime.RoundView.InvocationSubmitted += value => submitted = value;
@@ -219,15 +237,25 @@ namespace GuardsDigital.Tests.PlayMode
                 model.EndTurnInvocation,
                 model.ContinueEndOfRoundInvocation,
                 model.InitiativeChoices,
-                new List<TypedInvocationViewModel> { invocation }));
+                choices));
 
             yield return null;
 
-            Assert.That(runtime.RoundView.Model.DefenseChoices.Single().Label,
-                Is.EqualTo("DISCARD TEST - BLUE FEINT\nPRINTED DEFENSE 2"));
-            runtime.RoundView.ForwardInvocation(invocation);
-            Assert.That(submitted, Is.SameAs(invocation));
-            Assert.That(submitted.Command, Is.EqualTo(command));
+            Assert.That(runtime.RoundView.Model.DefenseChoices, Has.Count.EqualTo(5));
+            Assert.That(runtime.RoundView.Model.DefenseChoices[2].Label,
+                Is.EqualTo("DISCARD TEST - BLUE SCOUT SHOT\nPRINTED DEFENSE 1"));
+            Assert.That(runtime.RoundView.Model.DefenseChoices[4].Label, Is.EqualTo("DECLINE DEFENSE"));
+            foreach (var invocation in invocations)
+            {
+                runtime.RoundView.ForwardInvocation(invocation);
+                Assert.That(submitted, Is.SameAs(invocation));
+                Assert.That(submitted.Command.Kind, Is.EqualTo(DirectorCommandKind.ChooseDefenseCard));
+                Assert.That(submitted.Command.CardInstanceId, Is.EqualTo(invocation.Command.CardInstanceId));
+            }
+
+            runtime.RoundView.ForwardInvocation(declineInvocation);
+            Assert.That(submitted, Is.SameAs(declineInvocation));
+            Assert.That(submitted.Command, Is.EqualTo(declineCommand));
         }
 
         [UnityTest]

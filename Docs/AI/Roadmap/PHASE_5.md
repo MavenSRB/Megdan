@@ -58,7 +58,7 @@ Non-goals: No Defense-rule, value-calculation, card-content, snapshot, modifier,
 
 Historical evidence: [milestone 5.1b handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-51b-show-printed-defense-values-on-legal-defense-choices-completion-evidence).
 
-### [ ] 5.1c Restore readable content-sized Defense choice buttons
+### [x] 5.1c Restore readable content-sized Defense choice buttons
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -67,17 +67,17 @@ Observable outcome: Every configured Defense-card choice renders its complete ca
 Acceptance checks:
 
 - Defense-card controls no longer force the fixed 150-pixel invocation width that clips longer two-line labels; their rendered width is derived from the complete label and current GUI style, consistent with the existing content-sized normal-action path.
-- The longest current synthetic Defense label is fully readable at the configured saved-scene viewport with no left/right clipping, truncation, overlap, or loss of the second line; all legal card choices and `DECLINE DEFENSE` remain reachable through the existing scrollable panel.
+- The longest current synthetic Defense label is fully readable at the configured saved-scene viewport with no left/right clipping, truncation, overlap, or loss of the second line. At the validated 2048-by-1152 desktop Game View, the expanded panel shows the four-card turn-one Defense set plus `DECLINE DEFENSE` simultaneously without scrollbars; short viewports still clamp and keep every choice reachable through the existing scrollable fallback.
 - Every button retains its exact projected `ChooseDefenseCard` or `DeclineDefense` command, and presentation still owns no eligibility, value, or resolution authority.
 - A deterministic layout regression fails when the allocated Defense-button width is smaller than its measured full content, the configured saved-scene Play Mode fixture covers the passive HUD path, and completion includes a visible non-batch Game View inspection of the longest label. A blank/headless framebuffer or model-only label assertion is not visual evidence.
 
 Non-goals: No Defense rules, label-content change, card content, value calculation, HUD redesign, production styling, legacy-controller UI, or unrelated action/initiative/end-turn sizing change.
 
-### [!] 5.2 Implement Fast Travel replacement
+Historical evidence: [milestone 5.1c handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-51c-restore-readable-content-sized-defense-choice-buttons-completion-evidence).
+
+### [ ] 5.2 Implement Fast Travel replacement
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
-Blocked by: Corrective milestone 5.1c must restore readable Defense choices. Milestone 5.1 and the Phase 4 zone model are otherwise complete.
 
 Acceptance checks:
 

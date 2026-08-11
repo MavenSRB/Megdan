@@ -42,7 +42,8 @@ namespace GuardsDigital.Presentation.Match
     public sealed class ConfiguredMatchHudRenderer : MonoBehaviour
     {
         private const float Margin = 12f;
-        private const float CardPanelHeight = 310f;
+        private const float CardPanelWidth = 1280f;
+        private const float CardPanelHeight = 360f;
         private const float TieBreakerWidth = 200f;
         private const float TieBreakerHeight = 96f;
         private const float EventLogPreferredWidth = 720f;
@@ -144,7 +145,7 @@ namespace GuardsDigital.Presentation.Match
 
         public static Rect CalculateCardPanelRect(float viewportWidth, float viewportHeight)
         {
-            var width = Mathf.Min(820f, Mathf.Max(0f, viewportWidth - (Margin * 2f)));
+            var width = Mathf.Min(CardPanelWidth, Mathf.Max(0f, viewportWidth - (Margin * 2f)));
             var height = Mathf.Min(CardPanelHeight, Mathf.Max(0f, viewportHeight - (Margin * 2f)));
             return new Rect(
                 Margin,
