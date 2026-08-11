@@ -18,6 +18,9 @@
 *.controller text eol=lf whitespace=-blank-at-eol
 *.inputactions text eol=lf
 
+# Byte-exact milestone 3.11a preservation baseline
+Docs/AI/Archive/Pre-Governance/config.toml binary
+
 # Binary assets
 *.png binary
 *.jpg binary

@@ -1,0 +1,45 @@
+# Future Validation Gates and Recipes
+
+Canonical active shard. Return to [../TESTING.md](../TESTING.md).
+
+## Official board-map specification validation
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1
+```
+
+Expected result: the validator exits with code `0` and reports that reusable invariants and synthetic map-local identity isolation pass, followed by 292 cells, 210 playable spaces, 82 terrain cells, seven zones, 809 physical connections, 530 playable connections, and 40 spawn points split evenly between Red and Blue. The reusable layer verifies map-local `SpaceId`, `ZoneId`, and `SpawnPointId` contracts, immutable `(MapId, revision)` selection, selected-map-local coordinate queries, references, and structural invariants without official-map constants. Bounded in-memory fixtures reuse all three child IDs and their coordinate under different synthetic `MapId` values. The official layer separately verifies every reviewed count/location and the zone/space/spawn digest, including all rules-relevant zone metadata.
+
+This is the T0 schema/content check for milestones 4.1, 4.1a, and the source half of 4.2. Milestones 4.1-4.1a do not change a Unity runtime or presentation path, so their Unity suites are intentionally omitted.
+
+## Selected-map authoritative loading and snapshot tests
+
+For milestone 4.2, run focused Edit Mode `BoardMapDefinitionTests;AuthoritativeSnapshotSerializerTests` and write `tmp/milestone-4-2-focused-results.xml` plus `tmp/milestone-4-2-focused.log`. Run directly affected Edit Mode `BoardMapDefinitionTests;AdjacentDestinationQueryTests;AdjacentMoveAuthorityTests;MovementReachabilityQueryTests;MovementSessionTests;CardActionResolutionAuthorityTests;AttackActionResolutionAuthorityTests;RoundResolutionAuthorityTests;TurnResolutionAuthorityTests;AuthoritativeSnapshotSerializerTests;CardDrivenMovementPresentationTests;DirectorHandPresentationTests;HeroSelectionControllerTests;MinimalHexGridSceneTests` and write `tmp/milestone-4-2-affected-results.xml` plus `tmp/milestone-4-2-affected.log`. Because the saved-scene controller now constructs its authority from the selected definition, run Play Mode `MinimalHexGridPlayModeTests` and write `tmp/milestone-4-2-play-results.xml` plus `tmp/milestone-4-2-play.log`.
+
+Expected result: the catalog resolves exact map ID/revision pairs while bounded synthetic definitions reuse coordinates and every child ID without collision; the official resource loads 292 owned cells, 210 playable spaces, 82 terrain cells, seven zones, and 40 spawn points; the authoritative board exposes the immutable selected reference and uses only playable coordinates; snapshot schema version 2 round-trips deterministically and rejects missing map content separately from revision mismatch; Movement, Attack, turn/round, Undo/restart, event-log, controller, and saved-scene behavior remains green with the official definition selected. Milestone 4.2 T2 evidence passed focused Edit Mode 6/6, directly affected Edit Mode 138/138, and focused Play Mode 12/12, all with zero failed, skipped, or inconclusive cases. Complete unfiltered suites were intentionally omitted because this is not a phase gate or backward snapshot migration and the affected consumers were enumerated.
+
+## Post-setup application/session boundary tests
+
+For milestone 4.4a, add a pure `MatchSessionTests`-equivalent fixture and run it with the milestone 3.10a command-history/replay fixture, `RoundResolutionAuthorityTests`, `TurnResolutionAuthorityTests`, `CardActionResolutionAuthorityTests`, `AttackActionResolutionAuthorityTests`, `AuthoritativeSnapshotSerializerTests`, and `RuleEventLogProjectionTests`-equivalent coverage; write `tmp/milestone-4-4a-focused-results.xml` and `tmp/milestone-4-4a-focused.log`. Run the directly affected existing presentation fixtures and `MinimalHexGridPlayModeTests` only after the saved-scene adapter has been redirected through the new session port; write `tmp/milestone-4-4a-affected-results.xml`, `tmp/milestone-4-4a-affected.log`, `tmp/milestone-4-4a-play-results.xml`, and `tmp/milestone-4-4a-play.log`.
+
+Expected result: every supported live command and retained replay command crosses the same application-service dispatcher; accepted/rejected state, ordered events, pending choices, authoritative snapshot bytes, event-log projection, Undo/restart, and immutable projection versions match the pre-refactor behavior. The pure application assembly has no Unity reference, presentation no longer coordinates low-level authorities, and a rejected command exposes no partial state or projection. Milestone 4.4a is T2 unless implementation unexpectedly broadens the scene/bootstrap or shared test-infrastructure blast radius.
+
+## Typed card-action strategy tests
+
+For milestone 4.4b, add handler-registry and dispatcher-contract fixtures and run them with `CardActionResolutionAuthorityTests`, `AttackActionResolutionAuthorityTests`, `MovementSessionTests`, `MovementReachabilityQueryTests`, `TurnResolutionAuthorityTests`, `RoundResolutionAuthorityTests`, the milestone 3.10a replay fixture, and `AuthoritativeSnapshotSerializerTests`; write `tmp/milestone-4-4b-focused-results.xml` and `tmp/milestone-4-4b-focused.log`. Run directly affected presentation/session fixtures only if public adapter code changes; no Play Mode is required for a pure handler extraction unless a Unity-facing path changes.
+
+Expected result: the dispatcher preserves one active stable resolution, offer revalidation, atomic rejection, serializable pending choices, restoration validation, and event order while typed Movement and Attack/Defense handlers reproduce all accepted and rejected pre-refactor scenarios. A bounded synthetic registration fixture proves extension without dispatcher branching. Identical setup plus command sequence produces byte-identical authoritative snapshots and event-log projection before and after extraction.
+
+## Feature MVP presentation tests
+
+For milestone 4.4c, add pure presenter/view-port tests for board interaction, director hands/commitments, round/actions, Undo/restart, and diagnostics. Run those with `CardDrivenMovementPresentationTests`, `DirectorHandPresentationTests`, `HeroSelectionControllerTests` or their explicit replacement fixtures, `PrimitiveHeroViewTests`, `MinimalHexGridSceneTests`, the application-session tests, and the milestone 3.10a replay tests; write `tmp/milestone-4-4c-focused-edit-results.xml` and `tmp/milestone-4-4c-focused-edit.log`. Run `MinimalHexGridPlayModeTests` for the complete saved-scene interaction path and write `tmp/milestone-4-4c-focused-play-results.xml` and `tmp/milestone-4-4c-focused-play.log`.
+
+Expected result: passive views forward intent and render immutable view models; presenters depend only on the match-session/view ports and do not call each other; one composition root owns scene discovery/wiring; and no replacement god-object owns session, history, input, projection, and rendering. Commitment/reveal, tied Initiative, Hold, segmented Movement/Stop, Attack target/Defense, end-of-round continuation, repeated rounds, snapshot restore, Undo/restart, event log, input blocking, highlights, and visible status/layout remain behaviorally equivalent.
+
+## Phase 4 runtime-hygiene and architecture gate
+
+For milestone 4.4d, first run focused resource-lifecycle, unchanged-HUD projection/allocation, supported-object-discovery, malformed rule-event-log envelope, application/session, handler-registry, presenter/view, map/setup, snapshot, and replay fixtures; write `tmp/milestone-4-4d-focused-edit-results.xml` and `tmp/milestone-4-4d-focused-edit.log`. Run `MinimalHexGridPlayModeTests` and any new scene-lifecycle/performance fixture, then both complete unfiltered suites; write `tmp/milestone-4-4d-focused-play-results.xml`, `tmp/milestone-4-4d-focused-play.log`, `tmp/milestone-4-4d-complete-edit-results.xml`, `tmp/milestone-4-4d-complete-edit.log`, `tmp/milestone-4-4d-complete-play-results.xml`, and `tmp/milestone-4-4d-complete-play.log`.
+
+Record one development-Editor Unity Profiler or `ProfilerRecorder` baseline for the complete 292-cell map and a representative two-round director flow. Report frame-time and managed-allocation observations, repeated map-rebuild/native-object counts, test environment, capture duration, and whether project-owned unchanged-HUD code creates styles, collections, definitions/offers, or labels per event. This is a regression baseline, not a production performance target.
+
+Expected result: generated Unity/native resources are reused or destroyed through explicit ownership; repeated rebuild/lifecycle checks do not show monotonic owned-object growth; malformed diagnostic envelopes reject through the documented safe contract without partial restore; project-authored runtime and tests remain clear of Unity 6.5 `CS0618` object-discovery warnings; focused and complete suites pass; and targeted visual inspection confirms the complete configured Phase 4 setup and validation controls remain readable. This is the final Phase 4 T3 gate; no unaffected Unity suite is omitted.

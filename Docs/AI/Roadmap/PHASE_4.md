@@ -1,0 +1,203 @@
+# Phase 4 - Full official multi-zone board
+
+Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historical completion evidence: [PHASE_4 handoffs](../Archive/Phase-Handoffs/PHASE_4.md).
+
+## Phase 4 - Full official multi-zone board
+
+### [x] 4.1 Inventory the complete single-lane board reference
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: Every part of the complete official single-lane board - including all spaces, connections, terrain, zones, spawn points, Thrones, and the starting Battle Zone - has a reviewed data specification.
+
+Acceptance checks:
+
+- Every logical space has a stable ID and coordinate.
+- Every zone boundary, zone membership, spawn point, and Throne is checked against the authoritative visual reference.
+- The inventory covers the full map rather than a reduced movement-test area.
+
+Non-goals: No production board art or models.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-41-inventory-the-complete-single-lane-board-reference-completion-evidence).
+
+### [x] 4.1a Harden map-scoped identity and validation contracts
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: The map specification and source-validation boundary can admit additional future map definitions without weakening the reviewed `official-single-lane` evidence or relying on globally unique child IDs.
+
+Acceptance checks:
+
+- `SpaceId`, `ZoneId`, and `SpawnPointId` are explicitly map-local; any persisted, cross-map, catalog, or external reference composes the stable `MapId` with the applicable child ID.
+- The selected map is identified by an immutable `MapId` plus content revision, and coordinate-based rule/query APIs are explicitly local to that one selected match map rather than globally qualified individually.
+- Reusable schema/invariant validation is separated from `official-single-lane` source-review checks; the reusable layer contains no official-map IDs, counts, or digest.
+- Official-map validation still enforces every reviewed count/location and protects all rules-relevant zone metadata, including zone identity, kind, team, Throne status, and starting-Battle-Zone status.
+- A bounded synthetic validation fixture may reuse coordinates and child IDs under a different synthetic `MapId` to prove scoping, but it is not retained or presented as another playable map.
+- T0 documentation/source validation passes; no Unity suite is required because no Unity runtime or presentation path changes.
+
+Non-goals: No authoritative map loader, snapshot schema change, Unity scene geometry, second playable map, zone adjacency, ordered Lane relationship, or production art.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-41a-harden-map-scoped-identity-and-validation-contracts-completion-evidence).
+
+### [x] 4.2 Load the selected map definition into authoritative state
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: A match loads one selected map definition through a reusable boundary, and authoritative state plus snapshots retain and validate that map's stable identity and content revision.
+
+Acceptance checks:
+
+- A reusable loader/catalog boundary resolves a requested `MapId` and content revision without a singleton instance, fixed official-map resource path in rules code, or map-name branches.
+- The loaded immutable map definition owns its spaces, terrain, zones, and spawn points; existing coordinate-based movement/query authorities operate within that selected definition.
+- The authoritative match/board exposes its immutable selected-map reference rather than requiring every internal coordinate value to repeat `MapId`.
+- The versioned authoritative snapshot serializes `MapId` and map content revision, resolves them through the supplied current map definitions, and rejects missing or mismatched map content with a typed reason.
+- Focused pure tests use bounded synthetic definitions that reuse coordinates and map-local child IDs to prove isolation, selection, and snapshot mismatch rejection without adding another playable map.
+- Existing movement, Attack, round, snapshot, Undo, restart, and event-log regressions remain green with the official map definition selected.
+
+Non-goals: No Unity scene replacement, second playable map, zone adjacency queries, Fast Travel, lane pushing, setup placement, or production art.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-42-load-the-selected-map-definition-into-authoritative-state-completion-evidence).
+
+### [x] 4.2a Upgrade the test grid to the full official placeholder map
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: The temporary Phases 1-3 test grid is replaced in the main validation scene by placeholder geometry driven by the selected complete official multi-zone single-lane map definition.
+
+Acceptance checks:
+
+- The scene consumes the selected loaded map definition rather than rebuilding topology from a radius or a hard-coded official-map coordinate list.
+- Logical adjacency matches the reviewed board specification.
+- Terrain and spawn-point classifications are inspectable.
+- Every official zone is visibly distinguishable in debug presentation without implying final art.
+- The complete map can be framed and inspected under the current fixed-camera test setup.
+- Focused Edit Mode and saved-scene Play Mode checks prove presentation rebuilds from the selected map and does not own authoritative topology or map selection.
+
+Non-goals: No second playable map, polished environment, Fast Travel, lane pushing, or production camera controls.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-42a-upgrade-the-test-grid-to-the-full-official-placeholder-map-completion-evidence).
+
+### [ ] 4.3 Define and validate zones and zone adjacency
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: Every board space belongs to the correct official zone, and authoritative queries can distinguish the same zone, an adjacent zone, and a non-adjacent zone.
+
+Acceptance checks:
+
+- Red Throne, Blue Throne, the starting Battle Zone, and every intermediate zone have stable IDs.
+- Every playable space has the correct zone membership.
+- Zone adjacency follows the rulebook definition and is verified against the complete map.
+- Focused tests cover same-zone, adjacent-zone, and non-adjacent-zone pairs in both directions.
+- The ordered lane relationship between the two Thrones is represented for later lane movement.
+
+Non-goals: No Fast Travel validation, current-Battle-Zone changes, lane pushing, minion respawn, or victory logic.
+
+### [ ] 4.4 Place the 1v1 Quick Game setup
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: Red Wasp, Blue Wasp, standard minions, Lives, Waves, and Tie Breaker state are placed from configuration data while their hands still use synthetic test cards.
+
+Acceptance checks:
+
+- The setup configuration declares its required `MapId` and map content revision.
+- Setup creation requires the exact selected map definition and rejects an unavailable or mismatched map identity/revision.
+- Every configured occupied space and spawn point resolves within that selected map; map-local IDs are never resolved against another map.
+- Three Wave counters and four Life counters per team.
+- Standard single-lane minions are created from configuration with stable identity, team, type, and occupied-space data.
+- The visible standard minions use the circular artwork in the private reference atlas `Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/g713916_s799373.sprite0__45.jpg`: Steam/orange maps to project Red and Crystal/light-blue maps to project Blue; within each team, the round riveted/broad spiked face is Heavy, the narrow helmet with cheek guards/armored shoulders is Melee, and the two-pronged helmet/narrow crystal crest is Ranged. The source manifest incorrectly labels the Crystal melee sprite `Melee_Steam`; implementation must use this reviewed mapping, select art from authoritative team/type data, and never infer rules identity from the image or manifest label alone.
+- The initial Tie Breaker result comes from milestone 2.6.
+- Only the approved player-count, mirrored-hero, and director-mode deviations are present.
+- Source/data validation, focused setup-scene inspection, and directly affected Edit Mode and Play Mode suites pass. The complete unfiltered Phase 4 gate moves to milestone 4.4d so it validates the same configured setup after the behavior-preserving architecture refactor.
+
+Non-goals: No complete Wasp card inventory or Wasp-specific behavior.
+
+### [ ] 4.4a Establish the transport-neutral match application service
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: One pure C# application-service boundary owns the configured authoritative match and accepts typed gameplay commands for both live director input and deterministic replay, while Unity components no longer coordinate low-level rules authorities directly.
+
+Acceptance checks:
+
+- A `GuardsDigital.Application`-equivalent assembly has no Unity dependency and exposes one explicit match-session port over immutable initial scenario inputs, current authoritative state, typed commands/choices, accepted or rejected results, ordered events, and a monotonically changing immutable projection/version.
+- The session composes the existing participant, selected-map, board, card-action, turn/round, Tie Breaker, snapshot, command-replay history, and diagnostic-event boundaries without duplicating their rules or moving authority into presentation.
+- Live director commands, milestone 3.10a replay, Undo, and restart use the same command dispatcher and public rules-authority paths. Rejected commands expose no partial state or projection and never enter accepted history.
+- Presentation and future transports depend on the session port rather than concrete Movement, Attack/Defense, Initiative, turn, round, snapshot, or history implementations.
+- Focused equivalence tests cover every currently supported command family and prove unchanged serialized authoritative state, ordered events, pending choices, Undo/restart results, and event-log projection.
+- One deterministic replay oracle compares accepted-command identity/order, rejection results, ordered semantic events, immutable projection after each accepted command, final authoritative snapshot, and completed history across live execution, fresh replay, retained-prefix Undo replay, and snapshot restore plus continuation.
+- Bounded invariant/property fixtures use reported fixed seeds and prove at minimum that rejected commands mutate no state/history/events/version, ownership and occupancy remain valid, pending choices reference live stable identities, reveal never exposes an incomplete commitment set, and replay appends no extra accepted command.
+
+Non-goals: No gameplay-rule change, visual redesign, networking provider, client authorization/projection policy, save UI, production dependency-injection framework, service locator, or global event bus.
+
+### [ ] 4.4b Decompose card-action resolution behind typed strategy handlers
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: The shared card-action dispatcher preserves one deterministic resumable resolution boundary while Movement and Attack/Defense behavior live behind separately testable typed handlers rather than continuing to grow one action-kind authority.
+
+Acceptance checks:
+
+- One explicit registry maps supported typed action/capability identities to pure handlers without reflection, card-name/hero-name branches, runtime printed-text parsing, a service locator, or an untyped universal payload.
+- The dispatcher retains cross-action invariants: one active resolution, stable resolution/step identity, authoritative offer revalidation, atomic rejection, serializable pending choice, and ordered event publication.
+- Movement and Attack/Defense handlers retain their existing typed commands, results, state transitions, pending continuations, restoration validators, and deterministic event order.
+- Adding a bounded synthetic handler fixture proves a new supported strategy can be registered and tested without changing dispatcher control flow or unrelated handlers.
+- Before/after equivalence tests compare accepted and rejected scenarios, authoritative snapshots, event projections, turn/round integration, and deterministic replay for every currently supported action path.
+
+Non-goals: No new action kind, card text, effect capability, Attack consequence, Fast Travel, timing system, schema migration, reflection-based plugin system, or speculative general scripting language.
+
+### [ ] 4.4c Replace the validation god-controller with feature MVP
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: The validation scene uses Model-View-Presenter over the match-session port: feature presenters translate user intent and immutable projections, passive Unity views render view models, and one small composition root owns scene wiring.
+
+Acceptance checks:
+
+- The current `HeroSelectionController` responsibilities are separated into bounded board-interaction, director-hand/commitment, round/action, Undo/restart, and diagnostic-log presenters plus passive views; no replacement type owns all of session authority, history, input, projection, and rendering.
+- Presenters are plain testable C# collaborators, depend only on the match-session port and their view port, and never call one another directly. Cross-feature change flows through a new immutable session projection.
+- Unity views receive immutable view models and forward user intent through explicit callbacks. They do not query or mutate rules authorities, create snapshots, decide legality, own pending continuations, or reconstruct match state.
+- Scene-object discovery and dependency wiring are restricted to one composition root; feature views and presenters do not use global object discovery, a singleton, or a service locator.
+- Snapshot restore, command-replay Undo/restart, hero/obstacle placement, pending highlights, Defense controls, hands, round/turn status, Tie Breaker, and the event log rebuild identically through the new projection path.
+- Focused Edit Mode and saved-scene Play Mode tests prove behavior and visible layout equivalence across all existing interaction paths.
+
+Non-goals: No production HUD, UI Toolkit migration, animation, sound, networking, new gameplay, presentation redesign, or generic framework beyond the current match needs.
+
+### [ ] 4.4d Close Phase 4 runtime hygiene and architecture gate
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: The refactored Phase 4 match runs with explicit generated-resource ownership, no known project-authored hot-path allocation churn or obsolete Unity object-discovery APIs, robust malformed-envelope rejection, and a recorded performance baseline before Phase 5 expands the action system.
+
+Acceptance checks:
+
+- Generated Materials, Meshes, Input Actions, and other owned Unity/native resources have explicit reuse and teardown; repeated map rebuild/scene lifecycle tests do not monotonically increase owned native-object counts.
+- Unchanged HUD repaint/update paths reuse cached styles, immutable view models, labels, definitions, offers, and lookup collections rather than rebuilding project-owned LINQ arrays or GUI objects each event. A Unity Profiler or `ProfilerRecorder` capture records the managed-allocation and frame-time baseline for the complete 292-cell map and a representative two-round director flow.
+- Project-authored runtime and test code remains on the supported Unity 6.5 object-discovery APIs and compiles without `CS0618` warnings; scene discovery remains confined to the composition root.
+- Rule-event-log envelope parsing handles invalid Base64, truncated headers/bodies, invalid counts, unsupported versions, trailing data, and oversized/malformed inputs through the documented non-throwing or typed snapshot-rejection contract, with no partial restore.
+- Project-local architecture-conformance checks fail if pure rules/application assemblies reference Unity, presentation bypasses the match-session port for low-level authorities, views reference authoritative state/snapshot implementations, forbidden singleton/service-locator/global-discovery paths reappear, or card/hero display-name branches and runtime printed-text parsing occur outside an explicitly approved isolated boundary.
+- A small versioned compatibility corpus covers representative setup, active-turn, pending-choice, end-of-round, and completed-match snapshots. Current supported fixtures round-trip deterministically; intentionally unsupported schema/content revisions reject distinctly, and every future durable schema or content-identity change must record an explicit migrate-or-reject decision rather than silently changing meaning.
+- The recorded performance baseline gains noise-tolerant regression thresholds for steady-state managed allocation, owned-resource growth, map rebuild, snapshot/projection, and representative replay costs. Crossing a threshold requires investigation and an approved disposition, not automatic speculative optimization; threshold changes retain the prior measurement and rationale.
+- The application/session, strategy-handler, presenter/view, snapshot, command-replay, event-log, map/setup, and saved-scene focused regressions pass, followed by both complete unfiltered Edit Mode and Play Mode suites.
+- Targeted visual inspection confirms the complete Phase 4 configured setup and validation controls remain readable and behaviorally unchanged.
+
+Non-goals: No production optimization target, DOTS/ECS rewrite, production UI migration, object pooling without measured need, gameplay change, networking, build, or polished art.
+
+### [!] 4.4e Independently review the Phase 4 architecture baseline
+
+Blocked by: Milestone 4.4d must pass its final Phase 4 architecture and runtime-hygiene gate.
+
+Observable outcome: A fresh analysis-only review determines whether the completed application-service, command-replay, action-strategy, MVP, resource-lifetime, diagnostic-envelope, and performance-baseline work is a sound foundation for expanding the general action system.
+
+Acceptance checks:
+
+- The review traces representative live, replay, Undo/restart, snapshot, event, pending-choice, and presentation paths through the actual implementation and checks that authority and dependency direction match the durable contracts.
+- It checks whether the former controller and combined resolver responsibilities were genuinely decomposed rather than moved into replacement god objects or hidden service-location paths.
+- It evaluates abstraction proportionality, generated-resource ownership, allocation/frame-time evidence, supported Unity APIs, warning state, and the ability of existing tests to detect behavioral drift.
+- Findings follow the independent-review classification and evidence contract in the roadmap execution rule; any justified fix is proposed as a separate corrective micro-milestone with no runtime implementation in this review.
+- The review re-evaluates the Phase 5 sequence and records whether the shortest dependency-safe path remains valid.
+
+Non-goals: No gameplay or presentation change, refactor, optimization implementation, new abstraction, networking work, production performance target, or weakening of the Phase 4 evidence.
+
+Hard gate: Phase 5 does not begin until milestone 4.4e is reviewed and every finding classified as gate-blocking has an approved disposition and, when required, a completed corrective milestone.

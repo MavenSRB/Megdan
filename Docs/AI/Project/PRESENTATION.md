@@ -1,0 +1,55 @@
+# Presentation and Accessibility Direction
+
+Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).
+
+## Presentation direction
+
+- The Unity scene is 3D from the beginning, with the board on the XZ plane.
+- Early implementation uses primitive meshes and a fixed camera.
+- The minimal-grid validation scene centers its fixed camera directly above the map and looks straight down.
+- Pointy-top presentation maps `q` eastward and decreasing `r` northward; the same outer-radius value defines both the regular hex mesh and its center spacing.
+- Placeholder hexes use one light-gray fill with a darker gray perimeter for separation; this styling is non-semantic and the logical origin has no unique treatment.
+- The polished pitch uses a stylized tabletop presentation.
+- Heroes and minions appear as 3D miniatures on clearly marked team bases.
+- Miniatures may briefly animate when acting.
+- When the camera approaches top-down, units automatically crossfade to readable 2D tokens.
+- Separate enter and exit thresholds prevent visual flicker near the switching angle.
+- One logical unit owns interchangeable 3D-miniature and 2D-token representations.
+- Standard minions use the circular artwork embedded along the top of the private reference atlas `Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/g713916_s799373.sprite0__45.jpg` when they first become visible in milestone 4.4. Steam/orange maps to project Red and Crystal/light-blue maps to project Blue; the round riveted/broad spiked face is Heavy, the narrow helmet with cheek guards/armored shoulders is Melee, and the two-pronged helmet/narrow crystal crest is Ranged. The source manifest's `Melee_Steam` label on the Crystal melee sprite is a known metadata error. Milestones 9.3 and 9.5 retain these images as the 2D side of each minion's interchangeable presentation; authoritative team/type data selects the image, and rules identity is never inferred from art or the incorrect source label.
+
+### Camera
+
+- Board-focused rather than free flight.
+- Bounded pan, orbit, and zoom.
+- Supports angled tabletop and top-down views.
+- Includes a whole-board reset/focus control.
+- Cannot travel beneath or far outside the board.
+
+### Animation and audio
+
+- Rules resolve independently of animations.
+- The presentation layer consumes ordered rule events and animates them.
+- Skipping or accelerating animation never changes game state.
+- Target animation coverage for each of the six pitch heroes: idle, movement, attack, hit/defeat, and respawn, reusing shared rigs/clips where suitable without sacrificing hero readability.
+- Minions use a smaller shared animation set.
+- The pitch receives a small sound-effects pass for UI confirmation, card reveal, movement, attack, hit/defeat, minion battle, and lane push.
+- Music, voice acting, announcer systems, and elaborate adaptive audio are out of scope.
+
+## Pitch HUD
+
+- The board is the primary focus.
+- Director mode exposes all six hands through clear Red/Blue team and hero grouping. Private online clients expose only the local player's hand plus authorized shared played/revealed state; both modes keep the active resolver readable without presentation owning legality.
+- Show a compact read-only 6-hero-by-4-turn card history grouped as three Red and three Blue heroes; each entry derives from the authoritative `HeroId` assignment and reveals no committed card before the joint reveal.
+- Show round, turn, active resolver, Lives, Waves, hero levels, and coins.
+- Use contextual prompts for actions, targets, and choices.
+- Provide internal Undo, restart, animation-speed, and camera-reset controls.
+- Provide a collapsible event log.
+- No main menu, settings suite, tutorial, collection screen, or account UI is required for the pitch.
+
+## Accessibility baseline
+
+- Team identity never relies on color alone.
+- Red and Blue also use distinct symbols, base markings, outlines, and labels.
+- Cards and state values must remain readable at common desktop resolutions.
+- UI structure must allow later scaling.
+- A full accessibility settings suite is deferred.

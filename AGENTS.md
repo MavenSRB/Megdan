@@ -2,29 +2,28 @@
 
 ## Startup and targeted context loading
 
-At the start of each new Codex task or run, read `Docs/AI/SESSION_BRIEF.md` once before the first plan or workspace change. Treat it as loaded for the rest of that task; do not reread it merely because the user sends a follow-up.
+At the start of each new Codex task or run, read `Docs/AI/SESSION_BRIEF.md` once before the first plan or workspace change. Treat it as loaded for the rest of that task; do not reread it merely because the user sends a follow-up. Use `Docs/AI/DOCUMENTATION_GOVERNANCE.md` when ownership, archive, threshold, or risk routing is implicated.
 
 Do not automatically read the full continuity documents. Use `rg` to find the required headings or terms, then read only the relevant section and enough surrounding context to preserve its dependencies:
 
-1. For roadmap work, read `Docs/AI/ROADMAP.md`'s `Execution rule` and the exact current or proposed milestone section. Read adjacent milestone sections only when the selected milestone names them as prerequisites.
-2. Read relevant `Docs/AI/PROJECT_CONTEXT.md` sections when the task changes or depends on product scope, architecture, platform, presentation direction, terminology, or development workflow beyond the session brief.
+1. For roadmap work, read `Docs/AI/ROADMAP.md`'s `Execution rule`, follow its phase-shard index, and read the exact current or proposed milestone section. Read adjacent milestone sections only when the selected milestone names them as prerequisites.
+2. Follow `Docs/AI/PROJECT_CONTEXT.md` to the relevant subject shard when the task changes or depends on product scope, architecture, platform, presentation direction, terminology, or development workflow beyond the session brief.
 3. For game-rule work, read `Docs/AI/RULES_LEDGER.md`'s `Authority hierarchy`, the matching rule-system or capability entries, and any linked open question or deviation. Read the relevant pages of `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` when the task depends on a game rule.
-4. For card, action, effect, combat, turn, progression, snapshot, or rules-authority work, read the relevant sections of `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`. For effect, keyword, target/query, modifier, token, marker, board-object, timing, or system-transition work, also read the relevant capability sections of `Docs/AI/CARD_EFFECT_CAPABILITIES.md`.
-5. Before running or changing automated tests, read the applicable validation tier and exact commands in `Docs/AI/TESTING.md`.
+4. For card, action, effect, combat, turn, progression, snapshot, or rules-authority work, follow `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` to the relevant contract shard. For effect, keyword, target/query, modifier, token, marker, board-object, timing, or system-transition work, also read the relevant capability sections of `Docs/AI/CARD_EFFECT_CAPABILITIES.md`.
+5. Before running or changing automated tests, follow `Docs/AI/TESTING.md` to the applicable policy and exact recipe shard.
 
 Expand to a full-document read only when the task is genuinely cross-cutting, targeted sections reveal an unresolved dependency, or the living documents may conflict. Reread a loaded section only when it changed, the task expands into a new area, its exact contents are unavailable after a context reset, or conflict verification requires it. A delegated agent may rely on applicable inherited context; otherwise it reads only the missing relevant sections once.
 
-## Interim living-document hygiene
+## Living-document governance
 
-Corrective milestone 3.11a will establish the permanent ownership matrix, per-file routing thresholds, lossless archive/shard structure, and automated documentation validator. Its thresholds limit the size of one routinely loaded file; they never cap the total authoritative corpus or permit deletion, lossy compression, or reduced precision. Until that milestone is explicitly approved and completed:
+`Docs/AI/DOCUMENTATION_GOVERNANCE.md` is the permanent ownership, routing-threshold, archive, migration, preservation, and active-risk contract. Its thresholds limit one active leaf, never the total corpus, and never permit deletion, lossy compression, weakened precision, or reliance on Git history alone.
 
-- Record detailed milestone outcome and validation evidence only in that milestone's `ROADMAP.md` completion note. Other living documents may carry only the minimum current-state or durable-contract delta and should link or route to the canonical section instead of copying the narrative.
-- Keep `SESSION_BRIEF.md` limited to current implementation, current authorization, the exact next milestone/profile, hard boundaries, and targeted routing. Do not add chronological milestone history or duplicate test totals there.
-- Keep `PROJECT_CONTEXT.md` limited to current product scope, durable constraints, architecture, terminology, and workflow. Do not add milestone-by-milestone implementation history unless it changes a current durable contract.
-- Keep `TESTING.md` limited to current validation policy, reusable launch instructions, active/future exact test recipes, and current gate definitions. Do not copy completion narratives into it; historical run totals remain in roadmap completion evidence until 3.11a archives them.
-- Keep card/effect architecture documents limited to durable contracts and extension boundaries, and keep `RULES_LEDGER.md` limited to authority, verification, implementation/test status, open questions, and approved deviations.
-- When an update would repeat existing information, replace or tighten the stale summary rather than append another version. Preserve authoritative evidence; do not delete, archive, or reorganize existing history before milestone 3.11a defines and validates its destination.
-- Do not shorten a current rule, contract, acceptance check, source citation, deviation, open question, exact active test recipe, or historical result merely to reduce file size. If precise canonical content legitimately outgrows one file, milestone 3.11a must route it through indexed authoritative shards; completed historical evidence must move losslessly to an indexed archive.
+- Write each current fact in its one canonical home. Noncanonical active documents use a short routing summary and stable link instead of copying a narrative.
+- Write detailed completed-milestone outcome and validation evidence once in the applicable indexed `Docs/AI/Archive/Phase-Handoffs/` file. The active milestone definition keeps only its exact definition/status/profile and a historical backlink.
+- Keep `SESSION_BRIEF.md` limited to current implementation, authorization, exact next milestone/profile, boundaries, and routing; keep product, rules, card/effect, testing, and risk material in the canonical homes named by the ownership matrix.
+- When an active leaf reaches the 85% warning threshold, review ownership in the same handoff. Move duplicated/completed history losslessly or split irreducible current material into an indexed authoritative shard. A hard-threshold failure blocks handoff unless routing is corrected or the user explicitly approves a governance amendment.
+- Never shorten a current rule, contract, acceptance/non-goal check, source citation, deviation, open question, exact active test recipe, or historical pass/failure record merely to meet a threshold.
+- At every milestone handoff and phase gate, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1`, then `git diff --check`; update indexes, manifest, preservation inventory, and risk disposition when implicated.
 
 ## Milestone model selection
 
@@ -72,9 +71,9 @@ The current implementation, authorization, next milestone, and required Codex pr
 After an approved decision or completed milestone:
 
 - Update `Docs/AI/SESSION_BRIEF.md` and `.codex/config.toml` when current implementation status, authorization, the next milestone, its required Codex profile, or startup routing changes.
-- Update `Docs/AI/PROJECT_CONTEXT.md` when product scope, constraints, terminology, or architecture changes.
-- Update `Docs/AI/ROADMAP.md` when milestone status or sequencing changes.
+- Update the subject shard indexed by `Docs/AI/PROJECT_CONTEXT.md` when product scope, constraints, terminology, or architecture changes.
+- Update the phase shard indexed by `Docs/AI/ROADMAP.md` when milestone status or sequencing changes, and append completed evidence once to the matching phase-handoff archive.
 - Update `Docs/AI/RULES_LEDGER.md` when a rule is verified, implemented, tested, clarified, or intentionally deviated from.
-- Update `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` when a verified rule or card changes a card-engine contract or extension boundary.
+- Update the contract shard indexed by `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` when a verified rule or card changes a card-engine contract or extension boundary.
 - Update `Docs/AI/CARD_EFFECT_CAPABILITIES.md` when a verified rule or card adds or changes an effect, keyword, query, modifier, timing, or system-transition contract.
 - If these files disagree, stop and resolve the conflict with the user before implementation.
