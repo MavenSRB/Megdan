@@ -13,6 +13,8 @@ Last updated: 2026-08-10
 
 This roadmap is a sequence of micro-milestones, not authorization to execute them.
 
+GPT-5.6 Sol is the only permitted model for milestone work. Reasoning effort must be medium or higher: use medium by default, and raise it to high, extra high (`xhigh` in configuration), or ultra when the milestone's complexity, breadth, integration risk, or hard-gate role requires it.
+
 For every item:
 
 1. Confirm that the exact item declares its `Required Codex profile` and that `.codex/config.toml` matches it; this is execution metadata, not authorization.
@@ -595,7 +597,7 @@ Completion note (2026-08-10): Extended immutable card definitions with a validat
 
 ### [x] 3.2 Display both director-mode test hands
 
-Required Codex profile: GPT-5.6 Terra with medium reasoning.
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Separate Red and Blue synthetic hands are visible and independently selectable by the director-mode controller.
 
@@ -868,7 +870,7 @@ Phase 4-7 audit (2026-08-10): Keep milestones 4.1-4.4, 5.1-5.8, 6.1-6.8, and 7.1
 
 ### [ ] 4.1 Inventory the complete single-lane board reference
 
-Required Codex profile: GPT-5.6 Terra with medium reasoning.
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Every part of the complete official single-lane board - including all spaces, connections, terrain, zones, spawn points, Thrones, and the starting Battle Zone - has a reviewed data specification.
 
