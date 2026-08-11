@@ -236,7 +236,7 @@ Non-goals: No gameplay, action-strategy refactor, production HUD redesign, UI To
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44f-complete-the-configured-mvp-cutover-and-highlight-resource-ownership).
 
-### [ ] 4.4g Extract the production Movement and Attack/Defense strategy backends
+### [x] 4.4g Extract the production Movement and Attack/Defense strategy backends
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -252,11 +252,11 @@ Acceptance checks:
 
 Non-goals: No new action kind, Fast Travel, card text, effect capability, Attack consequence, timing system, snapshot migration, reflection plugin framework, or speculative scripting language.
 
-### [!] 4.4h Re-close the corrected Phase 4 architecture and performance gate
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44g-extract-the-production-movement-and-attack-defense-strategy-backends).
+
+### [ ] 4.4h Re-close the corrected Phase 4 architecture and performance gate
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
-
-Blocked by: Milestone 4.4g must complete first.
 
 Observable outcome: The corrected Phase 4 foundation has direct projection-cost evidence, all 4.4e findings have completed dispositions, and the T3 gate is green at one final revision before Phase 5.
 

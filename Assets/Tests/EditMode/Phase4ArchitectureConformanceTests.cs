@@ -60,6 +60,16 @@ namespace GuardsDigital.Tests.EditMode
             "Regex.IsMatch("
         };
 
+        private static readonly string[] CardActionDispatcherAlgorithmTokens =
+        {
+            "IMovementCardActionStrategyBackend,",
+            "IAttackDefenseCardActionStrategyBackend",
+            "new MovementSession(",
+            ".TryCommitStep(",
+            "AttackTargetQuery.FindLegalEnemyHeroes(",
+            ".TryApplyLocationTransition("
+        };
+
         private static readonly Regex NameOrTextBranch = new Regex(
             @"\b(if|switch)\s*\([^)]*\b(DisplayName|PrintedText)\b",
             RegexOptions.CultureInvariant | RegexOptions.Singleline);
@@ -120,6 +130,27 @@ namespace GuardsDigital.Tests.EditMode
                 ViewAuthorityTokens,
                 "passive view references session/authoritative implementation");
 
+            var cardResolution = Path.Combine(runtime, "Core", "Rules", "CardResolution");
+            var cardActionDispatcher = Path.Combine(cardResolution, "CardActionResolutionAuthority.cs");
+            AddTokenViolations(
+                violations,
+                cardActionDispatcher,
+                File.ReadAllText(cardActionDispatcher),
+                CardActionDispatcherAlgorithmTokens,
+                "card-action dispatcher owns a strategy backend or action-specific algorithm");
+
+            foreach (var backendFile in new[]
+                     {
+                         "MovementCardActionStrategyBackend.cs",
+                         "AttackDefenseCardActionStrategyBackend.cs"
+                     })
+            {
+                if (!File.Exists(Path.Combine(cardResolution, backendFile)))
+                {
+                    violations.Add($"Assets/GuardsDigital/Core/Rules/CardResolution/{backendFile}: production strategy backend is missing");
+                }
+            }
+
             foreach (var file in EnumerateSources(new[]
                      {
                          runtime,
@@ -156,6 +187,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(NameOrTextBranch.IsMatch("switch (definition.PrintedText) { }"), Is.True);
             Assert.That(FindTokens("ParsePrintedText(source);", RuntimePrintedTextParsingTokens), Is.Not.Empty);
             Assert.That(FindTokens("ParseTypedEffect(source);", RuntimePrintedTextParsingTokens), Is.Empty);
+            Assert.That(FindTokens("handler.Start(command);", CardActionDispatcherAlgorithmTokens), Is.Empty);
+            Assert.That(FindTokens("new MovementSession(authority, state);", CardActionDispatcherAlgorithmTokens), Is.Not.Empty);
+            Assert.That(FindTokens("class Resolver : IAttackDefenseCardActionStrategyBackend", CardActionDispatcherAlgorithmTokens), Is.Not.Empty);
             Assert.That(FindTokens("FindObjectOfType<Camera>();", ObsoleteDiscoveryTokens), Is.Not.Empty);
             Assert.That(FindTokens("FindAnyObjectByType<Camera>();", ObsoleteDiscoveryTokens), Is.Empty);
         }

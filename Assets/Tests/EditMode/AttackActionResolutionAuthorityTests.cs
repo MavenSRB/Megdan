@@ -1011,6 +1011,22 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void StartAttack_RejectsForgedOfferAndCannotOverlapMovementResolution()
         {
+            var attackFixture = CreateFixture();
+            var attack = attackFixture.Authority.StartAttackResolution(
+                new ActionResolutionId("active-attack"),
+                attackFixture.AttackOffer,
+                attackFixture.Configuration.CardDefinitions,
+                attackFixture.Configuration.CardInstances,
+                attackFixture.Configuration.Participants);
+            var foreignMovement = attackFixture.Authority.AnswerMovementChoice(MovementChoiceCommand.Stop(
+                attack.PendingResolution.ResolutionId,
+                attack.PendingResolution.CurrentStepId));
+
+            Assert.That(foreignMovement.Accepted, Is.False);
+            Assert.That(foreignMovement.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.NoPendingResolution));
+            Assert.That(attackFixture.Authority.PendingAttackResolution, Is.SameAs(attack.PendingResolution));
+            Assert.That(attackFixture.Authority.PendingAttackTargetChoice, Is.SameAs(attack.PendingTargetChoice));
+
             var fixture = CreateFixture();
             var forgedOffer = new ActionOffer(
                 new CardInstanceId("forged-card"),
@@ -1049,10 +1065,20 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
                 fixture.Configuration.Participants);
+            var foreignAttack = fixture.Authority.AnswerAttackTarget(
+                new AttackTargetChoiceCommand(
+                    movement.PendingResolution.ResolutionId,
+                    movement.PendingResolution.CurrentStepId,
+                    fixture.DefenderId),
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants);
 
             Assert.That(movement.Accepted, Is.True);
             Assert.That(overlap.Accepted, Is.False);
             Assert.That(overlap.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.ResolutionAlreadyPending));
+            Assert.That(foreignAttack.Accepted, Is.False);
+            Assert.That(foreignAttack.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.NoPendingResolution));
             Assert.That(fixture.Authority.PendingResolution, Is.SameAs(movement.PendingResolution));
         }
 

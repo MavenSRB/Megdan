@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -58,6 +59,38 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(movementBackend.AnswerWasCalled, Is.True);
             Assert.That(attackBackend.ResolveOutcomeWasCalled, Is.True);
+        }
+
+        [Test]
+        public void ProductionComposition_UsesDistinctConcreteBackends()
+        {
+            var authorityType = typeof(CardActionResolutionAuthority);
+            var coreAssembly = authorityType.Assembly;
+            var movementBackendType = coreAssembly.GetType(
+                "GuardsDigital.Core.Rules.CardResolution.MovementCardActionStrategyBackend",
+                true);
+            var attackBackendType = coreAssembly.GetType(
+                "GuardsDigital.Core.Rules.CardResolution.AttackDefenseCardActionStrategyBackend",
+                true);
+            var authorityFields = authorityType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.That(Array.IndexOf(
+                authorityType.GetInterfaces(),
+                typeof(IMovementCardActionStrategyBackend)), Is.LessThan(0));
+            Assert.That(Array.IndexOf(
+                authorityType.GetInterfaces(),
+                typeof(IAttackDefenseCardActionStrategyBackend)), Is.LessThan(0));
+            Assert.That(movementBackendType, Is.Not.EqualTo(attackBackendType));
+            Assert.That(movementBackendType.IsSealed, Is.True);
+            Assert.That(attackBackendType.IsSealed, Is.True);
+            Assert.That(Array.IndexOf(
+                movementBackendType.GetInterfaces(),
+                typeof(IMovementCardActionStrategyBackend)), Is.GreaterThanOrEqualTo(0));
+            Assert.That(Array.IndexOf(
+                attackBackendType.GetInterfaces(),
+                typeof(IAttackDefenseCardActionStrategyBackend)), Is.GreaterThanOrEqualTo(0));
+            Assert.That(Array.Exists(authorityFields, field => field.FieldType == movementBackendType), Is.True);
+            Assert.That(Array.Exists(authorityFields, field => field.FieldType == attackBackendType), Is.True);
         }
 
         private sealed class SyntheticSkillStrategyHandler : ICardActionStrategyHandler
