@@ -12,6 +12,8 @@ The project has completed roadmap milestones through the corrected Phase 4 runti
 
 The independent 4.4e review confirmed the session, replay, snapshot, event, pending-choice, dependency-direction, compatibility, warning-state, and supported-API strengths. Corrective milestone 4.4f closed `F44E-01` and `F44E-02`: generated destination-highlight Materials have explicit generated-versus-assigned ownership and exact teardown evidence, while configured hero/destination pointer intent enters only through passive board callbacks and `BoardInteractionPresenter` to `IMatchSession`. Corrective milestone 4.4g closed `F44E-03`: production Movement and Attack/Defense handlers compose distinct concrete strategy backends, and the combined dispatcher no longer implements either backend or contains their action-specific algorithms. Milestone 4.4h has now closed `F44E-04` and re-closed the corrected Phase 4 T3 gate: the performance fixture retains its snapshot-only measure and separately samples representative accepted-command refreshes that include immutable application projection plus authoritative/diagnostic snapshot work. The user-approved corrective-roadmap/governance amendment previously closed `F44E-05`; every 4.4e finding now has its required disposition and completion evidence.
 
+The user-approved post-correction routing amendment adds milestone 4.4i as a fresh-task independent verification of the corrected Phase 4 foundation. This check should have been included when milestones 4.4f-4.4h were added. It must inspect the implemented corrections and exact 4.4h evidence rather than treating corrective handoff self-reviews as independent confirmation; Phase 5 remains blocked until 4.4i completes and every new gate-blocking finding has its required disposition and evidence.
+
 Authoritative pure C# state currently covers map-scoped identity, the immutable selected map revision, participant `PlayerId`/`HeroId` relationships, initial Tie Breaker, five-card synthetic hands, owned commitment or empty-hand Pass for every configured hero, joint reveal, Initiative and tied-Initiative choice, Hold, printed Movement with cumulative waypoint routes and Stop, adjacent/Ranged Attack with one legal Defense discard or decline, immutable four-turn assignment history, and a resumable end-of-round cursor whose test fixture implements retrieval and emits typed `NotApplicable` outcomes for unavailable stages. Eligible cards return to canonical owners; two uninterrupted synthetic rounds and reuse are visible in the saved validation scene.
 
 Schema-versioned snapshots cover participants, selected map ID/revision, board occupancy, card facets, Initiative/Tie Breaker, current/completed assignments, end-of-round state, and pending Movement or Attack/Defense continuations. Director Undo retains immutable initial scenario inputs plus accepted typed commands, rebuilds fresh authority, replays the retained prefix through live command paths, and verifies byte-identical state/events across two rebuilds. Snapshots remain the separate persistence/diagnostics/resynchronization boundary. The read-only HUD exposes Tie Breaker, Undo, Restart, and the rule-event log.
@@ -23,9 +25,9 @@ The project does not yet implement Fast Travel, current-Battle-Zone changes, Lan
 ## Current authorization and next route
 
 - Current completed milestone: **4.4h**.
-- Next proposed milestone: **5.1**.
+- Next proposed milestone: **4.4i**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with high reasoning**.
-- Milestone 5.1 is proposed only. Do not implement it without explicit approval of that exact micro-milestone.
+- Milestone 4.4i is proposed only. Its execution requires a fresh Codex task and explicit approval of that exact micro-milestone. Milestone 5.1 is blocked by its review outcome.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries

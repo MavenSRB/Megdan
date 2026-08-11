@@ -274,3 +274,22 @@ Non-goals: No gameplay, production optimization target, pooling, DOTS/ECS, produ
 Hard gate: Phase 5 does not begin until milestone 4.4h completes and every 4.4e finding has its required completion evidence.
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44h-re-close-the-corrected-phase-4-architecture-and-performance-gate-completion-evidence).
+
+### [ ] 4.4i Independently verify the corrected Phase 4 foundation
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: A fresh analysis-only review determines whether the 4.4f-4.4h corrections genuinely close the 4.4e findings without introducing replacement ownership, authority, lifecycle, performance-evidence, or test-quality problems before Phase 5 expands the action system.
+
+Acceptance checks:
+
+- The review runs in a fresh Codex task at the final corrected Phase 4 revision and inspects actual source, tests, warnings, runtime paths, and the exact 4.4h T3 profiling/diagnostic evidence rather than relying on corrective completion notes.
+- It retraces representative configured board input, live command, replay, Undo/restart, snapshot restore, event, pending-choice, application-projection, and presentation paths and verifies that authority, dependency direction, atomicity, deterministic identity, and resource ownership still match the durable contracts.
+- It determines whether the configured runtime/HUD/presenter cutover and distinct Movement and Attack/Defense backends are genuine decompositions rather than replacement god objects, hidden service-location paths, cross-handler leakage, duplicated resolution routes, or test-only conformance.
+- It independently rechecks the evidence and closure claims for `F44E-01` through `F44E-05`, including generated-versus-assigned Material teardown, configured saved-scene input routing, strategy-backend ownership, accepted-command/projection metric ownership, and additive documentation-governance preservation.
+- Findings follow the roadmap's independent-review classification and evidence contract. Any justified runtime, test, tooling, or roadmap correction is proposed as a separately approved micro-milestone; the review itself implements no fix.
+- The review re-evaluates whether 5.1 remains the shortest dependency-safe next step. The fresh 4.4h T3 evidence is reused unless source inspection identifies a concrete evidence gap or a diagnostic is required to test a specific concern.
+
+Non-goals: No gameplay, presentation, runtime, test, scene, content, package, assembly, optimization, networking, build, or polished-art change; no automatic rerun of unchanged complete Unity suites; no reopening a closed 4.4e finding without new evidence.
+
+Hard gate: Phase 5 does not begin until milestone 4.4i is reviewed and every finding classified as gate-blocking has an approved disposition and, when required, completed corrective evidence.
