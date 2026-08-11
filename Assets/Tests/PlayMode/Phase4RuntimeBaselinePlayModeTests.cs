@@ -24,6 +24,7 @@ namespace GuardsDigital.Tests.PlayMode
         private const double MaximumP95FrameMilliseconds = 10.0;
         private const double MaximumAverageMapRebuildMilliseconds = 25.0;
         private const double MaximumAverageSnapshotMilliseconds = 5.0;
+        private const double MaximumAverageAcceptedCommandRefreshMilliseconds = 25.0;
         private const double MaximumUndoReplayMilliseconds = 250.0;
 
         [UnityTest]
@@ -92,26 +93,36 @@ namespace GuardsDigital.Tests.PlayMode
             rebuild.Stop();
             var averageRebuildMilliseconds = rebuild.Elapsed.TotalMilliseconds / rebuildCount;
 
+            var acceptedCommandRefreshMilliseconds = new List<double>();
             for (var round = 0; round < 2; round++)
             {
                 for (var turn = 0; turn < 4; turn++)
                 {
-                    Commit(runtime);
-                    Assert.That(runtime.SubmitEndTurn(), Is.True);
-                    Assert.That(runtime.SubmitEndTurn(), Is.True);
+                    Commit(runtime, acceptedCommandRefreshMilliseconds);
+                    MeasureAcceptedCommandRefresh(
+                        acceptedCommandRefreshMilliseconds,
+                        runtime.SubmitEndTurn);
+                    MeasureAcceptedCommandRefresh(
+                        acceptedCommandRefreshMilliseconds,
+                        runtime.SubmitEndTurn);
                     yield return null;
                 }
 
                 Assert.That(runtime.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
                 while (runtime.Phase == RoundResolutionPhase.EndOfRound)
                 {
-                    Assert.That(runtime.ContinueEndOfRound(), Is.True);
+                    MeasureAcceptedCommandRefresh(
+                        acceptedCommandRefreshMilliseconds,
+                        runtime.ContinueEndOfRound);
                     yield return null;
                 }
             }
 
             Assert.That(runtime.CompletedRounds.Select(value => value.RoundIndex),
                 Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(acceptedCommandRefreshMilliseconds, Has.Count.GreaterThanOrEqualTo(32));
+            var averageAcceptedCommandRefreshMilliseconds =
+                acceptedCommandRefreshMilliseconds.Average();
             var snapshot = Stopwatch.StartNew();
             const int snapshotCount = 20;
             for (var index = 0; index < snapshotCount; index++)
@@ -142,12 +153,16 @@ namespace GuardsDigital.Tests.PlayMode
                 $"mapRebuilds={rebuildCount} avgMapRebuildMs={averageRebuildMilliseconds:F3} " +
                 $"ownedResources={initialOwnedResources} ownedResourceGrowth=0 " +
                 $"snapshots={snapshotCount} avgSnapshotMs={averageSnapshotMilliseconds:F3} " +
+                $"acceptedCommandRefreshes={acceptedCommandRefreshMilliseconds.Count} " +
+                $"avgAcceptedCommandRefreshMs={averageAcceptedCommandRefreshMilliseconds:F3} " +
                 $"undoReplayMs={undo.Elapsed.TotalMilliseconds:F3}");
 
             Assert.That(maxGcBytes, Is.LessThanOrEqualTo(MaximumSteadyStateGcBytesPerFrame));
             Assert.That(p95FrameMilliseconds, Is.LessThanOrEqualTo(MaximumP95FrameMilliseconds));
             Assert.That(averageRebuildMilliseconds, Is.LessThanOrEqualTo(MaximumAverageMapRebuildMilliseconds));
             Assert.That(averageSnapshotMilliseconds, Is.LessThanOrEqualTo(MaximumAverageSnapshotMilliseconds));
+            Assert.That(averageAcceptedCommandRefreshMilliseconds,
+                Is.LessThanOrEqualTo(MaximumAverageAcceptedCommandRefreshMilliseconds));
             Assert.That(undo.Elapsed.TotalMilliseconds, Is.LessThanOrEqualTo(MaximumUndoReplayMilliseconds));
             Assert.That(File.Exists(screenshotPath), Is.True, "The Phase 4 visual capture was not written.");
         }
@@ -185,19 +200,38 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
-        private static void Commit(ConfiguredMatchSceneRuntime runtime)
+        private static void Commit(
+            ConfiguredMatchSceneRuntime runtime,
+            ICollection<double> acceptedCommandRefreshMilliseconds)
         {
             var red = runtime.HandsView.Model.Hands.Single(value => value.TeamSide == TeamSide.Red).Cards[0];
             var blue = runtime.HandsView.Model.Hands.Single(value => value.TeamSide == TeamSide.Blue).Cards[0];
             Assert.That(runtime.SelectCommitmentCard(red.Id), Is.True);
-            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            MeasureAcceptedCommandRefresh(
+                acceptedCommandRefreshMilliseconds,
+                runtime.ConfirmSelectedCommitment);
             Assert.That(runtime.SelectCommitmentCard(blue.Id), Is.True);
-            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            MeasureAcceptedCommandRefresh(
+                acceptedCommandRefreshMilliseconds,
+                runtime.ConfirmSelectedCommitment);
             if (runtime.PendingInitiativeChoice != null)
             {
-                Assert.That(runtime.SubmitInitiativeChoice(
-                    runtime.PendingInitiativeChoice.CandidateCardInstanceIds[0]), Is.True);
+                var candidate = runtime.PendingInitiativeChoice.CandidateCardInstanceIds[0];
+                MeasureAcceptedCommandRefresh(
+                    acceptedCommandRefreshMilliseconds,
+                    () => runtime.SubmitInitiativeChoice(candidate));
             }
+        }
+
+        private static void MeasureAcceptedCommandRefresh(
+            ICollection<double> samples,
+            Func<bool> submit)
+        {
+            var refresh = Stopwatch.StartNew();
+            var accepted = submit();
+            refresh.Stop();
+            Assert.That(accepted, Is.True);
+            samples.Add(refresh.Elapsed.TotalMilliseconds);
         }
 
         private static int CountOwnedMaterials()

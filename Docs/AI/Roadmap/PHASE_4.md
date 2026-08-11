@@ -254,7 +254,7 @@ Non-goals: No new action kind, Fast Travel, card text, effect capability, Attack
 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44g-extract-the-production-movement-and-attack-defense-strategy-backends).
 
-### [ ] 4.4h Re-close the corrected Phase 4 architecture and performance gate
+### [x] 4.4h Re-close the corrected Phase 4 architecture and performance gate
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -272,3 +272,5 @@ Acceptance checks:
 Non-goals: No gameplay, production optimization target, pooling, DOTS/ECS, production UI migration, networking, build, or polished art.
 
 Hard gate: Phase 5 does not begin until milestone 4.4h completes and every 4.4e finding has its required completion evidence.
+
+Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44h-re-close-the-corrected-phase-4-architecture-and-performance-gate-completion-evidence).
