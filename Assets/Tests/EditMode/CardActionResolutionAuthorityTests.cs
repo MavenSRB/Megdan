@@ -14,6 +14,16 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class CardActionResolutionAuthorityTests
     {
         [Test]
+        public void Constructor_RejectsMissingMovementActionStartRestrictionEvaluator()
+        {
+            var actorId = new HeroId("primitive-hero");
+
+            Assert.Throws<System.ArgumentNullException>(() => new CardActionResolutionAuthority(
+                CreateMovementAuthority(actorId, new HexCoordinate(0, 0)),
+                null));
+        }
+
+        [Test]
         public void StartMovementResolution_RecordsPendingResolutionAndChoiceAsPlainData()
         {
             var actorId = new HeroId("primitive-hero");
@@ -100,6 +110,78 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.PendingResolution.ActionDefinitionId, Is.EqualTo(new ActionDefinitionId("secondary-move")));
             Assert.That(result.PendingResolution.MovementAllowance, Is.EqualTo(1));
             Assert.That(result.PendingResolution.RemainingAllowance, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void StartMovementResolution_RulebookPage11PreventRestrictionRejectsAtActionStart()
+        {
+            var actorId = new HeroId("primitive-hero");
+            var origin = new HexCoordinate(0, 0);
+            var definition = CreateDefinition(
+                CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 3));
+            var instance = CreateInstance(actorId, definition);
+            var offer = CreateOffer(actorId, definition, ActionInvocationContext.PrintedPrimary);
+            var restrictions = new MutableMovementActionStartRestrictionEvaluator(
+                MovementActionStartRestriction.Prevent());
+            var movementAuthority = CreateMovementAuthority(actorId, origin);
+            var authority = new CardActionResolutionAuthority(movementAuthority, restrictions);
+
+            var result = authority.StartMovementResolution(
+                new ActionResolutionId("prevented-resolution"),
+                offer,
+                new[] { definition },
+                new[] { instance });
+
+            Assert.That(result.Accepted, Is.False);
+            Assert.That(result.RejectionReason, Is.EqualTo(
+                CardActionResolutionRejectionReason.MovementActionPrevented));
+            Assert.That(result.PendingResolution, Is.Null);
+            Assert.That(result.PendingChoice, Is.Null);
+            Assert.That(result.Events, Is.Empty);
+            Assert.That(movementAuthority.Occupancies.Single().Coordinate, Is.EqualTo(origin));
+            Assert.That(restrictions.EvaluationCount, Is.EqualTo(1));
+            Assert.That(restrictions.LastContext.ActorId, Is.EqualTo(actorId));
+            Assert.That(restrictions.LastContext.SourceCardInstanceId, Is.EqualTo(instance.Id));
+            Assert.That(restrictions.LastContext.ActionDefinitionId, Is.EqualTo(offer.ActionDefinitionId));
+            Assert.That(restrictions.LastContext.InvocationContext, Is.EqualTo(offer.InvocationContext));
+            Assert.That(restrictions.LastContext.MovementAllowance, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void StartMovementResolution_RulebookPage11LimitIsCapturedOnceForAllWaypointChoices()
+        {
+            var actorId = new HeroId("primitive-hero");
+            var origin = new HexCoordinate(0, 0);
+            var firstDestination = origin.GetNeighbor(HexDirection.East);
+            var definition = CreateDefinition(
+                CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 3));
+            var instance = CreateInstance(actorId, definition);
+            var offer = CreateOffer(actorId, definition, ActionInvocationContext.PrintedPrimary);
+            var restrictions = new MutableMovementActionStartRestrictionEvaluator(
+                MovementActionStartRestriction.LimitTo(2));
+            var movementAuthority = CreateMovementAuthority(actorId, origin);
+            var authority = new CardActionResolutionAuthority(movementAuthority, restrictions);
+
+            var start = authority.StartMovementResolution(
+                new ActionResolutionId("limited-resolution"),
+                offer,
+                new[] { definition },
+                new[] { instance });
+            restrictions.Restriction = MovementActionStartRestriction.Prevent();
+            var waypoint = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
+                start.PendingChoice.ResolutionId,
+                start.PendingChoice.ChoiceId,
+                firstDestination));
+
+            Assert.That(start.Accepted, Is.True);
+            Assert.That(start.PendingResolution.MovementAllowance, Is.EqualTo(2));
+            Assert.That(start.PendingChoice.RemainingAllowance, Is.EqualTo(2));
+            Assert.That(waypoint.Accepted, Is.True);
+            Assert.That(waypoint.IsComplete, Is.False);
+            Assert.That(waypoint.PendingResolution.MovementAllowance, Is.EqualTo(2));
+            Assert.That(waypoint.PendingChoice.RemainingAllowance, Is.EqualTo(1));
+            Assert.That(restrictions.EvaluationCount, Is.EqualTo(1),
+                "Action-start restrictions must not be re-evaluated for segmented waypoint continuation.");
         }
 
         [Test]
@@ -797,6 +879,29 @@ namespace GuardsDigital.Tests.EditMode
             public HexCoordinate FinalCoordinate { get; }
 
             public IReadOnlyList<CardActionResolutionEvent> Events { get; }
+        }
+
+        private sealed class MutableMovementActionStartRestrictionEvaluator :
+            IMovementActionStartRestrictionEvaluator
+        {
+            public MutableMovementActionStartRestrictionEvaluator(
+                MovementActionStartRestriction restriction)
+            {
+                Restriction = restriction;
+            }
+
+            public MovementActionStartRestriction Restriction { get; set; }
+
+            public int EvaluationCount { get; private set; }
+
+            public MovementActionStartContext LastContext { get; private set; }
+
+            public MovementActionStartRestriction Evaluate(MovementActionStartContext context)
+            {
+                EvaluationCount++;
+                LastContext = context;
+                return Restriction;
+            }
         }
     }
 }

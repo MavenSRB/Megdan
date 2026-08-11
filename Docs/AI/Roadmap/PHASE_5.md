@@ -6,7 +6,7 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Phase 5 uses verified general rules and synthetic test definitions. It does not depend on the complete Wasp card set, inventory that set, or implement it.
 
-### [ ] 5.1 Integrate and verify exact card-based Movement on the full map
+### [x] 5.1 Integrate and verify exact card-based Movement on the full map
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -21,7 +21,11 @@ Acceptance checks:
 - Up-to movement permits zero movement and early stopping.
 - Ordinary Movement remains distinct from direct movement written in card text.
 
+Historical evidence: [milestone 5.1 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-51-integrate-and-verify-exact-card-based-movement-on-the-full-map-completion-evidence).
+
 ### [ ] 5.2 Implement Fast Travel replacement
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Implements only after milestone 5.1 and the Phase 4 zone model are complete.
 

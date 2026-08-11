@@ -14,8 +14,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly AttackDefenseCardActionStrategyBackend attackDefenseBackend;
 
         public CardActionResolutionAuthority(AdjacentMoveAuthority adjacentMoveAuthority)
+            : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance)
+        {
+        }
+
+        public CardActionResolutionAuthority(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            IMovementActionStartRestrictionEvaluator movementActionStartRestrictions)
             : this(
-                new MovementCardActionStrategyBackend(adjacentMoveAuthority),
+                new MovementCardActionStrategyBackend(
+                    adjacentMoveAuthority,
+                    movementActionStartRestrictions ?? throw new ArgumentNullException(
+                        nameof(movementActionStartRestrictions))),
                 new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority))
         {
         }

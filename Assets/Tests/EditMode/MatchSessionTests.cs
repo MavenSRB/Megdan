@@ -149,6 +149,77 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void OfficialMapMovement_RulebookPage11CommitsShortestAndLongerWaypointRoutesToSameDestination()
+        {
+            var shortestSession = CreateSession();
+            StartOfficialMapMovementThree(shortestSession);
+            var shortestStart = shortestSession.Projection.PendingMovementChoice;
+            var origin = shortestStart.Origin;
+            var target = shortestStart.LegalDestinations
+                .Where(value => value.Cost == 1)
+                .OrderBy(value => value.Destination.Q)
+                .ThenBy(value => value.Destination.R)
+                .First(value => shortestStart.LegalDestinations.Any(candidate =>
+                    candidate.Cost == 1 &&
+                    !candidate.Destination.Equals(value.Destination) &&
+                    candidate.Destination.GetNeighbors().Contains(value.Destination)));
+            var shortestResult = Accept(
+                shortestSession,
+                DirectorCommand.ChooseMovementDestination(
+                    shortestStart.ResolutionId,
+                    shortestStart.ChoiceId,
+                    target.Destination),
+                null);
+
+            var longerSession = CreateSession();
+            StartOfficialMapMovementThree(longerSession);
+            var longerStart = longerSession.Projection.PendingMovementChoice;
+            var waypoint = longerStart.LegalDestinations
+                .Where(value => value.Cost == 1 && !value.Destination.Equals(target.Destination))
+                .OrderBy(value => value.Destination.Q)
+                .ThenBy(value => value.Destination.R)
+                .First(value => value.Destination.GetNeighbors().Contains(target.Destination));
+            Accept(
+                longerSession,
+                DirectorCommand.ChooseMovementDestination(
+                    longerStart.ResolutionId,
+                    longerStart.ChoiceId,
+                    waypoint.Destination),
+                null);
+            var continuation = longerSession.Projection.PendingMovementChoice;
+            Assert.That(continuation.LegalDestinations.Select(value => value.Destination),
+                Does.Contain(target.Destination));
+            var longerResult = Accept(
+                longerSession,
+                DirectorCommand.ChooseMovementDestination(
+                    continuation.ResolutionId,
+                    continuation.ChoiceId,
+                    target.Destination),
+                null);
+
+            Assert.That(shortestSession.Projection.SelectedMap.Reference,
+                Is.EqualTo(OfficialBoardMapCatalog.SelectedMap));
+            Assert.That(shortestResult.Projection.PendingMovementResolution.MovementSessionState.Route,
+                Is.EqualTo(new[] { origin, target.Destination }));
+            Assert.That(longerResult.Projection.PendingMovementResolution.MovementSessionState.Route,
+                Is.EqualTo(new[] { origin, waypoint.Destination, target.Destination }));
+            Assert.That(shortestResult.Projection.Heroes.Single(value =>
+                    value.HeroId.Equals(shortestResult.Projection.SelectedActor.ActorId)).Coordinate,
+                Is.EqualTo(target.Destination));
+            Assert.That(longerResult.Projection.Heroes.Single(value =>
+                    value.HeroId.Equals(longerResult.Projection.SelectedActor.ActorId)).Coordinate,
+                Is.EqualTo(target.Destination));
+            Assert.That(
+                longerResult.Projection.PendingMovementResolution.MovementSessionState.StepEvents
+                    .Select(value => (value.Origin, value.Destination)),
+                Is.EqualTo(new[]
+                {
+                    (origin, waypoint.Destination),
+                    (waypoint.Destination, target.Destination)
+                }));
+        }
+
+        [Test]
         public void ReplayOracle_MatchesLiveFreshUndoAndSnapshotContinuationEvidence()
         {
             var live = CreateSession();
@@ -342,6 +413,26 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(card => session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == side)
                 .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
                 .ToArray();
+        }
+
+        private static void StartOfficialMapMovementThree(MatchSession session)
+        {
+            var redCard = GetCardByInitiative(session, TeamSide.Red, 5);
+            var blueCard = GetCardByInitiative(session, TeamSide.Blue, 8);
+            Accept(session, DirectorCommand.CommitCard(redCard.OwnerId, redCard.Id), null);
+            Accept(session, DirectorCommand.CommitCard(blueCard.OwnerId, blueCard.Id), null);
+            Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(blueCard.OwnerId));
+            StartCurrentAction(session, ActionKind.Movement, null);
+            Assert.That(session.Projection.PendingMovementResolution.MovementAllowance, Is.EqualTo(3));
+        }
+
+        private static CardInstance GetCardByInitiative(
+            MatchSession session,
+            TeamSide side,
+            int initiative)
+        {
+            return GetCards(session, side).Single(card => session.Projection.Definitions.Single(
+                definition => definition.Reference.Equals(card.DefinitionReference)).Initiative.Value == initiative);
         }
 
         private static IReadOnlyList<CardInstance> GetEligibleHandCards(MatchSession session, TeamSide side)

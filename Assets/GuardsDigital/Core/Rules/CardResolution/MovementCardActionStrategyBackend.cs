@@ -10,12 +10,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
     internal sealed class MovementCardActionStrategyBackend : IMovementCardActionStrategyBackend
     {
         private readonly AdjacentMoveAuthority adjacentMoveAuthority;
+        private readonly IMovementActionStartRestrictionEvaluator actionStartRestrictions;
         private PendingCardActionResolution pendingResolution;
         private PendingMovementChoice pendingChoice;
 
-        internal MovementCardActionStrategyBackend(AdjacentMoveAuthority adjacentMoveAuthority)
+        internal MovementCardActionStrategyBackend(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            IMovementActionStartRestrictionEvaluator actionStartRestrictions = null)
         {
             this.adjacentMoveAuthority = adjacentMoveAuthority ?? throw new ArgumentNullException(nameof(adjacentMoveAuthority));
+            this.actionStartRestrictions = actionStartRestrictions ??
+                UnrestrictedMovementActionStartEvaluator.Instance;
         }
 
         internal PendingCardActionResolution PendingResolution => pendingResolution;
@@ -180,7 +185,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer,
                 materializedDefinitions,
                 PrintedValueChannel.Movement);
-            var movementSession = new MovementSession(adjacentMoveAuthority, offer.ActorId, movementValue.Total);
+            var restriction = actionStartRestrictions.Evaluate(new MovementActionStartContext(
+                offer.ActorId,
+                offer.SourceCardInstanceId,
+                offer.ActionDefinitionId,
+                offer.InvocationContext,
+                movementValue.Total));
+            if (restriction.PreventsAction)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.MovementActionPrevented,
+                    pendingResolution,
+                    pendingChoice);
+            }
+
+            var movementSession = new MovementSession(
+                adjacentMoveAuthority,
+                offer.ActorId,
+                restriction.ApplyTo(movementValue.Total));
             pendingResolution = CreatePendingResolution(resolutionId, offer, movementSession.CaptureState());
             pendingChoice = CreatePendingChoice(pendingResolution, movementSession);
 
