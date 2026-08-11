@@ -42,6 +42,8 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Show a compact read-only 6-hero-by-4-turn card history grouped as three Red and three Blue heroes; each entry derives from the authoritative `HeroId` assignment and reveals no committed card before the joint reveal.
 - Show round, turn, active resolver, Lives, Waves, hero levels, and coins.
 - Use contextual prompts for actions, targets, and choices.
+- Present one contextual player-facing **End Turn** control instead of separate Hold and Movement Stop controls. At ordinary unresolved-card action selection it invokes the exact authoritative Hold offer; while an optional Movement continuation is pending it invokes the exact authoritative Stop choice, ends that Movement action, and therefore ends the current turn. The control is hidden or disabled whenever the authoritative projection exposes no legal turn-ending invocation, including mandatory choices that cannot be bypassed.
+- **End Turn** is presentation terminology, not a generic rules command. Its view model carries the exact currently legal typed offer or pending-choice invocation supplied by authority; the view never infers legality from its own phase state. Future turn-ending functionality reuses the control by projecting its own typed invocation, without making Hold, Movement Stop, or later rule operations interchangeable.
 - Provide internal Undo, restart, animation-speed, and camera-reset controls.
 - Provide a collapsible event log.
 - No main menu, settings suite, tutorial, collection screen, or account UI is required for the pitch.

@@ -160,11 +160,12 @@ Acceptance checks:
 - The current `HeroSelectionController` responsibilities are separated into bounded board-interaction, director-hand/commitment, round/action, Undo/restart, and diagnostic-log presenters plus passive views; no replacement type owns all of session authority, history, input, projection, and rendering.
 - Presenters are plain testable C# collaborators, depend only on the match-session port and their view port, and never call one another directly. Cross-feature change flows through a new immutable session projection.
 - Unity views receive immutable view models and forward user intent through explicit callbacks. They do not query or mutate rules authorities, create snapshots, decide legality, own pending continuations, or reconstruct match state.
+- The round/action view exposes one contextual **End Turn** control and no separate Movement Stop button. Its immutable view model carries the exact authoritative typed invocation: Hold at ordinary unresolved-card action selection, Stop during an optional Movement continuation, and no enabled invocation during a mandatory choice. The passive view contains no Hold/Stop/action-kind/name/phase branching, and a bounded presenter test proves that a later projected typed turn-ending invocation can reuse the same control without changing the view.
 - Scene-object discovery and dependency wiring are restricted to one composition root; feature views and presenters do not use global object discovery, a singleton, or a service locator.
 - Snapshot restore, command-replay Undo/restart, hero/obstacle placement, pending highlights, Defense controls, hands, round/turn status, Tie Breaker, and the event log rebuild identically through the new projection path.
 - Focused Edit Mode and saved-scene Play Mode tests prove behavior and visible layout equivalence across all existing interaction paths.
 
-Non-goals: No production HUD, UI Toolkit migration, animation, sound, networking, new gameplay, presentation redesign, or generic framework beyond the current match needs.
+Non-goals: No production HUD, UI Toolkit migration, animation, sound, networking, new gameplay, broader presentation redesign beyond the approved contextual End Turn consolidation, or generic framework beyond the current match needs.
 
 ### [ ] 4.4d Close Phase 4 runtime hygiene and architecture gate
 
