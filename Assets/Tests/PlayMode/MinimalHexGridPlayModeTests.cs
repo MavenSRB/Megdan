@@ -18,7 +18,7 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class MinimalHexGridPlayModeTests
     {
         [UnityTest]
-        public IEnumerator Scene_LoadsExpandedVisibleHexTilesUnderFixedCamera()
+        public IEnumerator Scene_LoadsCompleteSelectedMapPresentationUnderFramedFixedCamera()
         {
             var loadOperation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(loadOperation, Is.Not.Null);
@@ -31,10 +31,22 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var markers = Object.FindObjectsByType<BoardMapSpawnMarkerView>(FindObjectsSortMode.None);
             var cameras = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            var mapView = Object.FindFirstObjectByType<PlaceholderTestGridView>();
 
-            Assert.That(tiles, Has.Length.EqualTo(19));
+            Assert.That(mapView.RenderedDefinition.Reference, Is.EqualTo(OfficialBoardMapCatalog.SelectedMap));
+            Assert.That(tiles, Has.Length.EqualTo(292));
+            Assert.That(tiles.Count(tile => tile.IsPlayable), Is.EqualTo(210));
+            Assert.That(tiles.Count(tile => tile.SpaceKind == BoardMapSpaceKind.Terrain), Is.EqualTo(82));
+            Assert.That(markers, Has.Length.EqualTo(40));
             Assert.That(cameras, Has.Length.EqualTo(1));
+            Assert.That(cameras[0].orthographic, Is.True);
+            Assert.That(tiles.All(tile =>
+            {
+                var viewport = cameras[0].WorldToViewportPoint(tile.transform.position);
+                return viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f;
+            }), Is.True);
             Assert.That(tiles, Has.All.Matches<HexTileView>(tile =>
             {
                 var edgeRenderer = tile.GetComponentInChildren<LineRenderer>();

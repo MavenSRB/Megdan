@@ -76,6 +76,16 @@ namespace GuardsDigital.Presentation.Interaction
 
         public int MovementAllowance => movementAllowance;
 
+        public BoardMapDefinition SelectedMapDefinition
+        {
+            get
+            {
+                EnsureBindings();
+                EnsureMoveAuthority();
+                return moveAuthority?.MapDefinition;
+            }
+        }
+
         public int RemainingMovementAllowance => cardDrivenMovementEnabled
             ? CardRemainingMovementAllowance
             : movementSession != null ? movementSession.RemainingAllowance : 0;
@@ -251,7 +261,7 @@ namespace GuardsDigital.Presentation.Interaction
             highlightedCoordinates.Clear();
             reachableDestinations.Clear();
 
-            var availableTiles = tileViews.Where(tile => tile != null).ToArray();
+            var availableTiles = tileViews.Where(tile => tile != null && tile.IsPlayable).ToArray();
             var boardCoordinates = availableTiles.Select(tile => tile.Coordinate);
             var destinations = MovementReachabilityQuery.FindReachableDestinations(
                 selectedOccupancy,
@@ -434,6 +444,15 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var selectedMap = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var mapView = FindFirstObjectByType<PlaceholderTestGridView>();
+            if (mapView != null &&
+                (mapView.RenderedDefinition == null ||
+                 !mapView.RenderedDefinition.Reference.Equals(selectedMap.Reference)))
+            {
+                mapView.Rebuild(selectedMap);
+                tileViews = mapView.GetComponentsInChildren<HexTileView>(true);
+                obstacleViews = mapView.GetComponentsInChildren<PlaceholderObstacleView>(true);
+            }
             var obstacleOccupancies = obstacleViews != null
                 ? obstacleViews
                     .Where(obstacle => obstacle != null)
@@ -473,7 +492,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             var hitPoint = pointerRay.GetPoint(enter);
             return tileViews
-                .Where(tile => tile != null)
+                .Where(tile => tile != null && tile.IsPlayable)
                 .OrderBy(tile => Vector3.Distance(tile.transform.position, hitPoint))
                 .FirstOrDefault(tile =>
                 {

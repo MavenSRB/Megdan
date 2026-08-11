@@ -10,131 +10,179 @@ namespace GuardsDigital.Presentation.Board
     [DisallowMultipleComponent]
     public sealed class PlaceholderTestGridView : MonoBehaviour
     {
-        [SerializeField]
-        private int gridRadius = 2;
+        private static readonly Color[] ZoneColors =
+        {
+            new Color(0.72f, 0.34f, 0.30f, 1f),
+            new Color(0.82f, 0.52f, 0.30f, 1f),
+            new Color(0.78f, 0.72f, 0.32f, 1f),
+            new Color(0.34f, 0.63f, 0.78f, 1f),
+            new Color(0.30f, 0.42f, 0.72f, 1f),
+            new Color(0.38f, 0.66f, 0.42f, 1f),
+            new Color(0.54f, 0.40f, 0.68f, 1f)
+        };
 
-        [SerializeField]
-        private float outerRadius = HexWorldLayout.DefaultOuterRadius;
-
-        [SerializeField]
-        private ObstacleCoordinate[] obstacleCoordinates =
+        [SerializeField] private float outerRadius = HexWorldLayout.DefaultOuterRadius;
+        [SerializeField] private float cameraPadding = 1.5f;
+        [SerializeField] private ObstacleCoordinate[] obstacleCoordinates =
         {
             new ObstacleCoordinate(1, 0),
             new ObstacleCoordinate(0, 1)
         };
 
-        public int GridRadius => gridRadius;
+        private readonly Dictionary<ZoneId, Material> zoneMaterials = new Dictionary<ZoneId, Material>();
+        private BoardMapDefinition renderedDefinition;
+        private Material terrainMaterial;
+        private Material edgeMaterial;
+        private Material redSpawnMaterial;
+        private Material blueSpawnMaterial;
 
         public float OuterRadius => outerRadius;
-
-        public IReadOnlyCollection<HexCoordinate> Coordinates => CreateCoordinates(gridRadius).ToArray();
-
+        public BoardMapDefinition RenderedDefinition => renderedDefinition;
+        public IReadOnlyCollection<HexCoordinate> Coordinates => renderedDefinition != null
+            ? renderedDefinition.Spaces.Select(space => space.Coordinate).ToArray()
+            : System.Array.Empty<HexCoordinate>();
         public IReadOnlyCollection<HexCoordinate> ObstacleCoordinates =>
             (obstacleCoordinates ?? System.Array.Empty<ObstacleCoordinate>())
                 .Select(coordinate => coordinate.Coordinate)
                 .ToArray();
 
-        public void EnsureGrid()
+        public void Rebuild(BoardMapDefinition definition)
         {
-            if (gridRadius < 0 || outerRadius <= 0f || float.IsNaN(outerRadius) || float.IsInfinity(outerRadius))
+            if (definition == null) throw new System.ArgumentNullException(nameof(definition));
+            if (outerRadius <= 0f || float.IsNaN(outerRadius) || float.IsInfinity(outerRadius))
             {
-                return;
+                throw new System.InvalidOperationException("The placeholder map requires a finite positive outer radius.");
             }
 
-            var desiredCoordinates = new HashSet<HexCoordinate>(CreateCoordinates(gridRadius));
+            renderedDefinition = definition;
+            EnsureMaterials(definition);
+
+            var spacesByCoordinate = definition.Spaces.ToDictionary(space => space.Coordinate);
             var tilesByCoordinate = new Dictionary<HexCoordinate, HexTileView>();
             HexTileView templateTile = null;
-
             foreach (var tile in GetComponentsInChildren<HexTileView>(true))
             {
                 templateTile ??= tile;
-                if (!desiredCoordinates.Contains(tile.Coordinate) || tilesByCoordinate.ContainsKey(tile.Coordinate))
+                if (!spacesByCoordinate.ContainsKey(tile.Coordinate) || tilesByCoordinate.ContainsKey(tile.Coordinate))
                 {
-                    DestroyTile(tile.gameObject);
+                    DestroyObject(tile.gameObject);
                     continue;
                 }
 
-                tile.Configure(tile.Coordinate, outerRadius);
+                ConfigureTile(tile, spacesByCoordinate[tile.Coordinate]);
                 tilesByCoordinate.Add(tile.Coordinate, tile);
             }
 
-            foreach (var coordinate in desiredCoordinates.OrderBy(coordinate => coordinate.Q).ThenBy(coordinate => coordinate.R))
+            foreach (var space in definition.Spaces.OrderBy(space => space.Coordinate.Q).ThenBy(space => space.Coordinate.R))
             {
-                if (!tilesByCoordinate.ContainsKey(coordinate))
+                if (!tilesByCoordinate.ContainsKey(space.Coordinate))
                 {
-                    CreateTile(coordinate, templateTile);
+                    CreateTile(space, templateTile);
                 }
             }
 
-            EnsureObstacles(desiredCoordinates);
+            EnsureSpawnMarkers(definition);
+            EnsureObstacles(new HashSet<HexCoordinate>(definition.PlayableCoordinates));
+            FrameWholeMap(Camera.main, definition);
         }
 
-        private static IEnumerable<HexCoordinate> CreateCoordinates(int radius)
+        public void EnsureGrid()
         {
-            for (var q = -radius; q <= radius; q++)
+            if (renderedDefinition != null)
             {
-                var minimumR = Mathf.Max(-radius, -q - radius);
-                var maximumR = Mathf.Min(radius, -q + radius);
-                for (var r = minimumR; r <= maximumR; r++)
-                {
-                    yield return new HexCoordinate(q, r);
-                }
+                Rebuild(renderedDefinition);
             }
         }
 
-        private HexTileView CreateTile(HexCoordinate coordinate, HexTileView templateTile)
+        private void ConfigureTile(HexTileView tile, BoardMapSpace space)
         {
-            var tileObject = new GameObject($"Hex {coordinate.Q},{coordinate.R}");
+            tile.gameObject.name = $"{space.Kind} {space.Id.Value}";
+            tile.Configure(space, outerRadius, GetSpaceMaterial(space));
+            var edge = tile.GetComponentInChildren<LineRenderer>(true);
+            if (edge != null)
+            {
+                ConfigureEdge(edge);
+            }
+        }
+
+        private HexTileView CreateTile(BoardMapSpace space, HexTileView templateTile)
+        {
+            var tileObject = new GameObject($"{space.Kind} {space.Id.Value}");
             tileObject.transform.SetParent(transform, false);
 
             var meshFilter = tileObject.AddComponent<MeshFilter>();
-            meshFilter.sharedMesh = templateTile != null
+            meshFilter.sharedMesh = templateTile != null && templateTile.GetComponent<MeshFilter>() != null
                 ? templateTile.GetComponent<MeshFilter>().sharedMesh
                 : FlatHexMeshBuilder.Create(outerRadius);
 
-            var meshRenderer = tileObject.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = templateTile != null
-                ? templateTile.GetComponent<MeshRenderer>().sharedMaterial
-                : CreateMaterial(new Color(0.72f, 0.72f, 0.72f, 1f));
-
+            tileObject.AddComponent<MeshRenderer>();
             var tile = tileObject.AddComponent<HexTileView>();
-            tile.Configure(coordinate, outerRadius);
+            tile.Configure(space, outerRadius, GetSpaceMaterial(space));
 
-            var edgeObject = new GameObject("Dark Gray Edge");
+            var edgeObject = new GameObject("Debug Edge");
             edgeObject.transform.SetParent(tileObject.transform, false);
-            var lineRenderer = edgeObject.AddComponent<LineRenderer>();
-            lineRenderer.sharedMaterial = GetEdgeMaterial(templateTile);
-            lineRenderer.useWorldSpace = false;
-            lineRenderer.loop = true;
-            lineRenderer.positionCount = 6;
-            lineRenderer.startWidth = 0.055f;
-            lineRenderer.endWidth = 0.055f;
-            lineRenderer.numCornerVertices = 2;
-
-            for (var side = 0; side < 6; side++)
-            {
-                var angle = Mathf.Deg2Rad * (30f + (side * 60f));
-                lineRenderer.SetPosition(side, new Vector3(Mathf.Cos(angle) * outerRadius, 0.015f, Mathf.Sin(angle) * outerRadius));
-            }
-
+            ConfigureEdge(edgeObject.AddComponent<LineRenderer>());
             return tile;
         }
 
-        private void EnsureObstacles(IReadOnlyCollection<HexCoordinate> boardCoordinates)
+        private void ConfigureEdge(LineRenderer lineRenderer)
+        {
+            lineRenderer.sharedMaterial = edgeMaterial;
+            lineRenderer.useWorldSpace = false;
+            lineRenderer.loop = true;
+            lineRenderer.positionCount = 6;
+            lineRenderer.startWidth = 0.045f;
+            lineRenderer.endWidth = 0.045f;
+            lineRenderer.numCornerVertices = 2;
+            for (var side = 0; side < 6; side++)
+            {
+                var angle = Mathf.Deg2Rad * (30f + (side * 60f));
+                lineRenderer.SetPosition(side, new Vector3(
+                    Mathf.Cos(angle) * outerRadius,
+                    0.015f,
+                    Mathf.Sin(angle) * outerRadius));
+            }
+        }
+
+        private void EnsureSpawnMarkers(BoardMapDefinition definition)
+        {
+            foreach (var marker in GetComponentsInChildren<BoardMapSpawnMarkerView>(true))
+            {
+                DestroyObject(marker.gameObject);
+            }
+
+            var spacesById = definition.Spaces.ToDictionary(space => space.Id);
+            foreach (var spawnPoint in definition.SpawnPoints.OrderBy(spawnPoint => spawnPoint.Id.Value))
+            {
+                var space = spacesById[spawnPoint.SpaceId];
+                var markerObject = new GameObject($"Spawn {spawnPoint.Id.Value}");
+                markerObject.transform.SetParent(transform, false);
+                markerObject.transform.localPosition = HexWorldLayout.ToWorld(space.Coordinate, outerRadius);
+                var marker = markerObject.AddComponent<BoardMapSpawnMarkerView>();
+                markerObject.AddComponent<LineRenderer>();
+                marker.Configure(
+                    spawnPoint,
+                    outerRadius,
+                    string.Equals(spawnPoint.TeamId, "red", System.StringComparison.OrdinalIgnoreCase)
+                        ? redSpawnMaterial
+                        : blueSpawnMaterial);
+            }
+        }
+
+        private void EnsureObstacles(IReadOnlyCollection<HexCoordinate> playableCoordinates)
         {
             var desiredCoordinates = new HashSet<HexCoordinate>(
                 (obstacleCoordinates ?? System.Array.Empty<ObstacleCoordinate>())
                     .Select(coordinate => coordinate.Coordinate)
-                    .Where(coordinate => boardCoordinates.Contains(coordinate)));
+                    .Where(playableCoordinates.Contains));
             var obstaclesByCoordinate = new Dictionary<HexCoordinate, PlaceholderObstacleView>();
             PlaceholderObstacleView templateObstacle = null;
-
             foreach (var obstacle in GetComponentsInChildren<PlaceholderObstacleView>(true))
             {
                 templateObstacle ??= obstacle;
                 if (!desiredCoordinates.Contains(obstacle.Coordinate) || obstaclesByCoordinate.ContainsKey(obstacle.Coordinate))
                 {
-                    DestroyObstacle(obstacle.gameObject);
+                    DestroyObject(obstacle.gameObject);
                     continue;
                 }
 
@@ -151,102 +199,76 @@ namespace GuardsDigital.Presentation.Board
             }
         }
 
-        private PlaceholderObstacleView CreateObstacle(
-            HexCoordinate coordinate,
-            PlaceholderObstacleView templateObstacle)
+        private void CreateObstacle(HexCoordinate coordinate, PlaceholderObstacleView templateObstacle)
         {
             var obstacleObject = new GameObject($"Obstacle {coordinate.Q},{coordinate.R}");
             obstacleObject.transform.SetParent(transform, false);
-
             var meshFilter = obstacleObject.AddComponent<MeshFilter>();
-            meshFilter.sharedMesh = templateObstacle != null
-                ? templateObstacle.GetComponent<MeshFilter>().sharedMesh
-                : null;
-
-            var meshRenderer = obstacleObject.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = templateObstacle != null
-                ? templateObstacle.GetComponent<MeshRenderer>().sharedMaterial
-                : null;
-
+            meshFilter.sharedMesh = templateObstacle != null ? templateObstacle.GetComponent<MeshFilter>().sharedMesh : null;
+            var renderer = obstacleObject.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = templateObstacle != null ? templateObstacle.GetComponent<MeshRenderer>().sharedMaterial : null;
             var obstacle = obstacleObject.AddComponent<PlaceholderObstacleView>();
             obstacle.Configure(CreateObstacleOccupancy(coordinate), outerRadius);
-            return obstacle;
         }
 
-        private static ObstacleOccupancy CreateObstacleOccupancy(HexCoordinate coordinate)
-        {
-            return new ObstacleOccupancy(
-                new ObstacleId($"placeholder-obstacle-{coordinate.Q}-{coordinate.R}"),
-                coordinate);
-        }
+        private static ObstacleOccupancy CreateObstacleOccupancy(HexCoordinate coordinate) =>
+            new ObstacleOccupancy(new ObstacleId($"placeholder-obstacle-{coordinate.Q}-{coordinate.R}"), coordinate);
 
-        private static Material GetEdgeMaterial(HexTileView templateTile)
+        private void EnsureMaterials(BoardMapDefinition definition)
         {
-            var templateEdge = templateTile != null ? templateTile.GetComponentInChildren<LineRenderer>() : null;
-            return templateEdge != null ? templateEdge.sharedMaterial : CreateMaterial(new Color(0.22f, 0.22f, 0.22f, 1f));
-        }
-
-        private static Material CreateMaterial(Color color)
-        {
-            var shader = Shader.Find("Standard");
-            return new Material(shader)
+            terrainMaterial ??= CreateMaterial("Terrain Debug", new Color(0.20f, 0.23f, 0.26f, 1f));
+            edgeMaterial ??= CreateMaterial("Map Edge Debug", new Color(0.10f, 0.11f, 0.13f, 1f));
+            redSpawnMaterial ??= CreateMaterial("Red Spawn Debug", new Color(1f, 0.18f, 0.12f, 1f));
+            blueSpawnMaterial ??= CreateMaterial("Blue Spawn Debug", new Color(0.12f, 0.55f, 1f, 1f));
+            zoneMaterials.Clear();
+            for (var index = 0; index < definition.Zones.Count; index++)
             {
-                color = color
-            };
-        }
-
-        private static void DestroyTile(GameObject tileObject)
-        {
-            if (Application.isPlaying)
-            {
-                Destroy(tileObject);
-            }
-            else
-            {
-                DestroyImmediate(tileObject);
+                var zone = definition.Zones[index];
+                zoneMaterials.Add(zone.Id, CreateMaterial($"Zone {zone.DisplayName} Debug", ZoneColors[index % ZoneColors.Length]));
             }
         }
 
-        private static void DestroyObstacle(GameObject obstacleObject)
+        private Material GetSpaceMaterial(BoardMapSpace space) =>
+            space.Kind == BoardMapSpaceKind.Terrain ? terrainMaterial : zoneMaterials[space.ZoneId.Value];
+
+        private static Material CreateMaterial(string name, Color color)
         {
-            if (Application.isPlaying)
-            {
-                Destroy(obstacleObject);
-            }
-            else
-            {
-                DestroyImmediate(obstacleObject);
-            }
+            var material = new Material(Shader.Find("Standard")) { name = name, color = color };
+            material.hideFlags = HideFlags.DontSave;
+            return material;
+        }
+
+        private void FrameWholeMap(Camera targetCamera, BoardMapDefinition definition)
+        {
+            if (targetCamera == null) return;
+            var positions = definition.Spaces.Select(space => HexWorldLayout.ToWorld(space.Coordinate, outerRadius)).ToArray();
+            var minimumX = positions.Min(position => position.x) - outerRadius;
+            var maximumX = positions.Max(position => position.x) + outerRadius;
+            var minimumZ = positions.Min(position => position.z) - outerRadius;
+            var maximumZ = positions.Max(position => position.z) + outerRadius;
+            var center = new Vector3((minimumX + maximumX) * 0.5f, 60f, (minimumZ + maximumZ) * 0.5f);
+            var aspect = targetCamera.aspect > 0f ? targetCamera.aspect : 16f / 9f;
+            var halfWidth = (maximumX - minimumX) * 0.5f;
+            var halfDepth = (maximumZ - minimumZ) * 0.5f;
+            targetCamera.orthographic = true;
+            targetCamera.orthographicSize = Mathf.Max(halfDepth, halfWidth / aspect) + cameraPadding;
+            targetCamera.farClipPlane = 100f;
+            targetCamera.transform.position = center;
+            targetCamera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+        }
+
+        private static void DestroyObject(GameObject target)
+        {
+            if (Application.isPlaying) Destroy(target); else DestroyImmediate(target);
         }
 
         [System.Serializable]
         private struct ObstacleCoordinate
         {
-            public ObstacleCoordinate(int q, int r)
-            {
-                this.q = q;
-                this.r = r;
-            }
-
-            [SerializeField]
-            private int q;
-
-            [SerializeField]
-            private int r;
-
+            public ObstacleCoordinate(int q, int r) { this.q = q; this.r = r; }
+            [SerializeField] private int q;
+            [SerializeField] private int r;
             public HexCoordinate Coordinate => new HexCoordinate(q, r);
         }
-
-        private void OnEnable()
-        {
-            EnsureGrid();
-        }
-
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            EnsureGrid();
-        }
-#endif
     }
 }

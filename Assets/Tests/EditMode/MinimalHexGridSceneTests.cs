@@ -16,23 +16,26 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class MinimalHexGridSceneTests
     {
         private const string ScenePath = "Assets/Scenes/Milestone1_2_HexGrid.unity";
-        private const int ExpandedGridRadius = 2;
-        private const int ExpandedGridTileCount = 19;
+        private const int OfficialMapCellCount = 292;
+        private const int OfficialPlayableCount = 210;
+        private const int OfficialTerrainCount = 82;
         private const float Tolerance = 0.0001f;
 
         [Test]
-        public void Scene_ContainsExpandedPlaceholderGridAtDerivedPositions()
+        public void Scene_RebuildsCompletePlaceholderMapFromSelectedDefinitionAtDerivedPositions()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
+            var mapView = RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var origin = new HexCoordinate(0, 0);
-            var expectedCoordinates = CreateRadiusTwoCoordinates();
+            var definition = mapView.RenderedDefinition;
 
-            Assert.That(tiles, Has.Length.EqualTo(ExpandedGridTileCount));
-            Assert.That(tiles.Select(tile => tile.Coordinate), Is.EquivalentTo(expectedCoordinates));
-            Assert.That(tiles.Select(tile => tile.Coordinate), Is.SupersetOf(origin.GetNeighbors()));
-            Assert.That(tiles.Select(tile => tile.Coordinate), Does.Contain(origin));
+            Assert.That(definition.Reference, Is.EqualTo(OfficialBoardMapCatalog.SelectedMap));
+            Assert.That(tiles, Has.Length.EqualTo(OfficialMapCellCount));
+            Assert.That(tiles.Select(tile => tile.Coordinate),
+                Is.EquivalentTo(definition.Spaces.Select(space => space.Coordinate)));
+            Assert.That(tiles.Count(tile => tile.IsPlayable), Is.EqualTo(OfficialPlayableCount));
+            Assert.That(tiles.Count(tile => tile.SpaceKind == BoardMapSpaceKind.Terrain),
+                Is.EqualTo(OfficialTerrainCount));
 
             foreach (var tile in tiles)
             {
@@ -47,31 +50,36 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_ExpandedGridSupportsDistancesAndAlternateRoutes()
+        public void Scene_PresentationMatchesSelectedDefinitionClassificationsAndSpawnPoints()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
-            var coordinates = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
-                .Select(tile => tile.Coordinate)
-                .ToHashSet();
+            var mapView = RebuildOfficialMap();
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            var markers = Object.FindObjectsByType<BoardMapSpawnMarkerView>(FindObjectsSortMode.None);
+            var definition = mapView.RenderedDefinition;
+            var tilesByCoordinate = tiles.ToDictionary(tile => tile.Coordinate);
 
-            Assert.That(coordinates, Has.Member(new HexCoordinate(0, 0)));
-            Assert.That(coordinates, Has.Member(new HexCoordinate(1, 0)));
-            Assert.That(HexDistance(new HexCoordinate(0, 0), new HexCoordinate(1, 0)), Is.EqualTo(1));
+            foreach (var space in definition.Spaces)
+            {
+                var tile = tiles.Single(candidate => candidate.SpaceId.Equals(space.Id));
+                Assert.That(tile.Coordinate, Is.EqualTo(space.Coordinate));
+                Assert.That(tile.SpaceKind, Is.EqualTo(space.Kind));
+                Assert.That(tile.ZoneId, Is.EqualTo(space.ZoneId));
+            }
 
-            Assert.That(coordinates, Has.Member(new HexCoordinate(-2, 0)));
-            Assert.That(coordinates, Has.Member(new HexCoordinate(0, -1)));
-            Assert.That(HexDistance(new HexCoordinate(-2, 0), new HexCoordinate(0, -1)), Is.EqualTo(2));
-
-            Assert.That(coordinates, Has.Member(new HexCoordinate(1, 0)));
-            Assert.That(HexDistance(new HexCoordinate(-2, 0), new HexCoordinate(1, 0)), Is.EqualTo(3));
-
-            Assert.That(coordinates, Has.Member(new HexCoordinate(-1, 0)));
-            Assert.That(coordinates, Has.Member(new HexCoordinate(-1, -1)));
-            Assert.That(new HexCoordinate(-2, 0).GetNeighbors(), Has.Member(new HexCoordinate(-1, 0)));
-            Assert.That(new HexCoordinate(-1, 0).GetNeighbors(), Has.Member(new HexCoordinate(0, -1)));
-            Assert.That(new HexCoordinate(-2, 0).GetNeighbors(), Has.Member(new HexCoordinate(-1, -1)));
-            Assert.That(new HexCoordinate(-1, -1).GetNeighbors(), Has.Member(new HexCoordinate(0, -1)));
+            Assert.That(markers, Has.Length.EqualTo(40));
+            Assert.That(markers.Select(marker => marker.SpawnPointId),
+                Is.EquivalentTo(definition.SpawnPoints.Select(spawn => spawn.Id)));
+            Assert.That(markers.All(marker => definition.SpawnPoints.Any(spawn =>
+                spawn.Id.Equals(marker.SpawnPointId) &&
+                spawn.SpaceId.Equals(marker.SpaceId) &&
+                spawn.TeamId == marker.TeamId &&
+                spawn.UnitType == marker.UnitType)), Is.True);
+            Assert.That(tiles.Sum(tile => tile.Coordinate.GetNeighbors().Count(tilesByCoordinate.ContainsKey)) / 2,
+                Is.EqualTo(809));
+            Assert.That(tiles.Where(tile => tile.IsPlayable).Sum(tile => tile.Coordinate.GetNeighbors().Count(
+                    coordinate => tilesByCoordinate.TryGetValue(coordinate, out var neighbor) && neighbor.IsPlayable)) / 2,
+                Is.EqualTo(530));
         }
 
         [Test]
@@ -84,36 +92,44 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(cameras[0].name, Is.EqualTo("Fixed Camera"));
             Assert.That(cameras[0].GetComponents<MonoBehaviour>(), Has.All.TypeOf<PrimitiveHeroPointerInput>());
             Assert.That(cameras[0].transform.position.y, Is.GreaterThan(0f));
-            Assert.That(
-                new Vector2(cameras[0].transform.position.x, cameras[0].transform.position.z).magnitude,
-                Is.LessThan(Tolerance));
+            RebuildOfficialMap();
+            Assert.That(cameras[0].orthographic, Is.True);
             Assert.That(Vector3.Angle(cameras[0].transform.forward, Vector3.down), Is.LessThan(Tolerance));
+            var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            Assert.That(tiles.All(tile =>
+            {
+                var viewport = cameras[0].WorldToViewportPoint(tile.transform.position);
+                return viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f;
+            }), Is.True);
         }
 
         [Test]
-        public void Scene_UsesOneLightGrayFillMaterialForEveryTile()
+        public void Scene_VisiblyDistinguishesEveryZoneAndTerrainForDebugInspection()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
+            var mapView = RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var fillMaterials = tiles
-                .Select(tile => tile.GetComponent<MeshRenderer>().sharedMaterial)
-                .Distinct()
-                .ToArray();
+            var playableMaterialsByZone = tiles.Where(tile => tile.IsPlayable)
+                .GroupBy(tile => tile.ZoneId.Value)
+                .ToDictionary(group => group.Key, group => group.Select(tile =>
+                    tile.GetComponent<MeshRenderer>().sharedMaterial).Distinct().Single());
+            var terrainMaterials = tiles.Where(tile => !tile.IsPlayable)
+                .Select(tile => tile.GetComponent<MeshRenderer>().sharedMaterial).Distinct().ToArray();
 
-            Assert.That(fillMaterials, Has.Length.EqualTo(1));
-            Assert.That(Mathf.Abs(fillMaterials[0].color.r - fillMaterials[0].color.g), Is.LessThan(0.05f));
-            Assert.That(Mathf.Abs(fillMaterials[0].color.g - fillMaterials[0].color.b), Is.LessThan(0.05f));
-            Assert.That(fillMaterials[0].color.grayscale, Is.GreaterThan(0.6f));
+            Assert.That(playableMaterialsByZone.Keys,
+                Is.EquivalentTo(mapView.RenderedDefinition.Zones.Select(zone => zone.Id)));
+            Assert.That(playableMaterialsByZone.Values.Distinct().Count(), Is.EqualTo(7));
+            Assert.That(terrainMaterials, Has.Length.EqualTo(1));
+            Assert.That(playableMaterialsByZone.Values, Has.No.Member(terrainMaterials[0]));
         }
 
         [Test]
         public void Scene_UsesOneDarkerGrayClosedEdgeForEveryTile()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
+            RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
-            var fillColor = tiles[0].GetComponent<MeshRenderer>().sharedMaterial.color;
+            var darkestFill = tiles.Min(tile => tile.GetComponent<MeshRenderer>().sharedMaterial.color.grayscale);
             var edgeRenderers = tiles.Select(tile => tile.GetComponentInChildren<LineRenderer>()).ToArray();
 
             Assert.That(edgeRenderers, Has.All.Not.Null);
@@ -123,14 +139,14 @@ namespace GuardsDigital.Tests.EditMode
             var edgeColor = edgeRenderers[0].sharedMaterial.color;
             Assert.That(Mathf.Abs(edgeColor.r - edgeColor.g), Is.LessThan(0.05f));
             Assert.That(Mathf.Abs(edgeColor.g - edgeColor.b), Is.LessThan(0.05f));
-            Assert.That(edgeColor.grayscale, Is.LessThan(fillColor.grayscale - 0.25f));
+            Assert.That(edgeColor.grayscale, Is.LessThan(darkestFill - 0.05f));
         }
 
         [Test]
         public void Scene_ContainsVisibleRedAndBlueHeroesAtAuthoritativeAdjacentCoordinates()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
+            RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
 
@@ -176,7 +192,7 @@ namespace GuardsDigital.Tests.EditMode
         public void Scene_ContainsVisiblePlaceholderObstaclesOnUniqueEmptySpaces()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
+            RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
             var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
@@ -250,7 +266,7 @@ namespace GuardsDigital.Tests.EditMode
         public void Scene_SelectingSecondaryMovementOfferHighlightsAuthoritativeCardDestinations()
         {
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            Object.FindFirstObjectByType<PlaceholderTestGridView>().EnsureGrid();
+            RebuildOfficialMap();
             var controller = Object.FindFirstObjectByType<HeroSelectionController>();
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None);
             var hero = heroes.Single(candidate =>
@@ -271,7 +287,7 @@ namespace GuardsDigital.Tests.EditMode
             var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None);
             var expectedDestinations = MovementReachabilityQuery.FindReachableDestinations(
                     hero.Occupancy,
-                    tiles.Select(tile => tile.Coordinate),
+                    tiles.Where(tile => tile.IsPlayable).Select(tile => tile.Coordinate),
                     heroes.Select(candidate => candidate.Occupancy),
                     obstacles.Select(obstacle => obstacle.Occupancy),
                     controller.LastCardMovementAllowance)
@@ -288,20 +304,12 @@ namespace GuardsDigital.Tests.EditMode
                 Has.No.Member(heroes.Single(candidate => candidate != hero).Coordinate));
         }
 
-        private static HashSet<HexCoordinate> CreateRadiusTwoCoordinates()
+        private static PlaceholderTestGridView RebuildOfficialMap()
         {
-            var coordinates = new HashSet<HexCoordinate>();
-            for (var q = -ExpandedGridRadius; q <= ExpandedGridRadius; q++)
-            {
-                var minimumR = Mathf.Max(-ExpandedGridRadius, -q - ExpandedGridRadius);
-                var maximumR = Mathf.Min(ExpandedGridRadius, -q + ExpandedGridRadius);
-                for (var r = minimumR; r <= maximumR; r++)
-                {
-                    coordinates.Add(new HexCoordinate(q, r));
-                }
-            }
-
-            return coordinates;
+            var mapView = Object.FindFirstObjectByType<PlaceholderTestGridView>();
+            var definition = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            mapView.Rebuild(definition);
+            return mapView;
         }
 
         private static int HexDistance(HexCoordinate first, HexCoordinate second)
