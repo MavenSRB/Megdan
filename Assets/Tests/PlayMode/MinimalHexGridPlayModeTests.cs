@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
@@ -113,7 +114,26 @@ namespace GuardsDigital.Tests.PlayMode
         public IEnumerator Scene_RoutesConfiguredMinionAttackCuePointerAndRemovalThroughFeatureBoundary()
         {
             yield return LoadScene();
-            var runtime = Root().Runtime;
+            var root = Root();
+            var runtime = root.Runtime;
+            var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var transientSetupField = typeof(StandardMinionView).GetField(
+                "setupState",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            foreach (var configuredMinion in Object.FindObjectsByType<StandardMinionView>())
+            {
+                transientSetupField.SetValue(configuredMinion, null);
+            }
+
+            mapView.Rebuild(mapView.RenderedDefinition, runtime.Setup);
+            yield return null;
+
+            var reboundViews = Object.FindObjectsByType<StandardMinionView>();
+            Assert.That(reboundViews, Has.Length.EqualTo(12));
+            Assert.That(runtime.BoardView.MinionViews, Is.EquivalentTo(reboundViews));
+            Assert.That(pointerInput.MinionSelectors.Select(value =>
+                value.GetComponent<StandardMinionView>()), Is.EquivalentTo(reboundViews));
             var redHeroId = new GuardsDigital.Core.Units.Heroes.HeroId(
                 PlaceholderOneVsOneParticipants.RedHeroIdValue);
 
@@ -211,9 +231,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(tile.IsHighlighted, Is.True,
                 "The exact projected minion occupancy must receive the configured target cue.");
             Assert.That(minion.GetComponent<StandardMinionPointerSelector>(), Is.Not.Null);
+            var pendingTargetSnapshot = runtime.CaptureSnapshot();
             var commandCount = runtime.AcceptedCommands.Count;
-            Assert.That(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>()
-                .TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
+            Assert.That(pointerInput.TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
             yield return null;
 
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandCount + 1));
@@ -233,6 +253,31 @@ namespace GuardsDigital.Tests.PlayMode
                 "Action.MinionRewardAwarded"));
             Assert.That(runtime.DiagnosticEvents.Select(value => value.EventType), Does.Contain(
                 "Action.MinionRemovalCompleted"));
+
+            Assert.That(runtime.Undo(), Is.True);
+            yield return null;
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null);
+            Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
+            Assert.That(minion.gameObject.activeSelf, Is.True);
+            Assert.That(tile.IsHighlighted, Is.True);
+
+            Assert.That(runtime.Restart(), Is.True);
+            yield return null;
+            Assert.That(runtime.BoardView.Model.Minions, Has.Count.EqualTo(12));
+            Assert.That(runtime.BoardView.MinionViews.Count, Is.EqualTo(12));
+            Assert.That(pointerInput.MinionSelectors.Count, Is.EqualTo(12));
+
+            Assert.That(runtime.RestoreSnapshot(pendingTargetSnapshot), Is.True, runtime.LastOperationDetail);
+            yield return null;
+            Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
+            Assert.That(minion.gameObject.activeSelf, Is.True);
+            Assert.That(tile.IsHighlighted, Is.True);
+            Assert.That(pointerInput.TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
+            yield return null;
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
+            Assert.That(runtime.BoardView.Model.Minions.Select(value => value.MinionId),
+                Has.None.EqualTo(targetId));
+            Assert.That(minion.gameObject.activeSelf, Is.False);
         }
 
         [UnityTest]
@@ -501,12 +546,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(first.OwnsGeneratedHighlightMaterial, Is.True);
             Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(1));
             Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
+            AssertCurrentMinionBindings(first);
 
             yield return LoadScene();
             yield return null;
             var second = Root();
             Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(1));
             Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
+            AssertCurrentMinionBindings(second);
         }
 
         private static IEnumerator LoadScene()
@@ -578,5 +625,16 @@ namespace GuardsDigital.Tests.PlayMode
         private static int CountHighlightMaterials() =>
             Resources.FindObjectsOfTypeAll<Material>().Count(value =>
                 value != null && value.name == DestinationHighlightMaterialOwner.GeneratedMaterialName);
+
+        private static void AssertCurrentMinionBindings(MatchSceneCompositionRoot root)
+        {
+            var views = Object.FindObjectsByType<StandardMinionView>();
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(views, Has.Length.EqualTo(12));
+            Assert.That(root.Runtime.BoardView.MinionViews, Is.EquivalentTo(views));
+            Assert.That(pointerInput.MinionSelectors.Count, Is.EqualTo(12));
+            Assert.That(pointerInput.MinionSelectors.Select(value =>
+                value.GetComponent<StandardMinionView>()), Is.EquivalentTo(views));
+        }
     }
 }

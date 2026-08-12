@@ -217,7 +217,7 @@ Non-goals: No Attack, Range, Heavy-immunity, reward, Defeat, or removal-rule cha
 
 Historical evidence: [milestone 5.8a handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58a-expose-authoritative-minion-attack-targets-in-the-configured-board-completion-evidence).
 
-### [ ] 5.8a1 Repair configured minion-view lifetime across Unity reloads
+### [x] 5.8a1 Repair configured minion-view lifetime across Unity reloads
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -231,11 +231,14 @@ Acceptance checks:
 - Rebuild/reload followed by commitment confirmation, target-choice refresh, removal, Undo, restart, and snapshot restore produces no `MissingReferenceException`, no missing-script warning attributable to the configured minion path, and no exception emitted outside NUnit result accounting. Focused validation inspects both the fresh XML and complete Unity log.
 - The regression protects the actual lifetime boundary rather than only a clean saved-scene load or an in-process rebuild whose existing views still retain `SetupState`; it must fail if stale cached view or selector references are reintroduced.
 - Existing authoritative minion identities, targeting legality, Defeat/reward/removal, Hero targeting, Defense continuation, map setup, and passive-presentation dependency direction remain unchanged.
+- The required T3 gate's representative retained-prefix Undo replay remains at or below its existing 250 ms investigation threshold. The authorized correction may optimize the unchanged deterministic replay/projection/snapshot work or, only when measured evidence proves the sentinel no longer represents its documented workload and risk, apply a rationale-preserving rebaseline without weakening deterministic equivalence or removing replacement coverage.
 - T3 validation runs the focused lifecycle Edit Mode/Play Mode coverage, the directly affected configured saved-scene and minion-target fixtures, and both complete unfiltered suites because this correction crosses editor/Play Mode lifecycle and changes an already-passed configured scene-bootstrap boundary. A targeted non-batch editor transition confirms the reported reload/commit flow is clean.
 
-Non-goals: No Attack, Defense, Range, Heavy-immunity, reward, Defeat, removal, Undo, snapshot, or map-rule change; no 5.8b Defense-preview implementation; no minion pooling, general presentation framework, production animation/audio, networking, or legacy-controller expansion.
+Non-goals: No Attack, Defense, Range, Heavy-immunity, reward, Defeat, removal, Undo semantics, snapshot meaning/schema, replay determinism, or map-rule change; no 5.8b Defense-preview implementation; no minion pooling, general presentation framework, production animation/audio, networking, or legacy-controller expansion. Behavior-preserving replay/projection/snapshot performance correction or a measured rationale-preserving sentinel rebaseline is authorized only to clear the observed required-gate failure.
 
-### [!] 5.8b Preview authoritative Defense breakdowns on hover
+Historical evidence: [milestone 5.8a1 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58a1-repair-configured-minion-view-lifetime-across-unity-reloads-completion-evidence).
+
+### [ ] 5.8b Preview authoritative Defense breakdowns on hover
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 

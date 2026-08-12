@@ -18,6 +18,7 @@ namespace GuardsDigital.Application
         private readonly DirectorCommandHistory history = new DirectorCommandHistory();
         private readonly RuleEventLogProjection eventLog = new RuleEventLogProjection();
         private readonly List<RoundResolutionEvent> roundEvents = new List<RoundResolutionEvent>();
+        private readonly bool deferAcceptedProjectionRefresh;
 
         private PlaceholderOneVsOneTestConfiguration configuration;
         private AdjacentMoveAuthority board;
@@ -27,13 +28,17 @@ namespace GuardsDigital.Application
         private bool canRecordHistory;
 
         public MatchSession(MatchSessionInitialState initialState)
-            : this(initialState, true)
+            : this(initialState, true, false)
         {
         }
 
-        private MatchSession(MatchSessionInitialState initialState, bool useProvidedConfiguration)
+        private MatchSession(
+            MatchSessionInitialState initialState,
+            bool useProvidedConfiguration,
+            bool deferAcceptedProjectionRefresh)
         {
             this.initialState = initialState ?? throw new ArgumentNullException(nameof(initialState));
+            this.deferAcceptedProjectionRefresh = deferAcceptedProjectionRefresh;
             RebuildInitialState(useProvidedConfiguration);
             Projection = CreateProjection();
         }
@@ -90,7 +95,10 @@ namespace GuardsDigital.Application
                 history.Append(command);
             }
             version++;
-            Projection = CreateProjection();
+            if (!deferAcceptedProjectionRefresh)
+            {
+                Projection = CreateProjection();
+            }
             return new MatchCommandResult(
                 true,
                 command,
@@ -364,7 +372,10 @@ namespace GuardsDigital.Application
 
         private ReplayCandidate Replay(IEnumerable<DirectorCommand> commands)
         {
-            var candidate = new MatchSession(initialState, false);
+            // Replay still traverses the normal typed Execute path and retains its atomic rollback
+            // checks. Its intermediate immutable projections are private and unobserved, so defer
+            // rebuilding them until the adopted live session publishes the final projection.
+            var candidate = new MatchSession(initialState, false, true);
             foreach (var command in commands)
             {
                 var result = candidate.Execute(command);

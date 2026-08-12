@@ -53,6 +53,8 @@ namespace GuardsDigital.Presentation.Board
             (blueSpawnMaterial != null ? 1 : 0) +
             (generatedTileMesh != null ? 1 : 0);
 
+        public event System.Action<IReadOnlyList<StandardMinionView>> ConfiguredMinionViewsChanged;
+
         public void ConfigureSceneBindings(Camera camera, IEnumerable<PrimitiveHeroView> heroes)
         {
             sceneCamera = camera;
@@ -270,16 +272,18 @@ namespace GuardsDigital.Presentation.Board
             var viewsById = new Dictionary<MinionId, StandardMinionView>();
             foreach (var view in GetComponentsInChildren<StandardMinionView>(true))
             {
-                if (!view.enabled || view.SetupState == null || viewsById.ContainsKey(view.SetupState.MinionId))
+                var boundId = view.BoundMinionId;
+                if (!view.enabled || !boundId.IsDefined || viewsById.ContainsKey(boundId))
                 {
-                    DestroyObject(view.gameObject);
+                    RetireMinionView(view);
                 }
                 else
                 {
-                    viewsById.Add(view.SetupState.MinionId, view);
+                    viewsById.Add(boundId, view);
                 }
             }
 
+            var currentViews = new List<StandardMinionView>(setupState.Minions.Count);
             foreach (var setupMinion in setupState.Minions.OrderBy(value => value.MinionId.Value))
             {
                 if (!viewsById.TryGetValue(setupMinion.MinionId, out var view))
@@ -290,22 +294,38 @@ namespace GuardsDigital.Presentation.Board
                 }
 
                 view.Configure(setupMinion, outerRadius);
+                currentViews.Add(view);
                 viewsById.Remove(setupMinion.MinionId);
             }
 
             foreach (var staleView in viewsById.Values)
             {
-                DestroyObject(staleView.gameObject);
+                RetireMinionView(staleView);
             }
+
+            ConfiguredMinionViewsChanged?.Invoke(System.Array.AsReadOnly(currentViews.ToArray()));
         }
 
         private void ClearConfiguredMinions()
         {
             foreach (var minion in GetComponentsInChildren<StandardMinionView>(true))
             {
-                minion.enabled = false;
-                DestroyObject(minion.gameObject);
+                RetireMinionView(minion);
             }
+
+            ConfiguredMinionViewsChanged?.Invoke(System.Array.Empty<StandardMinionView>());
+        }
+
+        private static void RetireMinionView(StandardMinionView view)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            view.enabled = false;
+            view.gameObject.SetActive(false);
+            DestroyObject(view.gameObject);
         }
 
         private void EnsureMaterials(BoardMapDefinition definition)

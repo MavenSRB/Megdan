@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
@@ -7,6 +8,7 @@ using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
@@ -313,6 +315,73 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(heroes, Has.All.Matches<PrimitiveHeroView>(hero =>
                 hero.GetComponent<CapsuleCollider>() != null &&
                 hero.GetComponent<PrimitiveHeroPointerSelector>() != null));
+        }
+
+        [Test]
+        public void Scene_RebuildReconcilesReloadedAndDeliberatelyReplacedMinionBindings()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var mapView = RebuildOfficialMap();
+            var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var originalViews = Object.FindObjectsByType<StandardMinionView>()
+                .OrderBy(value => value.BoundMinionId.Value)
+                .ToArray();
+            var transientSetupField = typeof(StandardMinionView).GetField(
+                "setupState",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.That(root, Is.Not.Null);
+            Assert.That(pointerInput, Is.Not.Null);
+            Assert.That(originalViews, Has.Length.EqualTo(12));
+            foreach (var view in originalViews)
+            {
+                transientSetupField.SetValue(view, null);
+            }
+
+            Assert.That(originalViews, Has.All.Matches<StandardMinionView>(view =>
+                view.SetupState == null && view.BoundMinionId.IsDefined));
+            Assert.DoesNotThrow(() => mapView.Rebuild(mapView.RenderedDefinition, root.Runtime.Setup));
+
+            var retainedViews = Object.FindObjectsByType<StandardMinionView>()
+                .OrderBy(value => value.BoundMinionId.Value)
+                .ToArray();
+            Assert.That(retainedViews, Is.EqualTo(originalViews),
+                "A backup/domain reload that only loses transient setup objects must retain the stable views.");
+
+            var replacedState = retainedViews[0].SetupState;
+            Object.DestroyImmediate(retainedViews[0].gameObject);
+            var replacementObject = new GameObject("Deliberate Bound Minion Replacement");
+            replacementObject.transform.SetParent(mapView.transform, false);
+            var replacement = replacementObject.AddComponent<StandardMinionView>();
+            replacement.Configure(replacedState, mapView.OuterRadius);
+
+            Assert.DoesNotThrow(() => mapView.Rebuild(mapView.RenderedDefinition, root.Runtime.Setup));
+            Assert.DoesNotThrow(() => root.Runtime.RefreshAll(),
+                "A session refresh after replacement must not touch the destroyed cached component.");
+
+            var currentViews = Object.FindObjectsByType<StandardMinionView>();
+            var currentSelectors = Object.FindObjectsByType<StandardMinionPointerSelector>();
+            Assert.That(currentViews, Has.Length.EqualTo(12));
+            Assert.That(currentViews.Select(value => value.BoundMinionId).Distinct().Count(), Is.EqualTo(12));
+            Assert.That(currentSelectors, Has.Length.EqualTo(12));
+            Assert.That(currentSelectors.Select(value => value.GetComponent<StandardMinionView>()),
+                Is.EquivalentTo(currentViews));
+            Assert.That(currentSelectors.Select(value => value.GetComponent<SphereCollider>()).Distinct().Count(),
+                Is.EqualTo(12));
+            Assert.That(root.Runtime.BoardView.MinionViews, Is.EquivalentTo(currentViews));
+            Assert.That(pointerInput.MinionSelectors, Is.EquivalentTo(currentSelectors));
+
+            MinionId submitted = default;
+            root.Runtime.BoardView.BindIntentHandlers(
+                _ => false,
+                id => { submitted = id; return true; },
+                _ => false);
+            var replacementSelector = replacement.GetComponent<StandardMinionPointerSelector>();
+            Assert.That(replacementSelector, Is.Not.Null);
+            Assert.That(replacementSelector.TrySelectFromPointerRay(
+                new Ray(replacement.transform.position + (Vector3.up * 10f), Vector3.down)), Is.True);
+            Assert.That(submitted, Is.EqualTo(replacedState.MinionId));
         }
 
         [Test]

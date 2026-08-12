@@ -42,6 +42,7 @@ if ($request.platform -notin @('EditMode', 'PlayMode')) {
 $resultsPath = Resolve-ProjectOutputPath -RelativePath ([string] $request.results) -FieldName 'results'
 $logPath = Resolve-ProjectOutputPath -RelativePath ([string] $request.log) -FieldName 'log'
 $filter = [string] $request.filter
+$batchMode = -not ($request.PSObject.Properties.Name -contains 'batchMode') -or [bool] $request.batchMode
 
 if (-not (Test-Path -LiteralPath $unityPath -PathType Leaf)) {
     throw "Unity Editor not found at $unityPath"
@@ -77,8 +78,12 @@ if (-not $hub -or -not $licensing) {
     }
 }
 
-$unityArguments = @(
-    '-batchmode',
+$unityArguments = @()
+if ($batchMode) {
+    $unityArguments += '-batchmode'
+}
+
+$unityArguments += @(
     '-runTests',
     '-projectPath', ('"{0}"' -f $projectRoot),
     '-testPlatform', [string] $request.platform,

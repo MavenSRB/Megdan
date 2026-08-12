@@ -16,7 +16,7 @@ namespace GuardsDigital.Presentation.Match
     public sealed class BoardInteractionUnityView : IBoardInteractionView
     {
         private readonly IReadOnlyList<PrimitiveHeroView> heroes;
-        private readonly IReadOnlyList<StandardMinionView> minions;
+        private IReadOnlyList<StandardMinionView> minions;
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly Material highlightMaterial;
         private Func<HeroId, bool> heroIntentHandler;
@@ -39,6 +39,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public BoardInteractionViewModel Model { get; private set; }
+        public IReadOnlyList<StandardMinionView> MinionViews => minions;
 
         public event Action<HeroId> HeroSubmitted;
         public event Action<MinionId> MinionSubmitted;
@@ -73,29 +74,7 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
-            var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);
-            foreach (var minion in minions)
-            {
-                if (minion.SetupState != null && projectedMinions.TryGetValue(minion.SetupState.MinionId, out var state))
-                {
-                    minion.gameObject.SetActive(true);
-                    if (!ReferenceEquals(minion.SetupState, state))
-                    {
-                        minion.Configure(state, minion.OuterRadius);
-                    }
-
-                    projectedMinions.Remove(state.MinionId);
-                }
-                else
-                {
-                    minion.gameObject.SetActive(false);
-                }
-            }
-
-            if (projectedMinions.Count > 0)
-            {
-                throw new InvalidOperationException("The configured board has no view for a projected minion identity.");
-            }
+            RenderMinions(model);
 
             var targetCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(model.MovementDestinations);
             targetCoordinates.UnionWith(model.FastTravelDestinations);
@@ -114,6 +93,47 @@ namespace GuardsDigital.Presentation.Match
             {
                 var highlighted = targetCoordinates.Contains(tile.Coordinate);
                 tile.SetHighlighted(highlighted, highlighted ? highlightMaterial : null);
+            }
+        }
+
+        public void ReplaceMinionViews(IEnumerable<StandardMinionView> currentMinions)
+        {
+            minions = Array.AsReadOnly((currentMinions ??
+                    throw new ArgumentNullException(nameof(currentMinions)))
+                .Where(value => value != null)
+                .Distinct()
+                .ToArray());
+            if (Model != null)
+            {
+                RenderMinions(Model);
+            }
+        }
+
+        private void RenderMinions(BoardInteractionViewModel model)
+        {
+            var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);
+            foreach (var minion in minions)
+            {
+                var boundId = minion.BoundMinionId;
+                if (boundId.IsDefined && projectedMinions.TryGetValue(boundId, out var state))
+                {
+                    minion.gameObject.SetActive(true);
+                    if (!ReferenceEquals(minion.SetupState, state))
+                    {
+                        minion.Configure(state, minion.OuterRadius);
+                    }
+
+                    projectedMinions.Remove(state.MinionId);
+                }
+                else
+                {
+                    minion.gameObject.SetActive(false);
+                }
+            }
+
+            if (projectedMinions.Count > 0)
+            {
+                throw new InvalidOperationException("The configured board has no view for a projected minion identity.");
             }
         }
 

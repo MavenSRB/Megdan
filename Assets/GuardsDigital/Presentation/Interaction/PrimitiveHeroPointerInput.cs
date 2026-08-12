@@ -32,6 +32,8 @@ namespace GuardsDigital.Presentation.Interaction
         public Camera EventCamera => eventCamera;
 
         public IReadOnlyList<PrimitiveHeroPointerSelector> Selectors => selectors;
+        public IReadOnlyList<StandardMinionPointerSelector> MinionSelectors =>
+            minionSelectors ?? System.Array.Empty<StandardMinionPointerSelector>();
 
         public void Configure(
             Camera camera,
@@ -71,6 +73,16 @@ namespace GuardsDigital.Presentation.Interaction
                 .ToArray();
             blocksPointer = pointerBlocker;
             selectionController = null;
+        }
+
+        public void ReplaceMinionSelectors(
+            IEnumerable<StandardMinionPointerSelector> pointerMinionSelectors)
+        {
+            minionSelectors = (pointerMinionSelectors ??
+                    throw new System.ArgumentNullException(nameof(pointerMinionSelectors)))
+                .Where(selector => selector != null)
+                .Distinct()
+                .ToArray();
         }
 
         private void OnEnable()

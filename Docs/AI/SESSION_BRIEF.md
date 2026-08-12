@@ -8,17 +8,17 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through Phase 5 milestone 5.8a. The configured vertical slice now uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation, including authority-owned Hero and minion Attack-target selection. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
+The project has completed roadmap milestones through Phase 5 milestone 5.8a1. The configured vertical slice now uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation, including reload-safe authority-owned Hero and minion Attack-target selection. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
 
-The immediate configured defect is a Unity editor/play-mode lifetime failure in the milestone 5.8a minion presentation path: a grid rebuild after backup/domain restoration can replace generated `StandardMinionView` objects while cached board/input bindings retain destroyed components. Proposed corrective milestone 5.8a1 owns the reload-safe binding correction and regression; milestone 5.8b's Defense preview is blocked behind it.
+Configured minion views now retain serialized stable binding identity across editor backup/domain restoration, and the grid atomically rebinds the passive board, pointer input, and all selectors whenever it replaces the generated view set. Retained-prefix Undo still traverses the same typed command path and validates two deterministic replay candidates, while private intermediate candidate projections are deferred because no consumer observes them. Proposed milestone 5.8b owns the authoritative Defense breakdown and attack-scoped minion-cue presentation.
 
 ## Current authorization and next route
 
-- Current completed milestone: **5.8a**.
+- Current completed milestone: **5.8a1**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **5.8a1**.
-- Required Codex profile for next milestone: **GPT-5.6 Sol with high reasoning**.
-- Corrective milestone 5.8a1 repairs configured minion-view lifetime and its missing editor reload regression. Milestone 5.8b and review 5.8c remain blocked behind the correction. None is authorized.
+- Next proposed milestone: **5.8b**.
+- Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
+- Milestone 5.8b is proposed to preview authoritative Defense breakdowns and attack-scoped minion contributions on hover/focus. Review 5.8c remains blocked behind it. Neither is authorized.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries

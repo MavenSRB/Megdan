@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
@@ -67,14 +68,13 @@ namespace GuardsDigital.Presentation.Interaction
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
+            mapView.ConfiguredMinionViewsChanged -= RebindConfiguredMinionViews;
+            mapView.ConfiguredMinionViewsChanged += RebindConfiguredMinionViews;
             mapView.ConfigureSceneBindings(eventCamera, heroViews);
             mapView.Rebuild(map, setup);
 
             var tiles = mapView.GetComponentsInChildren<HexTileView>(true);
             var minions = mapView.GetComponentsInChildren<StandardMinionView>(true);
-            var minionSelectors = minions.Select(view =>
-                view.GetComponent<StandardMinionPointerSelector>() ??
-                view.gameObject.AddComponent<StandardMinionPointerSelector>()).ToArray();
             var obstacles = mapView.GetComponentsInChildren<PlaceholderObstacleView>(true);
             highlightOwner = new DestinationHighlightMaterialOwner(assignedHighlightMaterial);
             hud = GetComponent<ConfiguredMatchHudRenderer>();
@@ -99,10 +99,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 selector.Configure(runtime.BoardView);
             }
-            foreach (var selector in minionSelectors)
-            {
-                selector.Configure(runtime.BoardView);
-            }
+            var minionSelectors = ConfigureMinionSelectors(minions);
 
             pointerInput.Configure(
                 eventCamera,
@@ -113,6 +110,37 @@ namespace GuardsDigital.Presentation.Interaction
                 hud.BlocksPointerAt);
         }
 
+        private void RebindConfiguredMinionViews(IReadOnlyList<StandardMinionView> minionViews)
+        {
+            if (runtime == null)
+            {
+                return;
+            }
+
+            var currentViews = (minionViews ?? Array.Empty<StandardMinionView>())
+                .Where(value => value != null)
+                .Distinct()
+                .ToArray();
+            runtime.BoardView.ReplaceMinionViews(currentViews);
+            pointerInput.ReplaceMinionSelectors(ConfigureMinionSelectors(currentViews));
+        }
+
+        private StandardMinionPointerSelector[] ConfigureMinionSelectors(
+            IEnumerable<StandardMinionView> minionViews)
+        {
+            var currentSelectors = (minionViews ?? Array.Empty<StandardMinionView>())
+                .Where(value => value != null)
+                .Select(view => view.GetComponent<StandardMinionPointerSelector>() ??
+                    view.gameObject.AddComponent<StandardMinionPointerSelector>())
+                .ToArray();
+            foreach (var selector in currentSelectors)
+            {
+                selector.Configure(runtime.BoardView);
+            }
+
+            return currentSelectors;
+        }
+
         private void Awake()
         {
             Compose();
@@ -120,6 +148,10 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void OnDestroy()
         {
+            if (mapView != null)
+            {
+                mapView.ConfiguredMinionViewsChanged -= RebindConfiguredMinionViews;
+            }
             runtime = null;
             highlightOwner?.Dispose();
             highlightOwner = null;
