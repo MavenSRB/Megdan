@@ -14,7 +14,7 @@ Configured minion views retain serialized stable binding identity across editor 
 
 ## Current authorization and next route
 
-- Current completed milestone: **6.1**.
+- Current completed milestone: **6.1b**.
 - Active authorized milestone: **none**.
 - Next proposed milestone: **6.1a**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.

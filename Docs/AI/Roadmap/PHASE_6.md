@@ -27,6 +27,23 @@ Non-goals: No player-facing removal-choice UI, optional decline of a mandatory r
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61-resolve-the-end-of-round-minion-battle-completion-evidence).
 
+### [x] 6.1b Correct Defense contribution cue proportions and orientation
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: The configured board-facing `+1` and `-1` minion Defense contribution cues use smaller readable numbers, vertically oval dark-grey backings that fit the signed values, and text mirrored around its local vertical axis to correct the inherited token orientation.
+
+Acceptance checks:
+
+- Both signed cues retain their exact projected `+1`/`-1` meaning and existing supporting/hindering color distinction while reducing the number size from the milestone 5.8b presentation.
+- The backing is vertically oval rather than circular, uses dark grey rather than near-black, and frames the signed value without crowding.
+- Only the number text is inverted around its local vertical axis; the backing remains symmetric and the resulting cue faces the configured top-down board camera correctly.
+- Focused view and configured-scene Play Mode coverage proves the exact text, smaller character size, vertical oval proportions, dark-grey backing, horizontal centering plus the reviewed downward optical correction, horizontal inversion, unchanged cue lifetime, and unchanged pointer-pass-through presentation boundary for both signs.
+
+Non-goals: No Defense calculation, contribution projection, cue identity/lifetime, target highlighting, input, Minion Battle UI, production art, animation, or audio changes.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61b-correct-defense-contribution-cue-proportions-and-orientation-completion-evidence).
+
 ### [ ] 6.1a Add player-facing Minion Battle removal-choice UI
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.

@@ -10,6 +10,12 @@ namespace GuardsDigital.Presentation.Units.Minions
     {
         public const float DefaultVerticalOffset = 0.18f;
         public const float DefaultScale = 1.35f;
+        public const float DefenseCueCharacterSize = 0.06f;
+        public const float DefenseCueBackgroundCharacterSize = 0.18f;
+        public const float DefenseCueBackgroundVerticalScale = 1.35f;
+        public const float DefenseCueOpticalVerticalOffset = -0.025f;
+
+        private static readonly Vector3 DefenseCueLocalPosition = new Vector3(0f, 0.85f, -0.15f);
 
         [SerializeField, HideInInspector]
         private string boundMinionId;
@@ -70,27 +76,32 @@ namespace GuardsDigital.Presentation.Units.Minions
             {
                 var cueObject = new GameObject("Defense Contribution Cue");
                 cueObject.transform.SetParent(transform, false);
-                cueObject.transform.localPosition = new Vector3(0f, 0.85f, -0.15f);
+                cueObject.transform.localPosition = DefenseCueLocalPosition;
                 cueObject.transform.localRotation = Quaternion.identity;
+                cueObject.transform.localScale = new Vector3(-1f, 1f, 1f);
                 var backgroundObject = new GameObject("Defense Contribution Cue Background");
                 backgroundObject.transform.SetParent(transform, false);
                 backgroundObject.transform.localPosition = cueObject.transform.localPosition;
                 backgroundObject.transform.localRotation = Quaternion.identity;
+                backgroundObject.transform.localScale = new Vector3(
+                    1f,
+                    DefenseCueBackgroundVerticalScale,
+                    1f);
                 defenseCueBackground = backgroundObject.AddComponent<TextMesh>();
                 defenseCueBackground.anchor = TextAnchor.MiddleCenter;
                 defenseCueBackground.alignment = TextAlignment.Center;
                 defenseCueBackground.fontStyle = FontStyle.Bold;
                 defenseCueBackground.fontSize = 64;
-                defenseCueBackground.characterSize = 0.18f;
+                defenseCueBackground.characterSize = DefenseCueBackgroundCharacterSize;
                 defenseCueBackground.text = "●";
-                defenseCueBackground.color = new Color(0.055f, 0.065f, 0.075f, 0.9f);
+                defenseCueBackground.color = new Color(0.16f, 0.17f, 0.18f, 0.9f);
                 defenseCueBackground.GetComponent<MeshRenderer>().sortingOrder = 19;
                 defenseCue = cueObject.AddComponent<TextMesh>();
                 defenseCue.anchor = TextAnchor.MiddleCenter;
                 defenseCue.alignment = TextAlignment.Center;
                 defenseCue.fontStyle = FontStyle.Bold;
                 defenseCue.fontSize = 64;
-                defenseCue.characterSize = 0.075f;
+                defenseCue.characterSize = DefenseCueCharacterSize;
                 defenseCue.GetComponent<MeshRenderer>().sortingOrder = 20;
             }
 
@@ -100,6 +111,19 @@ namespace GuardsDigital.Presentation.Units.Minions
             defenseCue.color = amount > 0
                 ? new Color(0.08f, 0.62f, 0.18f)
                 : new Color(0.72f, 0.12f, 0.08f);
+            CenterDefenseCueText();
+        }
+
+        private void CenterDefenseCueText()
+        {
+            defenseCue.transform.localPosition = DefenseCueLocalPosition;
+            var cueCenter = defenseCue.GetComponent<MeshRenderer>().bounds.center;
+            var backgroundCenter = defenseCueBackground.GetComponent<MeshRenderer>().bounds.center;
+            var localOffset = transform.InverseTransformVector(backgroundCenter - cueCenter);
+            defenseCue.transform.localPosition += new Vector3(
+                localOffset.x,
+                localOffset.y + DefenseCueOpticalVerticalOffset,
+                0f);
         }
     }
 }

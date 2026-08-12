@@ -210,15 +210,40 @@ namespace GuardsDigital.Tests.EditMode
                 var background = textMeshes.Single(value =>
                     value.gameObject.name == "Defense Contribution Cue Background");
                 Assert.That(cue.text, Is.EqualTo("-1"));
-                Assert.That(cue.characterSize, Is.LessThan(background.characterSize * 0.5f),
-                    "The signed value must fit cleanly inside its backing glyph.");
+                Assert.That(cue.characterSize, Is.EqualTo(StandardMinionView.DefenseCueCharacterSize));
+                Assert.That(cue.characterSize, Is.LessThan(0.075f),
+                    "The corrective cue number must be smaller than the milestone 5.8b value.");
                 Assert.That(cue.color.r, Is.EqualTo(0.72f).Within(1f / 255f));
                 Assert.That(cue.color.g, Is.EqualTo(0.12f).Within(1f / 255f));
                 Assert.That(cue.color.b, Is.EqualTo(0.08f).Within(1f / 255f));
                 Assert.That(cue.transform.localRotation, Is.EqualTo(Quaternion.identity),
                     "The cue must share the token's board-facing plane instead of rendering edge-on.");
+                Assert.That(cue.transform.localScale, Is.EqualTo(new Vector3(-1f, 1f, 1f)),
+                    "The signed number must be inverted around its local vertical axis.");
                 Assert.That(background.text, Is.EqualTo("●"));
+                Assert.That(background.characterSize,
+                    Is.EqualTo(StandardMinionView.DefenseCueBackgroundCharacterSize));
+                Assert.That(background.transform.localScale, Is.EqualTo(new Vector3(
+                    1f,
+                    StandardMinionView.DefenseCueBackgroundVerticalScale,
+                    1f)), "The backing must be vertically oval and must not inherit the text inversion.");
+                Assert.That(background.transform.localScale.y,
+                    Is.GreaterThan(background.transform.localScale.x));
+                Assert.That(cue.GetComponents<Collider>(), Is.Empty);
+                Assert.That(background.GetComponents<Collider>(), Is.Empty,
+                    "The cue visuals must remain pointer-pass-through.");
+                Assert.That(background.color.r, Is.EqualTo(0.16f).Within(1f / 255f));
+                Assert.That(background.color.g, Is.EqualTo(0.17f).Within(1f / 255f));
+                Assert.That(background.color.b, Is.EqualTo(0.18f).Within(1f / 255f));
                 Assert.That(background.color.a, Is.EqualTo(0.9f).Within(1f / 255f));
+                var localCenterDelta = minion.transform.InverseTransformVector(
+                    cue.GetComponent<MeshRenderer>().bounds.center -
+                    background.GetComponent<MeshRenderer>().bounds.center);
+                Assert.That(localCenterDelta.x, Is.EqualTo(0f).Within(0.0001f),
+                    "The rendered signed glyph must remain horizontally centered in the oval.");
+                Assert.That(localCenterDelta.y,
+                    Is.EqualTo(StandardMinionView.DefenseCueOpticalVerticalOffset).Within(0.0001f),
+                    "The signed glyph needs a reviewed downward optical correction after bounds alignment.");
                 Assert.That(background.GetComponent<MeshRenderer>().sortingOrder,
                     Is.LessThan(cue.GetComponent<MeshRenderer>().sortingOrder));
                 Assert.That(tile.IsHighlighted, Is.False,

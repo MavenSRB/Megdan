@@ -507,11 +507,41 @@ namespace GuardsDigital.Tests.PlayMode
             var hinderingView = runtime.BoardView.MinionViews.Single(value =>
                 value.BoundMinionId.Equals(hindering.MinionId));
             Assert.That(supportingView.DefenseCueAmount, Is.EqualTo(1));
-            Assert.That(supportingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
-                value.gameObject.name == "Defense Contribution Cue").text, Is.EqualTo("+1"));
+            var supportingCue = supportingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
+                value.gameObject.name == "Defense Contribution Cue");
+            var supportingBacking = supportingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
+                value.gameObject.name == "Defense Contribution Cue Background");
+            Assert.That(supportingCue.text, Is.EqualTo("+1"));
+            Assert.That(supportingCue.characterSize, Is.EqualTo(StandardMinionView.DefenseCueCharacterSize));
+            Assert.That(supportingCue.transform.localScale, Is.EqualTo(new Vector3(-1f, 1f, 1f)));
+            Assert.That(supportingBacking.transform.localScale.y,
+                Is.EqualTo(StandardMinionView.DefenseCueBackgroundVerticalScale));
+            Assert.That(supportingBacking.transform.localScale.y,
+                Is.GreaterThan(supportingBacking.transform.localScale.x));
+            var supportingCenterDelta = supportingView.transform.InverseTransformVector(
+                supportingCue.GetComponent<MeshRenderer>().bounds.center -
+                supportingBacking.GetComponent<MeshRenderer>().bounds.center);
+            Assert.That(supportingCenterDelta.x, Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(supportingCenterDelta.y,
+                Is.EqualTo(StandardMinionView.DefenseCueOpticalVerticalOffset).Within(0.0001f));
             Assert.That(hinderingView.DefenseCueAmount, Is.EqualTo(-1));
-            Assert.That(hinderingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
-                value.gameObject.name == "Defense Contribution Cue").text, Is.EqualTo("-1"));
+            var hinderingCue = hinderingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
+                value.gameObject.name == "Defense Contribution Cue");
+            var hinderingBacking = hinderingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
+                value.gameObject.name == "Defense Contribution Cue Background");
+            Assert.That(hinderingCue.text, Is.EqualTo("-1"));
+            Assert.That(hinderingCue.characterSize, Is.EqualTo(StandardMinionView.DefenseCueCharacterSize));
+            Assert.That(hinderingCue.transform.localScale, Is.EqualTo(new Vector3(-1f, 1f, 1f)));
+            Assert.That(hinderingBacking.transform.localScale.y,
+                Is.EqualTo(StandardMinionView.DefenseCueBackgroundVerticalScale));
+            Assert.That(hinderingBacking.transform.localScale.y,
+                Is.GreaterThan(hinderingBacking.transform.localScale.x));
+            var hinderingCenterDelta = hinderingView.transform.InverseTransformVector(
+                hinderingCue.GetComponent<MeshRenderer>().bounds.center -
+                hinderingBacking.GetComponent<MeshRenderer>().bounds.center);
+            Assert.That(hinderingCenterDelta.x, Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(hinderingCenterDelta.y,
+                Is.EqualTo(StandardMinionView.DefenseCueOpticalVerticalOffset).Within(0.0001f));
 
             var resolutionId = new ActionResolutionId("configured-preview-resolution");
             var choiceId = new ActionResolutionStepId("configured-preview-choice");
@@ -569,7 +599,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             if (!UnityEngine.Application.isBatchMode)
             {
-                var screenshotPath = Path.GetFullPath("tmp/milestone-5-8b-defense-preview.png");
+                var screenshotPath = Path.GetFullPath("tmp/milestone-6-1b-defense-preview.png");
                 if (File.Exists(screenshotPath))
                 {
                     File.Delete(screenshotPath);
