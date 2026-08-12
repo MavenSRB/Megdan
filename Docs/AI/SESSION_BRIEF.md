@@ -19,7 +19,7 @@ Configured minion views retain serialized stable binding identity across editor 
 - Next proposed milestone: **6.1a**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
 - Milestone 6.1a is proposed and remains unauthorized until separately approved.
-- The local repository is on `main`; `origin` is configured to the public Gitea repository `http://192.168.2.3:3000/maven/guards-digital.git`. On 2026-08-12, the user explicitly confirmed the required authorization to publish the tracked project content to this remote.
+- The local repository is on `main`; `origin` is configured to the public Gitea repository `ssh://git@192.168.2.3:2222/maven/guards-digital.git` through a repository-scoped write deploy key. On 2026-08-12, the user explicitly confirmed the required authorization to publish the tracked project content to this remote.
 
 ## Durable boundaries
 
