@@ -92,7 +92,7 @@ Acceptance checks:
 
 Historical evidence: [milestone 5.2 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-52-implement-fast-travel-replacement-completion-evidence).
 
-### [ ] 5.2a Require explicit Fast Travel selection in the configured player UI
+### [x] 5.2a Require explicit Fast Travel selection in the configured player UI
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -108,6 +108,8 @@ Acceptance checks:
 - Focused presenter/view-model coverage proves visible-versus-hidden button state and explicit activation, while configured saved-scene Play Mode coverage proves button selection, destination highlights, pointer submission, and authoritative relocation.
 
 Non-goals: No Fast Travel rule, eligibility, destination-query, command, replay, Undo, card-resolution, general action-selection, or production-styling change.
+
+Historical evidence: [milestone 5.2a handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-52a-require-explicit-fast-travel-selection-in-the-configured-player-ui-completion-evidence).
 
 ### [ ] 5.3 Add minion obstacle behavior and Defense contributions
 

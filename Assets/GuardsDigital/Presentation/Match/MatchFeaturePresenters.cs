@@ -54,6 +54,8 @@ namespace GuardsDigital.Presentation.Match
         private readonly IBoardInteractionView view;
         private MatchSessionProjection lastProjection;
         private BoardInteractionViewModel lastViewModel;
+        private MatchSessionProjection fastTravelSelectionProjection;
+        private ActionDefinitionId? selectedFastTravelActionDefinitionId;
 
         public BoardInteractionPresenter(IMatchSession session, IBoardInteractionView view)
         {
@@ -66,6 +68,12 @@ namespace GuardsDigital.Presentation.Match
         public void Refresh()
         {
             var projection = session.Projection;
+            if (!ReferenceEquals(projection, fastTravelSelectionProjection))
+            {
+                selectedFastTravelActionDefinitionId = null;
+                fastTravelSelectionProjection = null;
+            }
+
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
@@ -76,10 +84,29 @@ namespace GuardsDigital.Presentation.Match
                         Enumerable.Empty<HexCoordinate>(),
                     projection.PendingAttackTargetChoice?.LegalTargetHeroIds ?? Array.Empty<HeroId>(),
                     projection.SelectedActor.IsDefined ? projection.SelectedActor.ActorId : default,
-                    projection.AvailableFastTravelOptions.SelectMany(value => value.LegalDestinations).Distinct());
+                    GetSelectedFastTravelOption(projection)?.LegalDestinations ??
+                        Array.Empty<HexCoordinate>());
             }
 
             view.Render(lastViewModel);
+        }
+
+        public bool ActivateFastTravel(ActionDefinitionId replacedMovementActionDefinitionId)
+        {
+            var projection = session.Projection;
+            var matches = projection.AvailableFastTravelOptions
+                .Where(option => option.ReplacedMovementActionDefinitionId.Equals(
+                    replacedMovementActionDefinitionId) && option.LegalDestinations.Count > 0)
+                .ToArray();
+            if (matches.Length != 1)
+            {
+                return false;
+            }
+
+            selectedFastTravelActionDefinitionId = replacedMovementActionDefinitionId;
+            fastTravelSelectionProjection = projection;
+            lastProjection = null;
+            return true;
         }
 
         public bool SubmitDestination(HexCoordinate destination)
@@ -87,16 +114,14 @@ namespace GuardsDigital.Presentation.Match
             var choice = session.Projection.PendingMovementChoice;
             if (choice == null || choice.LegalDestinations.Count(value => value.Destination.Equals(destination)) != 1)
             {
-                var fastTravelOptions = session.Projection.AvailableFastTravelOptions
-                    .Where(option => option.LegalDestinations.Contains(destination))
-                    .ToArray();
-                if (fastTravelOptions.Length != 1)
+                var fastTravelOption = GetSelectedFastTravelOption(session.Projection);
+                if (fastTravelOption == null || !fastTravelOption.LegalDestinations.Contains(destination))
                 {
                     return false;
                 }
 
                 return Execute(DirectorCommand.PerformFastTravel(
-                    fastTravelOptions[0].ReplacedMovementActionDefinitionId,
+                    fastTravelOption.ReplacedMovementActionDefinitionId,
                     destination));
             }
 
@@ -118,6 +143,19 @@ namespace GuardsDigital.Presentation.Match
                 choice.ResolutionId,
                 choice.ChoiceId,
                 heroId));
+        }
+
+        private FastTravelOptionProjection GetSelectedFastTravelOption(MatchSessionProjection projection)
+        {
+            if (!ReferenceEquals(projection, fastTravelSelectionProjection) ||
+                !selectedFastTravelActionDefinitionId.HasValue)
+            {
+                return null;
+            }
+
+            return projection.AvailableFastTravelOptions.SingleOrDefault(option =>
+                option.ReplacedMovementActionDefinitionId.Equals(
+                    selectedFastTravelActionDefinitionId.Value) && option.LegalDestinations.Count > 0);
         }
 
         private bool Execute(DirectorCommand command)
@@ -447,6 +485,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public event Action<MatchSessionProjection> SessionProjectionChanged;
+        public event Action<FastTravelOfferViewModel> FastTravelSelectionRequested;
 
         public void Refresh()
         {
@@ -485,6 +524,27 @@ namespace GuardsDigital.Presentation.Match
             return result.Accepted;
         }
 
+        public bool SelectFastTravel(FastTravelOfferViewModel selection)
+        {
+            if (selection == null)
+            {
+                return false;
+            }
+
+            var current = GetOrCreateViewModel(session.Projection);
+            var legalSelection = current.FastTravelOffers.SingleOrDefault(option =>
+                option.ReplacedMovementActionDefinitionId.Equals(
+                    selection.ReplacedMovementActionDefinitionId) &&
+                option.LegalDestinationCount == selection.LegalDestinationCount);
+            if (legalSelection == null)
+            {
+                return false;
+            }
+
+            FastTravelSelectionRequested?.Invoke(legalSelection);
+            return true;
+        }
+
         public static RoundActionViewModel CreateViewModel(MatchSessionProjection projection)
         {
             if (projection == null)
@@ -518,7 +578,7 @@ namespace GuardsDigital.Presentation.Match
                 ? Array.Empty<FastTravelOfferViewModel>()
                 : projection.AvailableFastTravelOptions
                     .Select(option => new FastTravelOfferViewModel(
-                        "REPLACEMENT FAST TRAVEL\nSELECT A HIGHLIGHTED SPACE",
+                        "FAST TRAVEL",
                         option.ReplacedMovementActionDefinitionId,
                         option.LegalDestinations.Count))
                     .ToArray();

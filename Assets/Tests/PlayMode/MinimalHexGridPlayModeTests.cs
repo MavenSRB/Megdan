@@ -194,7 +194,17 @@ namespace GuardsDigital.Tests.PlayMode
             var sourceCardId = runtime.SelectedActor.CardInstanceId;
             Assert.That(runtime.RoundView.Model.FastTravelOffers, Has.Count.EqualTo(1));
             Assert.That(runtime.RoundView.Model.FastTravelOffers[0].Label,
-                Is.EqualTo("REPLACEMENT FAST TRAVEL\nSELECT A HIGHLIGHTED SPACE"));
+                Is.EqualTo("FAST TRAVEL"));
+            Assert.That(runtime.RoundView.Model.Actions, Is.Not.Empty);
+            Assert.That(runtime.BoardView.Model.FastTravelDestinations, Is.Empty,
+                "Fast Travel must not be the configured board's default interaction state.");
+            Assert.That(Object.FindObjectsByType<HexTileView>(),
+                Has.All.Matches<HexTileView>(value => !value.IsHighlighted));
+
+            runtime.RoundView.ForwardFastTravelSelection(
+                runtime.RoundView.Model.FastTravelOffers.Single());
+            yield return null;
+
             Assert.That(runtime.BoardView.Model.FastTravelDestinations,
                 Has.Count.EqualTo(runtime.RoundView.Model.FastTravelOffers[0].LegalDestinationCount));
 

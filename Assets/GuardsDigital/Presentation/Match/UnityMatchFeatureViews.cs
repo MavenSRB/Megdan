@@ -210,6 +210,7 @@ namespace GuardsDigital.Presentation.Match
         public RoundActionViewModel Model { get; private set; }
 
         public event Action<TypedInvocationViewModel> InvocationSubmitted;
+        public event Action<FastTravelOfferViewModel> FastTravelSelected;
 
         public void Render(RoundActionViewModel model)
         {
@@ -244,7 +245,10 @@ namespace GuardsDigital.Presentation.Match
 
             foreach (var fastTravel in Model.FastTravelOffers)
             {
-                GUILayout.Box(fastTravel.Label, GUILayout.Height(46f));
+                if (GUILayout.Button(fastTravel.Label, GUILayout.Height(46f)))
+                {
+                    ForwardFastTravelSelection(fastTravel);
+                }
             }
 
             GUILayout.FlexibleSpace();
@@ -269,6 +273,14 @@ namespace GuardsDigital.Presentation.Match
             if (invocation != null)
             {
                 InvocationSubmitted?.Invoke(invocation);
+            }
+        }
+
+        public void ForwardFastTravelSelection(FastTravelOfferViewModel selection)
+        {
+            if (selection != null)
+            {
+                FastTravelSelected?.Invoke(selection);
             }
         }
 

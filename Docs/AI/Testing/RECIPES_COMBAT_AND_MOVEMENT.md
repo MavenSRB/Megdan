@@ -2,6 +2,34 @@
 
 Canonical active shard. Return to [../TESTING.md](../TESTING.md).
 
+## Explicit Fast Travel selection T2 tests
+
+Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run these requests serially.
+
+Final affected Edit Mode request:
+
+```json
+{
+  "platform": "EditMode",
+  "filter": "GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.ApplicationArchitectureBoundaryTests;GuardsDigital.Tests.EditMode.ConfiguredMatchCutoverArchitectureTests;GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.FastTravelActionTests",
+  "results": "tmp/milestone-5.2a-final-affected-edit-results.xml",
+  "log": "tmp/milestone-5.2a-final-affected-edit.log"
+}
+```
+
+Configured saved-scene Play Mode request:
+
+```json
+{
+  "platform": "PlayMode",
+  "filter": "GuardsDigital.Tests.PlayMode.MinimalHexGridPlayModeTests",
+  "results": "tmp/milestone-5.2a-configured-play-results.xml",
+  "log": "tmp/milestone-5.2a-configured-play.log"
+}
+```
+
+Expected result: every discovered case passes with no skipped or inconclusive case. Edit Mode covers explicit selection state, button visibility, destination suppression/activation, passive-view intent forwarding, unchanged Fast Travel authority/session behavior, and the directly affected architecture/saved-scene source contracts. Play Mode proves the configured passive button/highlight/pointer/session path. Unfiltered suites are intentionally deferred to milestone 5.8 unless an escalation trigger appears.
+
 ## Fast Travel replacement T2 tests
 
 Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run these requests serially.

@@ -81,6 +81,14 @@ namespace GuardsDigital.Presentation.Match
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
             HandsView.PassRequested += heroId => HandsPresenter.Pass(heroId);
             RoundView.InvocationSubmitted += invocation => RoundPresenter.Submit(invocation);
+            RoundView.FastTravelSelected += selection => RoundPresenter.SelectFastTravel(selection);
+            RoundPresenter.FastTravelSelectionRequested += selection =>
+            {
+                if (BoardPresenter.ActivateFastTravel(selection.ReplacedMovementActionDefinitionId))
+                {
+                    RefreshAll();
+                }
+            };
             UndoRestartView.UndoRequested += () => UndoRestartPresenter.Undo();
             UndoRestartView.RestartRequested += () => UndoRestartPresenter.Restart();
             DiagnosticView.ToggleRequested += () => DiagnosticPresenter.Toggle();
@@ -156,6 +164,12 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public bool SubmitEndTurn() => RoundPresenter.Submit(RoundView.Model?.EndTurnInvocation);
+
+        public bool SelectFastTravel()
+        {
+            var selection = RoundView.Model?.FastTravelOffers.SingleOrDefault();
+            return RoundPresenter.SelectFastTravel(selection);
+        }
 
         public bool ContinueEndOfRound() =>
             RoundPresenter.Submit(RoundView.Model?.ContinueEndOfRoundInvocation);

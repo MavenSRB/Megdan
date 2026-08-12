@@ -171,28 +171,50 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredPresenters_ProjectAndSubmitAuthoritativeFastTravelDestination()
+        public void ConfiguredPresenters_RequireExplicitFastTravelSelectionBeforeDestinationSubmission()
         {
             var session = CreateSession();
+            Assert.That(RoundActionPresenter.CreateViewModel(session.Projection).FastTravelOffers, Is.Empty,
+                "The Fast Travel button must be absent when authority projects no eligible replacement.");
             StartTiedTurn(session, ActionKind.Movement);
             var option = session.Projection.AvailableFastTravelOptions.Single();
-            var roundModel = RoundActionPresenter.CreateViewModel(session.Projection);
+            var roundView = new CapturingRoundView();
+            var roundPresenter = new RoundActionPresenter(session, roundView);
             var boardView = new CapturingBoardView();
             var boardPresenter = new BoardInteractionPresenter(session, boardView);
+            FastTravelOfferViewModel requestedSelection = null;
+            roundPresenter.FastTravelSelectionRequested += selection =>
+            {
+                requestedSelection = selection;
+                Assert.That(boardPresenter.ActivateFastTravel(
+                    selection.ReplacedMovementActionDefinitionId), Is.True);
+            };
 
+            roundPresenter.Refresh();
             boardPresenter.Refresh();
-            Assert.That(roundModel.FastTravelOffers, Has.Count.EqualTo(1));
-            Assert.That(roundModel.FastTravelOffers[0].Label,
-                Is.EqualTo("REPLACEMENT FAST TRAVEL\nSELECT A HIGHLIGHTED SPACE"));
-            Assert.That(roundModel.FastTravelOffers[0].ReplacedMovementActionDefinitionId,
+            Assert.That(roundView.Model.FastTravelOffers, Has.Count.EqualTo(1));
+            Assert.That(roundView.Model.FastTravelOffers[0].Label, Is.EqualTo("FAST TRAVEL"));
+            Assert.That(roundView.Model.Actions, Is.Not.Empty,
+                "Normal projected actions remain the default interaction state.");
+            Assert.That(roundView.Model.FastTravelOffers[0].ReplacedMovementActionDefinitionId,
                 Is.EqualTo(option.ReplacedMovementActionDefinitionId));
-            Assert.That(roundModel.FastTravelOffers[0].LegalDestinationCount,
+            Assert.That(roundView.Model.FastTravelOffers[0].LegalDestinationCount,
                 Is.EqualTo(option.LegalDestinations.Count));
-            Assert.That(boardView.Model.FastTravelDestinations,
-                Is.EquivalentTo(option.LegalDestinations));
+            Assert.That(boardView.Model.FastTravelDestinations, Is.Empty,
+                "Receiving an eligible projection must not activate Fast Travel highlights.");
 
             var actorId = session.Projection.SelectedActor.ActorId;
             var destination = option.LegalDestinations[0];
+            var commandCount = session.Projection.AcceptedCommands.Count;
+            Assert.That(boardPresenter.SubmitDestination(destination), Is.False,
+                "A legal Fast Travel coordinate is not actionable before explicit selection.");
+            Assert.That(session.Projection.AcceptedCommands, Has.Count.EqualTo(commandCount));
+
+            Assert.That(roundPresenter.SelectFastTravel(roundView.Model.FastTravelOffers.Single()), Is.True);
+            Assert.That(requestedSelection, Is.SameAs(roundView.Model.FastTravelOffers.Single()));
+            boardPresenter.Refresh();
+            Assert.That(boardView.Model.FastTravelDestinations,
+                Is.EquivalentTo(option.LegalDestinations));
             Assert.That(boardPresenter.SubmitDestination(destination), Is.True);
             Assert.That(session.Projection.AcceptedCommands.Last().Kind,
                 Is.EqualTo(DirectorCommandKind.PerformFastTravel));
@@ -265,6 +287,34 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(submitted, Is.SameAs(futureInvocation));
             Assert.That(submitted.Command.Kind, Is.EqualTo(DirectorCommandKind.AdvanceEndOfRound));
+        }
+
+        [Test]
+        public void PassiveRoundView_ForwardsProjectedFastTravelSelectionWithoutCreatingACommand()
+        {
+            var view = new RoundActionUnityView();
+            var offer = new FastTravelOfferViewModel(
+                "FAST TRAVEL",
+                new ActionDefinitionId("test-movement"),
+                3);
+            FastTravelOfferViewModel selected = null;
+            view.FastTravelSelected += value => selected = value;
+            view.Render(new RoundActionViewModel(
+                4,
+                1,
+                1,
+                RoundResolutionPhase.ResolvingTurn,
+                "Choose an action",
+                Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>(),
+                new[] { offer }));
+
+            view.ForwardFastTravelSelection(view.Model.FastTravelOffers.Single());
+
+            Assert.That(selected, Is.SameAs(offer));
         }
 
         [Test]
