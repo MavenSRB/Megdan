@@ -1,6 +1,6 @@
 # Guards Digital - Card Effect Capabilities
 
-Last updated: 2026-08-10
+Last updated: 2026-08-12
 
 ## Purpose and status
 
@@ -8,7 +8,7 @@ This document is the effect-level companion to `CARD_SYSTEM_ARCHITECTURE.md`. It
 
 The baseline catalog is derived from the second-printing rulebook's action execution, card states, actions, progression, concepts, and keywords on printed pages 7-19. Verified card text may override a general rule or introduce a new capability. No hero-specific capability is authoritative until its card source and any applicable official correction are verified in `RULES_LEDGER.md`.
 
-This catalog specifies extension contracts; only named roadmap slices are implemented. Milestones 1.11-1.13a establish typed printed Movement, restorable segmented choices, adjacent-step commitment, cumulative waypoints, and synthetic presentation. Milestones 2.2-2.5 add printed Attack/Defense, adjacent and Ranged hero targeting, one-card-or-decline Defense, and unmodified outcome facts without consequences. Milestones 3.5 and 3.7-3.9 add general Hold, selected-turn Attack/Defense composition, round checkpoints, and serialized pending continuations. Milestone 5.1 adds exact-map segmented Movement with captured action-start restrictions; 5.2 adds value-free Fast Travel with typed zone/enemy eligibility and pathless atomic relocation; 5.3 binds configured minions as unit obstacles and adds their source-bearing Defense modifiers. Direct Move, resolve-without-action, Attack consequences, concrete restriction-source lifetimes, other Range/Defense modifiers, card-text effects, modal/repeat execution, broader lifecycle transitions, concrete timing effects, snapshot migrations, and broader mutation handlers remain unimplemented.
+This catalog specifies extension contracts; only named roadmap slices are implemented. Milestones 1.11-1.13a establish typed printed Movement and resumable segmented choices. Milestones 2.2-2.5 add printed Attack/Defense, hero targeting, one-card-or-decline Defense, and outcome facts without consequences. Milestones 3.5 and 3.7-3.9 add Hold, turn composition, round checkpoints, and serialized continuations. Milestones 5.1-5.3 add exact-map Movement, typed Fast Travel, and authoritative minion obstacles/Defense contributions; 5.4 implements the timing foundation below. Direct Move, resolve-without-action, Attack consequences, Active-effect modifier application, concrete Wasp effects, modal/repeat execution, broader lifecycle transitions, snapshot migration, and broader mutation handlers remain unimplemented.
 
 ## Capability categories
 
@@ -342,6 +342,8 @@ Supported timing definitions are introduced from verified needs and include:
 - Action start, effect step, action end, and system checkpoints.
 
 Simultaneous Active effects use the official tie procedure, record required choices, and do not flip the Tie Breaker in that ordering window.
+
+Milestone 5.4 implements named pure checkpoints and definition-owned trigger, duration, cross-round, uniqueness, and early-cancellation data. Instances retain phase, source card/action, creation order, activation anchors, and ending checkpoint. The four named durations remain distinct; cancellation/expiry are idempotent, and activation does not also trigger the effect in the same visit. Retrieval, source-card-state change, applicable defeat, and explicit cancellation are available boundaries invoked by their later owning systems.
 
 `ContinuousRuleSource` is separate. Ultimates apply only while their hero is on the board; token properties persist while the token remains. Their applicability is queried directly and does not inherit card Active-effect cancellation.
 

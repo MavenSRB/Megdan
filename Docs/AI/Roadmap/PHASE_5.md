@@ -126,7 +126,7 @@ Acceptance checks:
 
 Historical evidence: [milestone 5.3 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-53-add-minion-obstacle-behavior-and-defense-contributions-completion-evidence).
 
-### [ ] 5.4 Add generic timing, Active-effect, and continuous-source lifecycles
+### [x] 5.4 Add generic timing, Active-effect, and continuous-source lifecycles
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -148,7 +148,11 @@ Acceptance checks:
 
 Non-goals: No Wasp-specific text or duration interpretation, runtime printed-text parsing, full Phase 6 card-retrieval/cancellation integration, networking, or presentation-owned timing.
 
+Historical evidence: [milestone 5.4 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-54-add-generic-timing-active-effect-and-continuous-source-lifecycles-completion-evidence).
+
 ### [ ] 5.5 Add coin awards and assist-ready accounting
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Defeat outcomes can award coins to the correct hero/team collection through typed resource operations.
 

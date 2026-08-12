@@ -11,6 +11,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Snapshots
 {
@@ -62,7 +63,7 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         public static string Serialize(RoundResolutionAuthority round, AdjacentMoveAuthority board)
         {
@@ -361,6 +362,7 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(round.CurrentEndOfRoundStage.HasValue);
             if (round.CurrentEndOfRoundStage.HasValue) writer.Write((int)round.CurrentEndOfRoundStage.Value);
             WriteOutcomes(writer, round.EndOfRoundOutcomes);
+            WriteTiming(writer, round.Timing);
 
             writer.Write(round.CurrentCommitmentAuthority != null);
             if (round.CurrentCommitmentAuthority != null) WriteCommitment(writer, round.CurrentCommitmentAuthority);
@@ -391,6 +393,7 @@ namespace GuardsDigital.Core.Snapshots
             var hasStage = reader.ReadBoolean();
             var stage = hasStage ? (EndOfRoundStage?)(EndOfRoundStage)reader.ReadInt32() : null;
             var outcomes = ReadOutcomes(reader);
+            var timing = ReadTiming(reader);
 
             TurnCardCommitmentAuthority commitment = null;
             if (reader.ReadBoolean()) commitment = ReadCommitment(reader, cards, participants);
@@ -399,7 +402,8 @@ namespace GuardsDigital.Core.Snapshots
             TurnResolutionAuthority turn = null;
             if (reader.ReadBoolean())
             {
-                turn = ReadTurn(reader, definitions, cards, participants, board, out cardActions);
+                turn = ReadTurn(reader, definitions, cards, participants, board, timing,
+                    roundIndex, turnIndex, out cardActions);
             }
 
             return RoundResolutionAuthority.Restore(
@@ -416,7 +420,8 @@ namespace GuardsDigital.Core.Snapshots
                 outcomes,
                 commitment,
                 turn,
-                cardActions);
+                cardActions,
+                timing);
         }
 
         private static void WriteCommitment(BinaryWriter writer, TurnCardCommitmentAuthority authority)
@@ -464,6 +469,9 @@ namespace GuardsDigital.Core.Snapshots
             IReadOnlyList<CardInstance> cards,
             MatchParticipants participants,
             AdjacentMoveAuthority board,
+            ActiveEffectLifecycle timing,
+            int roundIndex,
+            int turnIndex,
             out CardActionResolutionAuthority cardActions)
         {
             var started = reader.ReadBoolean();
@@ -481,7 +489,110 @@ namespace GuardsDigital.Core.Snapshots
                 ended,
                 tieBreaker,
                 pendingChoice,
-                selectedActor);
+                selectedActor,
+                timing,
+                roundIndex,
+                turnIndex);
+        }
+
+        private static void WriteTiming(BinaryWriter writer, ActiveEffectLifecycle timing)
+        {
+            writer.Write(timing.Effects.Count);
+            foreach (var effect in timing.Effects.OrderBy(value => value.Id.Value, StringComparer.Ordinal))
+            {
+                writer.Write(effect.Id.Value);
+                var definition = effect.Definition;
+                writer.Write(definition.DefinitionId);
+                writer.Write(definition.ControllerHeroId.Value);
+                writer.Write((int)definition.ControllerTeamSide);
+                writer.Write((int)definition.AffectedScope);
+                writer.Write(definition.AffectedHeroId.IsDefined);
+                if (definition.AffectedHeroId.IsDefined) writer.Write(definition.AffectedHeroId.Value);
+                writer.Write((int)definition.DurationKind);
+                writer.Write((int)definition.CreationCheckpoint);
+                writer.Write((int)definition.ActivationCheckpoint);
+                writer.Write((int)definition.ExpirationCheckpoint);
+                writer.Write(definition.CancellationConditions.Count);
+                foreach (var condition in definition.CancellationConditions) writer.Write((int)condition);
+                writer.Write(definition.CarriesAcrossRoundBoundary);
+                writer.Write(definition.EffectKind);
+                writer.Write(definition.UniquenessKey);
+                writer.Write(definition.TriggerCheckpoints.Count);
+                foreach (var trigger in definition.TriggerCheckpoints) writer.Write((int)trigger);
+                writer.Write(effect.SourceCardInstanceId.Value);
+                writer.Write(effect.SourceActionDefinitionId.Value);
+                writer.Write(effect.CreatedRoundIndex);
+                writer.Write(effect.CreatedTurnIndex);
+                writer.Write(effect.CreationSequence);
+                writer.Write((int)effect.Phase);
+                writer.Write(effect.ActivatedRoundIndex.HasValue);
+                if (effect.ActivatedRoundIndex.HasValue) writer.Write(effect.ActivatedRoundIndex.Value);
+                writer.Write(effect.ActivatedTurnIndex.HasValue);
+                if (effect.ActivatedTurnIndex.HasValue) writer.Write(effect.ActivatedTurnIndex.Value);
+                writer.Write(effect.EndedAt.HasValue);
+                if (effect.EndedAt.HasValue) writer.Write((int)effect.EndedAt.Value);
+            }
+
+            writer.Write(timing.ContinuousSources.Count);
+            foreach (var source in timing.ContinuousSources.OrderBy(value => value.SourceId, StringComparer.Ordinal))
+            {
+                writer.Write(source.SourceId);
+                writer.Write((int)source.Kind);
+                writer.Write(source.ControllerHeroId.Value);
+                writer.Write(source.RuleKind);
+                writer.Write(source.ApplicabilityKind);
+                writer.Write(source.SourceCardInstanceId.IsDefined);
+                if (source.SourceCardInstanceId.IsDefined) writer.Write(source.SourceCardInstanceId.Value);
+            }
+        }
+
+        private static ActiveEffectLifecycle ReadTiming(BinaryReader reader)
+        {
+            var effects = ReadMany(reader, "Active effects", () =>
+            {
+                var id = new ActiveEffectId(reader.ReadString());
+                var definitionId = reader.ReadString();
+                var controller = new HeroId(reader.ReadString());
+                var side = (TeamSide)reader.ReadInt32();
+                var scope = (ActiveEffectAffectedScopeKind)reader.ReadInt32();
+                var affectedHero = reader.ReadBoolean() ? new HeroId(reader.ReadString()) : default;
+                var duration = (ActiveEffectDurationKind)reader.ReadInt32();
+                var creation = (TimingCheckpoint)reader.ReadInt32();
+                var activation = (TimingCheckpoint)reader.ReadInt32();
+                var expiration = (TimingCheckpoint)reader.ReadInt32();
+                var conditions = ReadMany(reader, "Active-effect cancellation conditions",
+                    () => (ActiveEffectCancellationCondition)reader.ReadInt32());
+                var carries = reader.ReadBoolean();
+                var effectKind = reader.ReadString();
+                var uniquenessKey = reader.ReadString();
+                var triggers = ReadMany(reader, "Active-effect trigger checkpoints",
+                    () => (TimingCheckpoint)reader.ReadInt32());
+                var definition = new ActiveEffectDefinition(definitionId, controller, side, scope, affectedHero,
+                    duration, creation, activation, expiration, conditions, carries, effectKind,
+                    uniquenessKey, triggers);
+                var sourceCard = new CardInstanceId(reader.ReadString());
+                var sourceAction = new ActionDefinitionId(reader.ReadString());
+                var createdRound = reader.ReadInt32();
+                var createdTurn = reader.ReadInt32();
+                var sequence = reader.ReadInt64();
+                var phase = (ActiveEffectPhase)reader.ReadInt32();
+                var activatedRound = reader.ReadBoolean() ? (int?)reader.ReadInt32() : null;
+                var activatedTurn = reader.ReadBoolean() ? (int?)reader.ReadInt32() : null;
+                var endedAt = reader.ReadBoolean() ? (TimingCheckpoint?)reader.ReadInt32() : null;
+                return new ActiveEffectInstance(id, definition, sourceCard, sourceAction, createdRound,
+                    createdTurn, sequence, phase, activatedRound, activatedTurn, endedAt);
+            });
+            var continuous = ReadMany(reader, "continuous rule sources", () =>
+            {
+                var sourceId = reader.ReadString();
+                var kind = (ContinuousRuleSourceKind)reader.ReadInt32();
+                var controller = new HeroId(reader.ReadString());
+                var ruleKind = reader.ReadString();
+                var applicability = reader.ReadString();
+                var sourceCard = reader.ReadBoolean() ? new CardInstanceId(reader.ReadString()) : default;
+                return new ContinuousRuleSource(sourceId, kind, controller, ruleKind, applicability, sourceCard);
+            });
+            return ActiveEffectLifecycle.Restore(effects, continuous);
         }
 
         private static void WritePendingInitiativeChoice(BinaryWriter writer, PendingInitiativeChoice choice)

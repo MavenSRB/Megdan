@@ -123,6 +123,9 @@ namespace GuardsDigital.Core.Diagnostics
                         roundReference,
                         $"stage={ruleEvent.EndOfRoundStage}");
                     return;
+                case RoundResolutionEventKind.TimingProgressed:
+                    AppendTiming(roundReference, ruleEvent.ActiveEffectEvent);
+                    return;
                 default:
                     Add($"Round.{ruleEvent.Kind}", roundReference, "accepted boundary");
                     return;
@@ -171,6 +174,12 @@ namespace GuardsDigital.Core.Diagnostics
                 ruleEvent.Kind == TurnResolutionEventKind.FastTravelActionProgressed)
             {
                 AppendCardAction(roundReference, ruleEvent.CardActionEvent);
+                return;
+            }
+
+            if (ruleEvent.Kind == TurnResolutionEventKind.TimingProgressed)
+            {
+                AppendTiming(roundReference, ruleEvent.ActiveEffectEvent);
                 return;
             }
 
@@ -243,6 +252,14 @@ namespace GuardsDigital.Core.Diagnostics
         private void Add(string eventType, string stableReferences, string detail)
         {
             entries.Add(new RuleEventLogEntry(entries.Count + 1, eventType, stableReferences, detail));
+        }
+
+        private void AppendTiming(string roundReference, GuardsDigital.Core.Timing.ActiveEffectLifecycleEvent ruleEvent)
+        {
+            Add(
+                $"Timing.{ruleEvent.Kind}",
+                JoinReferences(roundReference, $"effect={ruleEvent.EffectId.Value}"),
+                $"checkpoint={ruleEvent.Checkpoint}");
         }
 
         private static string JoinReferences(params string[] references)

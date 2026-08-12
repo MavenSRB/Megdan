@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Application
 {
@@ -16,11 +17,13 @@ namespace GuardsDigital.Application
             InitialScenarioDescription scenario,
             QuickGameSetupState setup,
             IEnumerable<BoardMapDefinition> availableMaps,
-            PlaceholderOneVsOneTestConfiguration initialConfiguration = null)
+            PlaceholderOneVsOneTestConfiguration initialConfiguration = null,
+            ActiveEffectLifecycle initialTiming = null)
         {
             Scenario = scenario ?? throw new ArgumentNullException(nameof(scenario));
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
             InitialConfiguration = initialConfiguration;
+            InitialTiming = (initialTiming ?? new ActiveEffectLifecycle()).Clone();
             this.availableMaps = Array.AsReadOnly(
                 (availableMaps ?? throw new ArgumentNullException(nameof(availableMaps))).ToArray());
 
@@ -52,6 +55,10 @@ namespace GuardsDigital.Application
         public QuickGameSetupState Setup { get; }
 
         public PlaceholderOneVsOneTestConfiguration InitialConfiguration { get; }
+
+        public ActiveEffectLifecycle InitialTiming { get; }
+
+        public ActiveEffectLifecycle CreateTiming() => InitialTiming.Clone();
 
         public IReadOnlyList<BoardMapDefinition> AvailableMaps => availableMaps;
     }

@@ -5,6 +5,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -42,7 +43,8 @@ namespace GuardsDigital.Core.Cards
         ActiveEffectCancellationCheckpoint = 8,
         RoundCompleted = 9,
         NextRoundStarted = 10,
-        GameEnded = 11
+        GameEnded = 11,
+        TimingProgressed = 12
     }
 
     public sealed class TurnCardAssignment
@@ -218,7 +220,8 @@ namespace GuardsDigital.Core.Cards
             EndOfRoundStageOutcomeKind? endOfRoundOutcomeKind = null,
             CardInstanceId? cardInstanceId = null,
             HeroId? cardOwnerId = null,
-            CompletedRoundRecord completedRound = null)
+            CompletedRoundRecord completedRound = null,
+            ActiveEffectLifecycleEvent activeEffectEvent = default)
         {
             Kind = kind;
             RoundIndex = roundIndex;
@@ -231,6 +234,7 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId = cardInstanceId;
             CardOwnerId = cardOwnerId;
             CompletedRound = completedRound;
+            ActiveEffectEvent = activeEffectEvent;
         }
 
         public RoundResolutionEventKind Kind { get; }
@@ -244,6 +248,7 @@ namespace GuardsDigital.Core.Cards
         public CardInstanceId? CardInstanceId { get; }
         public HeroId? CardOwnerId { get; }
         public CompletedRoundRecord CompletedRound { get; }
+        public ActiveEffectLifecycleEvent ActiveEffectEvent { get; }
 
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
@@ -377,6 +382,20 @@ namespace GuardsDigital.Core.Cards
                     : RoundResolutionAuthority.TurnsPerRound,
                 completedRound: completedRound);
         }
+
+        public static RoundResolutionEvent FromTiming(
+            int roundIndex,
+            int turnIndex,
+            ActiveEffectLifecycleEvent activeEffectEvent)
+        {
+            if (!activeEffectEvent.EffectId.IsDefined || activeEffectEvent.Checkpoint == TimingCheckpoint.None)
+                throw new ArgumentException("A round timing event requires a defined effect and checkpoint.", nameof(activeEffectEvent));
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.TimingProgressed,
+                roundIndex,
+                turnIndex,
+                activeEffectEvent: activeEffectEvent);
+        }
     }
 
     public readonly struct RoundResolutionResult
@@ -449,6 +468,7 @@ namespace GuardsDigital.Core.Cards
         private readonly EndOfRoundFixtureCapabilities endOfRoundCapabilities;
         private readonly IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers;
         private TieBreakerState tieBreakerState;
+        private readonly ActiveEffectLifecycle timing;
 
         public RoundResolutionAuthority(
             IEnumerable<CardDefinition> definitions,
@@ -458,7 +478,8 @@ namespace GuardsDigital.Core.Cards
             int roundIndex = 1,
             CardActionResolutionAuthority cardActions = null,
             EndOfRoundFixtureCapabilities endOfRoundCapabilities = null,
-            IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers = null)
+            IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers = null,
+            ActiveEffectLifecycle timing = null)
         {
             this.definitions = Array.AsReadOnly(
                 ActionOfferQuery.BuildDefinitionLookup(definitions).Values.ToArray());
@@ -502,6 +523,7 @@ namespace GuardsDigital.Core.Cards
 
             tieBreakerState = initialTieBreakerState;
             this.cardActions = cardActions;
+            this.timing = timing ?? new ActiveEffectLifecycle();
             this.endOfRoundCapabilities = endOfRoundCapabilities ??
                 EndOfRoundFixtureCapabilities.SyntheticRepeatedRound();
             var handlers = endOfRoundHandlers != null
@@ -561,6 +583,8 @@ namespace GuardsDigital.Core.Cards
 
         internal CardActionResolutionAuthority CardActions => cardActions;
 
+        public ActiveEffectLifecycle Timing => timing;
+
         internal static RoundResolutionAuthority Restore(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
@@ -575,7 +599,8 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<EndOfRoundStageOutcome> endOfRoundOutcomes,
             TurnCardCommitmentAuthority commitmentAuthority,
             TurnResolutionAuthority turnAuthority,
-            CardActionResolutionAuthority cardActions)
+            CardActionResolutionAuthority cardActions,
+            ActiveEffectLifecycle timing = null)
         {
             var authority = new RoundResolutionAuthority(
                 definitions,
@@ -583,7 +608,8 @@ namespace GuardsDigital.Core.Cards
                 participants,
                 tieBreakerState,
                 roundIndex,
-                cardActions);
+                cardActions,
+                timing: timing);
             if (turnIndex < 1 || turnIndex > TurnsPerRound || !Enum.IsDefined(typeof(RoundResolutionPhase), phase))
             {
                 throw new ArgumentException("Restored round cursor is invalid.");
@@ -730,6 +756,12 @@ namespace GuardsDigital.Core.Cards
 
             if (resolution.ActiveEffectCancellationBoundaryReached)
             {
+                events.AddRange(timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                    TimingCheckpoint.CardsRetrieved,
+                    RoundIndex,
+                    TurnIndex),
+                    TieBreakerState).Select(value => RoundResolutionEvent.FromTiming(
+                        RoundIndex, TurnIndex, value)));
                 events.Add(RoundResolutionEvent.EndOfRoundBoundary(
                     RoundResolutionEventKind.ActiveEffectCancellationCheckpoint,
                     RoundIndex,
@@ -877,8 +909,17 @@ namespace GuardsDigital.Core.Cards
                 instances,
                 participants,
                 tieBreakerState,
-                cardActions);
+                cardActions,
+                timing,
+                RoundIndex,
+                TurnIndex);
             Phase = RoundResolutionPhase.ResolvingTurn;
+            foreach (var timingEvent in timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                TimingCheckpoint.CardsPlayedAndRevealed,
+                RoundIndex,
+                TurnIndex),
+                tieBreakerState))
+                events.Add(RoundResolutionEvent.FromTiming(RoundIndex, TurnIndex, timingEvent));
             var start = CurrentTurnAuthority.TryStart();
             if (!start.Accepted)
             {
@@ -901,6 +942,12 @@ namespace GuardsDigital.Core.Cards
             tieBreakerState = CurrentTurnAuthority.TieBreakerState;
             if (TurnIndex == TurnsPerRound)
             {
+                foreach (var timingEvent in timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                    TimingCheckpoint.RoundEnd,
+                    RoundIndex,
+                    TurnIndex),
+                    TieBreakerState))
+                    events.Add(RoundResolutionEvent.FromTiming(RoundIndex, TurnIndex, timingEvent));
                 Phase = RoundResolutionPhase.EndOfRound;
                 CurrentEndOfRoundStage = EndOfRoundStage.MinionBattle;
                 events.Add(RoundResolutionEvent.Boundary(

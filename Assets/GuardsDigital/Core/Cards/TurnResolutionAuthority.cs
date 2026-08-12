@@ -5,6 +5,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -40,7 +41,8 @@ namespace GuardsDigital.Core.Cards
         TurnEnded = 5,
         MovementActionProgressed = 6,
         AttackActionProgressed = 7,
-        FastTravelActionProgressed = 8
+        FastTravelActionProgressed = 8,
+        TimingProgressed = 9
     }
 
     public readonly struct TurnResolutionEvent
@@ -52,7 +54,8 @@ namespace GuardsDigital.Core.Cards
             HeroId actorId,
             ActionDefinitionId actionDefinitionId,
             ActionInvocationContext invocationContext,
-            CardActionResolutionEvent cardActionEvent)
+            CardActionResolutionEvent cardActionEvent,
+            ActiveEffectLifecycleEvent activeEffectEvent = default)
         {
             Kind = kind;
             InitiativeEvent = initiativeEvent;
@@ -61,6 +64,7 @@ namespace GuardsDigital.Core.Cards
             ActionDefinitionId = actionDefinitionId;
             InvocationContext = invocationContext;
             CardActionEvent = cardActionEvent;
+            ActiveEffectEvent = activeEffectEvent;
         }
 
         public TurnResolutionEventKind Kind { get; }
@@ -76,6 +80,8 @@ namespace GuardsDigital.Core.Cards
         public ActionInvocationContext InvocationContext { get; }
 
         public CardActionResolutionEvent CardActionEvent { get; }
+
+        public ActiveEffectLifecycleEvent ActiveEffectEvent { get; }
 
         public static TurnResolutionEvent FromInitiative(InitiativeResolutionEvent initiativeEvent)
         {
@@ -187,6 +193,21 @@ namespace GuardsDigital.Core.Cards
                 ActionInvocationContext.None,
                 default);
         }
+
+        public static TurnResolutionEvent FromTiming(ActiveEffectLifecycleEvent activeEffectEvent)
+        {
+            if (!activeEffectEvent.EffectId.IsDefined || activeEffectEvent.Checkpoint == TimingCheckpoint.None)
+                throw new ArgumentException("A turn timing event requires a defined effect and checkpoint.", nameof(activeEffectEvent));
+            return new TurnResolutionEvent(
+                TurnResolutionEventKind.TimingProgressed,
+                default,
+                default,
+                default,
+                default,
+                ActionInvocationContext.None,
+                default,
+                activeEffectEvent);
+        }
     }
 
     public readonly struct TurnResolutionResult
@@ -230,6 +251,9 @@ namespace GuardsDigital.Core.Cards
         private readonly MatchParticipants participants;
         private InitiativeResolutionAuthority initiative;
         private readonly CardActionResolutionAuthority cardActions;
+        private readonly ActiveEffectLifecycle timing;
+        private int roundIndex;
+        private int turnIndex;
 
         public TurnResolutionAuthority(
             IEnumerable<CardDefinition> definitions,
@@ -246,6 +270,19 @@ namespace GuardsDigital.Core.Cards
             MatchParticipants participants,
             TieBreakerState initialTieBreakerState,
             CardActionResolutionAuthority cardActions)
+            : this(definitions, instances, participants, initialTieBreakerState, cardActions, null, 1, 1)
+        {
+        }
+
+        public TurnResolutionAuthority(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            TieBreakerState initialTieBreakerState,
+            CardActionResolutionAuthority cardActions,
+            ActiveEffectLifecycle timing,
+            int roundIndex,
+            int turnIndex)
         {
             this.definitions = Array.AsReadOnly(
                 ActionOfferQuery.BuildDefinitionLookup(definitions).Values.ToArray());
@@ -279,6 +316,9 @@ namespace GuardsDigital.Core.Cards
 
             initiative = new InitiativeResolutionAuthority(initialTieBreakerState);
             this.cardActions = cardActions;
+            this.timing = timing ?? new ActiveEffectLifecycle();
+            this.roundIndex = roundIndex;
+            this.turnIndex = turnIndex;
         }
 
         public bool IsStarted { get; private set; }
@@ -303,6 +343,8 @@ namespace GuardsDigital.Core.Cards
 
         internal CardActionResolutionAuthority CardActions => cardActions;
 
+        public ActiveEffectLifecycle Timing => timing;
+
         internal static TurnResolutionAuthority Restore(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
@@ -312,14 +354,20 @@ namespace GuardsDigital.Core.Cards
             bool isEnded,
             TieBreakerState tieBreakerState,
             PendingInitiativeChoice pendingChoice,
-            SelectedInitiativeActor selectedActor)
+            SelectedInitiativeActor selectedActor,
+            ActiveEffectLifecycle timing = null,
+            int roundIndex = 1,
+            int turnIndex = 1)
         {
             var authority = new TurnResolutionAuthority(
                 definitions,
                 instances,
                 participants,
                 tieBreakerState,
-                cardActions)
+                cardActions,
+                timing,
+                roundIndex,
+                turnIndex)
             {
                 IsStarted = isStarted,
                 IsEnded = isEnded,
@@ -344,7 +392,12 @@ namespace GuardsDigital.Core.Cards
             }
 
             IsStarted = true;
-            return AdvanceInitiative(Array.Empty<TurnResolutionEvent>());
+            var timingEvents = timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                TimingCheckpoint.TurnStarted,
+                roundIndex,
+                turnIndex),
+                initiative.TieBreakerState);
+            return AdvanceInitiative(timingEvents.Select(TurnResolutionEvent.FromTiming));
         }
 
         public TurnResolutionResult TryChooseTiedActor(
@@ -407,11 +460,13 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardResolutionFailed);
             }
 
-            var events = new List<TurnResolutionEvent>
-            {
-                TurnResolutionEvent.HoldPerformed(offer.Value),
-                TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId)
-            };
+            var events = new List<TurnResolutionEvent>();
+            AddTiming(events, TimingCheckpoint.ActionStarted);
+            events.Add(TurnResolutionEvent.HoldPerformed(offer.Value));
+            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+            AddTiming(events, TimingCheckpoint.ActionEnded);
             var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
             if (!acknowledgement.Accepted)
             {
@@ -459,9 +514,11 @@ namespace GuardsDigital.Core.Cards
                 offer,
                 definitions,
                 instances);
-            return result.Accepted
-                ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromCardAction))
-                : TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementActionRejected);
+            if (!result.Accepted)
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementActionRejected);
+            var movementEvents = result.Events.Select(TurnResolutionEvent.FromCardAction).ToList();
+            ApplyActionTiming(movementEvents);
+            return TurnResolutionResult.Accept(movementEvents);
         }
 
         public TurnResolutionResult TryAnswerMovementChoice(MovementChoiceCommand command)
@@ -512,6 +569,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
             if (!acknowledgement.Accepted)
             {
@@ -581,6 +640,8 @@ namespace GuardsDigital.Core.Cards
 
             var events = result.Events.Select(TurnResolutionEvent.FromFastTravelAction).ToList();
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
             if (!acknowledgement.Accepted)
             {
@@ -629,9 +690,11 @@ namespace GuardsDigital.Core.Cards
                 definitions,
                 instances,
                 participants);
-            return result.Accepted
-                ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromAttackAction))
-                : TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackActionRejected);
+            if (!result.Accepted)
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackActionRejected);
+            var attackEvents = result.Events.Select(TurnResolutionEvent.FromAttackAction).ToList();
+            ApplyActionTiming(attackEvents);
+            return TurnResolutionResult.Accept(attackEvents);
         }
 
         public TurnResolutionResult TryAnswerAttackTarget(AttackTargetChoiceCommand command)
@@ -652,9 +715,11 @@ namespace GuardsDigital.Core.Cards
                 definitions,
                 instances,
                 participants);
-            return result.Accepted
-                ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromAttackAction))
-                : TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            if (!result.Accepted)
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            var targetEvents = result.Events.Select(TurnResolutionEvent.FromAttackAction).ToList();
+            ApplyActionTiming(targetEvents);
+            return TurnResolutionResult.Accept(targetEvents);
         }
 
         public TurnResolutionResult TryAnswerDefenseResponse(DefenseResponseChoiceCommand command)
@@ -698,6 +763,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
             if (!acknowledgement.Accepted)
             {
@@ -721,6 +788,7 @@ namespace GuardsDigital.Core.Cards
         private TurnResolutionResult AdvanceInitiative(IEnumerable<TurnResolutionEvent> priorEvents)
         {
             var events = new List<TurnResolutionEvent>(priorEvents);
+            ApplyActionTiming(events);
             var result = initiative.TrySelectNextActor(definitions, instances, participants);
             if (!result.Accepted)
             {
@@ -731,13 +799,77 @@ namespace GuardsDigital.Core.Cards
             if (result.Events.Any(ruleEvent =>
                     ruleEvent.Kind == InitiativeResolutionEventKind.NoUnresolvedCardsRemaining))
             {
+                events.AddRange(timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                    TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                    roundIndex,
+                    turnIndex),
+                    initiative.TieBreakerState).Select(TurnResolutionEvent.FromTiming));
                 events.Add(TurnResolutionEvent.TurnCheckpoint(
                     TurnResolutionEventKind.TurnOnlyEffectsCancellationCheckpoint));
+                AddTiming(events, TimingCheckpoint.TurnEnded);
                 events.Add(TurnResolutionEvent.TurnCheckpoint(TurnResolutionEventKind.TurnEnded));
                 IsEnded = true;
             }
 
             return TurnResolutionResult.Accept(events);
+        }
+
+        private void ApplyActionTiming(List<TurnResolutionEvent> events)
+        {
+            var ordered = new List<TurnResolutionEvent>();
+            foreach (var turnEvent in events.ToArray())
+            {
+                if (turnEvent.Kind != TurnResolutionEventKind.MovementActionProgressed &&
+                    turnEvent.Kind != TurnResolutionEventKind.AttackActionProgressed &&
+                    turnEvent.Kind != TurnResolutionEventKind.FastTravelActionProgressed)
+                {
+                    ordered.Add(turnEvent);
+                    continue;
+                }
+
+                var kind = turnEvent.CardActionEvent.Kind;
+                if (kind == CardActionResolutionEventKind.MovementActionStarted ||
+                    kind == CardActionResolutionEventKind.AttackStarted ||
+                    kind == CardActionResolutionEventKind.FastTravelActionStarted)
+                    AddTiming(ordered, TimingCheckpoint.ActionStarted);
+                if (kind == CardActionResolutionEventKind.AttackStarted)
+                    AddTiming(ordered, TimingCheckpoint.BeforeAttack);
+                ordered.Add(turnEvent);
+                if (kind == CardActionResolutionEventKind.AttackResolutionCompleted)
+                    AddTiming(ordered, TimingCheckpoint.AfterAttack);
+                if (kind == CardActionResolutionEventKind.MovementActionCompleted ||
+                    kind == CardActionResolutionEventKind.AttackResolutionCompleted ||
+                    kind == CardActionResolutionEventKind.FastTravelActionCompleted)
+                    AddTiming(ordered, TimingCheckpoint.ActionEnded);
+            }
+            events.Clear();
+            events.AddRange(ordered);
+        }
+
+        private void AddTiming(
+            ICollection<TurnResolutionEvent> events,
+            TimingCheckpoint checkpoint,
+            CardInstanceId sourceCardInstanceId = default)
+        {
+            var timingEvents = timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                checkpoint,
+                roundIndex,
+                turnIndex,
+                initiative.SelectedActor.IsDefined ? initiative.SelectedActor.ActorId : default,
+                sourceCardInstanceId),
+                initiative.TieBreakerState);
+            foreach (var timingEvent in timingEvents) events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+        }
+
+        public IReadOnlyList<ActiveEffectLifecycleEvent> NotifySourceCardStateChanged(
+            CardInstanceId sourceCardInstanceId)
+        {
+            return timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                TimingCheckpoint.SourceCardStateChanged,
+                roundIndex,
+                turnIndex,
+                sourceCardInstanceId: sourceCardInstanceId),
+                initiative.TieBreakerState);
         }
 
         private TurnResolutionRejectionReason GetCommonRejection()

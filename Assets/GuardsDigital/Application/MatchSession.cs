@@ -396,7 +396,8 @@ namespace GuardsDigital.Application
                 configuration.CardInstances,
                 configuration.Participants,
                 initialState.Scenario.InitialTieBreakerState,
-                cardActions: cardActions);
+                cardActions: cardActions,
+                timing: initialState.CreateTiming());
             history.Clear();
             canRecordHistory = true;
             roundEvents.Clear();
