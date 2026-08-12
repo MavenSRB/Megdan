@@ -6,7 +6,7 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Phase 6 uses the complete Phase 4 map and the synthetic turn/round controller. Lane behavior is never validated on the reduced test grid.
 
-### [!] 6.1 Resolve the end-of-round Minion Battle
+### [ ] 6.1 Resolve the end-of-round Minion Battle
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -16,8 +16,14 @@ Acceptance checks:
 
 - Equal counts have no effect.
 - The losing team removes the exact difference or all remaining minions when it has fewer than required.
-- Choice ownership and Heavy-last ordering are authoritative.
+- Choice ownership and Heavy-last ordering are authoritative. A mandatory removal choice is round-owned typed pending state with stable resolution/choice identity, authorized chooser and team, required removal count, legal and currently selected stable `MinionId` values, and the exact typed select/deselect/confirm invocation that resumes the same end-of-round continuation.
+- Rejected, stale, under-count, over-count, ineligible, and wrong-chooser input is atomic and preserves the pending choice, cursor, occupancy, events, and command history. Accepted confirmation removes exactly the authoritative selection and advances the owning stage once.
+- The pending Minion-Battle choice is not retained in a handler-local flag or reconstructed from presentation. Its stage cursor, identities, candidates, selection, and continuation round-trip through the authoritative snapshot boundary with an explicit schema migrate-or-reject decision and reconstruct equivalently after restore, replay, and retained-prefix Undo.
+- The application projection exposes the same immutable pending choice required by milestone 6.1a without acquiring rule ownership.
+- Focused authority, session, snapshot-compatibility, restore, replay, and Undo tests prove equal-count/no-choice, deterministic auto-resolution, choice creation, accepted/rejected/stale input, exact resume, and byte-equivalent rebuilt pending state.
 - The Lane-Push request is not consumed before token/marker cleanup.
+
+Non-goals: No player-facing removal-choice UI, optional decline of a mandatory removal, Lane-Push consumption, token/marker cleanup, generic all-rules choice framework, production art, animation, or audio.
 
 ### [ ] 6.1a Add player-facing Minion Battle removal-choice UI
 
@@ -45,9 +51,43 @@ Acceptance checks:
 - Token placement/reclamation and marker attachment are authoritative choices/transitions.
 - Token and marker lifetime is not inferred from art or UI objects.
 
+### [ ] 6.2a Establish typed Skill and serializable effect execution
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: A bounded synthetic definition can offer and execute a first-class Skill through a stable-node, serializable non-Repeat effect frame before Clear or displacement effects extend the production action seam.
+
+Acceptance checks:
+
+- Skill is a first-class typed action offer and invocation with the same authoritative source, actor, lifecycle, command, event, timing, completion, and stale-input boundaries as existing card actions; presentation never infers Skill legality from printed text.
+- Stable-node `Sequence`, `Optional`, `Conditional`, and `Choose` structures preserve typed node identity, chooser ownership, inputs, outcomes, and the exact continuation required to resume. Mandatory failure, `may`, `up to`, and `if able` policies remain explicit rather than collapsing into one failure behavior.
+- One bounded synthetic capability fixture executes end to end through `IMatchSession`, the round/turn authorities, the registered action/effect dispatch seam, snapshots, restore, replay, and retained-prefix Undo. Rejected input is atomic and accepted execution emits deterministic ordered facts.
+- Adding the Skill/effect handler does not require editing Movement, Attack/Defense, or Fast-Travel backend algorithms. Architecture tests mechanically prevent action-specific algorithms or effect-node switches from accumulating in the outer session/round/turn dispatcher seams.
+- Pending effect state and stable node/choice identities cross the versioned snapshot boundary with an explicit migrate-or-reject decision and reconstruct equivalently after restore, replay, and Undo.
+
+Non-goals: No Repeat, Clear, direct Move, Object Push, Place, Spawn, Swap, Replace, Remove, Wasp definition, production presentation, printed-text parser, universal scripting language, or source-unverified special case.
+
+### [ ] 6.2b Independently verify the Phase 6 action/effect foundation
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: A fresh-task independent review determines whether milestones 6.1 and 6.2a actually close `F58C-01` and `F58C-02` before milestone 6.3 can begin.
+
+Acceptance checks:
+
+- Inspect the actual final source, tests, snapshots/compatibility fixtures, replay/Undo paths, and raw validation evidence rather than relying on implementation handoff summaries.
+- Trace accepted, rejected, stale, paused, restored, replayed, and Undo-truncated Minion-Battle and synthetic Skill/effect paths through the application, round/turn, action/effect, and serialization boundaries.
+- Confirm mechanically that the first real end-of-round choice has no handler-local or presentation-owned continuation, and that adding the production Skill/effect handler did not deepen unrelated action-family branching.
+- Classify every observation as a demonstrated defect, measured or plausible risk, or optional improvement; assign the smallest corrective owner and required validation for each actionable finding.
+- Reassess the dependency-safe sequence and scope of milestones 6.3 through 6.13. Milestone 6.3 remains blocked until this review closes both findings or the user approves a documented corrective disposition with a fresh terminal verification owner.
+
+Non-goals: No runtime, test, scene, package, assembly, content, or rule change; no implementation of a discovered correction inside the review milestone.
+
 ### [ ] 6.3 Add core token interactions, persistent properties, and Clear
 
 Observable outcome: Synthetic tokens preserve their properties while supporting the general board interactions needed by the core loop.
+
+Prerequisite: milestone 6.2b has independently closed the post-5.8c action/effect foundation findings or recorded an approved correction-plus-verification disposition.
 
 Acceptance checks:
 
@@ -134,20 +174,19 @@ Acceptance checks:
 
 Non-goals: No Wasp definition, card-state swap or upgrade replacement, hero Defeat consequences, specialized Respawn, card-name/hero-name branch, or production presentation.
 
-### [ ] 6.7 Implement reusable Skill actions and ordered effect control flow
+### [ ] 6.7 Add bounded Repeat action control flow
 
-Observable outcome: Synthetic definitions can offer a typed Skill and execute reusable ordered, optional, modal, and repeated effect structures without a Wasp-specific resolver.
+Observable outcome: Synthetic definitions can Repeat an eligible action as a separate bounded action instance through milestone 6.2a's typed effect frame, with each instance completing displaced-minion correction before the next begins.
 
 Acceptance checks:
 
-- Skill is a first-class action offer/invocation context with the same authority, lifecycle, command, event, pending-choice, and action-completion boundaries as other card actions; presentation never infers Skill legality from text.
-- Ordered mandatory nodes stop the remaining action when an impossible step requires it, while `may`, `up to`, and `if able` policies record explicit choices/outcomes instead of treating every failure alike.
-- Modal actions and player/target/option choices retain typed chooser ownership and serializable continuation state.
 - Repeat creates a separate bounded action instance with the original definition and explicit repeated context, cannot recursively Repeat, and applies the verified replacement and Active-effect restrictions.
 - Each repeated action reaches its own after-action displaced-minion correction boundary before the next Repeat instance begins.
-- Accepted, declined, impossible, interrupted, restored, replayed, and Undo-truncated synthetic scenarios produce deterministic state and ordered events.
+- A repeated action uses the same legality, typed choices, timing, completion, and effect outcomes as an ordinary instance; later instances may make different legal choices without mutating the original action definition.
+- Declined, impossible, prevented, interrupted, restored, replayed, and Undo-truncated synthetic scenarios produce deterministic state and ordered events without recursive execution or duplicate completion.
+- Focused integration tests cover Repeat across direct Move/Object Push displacement, the milestone 6.4a correction checkpoint, pending milestone 6.4b player choice, snapshot restore, replay, and retained-prefix Undo.
 
-Non-goals: No Wasp definition or text interpretation, invented scripting language, card-name/hero-name branch, production presentation, or source-unverified special case.
+Non-goals: No new Skill, Sequence, Optional, Conditional, or Choose foundation; no new leaf effect merely to exercise Repeat; no Wasp definition or text interpretation, invented scripting language, card-name/hero-name branch, production presentation, or source-unverified special case.
 
 ### [ ] 6.8 Implement reusable modifiers, permissions, immunity, and effective characteristics
 
