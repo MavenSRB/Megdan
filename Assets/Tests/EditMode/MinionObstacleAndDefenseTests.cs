@@ -98,6 +98,7 @@ namespace GuardsDigital.Tests.EditMode
                 CreateMinion("blue-friendly-ranged", TeamSide.Blue, StandardMinionType.Ranged, new HexCoordinate(3, 0)),
                 CreateMinion("red-enemy-heavy", TeamSide.Red, StandardMinionType.Heavy, new HexCoordinate(2, -1)),
                 CreateMinion("red-enemy-melee", TeamSide.Red, StandardMinionType.Melee, new HexCoordinate(0, 1)),
+                CreateMinion("red-enemy-ranged-adjacent", TeamSide.Red, StandardMinionType.Ranged, new HexCoordinate(1, -1)),
                 CreateMinion("red-enemy-ranged-near", TeamSide.Red, StandardMinionType.Ranged, new HexCoordinate(3, -1)),
                 CreateMinion("red-enemy-ranged-far", TeamSide.Red, StandardMinionType.Ranged, new HexCoordinate(-2, 0))
             };
@@ -148,7 +149,7 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.Participants);
 
             Assert.That(answered.Accepted, Is.True);
-            Assert.That(answered.PendingResolution.DefenseTotal, Is.EqualTo(printed.Total - 1));
+            Assert.That(answered.PendingResolution.DefenseTotal, Is.EqualTo(printed.Total - 2));
             Assert.That(answered.PendingResolution.DefenseValue.Contributions[0], Is.EqualTo(printed.Contributions[0]));
             var minionContributions = answered.PendingResolution.DefenseValue.Contributions
                 .Where(value => value.Kind == ValueContributionKind.MinionDefenseModifier)
@@ -159,9 +160,10 @@ namespace GuardsDigital.Tests.EditMode
                 "blue-friendly-melee",
                 "red-enemy-heavy",
                 "red-enemy-melee",
+                "red-enemy-ranged-adjacent",
                 "red-enemy-ranged-near"
             }));
-            Assert.That(minionContributions.Select(value => value.Amount), Is.EqualTo(new[] { 1, 1, -1, -1, -1 }));
+            Assert.That(minionContributions.Select(value => value.Amount), Is.EqualTo(new[] { 1, 1, -1, -1, -1, -1 }));
             Assert.That(minionContributions.All(value =>
                 value.HasSourceMinionId &&
                 !value.SourceCardInstanceId.IsDefined &&
