@@ -101,15 +101,24 @@ function Get-CompletionBody([string] $RoadmapText, [string] $Milestone) {
 function Test-RouteValues([string] $Session, [string] $RoadmapCorpus, [string] $Config) {
     $codes = New-Object System.Collections.Generic.List[string]
     $currentMatches = [regex]::Matches($Session, '(?m)^- Current completed milestone: \*\*([^*]+)\*\*\.$')
+    $activeMatches = [regex]::Matches($Session, '(?m)^- Active authorized milestone: \*\*([^*]+)\*\*(?:,[^\r\n]*)?\.$')
     $nextMatches = [regex]::Matches($Session, '(?m)^- Next proposed milestone: \*\*([^*]+)\*\*\.$')
     $profileMatches = [regex]::Matches($Session, '(?m)^- Required Codex profile for next milestone: \*\*GPT-5\.6 (Sol|Terra) with ([^*]+) reasoning\*\*\.$')
-    if ($currentMatches.Count -ne 1 -or $nextMatches.Count -ne 1 -or $profileMatches.Count -ne 1) {
+    if ($currentMatches.Count -ne 1 -or $activeMatches.Count -ne 1 -or $nextMatches.Count -ne 1 -or $profileMatches.Count -ne 1) {
         $codes.Add('missing-route')
         return $codes.ToArray()
     }
     $current = $currentMatches[0].Groups[1].Value
+    $active = $activeMatches[0].Groups[1].Value
     $next = $nextMatches[0].Groups[1].Value
     if (-not [regex]::IsMatch($RoadmapCorpus, "(?m)^### \[x\] $([regex]::Escape($current))(?:\s|$)")) { $codes.Add('current-status') }
+    $inProgressMatches = [regex]::Matches($RoadmapCorpus, '(?m)^### \[~\] (\S+)(?:\s|$)')
+    if ($active -eq 'none') {
+        if ($inProgressMatches.Count -ne 0) { $codes.Add('active-status') }
+    }
+    elseif ($inProgressMatches.Count -ne 1 -or $inProgressMatches[0].Groups[1].Value -ne $active -or $active -ne $next) {
+        $codes.Add('active-status')
+    }
     $nextBlock = [regex]::Match($RoadmapCorpus, "(?ms)^### \[[ !~]\] $([regex]::Escape($next))(?:\s[^\r\n]*)?\r?\n(.*?)(?=^### |\z)")
     if (-not $nextBlock.Success) {
         $codes.Add('next-status')
@@ -148,12 +157,19 @@ function Invoke-SelfTests {
     Expect 'warning threshold' ((Test-ThresholdValues 85 100 100 1000) -eq 'warning')
     Expect 'hard-threshold failure' ((Test-ThresholdValues 101 100 100 1000) -eq 'hard')
 
-    $validSession = "- Current completed milestone: **1.0**.`n- Next proposed milestone: **1.1**.`n- Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**."
+    $validSession = "- Current completed milestone: **1.0**.`n- Active authorized milestone: **none**.`n- Next proposed milestone: **1.1**.`n- Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**."
     $validRoadmap = "### [x] 1.0 Done`n`n### [ ] 1.1 Next`n`nRequired Codex profile: GPT-5.6 Sol with medium reasoning.`n"
+    $activeSession = $validSession -replace 'Active authorized milestone: \*\*none\*\*', 'Active authorized milestone: **1.1**, in progress'
+    $activeRoadmap = $validRoadmap -replace '### \[ \] 1\.1', '### [~] 1.1'
     $validConfig = "# Milestone: 1.1`nmodel = `"gpt-5.6-sol`"`nmodel_reasoning_effort = `"medium`""
     Expect 'valid route structure' ((Test-RouteValues $validSession $validRoadmap $validConfig).Count -eq 0)
+    Expect 'valid in-progress route' ((Test-RouteValues $activeSession $activeRoadmap $validConfig).Count -eq 0)
     Expect 'missing route' ((Test-RouteValues ($validSession -replace '(?m)^- Next proposed.*\r?\n?', '') $validRoadmap $validConfig) -contains 'missing-route')
     Expect 'mismatched profile' ((Test-RouteValues $validSession $validRoadmap ($validConfig -replace 'medium', 'high')) -contains 'mismatched-profile')
+    Expect 'active milestone left proposed' ((Test-RouteValues $activeSession $validRoadmap $validConfig) -contains 'active-status')
+    Expect 'orphaned in-progress milestone' ((Test-RouteValues $validSession $activeRoadmap $validConfig) -contains 'active-status')
+    $multipleActiveRoadmap = $activeRoadmap + "`n### [~] 1.2 Also active`n`nRequired Codex profile: GPT-5.6 Sol with medium reasoning.`n"
+    Expect 'multiple in-progress milestones' ((Test-RouteValues $activeSession $multipleActiveRoadmap $validConfig) -contains 'active-status')
 
     $virtualTargets = @('index.md','archive.md#record')
     Expect 'broken archive/shard link' (-not ($virtualTargets -contains 'missing.md#record'))
@@ -216,7 +232,7 @@ foreach ($relative in $requiredHeadings.Keys) {
     }
 }
 
-# Exactly one current/next/profile route and roadmap/session/config agreement.
+# Exactly one current/active/next/profile route and roadmap/session/config agreement.
 $session = Read-Utf8 (Join-Path $docsRoot 'SESSION_BRIEF.md')
 $roadmapCorpus = ((Get-ChildItem (Join-Path $docsRoot 'Roadmap') -File -Filter '*.md' | Sort-Object Name | ForEach-Object { Read-Utf8 $_.FullName }) -join "`n")
 $config = Read-Utf8 (Join-Path $projectRoot '.codex\config.toml')
@@ -224,6 +240,7 @@ $routeCodes = Test-RouteValues $session $roadmapCorpus $config
 foreach ($code in $routeCodes) { Add-Issue 'ERROR' $code 'SESSION_BRIEF.md, the next roadmap milestone, and .codex/config.toml do not agree.' }
 $routeMarkerCounts = @{
     'Current completed milestone:' = 0
+    'Active authorized milestone:' = 0
     'Next proposed milestone:' = 0
     'Required Codex profile for next milestone:' = 0
 }

@@ -199,7 +199,7 @@ Acceptance checks:
 
 Historical evidence: [milestone 5.8 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58-complete-the-general-hero-attack-and-defense-order-completion-evidence).
 
-### [ ] 5.8a Independently review the full-map action and combat foundation
+### [~] 5.8a Independently review the full-map action and combat foundation
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 

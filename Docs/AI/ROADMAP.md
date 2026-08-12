@@ -19,12 +19,13 @@ For every item:
 
 1. Confirm that the exact item declares its `Required Codex profile` and that `.codex/config.toml` matches it; this is execution metadata, not authorization.
 2. Obtain explicit user approval for that item.
-3. Implement only its stated observable outcome.
-4. Respect its non-goals.
-5. Run the milestone's focused tests, directly affected regressions, and highest applicable validation tier from `Docs/AI/TESTING.md`.
-6. Update the project documents and `.codex/config.toml`, including the next proposed milestone's required profile and matching new-task defaults.
-7. Create a local Git commit containing the completed milestone and continuity updates.
-8. Report the result, the next proposed milestone and its required profile, then stop.
+3. Before substantive milestone analysis, implementation, review, or test execution, mark the exact roadmap item `[~]`, record that same ID as the active authorized milestone in `Docs/AI/SESSION_BRIEF.md`, retain the canonical next-milestone/profile route for the active ID, and run the living-document validator. Do not proceed until the start transition validates; this rule includes analysis-only and independent-review milestones.
+4. Implement only its stated observable outcome.
+5. Respect its non-goals.
+6. Run the milestone's focused tests, directly affected regressions, and highest applicable validation tier from `Docs/AI/TESTING.md`.
+7. Update the project documents and `.codex/config.toml`, including the next proposed milestone's required profile and matching new-task defaults.
+8. Create a local Git commit containing the completed milestone and continuity updates.
+9. Report the result, the next proposed milestone and its required profile, then stop.
 
 Milestones may be split further if implementation reveals more than one independently testable behavior. They must not be silently combined.
 

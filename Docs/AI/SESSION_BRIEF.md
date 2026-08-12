@@ -39,10 +39,10 @@ The project does not yet implement current-Battle-Zone changes, Lane Push, the f
 ## Current authorization and next route
 
 - Current completed milestone: **5.8**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **5.8a**, in progress as a fresh-task analysis-only independent review.
 - Next proposed milestone: **5.8a**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with high reasoning**.
-- Milestone 5.8a is a fresh-task analysis-only independent review and requires explicit approval of that exact micro-milestone.
+- Milestone 5.8a may update only its review record and proposed roadmap/continuity documentation; it does not authorize a runtime, test, content, or rules correction.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries
