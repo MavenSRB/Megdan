@@ -145,13 +145,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(value.Channel, Is.EqualTo(PrintedValueChannel.Movement));
             Assert.That(value.Total, Is.EqualTo(1));
             Assert.That(value.Contributions.Count, Is.EqualTo(1));
-            Assert.That(value.Contributions[0].Kind, Is.EqualTo(PrintedValueContributionKind.PrintedIcon));
+            Assert.That(value.Contributions[0].Kind, Is.EqualTo(ValueContributionKind.PrintedIcon));
             Assert.That(value.Contributions[0].SourceCardInstanceId, Is.EqualTo(instance.Id));
             Assert.That(value.Contributions[0].SourceActionDefinitionId, Is.EqualTo(new ActionDefinitionId("secondary-move")));
             Assert.That(value.Contributions[0].Amount, Is.EqualTo(1));
-            Assert.That(value.Contributions, Is.Not.InstanceOf<PrintedValueContribution[]>());
+            Assert.That(value.Contributions, Is.Not.InstanceOf<ValueContribution[]>());
             Assert.Throws<NotSupportedException>(() =>
-                ((IList<PrintedValueContribution>)value.Contributions)[0] = value.Contributions[0]);
+                ((IList<ValueContribution>)value.Contributions)[0] = value.Contributions[0]);
         }
 
         [Test]

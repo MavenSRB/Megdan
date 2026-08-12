@@ -33,9 +33,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionStepId currentStepId,
             AttackResolutionPhase phase,
             HeroId targetHeroId,
-            PrintedValueResult attackValue,
+            ValueResult attackValue,
             ActionOffer? defenseOffer = null,
-            PrintedValueResult defenseValue = null)
+            ValueResult defenseValue = null)
         {
             if (!resolutionId.IsDefined ||
                 !sourceCardInstanceId.IsDefined ||
@@ -109,10 +109,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public ActionResolutionStepId CurrentStepId { get; }
         public AttackResolutionPhase Phase { get; }
         public HeroId TargetHeroId { get; }
-        public PrintedValueResult AttackValue { get; }
+        public ValueResult AttackValue { get; }
         public int AttackTotal => AttackValue?.Total ?? 0;
         public ActionOffer? DefenseOffer { get; }
-        public PrintedValueResult DefenseValue { get; }
+        public ValueResult DefenseValue { get; }
         public bool HasDefenseTotal => DefenseValue != null;
         public int? DefenseTotal => DefenseValue?.Total;
     }

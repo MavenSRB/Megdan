@@ -21,7 +21,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.Channel, Is.EqualTo(PrintedValueChannel.Initiative));
             Assert.That(result.Total, Is.EqualTo(8));
             Assert.That(result.Contributions, Has.Count.EqualTo(1));
-            Assert.That(result.Contributions[0].Kind, Is.EqualTo(PrintedValueContributionKind.PrintedIcon));
+            Assert.That(result.Contributions[0].Kind, Is.EqualTo(ValueContributionKind.PrintedIcon));
             Assert.That(result.Contributions[0].SourceCardInstanceId, Is.EqualTo(card.Id));
             Assert.That(result.Contributions[0].HasSourceActionDefinitionId, Is.False);
             Assert.That(result.Contributions[0].Channel, Is.EqualTo(PrintedValueChannel.Initiative));

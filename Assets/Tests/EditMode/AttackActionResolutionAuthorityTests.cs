@@ -50,7 +50,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(answer.PendingResolution.AttackValue.Contributions, Has.Count.EqualTo(1));
             Assert.That(
                 answer.PendingResolution.AttackValue.Contributions.Single().Kind,
-                Is.EqualTo(PrintedValueContributionKind.PrintedIcon));
+                Is.EqualTo(ValueContributionKind.PrintedIcon));
             Assert.That(answer.PendingResolution.AttackTotal, Is.EqualTo(3));
             Assert.That(answer.PendingDefenseChoice.ChooserId, Is.EqualTo(fixture.DefenderId));
             Assert.That(answer.PendingDefenseChoice.AttackerId, Is.EqualTo(fixture.AttackerId));
@@ -508,7 +508,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.PendingResolution.DefenseValue.Channel, Is.EqualTo(PrintedValueChannel.Defense));
             Assert.That(result.PendingResolution.DefenseValue.Contributions, Has.Count.EqualTo(1));
             Assert.That(result.PendingResolution.DefenseValue.Contributions.Single().Kind,
-                Is.EqualTo(PrintedValueContributionKind.PrintedIcon));
+                Is.EqualTo(ValueContributionKind.PrintedIcon));
             Assert.That(result.PendingResolution.DefenseValue.Contributions.Single().SourceCardInstanceId,
                 Is.EqualTo(selectedCard.Id));
             Assert.That(result.PendingResolution.DefenseTotal, Is.EqualTo(4));

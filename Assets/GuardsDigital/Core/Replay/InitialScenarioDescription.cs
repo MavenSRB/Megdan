@@ -70,6 +70,13 @@ namespace GuardsDigital.Core.Replay
 
         public AdjacentMoveAuthority CreateBoard(IEnumerable<BoardMapDefinition> availableMaps)
         {
+            return CreateBoard(availableMaps, Enumerable.Empty<QuickGameMinionSetupState>());
+        }
+
+        public AdjacentMoveAuthority CreateBoard(
+            IEnumerable<BoardMapDefinition> availableMaps,
+            IEnumerable<QuickGameMinionSetupState> minions)
+        {
             var matches = (availableMaps ?? throw new ArgumentNullException(nameof(availableMaps)))
                 .Where(map => map.Reference.Equals(SelectedMap))
                 .ToArray();
@@ -79,7 +86,7 @@ namespace GuardsDigital.Core.Replay
                     $"Initial scenario map {SelectedMap.MapId.Value} revision {SelectedMap.ContentRevision} is unavailable or ambiguous.");
             }
 
-            return new AdjacentMoveAuthority(matches[0], initialHeroes, initialObstacles);
+            return new AdjacentMoveAuthority(matches[0], initialHeroes, initialObstacles, minions);
         }
 
         private static CardInstance CloneCard(CardInstance card)

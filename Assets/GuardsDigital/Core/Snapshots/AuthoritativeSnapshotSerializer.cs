@@ -89,6 +89,19 @@ namespace GuardsDigital.Core.Snapshots
             IEnumerable<CardDefinition> currentDefinitions,
             IEnumerable<BoardMapDefinition> currentMapDefinitions)
         {
+            return Deserialize(
+                payload,
+                currentDefinitions,
+                currentMapDefinitions,
+                Enumerable.Empty<QuickGameMinionSetupState>());
+        }
+
+        public static RestoredAuthoritativeMatch Deserialize(
+            string payload,
+            IEnumerable<CardDefinition> currentDefinitions,
+            IEnumerable<BoardMapDefinition> currentMapDefinitions,
+            IEnumerable<QuickGameMinionSetupState> minions)
+        {
             if (string.IsNullOrWhiteSpace(payload))
             {
                 throw new SnapshotLoadException(
@@ -132,7 +145,7 @@ namespace GuardsDigital.Core.Snapshots
                         currentMapDefinitions ?? throw new ArgumentNullException(nameof(currentMapDefinitions)));
                     var definitions = ValidateDefinitions(reader, currentDefinitions);
                     var participants = ReadParticipants(reader);
-                    var board = ReadBoard(reader, mapCatalog);
+                    var board = ReadBoard(reader, mapCatalog, minions);
                     var cards = ReadCards(reader, definitions, participants);
                     var round = ReadRound(reader, definitions, cards, participants, board);
                     if (stream.Position != stream.Length)
@@ -257,7 +270,10 @@ namespace GuardsDigital.Core.Snapshots
             }
         }
 
-        private static AdjacentMoveAuthority ReadBoard(BinaryReader reader, BoardMapCatalog mapCatalog)
+        private static AdjacentMoveAuthority ReadBoard(
+            BinaryReader reader,
+            BoardMapCatalog mapCatalog,
+            IEnumerable<QuickGameMinionSetupState> minions)
         {
             var reference = new MapDefinitionReference(new MapId(reader.ReadString()), reader.ReadInt32());
             BoardMapDefinition mapDefinition;
@@ -278,7 +294,7 @@ namespace GuardsDigital.Core.Snapshots
             var obstacles = ReadMany(reader, "obstacle occupancies", () => new ObstacleOccupancy(
                 new ObstacleId(reader.ReadString()),
                 ReadCoordinate(reader)));
-            return new AdjacentMoveAuthority(mapDefinition, heroes, obstacles);
+            return new AdjacentMoveAuthority(mapDefinition, heroes, obstacles, minions);
         }
 
         private static void WriteCards(BinaryWriter writer, IReadOnlyList<CardInstance> cards)
@@ -615,7 +631,7 @@ namespace GuardsDigital.Core.Snapshots
                 new ActionResolutionStepId(reader.ReadString()));
         }
 
-        private static void WritePrintedValue(BinaryWriter writer, PrintedValueResult value)
+        private static void WritePrintedValue(BinaryWriter writer, ValueResult value)
         {
             writer.Write(value != null);
             if (value == null) return;
@@ -623,30 +639,46 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(value.Contributions.Count);
             foreach (var contribution in value.Contributions)
             {
-                writer.Write((int)contribution.Kind); writer.Write(contribution.SourceCardInstanceId.Value);
+                writer.Write((int)contribution.Kind);
+                writer.Write(contribution.HasSourceMinionId
+                    ? contribution.SourceMinionId.Value
+                    : contribution.SourceCardInstanceId.Value);
                 writer.Write(contribution.HasSourceActionDefinitionId);
                 if (contribution.HasSourceActionDefinitionId) writer.Write(contribution.SourceActionDefinitionId.Value);
                 writer.Write((int)contribution.Channel); writer.Write(contribution.Amount);
             }
         }
 
-        private static PrintedValueResult ReadPrintedValue(BinaryReader reader)
+        private static ValueResult ReadPrintedValue(BinaryReader reader)
         {
             if (!reader.ReadBoolean()) return null;
             var channel = (PrintedValueChannel)reader.ReadInt32();
             var contributions = ReadMany(reader, "printed contributions", () =>
             {
-                var kind = (PrintedValueContributionKind)reader.ReadInt32();
+                var kind = (ValueContributionKind)reader.ReadInt32();
                 var card = new CardInstanceId(reader.ReadString());
                 var hasAction = reader.ReadBoolean();
                 var action = hasAction ? new ActionDefinitionId(reader.ReadString()) : default;
                 var contributionChannel = (PrintedValueChannel)reader.ReadInt32();
                 var amount = reader.ReadInt32();
+                if (kind == ValueContributionKind.MinionDefenseModifier)
+                {
+                    if (hasAction)
+                    {
+                        throw Malformed("A minion Defense contribution cannot reference a card action.");
+                    }
+
+                    return new ValueContribution(
+                        kind,
+                        new MinionId(card.Value),
+                        contributionChannel,
+                        amount);
+                }
                 return hasAction
-                    ? new PrintedValueContribution(kind, card, action, contributionChannel, amount)
-                    : new PrintedValueContribution(kind, card, contributionChannel, amount);
+                    ? new ValueContribution(kind, card, action, contributionChannel, amount)
+                    : new ValueContribution(kind, card, contributionChannel, amount);
             });
-            return new PrintedValueResult(channel, contributions);
+            return new ValueResult(channel, contributions);
         }
 
         private static void WriteActionOffer(BinaryWriter writer, ActionOffer offer)

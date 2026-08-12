@@ -389,7 +389,7 @@ namespace GuardsDigital.Application
             configuration = useProvidedConfiguration && initialState.InitialConfiguration != null
                 ? initialState.InitialConfiguration
                 : initialState.Scenario.CreateConfiguration();
-            board = initialState.Scenario.CreateBoard(initialState.AvailableMaps);
+            board = initialState.Scenario.CreateBoard(initialState.AvailableMaps, initialState.Setup.Minions);
             cardActions = new CardActionResolutionAuthority(board);
             round = new RoundResolutionAuthority(
                 configuration.CardDefinitions,
@@ -410,7 +410,8 @@ namespace GuardsDigital.Application
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
                 authoritativePayload,
                 initialState.Scenario.CardDefinitions,
-                initialState.AvailableMaps);
+                initialState.AvailableMaps,
+                initialState.Setup.Minions);
 
             if (!restored.Board.SelectedMap.Equals(initialState.Setup.SelectedMap))
             {

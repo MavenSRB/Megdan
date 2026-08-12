@@ -111,7 +111,7 @@ Non-goals: No Fast Travel rule, eligibility, destination-query, command, replay,
 
 Historical evidence: [milestone 5.2a handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-52a-require-explicit-fast-travel-selection-in-the-configured-player-ui-completion-evidence).
 
-### [ ] 5.3 Add minion obstacle behavior and Defense contributions
+### [x] 5.3 Add minion obstacle behavior and Defense contributions
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -124,7 +124,11 @@ Acceptance checks:
 - Defense contributions retain minion-source provenance.
 - Heavy, Ranged, and Melee identity is not inferred from presentation.
 
+Historical evidence: [milestone 5.3 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-53-add-minion-obstacle-behavior-and-defense-contributions-completion-evidence).
+
 ### [ ] 5.4 Add generic timing, Active-effect, and continuous-source lifecycles
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: Synthetic effects can occupy named timing windows and serializable lifetimes without Wasp-specific logic.
 

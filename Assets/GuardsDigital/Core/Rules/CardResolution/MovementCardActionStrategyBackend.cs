@@ -375,6 +375,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 adjacentMoveAuthority.BoardCoordinates,
                 adjacentMoveAuthority.Occupancies,
                 adjacentMoveAuthority.ObstacleOccupancies,
+                adjacentMoveAuthority.Minions,
                 movementSession.RemainingAllowance);
 
             return new PendingMovementChoice(
@@ -394,9 +395,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             out MovementSessionStepResult rejectedStep)
         {
             var validationAuthority = new AdjacentMoveAuthority(
-                adjacentMoveAuthority.BoardCoordinates,
+                adjacentMoveAuthority.MapDefinition,
                 adjacentMoveAuthority.Occupancies,
-                adjacentMoveAuthority.ObstacleOccupancies);
+                adjacentMoveAuthority.ObstacleOccupancies,
+                adjacentMoveAuthority.Minions);
             var validationSession = new MovementSession(validationAuthority, movementState);
             for (var routeIndex = 1; routeIndex < destination.Route.Count; routeIndex++)
             {

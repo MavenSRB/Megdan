@@ -4,11 +4,11 @@ using System.Linq;
 
 namespace GuardsDigital.Core.Cards
 {
-    public sealed class PrintedValueResult
+    public sealed class ValueResult
     {
-        public PrintedValueResult(
+        public ValueResult(
             PrintedValueChannel channel,
-            IEnumerable<PrintedValueContribution> contributions)
+            IEnumerable<ValueContribution> contributions)
         {
             if (channel == PrintedValueChannel.None)
             {
@@ -27,7 +27,7 @@ namespace GuardsDigital.Core.Cards
 
         public PrintedValueChannel Channel { get; }
 
-        public IReadOnlyList<PrintedValueContribution> Contributions { get; }
+        public IReadOnlyList<ValueContribution> Contributions { get; }
 
         public int Total { get; }
     }

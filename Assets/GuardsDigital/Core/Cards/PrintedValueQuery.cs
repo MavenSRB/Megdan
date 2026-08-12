@@ -6,7 +6,7 @@ namespace GuardsDigital.Core.Cards
 {
     public static class PrintedValueQuery
     {
-        public static PrintedValueResult CalculatePrintedInitiative(
+        public static ValueResult CalculatePrintedInitiative(
             CardInstance card,
             IEnumerable<CardDefinition> definitions)
         {
@@ -23,19 +23,19 @@ namespace GuardsDigital.Core.Cards
                     nameof(card));
             }
 
-            return new PrintedValueResult(
+            return new ValueResult(
                 PrintedValueChannel.Initiative,
                 new[]
                 {
-                    new PrintedValueContribution(
-                        PrintedValueContributionKind.PrintedIcon,
+                    new ValueContribution(
+                        ValueContributionKind.PrintedIcon,
                         card.Id,
                         PrintedValueChannel.Initiative,
                         definition.Initiative.Value)
                 });
         }
 
-        public static PrintedValueResult CalculatePrintedValue(
+        public static ValueResult CalculatePrintedValue(
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             PrintedValueChannel channel)
@@ -59,14 +59,14 @@ namespace GuardsDigital.Core.Cards
 
             var contributions = actionDefinition.BaseValues
                 .Where(value => value.Channel == channel)
-                .Select(value => new PrintedValueContribution(
-                    PrintedValueContributionKind.PrintedIcon,
+                .Select(value => new ValueContribution(
+                    ValueContributionKind.PrintedIcon,
                     offer.SourceCardInstanceId,
                     offer.ActionDefinitionId,
                     value.Channel,
                     value.Amount));
 
-            return new PrintedValueResult(channel, contributions);
+            return new ValueResult(channel, contributions);
         }
     }
 }

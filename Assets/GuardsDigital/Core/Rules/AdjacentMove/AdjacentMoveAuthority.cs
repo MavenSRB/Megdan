@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.AdjacentMove
@@ -13,11 +15,12 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly List<HeroOccupancy> occupancies;
         private readonly List<ObstacleOccupancy> obstacleOccupancies;
+        private readonly IReadOnlyList<QuickGameMinionSetupState> minions;
 
         public AdjacentMoveAuthority(
             IEnumerable<HexCoordinate> boardCoordinates,
             IEnumerable<HeroOccupancy> initialOccupancies)
-            : this(BoardMapDefinition.CreateSynthetic(new MapId("synthetic-coordinate-board"), 1, boardCoordinates), initialOccupancies, Enumerable.Empty<ObstacleOccupancy>())
+            : this(BoardMapDefinition.CreateSynthetic(new MapId("synthetic-coordinate-board"), 1, boardCoordinates), initialOccupancies, Enumerable.Empty<ObstacleOccupancy>(), Enumerable.Empty<QuickGameMinionSetupState>())
         {
         }
 
@@ -25,7 +28,16 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<HexCoordinate> boardCoordinates,
             IEnumerable<HeroOccupancy> initialOccupancies,
             IEnumerable<ObstacleOccupancy> initialObstacleOccupancies)
-            : this(BoardMapDefinition.CreateSynthetic(new MapId("synthetic-coordinate-board"), 1, boardCoordinates), initialOccupancies, initialObstacleOccupancies)
+            : this(BoardMapDefinition.CreateSynthetic(new MapId("synthetic-coordinate-board"), 1, boardCoordinates), initialOccupancies, initialObstacleOccupancies, Enumerable.Empty<QuickGameMinionSetupState>())
+        {
+        }
+
+        public AdjacentMoveAuthority(
+            IEnumerable<HexCoordinate> boardCoordinates,
+            IEnumerable<HeroOccupancy> initialOccupancies,
+            IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
+            IEnumerable<QuickGameMinionSetupState> initialMinions)
+            : this(BoardMapDefinition.CreateSynthetic(new MapId("synthetic-coordinate-board"), 1, boardCoordinates), initialOccupancies, initialObstacleOccupancies, initialMinions)
         {
         }
 
@@ -33,6 +45,15 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             BoardMapDefinition mapDefinition,
             IEnumerable<HeroOccupancy> initialOccupancies,
             IEnumerable<ObstacleOccupancy> initialObstacleOccupancies)
+            : this(mapDefinition, initialOccupancies, initialObstacleOccupancies, Enumerable.Empty<QuickGameMinionSetupState>())
+        {
+        }
+
+        public AdjacentMoveAuthority(
+            BoardMapDefinition mapDefinition,
+            IEnumerable<HeroOccupancy> initialOccupancies,
+            IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
+            IEnumerable<QuickGameMinionSetupState> initialMinions)
         {
             MapDefinition = mapDefinition ?? throw new ArgumentNullException(nameof(mapDefinition));
 
@@ -46,9 +67,15 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new ArgumentNullException(nameof(initialObstacleOccupancies));
             }
 
+            if (initialMinions == null)
+            {
+                throw new ArgumentNullException(nameof(initialMinions));
+            }
+
             this.boardCoordinates = new HashSet<HexCoordinate>(mapDefinition.PlayableCoordinates);
             occupancies = new List<HeroOccupancy>();
             obstacleOccupancies = new List<ObstacleOccupancy>();
+            var materializedMinions = initialMinions.ToArray();
 
             foreach (var occupancy in initialOccupancies)
             {
@@ -90,6 +117,43 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
                 obstacleOccupancies.Add(obstacleOccupancy);
             }
+
+            if (materializedMinions.Any(minion => minion == null) ||
+                materializedMinions.Select(minion => minion.MinionId).Distinct().Count() != materializedMinions.Length)
+            {
+                throw new ArgumentException("Initial minions must be non-null and have unique IDs.", nameof(initialMinions));
+            }
+
+            foreach (var minion in materializedMinions)
+            {
+                if (!minion.MinionId.IsDefined ||
+                    !minion.TeamId.IsDefined ||
+                    (minion.TeamSide != TeamSide.Red && minion.TeamSide != TeamSide.Blue) ||
+                    (minion.MinionType != StandardMinionType.Melee &&
+                        minion.MinionType != StandardMinionType.Ranged &&
+                        minion.MinionType != StandardMinionType.Heavy))
+                {
+                    throw new ArgumentException("Initial minions require defined identity, team, and standard intrinsic type.", nameof(initialMinions));
+                }
+
+                if (!minion.OccupiedSpace.MapId.Equals(mapDefinition.Id) ||
+                    !mapDefinition.Spaces.Any(space =>
+                        space.Id.Equals(minion.OccupiedSpace.SpaceId) &&
+                        space.Kind == BoardMapSpaceKind.Playable &&
+                        space.Coordinate.Equals(minion.Coordinate)))
+                {
+                    throw new ArgumentException("Initial minion occupancy must resolve to its exact playable space on the selected map.", nameof(initialMinions));
+                }
+
+                if (occupancies.Any(existing => existing.Coordinate.Equals(minion.Coordinate)) ||
+                    obstacleOccupancies.Any(existing => existing.Coordinate.Equals(minion.Coordinate)) ||
+                    materializedMinions.Count(existing => existing.Coordinate.Equals(minion.Coordinate)) != 1)
+                {
+                    throw new ArgumentException("Initial minions must not share a coordinate with another obstacle or unit.", nameof(initialMinions));
+                }
+            }
+
+            minions = Array.AsReadOnly(materializedMinions);
         }
 
         public IReadOnlyList<HeroOccupancy> Occupancies => occupancies.ToArray();
@@ -99,6 +163,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         public MapDefinitionReference SelectedMap => MapDefinition.Reference;
 
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupancies.ToArray();
+
+        public IReadOnlyList<QuickGameMinionSetupState> Minions => minions;
 
         public IReadOnlyList<HexCoordinate> BoardCoordinates => boardCoordinates.ToArray();
 
@@ -127,7 +193,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             }
 
             if (occupancies.Any(occupancy => occupancy.Coordinate.Equals(command.Destination)) ||
-                obstacleOccupancies.Any(occupancy => occupancy.Coordinate.Equals(command.Destination)))
+                obstacleOccupancies.Any(occupancy => occupancy.Coordinate.Equals(command.Destination)) ||
+                minions.Any(minion => minion.Coordinate.Equals(command.Destination)))
             {
                 return AdjacentMoveResult.Reject(AdjacentMoveRejectionReason.DestinationOccupied);
             }
@@ -149,7 +216,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
             if (!boardCoordinates.Contains(destination) ||
                 occupancies.Any(occupancy => occupancy.Coordinate.Equals(destination)) ||
-                obstacleOccupancies.Any(occupancy => occupancy.Coordinate.Equals(destination)))
+                obstacleOccupancies.Any(occupancy => occupancy.Coordinate.Equals(destination)) ||
+                minions.Any(minion => minion.Coordinate.Equals(destination)))
             {
                 throw new InvalidOperationException("A validated Fast Travel destination is no longer empty and playable.");
             }

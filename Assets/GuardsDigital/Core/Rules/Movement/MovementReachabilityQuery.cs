@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.Movement
@@ -20,6 +21,7 @@ namespace GuardsDigital.Core.Rules.Movement
                 boardCoordinates,
                 occupancies,
                 Enumerable.Empty<ObstacleOccupancy>(),
+                Enumerable.Empty<QuickGameMinionSetupState>(),
                 movementAllowance);
         }
 
@@ -28,6 +30,23 @@ namespace GuardsDigital.Core.Rules.Movement
             IEnumerable<HexCoordinate> boardCoordinates,
             IEnumerable<HeroOccupancy> occupancies,
             IEnumerable<ObstacleOccupancy> obstacleOccupancies,
+            int movementAllowance)
+        {
+            return FindReachableDestinations(
+                selectedHero,
+                boardCoordinates,
+                occupancies,
+                obstacleOccupancies,
+                Enumerable.Empty<QuickGameMinionSetupState>(),
+                movementAllowance);
+        }
+
+        public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
+            HeroOccupancy selectedHero,
+            IEnumerable<HexCoordinate> boardCoordinates,
+            IEnumerable<HeroOccupancy> occupancies,
+            IEnumerable<ObstacleOccupancy> obstacleOccupancies,
+            IEnumerable<QuickGameMinionSetupState> minions,
             int movementAllowance)
         {
             if (boardCoordinates == null)
@@ -43,6 +62,11 @@ namespace GuardsDigital.Core.Rules.Movement
             if (obstacleOccupancies == null)
             {
                 throw new ArgumentNullException(nameof(obstacleOccupancies));
+            }
+
+            if (minions == null)
+            {
+                throw new ArgumentNullException(nameof(minions));
             }
 
             if (movementAllowance < 0)
@@ -68,6 +92,10 @@ namespace GuardsDigital.Core.Rules.Movement
             foreach (var obstacleOccupancy in obstacleOccupancies)
             {
                 blocked.Add(obstacleOccupancy.Coordinate);
+            }
+            foreach (var minion in minions)
+            {
+                blocked.Add(minion.Coordinate);
             }
 
             blocked.Remove(selectedHero.Coordinate);

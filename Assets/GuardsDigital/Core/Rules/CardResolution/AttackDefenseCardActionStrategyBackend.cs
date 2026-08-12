@@ -384,10 +384,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }
 
-            var defenseValue = PrintedValueQuery.CalculatePrintedValue(
+            var defenseValue = DefenseValueQuery.Calculate(
                 defenseOffer,
                 materializedDefinitions,
-                PrintedValueChannel.Defense);
+                pendingAttackResolution.TargetHeroId,
+                participants,
+                adjacentMoveAuthority);
             var resumedWithDefense = CreateOutcomeComparisonResolution(defenseOffer, defenseValue);
 
             if (!defenseCard.TryApplyLocationTransition(transition))
@@ -455,7 +457,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 !CompletedDefenseMatches(
                     pendingAttackResolution,
                     materializedDefinitions,
-                    materializedInstances))
+                    materializedInstances,
+                    participants,
+                    adjacentMoveAuthority))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }
@@ -565,7 +569,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 {
                     if (pendingDefenseChoice != null ||
                         !pendingResolution.CurrentStepId.Equals(new ActionResolutionStepId("attack-outcome-comparison")) ||
-                        !CompletedDefenseMatches(pendingResolution, materializedDefinitions, materializedInstances))
+                        !CompletedDefenseMatches(
+                            pendingResolution,
+                            materializedDefinitions,
+                            materializedInstances,
+                            participants,
+                            adjacentMoveAuthority))
                     {
                         throw new ArgumentException("Completed Defense response does not match authoritative Attack state.", nameof(pendingResolution));
                     }
@@ -645,7 +654,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         private PendingAttackResolution CreateOutcomeComparisonResolution(
             ActionOffer? defenseOffer,
-            PrintedValueResult defenseValue)
+            ValueResult defenseValue)
         {
             return new PendingAttackResolution(
                 pendingAttackResolution.ResolutionId,
@@ -754,7 +763,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 actual.LegalDefenseOffers.SequenceEqual(expectedOffers);
         }
 
-        private static bool PrintedValuesMatch(PrintedValueResult expected, PrintedValueResult actual)
+        private static bool PrintedValuesMatch(ValueResult expected, ValueResult actual)
         {
             if (expected == null || actual == null ||
                 expected.Channel != actual.Channel ||
@@ -778,7 +787,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private static bool CompletedDefenseMatches(
             PendingAttackResolution resolution,
             IReadOnlyList<CardDefinition> definitions,
-            IReadOnlyList<CardInstance> instances)
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            AdjacentMoveAuthority board)
         {
             if (!resolution.DefenseOffer.HasValue)
             {
@@ -808,10 +819,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return false;
             }
 
-            var expectedDefenseValue = PrintedValueQuery.CalculatePrintedValue(
+            var expectedDefenseValue = DefenseValueQuery.Calculate(
                 offer,
                 definitions,
-                PrintedValueChannel.Defense);
+                resolution.TargetHeroId,
+                participants,
+                board);
             return PrintedValuesMatch(resolution.DefenseValue, expectedDefenseValue);
         }
 

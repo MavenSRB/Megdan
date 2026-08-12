@@ -2,6 +2,45 @@
 
 Canonical active shard. Return to [../TESTING.md](../TESTING.md).
 
+## Minion obstacle and Defense contribution T2 tests
+
+Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run these requests serially.
+
+Focused Edit Mode request:
+
+```json
+{
+  "platform": "EditMode",
+  "filter": "GuardsDigital.Tests.EditMode.MinionObstacleAndDefenseTests",
+  "results": "tmp/milestone-5-3-focused-results.xml",
+  "log": "tmp/milestone-5-3-focused.log"
+}
+```
+
+Directly affected Edit Mode request:
+
+```json
+{
+  "platform": "EditMode",
+  "filter": "GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.FastTravelActionResolutionTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.InitiativeResolutionAuthorityTests",
+  "results": "tmp/milestone-5-3-regression-results.xml",
+  "log": "tmp/milestone-5-3-regression.log"
+}
+```
+
+Configured saved-scene Play Mode request:
+
+```json
+{
+  "platform": "PlayMode",
+  "filter": "GuardsDigital.Tests.PlayMode.MinimalHexGridPlayModeTests",
+  "results": "tmp/milestone-5-3-play-results.xml",
+  "log": "tmp/milestone-5-3-play.log"
+}
+```
+
+Expected result: every discovered case passes with no skipped or inconclusive case. Edit Mode covers authoritative minion identity/type/space reuse, one-obstacle occupancy, Movement blocking, exact Defense modifier boundaries and provenance, restore/snapshot determinism, and affected consumers. Play Mode proves the configured scene remains operational with minions bound into the board. Unfiltered suites are intentionally deferred to milestone 5.8 unless an escalation trigger appears.
+
 ## Explicit Fast Travel selection T2 tests
 
 Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run these requests serially.

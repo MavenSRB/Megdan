@@ -8,7 +8,7 @@ This document is the effect-level companion to `CARD_SYSTEM_ARCHITECTURE.md`. It
 
 The baseline catalog is derived from the second-printing rulebook's action execution, card states, actions, progression, concepts, and keywords on printed pages 7-19. Verified card text may override a general rule or introduce a new capability. No hero-specific capability is authoritative until its card source and any applicable official correction are verified in `RULES_LEDGER.md`.
 
-This catalog specifies extension contracts; only named roadmap slices are implemented. Milestones 1.11-1.13a establish typed printed Movement, restorable segmented choices, adjacent-step commitment, cumulative waypoints, and synthetic presentation. Milestones 2.2-2.5 add printed Attack/Defense, adjacent and Ranged hero targeting, one-card-or-decline Defense, and unmodified outcome facts without consequences. Milestones 3.5 and 3.7-3.9 add general Hold, selected-turn Attack/Defense composition, round checkpoints, and serialized pending continuations. Milestone 5.1 adds exact-map segmented Movement with captured action-start restrictions. Milestone 5.2 adds value-free Fast Travel with typed zone/enemy eligibility, pathless atomic relocation, projected legal destinations, and the configured presenter/session command route. Direct Move, resolve-without-action, Attack consequences, concrete restriction-source lifetimes, Range/Defense modifiers, card-text effects, modal/repeat execution, broader lifecycle transitions, concrete timing effects, snapshot migrations, and broader mutation handlers remain unimplemented.
+This catalog specifies extension contracts; only named roadmap slices are implemented. Milestones 1.11-1.13a establish typed printed Movement, restorable segmented choices, adjacent-step commitment, cumulative waypoints, and synthetic presentation. Milestones 2.2-2.5 add printed Attack/Defense, adjacent and Ranged hero targeting, one-card-or-decline Defense, and unmodified outcome facts without consequences. Milestones 3.5 and 3.7-3.9 add general Hold, selected-turn Attack/Defense composition, round checkpoints, and serialized pending continuations. Milestone 5.1 adds exact-map segmented Movement with captured action-start restrictions; 5.2 adds value-free Fast Travel with typed zone/enemy eligibility and pathless atomic relocation; 5.3 binds configured minions as unit obstacles and adds their source-bearing Defense modifiers. Direct Move, resolve-without-action, Attack consequences, concrete restriction-source lifetimes, other Range/Defense modifiers, card-text effects, modal/repeat execution, broader lifecycle transitions, concrete timing effects, snapshot migrations, and broader mutation handlers remain unimplemented.
 
 ## Capability categories
 
@@ -131,6 +131,8 @@ Reusable geometry queries include:
 Movement path, rulebook distance, Range, Radius, straight line, and zone adjacency are different calculations. A capability selects the required query explicitly.
 
 Milestone 2.3a implements only the hero-Attack subset: axial-coordinate rulebook distance and an inclusive Range Total comparison for enemy heroes, with Range 1 including adjacency and occupied/obstacle spaces creating no line-of-sight restriction. Broader object categories, Range modifiers, Radius, straight-line, immunity, and presence interactions remain specified but unimplemented.
+
+Milestone 5.3 binds the existing configured standard-minion state directly into authoritative board occupancy. Minions retain stable identity, team, intrinsic type, map-qualified space, and coordinate; they are unit obstacles for construction, Movement projection, route revalidation, and relocation, with no presentation-derived or parallel rules representation.
 
 Zone adjacency follows the board rule: two zones are adjacent when there is an adjacent pair of non-terrain spaces, one in each zone. It is not inferred from bounding boxes or art proximity and is verified against authoritative map data.
 
@@ -319,6 +321,8 @@ These modify capability queries. They do not inject card-name branches into exec
 ## Values, resources, and ownership changes
 
 `ModifyValueEffect` references a typed value channel and contribution source, such as Initiative, Attack, Defense, Movement, Range, or Radius. Printed icons, items, card text, minions, and Active effects remain separate contributions.
+
+Milestone 5.3 implements the general minion Defense subset from rulebook page 14. A discarded Defense card keeps its printed-icon contribution, then the value query adds +1 for every adjacent friendly Melee/Heavy minion, -1 for every adjacent enemy Melee/Heavy minion, and -1 for every enemy Ranged minion within radius 2. Every added contribution carries the stable authoritative `MinionId`; decline or no legal Defense card still produces no Defense Total.
 
 Milestone 3.4 establishes the current synthetic Initiative consumer: the printed card-wide Initiative icon is projected through the same typed contribution/result shape without inventing an action-definition source, and the next unresolved actor query recalculates from current contributions at every boundary. Later Initiative modifiers extend that contribution query rather than adding a cached turn-controller field.
 
