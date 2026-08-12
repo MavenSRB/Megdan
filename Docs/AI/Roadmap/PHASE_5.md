@@ -215,7 +215,30 @@ Acceptance checks:
 
 Non-goals: No Attack, Range, Heavy-immunity, reward, Defeat, or removal-rule changes; no Minion Battle, last-minion Lane Push, displacement correction, respawn, Wasp content, legacy-controller expansion, production animation, or audio.
 
-### [!] 5.8b Independently review the full-map action and combat foundation
+### [ ] 5.8b Preview authoritative Defense breakdowns on hover
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: While a Hero Defense response is pending, hovering or keyboard-focusing any legal Defense card or Decline choice opens a compact non-interactive popup that explains the incoming Attack, that choice's authoritative Defense preview, and the predicted result before the player clicks.
+
+Acceptance checks:
+
+- The application projection supplies the current Attack contribution list/total and an authority-computed preview for every legal Defense-card choice, including the complete ordered Defense contribution list, optional Defense Total, explicit Block result, and predicted comparison outcome; presentation performs no modifier, Block, or outcome calculation.
+- The preview reuses the same pure Defense query and comparison semantics as command resolution, while clicking a card or Decline still submits the existing resolution-qualified typed command for authoritative revalidation and immediate one-click resolution.
+- Hovering one choice shows one pointer-pass-through popup positioned clear of that control; moving directly across choices updates the same popup without flicker, and leaving the Defense controls dismisses it after a short bounded delay. Keyboard focus exposes the same information.
+- Defense-card previews identify the card, Attack Total, every applicable signed contribution with a player-readable source, Defense Total, and `DEFENDED` or `ATTACK SUCCEEDS`; a fulfilled future Block is shown as `BLOCK - DEFENDED`, never as a numeric sentinel.
+- When the Defense response opens, the board highlights exactly the authoritative minions included in that Attack's already-calculated minion Defense modifier. Supporting and hindering minions use visually distinct non-target cues with persistent `+1` or `-1` indicators so contribution sign never relies on color alone; presentation does not rediscover adjacency, team, type, or radius.
+- The attack-scoped minion cues remain stable while the defender hovers or focuses different cards or Decline because the rulebook minion modifier is calculated before card selection. Accepting a card or Decline, ending or replacing the pending Defense response, Undo, restart, or restore clears or rebuilds the cues from the latest projection; no cue is selectable or survives as a stale Attack-target highlight.
+- Hovering Decline explicitly shows `NO DEFENSE TOTAL - ATTACK SUCCEEDS`. If no legal Defense card exists, the sole decline/continue choice remains usable and receives the same explanation.
+- The popup stays within the viewport, never obscures the hovered control or captures pointer input, and keeps its complete breakdown readable through bounded sizing/scrolling on short desktop viewports. Outcome cues do not rely on color alone.
+- Projection-version changes, accepted/rejected commands, Undo, restart, and restore clear or rebuild transient hover state from the latest immutable projection; stale previews never discard a card or survive into another pending choice.
+- T2 validation covers the pure preview projection, attack-scoped exact signed `MinionId` source set, presenter mapping, passive hover/focus lifecycle, stable pending-response board cues, exact typed command preservation, stale/version-reset behavior, Decline, numeric equality/failure, explicit Block display, viewport placement, and separation from Attack-target cues. The configured saved-scene Play Mode path and a visible non-batch Game View inspection prove that the exact supporting/hindering minion cues appear for the whole Defense response while moving across multiple choices updates only the readable popup and never blocks one-click selection.
+
+Non-goals: No Attack, Defense, modifier, minion, Block-condition, card-text, item, or outcome-rule change; no confirmation click, modal dialog, card-detail redesign, legacy-controller expansion, production animation/audio, networking implementation, or disclosure of private Defense choices to unauthorized players.
+
+Prerequisite: Milestone 5.8a must be complete so the popup milestone preserves and regresses both configured Hero and minion Attack-target presentation paths.
+
+### [!] 5.8c Independently review the full-map action and combat foundation
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -231,6 +254,6 @@ Acceptance checks:
 
 Non-goals: No Wasp inventory or behavior, end-of-round implementation, combat redesign, speculative optimization, runtime fix, or relaxation of verified rules and validation gates.
 
-Prerequisite: Milestone 5.8a must be complete so the review inspects the actual configured minion-target interaction instead of the known presentation gap.
+Prerequisite: Milestones 5.8a and 5.8b must be complete so the review inspects the actual configured minion-target interaction and authoritative Defense-breakdown presentation instead of either known presentation gap.
 
-Hard gate: Phase 6 does not begin until milestone 5.8b is reviewed and every gate-blocking finding has an approved disposition.
+Hard gate: Phase 6 does not begin until milestone 5.8c is reviewed and every gate-blocking finding has an approved disposition.

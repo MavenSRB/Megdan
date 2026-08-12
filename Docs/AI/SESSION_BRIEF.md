@@ -18,7 +18,7 @@ The immediate configured gap is presentation-only: the board still accepts Hero 
 - Active authorized milestone: **none**.
 - Next proposed milestone: **5.8a**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
-- Milestone 5.8a adds configured-board minion Attack selection. Review 5.8b remains blocked until it completes; neither milestone is authorized.
+- Milestone 5.8a adds configured-board minion Attack selection. Planned 5.8b then adds the authoritative hover Defense breakdown, and review 5.8c remains blocked until both complete; none is authorized.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries
