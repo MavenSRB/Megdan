@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -27,7 +28,12 @@ namespace GuardsDigital.Core.Cards
         TurnCommandRejected = 5,
         NotResolvingEndOfRound = 6,
         MissingRequiredEndOfRoundHandler = 7,
-        GameAlreadyEnded = 8
+        GameAlreadyEnded = 8,
+        NoPendingMinionBattleChoice = 9,
+        StaleMinionBattleChoice = 10,
+        WrongMinionBattleChooser = 11,
+        IneligibleMinionBattleSelection = 12,
+        IncompleteMinionBattleSelection = 13
     }
 
     public enum RoundResolutionEventKind
@@ -44,7 +50,11 @@ namespace GuardsDigital.Core.Cards
         RoundCompleted = 9,
         NextRoundStarted = 10,
         GameEnded = 11,
-        TimingProgressed = 12
+        TimingProgressed = 12,
+        MinionBattleChoiceRequested = 13,
+        MinionBattleSelectionChanged = 14,
+        MinionBattleMinionRemoved = 15,
+        LanePushRequested = 16
     }
 
     public sealed class TurnCardAssignment
@@ -221,7 +231,14 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId? cardInstanceId = null,
             HeroId? cardOwnerId = null,
             CompletedRoundRecord completedRound = null,
-            ActiveEffectLifecycleEvent activeEffectEvent = default)
+            ActiveEffectLifecycleEvent activeEffectEvent = default,
+            EndOfRoundResolutionId endOfRoundResolutionId = default,
+            EndOfRoundChoiceId endOfRoundChoiceId = default,
+            TeamId teamId = default,
+            TeamSide teamSide = TeamSide.None,
+            MinionId minionId = default,
+            LanePushRequestId lanePushRequestId = default,
+            MinionBattleChoiceCommandKind minionBattleChoiceCommandKind = MinionBattleChoiceCommandKind.None)
         {
             Kind = kind;
             RoundIndex = roundIndex;
@@ -235,6 +252,13 @@ namespace GuardsDigital.Core.Cards
             CardOwnerId = cardOwnerId;
             CompletedRound = completedRound;
             ActiveEffectEvent = activeEffectEvent;
+            EndOfRoundResolutionId = endOfRoundResolutionId;
+            EndOfRoundChoiceId = endOfRoundChoiceId;
+            TeamId = teamId;
+            TeamSide = teamSide;
+            MinionId = minionId;
+            LanePushRequestId = lanePushRequestId;
+            MinionBattleChoiceCommandKind = minionBattleChoiceCommandKind;
         }
 
         public RoundResolutionEventKind Kind { get; }
@@ -249,6 +273,13 @@ namespace GuardsDigital.Core.Cards
         public HeroId? CardOwnerId { get; }
         public CompletedRoundRecord CompletedRound { get; }
         public ActiveEffectLifecycleEvent ActiveEffectEvent { get; }
+        public EndOfRoundResolutionId EndOfRoundResolutionId { get; }
+        public EndOfRoundChoiceId EndOfRoundChoiceId { get; }
+        public TeamId TeamId { get; }
+        public TeamSide TeamSide { get; }
+        public MinionId MinionId { get; }
+        public LanePushRequestId LanePushRequestId { get; }
+        public MinionBattleChoiceCommandKind MinionBattleChoiceCommandKind { get; }
 
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
@@ -396,6 +427,90 @@ namespace GuardsDigital.Core.Cards
                 turnIndex,
                 activeEffectEvent: activeEffectEvent);
         }
+
+        public static RoundResolutionEvent MinionBattleChoiceRequested(
+            int roundIndex,
+            PendingMinionBattleChoice choice)
+        {
+            if (choice == null)
+            {
+                throw new ArgumentNullException(nameof(choice));
+            }
+
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.MinionBattleChoiceRequested,
+                roundIndex,
+                RoundResolutionAuthority.TurnsPerRound,
+                endOfRoundStage: global::GuardsDigital.Core.Cards.EndOfRoundStage.MinionBattle,
+                endOfRoundResolutionId: choice.ResolutionId,
+                endOfRoundChoiceId: choice.ChoiceId,
+                teamId: choice.LosingTeamId,
+                teamSide: choice.ChoosingSide);
+        }
+
+        public static RoundResolutionEvent MinionBattleSelectionChanged(
+            int roundIndex,
+            PendingMinionBattleChoice choice,
+            MinionId minionId,
+            MinionBattleChoiceCommandKind commandKind)
+        {
+            if (choice == null || !minionId.IsDefined ||
+                (commandKind != MinionBattleChoiceCommandKind.Select &&
+                    commandKind != MinionBattleChoiceCommandKind.Deselect))
+            {
+                throw new ArgumentException("A Minion Battle selection event requires choice and minion identity.");
+            }
+
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.MinionBattleSelectionChanged,
+                roundIndex,
+                RoundResolutionAuthority.TurnsPerRound,
+                endOfRoundStage: global::GuardsDigital.Core.Cards.EndOfRoundStage.MinionBattle,
+                endOfRoundResolutionId: choice.ResolutionId,
+                endOfRoundChoiceId: choice.ChoiceId,
+                teamId: choice.LosingTeamId,
+                teamSide: choice.ChoosingSide,
+                minionId: minionId,
+                minionBattleChoiceCommandKind: commandKind);
+        }
+
+        public static RoundResolutionEvent MinionBattleMinionRemoved(
+            int roundIndex,
+            EndOfRoundResolutionId resolutionId,
+            TeamId losingTeamId,
+            TeamSide losingSide,
+            MinionId minionId)
+        {
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.MinionBattleMinionRemoved,
+                roundIndex,
+                RoundResolutionAuthority.TurnsPerRound,
+                endOfRoundStage: global::GuardsDigital.Core.Cards.EndOfRoundStage.MinionBattle,
+                endOfRoundResolutionId: resolutionId,
+                teamId: losingTeamId,
+                teamSide: losingSide,
+                minionId: minionId);
+        }
+
+        public static RoundResolutionEvent LanePushRequested(
+            int roundIndex,
+            PendingLanePushRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.LanePushRequested,
+                roundIndex,
+                RoundResolutionAuthority.TurnsPerRound,
+                endOfRoundStage: global::GuardsDigital.Core.Cards.EndOfRoundStage.MinionBattle,
+                endOfRoundResolutionId: request.CauseResolutionId,
+                teamId: request.LosingTeamId,
+                teamSide: request.LosingSide,
+                lanePushRequestId: request.RequestId);
+        }
     }
 
     public readonly struct RoundResolutionResult
@@ -467,6 +582,7 @@ namespace GuardsDigital.Core.Cards
             new List<EndOfRoundStageOutcome>();
         private readonly EndOfRoundFixtureCapabilities endOfRoundCapabilities;
         private readonly IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers;
+        private readonly AdjacentMoveAuthority board;
         private TieBreakerState tieBreakerState;
         private readonly ActiveEffectLifecycle timing;
 
@@ -479,7 +595,8 @@ namespace GuardsDigital.Core.Cards
             CardActionResolutionAuthority cardActions = null,
             EndOfRoundFixtureCapabilities endOfRoundCapabilities = null,
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers = null,
-            ActiveEffectLifecycle timing = null)
+            ActiveEffectLifecycle timing = null,
+            AdjacentMoveAuthority board = null)
         {
             this.definitions = Array.AsReadOnly(
                 ActionOfferQuery.BuildDefinitionLookup(definitions).Values.ToArray());
@@ -523,9 +640,12 @@ namespace GuardsDigital.Core.Cards
 
             tieBreakerState = initialTieBreakerState;
             this.cardActions = cardActions;
+            this.board = board;
             this.timing = timing ?? new ActiveEffectLifecycle();
             this.endOfRoundCapabilities = endOfRoundCapabilities ??
-                EndOfRoundFixtureCapabilities.SyntheticRepeatedRound();
+                (board != null && board.MapDefinition.Zones.Count(value => value.IsStartingBattleZone) == 1
+                    ? EndOfRoundFixtureCapabilities.ConfiguredMatch()
+                    : EndOfRoundFixtureCapabilities.SyntheticRepeatedRound());
             var handlers = endOfRoundHandlers != null
                 ? new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>(endOfRoundHandlers)
                 : new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
@@ -571,6 +691,10 @@ namespace GuardsDigital.Core.Cards
         public IReadOnlyList<EndOfRoundStageOutcome> EndOfRoundOutcomes =>
             endOfRoundOutcomes.AsReadOnly();
 
+        public PendingMinionBattleChoice PendingMinionBattleChoice { get; private set; }
+
+        public PendingLanePushRequest PendingLanePushRequest { get; private set; }
+
         public TurnCardCommitmentAuthority CurrentCommitmentAuthority { get; private set; }
 
         public TurnResolutionAuthority CurrentTurnAuthority { get; private set; }
@@ -600,7 +724,10 @@ namespace GuardsDigital.Core.Cards
             TurnCardCommitmentAuthority commitmentAuthority,
             TurnResolutionAuthority turnAuthority,
             CardActionResolutionAuthority cardActions,
-            ActiveEffectLifecycle timing = null)
+            ActiveEffectLifecycle timing = null,
+            AdjacentMoveAuthority board = null,
+            PendingMinionBattleChoice pendingMinionBattleChoice = null,
+            PendingLanePushRequest pendingLanePushRequest = null)
         {
             var authority = new RoundResolutionAuthority(
                 definitions,
@@ -609,7 +736,8 @@ namespace GuardsDigital.Core.Cards
                 tieBreakerState,
                 roundIndex,
                 cardActions,
-                timing: timing);
+                timing: timing,
+                board: board);
             if (turnIndex < 1 || turnIndex > TurnsPerRound || !Enum.IsDefined(typeof(RoundResolutionPhase), phase))
             {
                 throw new ArgumentException("Restored round cursor is invalid.");
@@ -628,6 +756,8 @@ namespace GuardsDigital.Core.Cards
             authority.CurrentEndOfRoundStage = currentEndOfRoundStage;
             authority.CurrentCommitmentAuthority = commitmentAuthority;
             authority.CurrentTurnAuthority = turnAuthority;
+            authority.PendingMinionBattleChoice = pendingMinionBattleChoice;
+            authority.PendingLanePushRequest = pendingLanePushRequest;
 
             var awaitingShape = phase == RoundResolutionPhase.AwaitingCommitments &&
                 commitmentAuthority != null && turnAuthority == null && !currentEndOfRoundStage.HasValue;
@@ -642,7 +772,81 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Restored round phase does not match its active authority or cursor.");
             }
 
+            var pendingMinionBattleShape = pendingMinionBattleChoice == null ||
+                (phase == RoundResolutionPhase.EndOfRound &&
+                    currentEndOfRoundStage == EndOfRoundStage.MinionBattle &&
+                    board != null);
+            if (!pendingMinionBattleShape)
+            {
+                throw new ArgumentException("Restored Minion Battle choice does not match the round cursor.");
+            }
+
+            if (pendingMinionBattleChoice != null)
+            {
+                var expectedPlan = MinionBattleRules.Plan(roundIndex, board, participants);
+                if (expectedPlan.PendingChoice == null)
+                {
+                    throw new ArgumentException("Restored Minion Battle choice is no longer required by authoritative state.");
+                }
+
+                PendingMinionBattleChoice expected;
+                try
+                {
+                    expected = expectedPlan.PendingChoice.WithSelected(
+                        pendingMinionBattleChoice.SelectedMinionIds);
+                }
+                catch (ArgumentException exception)
+                {
+                    throw new ArgumentException(
+                        "Restored Minion Battle selection violates authoritative Heavy-last ordering.",
+                        exception);
+                }
+
+                if (!MinionBattleChoicesMatch(expected, pendingMinionBattleChoice))
+                {
+                    throw new ArgumentException("Restored Minion Battle choice does not match authoritative candidates.");
+                }
+            }
+
+            if (pendingLanePushRequest != null &&
+                (phase != RoundResolutionPhase.EndOfRound ||
+                    !currentEndOfRoundStage.HasValue ||
+                    (int)currentEndOfRoundStage.Value < (int)EndOfRoundStage.RemoveTokensAndReturnMarkers ||
+                    pendingLanePushRequest.RoundIndex != roundIndex ||
+                    board == null ||
+                    participants.GetTeam(pendingLanePushRequest.WinningTeamId).Side !=
+                        pendingLanePushRequest.WinningSide ||
+                    participants.GetTeam(pendingLanePushRequest.LosingTeamId).Side !=
+                        pendingLanePushRequest.LosingSide ||
+                    !pendingLanePushRequest.CauseResolutionId.Equals(
+                        new EndOfRoundResolutionId($"round-{roundIndex}-minion-battle")) ||
+                    board.MapDefinition.Zones.Count(value =>
+                        value.Id.Equals(pendingLanePushRequest.BattleZoneId) && value.IsStartingBattleZone) != 1 ||
+                    board.Minions.Any(value =>
+                        value.TeamSide == pendingLanePushRequest.LosingSide &&
+                        board.MapDefinition.GetZoneForSpace(value.OccupiedSpace.SpaceId).Id.Equals(
+                            pendingLanePushRequest.BattleZoneId))))
+            {
+                throw new ArgumentException("Restored Lane-Push request does not match authoritative end-of-round state.");
+            }
+
             return authority;
+        }
+
+        private static bool MinionBattleChoicesMatch(
+            PendingMinionBattleChoice expected,
+            PendingMinionBattleChoice actual)
+        {
+            return expected.ResolutionId.Equals(actual.ResolutionId) &&
+                expected.ChoiceId.Equals(actual.ChoiceId) &&
+                expected.LosingTeamId.Equals(actual.LosingTeamId) &&
+                expected.ChoosingSide == actual.ChoosingSide &&
+                expected.BattleZoneId.Equals(actual.BattleZoneId) &&
+                expected.RequiredRemovalCount == actual.RequiredRemovalCount &&
+                expected.Candidates.SequenceEqual(actual.Candidates) &&
+                expected.SelectedMinionIds.SequenceEqual(actual.SelectedMinionIds) &&
+                expected.LegalSelectMinionIds.SequenceEqual(actual.LegalSelectMinionIds) &&
+                expected.LegalDeselectMinionIds.SequenceEqual(actual.LegalDeselectMinionIds);
         }
 
         public RoundResolutionResult TryCommitCard(HeroId heroId, CardInstanceId cardInstanceId)
@@ -715,6 +919,199 @@ namespace GuardsDigital.Core.Cards
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerDefenseResponse(command));
         }
 
+        public RoundResolutionResult TryAnswerMinionBattleChoice(MinionBattleChoiceCommand command)
+        {
+            if (command == null)
+            {
+                throw new ArgumentNullException(nameof(command));
+            }
+
+            if (Phase != RoundResolutionPhase.EndOfRound ||
+                CurrentEndOfRoundStage != EndOfRoundStage.MinionBattle ||
+                PendingMinionBattleChoice == null)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.NoPendingMinionBattleChoice);
+            }
+
+            var choice = PendingMinionBattleChoice;
+            if (!command.ResolutionId.Equals(choice.ResolutionId) ||
+                !command.ChoiceId.Equals(choice.ChoiceId))
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.StaleMinionBattleChoice);
+            }
+
+            if (command.ChoosingSide != choice.ChoosingSide)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.WrongMinionBattleChooser);
+            }
+
+            if (command.Kind == MinionBattleChoiceCommandKind.Select)
+            {
+                if (!choice.LegalSelectMinionIds.Contains(command.MinionId))
+                {
+                    return RoundResolutionResult.Reject(
+                        RoundResolutionRejectionReason.IneligibleMinionBattleSelection);
+                }
+
+                PendingMinionBattleChoice = choice.WithSelected(
+                    choice.SelectedMinionIds.Concat(new[] { command.MinionId }));
+                return RoundResolutionResult.Accept(new[]
+                {
+                    RoundResolutionEvent.MinionBattleSelectionChanged(
+                        RoundIndex,
+                        PendingMinionBattleChoice,
+                        command.MinionId,
+                        command.Kind)
+                });
+            }
+
+            if (command.Kind == MinionBattleChoiceCommandKind.Deselect)
+            {
+                if (!choice.LegalDeselectMinionIds.Contains(command.MinionId))
+                {
+                    return RoundResolutionResult.Reject(
+                        RoundResolutionRejectionReason.IneligibleMinionBattleSelection);
+                }
+
+                PendingMinionBattleChoice = choice.WithSelected(
+                    choice.SelectedMinionIds.Where(value => !value.Equals(command.MinionId)));
+                return RoundResolutionResult.Accept(new[]
+                {
+                    RoundResolutionEvent.MinionBattleSelectionChanged(
+                        RoundIndex,
+                        PendingMinionBattleChoice,
+                        command.MinionId,
+                        command.Kind)
+                });
+            }
+
+            if (!choice.CanConfirm)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.IncompleteMinionBattleSelection);
+            }
+
+            return CompleteMinionBattle(
+                choice.ResolutionId,
+                choice.BattleZoneId,
+                participants.Teams.Single(value => value.Side != choice.ChoosingSide),
+                participants.GetTeam(choice.LosingTeamId),
+                choice.SelectedMinionIds);
+        }
+
+        private RoundResolutionResult ResolveMinionBattle()
+        {
+            if (board == null)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.MissingRequiredEndOfRoundHandler);
+            }
+
+            var plan = MinionBattleRules.Plan(RoundIndex, board, participants);
+            if (plan.PendingChoice != null)
+            {
+                PendingMinionBattleChoice = plan.PendingChoice;
+                return RoundResolutionResult.Accept(new[]
+                {
+                    RoundResolutionEvent.MinionBattleChoiceRequested(RoundIndex, plan.PendingChoice),
+                    RoundResolutionEvent.EndOfRoundStageOutcome(
+                        RoundIndex,
+                        EndOfRoundStage.MinionBattle,
+                        EndOfRoundStageOutcomeKind.Paused)
+                });
+            }
+
+            if (!plan.LosingTeamId.IsDefined)
+            {
+                return CompleteMinionBattle(
+                    plan.ResolutionId,
+                    plan.BattleZoneId,
+                    null,
+                    null,
+                    Array.Empty<MinionId>());
+            }
+
+            return CompleteMinionBattle(
+                plan.ResolutionId,
+                plan.BattleZoneId,
+                participants.GetTeam(plan.WinningTeamId),
+                participants.GetTeam(plan.LosingTeamId),
+                plan.AutomaticRemovalIds);
+        }
+
+        private RoundResolutionResult CompleteMinionBattle(
+            EndOfRoundResolutionId resolutionId,
+            GuardsDigital.Core.Board.ZoneId battleZoneId,
+            Team winningTeam,
+            Team losingTeam,
+            IEnumerable<MinionId> removalIds)
+        {
+            var ids = (removalIds ?? throw new ArgumentNullException(nameof(removalIds))).ToArray();
+            if (ids.Distinct().Count() != ids.Length)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.IneligibleMinionBattleSelection);
+            }
+
+            var candidates = ids.Select(id => board.Minions.SingleOrDefault(value => value.MinionId.Equals(id)))
+                .ToArray();
+            if (candidates.Any(value => value == null) ||
+                candidates.Any(value =>
+                    losingTeam == null || value.TeamSide != losingTeam.Side ||
+                    !board.MapDefinition.GetZoneForSpace(value.OccupiedSpace.SpaceId).Id.Equals(battleZoneId)))
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.IneligibleMinionBattleSelection);
+            }
+
+            var ordered = candidates
+                .OrderBy(value => value.MinionType == StandardMinionType.Heavy ? 1 : 0)
+                .ThenBy(value => value.MinionId.Value, StringComparer.Ordinal)
+                .ToArray();
+            var events = new List<RoundResolutionEvent>();
+            foreach (var minion in ordered)
+            {
+                board.CommitValidatedMinionRemoval(minion.MinionId);
+                events.Add(RoundResolutionEvent.MinionBattleMinionRemoved(
+                    RoundIndex,
+                    resolutionId,
+                    losingTeam.Id,
+                    losingTeam.Side,
+                    minion.MinionId));
+            }
+
+            PendingMinionBattleChoice = null;
+            if (losingTeam != null && ordered.Length > 0 &&
+                !board.Minions.Any(value =>
+                    value.TeamSide == losingTeam.Side &&
+                    board.MapDefinition.GetZoneForSpace(value.OccupiedSpace.SpaceId).Id.Equals(battleZoneId)))
+            {
+                PendingLanePushRequest = new PendingLanePushRequest(
+                    new LanePushRequestId($"round-{RoundIndex}-minion-battle-lane-push"),
+                    RoundIndex,
+                    battleZoneId,
+                    winningTeam.Id,
+                    winningTeam.Side,
+                    losingTeam.Id,
+                    losingTeam.Side,
+                    resolutionId);
+                events.Add(RoundResolutionEvent.LanePushRequested(RoundIndex, PendingLanePushRequest));
+            }
+
+            endOfRoundOutcomes.Add(new EndOfRoundStageOutcome(
+                EndOfRoundStage.MinionBattle,
+                EndOfRoundStageOutcomeKind.Completed));
+            CurrentEndOfRoundStage = EndOfRoundStage.RemoveTokensAndReturnMarkers;
+            events.Add(RoundResolutionEvent.EndOfRoundStageOutcome(
+                RoundIndex,
+                EndOfRoundStage.MinionBattle,
+                EndOfRoundStageOutcomeKind.Completed));
+            return RoundResolutionResult.Accept(events);
+        }
+
         public RoundResolutionResult TryAdvanceEndOfRound()
         {
             if (Phase == RoundResolutionPhase.GameEnded)
@@ -729,6 +1126,25 @@ namespace GuardsDigital.Core.Cards
             }
 
             var stage = CurrentEndOfRoundStage.Value;
+            if (PendingMinionBattleChoice != null)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.IncompleteMinionBattleSelection);
+            }
+
+            if (stage == EndOfRoundStage.ResolveRequestedLanePush && PendingLanePushRequest != null)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.MissingRequiredEndOfRoundHandler);
+            }
+
+            if (stage == EndOfRoundStage.MinionBattle &&
+                endOfRoundCapabilities.IsAvailable(EndOfRoundStage.MinionBattle) &&
+                board != null)
+            {
+                return ResolveMinionBattle();
+            }
+
             EndOfRoundStageResolution resolution;
             if (!endOfRoundCapabilities.IsAvailable(stage))
             {

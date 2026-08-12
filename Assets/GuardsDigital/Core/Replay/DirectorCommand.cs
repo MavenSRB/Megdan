@@ -21,7 +21,10 @@ namespace GuardsDigital.Core.Replay
         ChooseDefenseCard = 8,
         DeclineDefense = 9,
         AdvanceEndOfRound = 10,
-        PerformFastTravel = 11
+        PerformFastTravel = 11,
+        SelectMinionBattleRemoval = 12,
+        DeselectMinionBattleRemoval = 13,
+        ConfirmMinionBattleRemovals = 14
     }
 
     public sealed class DirectorCommand : IEquatable<DirectorCommand>
@@ -35,7 +38,9 @@ namespace GuardsDigital.Core.Replay
             HexCoordinate coordinate = default,
             ActionResolutionId resolutionId = default,
             ActionResolutionStepId choiceId = default,
-            MinionId minionId = default)
+            MinionId minionId = default,
+            EndOfRoundResolutionId endOfRoundResolutionId = default,
+            EndOfRoundChoiceId endOfRoundChoiceId = default)
         {
             Kind = kind;
             HeroId = heroId;
@@ -46,6 +51,8 @@ namespace GuardsDigital.Core.Replay
             ResolutionId = resolutionId;
             ChoiceId = choiceId;
             MinionId = minionId;
+            EndOfRoundResolutionId = endOfRoundResolutionId;
+            EndOfRoundChoiceId = endOfRoundChoiceId;
         }
 
         public DirectorCommandKind Kind { get; }
@@ -57,6 +64,8 @@ namespace GuardsDigital.Core.Replay
         public ActionResolutionId ResolutionId { get; }
         public ActionResolutionStepId ChoiceId { get; }
         public MinionId MinionId { get; }
+        public EndOfRoundResolutionId EndOfRoundResolutionId { get; }
+        public EndOfRoundChoiceId EndOfRoundChoiceId { get; }
 
         public static DirectorCommand CommitCard(HeroId heroId, CardInstanceId cardInstanceId) =>
             new DirectorCommand(DirectorCommandKind.CommitCard, heroId, cardInstanceId);
@@ -158,13 +167,59 @@ namespace GuardsDigital.Core.Replay
         public static DirectorCommand AdvanceEndOfRound() =>
             new DirectorCommand(DirectorCommandKind.AdvanceEndOfRound);
 
+        public static DirectorCommand SelectMinionBattleRemoval(MinionBattleChoiceCommand invocation)
+        {
+            if (invocation == null || invocation.Kind != MinionBattleChoiceCommandKind.Select)
+            {
+                throw new ArgumentException("A select command requires the exact projected select invocation.", nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.SelectMinionBattleRemoval,
+                teamSide: invocation.ChoosingSide,
+                minionId: invocation.MinionId,
+                endOfRoundResolutionId: invocation.ResolutionId,
+                endOfRoundChoiceId: invocation.ChoiceId);
+        }
+
+        public static DirectorCommand DeselectMinionBattleRemoval(MinionBattleChoiceCommand invocation)
+        {
+            if (invocation == null || invocation.Kind != MinionBattleChoiceCommandKind.Deselect)
+            {
+                throw new ArgumentException("A deselect command requires the exact projected deselect invocation.", nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.DeselectMinionBattleRemoval,
+                teamSide: invocation.ChoosingSide,
+                minionId: invocation.MinionId,
+                endOfRoundResolutionId: invocation.ResolutionId,
+                endOfRoundChoiceId: invocation.ChoiceId);
+        }
+
+        public static DirectorCommand ConfirmMinionBattleRemovals(MinionBattleChoiceCommand invocation)
+        {
+            if (invocation == null || invocation.Kind != MinionBattleChoiceCommandKind.Confirm)
+            {
+                throw new ArgumentException("A confirm command requires the exact projected confirm invocation.", nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.ConfirmMinionBattleRemovals,
+                teamSide: invocation.ChoosingSide,
+                endOfRoundResolutionId: invocation.ResolutionId,
+                endOfRoundChoiceId: invocation.ChoiceId);
+        }
+
         public bool Equals(DirectorCommand other)
         {
             return other != null && Kind == other.Kind && HeroId.Equals(other.HeroId) &&
                 CardInstanceId.Equals(other.CardInstanceId) && TeamSide == other.TeamSide &&
                 ActionDefinitionId.Equals(other.ActionDefinitionId) && Coordinate.Equals(other.Coordinate) &&
                 ResolutionId.Equals(other.ResolutionId) && ChoiceId.Equals(other.ChoiceId) &&
-                MinionId.Equals(other.MinionId);
+                MinionId.Equals(other.MinionId) &&
+                EndOfRoundResolutionId.Equals(other.EndOfRoundResolutionId) &&
+                EndOfRoundChoiceId.Equals(other.EndOfRoundChoiceId);
         }
 
         public override bool Equals(object obj) => Equals(obj as DirectorCommand);
@@ -181,7 +236,9 @@ namespace GuardsDigital.Core.Replay
                 hash = (hash * 397) ^ Coordinate.GetHashCode();
                 hash = (hash * 397) ^ ResolutionId.GetHashCode();
                 hash = (hash * 397) ^ ChoiceId.GetHashCode();
-                return (hash * 397) ^ MinionId.GetHashCode();
+                hash = (hash * 397) ^ MinionId.GetHashCode();
+                hash = (hash * 397) ^ EndOfRoundResolutionId.GetHashCode();
+                return (hash * 397) ^ EndOfRoundChoiceId.GetHashCode();
             }
         }
 

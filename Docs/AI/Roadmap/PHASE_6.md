@@ -6,7 +6,7 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Phase 6 uses the complete Phase 4 map and the synthetic turn/round controller. Lane behavior is never validated on the reduced test grid.
 
-### [ ] 6.1 Resolve the end-of-round Minion Battle
+### [x] 6.1 Resolve the end-of-round Minion Battle
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -25,7 +25,11 @@ Acceptance checks:
 
 Non-goals: No player-facing removal-choice UI, optional decline of a mandatory removal, Lane-Push consumption, token/marker cleanup, generic all-rules choice framework, production art, animation, or audio.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61-resolve-the-end-of-round-minion-battle-completion-evidence).
+
 ### [ ] 6.1a Add player-facing Minion Battle removal-choice UI
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: When milestone 6.1's authority pauses for a Minion Battle removal choice, the configured passive presentation lets the authorized chooser select which eligible minions are removed and resumes the same authoritative end-of-round continuation.
 

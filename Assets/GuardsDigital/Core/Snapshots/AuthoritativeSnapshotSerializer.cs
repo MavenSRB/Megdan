@@ -64,7 +64,7 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
-        public const int CurrentSchemaVersion = 5;
+        public const int CurrentSchemaVersion = 6;
 
         public static string Serialize(RoundResolutionAuthority round, AdjacentMoveAuthority board)
         {
@@ -377,6 +377,8 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(round.CurrentEndOfRoundStage.HasValue);
             if (round.CurrentEndOfRoundStage.HasValue) writer.Write((int)round.CurrentEndOfRoundStage.Value);
             WriteOutcomes(writer, round.EndOfRoundOutcomes);
+            WritePendingMinionBattleChoice(writer, round.PendingMinionBattleChoice);
+            WritePendingLanePushRequest(writer, round.PendingLanePushRequest);
             WriteTiming(writer, round.Timing);
             writer.Write(round.CardActions != null);
             WriteDefeatRewards(writer, round.CardActions?.DefeatRewards);
@@ -410,6 +412,8 @@ namespace GuardsDigital.Core.Snapshots
             var hasStage = reader.ReadBoolean();
             var stage = hasStage ? (EndOfRoundStage?)(EndOfRoundStage)reader.ReadInt32() : null;
             var outcomes = ReadOutcomes(reader);
+            var pendingMinionBattleChoice = ReadPendingMinionBattleChoice(reader);
+            var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
             var timing = ReadTiming(reader);
             var hasRoundCardActions = reader.ReadBoolean();
             var roundDefeatRewards = ReadDefeatRewards(reader, participants);
@@ -445,7 +449,104 @@ namespace GuardsDigital.Core.Snapshots
                 commitment,
                 turn,
                 cardActions,
-                timing);
+                timing,
+                board,
+                pendingMinionBattleChoice,
+                pendingLanePushRequest);
+        }
+
+        private static void WritePendingMinionBattleChoice(
+            BinaryWriter writer,
+            PendingMinionBattleChoice choice)
+        {
+            writer.Write(choice != null);
+            if (choice == null)
+            {
+                return;
+            }
+
+            writer.Write(choice.ResolutionId.Value);
+            writer.Write(choice.ChoiceId.Value);
+            writer.Write(choice.LosingTeamId.Value);
+            writer.Write((int)choice.ChoosingSide);
+            writer.Write(choice.BattleZoneId.Value);
+            writer.Write(choice.RequiredRemovalCount);
+            writer.Write(choice.Candidates.Count);
+            foreach (var candidate in choice.Candidates)
+            {
+                writer.Write(candidate.MinionId.Value);
+                writer.Write((int)candidate.MinionType);
+            }
+
+            WriteStrings(writer, choice.SelectedMinionIds.Select(value => value.Value));
+        }
+
+        private static PendingMinionBattleChoice ReadPendingMinionBattleChoice(BinaryReader reader)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            var resolutionId = new EndOfRoundResolutionId(reader.ReadString());
+            var choiceId = new EndOfRoundChoiceId(reader.ReadString());
+            var losingTeamId = new TeamId(reader.ReadString());
+            var choosingSide = (TeamSide)reader.ReadInt32();
+            var battleZoneId = new ZoneId(reader.ReadString());
+            var requiredRemovalCount = reader.ReadInt32();
+            var candidates = ReadMany(reader, "Minion Battle candidates", () =>
+                new MinionBattleCandidate(
+                    new MinionId(reader.ReadString()),
+                    (StandardMinionType)reader.ReadInt32()));
+            var selected = ReadStrings(reader, "selected Minion Battle minions")
+                .Select(value => new MinionId(value));
+            return new PendingMinionBattleChoice(
+                resolutionId,
+                choiceId,
+                losingTeamId,
+                choosingSide,
+                battleZoneId,
+                requiredRemovalCount,
+                candidates,
+                selected);
+        }
+
+        private static void WritePendingLanePushRequest(
+            BinaryWriter writer,
+            PendingLanePushRequest request)
+        {
+            writer.Write(request != null);
+            if (request == null)
+            {
+                return;
+            }
+
+            writer.Write(request.RequestId.Value);
+            writer.Write(request.RoundIndex);
+            writer.Write(request.BattleZoneId.Value);
+            writer.Write(request.WinningTeamId.Value);
+            writer.Write((int)request.WinningSide);
+            writer.Write(request.LosingTeamId.Value);
+            writer.Write((int)request.LosingSide);
+            writer.Write(request.CauseResolutionId.Value);
+        }
+
+        private static PendingLanePushRequest ReadPendingLanePushRequest(BinaryReader reader)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            return new PendingLanePushRequest(
+                new LanePushRequestId(reader.ReadString()),
+                reader.ReadInt32(),
+                new ZoneId(reader.ReadString()),
+                new TeamId(reader.ReadString()),
+                (TeamSide)reader.ReadInt32(),
+                new TeamId(reader.ReadString()),
+                (TeamSide)reader.ReadInt32(),
+                new EndOfRoundResolutionId(reader.ReadString()));
         }
 
         private static void WriteCommitment(BinaryWriter writer, TurnCardCommitmentAuthority authority)

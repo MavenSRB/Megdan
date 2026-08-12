@@ -126,6 +126,47 @@ namespace GuardsDigital.Core.Diagnostics
                 case RoundResolutionEventKind.TimingProgressed:
                     AppendTiming(roundReference, ruleEvent.ActiveEffectEvent);
                     return;
+                case RoundResolutionEventKind.MinionBattleChoiceRequested:
+                    Add(
+                        "Round.MinionBattleChoiceRequested",
+                        JoinReferences(
+                            roundReference,
+                            $"resolution={ruleEvent.EndOfRoundResolutionId.Value}",
+                            $"choice={ruleEvent.EndOfRoundChoiceId.Value}",
+                            $"team={ruleEvent.TeamId.Value}"),
+                        $"side={ruleEvent.TeamSide}");
+                    return;
+                case RoundResolutionEventKind.MinionBattleSelectionChanged:
+                    Add(
+                        "Round.MinionBattleSelectionChanged",
+                        JoinReferences(
+                            roundReference,
+                            $"resolution={ruleEvent.EndOfRoundResolutionId.Value}",
+                            $"choice={ruleEvent.EndOfRoundChoiceId.Value}",
+                            $"team={ruleEvent.TeamId.Value}",
+                            $"minion={ruleEvent.MinionId.Value}"),
+                        $"side={ruleEvent.TeamSide};operation={ruleEvent.MinionBattleChoiceCommandKind}");
+                    return;
+                case RoundResolutionEventKind.MinionBattleMinionRemoved:
+                    Add(
+                        "Round.MinionBattleMinionRemoved",
+                        JoinReferences(
+                            roundReference,
+                            $"resolution={ruleEvent.EndOfRoundResolutionId.Value}",
+                            $"team={ruleEvent.TeamId.Value}",
+                            $"minion={ruleEvent.MinionId.Value}"),
+                        $"side={ruleEvent.TeamSide};stage={ruleEvent.EndOfRoundStage}");
+                    return;
+                case RoundResolutionEventKind.LanePushRequested:
+                    Add(
+                        "Round.LanePushRequested",
+                        JoinReferences(
+                            roundReference,
+                            $"request={ruleEvent.LanePushRequestId.Value}",
+                            $"resolution={ruleEvent.EndOfRoundResolutionId.Value}",
+                            $"losingTeam={ruleEvent.TeamId.Value}"),
+                        $"losingSide={ruleEvent.TeamSide};checkpoint={EndOfRoundStage.ResolveRequestedLanePush}");
+                    return;
                 default:
                     Add($"Round.{ruleEvent.Kind}", roundReference, "accepted boundary");
                     return;

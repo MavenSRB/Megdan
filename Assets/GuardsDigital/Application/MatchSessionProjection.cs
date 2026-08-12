@@ -229,7 +229,9 @@ namespace GuardsDigital.Application
             string diagnosticSnapshot,
             IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
             IEnumerable<QuickGameMinionSetupState> minions = null,
-            PendingDefensePreviewProjection pendingDefensePreview = null)
+            PendingDefensePreviewProjection pendingDefensePreview = null,
+            PendingMinionBattleChoice pendingMinionBattleChoice = null,
+            PendingLanePushRequest pendingLanePushRequest = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -266,6 +268,8 @@ namespace GuardsDigital.Application
             AvailableFastTravelOptions = Array.AsReadOnly((availableFastTravelOptions ??
                 Enumerable.Empty<FastTravelOptionProjection>()).ToArray());
             PendingDefensePreview = pendingDefensePreview;
+            PendingMinionBattleChoice = pendingMinionBattleChoice;
+            PendingLanePushRequest = pendingLanePushRequest;
         }
 
         public long Version { get; }
@@ -302,6 +306,8 @@ namespace GuardsDigital.Application
         public string DiagnosticSnapshot { get; }
         public IReadOnlyList<FastTravelOptionProjection> AvailableFastTravelOptions { get; }
         public PendingDefensePreviewProjection PendingDefensePreview { get; }
+        public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
+        public PendingLanePushRequest PendingLanePushRequest { get; }
 
         public bool IsTurnActive =>
             Phase == RoundResolutionPhase.ResolvingTurn && IsTurnStarted && !IsTurnEnded;

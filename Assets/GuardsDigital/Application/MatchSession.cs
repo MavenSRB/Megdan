@@ -188,6 +188,12 @@ namespace GuardsDigital.Application
                     return DispatchResult.From(round.TryAdvanceEndOfRound());
                 case DirectorCommandKind.PerformFastTravel:
                     return PerformFastTravel(command.ActionDefinitionId, command.Coordinate);
+                case DirectorCommandKind.SelectMinionBattleRemoval:
+                    return AnswerMinionBattle(command, MinionBattleChoiceCommandKind.Select);
+                case DirectorCommandKind.DeselectMinionBattleRemoval:
+                    return AnswerMinionBattle(command, MinionBattleChoiceCommandKind.Deselect);
+                case DirectorCommandKind.ConfirmMinionBattleRemovals:
+                    return AnswerMinionBattle(command, MinionBattleChoiceCommandKind.Confirm);
                 default:
                     return DispatchResult.Unavailable("The command kind is not supported by this match session.");
             }
@@ -331,6 +337,25 @@ namespace GuardsDigital.Application
             return DispatchResult.From(round.TryAnswerDefenseResponse(defenseCommand));
         }
 
+        private DispatchResult AnswerMinionBattle(
+            DirectorCommand command,
+            MinionBattleChoiceCommandKind kind)
+        {
+            var choice = round.PendingMinionBattleChoice;
+            if (choice == null)
+            {
+                return DispatchResult.Unavailable("No Minion Battle removal choice is pending.");
+            }
+
+            var invocation = new MinionBattleChoiceCommand(
+                kind,
+                command.EndOfRoundResolutionId,
+                command.EndOfRoundChoiceId,
+                command.TeamSide,
+                command.MinionId);
+            return DispatchResult.From(round.TryAnswerMinionBattleChoice(invocation));
+        }
+
         private MatchSessionOperationResult Reconstruct(
             IReadOnlyList<DirectorCommand> commands,
             string operation)
@@ -414,7 +439,8 @@ namespace GuardsDigital.Application
                 configuration.Participants,
                 initialState.Scenario.InitialTieBreakerState,
                 cardActions: cardActions,
-                timing: initialState.CreateTiming());
+                timing: initialState.CreateTiming(),
+                board: board);
             history.Clear();
             canRecordHistory = true;
             roundEvents.Clear();
@@ -562,7 +588,9 @@ namespace GuardsDigital.Application
                 diagnostic,
                 availableFastTravelOptions,
                 board.Minions,
-                defensePreview);
+                defensePreview,
+                round.PendingMinionBattleChoice,
+                round.PendingLanePushRequest);
         }
 
         private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn)

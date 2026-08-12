@@ -22,10 +22,11 @@ namespace GuardsDigital.Tests.EditMode
     {
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v5", "52243b52621ed20b8bf81ff63e4a9c040d55b60fffcfce35bad2d4e9a5440fc6"),
-            new CompatibilityFixture("active-turn-v5", "71b26928dfdae22af307018ba817e06e3845d13bbeb3d229dcfead2ddb685920"),
-            new CompatibilityFixture("pending-choice-v5", "c0becf955ae0c95f9d0fcfd349090b04bc050835d5b6d1fa86d7a36f3608c49f"),
-            new CompatibilityFixture("end-of-round-v5", "4ae23f60e4357bc7084dad168be5f2cef6fde750ba37b9172af2b45c88ac3b76")
+            new CompatibilityFixture("setup-v6", "e819df8cdd38b6530184ccebd29f02065a1204af3579f87d8e73464bd3fa325d"),
+            new CompatibilityFixture("active-turn-v6", "d043ae4e325161c179d8c77b0d1f40e0ee1b13a8513e277b3dba477138af695f"),
+            new CompatibilityFixture("pending-choice-v6", "48518f5843b5e9ce94edd727af80ecbdaad71d4844e25468810a25420566c070"),
+            new CompatibilityFixture("end-of-round-v6", "c477f3c12d085be9838ef6c0a04b484ebea2d6cc94d0c2b1872f0c5395d66128"),
+            new CompatibilityFixture("pending-minion-battle-v6", "9561c5173a522b98b7b2f9376802819f3c61f19018dbfd68319d8459c5d03593")
         };
 
         [Test]
@@ -81,7 +82,7 @@ namespace GuardsDigital.Tests.EditMode
                     new[] { session.Projection.SelectedMap }));
             Assert.That(priorSchemaException.Reason,
                 Is.EqualTo(SnapshotLoadRejectionReason.UnsupportedSchemaVersion),
-                "Schema v4 lacks milestone 5.8's durable timing/value discriminators and is explicitly rejected.");
+                "Schema v5 lacks milestone 6.1's durable Minion-Battle choice and Lane-Push request state and is explicitly rejected.");
 
             var changedDefinitions = session.Projection.Definitions.ToArray();
             var original = changedDefinitions[0];
@@ -105,16 +106,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v5", session.CaptureSnapshot());
+            values.Add("setup-v6", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v5", session.CaptureSnapshot());
+            values.Add("active-turn-v6", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v5", session.CaptureSnapshot());
+            values.Add("pending-choice-v6", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -130,8 +131,61 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v5", session.CaptureSnapshot());
+            values.Add("end-of-round-v6", session.CaptureSnapshot());
+
+            session = CreateSessionWithMinionImbalance();
+            AdvanceToEndOfRound(session);
+            Assert.That(session.Execute(DirectorCommand.AdvanceEndOfRound()).Accepted, Is.True);
+            var minionChoice = session.Projection.PendingMinionBattleChoice;
+            Assert.That(minionChoice, Is.Not.Null);
+            Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
+                minionChoice.SelectInvocations[0])).Accepted, Is.True);
+            values.Add("pending-minion-battle-v6", session.CaptureSnapshot());
             return values;
+        }
+
+        private static MatchSession CreateSessionWithMinionImbalance()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var fullSetup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var removed = fullSetup.Minions.First(value =>
+                value.TeamSide == TeamSide.Blue && value.MinionType == StandardMinionType.Ranged);
+            var setup = new QuickGameSetupState(
+                fullSetup.SelectedMap,
+                fullSetup.WaveCount,
+                fullSetup.TieBreakerState,
+                fullSetup.Teams,
+                fullSetup.Heroes,
+                fullSetup.Minions.Where(value => !value.MinionId.Equals(removed.MinionId)));
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        private static void AdvanceToEndOfRound(MatchSession session)
+        {
+            while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
+            {
+                if (session.Projection.Phase == RoundResolutionPhase.AwaitingCommitments)
+                {
+                    CommitUnequalCards(session);
+                    continue;
+                }
+
+                Assert.That(session.Execute(DirectorCommand.PerformHold(
+                    session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
+            }
         }
 
         private static void CommitUnequalCards(MatchSession session)

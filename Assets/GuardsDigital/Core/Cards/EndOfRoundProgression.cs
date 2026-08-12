@@ -54,6 +54,15 @@ namespace GuardsDigital.Core.Cards
             });
         }
 
+        public static EndOfRoundFixtureCapabilities ConfiguredMatch()
+        {
+            return new EndOfRoundFixtureCapabilities(new[]
+            {
+                EndOfRoundStage.MinionBattle,
+                EndOfRoundStage.RetrieveCardsAndCancelActiveEffects
+            });
+        }
+
         public bool IsAvailable(EndOfRoundStage stage)
         {
             return availableStages.Contains(stage);
