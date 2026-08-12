@@ -469,11 +469,20 @@ namespace GuardsDigital.Presentation.Interaction
                     !quickGameSetupState.SelectedMap.Equals(selectedMap.Reference) ||
                     !quickGameSetupState.TieBreakerState.Equals(placeholderConfiguration.TieBreakerState))
                 {
-                    quickGameSetupState = QuickGameSetupAuthority.Create(
+                    var configuredSetup = QuickGameSetupAuthority.Create(
                         QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                         placeholderConfiguration.Participants,
                         selectedMap,
                         placeholderConfiguration.TieBreakerState);
+                    // This unconfigured compatibility drill uses synthetic hero coordinates and must not
+                    // merge them with the configured scene's official minion occupancies.
+                    quickGameSetupState = new QuickGameSetupState(
+                        configuredSetup.SelectedMap,
+                        configuredSetup.WaveCount,
+                        configuredSetup.TieBreakerState,
+                        configuredSetup.Teams,
+                        configuredSetup.Heroes,
+                        System.Array.Empty<QuickGameMinionSetupState>());
                 }
             }
             else

@@ -56,7 +56,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(PrintedValueQuery.CalculatePrintedValue(
                     secondary,
                     hand.Definitions,
-                    PrintedValueChannel.Movement).Total, Is.InRange(1, 2));
+                    PrintedValueChannel.Movement).Total, Is.InRange(2, 3));
                 Assert.That(definition.ActionDefinitions.Single(action =>
                         action.Id.Equals(primary.ActionDefinitionId)).DefaultPolicy.CardTextApplication,
                     Is.EqualTo(CardTextApplicationPolicy.Applies));
@@ -399,7 +399,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void SecondaryOffer_UsesTypedValueOneAndProjectsOnlyLegalAdjacentDestinations()
+        public void SecondaryOffer_UsesTypedValueTwoAndProjectsOnlyLegalDestinations()
         {
             var objects = new List<GameObject>();
             try
@@ -412,14 +412,16 @@ namespace GuardsDigital.Tests.EditMode
                     new ActionDefinitionId("secondary-movement")), Is.True);
 
                 Assert.That(scenario.Controller.PendingCardChoice, Is.Not.Null);
-                Assert.That(scenario.Controller.PendingCardChoice.RemainingAllowance, Is.EqualTo(1));
-                Assert.That(scenario.Controller.LastCardMovementAllowance, Is.EqualTo(1));
+                Assert.That(scenario.Controller.PendingCardChoice.RemainingAllowance, Is.EqualTo(2));
+                Assert.That(scenario.Controller.LastCardMovementAllowance, Is.EqualTo(2));
                 Assert.That(scenario.Controller.LastCardInvocationContext,
                     Is.EqualTo(ActionInvocationContext.PrintedSecondary));
                 Assert.That(scenario.Controller.LastCardTextApplicationPolicy,
                     Is.EqualTo(CardTextApplicationPolicy.Suppressed));
                 Assert.That(scenario.Controller.PendingCardDestinations, Has.All.Matches<ReachableMovementDestination>(
-                    destination => destination.Cost == 1 && destination.Route.Count == 2));
+                    destination => destination.Cost >= 1 &&
+                                   destination.Cost <= 2 &&
+                                   destination.Route.Count == destination.Cost + 1));
                 Assert.That(scenario.Controller.HighlightedCoordinates,
                     Has.No.Member(new HexCoordinate(1, 0)));
                 Assert.That(scenario.Controller.HighlightedCoordinates,
@@ -452,7 +454,7 @@ namespace GuardsDigital.Tests.EditMode
                     selectedMap.PlayableCoordinates,
                     new[] { scenario.Hero.Occupancy },
                     scenario.Obstacles.Select(obstacle => obstacle.Occupancy),
-                    2);
+                    3);
 
                 Assert.That(scenario.Controller.PendingCardDestinations.Select(choice => choice.Destination),
                     Is.EquivalentTo(expectedChoices.Select(choice => choice.Destination)));
@@ -462,7 +464,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(scenario.Controller.CurrentHeroOccupancy.Coordinate, Is.EqualTo(firstDestination));
                 Assert.That(scenario.Controller.CardMovementRoute,
                     Is.EqualTo(new[] { new HexCoordinate(0, 0), firstDestination }));
-                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
+                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(2));
                 Assert.That(scenario.Controller.PendingCardChoice.Origin, Is.EqualTo(firstDestination));
                 Assert.That(scenario.Controller.IsCardResolutionPending, Is.True);
                 Assert.That(scenario.Controller.SelectedCardInstanceId, Is.EqualTo(selectedCard.Id));
@@ -472,7 +474,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(scenario.Controller.TryStopCardMovement(), Is.True);
 
                 Assert.That(scenario.Hero.Coordinate, Is.EqualTo(firstDestination));
-                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
+                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(2));
                 Assert.That(scenario.Controller.IsCardResolutionPending, Is.False);
                 Assert.That(scenario.Controller.SelectedCardInstanceId, Is.Null);
                 Assert.That(scenario.Controller.SelectedActionOffer, Is.Null);
@@ -508,7 +510,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(scenario.Hero.Coordinate, Is.EqualTo(origin));
                 Assert.That(scenario.Controller.CardMovementRoute, Is.EqualTo(new[] { origin }));
-                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
+                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(2));
                 Assert.That(scenario.Controller.IsCardResolutionPending, Is.False);
                 Assert.That(scenario.Controller.HighlightedCoordinates, Is.Empty);
             }
@@ -582,6 +584,9 @@ namespace GuardsDigital.Tests.EditMode
                     new HexCoordinate(-1, 0),
                     destination
                 }));
+                Assert.That(scenario.Controller.IsCardResolutionPending, Is.True);
+                Assert.That(scenario.Controller.RemainingMovementAllowance, Is.EqualTo(1));
+                Assert.That(scenario.Controller.TryStopCardMovement(), Is.True);
                 Assert.That(scenario.Controller.IsCardResolutionPending, Is.False);
             }
             finally
@@ -622,6 +627,8 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(scenario.Controller.PendingCardDestinations.Any(candidate =>
                     candidate.Destination.Equals(destination)), Is.True);
                 Assert.That(scenario.Controller.TrySubmitCardDestination(destination), Is.True);
+                Assert.That(scenario.Controller.IsCardResolutionPending, Is.True);
+                Assert.That(scenario.Controller.TryStopCardMovement(), Is.True);
 
                 Assert.That(redCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
                 Assert.That(blueCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));

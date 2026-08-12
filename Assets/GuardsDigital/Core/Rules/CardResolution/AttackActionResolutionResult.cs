@@ -13,7 +13,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackTargetChoice pendingTargetChoice,
             PendingDefenseResponseChoice pendingDefenseChoice,
             AttackResolutionOutcome outcome,
-            IEnumerable<CardActionResolutionEvent> events)
+            IEnumerable<CardActionResolutionEvent> events,
+            MinionDefeatResolution minionDefeat)
         {
             Accepted = accepted;
             RejectionReason = rejectionReason;
@@ -21,6 +22,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingTargetChoice = pendingTargetChoice;
             PendingDefenseChoice = pendingDefenseChoice;
             Outcome = outcome;
+            MinionDefeat = minionDefeat;
             Events = Array.AsReadOnly((events ?? throw new ArgumentNullException(nameof(events))).ToArray());
         }
 
@@ -30,6 +32,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public PendingAttackTargetChoice PendingTargetChoice { get; }
         public PendingDefenseResponseChoice PendingDefenseChoice { get; }
         public AttackResolutionOutcome Outcome { get; }
+        public MinionDefeatResolution MinionDefeat { get; }
         public IReadOnlyList<CardActionResolutionEvent> Events { get; }
 
         public static AttackActionResolutionResult Accept(
@@ -37,7 +40,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackTargetChoice pendingTargetChoice,
             PendingDefenseResponseChoice pendingDefenseChoice,
             IEnumerable<CardActionResolutionEvent> events,
-            AttackResolutionOutcome outcome = AttackResolutionOutcome.None)
+            AttackResolutionOutcome outcome = AttackResolutionOutcome.None,
+            MinionDefeatResolution minionDefeat = null)
         {
             return new AttackActionResolutionResult(
                 true,
@@ -46,7 +50,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingTargetChoice,
                 pendingDefenseChoice,
                 outcome,
-                events);
+                events,
+                minionDefeat);
         }
 
         public static AttackActionResolutionResult Reject(
@@ -67,7 +72,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingTargetChoice,
                 pendingDefenseChoice,
                 AttackResolutionOutcome.None,
-                Array.Empty<CardActionResolutionEvent>());
+                Array.Empty<CardActionResolutionEvent>(),
+                null);
         }
     }
 }

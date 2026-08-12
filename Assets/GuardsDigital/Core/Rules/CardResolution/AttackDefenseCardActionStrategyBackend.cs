@@ -4,6 +4,8 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -14,10 +16,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingAttackResolution pendingAttackResolution;
         private PendingAttackTargetChoice pendingAttackTargetChoice;
         private PendingDefenseResponseChoice pendingDefenseChoice;
+        private DefeatRewardAccounting defeatRewards;
 
         internal AttackDefenseCardActionStrategyBackend(AdjacentMoveAuthority adjacentMoveAuthority)
+            : this(adjacentMoveAuthority, null)
+        {
+        }
+
+        internal AttackDefenseCardActionStrategyBackend(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            DefeatRewardAccounting defeatRewards)
         {
             this.adjacentMoveAuthority = adjacentMoveAuthority ?? throw new ArgumentNullException(nameof(adjacentMoveAuthority));
+            this.defeatRewards = defeatRewards;
         }
 
         internal PendingAttackResolution PendingResolution => pendingAttackResolution;
@@ -27,6 +38,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal PendingDefenseResponseChoice PendingDefenseChoice => pendingDefenseChoice;
 
         internal bool HasPendingResolution => pendingAttackResolution != null;
+
+        internal DefeatRewardAccounting DefeatRewards => defeatRewards;
 
         AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.StartAttack(
             ActionResolutionId resolutionId,
@@ -144,7 +157,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer.InvocationContext,
                 new ActionResolutionStepId("attack-target"),
                 AttackResolutionPhase.ChooseTarget,
-                default,
+                default(AttackTarget),
                 null);
             pendingAttackTargetChoice = CreateAttackTargetChoice(
                 pendingAttackResolution,
@@ -153,7 +166,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 participants);
             pendingDefenseChoice = null;
 
-            if (pendingAttackTargetChoice.LegalTargetHeroIds.Count == 0)
+            if (pendingAttackTargetChoice.LegalTargets.Count == 0)
             {
                 pendingAttackResolution = null;
                 pendingAttackTargetChoice = null;
@@ -212,9 +225,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }
 
-            if (!authoritativeChoice.LegalTargetHeroIds.Contains(command.TargetHeroId))
+            if (!authoritativeChoice.LegalTargets.Contains(command.Target))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.TargetUnavailable);
+            }
+
+            if (command.Target.Kind == AttackTargetKind.Minion)
+            {
+                return ResolveMinionTarget(command.TargetMinionId, participants);
             }
 
             var attackValue = PrintedValueQuery.CalculatePrintedValue(
@@ -262,6 +280,60 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     CardActionResolutionEvent.AttackTotalCalculated(pendingAttackResolution),
                     CardActionResolutionEvent.DefenseResponseChoiceRequested(pendingAttackResolution)
                 });
+        }
+
+        private AttackActionResolutionResult ResolveMinionTarget(
+            MinionId targetMinionId,
+            MatchParticipants participants)
+        {
+            var target = adjacentMoveAuthority.Minions.Single(minion => minion.MinionId.Equals(targetMinionId));
+            var resolution = new PendingAttackResolution(
+                pendingAttackResolution.ResolutionId,
+                pendingAttackResolution.SourceCardInstanceId,
+                pendingAttackResolution.SourceDefinitionReference,
+                pendingAttackResolution.ActionDefinitionId,
+                pendingAttackResolution.ActorId,
+                pendingAttackResolution.InvocationContext,
+                new ActionResolutionStepId("minion-defeat"),
+                AttackResolutionPhase.ResolveMinionDefeat,
+                AttackTarget.Minion(targetMinionId),
+                null);
+            var coins = target.MinionType == StandardMinionType.Heavy ? 4 : 2;
+            var outcome = new DefeatOutcome(
+                new DefeatOutcomeId($"{resolution.ResolutionId.Value}:minion-defeat"),
+                new DefeatTargetId(targetMinionId.Value),
+                target.TeamId,
+                resolution.ActorId,
+                coins,
+                0);
+            if (defeatRewards == null) defeatRewards = new DefeatRewardAccounting(participants);
+            var reward = defeatRewards.Award(outcome);
+            if (!reward.Accepted)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
+            }
+
+            var removalAttempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
+            var removed = adjacentMoveAuthority.CommitValidatedMinionRemoval(targetMinionId);
+            var removalResult = new DefeatRemovalResult(
+                outcome.Id, outcome.TargetId, DefeatRemovalResultKind.Removed);
+            var defeat = new MinionDefeatResolution(
+                outcome, reward, removalAttempt, removalResult, removed);
+            var events = new List<CardActionResolutionEvent>
+            {
+                CardActionResolutionEvent.AttackStarted(resolution)
+            };
+            events.AddRange(defeat.Facts.Select(fact =>
+                CardActionResolutionEvent.MinionDefeatFact(resolution, defeat, fact)));
+            events.Add(CardActionResolutionEvent.AttackResolutionCompleted(
+                resolution, AttackResolutionOutcome.AttackSuccessful));
+
+            pendingAttackResolution = null;
+            pendingAttackTargetChoice = null;
+            pendingDefenseChoice = null;
+            return AttackActionResolutionResult.Accept(
+                null, null, null, events,
+                AttackResolutionOutcome.AttackSuccessful, defeat);
         }
 
 
@@ -313,7 +385,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 attackOffer.Value,
                 materializedDefinitions,
                 PrintedValueChannel.Attack);
-            if (!legalTargets.Contains(pendingAttackResolution.TargetHeroId) ||
+            if (!legalTargets.Contains(AttackTarget.Hero(pendingAttackResolution.TargetHeroId)) ||
                 !PrintedValuesMatch(pendingAttackResolution.AttackValue, expectedAttackValue))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
@@ -452,7 +524,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 PrintedValueChannel.Attack);
             if (!pendingAttackResolution.CurrentStepId.Equals(
                     new ActionResolutionStepId("attack-outcome-comparison")) ||
-                !legalTargets.Contains(pendingAttackResolution.TargetHeroId) ||
+                !legalTargets.Contains(AttackTarget.Hero(pendingAttackResolution.TargetHeroId)) ||
                 !PrintedValuesMatch(pendingAttackResolution.AttackValue, expectedAttackValue) ||
                 !CompletedDefenseMatches(
                     pendingAttackResolution,
@@ -494,7 +566,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingDefenseResponseChoice pendingDefenseChoice,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            DefeatRewardAccounting defeatRewards = null)
         {
             if (pendingResolution == null)
             {
@@ -508,7 +581,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority);
+            var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards);
             var offer = FindPendingAttackOffer(pendingResolution, materializedDefinitions, materializedInstances);
             if (!offer.HasValue)
             {
@@ -535,7 +608,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     offer.Value,
                     materializedDefinitions,
                     participants);
-                if (!legalTargets.Contains(pendingResolution.TargetHeroId))
+                if (!legalTargets.Contains(AttackTarget.Hero(pendingResolution.TargetHeroId)))
                 {
                     throw new ArgumentException("Pending Attack target is no longer legal.", nameof(pendingResolution));
                 }
@@ -596,11 +669,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution pendingResolution,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            DefeatRewardAccounting defeatRewards = null)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority);
+            var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards);
             var offer = FindPendingAttackOffer(pendingResolution, materializedDefinitions, materializedInstances);
             if (!offer.HasValue)
             {
@@ -640,7 +714,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 defenseChoice,
                 materializedDefinitions,
                 materializedInstances,
-                participants);
+                participants,
+                defeatRewards);
         }
 
         private AttackActionResolutionResult RejectAttack(CardActionResolutionRejectionReason reason)
@@ -688,7 +763,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     participants));
         }
 
-        private IReadOnlyList<HeroId> FindLegalAttackTargets(
+        private IReadOnlyList<AttackTarget> FindLegalAttackTargets(
             HeroId attackerId,
             ActionOffer offer,
             IReadOnlyList<CardDefinition> definitions,
@@ -700,12 +775,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     definitions,
                     PrintedValueChannel.Range).Total
                 : 1;
-            return AttackTargetQuery.FindLegalEnemyHeroes(
+            return AttackTargetQuery.FindLegalEnemyTargets(
                 attackerId,
                 offer.AttackRange,
                 rangeTotal,
                 participants,
-                adjacentMoveAuthority.Occupancies);
+                adjacentMoveAuthority);
         }
 
         private static ActionOffer? FindPendingAttackOffer(
@@ -746,7 +821,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return expected.ResolutionId.Equals(actual.ResolutionId) &&
                 expected.ChoiceId.Equals(actual.ChoiceId) &&
                 expected.ChooserId.Equals(actual.ChooserId) &&
-                expected.LegalTargetHeroIds.SequenceEqual(actual.LegalTargetHeroIds);
+                expected.LegalTargets.SequenceEqual(actual.LegalTargets);
         }
 
         private static bool DefenseChoicesMatch(

@@ -20,6 +20,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         AttackResolutionCompleted = 15,
         FastTravelActionStarted = 16,
         FastTravelCommitted = 17,
-        FastTravelActionCompleted = 18
+        FastTravelActionCompleted = 18,
+        MinionDefeatRecorded = 19,
+        MinionRewardAwarded = 20,
+        MinionRemovalAttempted = 21,
+        MinionRemovalCompleted = 22
     }
 }

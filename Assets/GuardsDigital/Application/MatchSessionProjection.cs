@@ -96,7 +96,8 @@ namespace GuardsDigital.Application
             IEnumerable<RuleEventLogEntry> diagnosticEvents,
             string authoritativeSnapshot,
             string diagnosticSnapshot,
-            IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null)
+            IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
+            IEnumerable<QuickGameMinionSetupState> minions = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -106,6 +107,7 @@ namespace GuardsDigital.Application
             Cards = Array.AsReadOnly((cards ?? throw new ArgumentNullException(nameof(cards))).Select(CloneCard).ToArray());
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
             Obstacles = Array.AsReadOnly((obstacles ?? throw new ArgumentNullException(nameof(obstacles))).ToArray());
+            Minions = Array.AsReadOnly((minions ?? setup.Minions).ToArray());
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
             Phase = phase;
@@ -141,6 +143,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<CardInstance> Cards { get; }
         public IReadOnlyList<HeroOccupancy> Heroes { get; }
         public IReadOnlyList<ObstacleOccupancy> Obstacles { get; }
+        public IReadOnlyList<QuickGameMinionSetupState> Minions { get; }
         public int RoundIndex { get; }
         public int TurnIndex { get; }
         public RoundResolutionPhase Phase { get; }

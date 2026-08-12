@@ -3,6 +3,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Replay
@@ -33,7 +34,8 @@ namespace GuardsDigital.Core.Replay
             ActionDefinitionId actionDefinitionId = default,
             HexCoordinate coordinate = default,
             ActionResolutionId resolutionId = default,
-            ActionResolutionStepId choiceId = default)
+            ActionResolutionStepId choiceId = default,
+            MinionId minionId = default)
         {
             Kind = kind;
             HeroId = heroId;
@@ -43,6 +45,7 @@ namespace GuardsDigital.Core.Replay
             Coordinate = coordinate;
             ResolutionId = resolutionId;
             ChoiceId = choiceId;
+            MinionId = minionId;
         }
 
         public DirectorCommandKind Kind { get; }
@@ -53,6 +56,7 @@ namespace GuardsDigital.Core.Replay
         public HexCoordinate Coordinate { get; }
         public ActionResolutionId ResolutionId { get; }
         public ActionResolutionStepId ChoiceId { get; }
+        public MinionId MinionId { get; }
 
         public static DirectorCommand CommitCard(HeroId heroId, CardInstanceId cardInstanceId) =>
             new DirectorCommand(DirectorCommandKind.CommitCard, heroId, cardInstanceId);
@@ -114,6 +118,19 @@ namespace GuardsDigital.Core.Replay
                 resolutionId: resolutionId,
                 choiceId: choiceId);
 
+        public static DirectorCommand ChooseAttackTarget(MinionId minionId) =>
+            new DirectorCommand(DirectorCommandKind.ChooseAttackTarget, minionId: minionId);
+
+        public static DirectorCommand ChooseAttackTarget(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            MinionId minionId) =>
+            new DirectorCommand(
+                DirectorCommandKind.ChooseAttackTarget,
+                resolutionId: resolutionId,
+                choiceId: choiceId,
+                minionId: minionId);
+
         public static DirectorCommand ChooseDefenseCard(CardInstanceId cardInstanceId) =>
             new DirectorCommand(DirectorCommandKind.ChooseDefenseCard, cardInstanceId: cardInstanceId);
 
@@ -146,7 +163,8 @@ namespace GuardsDigital.Core.Replay
             return other != null && Kind == other.Kind && HeroId.Equals(other.HeroId) &&
                 CardInstanceId.Equals(other.CardInstanceId) && TeamSide == other.TeamSide &&
                 ActionDefinitionId.Equals(other.ActionDefinitionId) && Coordinate.Equals(other.Coordinate) &&
-                ResolutionId.Equals(other.ResolutionId) && ChoiceId.Equals(other.ChoiceId);
+                ResolutionId.Equals(other.ResolutionId) && ChoiceId.Equals(other.ChoiceId) &&
+                MinionId.Equals(other.MinionId);
         }
 
         public override bool Equals(object obj) => Equals(obj as DirectorCommand);
@@ -162,7 +180,8 @@ namespace GuardsDigital.Core.Replay
                 hash = (hash * 397) ^ ActionDefinitionId.GetHashCode();
                 hash = (hash * 397) ^ Coordinate.GetHashCode();
                 hash = (hash * 397) ^ ResolutionId.GetHashCode();
-                return (hash * 397) ^ ChoiceId.GetHashCode();
+                hash = (hash * 397) ^ ChoiceId.GetHashCode();
+                return (hash * 397) ^ MinionId.GetHashCode();
             }
         }
 

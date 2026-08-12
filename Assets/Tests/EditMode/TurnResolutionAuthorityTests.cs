@@ -531,6 +531,33 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
         }
 
+        [Test]
+        public void SelectedActor_MinionAttackResolvesCardWithoutDefenseAndAdvances()
+        {
+            var fixture = CreateAttackFixture(false, minionTarget: true);
+            Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
+            var attackOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
+                    fixture.Configuration.CardDefinitions,
+                    fixture.Configuration.CardInstances,
+                    fixture.RedPlayed.OwnerId,
+                    fixture.RedPlayed.Id)
+                .Single(offer => offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
+            Assert.That(fixture.Authority.TryStartAttack(
+                new ActionResolutionId("turn-minion-attack"), attackOffer).Accepted, Is.True);
+            var target = fixture.Authority.PendingAttackTargetChoice;
+
+            var completed = fixture.Authority.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
+                target.ResolutionId, target.ChoiceId, new MinionId("blue-turn-minion")));
+
+            Assert.That(completed.Accepted, Is.True);
+            Assert.That(fixture.Authority.PendingDefenseChoice, Is.Null);
+            Assert.That(fixture.RedPlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(fixture.BluePlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
+            Assert.That(completed.Events.Where(value => value.Kind == TurnResolutionEventKind.AttackActionProgressed)
+                .Select(value => value.CardActionEvent.Kind), Does.Contain(CardActionResolutionEventKind.MinionDefeatRecorded));
+        }
+
         private static IEnumerable<InitiativeResolutionEventKind> EventKinds(
             TurnResolutionResult result)
         {
@@ -615,7 +642,8 @@ namespace GuardsDigital.Tests.EditMode
 
         private static AttackTestFixture CreateAttackFixture(
             bool tiedInitiative,
-            bool rangedAttack = false)
+            bool rangedAttack = false,
+            bool minionTarget = false)
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var redPlayed = configuration.RedHand.Instances[rangedAttack ? 2 : tiedInitiative ? 1 : 0];
@@ -625,6 +653,19 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(CardLifecycleAuthority.TryReveal(redPlayed), Is.True);
             Assert.That(CardLifecycleAuthority.TryPlayFacedown(bluePlayed), Is.True);
             Assert.That(CardLifecycleAuthority.TryReveal(bluePlayed), Is.True);
+            var minions = minionTarget
+                ? new[]
+                {
+                    new QuickGameMinionSetupState(
+                        new MinionId("blue-turn-minion"),
+                        configuration.Participants.GetTeamForHero(bluePlayed.OwnerId).Id,
+                        TeamSide.Blue,
+                        StandardMinionType.Melee,
+                        new ConfiguredSpawnPointReference(new MapId("synthetic-coordinate-board"), new SpawnPointId("blue-turn-spawn")),
+                        new ConfiguredSpaceReference(new MapId("synthetic-coordinate-board"), new SpaceId("q1_r0")),
+                        new HexCoordinate(1, 0))
+                }
+                : Array.Empty<QuickGameMinionSetupState>();
             var board = new AdjacentMoveAuthority(
                 new[]
                 {
@@ -636,8 +677,10 @@ namespace GuardsDigital.Tests.EditMode
                 new[]
                 {
                     new HeroOccupancy(redPlayed.OwnerId, new HexCoordinate(0, 0)),
-                    new HeroOccupancy(bluePlayed.OwnerId, new HexCoordinate(1, 0))
-                });
+                    new HeroOccupancy(bluePlayed.OwnerId, new HexCoordinate(minionTarget ? 2 : 1, 0))
+                },
+                Array.Empty<ObstacleOccupancy>(),
+                minions);
             return new AttackTestFixture(
                 configuration,
                 redPlayed,

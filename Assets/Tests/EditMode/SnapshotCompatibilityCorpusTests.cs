@@ -22,10 +22,10 @@ namespace GuardsDigital.Tests.EditMode
     {
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v3", "412f3cf12dd552ffa4c0adf5177238a62982dffc95d6fb96cde1b14a9d58fba4"),
-            new CompatibilityFixture("active-turn-v3", "149b0cd9e0d9b7d040f8110f9c42ded776ec61de5906e53a7350798b3c670aa3"),
-            new CompatibilityFixture("pending-choice-v3", "e730a85237c5c96aad8c6d20563608062d4ed4fe0c8c6dcf46dd02a09e1d5b97"),
-            new CompatibilityFixture("end-of-round-v3", "2fd4e64a4381246c984cbe06f8eb8d12b9e0b055b83d838bfb1a9d3e8d53ce4d")
+            new CompatibilityFixture("setup-v4", "73505d3a69dd94eed63ba3557b2ab49f95466f533574c946bb997bdaa4f2ff68"),
+            new CompatibilityFixture("active-turn-v4", "16f5253779a6535ab26d9a01b894efd7b00d516b8574c5f90de8f41ffc6ae2f4"),
+            new CompatibilityFixture("pending-choice-v4", "235228cd69ea702bb22ef50b5e57eceba767e8f7016400a7e2335378338c46b4"),
+            new CompatibilityFixture("end-of-round-v4", "1f87aa4a338134a8775b7186bffd60dca96eb6d885d7c6e132abf1b675c7e849")
         };
 
         [Test]
@@ -81,7 +81,7 @@ namespace GuardsDigital.Tests.EditMode
                     new[] { session.Projection.SelectedMap }));
             Assert.That(priorSchemaException.Reason,
                 Is.EqualTo(SnapshotLoadRejectionReason.UnsupportedSchemaVersion),
-                "Schema v2 has no timing state and is explicitly rejected instead of silently acquiring empty lifecycles.");
+                "Schema v3 has no mutable minion/reward state and is explicitly rejected instead of silently acquiring it.");
 
             var changedDefinitions = session.Projection.Definitions.ToArray();
             var original = changedDefinitions[0];
@@ -105,16 +105,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v3", session.CaptureSnapshot());
+            values.Add("setup-v4", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v3", session.CaptureSnapshot());
+            values.Add("active-turn-v4", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v3", session.CaptureSnapshot());
+            values.Add("pending-choice-v4", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -130,7 +130,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v3", session.CaptureSnapshot());
+            values.Add("end-of-round-v4", session.CaptureSnapshot());
             return values;
         }
 

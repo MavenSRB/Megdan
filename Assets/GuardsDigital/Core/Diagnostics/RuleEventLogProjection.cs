@@ -206,6 +206,8 @@ namespace GuardsDigital.Core.Diagnostics
                     ? $"replaces={ruleEvent.ReplacedActionDefinitionId.Value}"
                     : null,
                 ruleEvent.TargetHeroId.IsDefined ? $"target={ruleEvent.TargetHeroId.Value}" : null,
+                ruleEvent.TargetMinionId.IsDefined ? $"minion={ruleEvent.TargetMinionId.Value}" : null,
+                ruleEvent.DefeatOutcomeId.IsDefined ? $"defeat={ruleEvent.DefeatOutcomeId.Value}" : null,
                 ruleEvent.DefenseCardInstanceId.IsDefined ? $"defenseCard={ruleEvent.DefenseCardInstanceId.Value}" : null);
 
             var detailParts = new List<string> { $"step={ruleEvent.StepId.Value}" };
@@ -244,6 +246,11 @@ namespace GuardsDigital.Core.Diagnostics
             if (ruleEvent.AttackOutcome != AttackResolutionOutcome.None)
             {
                 detailParts.Add($"outcome={ruleEvent.AttackOutcome}");
+            }
+
+            if (ruleEvent.MinionDefeatFactKind != MinionDefeatFactKind.None)
+            {
+                detailParts.Add($"minionFact={ruleEvent.MinionDefeatFactKind}");
             }
 
             Add($"Action.{ruleEvent.Kind}", references, string.Join(";", detailParts));

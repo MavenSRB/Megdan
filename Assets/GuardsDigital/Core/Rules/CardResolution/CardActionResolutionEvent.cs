@@ -1,6 +1,9 @@
 using System;
+using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -22,7 +25,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int defenseTotal,
             AttackResolutionOutcome attackOutcome,
             AdjacentMoveEvent movementEvent,
-            FastTravelEvent fastTravelEvent)
+            FastTravelEvent fastTravelEvent,
+            MinionDefeatFactKind minionDefeatFactKind = MinionDefeatFactKind.None,
+            MinionId targetMinionId = default,
+            DefeatOutcomeId defeatOutcomeId = default)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -69,6 +75,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackOutcome = attackOutcome;
             MovementEvent = movementEvent;
             FastTravelEvent = fastTravelEvent;
+            MinionDefeatFactKind = minionDefeatFactKind;
+            TargetMinionId = targetMinionId;
+            DefeatOutcomeId = defeatOutcomeId;
         }
 
         public CardActionResolutionEventKind Kind { get; }
@@ -100,6 +109,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public AdjacentMoveEvent MovementEvent { get; }
 
         public FastTravelEvent FastTravelEvent { get; }
+        public MinionDefeatFactKind MinionDefeatFactKind { get; }
+        public MinionId TargetMinionId { get; }
+        public DefeatOutcomeId DefeatOutcomeId { get; }
 
         public static CardActionResolutionEvent MovementActionStarted(
             PendingCardActionResolution resolution)
@@ -231,6 +243,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 outcome);
         }
 
+        public static CardActionResolutionEvent MinionDefeatFact(
+            PendingAttackResolution resolution,
+            MinionDefeatResolution defeat,
+            MinionDefeatFactKind factKind)
+        {
+            if (resolution == null || defeat == null ||
+                !defeat.Facts.Contains(factKind) || !resolution.TargetMinionId.IsDefined)
+            {
+                throw new ArgumentException("Minion Defeat event requires one recorded typed fact.");
+            }
+
+            CardActionResolutionEventKind eventKind;
+            switch (factKind)
+            {
+                case MinionDefeatFactKind.DefeatRecorded: eventKind = CardActionResolutionEventKind.MinionDefeatRecorded; break;
+                case MinionDefeatFactKind.RewardAwarded: eventKind = CardActionResolutionEventKind.MinionRewardAwarded; break;
+                case MinionDefeatFactKind.RemovalAttempted: eventKind = CardActionResolutionEventKind.MinionRemovalAttempted; break;
+                case MinionDefeatFactKind.RemovalCompleted: eventKind = CardActionResolutionEventKind.MinionRemovalCompleted; break;
+                default: throw new ArgumentOutOfRangeException(nameof(factKind));
+            }
+
+            return new CardActionResolutionEvent(
+                eventKind, resolution.ResolutionId, resolution.SourceCardInstanceId,
+                resolution.ActionDefinitionId, default, resolution.ActorId, default,
+                resolution.CurrentStepId, 0, resolution.AttackTotal, default, 0,
+                AttackResolutionOutcome.AttackSuccessful, default, default,
+                factKind, resolution.TargetMinionId, defeat.Defeat.Id);
+        }
+
         public bool Equals(CardActionResolutionEvent other)
         {
             return Kind == other.Kind &&
@@ -247,7 +288,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 DefenseTotal == other.DefenseTotal &&
                 AttackOutcome == other.AttackOutcome &&
                 MovementEvent.Equals(other.MovementEvent) &&
-                FastTravelEvent.Equals(other.FastTravelEvent);
+                FastTravelEvent.Equals(other.FastTravelEvent) &&
+                MinionDefeatFactKind == other.MinionDefeatFactKind &&
+                TargetMinionId.Equals(other.TargetMinionId) &&
+                DefeatOutcomeId.Equals(other.DefeatOutcomeId);
         }
 
         public override bool Equals(object obj)
@@ -273,7 +317,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ DefenseTotal;
                 hashCode = (hashCode * 397) ^ (int)AttackOutcome;
                 hashCode = (hashCode * 397) ^ MovementEvent.GetHashCode();
-                return (hashCode * 397) ^ FastTravelEvent.GetHashCode();
+                hashCode = (hashCode * 397) ^ FastTravelEvent.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)MinionDefeatFactKind;
+                hashCode = (hashCode * 397) ^ TargetMinionId.GetHashCode();
+                return (hashCode * 397) ^ DefeatOutcomeId.GetHashCode();
             }
         }
 

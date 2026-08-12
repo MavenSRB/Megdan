@@ -166,7 +166,7 @@ Non-goals: Exact hero-Level and lowest-Tier reward amounts remain part of comple
 
 Historical evidence: [milestone 5.5 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-55-add-coin-awards-and-assist-ready-accounting-completion-evidence).
 
-### [ ] 5.6 Attack and defeat minions with test cards
+### [x] 5.6 Attack and defeat minions with test cards
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -180,7 +180,11 @@ Acceptance checks:
 - Melee/Ranged and Heavy rewards use verified general values.
 - Last-minion Lane-Push handling remains a separate Phase 6 integration.
 
+Historical evidence: [milestone 5.6 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-56-attack-and-defeat-minions-with-test-cards-completion-evidence).
+
 ### [ ] 5.7 Return displaced minions to the Battle Zone
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Acceptance checks:
 

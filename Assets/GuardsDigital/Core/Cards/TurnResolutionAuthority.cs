@@ -718,6 +718,11 @@ namespace GuardsDigital.Core.Cards
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
             var targetEvents = result.Events.Select(TurnResolutionEvent.FromAttackAction).ToList();
+            if (result.MinionDefeat != null)
+            {
+                return CompleteAttackAndAdvance(targetEvents);
+            }
+
             ApplyActionTiming(targetEvents);
             return TurnResolutionResult.Accept(targetEvents);
         }
@@ -754,6 +759,11 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.AddRange(outcome.Events.Select(TurnResolutionEvent.FromAttackAction));
+            return CompleteAttackAndAdvance(events);
+        }
+
+        private TurnResolutionResult CompleteAttackAndAdvance(List<TurnResolutionEvent> events)
+        {
             var card = instances.Single(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))

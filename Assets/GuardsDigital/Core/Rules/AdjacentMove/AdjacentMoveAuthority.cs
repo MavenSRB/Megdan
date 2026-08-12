@@ -15,7 +15,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly List<HeroOccupancy> occupancies;
         private readonly List<ObstacleOccupancy> obstacleOccupancies;
-        private readonly IReadOnlyList<QuickGameMinionSetupState> minions;
+        private readonly List<QuickGameMinionSetupState> minions;
 
         public AdjacentMoveAuthority(
             IEnumerable<HexCoordinate> boardCoordinates,
@@ -153,7 +153,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 }
             }
 
-            minions = Array.AsReadOnly(materializedMinions);
+            minions = new List<QuickGameMinionSetupState>(materializedMinions);
         }
 
         public IReadOnlyList<HeroOccupancy> Occupancies => occupancies.ToArray();
@@ -164,7 +164,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupancies.ToArray();
 
-        public IReadOnlyList<QuickGameMinionSetupState> Minions => minions;
+        public IReadOnlyList<QuickGameMinionSetupState> Minions => minions.ToArray();
 
         public IReadOnlyList<HexCoordinate> BoardCoordinates => boardCoordinates.ToArray();
 
@@ -235,6 +235,19 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 MapDefinition.GetZoneForSpace(destinationSpace.Id).Id);
             occupancies[heroIndex] = new HeroOccupancy(heroId, destination);
             return travelEvent;
+        }
+
+        internal QuickGameMinionSetupState CommitValidatedMinionRemoval(MinionId minionId)
+        {
+            var index = minions.FindIndex(minion => minion.MinionId.Equals(minionId));
+            if (index < 0)
+            {
+                throw new InvalidOperationException("A validated minion target is no longer on the board.");
+            }
+
+            var removed = minions[index];
+            minions.RemoveAt(index);
+            return removed;
         }
     }
 }

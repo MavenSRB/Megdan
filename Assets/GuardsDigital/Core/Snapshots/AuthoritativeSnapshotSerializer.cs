@@ -8,6 +8,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -63,7 +64,7 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
-        public const int CurrentSchemaVersion = 3;
+        public const int CurrentSchemaVersion = 4;
 
         public static string Serialize(RoundResolutionAuthority round, AdjacentMoveAuthority board)
         {
@@ -269,6 +270,12 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(occupancy.ObstacleId.Value);
                 WriteCoordinate(writer, occupancy.Coordinate);
             }
+
+            writer.Write(board.Minions.Count);
+            foreach (var minion in board.Minions.OrderBy(value => value.MinionId.Value, StringComparer.Ordinal))
+            {
+                writer.Write(minion.MinionId.Value);
+            }
         }
 
         private static AdjacentMoveAuthority ReadBoard(
@@ -295,7 +302,15 @@ namespace GuardsDigital.Core.Snapshots
             var obstacles = ReadMany(reader, "obstacle occupancies", () => new ObstacleOccupancy(
                 new ObstacleId(reader.ReadString()),
                 ReadCoordinate(reader)));
-            return new AdjacentMoveAuthority(mapDefinition, heroes, obstacles, minions);
+            var availableMinions = (minions ?? throw new ArgumentNullException(nameof(minions))).ToArray();
+            var remainingIds = ReadMany(reader, "remaining minions", () => new MinionId(reader.ReadString()));
+            if (remainingIds.Distinct().Count() != remainingIds.Length ||
+                remainingIds.Any(id => availableMinions.Count(minion => minion.MinionId.Equals(id)) != 1))
+            {
+                throw Malformed("Snapshot remaining-minion identities do not match configured minion content.");
+            }
+            var remaining = availableMinions.Where(minion => remainingIds.Contains(minion.MinionId)).ToArray();
+            return new AdjacentMoveAuthority(mapDefinition, heroes, obstacles, remaining);
         }
 
         private static void WriteCards(BinaryWriter writer, IReadOnlyList<CardInstance> cards)
@@ -363,6 +378,8 @@ namespace GuardsDigital.Core.Snapshots
             if (round.CurrentEndOfRoundStage.HasValue) writer.Write((int)round.CurrentEndOfRoundStage.Value);
             WriteOutcomes(writer, round.EndOfRoundOutcomes);
             WriteTiming(writer, round.Timing);
+            writer.Write(round.CardActions != null);
+            WriteDefeatRewards(writer, round.CardActions?.DefeatRewards);
 
             writer.Write(round.CurrentCommitmentAuthority != null);
             if (round.CurrentCommitmentAuthority != null) WriteCommitment(writer, round.CurrentCommitmentAuthority);
@@ -394,6 +411,8 @@ namespace GuardsDigital.Core.Snapshots
             var stage = hasStage ? (EndOfRoundStage?)(EndOfRoundStage)reader.ReadInt32() : null;
             var outcomes = ReadOutcomes(reader);
             var timing = ReadTiming(reader);
+            var hasRoundCardActions = reader.ReadBoolean();
+            var roundDefeatRewards = ReadDefeatRewards(reader, participants);
 
             TurnCardCommitmentAuthority commitment = null;
             if (reader.ReadBoolean()) commitment = ReadCommitment(reader, cards, participants);
@@ -404,6 +423,11 @@ namespace GuardsDigital.Core.Snapshots
             {
                 turn = ReadTurn(reader, definitions, cards, participants, board, timing,
                     roundIndex, turnIndex, out cardActions);
+            }
+            else if (hasRoundCardActions)
+            {
+                cardActions = CardActionResolutionAuthority.RestoreWithoutPendingAction(
+                    board, roundDefeatRewards);
             }
 
             return RoundResolutionAuthority.Restore(
@@ -641,6 +665,7 @@ namespace GuardsDigital.Core.Snapshots
         {
             var kind = authority == null ? -1 : authority.PendingResolution != null ? 1 : authority.PendingAttackResolution != null ? 2 : 0;
             writer.Write(kind);
+            WriteDefeatRewards(writer, authority?.DefeatRewards);
             if (kind == 1) WriteMovementResolution(writer, authority.PendingResolution);
             if (kind == 2) WriteAttackResolution(writer, authority.PendingAttackResolution);
         }
@@ -653,18 +678,19 @@ namespace GuardsDigital.Core.Snapshots
             MatchParticipants participants)
         {
             var kind = reader.ReadInt32();
+            var defeatRewards = ReadDefeatRewards(reader, participants);
             if (kind == -1) return null;
-            if (kind == 0) return new CardActionResolutionAuthority(board);
+            if (kind == 0) return CardActionResolutionAuthority.RestoreWithoutPendingAction(board, defeatRewards);
             if (kind == 1)
             {
                 var pending = ReadMovementResolution(reader);
-                return CardActionResolutionAuthority.Restore(board, pending);
+                return CardActionResolutionAuthority.Restore(board, pending, defeatRewards);
             }
             if (kind == 2)
             {
                 var pending = ReadAttackResolution(reader);
                 return CardActionResolutionAuthority.RestoreAttack(
-                    board, pending, definitions, cards, participants);
+                    board, pending, definitions, cards, participants, defeatRewards);
             }
             throw Malformed("Unknown pending card-action kind.");
         }
@@ -703,8 +729,9 @@ namespace GuardsDigital.Core.Snapshots
                 pending.SourceDefinitionReference, pending.ActionDefinitionId, pending.ActorId,
                 pending.InvocationContext, pending.CurrentStepId);
             writer.Write((int)pending.Phase);
-            writer.Write(pending.TargetHeroId.IsDefined);
-            if (pending.TargetHeroId.IsDefined) writer.Write(pending.TargetHeroId.Value);
+            writer.Write((int)pending.Target.Kind);
+            if (pending.Target.Kind == AttackTargetKind.Hero) writer.Write(pending.TargetHeroId.Value);
+            if (pending.Target.Kind == AttackTargetKind.Minion) writer.Write(pending.TargetMinionId.Value);
             WritePrintedValue(writer, pending.AttackValue);
             writer.Write(pending.DefenseOffer.HasValue);
             if (pending.DefenseOffer.HasValue) WriteActionOffer(writer, pending.DefenseOffer.Value);
@@ -715,7 +742,12 @@ namespace GuardsDigital.Core.Snapshots
         {
             var common = ReadCommonResolution(reader);
             var phase = (AttackResolutionPhase)reader.ReadInt32();
-            var target = reader.ReadBoolean() ? new HeroId(reader.ReadString()) : default;
+            var targetKind = (AttackTargetKind)reader.ReadInt32();
+            var target = targetKind == AttackTargetKind.Hero
+                ? AttackTarget.Hero(new HeroId(reader.ReadString()))
+                : targetKind == AttackTargetKind.Minion
+                    ? AttackTarget.Minion(new MinionId(reader.ReadString()))
+                    : default;
             var attackValue = ReadPrintedValue(reader);
             var defenseOffer = reader.ReadBoolean() ? (ActionOffer?)ReadActionOffer(reader) : null;
             var defenseValue = ReadPrintedValue(reader);
@@ -723,6 +755,32 @@ namespace GuardsDigital.Core.Snapshots
                 common.ResolutionId, common.CardId, common.DefinitionReference, common.ActionId,
                 common.ActorId, common.InvocationContext, common.StepId, phase, target,
                 attackValue, defenseOffer, defenseValue);
+        }
+
+        private static void WriteDefeatRewards(BinaryWriter writer, DefeatRewardAccounting rewards)
+        {
+            writer.Write(rewards != null);
+            if (rewards == null) return;
+            writer.Write(rewards.CoinBalances.Count);
+            foreach (var balance in rewards.CoinBalances)
+            {
+                writer.Write(balance.Key.Value);
+                writer.Write(balance.Value);
+            }
+            writer.Write(rewards.AwardedOutcomeIds.Count);
+            foreach (var outcomeId in rewards.AwardedOutcomeIds) writer.Write(outcomeId.Value);
+        }
+
+        private static DefeatRewardAccounting ReadDefeatRewards(
+            BinaryReader reader,
+            MatchParticipants participants)
+        {
+            if (!reader.ReadBoolean()) return null;
+            var balances = ReadMany(reader, "hero coin balances", () =>
+                new KeyValuePair<HeroId, int>(new HeroId(reader.ReadString()), reader.ReadInt32()));
+            var outcomes = ReadMany(reader, "awarded Defeat outcomes", () =>
+                new DefeatOutcomeId(reader.ReadString()));
+            return DefeatRewardAccounting.Restore(participants, balances, outcomes);
         }
 
         private static void WriteCommonResolution(BinaryWriter writer, ActionResolutionId resolutionId,

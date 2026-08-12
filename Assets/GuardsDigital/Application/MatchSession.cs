@@ -273,7 +273,7 @@ namespace GuardsDigital.Application
                 replacementOffer.Value,
                 replacedMovementActionDefinitionId,
                 destination,
-                initialState.Setup.Minions));
+                board.Minions));
         }
 
         private DispatchResult AnswerAttackTarget(DirectorCommand command)
@@ -288,6 +288,12 @@ namespace GuardsDigital.Application
                 (command.ChoiceId.IsDefined && !command.ChoiceId.Equals(choice.ChoiceId)))
             {
                 return DispatchResult.Unavailable("The Attack target choice identity is stale or does not match the pending choice.");
+            }
+
+            if (command.MinionId.IsDefined)
+            {
+                return DispatchResult.From(round.TryAnswerAttackTarget(
+                    new AttackTargetChoiceCommand(choice.ResolutionId, choice.ChoiceId, command.MinionId)));
             }
 
             return DispatchResult.From(round.TryAnswerAttackTarget(
@@ -497,7 +503,7 @@ namespace GuardsDigital.Application
                             configuration.CardInstances,
                             board,
                             configuration.Participants,
-                            initialState.Setup.Minions);
+                            board.Minions);
                         return destinations.Count == 0
                             ? null
                             : new FastTravelOptionProjection(
@@ -542,7 +548,8 @@ namespace GuardsDigital.Application
                 eventLog.Entries,
                 authoritative,
                 diagnostic,
-                availableFastTravelOptions);
+                availableFastTravelOptions,
+                board.Minions);
         }
 
         private MatchCommandResult Rejected(

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -11,7 +12,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         None = 0,
         ChooseTarget = 1,
         DefenseResponse = 2,
-        CompareOutcome = 3
+        CompareOutcome = 3,
+        ResolveMinionDefeat = 4
     }
 
     public enum AttackResolutionOutcome
@@ -19,6 +21,51 @@ namespace GuardsDigital.Core.Rules.CardResolution
         None = 0,
         SuccessfullyDefended = 1,
         AttackSuccessful = 2
+    }
+
+    public enum AttackTargetKind
+    {
+        None = 0,
+        Hero = 1,
+        Minion = 2
+    }
+
+    public readonly struct AttackTarget : IEquatable<AttackTarget>
+    {
+        private AttackTarget(AttackTargetKind kind, HeroId heroId, MinionId minionId)
+        {
+            Kind = kind;
+            HeroId = heroId;
+            MinionId = minionId;
+        }
+
+        public AttackTargetKind Kind { get; }
+        public HeroId HeroId { get; }
+        public MinionId MinionId { get; }
+        public bool IsDefined => Kind == AttackTargetKind.Hero ? HeroId.IsDefined :
+            Kind == AttackTargetKind.Minion && MinionId.IsDefined;
+
+        public static AttackTarget Hero(HeroId heroId)
+        {
+            if (!heroId.IsDefined) throw new ArgumentException("Attack hero target requires a defined ID.", nameof(heroId));
+            return new AttackTarget(AttackTargetKind.Hero, heroId, default);
+        }
+
+        public static AttackTarget Minion(MinionId minionId)
+        {
+            if (!minionId.IsDefined) throw new ArgumentException("Attack minion target requires a defined ID.", nameof(minionId));
+            return new AttackTarget(AttackTargetKind.Minion, default, minionId);
+        }
+
+        public bool Equals(AttackTarget other) =>
+            Kind == other.Kind && HeroId.Equals(other.HeroId) && MinionId.Equals(other.MinionId);
+
+        public override bool Equals(object obj) => obj is AttackTarget other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked { return (((int)Kind * 397) ^ HeroId.GetHashCode()) * 397 ^ MinionId.GetHashCode(); }
+        }
     }
 
     public sealed class PendingAttackResolution
@@ -33,6 +80,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionStepId currentStepId,
             AttackResolutionPhase phase,
             HeroId targetHeroId,
+            ValueResult attackValue,
+            ActionOffer? defenseOffer = null,
+            ValueResult defenseValue = null)
+            : this(resolutionId, sourceCardInstanceId, sourceDefinitionReference, actionDefinitionId,
+                actorId, invocationContext, currentStepId, phase,
+                targetHeroId.IsDefined ? AttackTarget.Hero(targetHeroId) : default,
+                attackValue, defenseOffer, defenseValue)
+        {
+        }
+
+        public PendingAttackResolution(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            ActionInvocationContext invocationContext,
+            ActionResolutionStepId currentStepId,
+            AttackResolutionPhase phase,
+            AttackTarget target,
             ValueResult attackValue,
             ActionOffer? defenseOffer = null,
             ValueResult defenseValue = null)
@@ -55,14 +122,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (phase == AttackResolutionPhase.ChooseTarget)
             {
-                if (targetHeroId.IsDefined || attackValue != null || defenseOffer.HasValue || defenseValue != null)
+                if (target.IsDefined || attackValue != null || defenseOffer.HasValue || defenseValue != null)
                 {
                     throw new ArgumentException("Target-selection state cannot already contain a target or Attack Total.");
                 }
             }
             else if (phase == AttackResolutionPhase.DefenseResponse)
             {
-                if (!targetHeroId.IsDefined || attackValue == null || attackValue.Channel != PrintedValueChannel.Attack ||
+                if (target.Kind != AttackTargetKind.Hero || attackValue == null || attackValue.Channel != PrintedValueChannel.Attack ||
                     defenseOffer.HasValue || defenseValue != null)
                 {
                     throw new ArgumentException("Defense-response state requires a target and typed Attack Total.");
@@ -70,15 +137,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
             else if (phase == AttackResolutionPhase.CompareOutcome)
             {
-                if (!targetHeroId.IsDefined || attackValue == null || attackValue.Channel != PrintedValueChannel.Attack ||
+                if (target.Kind != AttackTargetKind.Hero || attackValue == null || attackValue.Channel != PrintedValueChannel.Attack ||
                     defenseOffer.HasValue != (defenseValue != null) ||
                     (defenseValue != null && defenseValue.Channel != PrintedValueChannel.Defense) ||
                     (defenseOffer.HasValue &&
                         (!defenseOffer.Value.IsAvailable ||
-                         !defenseOffer.Value.ActorId.Equals(targetHeroId) ||
+                         !defenseOffer.Value.ActorId.Equals(target.HeroId) ||
                          defenseOffer.Value.InvocationContext != ActionInvocationContext.Reaction)))
                 {
                     throw new ArgumentException("Outcome-comparison state requires a target, typed Attack Total, and an optional typed Defense response.");
+                }
+            }
+            else if (phase == AttackResolutionPhase.ResolveMinionDefeat)
+            {
+                if (target.Kind != AttackTargetKind.Minion || attackValue != null ||
+                    defenseOffer.HasValue || defenseValue != null)
+                {
+                    throw new ArgumentException("Minion Defeat state requires a minion target and no hero-only Attack/Defense totals.");
                 }
             }
             else
@@ -94,7 +169,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             InvocationContext = invocationContext;
             CurrentStepId = currentStepId;
             Phase = phase;
-            TargetHeroId = targetHeroId;
+            Target = target;
             AttackValue = attackValue;
             DefenseOffer = defenseOffer;
             DefenseValue = defenseValue;
@@ -108,7 +183,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public ActionInvocationContext InvocationContext { get; }
         public ActionResolutionStepId CurrentStepId { get; }
         public AttackResolutionPhase Phase { get; }
-        public HeroId TargetHeroId { get; }
+        public AttackTarget Target { get; }
+        public HeroId TargetHeroId => Target.HeroId;
+        public MinionId TargetMinionId => Target.MinionId;
         public ValueResult AttackValue { get; }
         public int AttackTotal => AttackValue?.Total ?? 0;
         public ActionOffer? DefenseOffer { get; }
@@ -124,33 +201,52 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionStepId choiceId,
             HeroId chooserId,
             IEnumerable<HeroId> legalTargetHeroIds)
+            : this(resolutionId, choiceId, chooserId,
+                (legalTargetHeroIds ?? throw new ArgumentNullException(nameof(legalTargetHeroIds)))
+                    .Select(AttackTarget.Hero))
+        {
+        }
+
+        public PendingAttackTargetChoice(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            HeroId chooserId,
+            IEnumerable<AttackTarget> legalTargets)
         {
             if (!resolutionId.IsDefined || !choiceId.IsDefined || !chooserId.IsDefined)
             {
                 throw new ArgumentException("Pending Attack target choice requires defined stable identities.");
             }
 
-            if (legalTargetHeroIds == null)
+            if (legalTargets == null)
             {
-                throw new ArgumentNullException(nameof(legalTargetHeroIds));
+                throw new ArgumentNullException(nameof(legalTargets));
             }
 
-            var targetIds = legalTargetHeroIds.ToArray();
-            if (targetIds.Any(targetId => !targetId.IsDefined) || targetIds.Distinct().Count() != targetIds.Length)
+            var targets = legalTargets.ToArray();
+            if (targets.Any(target => !target.IsDefined) || targets.Distinct().Count() != targets.Length)
             {
-                throw new ArgumentException("Pending Attack target choice requires unique defined targets.", nameof(legalTargetHeroIds));
+                throw new ArgumentException("Pending Attack target choice requires unique defined targets.", nameof(legalTargets));
             }
 
             ResolutionId = resolutionId;
             ChoiceId = choiceId;
             ChooserId = chooserId;
-            LegalTargetHeroIds = Array.AsReadOnly(targetIds);
+            LegalTargets = Array.AsReadOnly(targets);
+            LegalTargetHeroIds = Array.AsReadOnly(targets
+                .Where(target => target.Kind == AttackTargetKind.Hero)
+                .Select(target => target.HeroId).ToArray());
+            LegalTargetMinionIds = Array.AsReadOnly(targets
+                .Where(target => target.Kind == AttackTargetKind.Minion)
+                .Select(target => target.MinionId).ToArray());
         }
 
         public ActionResolutionId ResolutionId { get; }
         public ActionResolutionStepId ChoiceId { get; }
         public HeroId ChooserId { get; }
         public IReadOnlyList<HeroId> LegalTargetHeroIds { get; }
+        public IReadOnlyList<MinionId> LegalTargetMinionIds { get; }
+        public IReadOnlyList<AttackTarget> LegalTargets { get; }
     }
 
     public sealed class PendingDefenseResponseChoice
@@ -212,20 +308,38 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionId resolutionId,
             ActionResolutionStepId choiceId,
             HeroId targetHeroId)
+            : this(resolutionId, choiceId, AttackTarget.Hero(targetHeroId))
         {
-            if (!resolutionId.IsDefined || !choiceId.IsDefined || !targetHeroId.IsDefined)
+        }
+
+        public AttackTargetChoiceCommand(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            MinionId targetMinionId)
+            : this(resolutionId, choiceId, AttackTarget.Minion(targetMinionId))
+        {
+        }
+
+        public AttackTargetChoiceCommand(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            AttackTarget target)
+        {
+            if (!resolutionId.IsDefined || !choiceId.IsDefined || !target.IsDefined)
             {
                 throw new ArgumentException("Attack target command requires defined stable identities.");
             }
 
             ResolutionId = resolutionId;
             ChoiceId = choiceId;
-            TargetHeroId = targetHeroId;
+            Target = target;
         }
 
         public ActionResolutionId ResolutionId { get; }
         public ActionResolutionStepId ChoiceId { get; }
-        public HeroId TargetHeroId { get; }
+        public AttackTarget Target { get; }
+        public HeroId TargetHeroId => Target.HeroId;
+        public MinionId TargetMinionId => Target.MinionId;
     }
 
     public enum DefenseResponseChoiceKind

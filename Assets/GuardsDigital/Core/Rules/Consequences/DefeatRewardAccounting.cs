@@ -128,6 +128,23 @@ namespace GuardsDigital.Core.Rules.Consequences
         RemovalPrevented = 2
     }
 
+    public readonly struct DefeatRemovalAttempt
+    {
+        public DefeatRemovalAttempt(DefeatOutcomeId defeatOutcomeId, DefeatTargetId targetId)
+        {
+            if (!defeatOutcomeId.IsDefined || !targetId.IsDefined)
+            {
+                throw new ArgumentException("Removal attempt requires a typed Defeat outcome and target.");
+            }
+
+            DefeatOutcomeId = defeatOutcomeId;
+            TargetId = targetId;
+        }
+
+        public DefeatOutcomeId DefeatOutcomeId { get; }
+        public DefeatTargetId TargetId { get; }
+    }
+
     public readonly struct DefeatRemovalResult
     {
         public DefeatRemovalResult(
@@ -290,11 +307,53 @@ namespace GuardsDigital.Core.Rules.Consequences
         private readonly HashSet<DefeatOutcomeId> awardedOutcomeIds;
 
         public DefeatRewardAccounting(MatchParticipants participants)
+            : this(participants, null, null)
+        {
+        }
+
+        private DefeatRewardAccounting(
+            MatchParticipants participants,
+            IEnumerable<KeyValuePair<HeroId, int>> restoredBalances,
+            IEnumerable<DefeatOutcomeId> restoredOutcomeIds)
         {
             this.participants = participants ?? throw new ArgumentNullException(nameof(participants));
             coinBalances = participants.Heroes.ToDictionary(hero => hero.Id, hero => 0);
             awardedOutcomeIds = new HashSet<DefeatOutcomeId>();
+
+            if (restoredBalances != null)
+            {
+                var balances = restoredBalances.ToArray();
+                if (balances.Length != coinBalances.Count || balances.Any(value => value.Value < 0) ||
+                    balances.Select(value => value.Key).Distinct().Count() != balances.Length ||
+                    balances.Any(value => !coinBalances.ContainsKey(value.Key)))
+                {
+                    throw new ArgumentException("Restored coin balances must cover every participant hero exactly once.", nameof(restoredBalances));
+                }
+
+                foreach (var balance in balances) coinBalances[balance.Key] = balance.Value;
+            }
+
+            if (restoredOutcomeIds != null)
+            {
+                foreach (var outcomeId in restoredOutcomeIds)
+                {
+                    if (!outcomeId.IsDefined || !awardedOutcomeIds.Add(outcomeId))
+                        throw new ArgumentException("Restored awarded outcomes require unique defined IDs.", nameof(restoredOutcomeIds));
+                }
+            }
         }
+
+        public IReadOnlyList<KeyValuePair<HeroId, int>> CoinBalances => Array.AsReadOnly(
+            coinBalances.OrderBy(value => value.Key.Value, StringComparer.Ordinal).ToArray());
+
+        public IReadOnlyList<DefeatOutcomeId> AwardedOutcomeIds => Array.AsReadOnly(
+            awardedOutcomeIds.OrderBy(value => value.Value, StringComparer.Ordinal).ToArray());
+
+        public static DefeatRewardAccounting Restore(
+            MatchParticipants participants,
+            IEnumerable<KeyValuePair<HeroId, int>> balances,
+            IEnumerable<DefeatOutcomeId> awardedOutcomeIds) =>
+            new DefeatRewardAccounting(participants, balances, awardedOutcomeIds);
 
         public int GetCoins(HeroId heroId)
         {

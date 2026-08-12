@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -60,30 +61,44 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public PendingDefenseResponseChoice PendingDefenseChoice => attackDefenseBackend.PendingDefenseChoice;
 
+        public DefeatRewardAccounting DefeatRewards => attackDefenseBackend.DefeatRewards;
+
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution;
 
         public static CardActionResolutionAuthority Restore(
             AdjacentMoveAuthority adjacentMoveAuthority,
             PendingCardActionResolution pendingResolution,
-            PendingMovementChoice pendingChoice)
+            PendingMovementChoice pendingChoice,
+            DefeatRewardAccounting defeatRewards = null)
         {
             return new CardActionResolutionAuthority(
                 MovementCardActionStrategyBackend.Restore(
                     adjacentMoveAuthority,
                     pendingResolution,
                     pendingChoice),
-                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority),
+                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
+                new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
+        }
+
+        internal static CardActionResolutionAuthority RestoreWithoutPendingAction(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            DefeatRewardAccounting defeatRewards)
+        {
+            return new CardActionResolutionAuthority(
+                new MovementCardActionStrategyBackend(adjacentMoveAuthority),
+                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
                 new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
         }
 
         public static CardActionResolutionAuthority Restore(
             AdjacentMoveAuthority adjacentMoveAuthority,
-            PendingCardActionResolution pendingResolution)
+            PendingCardActionResolution pendingResolution,
+            DefeatRewardAccounting defeatRewards = null)
         {
             return new CardActionResolutionAuthority(
                 MovementCardActionStrategyBackend.Restore(adjacentMoveAuthority, pendingResolution),
-                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority),
+                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
                 new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
         }
 
@@ -282,7 +297,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingDefenseResponseChoice pendingDefenseChoice,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            DefeatRewardAccounting defeatRewards = null)
         {
             return new CardActionResolutionAuthority(
                 new MovementCardActionStrategyBackend(adjacentMoveAuthority),
@@ -293,7 +309,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingDefenseChoice,
                     definitions,
                     instances,
-                    participants),
+                    participants,
+                    defeatRewards),
                 new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
         }
 
@@ -302,7 +319,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution pendingResolution,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            DefeatRewardAccounting defeatRewards = null)
         {
             return new CardActionResolutionAuthority(
                 new MovementCardActionStrategyBackend(adjacentMoveAuthority),
@@ -311,7 +329,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingResolution,
                     definitions,
                     instances,
-                    participants),
+                    participants,
+                    defeatRewards),
                 new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
         }
 
