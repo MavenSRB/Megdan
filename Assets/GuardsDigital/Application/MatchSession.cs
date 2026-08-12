@@ -525,6 +525,7 @@ namespace GuardsDigital.Application
                     .Where(option => option != null)
                     .ToArray()
                 : Array.Empty<FastTravelOptionProjection>();
+            var defensePreview = CreateDefensePreview(turn);
             var authoritative = AuthoritativeSnapshotSerializer.Serialize(round, board);
             var diagnostic = RuleEventLogSnapshotEnvelope.Serialize(authoritative, eventLog.Entries);
             return new MatchSessionProjection(
@@ -560,7 +561,100 @@ namespace GuardsDigital.Application
                 authoritative,
                 diagnostic,
                 availableFastTravelOptions,
-                board.Minions);
+                board.Minions,
+                defensePreview);
+        }
+
+        private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn)
+        {
+            var choice = turn?.PendingDefenseChoice;
+            var attack = turn?.PendingAttackResolution;
+            if (choice == null || attack == null ||
+                attack.Phase != AttackResolutionPhase.DefenseResponse || attack.AttackValue == null)
+            {
+                return null;
+            }
+
+            var minionContributions = DefenseValueQuery.CalculateMinionContributions(
+                choice.ChooserId,
+                configuration.Participants,
+                board);
+            var projectedChoices = new List<DefenseChoicePreviewProjection>();
+            foreach (var offer in choice.LegalDefenseOffers)
+            {
+                var defense = DefenseValueQuery.Calculate(
+                    offer,
+                    configuration.CardDefinitions,
+                    choice.ChooserId,
+                    configuration.Participants,
+                    board);
+                var comparison = AttackOutcomeComparison.Create(
+                    attack.AttackTotal,
+                    defense.Total,
+                    DefenseBlockResult.None);
+                projectedChoices.Add(new DefenseChoicePreviewProjection(
+                    offer.SourceCardInstanceId,
+                    GetCardDisplayName(offer.SourceCardInstanceId),
+                    defense.Contributions.Select(ProjectContribution),
+                    defense.Total,
+                    comparison.BlockResult,
+                    comparison.Outcome));
+            }
+
+            if (choice.CanDecline)
+            {
+                var comparison = AttackOutcomeComparison.Create(
+                    attack.AttackTotal,
+                    null,
+                    DefenseBlockResult.None);
+                projectedChoices.Add(new DefenseChoicePreviewProjection(
+                    null,
+                    "Decline Defense",
+                    Array.Empty<ValueContributionProjection>(),
+                    null,
+                    comparison.BlockResult,
+                    comparison.Outcome));
+            }
+
+            return new PendingDefensePreviewProjection(
+                choice.ResolutionId,
+                choice.ChoiceId,
+                attack.AttackValue.Contributions.Select(ProjectContribution),
+                attack.AttackTotal,
+                projectedChoices,
+                minionContributions.Select(ProjectContribution));
+        }
+
+        private ValueContributionProjection ProjectContribution(ValueContribution contribution)
+        {
+            string label;
+            if (contribution.SourceCardInstanceId.IsDefined)
+            {
+                label = GetCardDisplayName(contribution.SourceCardInstanceId);
+            }
+            else if (contribution.SourceMinionId.IsDefined)
+            {
+                var minion = board.Minions.Single(value =>
+                    value.MinionId.Equals(contribution.SourceMinionId));
+                label = $"{minion.TeamSide} {minion.MinionType} minion ({minion.MinionId.Value})";
+            }
+            else if (contribution.SourceActiveEffectId.IsDefined)
+            {
+                label = $"Active effect {contribution.SourceActiveEffectId.Value}";
+            }
+            else
+            {
+                throw new InvalidOperationException("A value contribution has no readable typed source.");
+            }
+
+            return new ValueContributionProjection(contribution, label);
+        }
+
+        private string GetCardDisplayName(CardInstanceId cardId)
+        {
+            var card = configuration.CardInstances.Single(value => value.Id.Equals(cardId));
+            return configuration.CardDefinitions.Single(value =>
+                value.Reference.Equals(card.DefinitionReference)).DisplayName;
         }
 
         private MatchCommandResult Rejected(

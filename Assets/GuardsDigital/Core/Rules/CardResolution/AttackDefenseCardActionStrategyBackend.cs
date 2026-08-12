@@ -539,15 +539,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var completedResolution = pendingAttackResolution;
-            var outcome = completedResolution.HasDefenseTotal &&
-                completedResolution.DefenseTotal.Value >= completedResolution.AttackTotal
-                    ? AttackResolutionOutcome.SuccessfullyDefended
-                    : AttackResolutionOutcome.AttackSuccessful;
-            var comparison = new AttackOutcomeComparison(
+            var comparison = AttackOutcomeComparison.Create(
                 completedResolution.AttackTotal,
                 completedResolution.DefenseTotal,
-                DefenseBlockResult.None,
-                outcome);
+                DefenseBlockResult.None);
+            var outcome = comparison.Outcome;
             HeroDefeatResolution heroDefeat = null;
             var events = new List<CardActionResolutionEvent>
             {

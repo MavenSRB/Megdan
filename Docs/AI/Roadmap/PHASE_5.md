@@ -238,7 +238,7 @@ Non-goals: No Attack, Defense, Range, Heavy-immunity, reward, Defeat, removal, U
 
 Historical evidence: [milestone 5.8a1 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58a1-repair-configured-minion-view-lifetime-across-unity-reloads-completion-evidence).
 
-### [ ] 5.8b Preview authoritative Defense breakdowns on hover
+### [x] 5.8b Preview authoritative Defense breakdowns on hover
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -261,7 +261,9 @@ Non-goals: No Attack, Defense, modifier, minion, Block-condition, card-text, ite
 
 Prerequisite: Milestones 5.8a and 5.8a1 must be complete so the popup milestone preserves and regresses both configured Hero and minion Attack-target presentation paths on a reload-safe view-lifetime foundation.
 
-### [!] 5.8c Independently review the full-map action and combat foundation
+Historical evidence: [milestone 5.8b handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58b-preview-authoritative-defense-breakdowns-on-hover-completion-evidence).
+
+### [ ] 5.8c Independently review the full-map action and combat foundation
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 

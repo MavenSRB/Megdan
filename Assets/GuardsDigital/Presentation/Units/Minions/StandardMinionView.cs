@@ -18,6 +18,7 @@ namespace GuardsDigital.Presentation.Units.Minions
         private float outerRadius = HexWorldLayout.DefaultOuterRadius;
 
         private QuickGameMinionSetupState setupState;
+        private TextMesh defenseCue;
 
         public QuickGameMinionSetupState SetupState => setupState;
         public MinionId BoundMinionId => setupState != null
@@ -26,6 +27,7 @@ namespace GuardsDigital.Presentation.Units.Minions
                 ? default
                 : new MinionId(boundMinionId);
         public float OuterRadius => outerRadius;
+        public int DefenseCueAmount { get; private set; }
 
         public void Configure(QuickGameMinionSetupState state, float outerRadius)
         {
@@ -42,6 +44,46 @@ namespace GuardsDigital.Presentation.Units.Minions
             var renderer = GetComponent<SpriteRenderer>();
             renderer.sprite = StandardMinionArtCatalog.Load(state.TeamSide, state.MinionType);
             renderer.sortingOrder = 10;
+        }
+
+        public void SetDefenseContributionCue(int amount)
+        {
+            if (amount != -1 && amount != 0 && amount != 1)
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(amount));
+            }
+
+            DefenseCueAmount = amount;
+            if (amount == 0)
+            {
+                if (defenseCue != null)
+                {
+                    defenseCue.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
+            if (defenseCue == null)
+            {
+                var cueObject = new GameObject("Defense Contribution Cue");
+                cueObject.transform.SetParent(transform, false);
+                cueObject.transform.localPosition = new Vector3(0f, 0.85f, -0.15f);
+                cueObject.transform.localRotation = Quaternion.identity;
+                defenseCue = cueObject.AddComponent<TextMesh>();
+                defenseCue.anchor = TextAnchor.MiddleCenter;
+                defenseCue.alignment = TextAlignment.Center;
+                defenseCue.fontStyle = FontStyle.Bold;
+                defenseCue.fontSize = 64;
+                defenseCue.characterSize = 0.11f;
+                defenseCue.GetComponent<MeshRenderer>().sortingOrder = 20;
+            }
+
+            defenseCue.gameObject.SetActive(true);
+            defenseCue.text = amount > 0 ? "+1" : "-1";
+            defenseCue.color = amount > 0
+                ? new Color(0.2f, 1f, 0.35f)
+                : new Color(1f, 0.35f, 0.2f);
         }
     }
 }

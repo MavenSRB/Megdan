@@ -38,6 +38,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public int? DefenseTotal { get; }
         public DefenseBlockResult BlockResult { get; }
         public AttackResolutionOutcome Outcome { get; }
+
+        public static AttackOutcomeComparison Create(
+            int attackTotal,
+            int? defenseTotal,
+            DefenseBlockResult blockResult)
+        {
+            var outcome = blockResult == DefenseBlockResult.Blocked ||
+                (defenseTotal.HasValue && defenseTotal.Value >= attackTotal)
+                    ? AttackResolutionOutcome.SuccessfullyDefended
+                    : AttackResolutionOutcome.AttackSuccessful;
+            return new AttackOutcomeComparison(attackTotal, defenseTotal, blockResult, outcome);
+        }
     }
 
     public sealed class HeroDefeatResolution

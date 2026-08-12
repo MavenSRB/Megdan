@@ -9,6 +9,7 @@ using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
@@ -431,6 +432,197 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void DefensePreview_ProjectsAuthorityComputedBreakdownsAndStableSignedMinionCues()
+        {
+            var session = CreateDefensePreviewSession();
+            StartTiedTurn(session, ActionKind.Attack);
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Attack);
+            Assert.That(session.Execute(DirectorCommand.StartAction(attack.ActionDefinitionId)).Accepted, Is.True);
+            var target = session.Projection.PendingAttackTargetChoice;
+            Assert.That(session.Execute(DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId,
+                target.ChoiceId,
+                target.LegalTargetHeroIds.Single())).Accepted, Is.True);
+
+            var projection = session.Projection;
+            var preview = projection.PendingDefensePreview;
+            Assert.That(preview, Is.Not.Null);
+            Assert.That(preview.AttackTotal, Is.EqualTo(projection.PendingAttackResolution.AttackTotal));
+            Assert.That(preview.AttackContributions.Select(value => value.Contribution),
+                Is.EqualTo(projection.PendingAttackResolution.AttackValue.Contributions));
+            Assert.That(preview.MinionContributions.Select(value =>
+                    (value.SourceMinionId.Value, value.Amount)),
+                Is.EquivalentTo(new[]
+                {
+                    ("blue-defense-support", 1),
+                    ("red-defense-hinder", -1),
+                    ("red-ranged-hinder", -1)
+                }));
+            Assert.That(preview.MinionContributions.All(value =>
+                value.SourceLabel.Contains("minion (")), Is.True);
+            Assert.That(preview.Choices.Count, Is.EqualTo(
+                projection.PendingDefenseChoice.LegalDefenseOffers.Count + 1));
+
+            foreach (var cardPreview in preview.Choices.Where(value => !value.IsDecline))
+            {
+                Assert.That(cardPreview.DefenseContributions.Select(value => value.Contribution.SourceMinionId)
+                        .Where(value => value.IsDefined),
+                    Is.EquivalentTo(preview.MinionContributions.Select(value => value.SourceMinionId)));
+                Assert.That(cardPreview.DefenseTotal,
+                    Is.EqualTo(cardPreview.DefenseContributions.Sum(value => value.Amount)));
+                Assert.That(cardPreview.Outcome, Is.EqualTo(
+                    cardPreview.DefenseTotal.Value >= preview.AttackTotal
+                        ? AttackResolutionOutcome.SuccessfullyDefended
+                        : AttackResolutionOutcome.AttackSuccessful));
+            }
+
+            var decline = preview.Choices.Single(value => value.IsDecline);
+            Assert.That(decline.DefenseTotal, Is.Null);
+            Assert.That(decline.Outcome, Is.EqualTo(AttackResolutionOutcome.AttackSuccessful));
+
+            var boardView = new CapturingBoardView();
+            new BoardInteractionPresenter(session, boardView).Refresh();
+            Assert.That(boardView.Model.MinionDefenseCues.Select(value =>
+                    (value.MinionId.Value, value.Amount)),
+                Is.EquivalentTo(preview.MinionContributions.Select(value =>
+                    (value.SourceMinionId.Value, value.Amount))));
+            Assert.That(boardView.Model.MinionAttackTargets, Is.Empty,
+                "Defense contribution cues must remain separate from selectable Attack-target cues.");
+
+            var pendingSnapshot = session.CaptureSnapshot();
+            var selected = preview.Choices.First(value => !value.IsDecline);
+            var command = DirectorCommand.ChooseDefenseCard(
+                preview.ResolutionId,
+                preview.ChoiceId,
+                selected.CardInstanceId.Value);
+            var response = session.Execute(command);
+            Assert.That(response.Accepted, Is.True);
+            Assert.That(session.Projection.PendingDefensePreview, Is.Null);
+            Assert.That(session.Projection.Cards.Single(value =>
+                value.Id.Equals(selected.CardInstanceId.Value)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile));
+            new BoardInteractionPresenter(session, boardView).Refresh();
+            Assert.That(boardView.Model.MinionDefenseCues, Is.Empty);
+
+            Assert.That(session.Undo().Accepted, Is.True);
+            Assert.That(session.Projection.PendingDefensePreview.MinionContributions.Select(value =>
+                    (value.SourceMinionId.Value, value.Amount)),
+                Is.EquivalentTo(preview.MinionContributions.Select(value =>
+                    (value.SourceMinionId.Value, value.Amount))));
+            Assert.That(session.Execute(DirectorCommand.DeclineDefense(
+                session.Projection.PendingDefenseChoice.ResolutionId,
+                session.Projection.PendingDefenseChoice.ChoiceId)).Accepted, Is.True);
+            Assert.That(session.RestoreSnapshot(pendingSnapshot).Accepted, Is.True);
+            Assert.That(session.Projection.PendingDefensePreview.MinionContributions.Select(value =>
+                    (value.SourceMinionId.Value, value.Amount)),
+                Is.EquivalentTo(preview.MinionContributions.Select(value =>
+                    (value.SourceMinionId.Value, value.Amount))));
+        }
+
+        [Test]
+        public void DefensePreview_HoverSwitchDismissalAndVersionResetNeverSubmitACommand()
+        {
+            var session = CreateDefensePreviewSession();
+            StartTiedTurn(session, ActionKind.Attack);
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Attack);
+            Assert.That(session.Execute(DirectorCommand.StartAction(attack.ActionDefinitionId)).Accepted, Is.True);
+            var target = session.Projection.PendingAttackTargetChoice;
+            Assert.That(session.Execute(DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId, target.ChoiceId, target.LegalTargetHeroIds.Single())).Accepted, Is.True);
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+            var view = new RoundActionUnityView();
+            view.Render(model);
+            var beforeCommands = session.Projection.AcceptedCommands.Count;
+
+            view.ShowDefensePreview(model.DefenseChoices[0].DefenseBreakdown,
+                new UnityEngine.Rect(100f, 240f, 180f, 46f));
+            Assert.That(view.ActiveDefensePreview, Is.SameAs(model.DefenseChoices[0].DefenseBreakdown));
+            view.ShowDefensePreview(model.DefenseChoices[1].DefenseBreakdown,
+                new UnityEngine.Rect(290f, 240f, 180f, 46f));
+            Assert.That(view.ActiveDefensePreview, Is.SameAs(model.DefenseChoices[1].DefenseBreakdown));
+            Assert.That(session.Projection.AcceptedCommands, Has.Count.EqualTo(beforeCommands));
+
+            view.ScheduleDefensePreviewDismissal(10d);
+            view.UpdateDefensePreviewDismissal(10.1d);
+            Assert.That(view.ActiveDefensePreview, Is.Not.Null);
+            view.UpdateDefensePreviewDismissal(10.13d);
+            Assert.That(view.ActiveDefensePreview, Is.Null);
+
+            view.ShowDefensePreview(model.DefenseChoices[0].DefenseBreakdown,
+                new UnityEngine.Rect(100f, 240f, 180f, 46f));
+            view.Render(new RoundActionViewModel(
+                model.Version + 1,
+                model.RoundIndex,
+                model.TurnIndex,
+                model.Phase,
+                model.Status,
+                Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>()));
+            Assert.That(view.ActiveDefensePreview, Is.Null);
+        }
+
+        [Test]
+        public void DefensePreview_FormatsBlockDeclineAndViewportPlacementExplicitly()
+        {
+            var attackContribution = new ValueContributionProjection(
+                new ValueContribution(
+                    ValueContributionKind.PrintedIcon,
+                    new CardInstanceId("attack-card"),
+                    new ActionDefinitionId("attack-action"),
+                    PrintedValueChannel.Attack,
+                    3),
+                "Attack Card");
+            var blocked = new DefenseChoicePreviewProjection(
+                new CardInstanceId("block-card"),
+                "Block Card",
+                Array.Empty<ValueContributionProjection>(),
+                0,
+                DefenseBlockResult.Blocked,
+                AttackResolutionOutcome.SuccessfullyDefended);
+            var decline = new DefenseChoicePreviewProjection(
+                null,
+                "Decline Defense",
+                Array.Empty<ValueContributionProjection>(),
+                null,
+                DefenseBlockResult.None,
+                AttackResolutionOutcome.AttackSuccessful);
+            var preview = new PendingDefensePreviewProjection(
+                new ActionResolutionId("preview-resolution"),
+                new ActionResolutionStepId("preview-choice"),
+                new[] { attackContribution },
+                3,
+                new[] { blocked, decline },
+                Array.Empty<ValueContributionProjection>());
+
+            var blockedModel = RoundActionPresenter.CreateDefenseBreakdown(4, preview, blocked);
+            var declineModel = RoundActionPresenter.CreateDefenseBreakdown(4, preview, decline);
+            Assert.That(blockedModel.Text, Does.Contain("BLOCK - DEFENDED"));
+            Assert.That(blockedModel.Text, Does.Not.Contain("2147483647"));
+            Assert.That(declineModel.Text, Does.Contain("NO DEFENSE TOTAL - ATTACK SUCCEEDS"));
+            Assert.That(blockedModel.Text, Does.StartWith("ATTACK:"));
+            Assert.That(blockedModel.Text, Does.Contain("\nDEFENSE:\n"));
+            Assert.That(blockedModel.Text, Does.Contain("RESULT: BLOCK - DEFENDED"));
+            Assert.That(RoundActionUnityView.DefensePreviewBackgroundColor.a, Is.EqualTo(1f),
+                "The breakdown must be fully opaque over the card HUD.");
+
+            var anchor = new UnityEngine.Rect(300f, 260f, 180f, 46f);
+            var popup = RoundActionUnityView.CalculateDefensePreviewRect(
+                anchor,
+                new UnityEngine.Vector2(778f, 300f),
+                new UnityEngine.Vector2(440f, 220f));
+            Assert.That(popup.xMin, Is.GreaterThanOrEqualTo(0f));
+            Assert.That(popup.yMin, Is.GreaterThanOrEqualTo(0f));
+            Assert.That(popup.xMax, Is.LessThanOrEqualTo(778f));
+            Assert.That(popup.yMax, Is.LessThanOrEqualTo(300f));
+            Assert.That(popup.Overlaps(anchor), Is.False);
+        }
+
+        [Test]
         public void UndoRestartAndDiagnostics_PresentersKeepOperationsAndLogProjectionSeparate()
         {
             var session = CreateSession();
@@ -606,6 +798,89 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 Array.Empty<ObstacleOccupancy>());
             return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        private static MatchSession CreateDefensePreviewSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var map = BoardMapDefinition.CreateSynthetic(
+                new MapId("defense-preview-fixture"),
+                1,
+                new[]
+                {
+                    new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0),
+                    new HexCoordinate(1, 1),
+                    new HexCoordinate(2, 0),
+                    new HexCoordinate(2, 1)
+                });
+            var redHeroId = configuration.RedHand.Instances[0].OwnerId;
+            var blueHeroId = configuration.BlueHand.Instances[0].OwnerId;
+            var redTeam = configuration.Participants.GetTeamForHero(redHeroId);
+            var blueTeam = configuration.Participants.GetTeamForHero(blueHeroId);
+            var redCoordinate = new HexCoordinate(0, 0);
+            var blueCoordinate = new HexCoordinate(1, 0);
+            var minions = new[]
+            {
+                CreateMinion(map.Id, "blue-defense-support", blueTeam.Id, TeamSide.Blue,
+                    StandardMinionType.Melee, new HexCoordinate(1, 1)),
+                CreateMinion(map.Id, "red-defense-hinder", redTeam.Id, TeamSide.Red,
+                    StandardMinionType.Heavy, new HexCoordinate(2, 0)),
+                CreateMinion(map.Id, "red-ranged-hinder", redTeam.Id, TeamSide.Red,
+                    StandardMinionType.Ranged, new HexCoordinate(2, 1))
+            };
+            var setup = new QuickGameSetupState(
+                map.Reference,
+                3,
+                configuration.TieBreakerState,
+                new[]
+                {
+                    new QuickGameTeamSetupState(redTeam.Id, TeamSide.Red, 4, new ZoneId("red-zone")),
+                    new QuickGameTeamSetupState(blueTeam.Id, TeamSide.Blue, 4, new ZoneId("blue-zone"))
+                },
+                new[]
+                {
+                    new QuickGameHeroSetupState(redHeroId, new HeroContentId("red-preview"), "Red Preview",
+                        redTeam.Id, TeamSide.Red,
+                        new ConfiguredSpawnPointReference(map.Id, new SpawnPointId("red-spawn")),
+                        new ConfiguredSpaceReference(map.Id, new SpaceId("q0_r0")), redCoordinate),
+                    new QuickGameHeroSetupState(blueHeroId, new HeroContentId("blue-preview"), "Blue Preview",
+                        blueTeam.Id, TeamSide.Blue,
+                        new ConfiguredSpawnPointReference(map.Id, new SpawnPointId("blue-spawn")),
+                        new ConfiguredSpaceReference(map.Id, new SpaceId("q1_r0")), blueCoordinate)
+                },
+                minions);
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                new[]
+                {
+                    new HeroOccupancy(redHeroId, redCoordinate),
+                    new HeroOccupancy(blueHeroId, blueCoordinate)
+                },
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        private static QuickGameMinionSetupState CreateMinion(
+            MapId mapId,
+            string id,
+            TeamId teamId,
+            TeamSide side,
+            StandardMinionType type,
+            HexCoordinate coordinate)
+        {
+            return new QuickGameMinionSetupState(
+                new MinionId(id),
+                teamId,
+                side,
+                type,
+                new ConfiguredSpawnPointReference(mapId, new SpawnPointId($"{id}-spawn")),
+                new ConfiguredSpaceReference(mapId, new SpaceId($"q{coordinate.Q}_r{coordinate.R}")),
+                coordinate);
         }
 
         private static void StartTiedTurn(MatchSession session, ActionKind requiredAction)

@@ -38,6 +38,32 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 defenseOffer,
                 definitions,
                 PrintedValueChannel.Defense);
+            var contributions = new List<ValueContribution>(printed.Contributions);
+            contributions.AddRange(CalculateMinionContributions(defenderId, participants, board));
+
+            return new ValueResult(PrintedValueChannel.Defense, contributions);
+        }
+
+        public static IReadOnlyList<ValueContribution> CalculateMinionContributions(
+            HeroId defenderId,
+            MatchParticipants participants,
+            AdjacentMoveAuthority board)
+        {
+            if (!defenderId.IsDefined)
+            {
+                throw new ArgumentException("Defense value query requires a defined defender ID.", nameof(defenderId));
+            }
+
+            if (participants == null)
+            {
+                throw new ArgumentNullException(nameof(participants));
+            }
+
+            if (board == null)
+            {
+                throw new ArgumentNullException(nameof(board));
+            }
+
             var defenderOccupancies = board.Occupancies
                 .Where(occupancy => occupancy.HeroId.Equals(defenderId))
                 .ToArray();
@@ -48,7 +74,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var defenderTeam = participants.GetTeamForHero(defenderId).Side;
             var defenderCoordinate = defenderOccupancies[0].Coordinate;
-            var contributions = new List<ValueContribution>(printed.Contributions);
+            var contributions = new List<ValueContribution>();
             foreach (var minion in board.Minions.OrderBy(value => value.MinionId.Value, StringComparer.Ordinal))
             {
                 var distance = HexDistanceQuery.Calculate(defenderCoordinate, minion.Coordinate);
@@ -63,7 +89,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 }
             }
 
-            return new ValueResult(PrintedValueChannel.Defense, contributions);
+            return Array.AsReadOnly(contributions.ToArray());
         }
 
         private static int GetMinionDefenseModifier(

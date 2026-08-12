@@ -14,6 +14,137 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application
 {
+    public sealed class ValueContributionProjection
+    {
+        public ValueContributionProjection(ValueContribution contribution, string sourceLabel)
+        {
+            Contribution = contribution;
+            SourceLabel = string.IsNullOrWhiteSpace(sourceLabel)
+                ? throw new ArgumentException("A projected contribution requires a readable source label.", nameof(sourceLabel))
+                : sourceLabel;
+        }
+
+        public ValueContribution Contribution { get; }
+        public ValueContributionKind Kind => Contribution.Kind;
+        public int Amount => Contribution.Amount;
+        public string SourceLabel { get; }
+        public MinionId SourceMinionId => Contribution.SourceMinionId;
+    }
+
+    public sealed class DefenseChoicePreviewProjection
+    {
+        public DefenseChoicePreviewProjection(
+            CardInstanceId? cardInstanceId,
+            string choiceLabel,
+            IEnumerable<ValueContributionProjection> defenseContributions,
+            int? defenseTotal,
+            DefenseBlockResult blockResult,
+            AttackResolutionOutcome outcome)
+        {
+            if (cardInstanceId.HasValue != defenseTotal.HasValue)
+            {
+                throw new ArgumentException("Only a Defense-card preview has a Defense Total.");
+            }
+
+            CardInstanceId = cardInstanceId;
+            ChoiceLabel = string.IsNullOrWhiteSpace(choiceLabel)
+                ? throw new ArgumentException("A Defense preview requires a readable choice label.", nameof(choiceLabel))
+                : choiceLabel;
+            var contributions = (defenseContributions ??
+                throw new ArgumentNullException(nameof(defenseContributions))).ToArray();
+            if (defenseTotal.HasValue && defenseTotal.Value != contributions.Sum(value => value.Amount))
+            {
+                throw new ArgumentException("A Defense preview total must equal its complete contribution list.");
+            }
+
+            DefenseContributions = Array.AsReadOnly(contributions);
+            DefenseTotal = defenseTotal;
+            BlockResult = blockResult;
+            Outcome = outcome;
+        }
+
+        public CardInstanceId? CardInstanceId { get; }
+        public bool IsDecline => !CardInstanceId.HasValue;
+        public string ChoiceLabel { get; }
+        public IReadOnlyList<ValueContributionProjection> DefenseContributions { get; }
+        public int? DefenseTotal { get; }
+        public DefenseBlockResult BlockResult { get; }
+        public AttackResolutionOutcome Outcome { get; }
+    }
+
+    public sealed class PendingDefensePreviewProjection
+    {
+        public PendingDefensePreviewProjection(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            IEnumerable<ValueContributionProjection> attackContributions,
+            int attackTotal,
+            IEnumerable<DefenseChoicePreviewProjection> choices,
+            IEnumerable<ValueContributionProjection> minionContributions)
+        {
+            if (!resolutionId.IsDefined || !choiceId.IsDefined)
+            {
+                throw new ArgumentException("A Defense preview requires current resolution and choice identities.");
+            }
+
+            ResolutionId = resolutionId;
+            ChoiceId = choiceId;
+            var projectedAttack = (attackContributions ??
+                throw new ArgumentNullException(nameof(attackContributions))).ToArray();
+            var projectedChoices = (choices ?? throw new ArgumentNullException(nameof(choices))).ToArray();
+            var projectedMinions = (minionContributions ??
+                throw new ArgumentNullException(nameof(minionContributions))).ToArray();
+            if (projectedAttack.Sum(value => value.Amount) != attackTotal)
+            {
+                throw new ArgumentException("A Defense preview Attack Total must equal its complete contribution list.");
+            }
+
+            if (projectedChoices.Length == 0 || projectedChoices.Count(value => value.IsDecline) > 1 ||
+                projectedChoices.Where(value => value.CardInstanceId.HasValue)
+                    .Select(value => value.CardInstanceId.Value).Distinct().Count() !=
+                projectedChoices.Count(value => value.CardInstanceId.HasValue))
+            {
+                throw new ArgumentException("A Defense preview requires unique legal choices.");
+            }
+
+            if (projectedMinions.Any(value => value.Kind != ValueContributionKind.MinionDefenseModifier ||
+                    !value.SourceMinionId.IsDefined) ||
+                projectedMinions.Select(value => value.SourceMinionId).Distinct().Count() != projectedMinions.Length)
+            {
+                throw new ArgumentException("A Defense preview requires unique typed minion contributions.");
+            }
+
+            foreach (var choice in projectedChoices)
+            {
+                var expected = AttackOutcomeComparison.Create(
+                    attackTotal,
+                    choice.DefenseTotal,
+                    choice.BlockResult);
+                var choiceMinions = choice.DefenseContributions
+                    .Where(value => value.Kind == ValueContributionKind.MinionDefenseModifier)
+                    .Select(value => value.Contribution);
+                if (choice.Outcome != expected.Outcome ||
+                    (!choice.IsDecline && !choiceMinions.SequenceEqual(
+                        projectedMinions.Select(value => value.Contribution))))
+                {
+                    throw new ArgumentException("A Defense choice preview must match shared comparison and minion semantics.");
+                }
+            }
+
+            AttackContributions = Array.AsReadOnly(projectedAttack);
+            AttackTotal = attackTotal;
+            Choices = Array.AsReadOnly(projectedChoices);
+            MinionContributions = Array.AsReadOnly(projectedMinions);
+        }
+
+        public ActionResolutionId ResolutionId { get; }
+        public ActionResolutionStepId ChoiceId { get; }
+        public IReadOnlyList<ValueContributionProjection> AttackContributions { get; }
+        public int AttackTotal { get; }
+        public IReadOnlyList<DefenseChoicePreviewProjection> Choices { get; }
+        public IReadOnlyList<ValueContributionProjection> MinionContributions { get; }
+    }
+
     public sealed class FastTravelOptionProjection
     {
         public FastTravelOptionProjection(
@@ -97,7 +228,8 @@ namespace GuardsDigital.Application
             string authoritativeSnapshot,
             string diagnosticSnapshot,
             IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
-            IEnumerable<QuickGameMinionSetupState> minions = null)
+            IEnumerable<QuickGameMinionSetupState> minions = null,
+            PendingDefensePreviewProjection pendingDefensePreview = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -133,6 +265,7 @@ namespace GuardsDigital.Application
             DiagnosticSnapshot = diagnosticSnapshot ?? throw new ArgumentNullException(nameof(diagnosticSnapshot));
             AvailableFastTravelOptions = Array.AsReadOnly((availableFastTravelOptions ??
                 Enumerable.Empty<FastTravelOptionProjection>()).ToArray());
+            PendingDefensePreview = pendingDefensePreview;
         }
 
         public long Version { get; }
@@ -168,6 +301,7 @@ namespace GuardsDigital.Application
         public string AuthoritativeSnapshot { get; }
         public string DiagnosticSnapshot { get; }
         public IReadOnlyList<FastTravelOptionProjection> AvailableFastTravelOptions { get; }
+        public PendingDefensePreviewProjection PendingDefensePreview { get; }
 
         public bool IsTurnActive =>
             Phase == RoundResolutionPhase.ResolvingTurn && IsTurnStarted && !IsTurnEnded;

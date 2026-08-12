@@ -112,6 +112,7 @@ namespace GuardsDigital.Presentation.Match
         private void RenderMinions(BoardInteractionViewModel model)
         {
             var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);
+            var defenseCues = model.MinionDefenseCues.ToDictionary(value => value.MinionId, value => value.Amount);
             foreach (var minion in minions)
             {
                 var boundId = minion.BoundMinionId;
@@ -123,10 +124,14 @@ namespace GuardsDigital.Presentation.Match
                         minion.Configure(state, minion.OuterRadius);
                     }
 
+                    minion.SetDefenseContributionCue(
+                        defenseCues.TryGetValue(boundId, out var amount) ? amount : 0);
+
                     projectedMinions.Remove(state.MinionId);
                 }
                 else
                 {
+                    minion.SetDefenseContributionCue(0);
                     minion.gameObject.SetActive(false);
                 }
             }
@@ -287,7 +292,16 @@ namespace GuardsDigital.Presentation.Match
 
     public sealed class RoundActionUnityView : IRoundActionView
     {
+        private const double PreviewDismissDelaySeconds = 0.12d;
+        public static readonly Color DefensePreviewBackgroundColor =
+            new Color(0.025f, 0.035f, 0.045f, 1f);
+        private DefenseBreakdownViewModel activeDefensePreview;
+        private Rect defensePreviewAnchor;
+        private double dismissPreviewAt = -1d;
+
         public RoundActionViewModel Model { get; private set; }
+        public DefenseBreakdownViewModel ActiveDefensePreview => activeDefensePreview;
+        public Rect DefensePreviewAnchor => defensePreviewAnchor;
 
         public event Action<TypedInvocationViewModel> InvocationSubmitted;
         public event Action<FastTravelOfferViewModel> FastTravelSelected;
@@ -300,6 +314,13 @@ namespace GuardsDigital.Presentation.Match
             }
 
             Model = model ?? throw new ArgumentNullException(nameof(model));
+            if (activeDefensePreview != null &&
+                (activeDefensePreview.Version != Model.Version ||
+                 !Model.DefenseChoices.Any(value =>
+                     ReferenceEquals(value.DefenseBreakdown, activeDefensePreview))))
+            {
+                ClearDefensePreview();
+            }
         }
 
         public void Draw()
@@ -339,13 +360,26 @@ namespace GuardsDigital.Presentation.Match
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Defense", GUILayout.Width(54f));
-                foreach (var defense in Model.DefenseChoices)
+                var previewActiveThisEvent = false;
+                for (var index = 0; index < Model.DefenseChoices.Count; index++)
                 {
-                    DrawContentSizedDefenseInvocation(defense);
+                    previewActiveThisEvent |= DrawContentSizedDefenseInvocation(
+                        Model.DefenseChoices[index],
+                        index);
                 }
 
                 GUILayout.EndHorizontal();
+                if (Event.current.type == EventType.Repaint && !previewActiveThisEvent)
+                {
+                    ScheduleDefensePreviewDismissal(Time.realtimeSinceStartupAsDouble);
+                }
             }
+            else
+            {
+                ClearDefensePreview();
+            }
+
+            UpdateDefensePreviewDismissal(Time.realtimeSinceStartupAsDouble);
         }
 
         public void ForwardInvocation(TypedInvocationViewModel invocation)
@@ -380,14 +414,16 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
-        private void DrawContentSizedDefenseInvocation(TypedInvocationViewModel invocation)
+        private bool DrawContentSizedDefenseInvocation(TypedInvocationViewModel invocation, int index)
         {
             if (invocation == null)
             {
-                return;
+                return false;
             }
 
             var minimumWidth = CalculateContentWidth(invocation.Label, GUI.skin.button);
+            var controlName = $"DefenseChoice-{Model.Version}-{index}";
+            GUI.SetNextControlName(controlName);
             if (GUILayout.Button(
                 invocation.Label,
                 GUILayout.MinWidth(minimumWidth),
@@ -395,6 +431,164 @@ namespace GuardsDigital.Presentation.Match
             {
                 ForwardInvocation(invocation);
             }
+
+            if (Event.current.type != EventType.Repaint || invocation.DefenseBreakdown == null)
+            {
+                return false;
+            }
+
+            var localRect = GUILayoutUtility.GetLastRect();
+            var screenTopLeft = GUIUtility.GUIToScreenPoint(localRect.position);
+            var screenRect = new Rect(screenTopLeft, localRect.size);
+            var active = localRect.Contains(Event.current.mousePosition) ||
+                string.Equals(GUI.GetNameOfFocusedControl(), controlName, StringComparison.Ordinal);
+            if (active)
+            {
+                ShowDefensePreview(invocation.DefenseBreakdown, screenRect);
+            }
+
+            return active;
+        }
+
+        public void ShowDefensePreview(DefenseBreakdownViewModel preview, Rect anchorScreenRect)
+        {
+            activeDefensePreview = preview ?? throw new ArgumentNullException(nameof(preview));
+            defensePreviewAnchor = anchorScreenRect;
+            dismissPreviewAt = -1d;
+        }
+
+        public void ScheduleDefensePreviewDismissal(double now)
+        {
+            if (activeDefensePreview != null && dismissPreviewAt < 0d)
+            {
+                dismissPreviewAt = now + PreviewDismissDelaySeconds;
+            }
+        }
+
+        public void UpdateDefensePreviewDismissal(double now)
+        {
+            if (activeDefensePreview != null && dismissPreviewAt >= 0d && now >= dismissPreviewAt)
+            {
+                ClearDefensePreview();
+            }
+        }
+
+        public void DrawDefensePreviewOverlay()
+        {
+            if (activeDefensePreview == null)
+            {
+                return;
+            }
+
+            var style = new GUIStyle(GUI.skin.label)
+            {
+                wordWrap = false,
+                fontSize = 12,
+                richText = false
+            };
+            var titleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontStyle = FontStyle.Bold,
+                fontSize = 13
+            };
+            var lines = activeDefensePreview.Text.Split('\n');
+            var columnCount = lines.Length > 12 ? 2 : 1;
+            var rowsPerColumn = Mathf.CeilToInt(lines.Length / (float)columnCount);
+            var columns = Enumerable.Range(0, columnCount)
+                .Select(column => string.Join("\n", lines
+                    .Skip(column * rowsPerColumn)
+                    .Take(rowsPerColumn)))
+                .ToArray();
+            var width = columnCount == 1 ? 440f : 680f;
+            var columnWidth = (width - 24f) / columnCount;
+            var textHeight = columns.Max(column => style.CalcHeight(
+                new GUIContent(column),
+                columnWidth));
+            var preferred = new Vector2(width, textHeight + 44f);
+            var rect = CalculateDefensePreviewRect(
+                defensePreviewAnchor,
+                new Vector2(Screen.width, Screen.height),
+                preferred);
+            var previousBackgroundColor = GUI.color;
+            GUI.color = DefensePreviewBackgroundColor;
+            GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill);
+            GUI.color = previousBackgroundColor;
+            GUI.Box(rect, GUIContent.none);
+            GUI.Label(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, 22f),
+                activeDefensePreview.Title, titleStyle);
+            var body = new Rect(rect.x + 8f, rect.y + 32f, rect.width - 16f, rect.height - 40f);
+            var renderedColumnWidth = body.width / columnCount;
+            for (var column = 0; column < columns.Length; column++)
+            {
+                GUI.Label(new Rect(
+                    body.x + (column * renderedColumnWidth),
+                    body.y,
+                    renderedColumnWidth,
+                    body.height),
+                    columns[column],
+                    style);
+            }
+        }
+
+        public static Rect CalculateDefensePreviewRect(
+            Rect anchor,
+            Vector2 viewport,
+            Vector2 preferredSize)
+        {
+            const float margin = 8f;
+            var width = Mathf.Min(preferredSize.x, Mathf.Max(0f, viewport.x - (margin * 2f)));
+            var height = Mathf.Min(preferredSize.y, Mathf.Max(0f, viewport.y - (margin * 2f)));
+            var above = anchor.y - margin;
+            var below = viewport.y - anchor.yMax - margin;
+            var right = viewport.x - anchor.xMax - margin;
+            var left = anchor.x - margin;
+
+            if (above >= height)
+            {
+                return new Rect(
+                    Mathf.Clamp(anchor.center.x - (width * 0.5f), margin, viewport.x - width - margin),
+                    anchor.y - height - margin,
+                    width,
+                    height);
+            }
+
+            if (right >= width)
+            {
+                return new Rect(anchor.xMax + margin,
+                    Mathf.Clamp(anchor.center.y - (height * 0.5f), margin, viewport.y - height - margin),
+                    width, height);
+            }
+
+            if (left >= width)
+            {
+                return new Rect(anchor.x - width - margin,
+                    Mathf.Clamp(anchor.center.y - (height * 0.5f), margin, viewport.y - height - margin),
+                    width, height);
+            }
+
+            if (below >= height)
+            {
+                return new Rect(
+                    Mathf.Clamp(anchor.center.x - (width * 0.5f), margin, viewport.x - width - margin),
+                    anchor.yMax + margin,
+                    width,
+                    height);
+            }
+
+            var verticalSpace = Mathf.Max(above, below);
+            var boundedHeight = Mathf.Min(height, verticalSpace);
+            var y = above >= below ? anchor.y - boundedHeight - margin : anchor.yMax + margin;
+            return new Rect(
+                Mathf.Clamp(anchor.center.x - (width * 0.5f), margin, viewport.x - width - margin),
+                y,
+                width,
+                boundedHeight);
+        }
+
+        private void ClearDefensePreview()
+        {
+            activeDefensePreview = null;
+            dismissPreviewAt = -1d;
         }
 
         public static float CalculateContentWidth(string label, GUIStyle style)

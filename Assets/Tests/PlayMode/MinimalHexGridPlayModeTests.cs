@@ -2,10 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.IO;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
@@ -475,6 +477,107 @@ namespace GuardsDigital.Tests.PlayMode
             runtime.RoundView.ForwardInvocation(declineInvocation);
             Assert.That(submitted, Is.SameAs(declineInvocation));
             Assert.That(submitted.Command, Is.EqualTo(declineCommand));
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_PassiveDefensePreviewAndSignedMinionCuesUseConfiguredViews()
+        {
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+            var supporting = runtime.BoardView.Model.Minions.First(value => value.TeamSide == TeamSide.Blue);
+            var hindering = runtime.BoardView.Model.Minions.First(value => value.TeamSide == TeamSide.Red);
+            var baseBoard = runtime.BoardView.Model;
+            runtime.BoardView.Render(new BoardInteractionViewModel(
+                baseBoard.Version + 1,
+                baseBoard.Heroes,
+                baseBoard.Minions,
+                baseBoard.MovementDestinations,
+                baseBoard.AttackTargets,
+                System.Array.Empty<MinionId>(),
+                baseBoard.FocusedHeroId,
+                baseBoard.FastTravelDestinations,
+                new[]
+                {
+                    new MinionDefenseCueViewModel(supporting.MinionId, 1),
+                    new MinionDefenseCueViewModel(hindering.MinionId, -1)
+                }));
+
+            var supportingView = runtime.BoardView.MinionViews.Single(value =>
+                value.BoundMinionId.Equals(supporting.MinionId));
+            var hinderingView = runtime.BoardView.MinionViews.Single(value =>
+                value.BoundMinionId.Equals(hindering.MinionId));
+            Assert.That(supportingView.DefenseCueAmount, Is.EqualTo(1));
+            Assert.That(supportingView.GetComponentsInChildren<TextMesh>(true).Single().text, Is.EqualTo("+1"));
+            Assert.That(hinderingView.DefenseCueAmount, Is.EqualTo(-1));
+            Assert.That(hinderingView.GetComponentsInChildren<TextMesh>(true).Single().text, Is.EqualTo("-1"));
+
+            var resolutionId = new ActionResolutionId("configured-preview-resolution");
+            var choiceId = new ActionResolutionStepId("configured-preview-choice");
+            var cardBreakdown = new DefenseBreakdownViewModel(
+                12,
+                resolutionId,
+                choiceId,
+                Hand(runtime, TeamSide.Blue).Cards[0].Id,
+                "TEST DEFENSE CARD DEFENSE",
+                "ATTACK:\n  +3 — Test Attack Card\nATTACK TOTAL: 3\n\n" +
+                "DEFENSE:\n  CARD: TEST DEFENSE CARD\n  +3 — Test Defense Card\n" +
+                "DEFENSE TOTAL: 3\nRESULT: DEFENDED",
+                AttackResolutionOutcome.SuccessfullyDefended);
+            var declineBreakdown = new DefenseBreakdownViewModel(
+                12,
+                resolutionId,
+                choiceId,
+                null,
+                "DECLINE PREVIEW",
+                "ATTACK:\n  +3 — Test Attack Card\nATTACK TOTAL: 3\n\n" +
+                "DEFENSE:\n  NO DEFENSE TOTAL\nRESULT: NO DEFENSE TOTAL - ATTACK SUCCEEDS",
+                AttackResolutionOutcome.AttackSuccessful);
+            var currentRound = runtime.RoundView.Model;
+            var cardInvocation = new TypedInvocationViewModel(
+                "DISCARD TEST DEFENSE CARD\nPRINTED DEFENSE 3",
+                DirectorCommand.ChooseDefenseCard(Hand(runtime, TeamSide.Blue).Cards[0].Id),
+                cardBreakdown);
+            var declineInvocation = new TypedInvocationViewModel(
+                "DECLINE DEFENSE",
+                DirectorCommand.DeclineDefense(),
+                declineBreakdown);
+            runtime.RoundView.Render(new RoundActionViewModel(
+                12,
+                currentRound.RoundIndex,
+                currentRound.TurnIndex,
+                currentRound.Phase,
+                "Defense response pending against Attack 3.",
+                currentRound.Actions,
+                currentRound.EndTurnInvocation,
+                currentRound.ContinueEndOfRoundInvocation,
+                currentRound.InitiativeChoices,
+                new[] { cardInvocation, declineInvocation },
+                currentRound.FastTravelOffers));
+
+            runtime.RoundView.ShowDefensePreview(cardBreakdown, new Rect(120f, 220f, 190f, 46f));
+            yield return null;
+            Assert.That(runtime.RoundView.ActiveDefensePreview.Text, Does.Contain("DEFENSE TOTAL: 3"));
+            runtime.RoundView.ShowDefensePreview(declineBreakdown, new Rect(320f, 220f, 190f, 46f));
+            yield return null;
+            Assert.That(runtime.RoundView.ActiveDefensePreview.Text,
+                Does.Contain("NO DEFENSE TOTAL - ATTACK SUCCEEDS"));
+            Assert.That(supportingView.DefenseCueAmount, Is.EqualTo(1),
+                "Moving between Defense choices must not rebuild attack-scoped cues.");
+            Assert.That(hinderingView.DefenseCueAmount, Is.EqualTo(-1));
+
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                var screenshotPath = Path.GetFullPath("tmp/milestone-5-8b-defense-preview.png");
+                if (File.Exists(screenshotPath))
+                {
+                    File.Delete(screenshotPath);
+                }
+                ScreenCapture.CaptureScreenshot(screenshotPath);
+                yield return new WaitForEndOfFrame();
+                yield return null;
+                Assert.That(File.Exists(screenshotPath), Is.True,
+                    "The targeted Game View visual evidence must be captured under tmp/.");
+            }
         }
 
         [UnityTest]

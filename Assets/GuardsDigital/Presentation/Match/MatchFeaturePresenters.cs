@@ -15,6 +15,23 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Presentation.Match
 {
+    public readonly struct MinionDefenseCueViewModel
+    {
+        public MinionDefenseCueViewModel(MinionId minionId, int amount)
+        {
+            if (!minionId.IsDefined || (amount != -1 && amount != 1))
+            {
+                throw new ArgumentException("A minion Defense cue requires a stable identity and signed unit contribution.");
+            }
+
+            MinionId = minionId;
+            Amount = amount;
+        }
+
+        public MinionId MinionId { get; }
+        public int Amount { get; }
+    }
+
     public sealed class BoardInteractionViewModel
     {
         public BoardInteractionViewModel(
@@ -25,7 +42,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HeroId> attackTargets,
             IEnumerable<MinionId> minionAttackTargets,
             HeroId focusedHeroId,
-            IEnumerable<HexCoordinate> fastTravelDestinations = null)
+            IEnumerable<HexCoordinate> fastTravelDestinations = null,
+            IEnumerable<MinionDefenseCueViewModel> minionDefenseCues = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -39,6 +57,8 @@ namespace GuardsDigital.Presentation.Match
             FocusedHeroId = focusedHeroId;
             FastTravelDestinations = Array.AsReadOnly((fastTravelDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
+            MinionDefenseCues = Array.AsReadOnly((minionDefenseCues ??
+                Enumerable.Empty<MinionDefenseCueViewModel>()).ToArray());
         }
 
         public long Version { get; }
@@ -49,6 +69,7 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<MinionId> MinionAttackTargets { get; }
         public HeroId FocusedHeroId { get; }
         public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
+        public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
     }
 
     public interface IBoardInteractionView
@@ -95,7 +116,10 @@ namespace GuardsDigital.Presentation.Match
                     projection.PendingAttackTargetChoice?.LegalTargetMinionIds ?? Array.Empty<MinionId>(),
                     projection.SelectedActor.IsDefined ? projection.SelectedActor.ActorId : default,
                     GetSelectedFastTravelOption(projection)?.LegalDestinations ??
-                        Array.Empty<HexCoordinate>());
+                        Array.Empty<HexCoordinate>(),
+                    projection.PendingDefensePreview?.MinionContributions.Select(value =>
+                        new MinionDefenseCueViewModel(value.SourceMinionId, value.Amount)) ??
+                        Enumerable.Empty<MinionDefenseCueViewModel>());
             }
 
             view.Render(lastViewModel);
@@ -407,16 +431,54 @@ namespace GuardsDigital.Presentation.Match
 
     public sealed class TypedInvocationViewModel
     {
-        public TypedInvocationViewModel(string label, DirectorCommand command)
+        public TypedInvocationViewModel(
+            string label,
+            DirectorCommand command,
+            DefenseBreakdownViewModel defenseBreakdown = null)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A typed invocation requires a label.", nameof(label))
                 : label;
             Command = command ?? throw new ArgumentNullException(nameof(command));
+            DefenseBreakdown = defenseBreakdown;
         }
 
         public string Label { get; }
         public DirectorCommand Command { get; }
+        public DefenseBreakdownViewModel DefenseBreakdown { get; }
+    }
+
+    public sealed class DefenseBreakdownViewModel
+    {
+        public DefenseBreakdownViewModel(
+            long version,
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            CardInstanceId? cardInstanceId,
+            string title,
+            string text,
+            AttackResolutionOutcome outcome)
+        {
+            Version = version;
+            ResolutionId = resolutionId;
+            ChoiceId = choiceId;
+            CardInstanceId = cardInstanceId;
+            Title = string.IsNullOrWhiteSpace(title)
+                ? throw new ArgumentException("A Defense breakdown requires a title.", nameof(title))
+                : title;
+            Text = string.IsNullOrWhiteSpace(text)
+                ? throw new ArgumentException("A Defense breakdown requires text.", nameof(text))
+                : text;
+            Outcome = outcome;
+        }
+
+        public long Version { get; }
+        public ActionResolutionId ResolutionId { get; }
+        public ActionResolutionStepId ChoiceId { get; }
+        public CardInstanceId? CardInstanceId { get; }
+        public string Title { get; }
+        public string Text { get; }
+        public AttackResolutionOutcome Outcome { get; }
     }
 
     public sealed class FastTravelOfferViewModel
@@ -669,29 +731,93 @@ namespace GuardsDigital.Presentation.Match
             MatchSessionProjection projection)
         {
             var choice = projection.PendingDefenseChoice;
-            if (choice == null)
+            var preview = projection.PendingDefensePreview;
+            if (choice == null || preview == null ||
+                !preview.ResolutionId.Equals(choice.ResolutionId) ||
+                !preview.ChoiceId.Equals(choice.ChoiceId))
             {
                 return Array.Empty<TypedInvocationViewModel>();
             }
 
             var values = choice.LegalDefenseOffers
-                .Select(offer => new TypedInvocationViewModel(
-                    $"DISCARD {GetCardDisplayName(projection, offer.SourceCardInstanceId)}\n" +
-                    $"PRINTED DEFENSE " +
-                    $"{PrintedValueQuery.CalculatePrintedValue(offer, projection.Definitions, PrintedValueChannel.Defense).Total}",
-                    DirectorCommand.ChooseDefenseCard(
-                        choice.ResolutionId,
-                        choice.ChoiceId,
-                        offer.SourceCardInstanceId)))
+                .Select(offer =>
+                {
+                    var choicePreview = preview.Choices.Single(value =>
+                        value.CardInstanceId.HasValue &&
+                        value.CardInstanceId.Value.Equals(offer.SourceCardInstanceId));
+                    var printed = choicePreview.DefenseContributions.Single(value =>
+                        value.Kind == ValueContributionKind.PrintedIcon);
+                    return new TypedInvocationViewModel(
+                        $"DISCARD {choicePreview.ChoiceLabel.ToUpperInvariant()}\n" +
+                        $"PRINTED DEFENSE {printed.Amount}",
+                        DirectorCommand.ChooseDefenseCard(
+                            choice.ResolutionId,
+                            choice.ChoiceId,
+                            offer.SourceCardInstanceId),
+                        CreateDefenseBreakdown(projection.Version, preview, choicePreview));
+                })
                 .ToList();
             if (choice.CanDecline)
             {
+                var declinePreview = preview.Choices.Single(value => value.IsDecline);
                 values.Add(new TypedInvocationViewModel(
                     "DECLINE DEFENSE",
-                    DirectorCommand.DeclineDefense(choice.ResolutionId, choice.ChoiceId)));
+                    DirectorCommand.DeclineDefense(choice.ResolutionId, choice.ChoiceId),
+                    CreateDefenseBreakdown(projection.Version, preview, declinePreview)));
             }
 
             return values;
+        }
+
+        public static DefenseBreakdownViewModel CreateDefenseBreakdown(
+            long version,
+            PendingDefensePreviewProjection preview,
+            DefenseChoicePreviewProjection choice)
+        {
+            var lines = new List<string> { "ATTACK:" };
+            lines.AddRange(preview.AttackContributions.Select(FormatContribution));
+            lines.Add($"ATTACK TOTAL: {preview.AttackTotal}");
+            lines.Add(string.Empty);
+            lines.Add("DEFENSE:");
+            if (!choice.IsDecline)
+            {
+                lines.Add($"  CARD: {choice.ChoiceLabel.ToUpperInvariant()}");
+                lines.AddRange(choice.DefenseContributions.Select(FormatContribution));
+            }
+            if (choice.BlockResult == DefenseBlockResult.Blocked)
+            {
+                lines.Add("  BLOCK");
+                lines.Add("RESULT: BLOCK - DEFENDED");
+            }
+            else if (!choice.DefenseTotal.HasValue)
+            {
+                lines.Add("  NO DEFENSE TOTAL");
+                lines.Add("RESULT: NO DEFENSE TOTAL - ATTACK SUCCEEDS");
+            }
+            else
+            {
+                lines.Add($"DEFENSE TOTAL: {choice.DefenseTotal.Value}");
+                lines.Add(choice.Outcome == AttackResolutionOutcome.SuccessfullyDefended
+                    ? "RESULT: DEFENDED"
+                    : "RESULT: ATTACK SUCCEEDS");
+            }
+
+            return new DefenseBreakdownViewModel(
+                version,
+                preview.ResolutionId,
+                preview.ChoiceId,
+                choice.CardInstanceId,
+                choice.IsDecline
+                    ? "DEFENSE PREVIEW: DECLINE"
+                    : $"DEFENSE PREVIEW: {choice.ChoiceLabel.ToUpperInvariant()}",
+                string.Join("\n", lines),
+                choice.Outcome);
+        }
+
+        private static string FormatContribution(ValueContributionProjection contribution)
+        {
+            var sign = contribution.Amount >= 0 ? "+" : string.Empty;
+            return $"  {sign}{contribution.Amount} — {contribution.SourceLabel}";
         }
 
         private static string FormatActionLabel(MatchSessionProjection projection, ActionOffer offer)

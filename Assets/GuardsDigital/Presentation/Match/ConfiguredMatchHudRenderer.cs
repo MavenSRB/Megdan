@@ -109,6 +109,7 @@ namespace GuardsDigital.Presentation.Match
             round.Draw();
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+            round.DrawDefensePreviewOverlay();
             diagnostics.DrawPanel(GetRuleEventLogRect());
         }
 

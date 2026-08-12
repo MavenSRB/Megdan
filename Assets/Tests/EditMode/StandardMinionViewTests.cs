@@ -174,6 +174,63 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void PassiveBoardView_RendersSignedDefenseCueWithoutCreatingAnAttackTarget()
+        {
+            var minionObject = new GameObject("Defense Cue Minion");
+            var tileObject = new GameObject("Defense Cue Tile");
+            var material = new Material(Shader.Find("Standard"));
+            try
+            {
+                var state = CreateState("defense-cue-minion");
+                var minion = minionObject.AddComponent<StandardMinionView>();
+                minion.Configure(state, HexWorldLayout.DefaultOuterRadius);
+                var tile = tileObject.AddComponent<HexTileView>();
+                tile.Configure(state.Coordinate, HexWorldLayout.DefaultOuterRadius);
+                var view = new BoardInteractionUnityView(
+                    Array.Empty<PrimitiveHeroView>(),
+                    new[] { tile },
+                    material,
+                    new[] { minion });
+
+                view.Render(new BoardInteractionViewModel(
+                    1,
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroOccupancy>(),
+                    new[] { state },
+                    Array.Empty<HexCoordinate>(),
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
+                    Array.Empty<MinionId>(),
+                    default,
+                    null,
+                    new[] { new MinionDefenseCueViewModel(state.MinionId, -1) }));
+
+                Assert.That(minion.DefenseCueAmount, Is.EqualTo(-1));
+                var cue = minion.GetComponentsInChildren<TextMesh>(true).Single();
+                Assert.That(cue.text, Is.EqualTo("-1"));
+                Assert.That(cue.transform.localRotation, Is.EqualTo(Quaternion.identity),
+                    "The cue must share the token's board-facing plane instead of rendering edge-on.");
+                Assert.That(tile.IsHighlighted, Is.False,
+                    "A Defense modifier source is not a selectable Attack-target cue.");
+
+                view.Render(new BoardInteractionViewModel(
+                    2,
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroOccupancy>(),
+                    new[] { state },
+                    Array.Empty<HexCoordinate>(),
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
+                    Array.Empty<MinionId>(),
+                    default));
+                Assert.That(minion.DefenseCueAmount, Is.Zero);
+                Assert.That(minion.GetComponentsInChildren<TextMesh>(true).Single().gameObject.activeSelf, Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                Object.DestroyImmediate(minionObject);
+                Object.DestroyImmediate(tileObject);
+            }
+        }
+
         [TestCase(TeamSide.Red, StandardMinionType.Heavy, "Minions/red-heavy")]
         [TestCase(TeamSide.Red, StandardMinionType.Melee, "Minions/red-melee")]
         [TestCase(TeamSide.Red, StandardMinionType.Ranged, "Minions/red-ranged")]
