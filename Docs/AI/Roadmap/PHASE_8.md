@@ -4,7 +4,7 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 ## Phase 8 - Verified hero content, deterministic 3v3, and private online validation
 
-Phase 8 begins only after the synthetic core match gate. Wasp-specific card work extends proven core systems; it does not replace them. The mirrored Wasp setup identities introduced earlier remain an intermediate configuration for the first complete hero gate, not the final pitch roster. After that gate, five additional user-approved heroes enter through source inventory and capability-delta mapping before the final six-distinct-hero 3v3 integration. Once the complete primitive match and URP baseline are proven, a separate private-online track moves the same authority behind a host/session boundary and reaches an invite-only six-human internet playtest before production presentation begins.
+Phase 8 begins only after the synthetic core match gate. Wasp-specific card work composes proven core actions, keywords, effect operations, queries, modifiers, control flow, and system transitions; it does not defer their first general implementation until a card requires them. The mirrored Wasp setup identities introduced earlier remain an intermediate configuration for the first complete hero gate, not the final pitch roster. After that gate, five additional user-approved heroes enter through source inventory and capability-delta mapping before the final six-distinct-hero 3v3 integration. Once the complete primitive match and URP baseline are proven, a separate private-online track moves the same authority behind a host/session boundary and reaches an invite-only six-human internet playtest before production presentation begins.
 
 ### [ ] 8.1 Inventory and verify Wasp's complete card set
 
@@ -52,17 +52,17 @@ Observable outcome: Red and Blue Wasp hands replace the synthetic hands while us
 
 ### [!] 8.5 Implement exact Wasp Movement behavior
 
-### [!] 8.6 Implement verified Wasp spatial effects
+### [!] 8.6 Integrate verified Wasp spatial effects with the core capabilities
 
-Covers only required direct Move, Object Push, Place, Spawn, Respawn, Swap, and Replace slices.
+Maps verified Wasp text onto the already-proven direct Move, Object Push, Place, Spawn, board-object Swap/Replace, Remove, and specialized Respawn contracts. This milestone composes source-verified definitions, policies, queries, timing, and choices; it does not postpone first implementation of the general operations until a card requires them. A genuinely new source-required variant receives an explicit versioned capability or controlled custom handler and focused source-linked tests rather than changing established semantics or adding card-name branches.
 
 ### [!] 8.7 Implement verified Wasp token, marker, obstacle, and persistent effects
 
 ### [!] 8.8 Implement verified Wasp card-state and resource effects
 
-### [!] 8.9 Implement verified Wasp modifiers, restrictions, permissions, and characteristics
+### [!] 8.9 Integrate verified Wasp modifiers, restrictions, permissions, and characteristics with the core capabilities
 
-### [!] 8.10 Implement Wasp Skills and structured control flow
+### [!] 8.10 Integrate Wasp Skills and structured control flow with the core capabilities
 
 ### [!] 8.11 Implement Wasp Attack, range, and minion interactions
 

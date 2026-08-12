@@ -182,20 +182,9 @@ Acceptance checks:
 
 Historical evidence: [milestone 5.6 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-56-attack-and-defeat-minions-with-test-cards-completion-evidence).
 
-### [ ] 5.7 Return displaced minions to the Battle Zone
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
-Acceptance checks:
-
-- Correction applies only to intrinsic minion miniatures outside the Battle Zone after the whole action.
-- A minion follows a shortest empty path; its team chooses among equally short valid paths.
-- With no path or legal move, the minion is Placed into a nearest empty Battle-Zone space.
-- The fallback implements the minimum general Place capability through typed policy/outcome data and emits Place rather than Movement facts.
-- When cross-team order matters, the Tie-Breaker-side team resolves first without flipping the coin.
-- End-to-end ordering between separate Repeat instances is deferred until the first verified Repeat implementation.
-
 ### [ ] 5.8 Complete the general Hero Attack and Defense order with test cards
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: Synthetic hero combat follows the complete general Attack/Defense order while still deferring Wasp-specific text.
 

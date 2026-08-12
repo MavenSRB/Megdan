@@ -90,7 +90,7 @@ Observable outcome: Final Wave, Throne capture, and loss of the final Life all e
 
 Acceptance checks:
 
-- Final-Wave and Throne outcomes reuse milestone 6.5; final-Life loss reuses milestone 7.4.
+- Final-Wave and Throne outcomes reuse milestone 6.10; final-Life loss reuses milestone 7.4.
 - Each path records the winning team and exact reason, stops pending resolution, and prevents later rule steps.
 - Focused scenarios prove each path independently and reject duplicate or conflicting winners.
 
@@ -109,12 +109,14 @@ Acceptance checks:
 
 ### [ ] 7.9 Complete a deterministic test-card core match
 
-Observable outcome: Synthetic test cards can start a match, play legal Movement/Hold/Attack/Defense turns, complete rounds, resolve minions and Lane Pushes, progress, and end through every victory path.
+Observable outcome: Synthetic test cards can start a match, play legal Movement/Hold/Attack/Defense turns, exercise the reusable core effect operations, complete rounds, resolve minions and Lane Pushes, progress, and end through every victory path.
 
 Acceptance checks:
 
 - Every general core rule used by the loop links to its authoritative source and focused tests.
 - Initiative, Tie Breaker flips, turns, rounds, immediate/end-of-round Lane Pushes, retrieval, leveling, respawn, and victory work together.
+- Synthetic effect scenarios exercise direct Move, Object Push, Place, Spawn, board-object Swap/Replace, standalone Remove, Defeat, and Clear through the same command, timing, pending-choice, snapshot, replay, Undo/restart, and event-log boundaries used by the match; Object Push and Lane Push remain observably distinct.
+- Synthetic Skill, ordered/optional/modal/Repeat control flow, modifiers, restrictions, permissions, immunity, and effective-characteristic scenarios prove that no source-reviewed general keyword or reusable core capability is deferred for first implementation to a verified hero milestone.
 - Snapshots, Undo, restart, and the event log remain deterministic across the complete loop.
 - The deterministic replay oracle covers representative complete matches and bounded multi-round generated/soak scenarios with fixed reported seeds; live, replayed, restored-and-continued, and Undo-truncated paths produce matching command/event/projection/snapshot/history evidence.
 - The maintained snapshot compatibility corpus covers the complete synthetic-loop state, and every schema/content incompatibility remains an explicit typed migration or rejection decision.
@@ -131,9 +133,10 @@ Observable outcome: A fresh analysis-only review determines whether the complete
 
 Acceptance checks:
 
-- The review follows complete-match paths across setup, turns, pending choices, combat, minions, tokens/markers, Lane Push, progression, victory, snapshots, deterministic replay, Undo/restart, and the event log using actual source and gate evidence.
+- The review follows complete-match paths across setup, turns, pending choices, combat, reusable direct Move/Object Push/Place/Spawn/Swap/Replace/Remove/Clear operations, minions, tokens/markers, Lane Push, progression, victory, snapshots, deterministic replay, Undo/restart, and the event log using actual source and gate evidence.
 - It checks for state duplication, hidden coupling, temporary Phase 1-7 structures that outlived their purpose, rules or presentation authority leakage, persistence/replay divergence, complete-match allocation or resource-growth risks, and test suites that could provide false confidence.
 - It explicitly assesses whether the generic card/effect contracts remain suitable for real verified content without claiming that unknown cards require no extension.
+- It identifies any source-reviewed general keyword or reusable capability still awaiting first implementation; such a gap blocks verified hero content rather than being reassigned to Phase 8.
 - Findings and preserved strengths follow the common independent-review evidence contract; fixes become separately approved corrective milestones and are not implemented here.
 - The existing hard-gate roadmap audit of Phase 8 entry is completed as a distinct section of the same review record, including remaining-effort range and shortest dependency-safe path.
 
