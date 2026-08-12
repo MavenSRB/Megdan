@@ -10,6 +10,27 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class DefeatRewardAccountingTests
     {
         [Test]
+        public void RewardDeferredHeroDefeatCannotAwardInventedAmounts()
+        {
+            var participants = PlaceholderOneVsOneParticipants.Create();
+            var accounting = new DefeatRewardAccounting(participants);
+            var outcome = new DefeatOutcome(
+                new DefeatOutcomeId("hero-defeat-awaiting-progression"),
+                new DefeatTargetId(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
+                new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue),
+                new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue));
+
+            var result = accounting.Award(outcome);
+
+            Assert.That(result.Accepted, Is.False);
+            Assert.That(result.RejectionReason,
+                Is.EqualTo(DefeatRewardRejectionReason.RewardAmountsUnavailable));
+            Assert.That(result.Operations, Is.Empty);
+            Assert.That(accounting.CoinBalances, Has.All.Matches<System.Collections.Generic.KeyValuePair<HeroId, int>>(
+                value => value.Value == 0));
+        }
+
+        [Test]
         public void OneVsOneDefeatAwardsTheActingHeroAndNotTheEnemy()
         {
             var participants = PlaceholderOneVsOneParticipants.Create();

@@ -187,6 +187,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return FromAttackResolution(CardActionResolutionEventKind.AttackStarted, resolution);
         }
 
+        public static CardActionResolutionEvent AttackTargetValidated(PendingAttackResolution resolution)
+        {
+            return FromAttackResolution(CardActionResolutionEventKind.AttackTargetValidated, resolution);
+        }
+
         public static CardActionResolutionEvent AttackTotalCalculated(PendingAttackResolution resolution)
         {
             return FromAttackResolution(CardActionResolutionEventKind.AttackTotalCalculated, resolution);
@@ -241,6 +246,40 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CardActionResolutionEventKind.AttackResolutionCompleted,
                 resolution,
                 outcome);
+        }
+
+        public static CardActionResolutionEvent HeroDefeatRecorded(
+            PendingAttackResolution resolution,
+            HeroDefeatResolution defeat)
+        {
+            if (resolution == null || defeat == null ||
+                !resolution.TargetHeroId.IsDefined ||
+                !string.Equals(defeat.Defeat.TargetId.Value, resolution.TargetHeroId.Value, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("Hero Defeat event requires the Attack's exact hero target.");
+            }
+
+            return new CardActionResolutionEvent(
+                CardActionResolutionEventKind.HeroDefeatRecorded,
+                resolution.ResolutionId,
+                resolution.SourceCardInstanceId,
+                resolution.ActionDefinitionId,
+                default,
+                resolution.ActorId,
+                resolution.TargetHeroId,
+                resolution.CurrentStepId,
+                0,
+                resolution.AttackTotal,
+                resolution.DefenseOffer.HasValue
+                    ? resolution.DefenseOffer.Value.SourceCardInstanceId
+                    : default,
+                resolution.DefenseTotal ?? 0,
+                AttackResolutionOutcome.AttackSuccessful,
+                default,
+                default,
+                MinionDefeatFactKind.None,
+                default,
+                defeat.Defeat.Id);
         }
 
         public static CardActionResolutionEvent MinionDefeatFact(

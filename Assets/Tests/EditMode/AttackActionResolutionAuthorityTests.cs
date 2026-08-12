@@ -15,6 +15,24 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class AttackActionResolutionAuthorityTests
     {
         [Test]
+        public void OutcomeComparison_UsesTypedBlockOverrideInsteadOfMagicDefenseTotal()
+        {
+            var blocked = new AttackOutcomeComparison(
+                7,
+                -2,
+                DefenseBlockResult.Blocked,
+                AttackResolutionOutcome.SuccessfullyDefended);
+
+            Assert.That(blocked.BlockResult, Is.EqualTo(DefenseBlockResult.Blocked));
+            Assert.That(blocked.DefenseTotal, Is.EqualTo(-2));
+            Assert.Throws<ArgumentException>(() => new AttackOutcomeComparison(
+                7,
+                1,
+                DefenseBlockResult.None,
+                AttackResolutionOutcome.SuccessfullyDefended));
+        }
+
+        [Test]
         public void AdjacentEnemyTarget_OpensDefenderOwnedChoiceWithPrintedAttackTotalAndOrderedEvents()
         {
             var fixture = CreateFixture();
@@ -64,6 +82,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True);
             Assert.That(answer.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
             {
+                CardActionResolutionEventKind.AttackTargetValidated,
                 CardActionResolutionEventKind.AttackStarted,
                 CardActionResolutionEventKind.AttackTotalCalculated,
                 CardActionResolutionEventKind.DefenseResponseChoiceRequested
@@ -253,6 +272,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(accepted.PendingDefenseChoice.ChooserId, Is.EqualTo(maximumRangeEnemyId));
             Assert.That(accepted.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
             {
+                CardActionResolutionEventKind.AttackTargetValidated,
                 CardActionResolutionEventKind.AttackStarted,
                 CardActionResolutionEventKind.AttackTotalCalculated,
                 CardActionResolutionEventKind.DefenseResponseChoiceRequested
@@ -873,8 +893,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(outcome.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
             {
                 CardActionResolutionEventKind.AttackSuccessful,
+                CardActionResolutionEventKind.HeroDefeatRecorded,
                 CardActionResolutionEventKind.AttackResolutionCompleted
             }));
+            Assert.That(outcome.OutcomeComparison.BlockResult, Is.EqualTo(DefenseBlockResult.None));
+            Assert.That(outcome.HeroDefeat.Defeat.TargetId.Value, Is.EqualTo(fixture.DefenderId.Value));
+            Assert.That(outcome.HeroDefeat.Defeat.HasRewardAmounts, Is.False,
+                "Hero Level/Tier reward derivation remains deferred to Phase 7.");
             Assert.That(outcome.Events.All(ruleEvent =>
                 ruleEvent.AttackTotal == 3 &&
                 ruleEvent.DefenseTotal == 2 &&

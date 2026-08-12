@@ -243,6 +243,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
                 {
                     CardActionResolutionEventKind.AttackTargetChoiceRequested,
+                    CardActionResolutionEventKind.AttackTargetValidated,
                     CardActionResolutionEventKind.AttackStarted,
                     CardActionResolutionEventKind.AttackTotalCalculated,
                     CardActionResolutionEventKind.DefenseResponseChoiceRequested
@@ -275,6 +276,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
                 {
                     CardActionResolutionEventKind.AttackTargetChoiceRequested,
+                    CardActionResolutionEventKind.AttackTargetValidated,
                     CardActionResolutionEventKind.AttackStarted,
                     CardActionResolutionEventKind.AttackTotalCalculated,
                     CardActionResolutionEventKind.DefenseResponseChoiceRequested,
@@ -366,6 +368,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
                 {
                     CardActionResolutionEventKind.AttackTargetChoiceRequested,
+                    CardActionResolutionEventKind.AttackTargetValidated,
                     CardActionResolutionEventKind.AttackStarted,
                     CardActionResolutionEventKind.AttackTotalCalculated,
                     CardActionResolutionEventKind.DefenseResponseChoiceRequested
@@ -383,12 +386,14 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(controller.CardResolutionEvents.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
                 {
                     CardActionResolutionEventKind.AttackTargetChoiceRequested,
+                    CardActionResolutionEventKind.AttackTargetValidated,
                     CardActionResolutionEventKind.AttackStarted,
                     CardActionResolutionEventKind.AttackTotalCalculated,
                     CardActionResolutionEventKind.DefenseResponseChoiceRequested,
                     CardActionResolutionEventKind.DefenseDeclined,
                     CardActionResolutionEventKind.DefenseResponseCompleted,
                     CardActionResolutionEventKind.AttackSuccessful,
+                    CardActionResolutionEventKind.HeroDefeatRecorded,
                     CardActionResolutionEventKind.AttackResolutionCompleted
                 }));
             }

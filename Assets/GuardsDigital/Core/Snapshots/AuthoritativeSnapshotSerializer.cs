@@ -64,7 +64,7 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
-        public const int CurrentSchemaVersion = 4;
+        public const int CurrentSchemaVersion = 5;
 
         public static string Serialize(RoundResolutionAuthority round, AdjacentMoveAuthority board)
         {
@@ -811,7 +811,9 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write((int)contribution.Kind);
                 writer.Write(contribution.HasSourceMinionId
                     ? contribution.SourceMinionId.Value
-                    : contribution.SourceCardInstanceId.Value);
+                    : contribution.HasSourceActiveEffectId
+                        ? contribution.SourceActiveEffectId.Value
+                        : contribution.SourceCardInstanceId.Value);
                 writer.Write(contribution.HasSourceActionDefinitionId);
                 if (contribution.HasSourceActionDefinitionId) writer.Write(contribution.SourceActionDefinitionId.Value);
                 writer.Write((int)contribution.Channel); writer.Write(contribution.Amount);
@@ -840,6 +842,19 @@ namespace GuardsDigital.Core.Snapshots
                     return new ValueContribution(
                         kind,
                         new MinionId(card.Value),
+                        contributionChannel,
+                        amount);
+                }
+                if (kind == ValueContributionKind.ActiveEffectModifier)
+                {
+                    if (hasAction)
+                    {
+                        throw Malformed("An Active-effect contribution cannot reference a card action.");
+                    }
+
+                    return new ValueContribution(
+                        kind,
+                        new ActiveEffectId(card.Value),
                         contributionChannel,
                         amount);
                 }

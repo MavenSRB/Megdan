@@ -750,7 +750,12 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
             }
 
-            var events = response.Events.Select(TurnResolutionEvent.FromAttackAction).ToList();
+            var events = new List<TurnResolutionEvent>();
+            events.AddRange(response.Events.Select(TurnResolutionEvent.FromAttackAction));
+            AddTiming(
+                events,
+                TimingCheckpoint.AttackResultComparison,
+                response.PendingResolution.TargetHeroId);
             var outcome = cardActions.ResolveAttackOutcome(definitions, instances, participants);
             if (!outcome.Accepted)
             {
@@ -764,6 +769,7 @@ namespace GuardsDigital.Core.Cards
 
         private TurnResolutionResult CompleteAttackAndAdvance(List<TurnResolutionEvent> events)
         {
+            ApplyActionTiming(events);
             var card = instances.Single(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
@@ -783,7 +789,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
-            return AdvanceInitiative(events);
+            return AdvanceInitiative(events, false);
         }
 
         private bool IsPendingAttackForSelectedActor()
@@ -795,10 +801,12 @@ namespace GuardsDigital.Core.Cards
                 pending.ActorId.Equals(initiative.SelectedActor.ActorId);
         }
 
-        private TurnResolutionResult AdvanceInitiative(IEnumerable<TurnResolutionEvent> priorEvents)
+        private TurnResolutionResult AdvanceInitiative(
+            IEnumerable<TurnResolutionEvent> priorEvents,
+            bool applyActionTiming = true)
         {
             var events = new List<TurnResolutionEvent>(priorEvents);
-            ApplyActionTiming(events);
+            if (applyActionTiming) ApplyActionTiming(events);
             var result = initiative.TrySelectNextActor(definitions, instances, participants);
             if (!result.Accepted)
             {
@@ -844,9 +852,14 @@ namespace GuardsDigital.Core.Cards
                     AddTiming(ordered, TimingCheckpoint.ActionStarted);
                 if (kind == CardActionResolutionEventKind.AttackStarted)
                     AddTiming(ordered, TimingCheckpoint.BeforeAttack);
-                ordered.Add(turnEvent);
+                if (kind == CardActionResolutionEventKind.DefenseResponseChoiceRequested)
+                    AddTiming(
+                        ordered,
+                        TimingCheckpoint.DefenseResponse,
+                        turnEvent.CardActionEvent.TargetHeroId);
                 if (kind == CardActionResolutionEventKind.AttackResolutionCompleted)
                     AddTiming(ordered, TimingCheckpoint.AfterAttack);
+                ordered.Add(turnEvent);
                 if (kind == CardActionResolutionEventKind.MovementActionCompleted ||
                     kind == CardActionResolutionEventKind.AttackResolutionCompleted ||
                     kind == CardActionResolutionEventKind.FastTravelActionCompleted)
@@ -859,13 +872,16 @@ namespace GuardsDigital.Core.Cards
         private void AddTiming(
             ICollection<TurnResolutionEvent> events,
             TimingCheckpoint checkpoint,
+            HeroId affectedHeroId = default,
             CardInstanceId sourceCardInstanceId = default)
         {
+            if (!affectedHeroId.IsDefined && initiative.SelectedActor.IsDefined)
+                affectedHeroId = initiative.SelectedActor.ActorId;
             var timingEvents = timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
                 checkpoint,
                 roundIndex,
                 turnIndex,
-                initiative.SelectedActor.IsDefined ? initiative.SelectedActor.ActorId : default,
+                affectedHeroId,
                 sourceCardInstanceId),
                 initiative.TieBreakerState);
             foreach (var timingEvent in timingEvents) events.Add(TurnResolutionEvent.FromTiming(timingEvent));

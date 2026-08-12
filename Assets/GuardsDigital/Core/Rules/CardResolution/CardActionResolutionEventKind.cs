@@ -24,6 +24,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         MinionDefeatRecorded = 19,
         MinionRewardAwarded = 20,
         MinionRemovalAttempted = 21,
-        MinionRemovalCompleted = 22
+        MinionRemovalCompleted = 22,
+        AttackTargetValidated = 23,
+        HeroDefeatRecorded = 24
     }
 }

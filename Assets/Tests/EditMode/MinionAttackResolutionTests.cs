@@ -46,6 +46,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Board.Minions, Is.Empty);
             Assert.That(result.Events.Select(value => value.Kind), Is.EqualTo(new[]
             {
+                CardActionResolutionEventKind.AttackTargetValidated,
                 CardActionResolutionEventKind.AttackStarted,
                 CardActionResolutionEventKind.MinionDefeatRecorded,
                 CardActionResolutionEventKind.MinionRewardAwarded,
@@ -124,7 +125,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(4));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(5));
             Assert.That(restored.Board.Minions, Is.Empty);
             Assert.That(restored.CardActions.DefeatRewards.GetCoins(fixture.AttackerId), Is.EqualTo(2));
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board), Is.EqualTo(payload));

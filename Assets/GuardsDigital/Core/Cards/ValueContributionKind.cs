@@ -4,6 +4,9 @@ namespace GuardsDigital.Core.Cards
     {
         None = 0,
         PrintedIcon = 1,
-        MinionDefenseModifier = 2
+        MinionDefenseModifier = 2,
+        ItemModifier = 3,
+        CardTextModifier = 4,
+        ActiveEffectModifier = 5
     }
 }

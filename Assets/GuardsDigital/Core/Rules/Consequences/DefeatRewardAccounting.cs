@@ -66,9 +66,30 @@ namespace GuardsDigital.Core.Rules.Consequences
             DefeatOutcomeId id,
             DefeatTargetId targetId,
             TeamId defeatedTeamId,
+            HeroId defeatingHeroId)
+            : this(id, targetId, defeatedTeamId, defeatingHeroId, 0, 0, false)
+        {
+        }
+
+        public DefeatOutcome(
+            DefeatOutcomeId id,
+            DefeatTargetId targetId,
+            TeamId defeatedTeamId,
             HeroId defeatingHeroId,
             int defeatCoins,
             int assistCoins)
+            : this(id, targetId, defeatedTeamId, defeatingHeroId, defeatCoins, assistCoins, true)
+        {
+        }
+
+        private DefeatOutcome(
+            DefeatOutcomeId id,
+            DefeatTargetId targetId,
+            TeamId defeatedTeamId,
+            HeroId defeatingHeroId,
+            int defeatCoins,
+            int assistCoins,
+            bool hasRewardAmounts)
         {
             if (!id.IsDefined)
             {
@@ -90,12 +111,12 @@ namespace GuardsDigital.Core.Rules.Consequences
                 throw new ArgumentException("Defeat outcome requires a defined defeating hero.", nameof(defeatingHeroId));
             }
 
-            if (defeatCoins <= 0)
+            if (hasRewardAmounts && defeatCoins <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(defeatCoins), defeatCoins, "Defeat coins must be positive.");
             }
 
-            if (assistCoins < 0)
+            if (hasRewardAmounts && assistCoins < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(assistCoins), assistCoins, "Assist coins must not be negative.");
             }
@@ -106,6 +127,7 @@ namespace GuardsDigital.Core.Rules.Consequences
             DefeatingHeroId = defeatingHeroId;
             DefeatCoins = defeatCoins;
             AssistCoins = assistCoins;
+            HasRewardAmounts = hasRewardAmounts;
         }
 
         public DefeatOutcomeId Id { get; }
@@ -119,6 +141,11 @@ namespace GuardsDigital.Core.Rules.Consequences
         public int DefeatCoins { get; }
 
         public int AssistCoins { get; }
+
+        public bool HasRewardAmounts { get; }
+
+        public DefeatOutcome WithRewardAmounts(int defeatCoins, int assistCoins) =>
+            new DefeatOutcome(Id, TargetId, DefeatedTeamId, DefeatingHeroId, defeatCoins, assistCoins);
     }
 
     public enum DefeatRemovalResultKind
@@ -264,7 +291,8 @@ namespace GuardsDigital.Core.Rules.Consequences
         DefeatedTeamNotInMatch = 2,
         FriendlyTarget = 3,
         OutcomeAlreadyAwarded = 4,
-        CoinBalanceOverflow = 5
+        CoinBalanceOverflow = 5,
+        RewardAmountsUnavailable = 6
     }
 
     public sealed class DefeatRewardResult
@@ -370,6 +398,11 @@ namespace GuardsDigital.Core.Rules.Consequences
             if (outcome == null)
             {
                 throw new ArgumentNullException(nameof(outcome));
+            }
+
+            if (!outcome.HasRewardAmounts)
+            {
+                return DefeatRewardResult.Reject(DefeatRewardRejectionReason.RewardAmountsUnavailable);
             }
 
             if (!coinBalances.ContainsKey(outcome.DefeatingHeroId))

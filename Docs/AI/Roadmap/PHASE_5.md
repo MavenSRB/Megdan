@@ -182,7 +182,7 @@ Acceptance checks:
 
 Historical evidence: [milestone 5.6 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-56-attack-and-defeat-minions-with-test-cards-completion-evidence).
 
-### [ ] 5.8 Complete the general Hero Attack and Defense order with test cards
+### [x] 5.8 Complete the general Hero Attack and Defense order with test cards
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -197,9 +197,11 @@ Acceptance checks:
 - Wasp card text, values, items, and special effects are not used.
 - T3 phase gate: both complete unfiltered Edit Mode and Play Mode suites pass after the focused combat scenarios.
 
-### [!] 5.8a Independently review the full-map action and combat foundation
+Historical evidence: [milestone 5.8 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58-complete-the-general-hero-attack-and-defense-order-completion-evidence).
 
-Blocked by: Milestone 5.8 must pass its Phase 5 gate.
+### [ ] 5.8a Independently review the full-map action and combat foundation
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: A fresh analysis-only review determines whether full-map Movement, Fast Travel, minion interactions, Attack/Defense, timing readiness, and their shared action-resolution seams can safely support the end-of-round systems in Phase 6.
 

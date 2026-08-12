@@ -133,6 +133,8 @@ namespace GuardsDigital.Core.Timing
             if (duration == ActiveEffectDurationKind.ThisTurn)
             {
                 if (activation != TimingCheckpoint.ActionStarted && activation != TimingCheckpoint.BeforeAttack &&
+                    activation != TimingCheckpoint.DefenseResponse &&
+                    activation != TimingCheckpoint.AttackResultComparison &&
                     activation != TimingCheckpoint.AfterAttack && activation != TimingCheckpoint.ActionEnded &&
                     activation != TimingCheckpoint.TurnStarted)
                     throw new ArgumentException("A This Turn effect must activate within the current turn.");

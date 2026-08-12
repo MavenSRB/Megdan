@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -10,6 +12,42 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class ActionOfferAndPrintedValueTests
     {
+        [Test]
+        public void ValueContributions_KeepPrintedMinionItemCardTextAndActiveSourcesDistinct()
+        {
+            var cardId = new CardInstanceId("synthetic-value-card");
+            var actionId = new ActionDefinitionId("synthetic-value-action");
+            var contributions = new[]
+            {
+                new ValueContribution(ValueContributionKind.PrintedIcon, cardId, actionId,
+                    PrintedValueChannel.Defense, 3),
+                new ValueContribution(ValueContributionKind.MinionDefenseModifier,
+                    new MinionId("synthetic-value-minion"), PrintedValueChannel.Defense, 1),
+                new ValueContribution(ValueContributionKind.ItemModifier, cardId,
+                    PrintedValueChannel.Defense, 1),
+                new ValueContribution(ValueContributionKind.CardTextModifier, cardId, actionId,
+                    PrintedValueChannel.Defense, 2),
+                new ValueContribution(ValueContributionKind.ActiveEffectModifier,
+                    new ActiveEffectId("synthetic-value-effect"), PrintedValueChannel.Defense, -1)
+            };
+
+            var result = new ValueResult(PrintedValueChannel.Defense, contributions);
+
+            Assert.That(result.Contributions.Select(value => value.Kind), Is.EqualTo(new[]
+            {
+                ValueContributionKind.PrintedIcon,
+                ValueContributionKind.MinionDefenseModifier,
+                ValueContributionKind.ItemModifier,
+                ValueContributionKind.CardTextModifier,
+                ValueContributionKind.ActiveEffectModifier
+            }));
+            Assert.That(result.Contributions[1].SourceMinionId.Value, Is.EqualTo("synthetic-value-minion"));
+            Assert.That(result.Contributions[2].SourceCardInstanceId, Is.EqualTo(cardId));
+            Assert.That(result.Contributions[3].SourceActionDefinitionId, Is.EqualTo(actionId));
+            Assert.That(result.Contributions[4].SourceActiveEffectId.Value, Is.EqualTo("synthetic-value-effect"));
+            Assert.That(result.Total, Is.EqualTo(6));
+        }
+
         [Test]
         public void CardDefinition_OwnsOrderedImmutableActionDefinitions()
         {

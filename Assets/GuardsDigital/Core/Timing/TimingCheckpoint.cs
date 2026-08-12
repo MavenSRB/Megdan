@@ -15,6 +15,8 @@ namespace GuardsDigital.Core.Timing
         CardsRetrieved = 10,
         SourceCardStateChanged = 11,
         AffectedHeroDefeated = 12,
-        ExplicitCancellation = 13
+        ExplicitCancellation = 13,
+        DefenseResponse = 14,
+        AttackResultComparison = 15
     }
 }

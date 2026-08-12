@@ -1,9 +1,57 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Rules.Consequences;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
+    public enum DefenseBlockResult
+    {
+        None = 0,
+        Blocked = 1
+    }
+
+    public sealed class AttackOutcomeComparison
+    {
+        public AttackOutcomeComparison(
+            int attackTotal,
+            int? defenseTotal,
+            DefenseBlockResult blockResult,
+            AttackResolutionOutcome outcome)
+        {
+            if (blockResult != DefenseBlockResult.None && blockResult != DefenseBlockResult.Blocked)
+                throw new ArgumentOutOfRangeException(nameof(blockResult));
+            var expected = blockResult == DefenseBlockResult.Blocked ||
+                (defenseTotal.HasValue && defenseTotal.Value >= attackTotal)
+                    ? AttackResolutionOutcome.SuccessfullyDefended
+                    : AttackResolutionOutcome.AttackSuccessful;
+            if (outcome != expected)
+                throw new ArgumentException("Attack outcome must match the typed Block/numeric comparison.", nameof(outcome));
+
+            AttackTotal = attackTotal;
+            DefenseTotal = defenseTotal;
+            BlockResult = blockResult;
+            Outcome = outcome;
+        }
+
+        public int AttackTotal { get; }
+        public int? DefenseTotal { get; }
+        public DefenseBlockResult BlockResult { get; }
+        public AttackResolutionOutcome Outcome { get; }
+    }
+
+    public sealed class HeroDefeatResolution
+    {
+        public HeroDefeatResolution(DefeatOutcome defeat)
+        {
+            Defeat = defeat ?? throw new ArgumentNullException(nameof(defeat));
+            if (defeat.HasRewardAmounts)
+                throw new ArgumentException("A staged Hero Defeat must defer Level/Tier reward derivation.", nameof(defeat));
+        }
+
+        public DefeatOutcome Defeat { get; }
+    }
+
     public sealed class AttackActionResolutionResult
     {
         private AttackActionResolutionResult(
@@ -14,7 +62,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingDefenseResponseChoice pendingDefenseChoice,
             AttackResolutionOutcome outcome,
             IEnumerable<CardActionResolutionEvent> events,
-            MinionDefeatResolution minionDefeat)
+            MinionDefeatResolution minionDefeat,
+            AttackOutcomeComparison outcomeComparison,
+            HeroDefeatResolution heroDefeat)
         {
             Accepted = accepted;
             RejectionReason = rejectionReason;
@@ -23,7 +73,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingDefenseChoice = pendingDefenseChoice;
             Outcome = outcome;
             MinionDefeat = minionDefeat;
+            OutcomeComparison = outcomeComparison;
+            HeroDefeat = heroDefeat;
             Events = Array.AsReadOnly((events ?? throw new ArgumentNullException(nameof(events))).ToArray());
+
+            if (minionDefeat != null && heroDefeat != null)
+                throw new ArgumentException("An Attack cannot record both a minion and hero Defeat.");
+            if (outcomeComparison != null && outcomeComparison.Outcome != outcome)
+                throw new ArgumentException("The typed comparison must match the reported Attack outcome.");
+            if (outcome == AttackResolutionOutcome.SuccessfullyDefended &&
+                (outcomeComparison == null || heroDefeat != null))
+                throw new ArgumentException("A defended Hero Attack requires its comparison and no Defeat.");
+            if (outcome == AttackResolutionOutcome.AttackSuccessful && minionDefeat == null &&
+                (outcomeComparison == null || heroDefeat == null))
+                throw new ArgumentException("A successful Hero Attack requires its comparison and staged Defeat.");
         }
 
         public bool Accepted { get; }
@@ -33,6 +96,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public PendingDefenseResponseChoice PendingDefenseChoice { get; }
         public AttackResolutionOutcome Outcome { get; }
         public MinionDefeatResolution MinionDefeat { get; }
+        public AttackOutcomeComparison OutcomeComparison { get; }
+        public HeroDefeatResolution HeroDefeat { get; }
         public IReadOnlyList<CardActionResolutionEvent> Events { get; }
 
         public static AttackActionResolutionResult Accept(
@@ -41,7 +106,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingDefenseResponseChoice pendingDefenseChoice,
             IEnumerable<CardActionResolutionEvent> events,
             AttackResolutionOutcome outcome = AttackResolutionOutcome.None,
-            MinionDefeatResolution minionDefeat = null)
+            MinionDefeatResolution minionDefeat = null,
+            AttackOutcomeComparison outcomeComparison = null,
+            HeroDefeatResolution heroDefeat = null)
         {
             return new AttackActionResolutionResult(
                 true,
@@ -51,7 +118,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingDefenseChoice,
                 outcome,
                 events,
-                minionDefeat);
+                minionDefeat,
+                outcomeComparison,
+                heroDefeat);
         }
 
         public static AttackActionResolutionResult Reject(
@@ -73,6 +142,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingDefenseChoice,
                 AttackResolutionOutcome.None,
                 Array.Empty<CardActionResolutionEvent>(),
+                null,
+                null,
                 null);
         }
     }

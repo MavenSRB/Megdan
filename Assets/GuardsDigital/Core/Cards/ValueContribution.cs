@@ -1,5 +1,6 @@
 using System;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -16,6 +17,7 @@ namespace GuardsDigital.Core.Cards
                 sourceCardInstanceId,
                 sourceActionDefinitionId,
                 default,
+                default,
                 channel,
                 amount,
                 true)
@@ -30,6 +32,7 @@ namespace GuardsDigital.Core.Cards
             : this(
                 kind,
                 sourceCardInstanceId,
+                default,
                 default,
                 default,
                 channel,
@@ -48,6 +51,24 @@ namespace GuardsDigital.Core.Cards
                 default,
                 default,
                 sourceMinionId,
+                default,
+                channel,
+                amount,
+                false)
+        {
+        }
+
+        public ValueContribution(
+            ValueContributionKind kind,
+            ActiveEffectId sourceActiveEffectId,
+            PrintedValueChannel channel,
+            int amount)
+            : this(
+                kind,
+                default,
+                default,
+                default,
+                sourceActiveEffectId,
                 channel,
                 amount,
                 false)
@@ -59,6 +80,7 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId sourceActionDefinitionId,
             MinionId sourceMinionId,
+            ActiveEffectId sourceActiveEffectId,
             PrintedValueChannel channel,
             int amount,
             bool requiresActionDefinition)
@@ -68,9 +90,12 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Printed value contribution requires a kind.", nameof(kind));
             }
 
-            if (kind == ValueContributionKind.PrintedIcon && !sourceCardInstanceId.IsDefined)
+            var usesCardSource = kind == ValueContributionKind.PrintedIcon ||
+                kind == ValueContributionKind.ItemModifier ||
+                kind == ValueContributionKind.CardTextModifier;
+            if (usesCardSource && !sourceCardInstanceId.IsDefined)
             {
-                throw new ArgumentException("Printed value contribution requires a source card instance ID.", nameof(sourceCardInstanceId));
+                throw new ArgumentException("Card-sourced value contributions require a source card instance ID.", nameof(sourceCardInstanceId));
             }
 
             if (kind == ValueContributionKind.PrintedIcon && requiresActionDefinition && !sourceActionDefinitionId.IsDefined)
@@ -85,6 +110,26 @@ namespace GuardsDigital.Core.Cards
                     nameof(channel));
             }
 
+            if (kind == ValueContributionKind.ItemModifier && requiresActionDefinition)
+            {
+                throw new ArgumentException("An item contribution identifies its item card, not an action definition.");
+            }
+
+            if (kind == ValueContributionKind.CardTextModifier &&
+                (!requiresActionDefinition || !sourceActionDefinitionId.IsDefined))
+            {
+                throw new ArgumentException(
+                    "A card-text contribution requires its source card and action definition.");
+            }
+
+            if (kind == ValueContributionKind.ActiveEffectModifier &&
+                (!sourceActiveEffectId.IsDefined || sourceCardInstanceId.IsDefined ||
+                    sourceActionDefinitionId.IsDefined || sourceMinionId.IsDefined))
+            {
+                throw new ArgumentException(
+                    "An Active-effect contribution requires exactly one typed Active-effect source.");
+            }
+
             if (kind == ValueContributionKind.MinionDefenseModifier &&
                 (!sourceMinionId.IsDefined || channel != PrintedValueChannel.Defense ||
                     (amount != -1 && amount != 1)))
@@ -94,7 +139,10 @@ namespace GuardsDigital.Core.Cards
             }
 
             if (kind != ValueContributionKind.PrintedIcon &&
-                kind != ValueContributionKind.MinionDefenseModifier)
+                kind != ValueContributionKind.MinionDefenseModifier &&
+                kind != ValueContributionKind.ItemModifier &&
+                kind != ValueContributionKind.CardTextModifier &&
+                kind != ValueContributionKind.ActiveEffectModifier)
             {
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported value contribution kind.");
             }
@@ -108,6 +156,7 @@ namespace GuardsDigital.Core.Cards
             SourceCardInstanceId = sourceCardInstanceId;
             SourceActionDefinitionId = sourceActionDefinitionId;
             SourceMinionId = sourceMinionId;
+            SourceActiveEffectId = sourceActiveEffectId;
             Channel = channel;
             Amount = amount;
         }
@@ -124,6 +173,10 @@ namespace GuardsDigital.Core.Cards
 
         public bool HasSourceMinionId => SourceMinionId.IsDefined;
 
+        public ActiveEffectId SourceActiveEffectId { get; }
+
+        public bool HasSourceActiveEffectId => SourceActiveEffectId.IsDefined;
+
         public PrintedValueChannel Channel { get; }
 
         public int Amount { get; }
@@ -134,6 +187,7 @@ namespace GuardsDigital.Core.Cards
                 SourceCardInstanceId.Equals(other.SourceCardInstanceId) &&
                 SourceActionDefinitionId.Equals(other.SourceActionDefinitionId) &&
                 SourceMinionId.Equals(other.SourceMinionId) &&
+                SourceActiveEffectId.Equals(other.SourceActiveEffectId) &&
                 Channel == other.Channel &&
                 Amount == other.Amount;
         }
@@ -151,6 +205,7 @@ namespace GuardsDigital.Core.Cards
                 hashCode = (hashCode * 397) ^ SourceCardInstanceId.GetHashCode();
                 hashCode = (hashCode * 397) ^ SourceActionDefinitionId.GetHashCode();
                 hashCode = (hashCode * 397) ^ SourceMinionId.GetHashCode();
+                hashCode = (hashCode * 397) ^ SourceActiveEffectId.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)Channel;
                 hashCode = (hashCode * 397) ^ Amount;
                 return hashCode;

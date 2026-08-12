@@ -8,6 +8,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -532,6 +533,109 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void HeroAttackDefense_VisitsVerifiedGeneralCheckpointsInExactOrder()
+        {
+            var timing = new ActiveEffectLifecycle();
+            var checkpoints = new[]
+            {
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.BeforeAttack,
+                TimingCheckpoint.DefenseResponse,
+                TimingCheckpoint.AttackResultComparison,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.ActionEnded
+            };
+            for (var index = 0; index < checkpoints.Length; index++)
+            {
+                var checkpoint = checkpoints[index];
+                var definition = new ActiveEffectDefinition(
+                    $"attack-order-{index}",
+                    new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                    TeamSide.Red,
+                    ActiveEffectAffectedScopeKind.Global,
+                    default,
+                    ActiveEffectDurationKind.ThisTurn,
+                    TimingCheckpoint.ActionStarted,
+                    TimingCheckpoint.ActionStarted,
+                    TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                    new[]
+                    {
+                        ActiveEffectCancellationCondition.SourceCardStateChanged,
+                        ActiveEffectCancellationCondition.AffectedHeroDefeated,
+                        ActiveEffectCancellationCondition.CardsRetrieved,
+                        ActiveEffectCancellationCondition.Explicit
+                    },
+                    false,
+                    "SyntheticAttackOrderProbe",
+                    $"attack-order-{index}",
+                    new[] { checkpoint });
+                timing.Create(
+                    new ActiveEffectId($"attack-order-effect-{index}"),
+                    definition,
+                    new CardInstanceId($"attack-order-source-{index}"),
+                    new ActionDefinitionId($"attack-order-action-{index}"),
+                    1,
+                    1);
+            }
+
+            var fixture = CreateAttackFixture(false, timing: timing);
+            Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
+            var attackOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
+                    fixture.Configuration.CardDefinitions,
+                    fixture.Configuration.CardInstances,
+                    fixture.RedPlayed.OwnerId,
+                    fixture.RedPlayed.Id)
+                .Single(offer => offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
+            Assert.That(fixture.Authority.TryStartAttack(
+                new ActionResolutionId("complete-hero-attack-order"), attackOffer).Accepted, Is.True);
+            var targetChoice = fixture.Authority.PendingAttackTargetChoice;
+            var targeted = fixture.Authority.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
+                targetChoice.ResolutionId,
+                targetChoice.ChoiceId,
+                fixture.BluePlayed.OwnerId));
+            var defenseChoice = fixture.Authority.PendingDefenseChoice;
+            var completed = fixture.Authority.TryAnswerDefenseResponse(DefenseResponseChoiceCommand.Decline(
+                defenseChoice.ResolutionId,
+                defenseChoice.ChoiceId));
+
+            var events = targeted.Events.Concat(completed.Events).ToArray();
+            var observedCheckpoints = events
+                .Where(value => value.Kind == TurnResolutionEventKind.TimingProgressed &&
+                    value.ActiveEffectEvent.Kind == ActiveEffectLifecycleEventKind.Triggered)
+                .Select(value => value.ActiveEffectEvent.Checkpoint)
+                .ToArray();
+            Assert.That(observedCheckpoints, Is.EqualTo(checkpoints));
+
+            var targetValidated = Array.FindIndex(events, value =>
+                value.Kind == TurnResolutionEventKind.AttackActionProgressed &&
+                value.CardActionEvent.Kind == CardActionResolutionEventKind.AttackTargetValidated);
+            var beforeAttack = Array.FindIndex(events, value =>
+                value.Kind == TurnResolutionEventKind.TimingProgressed &&
+                value.ActiveEffectEvent.Checkpoint == TimingCheckpoint.BeforeAttack);
+            var attackTotal = Array.FindIndex(events, value =>
+                value.Kind == TurnResolutionEventKind.AttackActionProgressed &&
+                value.CardActionEvent.Kind == CardActionResolutionEventKind.AttackTotalCalculated);
+            var defenseResponse = Array.FindIndex(events, value =>
+                value.Kind == TurnResolutionEventKind.TimingProgressed &&
+                value.ActiveEffectEvent.Checkpoint == TimingCheckpoint.DefenseResponse);
+            var comparison = Array.FindIndex(events, value =>
+                value.Kind == TurnResolutionEventKind.TimingProgressed &&
+                value.ActiveEffectEvent.Checkpoint == TimingCheckpoint.AttackResultComparison);
+            var afterAttack = Array.FindIndex(events, value =>
+                value.Kind == TurnResolutionEventKind.TimingProgressed &&
+                value.ActiveEffectEvent.Checkpoint == TimingCheckpoint.AfterAttack);
+            var actionEnded = Array.FindIndex(events, value =>
+                value.Kind == TurnResolutionEventKind.TimingProgressed &&
+                value.ActiveEffectEvent.Checkpoint == TimingCheckpoint.ActionEnded);
+            var order = new[]
+            {
+                targetValidated, beforeAttack, attackTotal, defenseResponse, comparison, afterAttack, actionEnded
+            };
+            Assert.That(order, Is.All.GreaterThanOrEqualTo(0));
+            Assert.That(order, Is.Ordered);
+        }
+
+        [Test]
         public void SelectedActor_MinionAttackResolvesCardWithoutDefenseAndAdvances()
         {
             var fixture = CreateAttackFixture(false, minionTarget: true);
@@ -643,7 +747,8 @@ namespace GuardsDigital.Tests.EditMode
         private static AttackTestFixture CreateAttackFixture(
             bool tiedInitiative,
             bool rangedAttack = false,
-            bool minionTarget = false)
+            bool minionTarget = false,
+            ActiveEffectLifecycle timing = null)
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var redPlayed = configuration.RedHand.Instances[rangedAttack ? 2 : tiedInitiative ? 1 : 0];
@@ -691,7 +796,10 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     configuration.Participants,
                     configuration.TieBreakerState,
-                    new CardActionResolutionAuthority(board)));
+                    new CardActionResolutionAuthority(board),
+                    timing,
+                    1,
+                    1));
         }
 
         private static CardDefinition CreateMovementDefinition(
