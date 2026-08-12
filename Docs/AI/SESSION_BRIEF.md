@@ -34,6 +34,8 @@ Schema-versioned snapshots cover participants, selected map ID/revision, board o
 
 The current staged setup declares `official-single-lane` revision 1; places Red and Blue Wasp identities at their team Hero spawn points while retaining five synthetic test cards each; creates three Waves, four Lives per team, and twelve stable standard minions at the reviewed starting-Battle-Zone points; and projects the reviewed Steam/Red and Crystal/Blue circular minion art from authoritative team/type data. Those minions are now authoritative unit obstacles, Defense-modifier sources, and legal typed Attack/Defeat/removal targets. Minion Battle, displacement correction, respawn, and Lane transitions remain deferred to Phase 6.
 
+The configured board still accepts only Hero Attack-target identities. Proposed 5.8a connects authority-owned legal minion identities and refreshes removed minions without changing combat rules.
+
 The project does not yet implement current-Battle-Zone changes, Lane Push, the final official six-player Quick Game setup, resolve-without-action, real Wasp content, general card-text effects, complete hero Attack consequences, concrete end-of-round subsystems beyond retrieval, networking, production animation/audio, or build/distribution work.
 
 ## Current authorization and next route
@@ -41,8 +43,8 @@ The project does not yet implement current-Battle-Zone changes, Lane Push, the f
 - Current completed milestone: **5.8**.
 - Active authorized milestone: **none**.
 - Next proposed milestone: **5.8a**.
-- Required Codex profile for next milestone: **GPT-5.6 Sol with high reasoning**.
-- Milestone 5.8a is a fresh-task analysis-only independent review and requires explicit approval of that exact micro-milestone.
+- Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
+- Milestone 5.8a adds configured-board minion Attack selection. Review 5.8b remains blocked until it completes; neither milestone is authorized.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries

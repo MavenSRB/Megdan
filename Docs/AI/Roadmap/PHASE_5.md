@@ -199,7 +199,23 @@ Acceptance checks:
 
 Historical evidence: [milestone 5.8 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58-complete-the-general-hero-attack-and-defense-order-completion-evidence).
 
-### [ ] 5.8a Independently review the full-map action and combat foundation
+### [ ] 5.8a Expose authoritative minion Attack targets in the configured board
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: When a synthetic Attack has one or more legal enemy-minion targets, the configured board visibly identifies those exact projected minions and lets the player select one through the existing typed Attack-target command path.
+
+Acceptance checks:
+
+- The board interaction projection carries the current authoritative minion occupancies and `LegalTargetMinionIds`; presentation maps those projected identities to target cues without recalculating team, distance, Range, Heavy immunity, or any other legality.
+- The passive configured view forwards a selected stable `MinionId` through `BoardInteractionPresenter`, `IMatchSession`, and the existing resolution/choice-qualified `ChooseAttackTarget` command; an illegal or stale minion intent rejects without mutation.
+- An accepted minion selection uses milestone 5.6's unchanged Defeat/reward/removal path, clears the target choice, resolves the attacking card, advances the turn, and removes the defeated minion from both the next application projection and the rendered board.
+- Existing adjacent and Ranged hero target highlighting, pointer submission, Defense continuation, and result presentation remain unchanged.
+- T2 validation covers focused presenter/view-model/passive-view behavior and the affected configured saved-scene Play Mode path, including a visible inspection of the minion target cue; the immediately preceding 5.8 T3 evidence is not treated as proof of this new UI path.
+
+Non-goals: No Attack, Range, Heavy-immunity, reward, Defeat, or removal-rule changes; no Minion Battle, last-minion Lane Push, displacement correction, respawn, Wasp content, legacy-controller expansion, production animation, or audio.
+
+### [!] 5.8b Independently review the full-map action and combat foundation
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -215,4 +231,6 @@ Acceptance checks:
 
 Non-goals: No Wasp inventory or behavior, end-of-round implementation, combat redesign, speculative optimization, runtime fix, or relaxation of verified rules and validation gates.
 
-Hard gate: Phase 6 does not begin until milestone 5.8a is reviewed and every gate-blocking finding has an approved disposition.
+Prerequisite: Milestone 5.8a must be complete so the review inspects the actual configured minion-target interaction instead of the known presentation gap.
+
+Hard gate: Phase 6 does not begin until milestone 5.8b is reviewed and every gate-blocking finding has an approved disposition.
