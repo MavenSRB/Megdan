@@ -8,6 +8,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 - [Living-document governance](../DOCUMENTATION_GOVERNANCE.md) owns the exact matrix, thresholds, archive lifecycle, manifest, preservation inventory, and phase-gate ownership review.
 - Active continuity documents are working contracts, not chronological journals. Detailed milestone outcome and validation evidence is written once in the indexed phase-handoff archive; active definitions retain exact status/profile/checks and a stable backlink.
+- The current implementation inventory is maintained by subject in [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md). Replace or consolidate affected statements as behavior changes; the session brief keeps only a compact startup summary and route.
 - A threshold limits one active leaf, never the complete corpus. At 85% review ownership in the same handoff; archive completed history losslessly or split irreducible current authority into indexed shards. Never weaken precise content to pass.
 - Run the project-local living-document validator and `git diff --check` at every milestone handoff and phase gate.
 
@@ -45,7 +46,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 - `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` - primary local rulebook.
 - `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` - project architecture contract derived from the general card/action rules; it is not a substitute for card-specific source verification.
-- `Docs/AI/CARD_EFFECT_CAPABILITIES.md` - effect and keyword capability catalog; it is not evidence that a capability or card is implemented.
+- `Docs/AI/CARD_EFFECT_CAPABILITIES.md` - effect and keyword capability index/catalog, routing to capability shards where needed; it is not evidence that a capability or card is implemented.
 - `Docs/Guards of Atlantis II - Tabletopia Cards/` - private reference extraction containing hero-card material and supporting scripts/assets.
 - The extracted card corpus has not been accepted as complete or fully verified for implementation.
 - Do not assume filenames, duplicates, image faces, or extraction completeness are authoritative without an explicit inventory milestone.

@@ -218,10 +218,14 @@ $requiredHeadings = @{
     'TECHNICAL_RISKS.md' = @('Active risks','Resolved-risk history')
     'ROADMAP.md' = @('Status legend','Execution rule','Active milestone definition index')
     'PROJECT_CONTEXT.md' = @('Canonical active shards','Historical status snapshot')
+    'Project/CURRENT_IMPLEMENTATION.md' = @('Current implementation','Maintenance rule')
     'TESTING.md' = @('Canonical active shards','Historical recipes','Required launcher')
     'CARD_SYSTEM_ARCHITECTURE.md' = @('Canonical active shards')
     'RULES_LEDGER.md' = @('Authority hierarchy','Approved deviations','Rule-system ledger','Open source and rules questions')
-    'CARD_EFFECT_CAPABILITIES.md' = @('Contract required for every capability','Implementation boundary')
+    'CARD_EFFECT_CAPABILITIES.md' = @('Capability shard routing','Contract required for every capability','Implementation boundary')
+    'Card-System/BOARD_CAPABILITIES.md' = @('Spatial and object query capabilities','Movement, forced displacement, and relocation','Removal, defeat, prevention, and battle consequences')
+    'Card-System/STATE_CAPABILITIES.md' = @('Tokens, markers, obstacles, and terrain','Card-state and progression capabilities','Characteristics, immunity, permissions, and restrictions','Values, resources, and ownership changes')
+    'Card-System/TIMING_AND_TRANSITIONS.md' = @('Timing, Active effects, and continuous sources','Control flow and action composition','System-transition capabilities used by cards')
 }
 foreach ($relative in $requiredHeadings.Keys) {
     $path = Join-Path $docsRoot $relative

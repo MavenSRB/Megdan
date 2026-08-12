@@ -1,0 +1,137 @@
+# Guards Digital - Board Effect Capabilities
+
+Canonical effect-capability shard. Return to the [Card Effect Capabilities index](../CARD_EFFECT_CAPABILITIES.md).
+
+## Spatial and object query capabilities
+
+### Object categories and relationships
+
+Queries support spaces, heroes, minions, units, tokens, markers, cards, zones, terrain, spawn points, and other explicitly modeled game pieces. Each object exposes an immutable intrinsic representation kind and a derived effective rules type.
+
+Relationship filters include self, another, friendly, enemy, owner, controller, and source. `Friendly` excludes self. A hero/minion is both a unit and an obstacle for occupancy, so an obstacle filter must not make a legal unit untargetable.
+
+### Target versus presence
+
+`TargetQuery` evaluates target eligibility for both player-chosen and automatically affected objects and applies immunity in either case. A separate `ChooseTarget` node creates a pending choice among eligible candidates when the action requires a player decision. `PresenceQuery` checks whether an object exists or is adjacent/in range without targeting it; immune units still count for presence checks where the rules say so. Executors must declare which query they use.
+
+### Geometry
+
+Reusable geometry queries include:
+
+- `AdjacentSpaceQuery` and `AdjacentObjectQuery`.
+- `RangeQuery` and `RadiusQuery`, with no invented line of sight.
+- `DirectionQuery` over the six named hex directions.
+- `StraightLineQuery` for spaces or units in one hex direction/file.
+- `DistanceQuery`, counting spaces including spaces with obstacles where required.
+- `CloserQuery`, `FartherQuery`, `FarthestQuery`, and `NearestQuery`.
+- `SameZoneQuery`, `AdjacentZoneQuery`, `BattleZoneQuery`, and ordered-lane queries.
+- `EmptySpaceQuery`, `EmptySpawnPointQuery`, occupancy, terrain, obstacle, and token filters.
+
+Movement path, rulebook distance, Range, Radius, straight line, and zone adjacency are different calculations. A capability selects the required query explicitly.
+
+Milestone 2.3a implements only the hero-Attack subset: axial-coordinate rulebook distance and an inclusive Range Total comparison for enemy heroes, with Range 1 including adjacency and occupied/obstacle spaces creating no line-of-sight restriction. Broader object categories, Range modifiers, Radius, straight-line, immunity, and presence interactions remain specified but unimplemented.
+
+Milestone 5.3 binds the existing configured standard-minion state directly into authoritative board occupancy. Minions retain stable identity, team, intrinsic type, map-qualified space, and coordinate; they are unit obstacles for construction, Movement projection, route revalidation, and relocation, with no presentation-derived or parallel rules representation.
+
+Zone adjacency follows the board rule: two zones are adjacent when there is an adjacent pair of non-terrain spaces, one in each zone. It is not inferred from bounding boxes or art proximity and is verified against authoritative map data.
+
+## Movement, forced displacement, and relocation
+
+### Perform Movement action
+
+`PerformMovementAction` uses the selected action offer's typed Movement value and checks action-start movement limits/restrictions once. The Phase 1 shell creates an immutable pending choice of currently reachable destinations, each bound to one disclosed deterministic adjacent route and cost. Selecting a destination revalidates that candidate, commits each route step through the adjacent-move authority, spends one allowance per step, and completes the `up to` action; Stop selects zero movement. Each step enters an adjacent empty legal space and respects obstacles.
+
+Each segmented destination choice intentionally projects one deterministic shortest route per currently offered destination. After a partial segment, the same action preserves cumulative route facts and ordered step events, subtracts the segment cost, and offers another choice from the new position. Waypoints therefore let the player construct deliberately longer/non-shortest cumulative routes without pre-enumerating every possible complete route. Milestone 5.1 integrates and source-tests this interaction on the official topology: a typed action-start evaluator receives the actor, source card, action, invocation context, and typed Movement value exactly once; prevention rejects atomically, while a distance cap becomes the captured session allowance used by every later segment and recovery path. Concrete persistent restriction sources and lifetimes remain deferred.
+
+Primary/Secondary context controls card-text application. Milestone 5.2 implements the Fast Travel replacement as a separate value-free typed action: a current replaceable printed Movement offer supplies the replaced-action identity, while the replacement invocation suppresses source-card text. It atomically relocates to an empty space in the same or a shared-border adjacent zone only when neither endpoint zone contains an enemy hero or minion, requires no empty-space path, and emits ordered replacement/relocation/completion facts. Ordinary Movement continues to emit action, step, and completion events while leaving presentation timing separate.
+
+### Direct Move effect
+
+`MoveEffect` represents movement written inside card text. It uses ordinary movement restrictions unless its text overrides them, but it is not a Movement action:
+
+- It cannot become Fast Travel.
+- Preventing a Movement action does not automatically prevent it.
+- Exact distance is mandatory unless wording such as `may move` or `up to` makes it optional.
+- Its source text determines whether the acting hero or another unit/token moves.
+
+Card wording such as `move a unit towards you` remains `MoveEffect`; `towards` is not promoted into a standalone keyword. Its target/destination contract composes `CloserQuery` so every legal destination is closer to the source than the target's starting space under obstacle-inclusive geometric distance, plus the source's exact/up-to distance policy and any required chooser/tie rules. There is no separate Pull capability or invented Pull keyword.
+
+### Ignore obstacles and Move Through
+
+`IgnoreObstaclesModifier` changes transit legality for the specified effect/action. The unit may enter and leave an obstacle space during transit but cannot end on an obstacle. Traversal does not target objects being traversed, so their immunity does not itself block transit; token traversal effects still apply. `MoveThrough` uses the same transit policy but remains traceable to its source capability/wording.
+
+### Push
+
+`PushEffect` implements the official Push keyword:
+
+- The pushing unit and target unit/token are explicit. A different anchor is legal only when verified text defines that override or a separately named capability.
+- The target moves in a straight line directly away from the pushing unit.
+- Requested distance is typed and may be fixed or chosen according to source text.
+- If full distance is impossible, the target moves as far as possible, including zero.
+- Ignore-obstacle/move-through variants still require a legal empty endpoint.
+- A source that pushes multiple targets `up to X` records one chosen distance and moves all affected targets simultaneously.
+- Push is not a Movement action or Place effect and does not itself trigger a Lane Push merely by displacing the last minion.
+- Minions outside the Battle Zone are corrected at the after-action checkpoint, not after each pushed step.
+
+The executor emits `PushDeclared`, a simultaneous `ObjectsPushed` batch where applicable, and occupancy events. The action/system controller alone runs after-action minion correction after all action nodes finish.
+
+### Place
+
+`PlaceEffect` takes a game piece from the board or supply and puts it into a different empty space. It does not count as movement. The contract declares source container, eligible piece type, destination query, chooser, and what happens when no legal empty destination exists.
+
+Placing tokens additionally uses the limited-supply rules in the token section. Placing a board object must not silently use Spawn semantics.
+
+### Spawn and Respawn
+
+`SpawnEffect` takes an object from supply and puts it into a legal empty board space. Unlike Place, it cannot take the object from another board space. It validates supply and the source-defined destination query. Spawn-point type/color constraints apply only when the invoking rule/card requires them. Whenever a unit Spawns on a token-covered Spawn point, the token is removed first.
+
+Respawn is a specialized capability family, not one generic spatial handler:
+
+- `HeroRespawnTransition` uses the optional before-action timing, an empty Spawn point in the hero's Throne Zone, or the rulebook's nearest empty fallback adjacent to a Throne-Zone Spawn point when none are available.
+- Declining hero respawn is an explicit authoritative choice/outcome that resolves the selected card without performing an action; it is not treated as failed Spawn.
+- `MinionRespawnEffect` uses an eligible off-board minion miniature/pool and the rulebook's type/color spawn-point versus existing-minion condition; it is not casually treated as generic Spawn supply.
+- Failure and fallback placement use the exact applicable source rather than a generic Spawn guess.
+
+The two contracts may share supply, destination, and occupancy queries, but keep separate eligibility, timing, events, and tests.
+
+### Swap board objects
+
+`SwapBoardObjectsEffect` exchanges two legal board positions atomically. It is neither movement nor placement. It validates both objects and both resulting occupancies against the same pre-swap state, then emits one semantic swap transaction.
+
+Moving, pushing, or swapping a minion does not cause a Lane Push. Any minion left outside the Battle Zone is handled by the after-action correction system.
+
+### Replace board object
+
+`ReplaceBoardObjectEffect` exchanges an existing object for a different object. Its definition declares where the replacement comes from, where the old object goes, whether properties transfer, and which triggers observe replacement. It is not an alias for Remove followed by Spawn unless verified rules text defines those exact observable stages.
+
+## Removal, defeat, prevention, and battle consequences
+
+### Remove
+
+`RemoveEffect` takes a game piece off the board without defeat rewards. It records the destination (supply, pool, or other defined location) and runs applicable removal/prevention triggers. Removing the last enemy minion in the Battle Zone can trigger an immediate Lane Push; moving, pushing, or swapping it cannot.
+
+### Defeat
+
+`DefeatEffect` is a staged outcome, not deletion. Its contract preserves these distinct required facts/operations without using the list order below as an unverified timing claim:
+
+- Validate that the target can be defeated by this source; friendly units cannot be defeated.
+- Record defeat and its reward eligibility.
+- Open any triggered choices/effects around the removal attempt and record removed or removal-prevented outcome.
+- Award the appropriate defeat/assist rewards even when a verified prevention effect keeps a defeated minion on the board.
+- Resolve hero-specific consequences such as unresolved-card resolution, Active-effect cancellation, marker return, Life spending, victory, and later respawn at their exact checkpoints.
+
+The precise stage ordering is capability- and source-tested before implementation. Presentation receives separate defeat, prevention, reward, and removal events.
+
+Milestone 5.6 implements the verified standard-minion slice in exact order after legal target revalidation: record the minion Defeat, award the acting hero 2 coins for Melee/Ranged or 4 for Heavy through milestone 5.5's idempotent accounting, record a removal attempt, then record the successful removed result and update occupancy. Minions open no Defense frame and do not use the hero-only Attack Total comparison. The Heavy target query rejects while a friendly non-Heavy remains in the current starting Battle Zone. No removal-prevention source, last-minion Lane-Push request, displaced-minion correction, hero consequence, or UI selection path is added.
+
+Milestone 5.8 implements the Hero subset only through a staged Defeat outcome. A successful Block/numeric comparison creates a stable outcome and target identity with defeated team and acting hero, but deliberately carries no reward amounts until milestone 7.4 derives them from verified Hero Level/lowest Tier. Reward accounting rejects that incomplete stage rather than inventing values. Removal attempt/result, unresolved-card resolution, Active-effect/marker consequences, Life, victory, and respawn remain separate later operations.
+
+### Prevent removal and Block
+
+`PreventRemovalEffect` intercepts the removal stage; it does not undo defeat or reward unless exact card text says otherwise.
+
+`BlockResult` is a Defense-specific conditional result override that prevents an Attack according to its condition. It is not a large numeric Defense value and does not share `PreventRemovalEffect` semantics.
+
+### Clear
+
+`ClearAction` is a rule-provided optional replacement for an entire Attack action. Once selected, its controller may choose any subset of tokens adjacent to the acting hero, including none, and removes the chosen tokens through token removal capabilities. It suppresses the replaced Primary Attack text and is not an Attack that happens to target tokens.

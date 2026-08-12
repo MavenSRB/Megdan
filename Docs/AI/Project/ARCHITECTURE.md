@@ -59,7 +59,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ### Card system
 
-- `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` is the required card/resolver contract. `Docs/AI/CARD_EFFECT_CAPABILITIES.md` is its mandatory effect/keyword companion for all mutation, query, modifier, token, marker, timing, and system-transition work.
+- `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` is the required card/resolver contract. The `Docs/AI/CARD_EFFECT_CAPABILITIES.md` index and its routed shards are the mandatory effect/keyword companion for all mutation, query, modifier, token, marker, timing, and system-transition work.
 - The architecture must support the future hero catalog without claiming that unknown cards require zero extensions.
 - Immutable, revisioned `CardDefinition`-equivalent content is separate from owned runtime `CardInstance`-equivalent state. Instances refer to definitions; definitions are never mutated into match state or upgrades.
 - Runtime card lifecycle is represented through orthogonal facts such as location, played status, resolution status, and face orientation because the rulebook permits overlapping states.

@@ -53,7 +53,7 @@ Before accepting a real card definition:
 8. Test state, timing, replacement, repeat, immunity, and ownership interactions that apply.
 9. Confirm no card/hero/display-name branch, scene dependency, or runtime text parsing was introduced.
 10. Update `RULES_LEDGER.md` with verification and implementation status.
-11. Update `CARD_EFFECT_CAPABILITIES.md` whenever the card adds or refines a reusable effect/query contract.
+11. Follow the `CARD_EFFECT_CAPABILITIES.md` index and update the owning capability section or shard whenever the card adds or refines a reusable effect/query contract.
 
 ## Deferred decisions
 

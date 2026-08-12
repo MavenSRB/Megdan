@@ -13,11 +13,11 @@ This inventory accounts for the governed categories required by milestone 3.11a.
 | `rule-authority-and-status` | Baseline `RULES_LEDGER.md`, 52,554 bytes, SHA-256 `13bc55a1c65ff315ac6af441cdb9a67373b4de236a984bf46ec0b6ba7c1d7c3a` | Active ledger is byte-identical | `PASS` |
 | `deviations-and-open-questions` | Approved-deviation and open-question sections in the baseline ledger | Same byte-identical active sections | `PASS` |
 | `card-contracts` | 17 level-two sections in baseline `CARD_SYSTEM_ARCHITECTURE.md` | 17 exact hashed sections in three indexed `Card-System/*.md` shards | `PASS` |
-| `effect-contracts` | 21 level-two sections in baseline `CARD_EFFECT_CAPABILITIES.md` | Active capability catalog is byte-identical | `PASS` |
+| `effect-contracts` | 21 level-two sections in baseline `CARD_EFFECT_CAPABILITIES.md` | Every baseline capability category remains active across the compact index and indexed `Card-System/BOARD_CAPABILITIES.md`, `STATE_CAPABILITIES.md`, and `TIMING_AND_TRANSITIONS.md` shards; moved section bodies retain their precise contracts and later authorized implementation-status additions | `PASS` |
 | `test-commands-and-gates` | 56 level-two sections and 35 exact PowerShell command fences | 55 exact current sections in indexed testing shards; one superseded snapshot-Undo section is a hashed verbatim archive; all commands remain recoverable | `PASS` |
 | `historical-results` | 51 roadmap completion-note bodies | 51 hashed verbatim records in indexed phase-handoff archives, with active backlinks | `PASS` |
 | `rights-and-privacy` | Exact rights/distribution, product-horizon, and current-non-goal sections in baseline project context plus matching process boundaries | Exact hashed product/workflow shard destinations; compact startup routing preserves private/no-distribution boundaries | `PASS` |
-| `active-leaf-measurements` | Seven governed active files measured below | All current index and subject leaves measured below and within hard thresholds | `PASS` |
+| `active-leaf-measurements` | Seven governed active files measured below | The 2026-08-12 routing correction leaves all current index and subject leaves below warning and hard thresholds; affected measurements are recorded below and the validator checks the complete active corpus | `PASS` |
 
 ## Original governed-file measurements
 
@@ -33,7 +33,7 @@ This inventory accounts for the governed categories required by milestone 3.11a.
 
 Word counting uses the validator's stable Unicode token expression. Byte values are exact file lengths at consolidation review.
 
-## New governed active-leaf measurements
+## Consolidation active-leaf measurements
 
 | Active leaf | Words | Bytes | Family hard limit |
 | --- | ---: | ---: | --- |
@@ -66,3 +66,16 @@ Word counting uses the validator's stable Unicode token expression. Byte values 
 | `Card-System/VALIDATION_AND_EXTENSION.md` | 774 | 5,885 | 7,000 / 64 KiB |
 
 No active leaf is at the 85% warning threshold. Archive files are excluded from active-leaf thresholds and routine startup loading.
+
+## 2026-08-12 routing correction measurements
+
+| Active leaf | Words | Bytes | Family hard limit |
+| --- | ---: | ---: | --- |
+| `SESSION_BRIEF.md` | 526 | 4,483 | 2,000 / 20 KiB |
+| `Project/CURRENT_IMPLEMENTATION.md` | 1,622 | 12,569 | 4,500 / 40 KiB |
+| `CARD_EFFECT_CAPABILITIES.md` | 2,368 | 18,529 | 7,000 / 64 KiB |
+| `Card-System/BOARD_CAPABILITIES.md` | 1,858 | 13,460 | 7,000 / 64 KiB |
+| `Card-System/STATE_CAPABILITIES.md` | 1,360 | 10,245 | 7,000 / 64 KiB |
+| `Card-System/TIMING_AND_TRANSITIONS.md` | 917 | 6,711 | 7,000 / 64 KiB |
+
+This correction changes routing and ownership only. It preserves current implementation facts and capability contracts, introduces no gameplay or milestone-status change, and leaves archives outside active-leaf thresholds.

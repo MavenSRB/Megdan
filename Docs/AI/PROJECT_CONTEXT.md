@@ -1,9 +1,10 @@
 # Guards Digital - Project Context Index
 
-Current implementation and authorization live only in [SESSION_BRIEF.md](SESSION_BRIEF.md). This index routes to durable product, architecture, presentation, workflow, and terminology authority without carrying milestone history.
+Current implementation detail lives in the indexed subject shard below. Exact authorization and next-milestone/profile routing live only in [SESSION_BRIEF.md](SESSION_BRIEF.md). This index carries no milestone history.
 
 ## Canonical active shards
 
+- [Current implementation inventory](Project/CURRENT_IMPLEMENTATION.md)
 - [Product scope and durable constraints](Project/PRODUCT.md)
 - [Core architecture constraints](Project/ARCHITECTURE.md)
 - [Presentation and accessibility direction](Project/PRESENTATION.md)

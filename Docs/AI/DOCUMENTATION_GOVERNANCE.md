@@ -10,12 +10,13 @@ Every fact has exactly one canonical active home. Other active documents use a s
 
 | Information category | One canonical home | Permitted noncanonical content |
 | --- | --- | --- |
-| Current implementation, authorization, exact next milestone, and next profile | [`SESSION_BRIEF.md`](SESSION_BRIEF.md) | One stable link; no duplicated chronology or test totals |
+| Current implementation inventory | [`Project/CURRENT_IMPLEMENTATION.md`](Project/CURRENT_IMPLEMENTATION.md) | Compact startup status and one stable link from [`SESSION_BRIEF.md`](SESSION_BRIEF.md); no duplicated chronology or test totals |
+| Current authorization, exact next milestone, and next profile | [`SESSION_BRIEF.md`](SESSION_BRIEF.md) | One stable link; no duplicated route markers |
 | Roadmap sequencing, milestone status/profile, exact acceptance checks, and non-goals | [`ROADMAP.md`](ROADMAP.md) plus its indexed [`Roadmap/`](Roadmap/) phase shards | Status/routing summaries that link to the exact milestone |
 | Durable product scope, architecture, platform, presentation, terminology, and workflow | [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) plus its indexed [`Project/`](Project/) subject shards | Minimal dependency-routing summaries |
 | Rule/source authority, verification and implementation status, approved deviations, and open questions | [`RULES_LEDGER.md`](RULES_LEDGER.md) | Links from architecture or milestone definitions |
 | Durable card/action engine contracts and extension boundaries | [`CARD_SYSTEM_ARCHITECTURE.md`](CARD_SYSTEM_ARCHITECTURE.md) plus its indexed [`Card-System/`](Card-System/) shards | Links and narrowly necessary dependency summaries |
-| Durable effect, keyword, query, modifier, timing, token/marker, and transition capabilities | [`CARD_EFFECT_CAPABILITIES.md`](CARD_EFFECT_CAPABILITIES.md) | Links and narrowly necessary dependency summaries |
+| Durable effect, keyword, query, modifier, timing, token/marker, and transition capabilities | [`CARD_EFFECT_CAPABILITIES.md`](CARD_EFFECT_CAPABILITIES.md) plus its indexed [`Card-System/`](Card-System/) capability shards | Links and narrowly necessary dependency summaries |
 | Validation policy, launcher resilience, active/future exact recipes, gate definitions, and test ownership | [`TESTING.md`](TESTING.md) plus its indexed [`Testing/`](Testing/) shards | Exact command link or short gate route |
 | Active technical risks | [`TECHNICAL_RISKS.md`](TECHNICAL_RISKS.md) | Milestone links to owning risk IDs |
 | Completed milestone narratives, historical run/failure evidence, superseded recipes, and resolved risks | [`Archive/README.md`](Archive/README.md) and its indexed lossless destinations | Short backlink only; never a copied body |
@@ -36,6 +37,8 @@ Thresholds apply per active leaf, never to the aggregate corpus. Word count uses
 | `DOCUMENTATION_GOVERNANCE.md` and `TECHNICAL_RISKS.md` | 4,500 | 40 KiB |
 
 If irreducible precise current material cannot fit, create an indexed authoritative shard with the same family threshold or obtain an explicit governance amendment. Never abbreviate exact material or silently relax the validator. A validator cannot become passable merely by deleting content: preservation inventory, manifest coverage, baseline hashes, destination checks, and exact category fingerprints must also pass.
+
+The current-implementation inventory is maintained by subject, not chronology: replace or consolidate affected statements when behavior changes, and route detailed completed outcome/validation evidence to the phase-handoff archive. Top-level startup and capability indexes remain compact routers; moving precise active authority to an indexed shard is the normal response to sustained growth, not compression.
 
 ## Active risk lifecycle
 
