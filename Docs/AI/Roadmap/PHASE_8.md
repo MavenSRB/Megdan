@@ -266,26 +266,80 @@ Acceptance checks:
 - A lightweight threat model identifies trusted and untrusted processes, per-seat command authority, public/team/owner-private information, diagnostic-log sensitivity, host-tampering limitations, and the required safe rejection or terminal behavior. This is scoped to six invited players and does not claim production anti-cheat or public-service security.
 - The selected Unity editor, packages/SDKs, transport/service versions, licenses, private-distribution constraints, deterministic/authoritative-code reach, removal/upgrade path, and build compatibility are pinned in a version-controlled dependency decision record. Upgrades that can affect authority, serialization, networking, rendering, or builds require an explicit compatibility assessment and applicable gate rerun.
 - The track remains private and invite-only; accounts, public matchmaking, public server browsing, telemetry, monetization, and public distribution remain out of scope.
-- Milestones 8.30-8.36 receive evidence-based implementation slices, validation commands, and required Codex profiles before the first networking implementation is authorized.
+- Milestones 8.30-8.36, including the lettered local-UI and rehearsal slices, receive evidence-based implementation boundaries, validation commands, and required Codex profiles before the first implementation milestone is authorized.
 
-Planning note: This scope amendment adds a major cross-system track rather than one playtest task. The provisional planning range is eight micro-milestones and roughly 4-8 focused engineering weeks, excluding approval latency, external-service outages, and corrective work discovered by real internet testing. Milestone 8.29 must replace this estimate with evidence from the selected architecture.
+Planning note: This scope amendment adds a major cross-system track rather than one playtest task. The provisional planning range is thirteen implementation/validation micro-milestones and roughly 4-8 focused engineering weeks, excluding approval latency, external-service outages, and corrective work discovered by local or real-internet testing. The added milestone boundaries isolate session/projection, player-UI, transport, and internet defects; they do not by themselves expand the intended product scope. Milestone 8.29 must replace this estimate with evidence from the selected architecture.
 
 ### [!] 8.30 Move match authority behind a transport-neutral session boundary
 
 Observable outcome: The existing local director adapter and a future network host can submit the same typed commands to, and consume the same ordered events and snapshots from, one authoritative match session without moving rules into Unity views or transport callbacks.
 
+### [!] 8.30a Add locally testable owner-scoped projections and command authorization
+
+Blocked by: Milestone 8.30 must establish the transport-neutral session boundary.
+
+Observable outcome: Before any real transport is introduced, the local session can expose six distinct seat-scoped client projections and authorize each submitted command against its stable player/hero ownership.
+
+Acceptance checks:
+
+- A development-only local seat harness can select each of the six configured seats outside match authority and consume the same owner-scoped projection contract intended for network clients.
+- Each seat receives its own hand and pre-reveal commitment state plus only the authorized public or team-shared state; another seat's hidden hand or commitment identity is absent rather than merely concealed by a view.
+- The authoritative session rejects cross-seat hero commands, unauthorized team choices, stale projection versions, replayed or duplicated command identities, and forged stable ownership identities without partial mutation.
+- Snapshot restore and session replacement rebuild every seat's authorized projection deterministically without transferring ownership or revealing another seat's private state.
+- Director-only Undo, restart, hidden-state inspection, and Tie Breaker override remain outside the player projection and command surface.
+
+Non-goals: No network SDK, transport envelope, host/join flow, relay/NAT traversal, reconnect policy, production security claim, or polished UI.
+
+### [!] 8.30b Build the primitive local player HUD and complete prompt flow
+
+Blocked by: Milestone 8.30a must prove the local owner-scoped projection and authorization contract.
+
+Observable outcome: A player-facing primitive HUD can complete the full six-hero match through the local session using only one selected seat's authorized projection and typed invocations.
+
+Acceptance checks:
+
+- The HUD shows the selected seat's own hand and commitments, authorized shared reveal/history, active resolver, round/turn, Lives, Waves, hero levels, coins, and connection-independent session status without querying rules objects or director-only state.
+- Every action, target, Defense, tied-Initiative, team-owned, optional/mandatory continuation, and completed-match state required by the complete pitch roster has a readable contextual prompt and forwards the exact projected typed invocation.
+- Waiting, rejected-input, stale-view, session-replacement, recoverable-error, and terminal states are explicit; presentation never guesses legality or silently leaves a control enabled after its offer expires.
+- Rebuilding after snapshot restore or local session replacement produces the same authorized HUD and prompt state without retaining stale callbacks, selections, hidden data, or presentation-owned continuation state.
+- The development-only seat switcher is visibly non-player-facing, cannot mutate seat ownership, and is unavailable from private-online client projections.
+- The primitive layout keeps all required cards, prompts, and state reachable at the supported desktop validation resolutions without introducing the deferred production HUD, general settings suite, or accessibility suite.
+
+Non-goals: No transport, lobby, reconnect implementation, production styling, animation overhaul, main menu, account UI, tutorial, or Phase 9 presentation work.
+
+### [!] 8.30c Validate the complete six-seat player experience against the local session
+
+Blocked by: Milestone 8.30b must provide the primitive local player HUD and prompt flow.
+
+Observable outcome: A complete deterministic 3v3 match can be played locally while exercising all six seat perspectives, establishing that session, privacy, HUD, and prompt defects are isolated before networking begins.
+
+Acceptance checks:
+
+- A recorded local scenario completes a full match while switching among all six development seats and covers every roster-required player prompt family, team-owned choice, reveal boundary, and victory path.
+- Automated projection and presentation checks cover each seat's private/public visibility, cross-seat rejection, stale controls, snapshot/session rebuild, completed-match state, and supported validation resolutions.
+- Repeated seat switching and session replacement do not leak hidden information, transfer control, duplicate input handlers, retain stale selections, or grow presentation-owned resources monotonically.
+- Findings are classified as authoritative-session, projection/authorization, HUD/prompt, or presentation-lifecycle defects and every blocking defect is corrected and rerun green before transport work is authorized.
+- Validation records explicitly state that this in-process local gate proves no claim about serialization envelopes, network faults, relay/NAT traversal, latency, disconnects, or real-internet behavior.
+
+Non-goals: No network process, provider integration, lobby, reconnect, public distribution, production visuals, or invited playtest.
+
 ### [!] 8.31 Establish the private host and six player seats
+
+Blocked by: Milestone 8.30c must pass the complete local six-seat player-experience gate.
 
 Observable outcome: One host creates an invite-only session and six compatible Windows clients can occupy exactly one stable player/hero seat each, with duplicates, unauthorized seat changes, and incompatible content/schema revisions rejected.
 
-### [!] 8.32 Add owner-scoped projections and command authorization
+### [!] 8.32 Enforce owner-scoped projections and command authorization across the network boundary
 
-Observable outcome: Each client receives only the state it is permitted to see and can submit commands only for its owned hero or an explicitly team-owned choice; the host revalidates every command against authoritative state.
+Blocked by: Milestone 8.31 must establish the private host and six network seats.
+
+Observable outcome: Each network client receives the already-proven seat-scoped projection and can submit commands only for its owned hero or an explicitly team-owned choice; untrusted transport input cannot bypass host-side revalidation.
 
 Acceptance checks:
 
 - Automated negative cases cover cross-seat hero commands, unauthorized team choices, hidden-hand/pre-reveal leakage, replayed or duplicated commands, stale projection versions, malformed/oversized envelopes, and forged stable identities without partial host mutation.
 - Diagnostic output needed for support does not expose another seat's owner-private hand or pre-reveal commitment identity.
+- Network serialization and delivery preserve the local projection's absence of unauthorized fields rather than sending complete director state and relying on client-side hiding.
 
 ### [!] 8.33 Synchronize commands, events, pending choices, and snapshots
 
@@ -305,13 +359,55 @@ Acceptance checks:
 - Fixed scenarios disconnect and reconnect during commitment, joint reveal, same-team Initiative choice, Movement continuation, Defense reaction, and end-of-round progression, then prove convergence or the documented terminal result.
 - Reconnect to stale, future, incompatible, or unauthorized session state cannot transfer seat control, reveal private information, or partially replace authoritative state.
 
-### [!] 8.35 Add primitive private lobby and online match-flow UI
+### [!] 8.35a Add the primitive private host/join lobby
 
-Observable outcome: Without production styling, invited players can host/join, identify their seat and team, become ready, enter the match, see their own hand and shared public state, answer their legal prompts, and leave or reconnect with clear status feedback.
+Blocked by: Milestones 8.31-8.34 must establish seats, authorized synchronization, and reconnect/host-loss policy.
 
-Non-goals: No account system, friends list, public matchmaking, server browser, text/voice chat, spectator mode, ranking, moderation, or polished production UI.
+Observable outcome: Without production styling, invited players can host or join by the selected private invitation mechanism, identify their seat and team, observe compatibility and connection state, become ready, enter the match, leave, and begin an authorized reconnect.
+
+Acceptance checks:
+
+- The lobby exposes exactly the selected architecture's minimum host/join and invitation flow, six stable seats, team/hero identity, readiness, compatibility/version rejection, and transition-to-match state.
+- Duplicate claims, unauthorized seat changes, full/incompatible sessions, host loss, join failure, and reconnect eligibility receive explicit bounded feedback without exposing another player's private match state or sensitive diagnostic data.
+- Team identity and status never rely on color alone, and all required controls remain reachable at the supported desktop validation resolutions.
+- Lobby state remains presentation-only over the session contracts and cannot assign authoritative match ownership by mutating Unity views.
+
+Non-goals: No account system, friends list, public matchmaking, server browser, text/voice chat, spectator mode, ranking, moderation, general main menu, or production styling.
+
+### [!] 8.35b Integrate the proven player HUD with online match flow
+
+Blocked by: Milestone 8.35a must establish the primitive private lobby.
+
+Observable outcome: The locally proven player HUD operates over the network client/session adapter with clear waiting, synchronization, latency, disconnect, reconnect, rejection, host-loss, and terminal feedback while preserving the same authoritative invocations and visibility boundaries.
+
+Acceptance checks:
+
+- Invited clients enter the existing owner-scoped HUD from the lobby, see only their own hand and authorized shared state, answer every legal prompt, and return to an explicit recoverable or terminal state when the session policy requires it.
+- Network waiting, stale-view rejection, resynchronization, temporary disconnect, incompatible restore, reconnect success/failure, and host loss cannot leave stale actionable controls or presentation-owned continuation state.
+- Equivalent local and network projections produce equivalent player HUD and prompt meanings; transport metadata does not become gameplay authority or fork a second rules-facing UI path.
+- Reconnect and resynchronization rebuild the HUD without hidden-information leakage, seat-control transfer, duplicated input handlers, stale selections, or monotonic presentation-resource growth.
+
+Non-goals: No production HUD redesign, public-service UX, matchmaking, account recovery, telemetry dashboard, tutorial, chat, or Phase 9 polish.
+
+### [!] 8.35c Pass a local six-client playtest-build rehearsal
+
+Blocked by: Milestone 8.35b must complete primitive online match-flow UI integration.
+
+Observable outcome: The exact intended private-playtest topology and disposable Win64 build path complete a six-client match locally, including bounded fault and reconnect scenarios, before friends are asked to test over the internet.
+
+Acceptance checks:
+
+- Six local client processes occupy six distinct seats through the primitive lobby and complete a full match using the same build, content/schema revision, host/session boundary, owner-scoped projections, and UI intended for milestone 8.36.
+- The rehearsal exercises the approved local fault-injection, disconnect/reconnect, stale/version rejection, host-loss, and resynchronization cases and records host/client convergence plus privacy-reviewed diagnostics.
+- No client receives another seat's hidden hand, controls another hero, retains stale actionable prompts after resynchronization, or diverges from the host's authoritative public outcome.
+- Every observed blocking rules/session, projection/privacy, HUD/prompt, transport/synchronization, build, or diagnostic defect is corrected and rerun green before the internet playtest is authorized.
+- The evidence explicitly states that a same-machine or local-network rehearsal does not prove relay/NAT traversal, external latency behavior, multi-network connectivity, or real-internet reliability.
+
+Non-goals: No invited external tester, public distribution, production service, account system, matchmaking, production presentation, or substitution for milestone 8.36.
 
 ### [!] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
+
+Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.
 
 Observable outcome: Six humans on separate clients complete an invite-only full 3v3 match over the internet using a disposable private Win64 playtest build and primitive UI before production presentation begins.
 

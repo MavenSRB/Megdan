@@ -39,6 +39,8 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 - The board is the primary focus.
 - Director mode exposes all six hands through clear Red/Blue team and hero grouping. Private online clients expose only the local player's hand plus authorized shared played/revealed state; both modes keep the active resolver readable without presentation owning legality.
+- Before networking begins, the primitive player-facing HUD is proven against six owner-scoped projections from the local transport-neutral session. A development-only seat switcher may select each perspective for validation, but it remains outside match authority, cannot transfer ownership, and is unavailable from private-online client projections.
+- The same primitive HUD and contextual-prompt meanings are retained behind the network client/session adapter. Lobby, connection, synchronization, reconnect, rejection, and host-loss status wrap that proven match UI rather than creating a second rules-facing presentation path.
 - Show a compact read-only 6-hero-by-4-turn card history grouped as three Red and three Blue heroes; each entry derives from the authoritative `HeroId` assignment and reveals no committed card before the joint reveal.
 - Show round, turn, active resolver, Lives, Waves, hero levels, and coins.
 - Use contextual prompts for actions, targets, and choices.
@@ -52,7 +54,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Each configured legal Defense-card invocation identifies its authoritative card and labels the offer-bound value as `PRINTED DEFENSE`; the exact typed command remains in the projected invocation, while modified Defense Total, eligibility, and response resolution remain outside presentation.
 - Defense-choice controls must size or wrap from their complete rendered label so the card name and printed value remain readable; a model containing complete text does not satisfy this requirement when the configured control clips it.
 - Planned milestone 5.8b adds a compact pointer-pass-through Defense breakdown above the hovered or keyboard-focused legal Defense choice. Moving across choices updates the same preview without changing authoritative state; clicking retains the current one-click typed response. The immutable application projection supplies Attack and per-choice Defense contributions, totals, explicit Block/result meaning, and player-readable source identities, while presentation only formats them. As soon as the Defense response opens, the board marks the attack-scoped minions in its already-calculated Defense modifier by projected stable identity: supporting and hindering sources receive distinct non-target cues with visible `+1` or `-1` indicators, never color alone. Those cues remain unchanged while the player moves across cards or Decline; they clear or rebuild only when the pending Defense response or projection changes. Decline previews no Defense Total without changing the attack-scoped cues. The popup avoids the focused control and remains inside the viewport.
-- No main menu, settings suite, tutorial, collection screen, or account UI is required for the pitch.
+- A minimal private-session entry/lobby screen is required for host/join and connection flow. No general main menu, settings suite, tutorial, collection screen, or account UI is required for the pitch.
 
 ## Accessibility baseline
 
