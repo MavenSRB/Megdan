@@ -205,10 +205,22 @@ namespace GuardsDigital.Tests.EditMode
                     new[] { new MinionDefenseCueViewModel(state.MinionId, -1) }));
 
                 Assert.That(minion.DefenseCueAmount, Is.EqualTo(-1));
-                var cue = minion.GetComponentsInChildren<TextMesh>(true).Single();
+                var textMeshes = minion.GetComponentsInChildren<TextMesh>(true);
+                var cue = textMeshes.Single(value => value.gameObject.name == "Defense Contribution Cue");
+                var background = textMeshes.Single(value =>
+                    value.gameObject.name == "Defense Contribution Cue Background");
                 Assert.That(cue.text, Is.EqualTo("-1"));
+                Assert.That(cue.characterSize, Is.LessThan(background.characterSize * 0.5f),
+                    "The signed value must fit cleanly inside its backing glyph.");
+                Assert.That(cue.color.r, Is.EqualTo(0.72f).Within(1f / 255f));
+                Assert.That(cue.color.g, Is.EqualTo(0.12f).Within(1f / 255f));
+                Assert.That(cue.color.b, Is.EqualTo(0.08f).Within(1f / 255f));
                 Assert.That(cue.transform.localRotation, Is.EqualTo(Quaternion.identity),
                     "The cue must share the token's board-facing plane instead of rendering edge-on.");
+                Assert.That(background.text, Is.EqualTo("●"));
+                Assert.That(background.color.a, Is.EqualTo(0.9f).Within(1f / 255f));
+                Assert.That(background.GetComponent<MeshRenderer>().sortingOrder,
+                    Is.LessThan(cue.GetComponent<MeshRenderer>().sortingOrder));
                 Assert.That(tile.IsHighlighted, Is.False,
                     "A Defense modifier source is not a selectable Attack-target cue.");
 
@@ -221,7 +233,8 @@ namespace GuardsDigital.Tests.EditMode
                     Array.Empty<MinionId>(),
                     default));
                 Assert.That(minion.DefenseCueAmount, Is.Zero);
-                Assert.That(minion.GetComponentsInChildren<TextMesh>(true).Single().gameObject.activeSelf, Is.False);
+                Assert.That(minion.GetComponentsInChildren<TextMesh>(true),
+                    Has.All.Matches<TextMesh>(value => !value.gameObject.activeSelf));
             }
             finally
             {

@@ -507,9 +507,11 @@ namespace GuardsDigital.Tests.PlayMode
             var hinderingView = runtime.BoardView.MinionViews.Single(value =>
                 value.BoundMinionId.Equals(hindering.MinionId));
             Assert.That(supportingView.DefenseCueAmount, Is.EqualTo(1));
-            Assert.That(supportingView.GetComponentsInChildren<TextMesh>(true).Single().text, Is.EqualTo("+1"));
+            Assert.That(supportingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
+                value.gameObject.name == "Defense Contribution Cue").text, Is.EqualTo("+1"));
             Assert.That(hinderingView.DefenseCueAmount, Is.EqualTo(-1));
-            Assert.That(hinderingView.GetComponentsInChildren<TextMesh>(true).Single().text, Is.EqualTo("-1"));
+            Assert.That(hinderingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
+                value.gameObject.name == "Defense Contribution Cue").text, Is.EqualTo("-1"));
 
             var resolutionId = new ActionResolutionId("configured-preview-resolution");
             var choiceId = new ActionResolutionStepId("configured-preview-choice");
