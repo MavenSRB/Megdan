@@ -263,7 +263,7 @@ Prerequisite: Milestones 5.8a and 5.8a1 must be complete so the popup milestone 
 
 Historical evidence: [milestone 5.8b handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58b-preview-authoritative-defense-breakdowns-on-hover-completion-evidence).
 
-### [ ] 5.8c Independently review the full-map action and combat foundation
+### [x] 5.8c Independently review the full-map action and combat foundation
 
 Required Codex profile: GPT-5.6 Sol with high reasoning.
 
@@ -282,3 +282,5 @@ Non-goals: No Wasp inventory or behavior, end-of-round implementation, combat re
 Prerequisite: Milestones 5.8a, 5.8a1, and 5.8b must be complete so the review inspects the reload-safe configured minion-target interaction and authoritative Defense-breakdown presentation instead of either known presentation gap.
 
 Hard gate: Phase 6 does not begin until milestone 5.8c is reviewed and every gate-blocking finding has an approved disposition.
+
+Historical evidence: [milestone 5.8c handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58c-independently-review-the-full-map-action-and-combat-foundation-completion-evidence).

@@ -6,7 +6,9 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Phase 6 uses the complete Phase 4 map and the synthetic turn/round controller. Lane behavior is never validated on the reduced test grid.
 
-### [ ] 6.1 Resolve the end-of-round Minion Battle
+### [!] 6.1 Resolve the end-of-round Minion Battle
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: The authority compares Battle-Zone minions, resolves the losing team's choices with Heavy removed last, and records an end-of-round Lane-Push request if a team loses its last minion.
 

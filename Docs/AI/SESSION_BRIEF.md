@@ -8,17 +8,17 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through Phase 5 milestone 5.8b. The configured vertical slice now uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation, including reload-safe authority-owned Hero/minion Attack targeting and authoritative Defense previews with signed attack-scoped minion cues. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
+The project has completed roadmap milestones through the independent Phase 5 foundation review at 5.8c. The configured vertical slice now uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation, including reload-safe authority-owned Hero/minion Attack targeting and authoritative Defense previews with signed attack-scoped minion cues. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
 
-Configured minion views retain serialized stable binding identity across editor backup/domain restoration, and the grid atomically rebinds the passive board, pointer input, and all selectors whenever it replaces the generated view set. During a pending Hero Defense response, the immutable session projection now supplies ordered Attack contributions and totals, per-card authoritative Defense previews, explicit Block/outcome meaning, readable sources, and exact signed minion identities. Hover/focus presentation is opaque, pointer-pass-through, viewport-bounded, and keeps the existing one-click typed response commands. Fresh-task review milestone 5.8c now owns the independent Phase 5 foundation assessment.
+Configured minion views retain serialized stable binding identity across editor backup/domain restoration, and the grid atomically rebinds the passive board, pointer input, and all selectors whenever it replaces the generated view set. During a pending Hero Defense response, the immutable session projection supplies ordered Attack contributions and totals, per-card authoritative Defense previews, explicit Block/outcome meaning, readable sources, and exact signed minion identities. Hover/focus presentation is opaque, pointer-pass-through, viewport-bounded, and keeps the existing one-click typed response commands. Review 5.8c found no current gameplay or performance defect, but Phase 6 is blocked pending approval of two roadmap dispositions: typed serializable Minion-Battle continuation ownership in 6.1, and a pre-effect Skill/control-flow foundation plus fresh verification before 6.3.
 
 ## Current authorization and next route
 
-- Current completed milestone: **5.8b**.
+- Current completed milestone: **5.8c**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **5.8c**.
+- Next proposed milestone: **6.1**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with high reasoning**.
-- Milestone 5.8c is proposed as the fresh-task independent review of the full-map action and combat foundation. It is not authorized.
+- Milestone 6.1 is blocked by the open 5.8c finding-disposition table. The immediate next authorization must be the proposed Phase 6 roadmap amendment; do not approve or implement 6.1 until both findings have approved dispositions and the required correction-plus-verification route is canonical.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries
