@@ -217,7 +217,25 @@ Non-goals: No Attack, Range, Heavy-immunity, reward, Defeat, or removal-rule cha
 
 Historical evidence: [milestone 5.8a handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58a-expose-authoritative-minion-attack-targets-in-the-configured-board-completion-evidence).
 
-### [ ] 5.8b Preview authoritative Defense breakdowns on hover
+### [ ] 5.8a1 Repair configured minion-view lifetime across Unity reloads
+
+Required Codex profile: GPT-5.6 Sol with high reasoning.
+
+Observable outcome: The configured board retains or safely rebinds every projected minion view and pointer selector when Unity rebuilds, serializes/restores, destroys/replaces, or reloads generated scene objects, so later board refreshes never access a destroyed component or silently lose minion interaction.
+
+Acceptance checks:
+
+- A focused automated regression reproduces the demonstrated lifecycle sequence against the pre-correction design: a board interaction view is composed, one or more bound `StandardMinionView` objects lose transient setup identity or are destroyed/replaced by the grid lifecycle, and a later card/session-driven board refresh would raise `MissingReferenceException` on the stale cached component.
+- Minion presentation identity and ownership remain explicit across editor backup/domain reload, scene reload, Play Mode entry, repeated configured map rebuild, and deliberate bound-view replacement. The correction either preserves valid objects or atomically rebinds every consumer; a null check that merely skips destroyed entries is insufficient.
+- `BoardInteractionUnityView`, `PrimitiveHeroPointerInput`, and every `StandardMinionPointerSelector` observe the same current set of twelve configured minion views after a rebuild/replacement. Legal target highlighting and typed `MinionId` submission still work, while removed projected minions remain disabled and Undo/restore can re-enable the correct identity without duplicate selectors, colliders, or views.
+- Rebuild/reload followed by commitment confirmation, target-choice refresh, removal, Undo, restart, and snapshot restore produces no `MissingReferenceException`, no missing-script warning attributable to the configured minion path, and no exception emitted outside NUnit result accounting. Focused validation inspects both the fresh XML and complete Unity log.
+- The regression protects the actual lifetime boundary rather than only a clean saved-scene load or an in-process rebuild whose existing views still retain `SetupState`; it must fail if stale cached view or selector references are reintroduced.
+- Existing authoritative minion identities, targeting legality, Defeat/reward/removal, Hero targeting, Defense continuation, map setup, and passive-presentation dependency direction remain unchanged.
+- T3 validation runs the focused lifecycle Edit Mode/Play Mode coverage, the directly affected configured saved-scene and minion-target fixtures, and both complete unfiltered suites because this correction crosses editor/Play Mode lifecycle and changes an already-passed configured scene-bootstrap boundary. A targeted non-batch editor transition confirms the reported reload/commit flow is clean.
+
+Non-goals: No Attack, Defense, Range, Heavy-immunity, reward, Defeat, removal, Undo, snapshot, or map-rule change; no 5.8b Defense-preview implementation; no minion pooling, general presentation framework, production animation/audio, networking, or legacy-controller expansion.
+
+### [!] 5.8b Preview authoritative Defense breakdowns on hover
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -238,7 +256,7 @@ Acceptance checks:
 
 Non-goals: No Attack, Defense, modifier, minion, Block-condition, card-text, item, or outcome-rule change; no confirmation click, modal dialog, card-detail redesign, legacy-controller expansion, production animation/audio, networking implementation, or disclosure of private Defense choices to unauthorized players.
 
-Prerequisite: Milestone 5.8a must be complete so the popup milestone preserves and regresses both configured Hero and minion Attack-target presentation paths.
+Prerequisite: Milestones 5.8a and 5.8a1 must be complete so the popup milestone preserves and regresses both configured Hero and minion Attack-target presentation paths on a reload-safe view-lifetime foundation.
 
 ### [!] 5.8c Independently review the full-map action and combat foundation
 
@@ -256,6 +274,6 @@ Acceptance checks:
 
 Non-goals: No Wasp inventory or behavior, end-of-round implementation, combat redesign, speculative optimization, runtime fix, or relaxation of verified rules and validation gates.
 
-Prerequisite: Milestones 5.8a and 5.8b must be complete so the review inspects the actual configured minion-target interaction and authoritative Defense-breakdown presentation instead of either known presentation gap.
+Prerequisite: Milestones 5.8a, 5.8a1, and 5.8b must be complete so the review inspects the reload-safe configured minion-target interaction and authoritative Defense-breakdown presentation instead of either known presentation gap.
 
 Hard gate: Phase 6 does not begin until milestone 5.8c is reviewed and every gate-blocking finding has an approved disposition.
