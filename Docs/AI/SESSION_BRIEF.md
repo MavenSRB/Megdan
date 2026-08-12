@@ -8,17 +8,17 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through Phase 5 milestone 5.8. The configured vertical slice now uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
+The project has completed roadmap milestones through Phase 5 milestone 5.8a. The configured vertical slice now uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation, including authority-owned Hero and minion Attack-target selection. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
 
-The immediate configured gap is presentation-only: the board still accepts Hero Attack-target identities but not the already-authoritative legal minion identities. Proposed milestone 5.8a owns that connection and remains unauthorized.
+The immediate configured gap is the authority-computed Hero Defense breakdown and its passive hover/focus presentation. Proposed milestone 5.8b owns that preview and remains unauthorized.
 
 ## Current authorization and next route
 
-- Current completed milestone: **5.8**.
+- Current completed milestone: **5.8a**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **5.8a**.
+- Next proposed milestone: **5.8b**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
-- Milestone 5.8a adds configured-board minion Attack selection. Planned 5.8b then adds the authoritative hover Defense breakdown, and review 5.8c remains blocked until both complete; none is authorized.
+- Milestone 5.8b adds the authoritative hover Defense breakdown; review 5.8c remains blocked until 5.8b completes. Neither is authorized.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries

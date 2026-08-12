@@ -1,15 +1,98 @@
+using System;
+using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
+using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace GuardsDigital.Tests.EditMode
 {
     public sealed class StandardMinionViewTests
     {
+        [Test]
+        public void PassiveBoardView_UsesProjectedMinionIdentityForCuePointerAndRemoval()
+        {
+            var minionObject = new GameObject("Projected Minion");
+            var tileObject = new GameObject("Projected Minion Tile");
+            var material = new Material(Shader.Find("Standard"));
+            try
+            {
+                var state = new QuickGameMinionSetupState(
+                    new MinionId("blue-target"),
+                    new TeamId("blue-team"),
+                    TeamSide.Blue,
+                    StandardMinionType.Melee,
+                    new ConfiguredSpawnPointReference(new MapId("test-map"), new SpawnPointId("blue-target-spawn")),
+                    new ConfiguredSpaceReference(new MapId("test-map"), new SpaceId("q1_r0")),
+                    new HexCoordinate(1, 0));
+                var minion = minionObject.AddComponent<StandardMinionView>();
+                minion.Configure(state, HexWorldLayout.DefaultOuterRadius);
+                var selector = minionObject.AddComponent<StandardMinionPointerSelector>();
+                var tile = tileObject.AddComponent<HexTileView>();
+                tile.Configure(state.Coordinate, HexWorldLayout.DefaultOuterRadius);
+                var view = new BoardInteractionUnityView(
+                    Array.Empty<PrimitiveHeroView>(),
+                    new[] { tile },
+                    material,
+                    new[] { minion });
+                MinionId submitted = default;
+                view.BindIntentHandlers(_ => false, id => { submitted = id; return true; }, _ => false);
+                selector.Configure(view);
+
+                view.Render(new BoardInteractionViewModel(
+                    1,
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroOccupancy>(),
+                    new[] { state },
+                    Array.Empty<HexCoordinate>(),
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
+                    new[] { state.MinionId },
+                    default));
+
+                Assert.That(tile.IsHighlighted, Is.True);
+                Assert.That(selector.TrySelectFromPointerRay(
+                    new Ray(minion.transform.position + (Vector3.up * 10f), Vector3.down)), Is.True);
+                Assert.That(submitted, Is.EqualTo(state.MinionId));
+
+                view.Render(new BoardInteractionViewModel(
+                    2,
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroOccupancy>(),
+                    Array.Empty<QuickGameMinionSetupState>(),
+                    Array.Empty<HexCoordinate>(),
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
+                    Array.Empty<MinionId>(),
+                    default));
+
+                Assert.That(minionObject.activeSelf, Is.False);
+                Assert.That(tile.IsHighlighted, Is.False);
+
+                view.Render(new BoardInteractionViewModel(
+                    3,
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroOccupancy>(),
+                    new[] { state },
+                    Array.Empty<HexCoordinate>(),
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
+                    Array.Empty<MinionId>(),
+                    default));
+
+                Assert.That(minionObject.activeSelf, Is.True,
+                    "A later authoritative projection such as Undo/restore must re-enable the retained view.");
+                Assert.That(tile.IsHighlighted, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(material);
+                UnityEngine.Object.DestroyImmediate(minionObject);
+                UnityEngine.Object.DestroyImmediate(tileObject);
+            }
+        }
+
         [TestCase(TeamSide.Red, StandardMinionType.Heavy, "Minions/red-heavy")]
         [TestCase(TeamSide.Red, StandardMinionType.Melee, "Minions/red-melee")]
         [TestCase(TeamSide.Red, StandardMinionType.Ranged, "Minions/red-ranged")]

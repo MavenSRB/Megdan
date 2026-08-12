@@ -12,12 +12,15 @@ namespace GuardsDigital.Presentation.Units.Minions
         public const float DefaultScale = 1.35f;
 
         private QuickGameMinionSetupState setupState;
+        private float outerRadius = HexWorldLayout.DefaultOuterRadius;
 
         public QuickGameMinionSetupState SetupState => setupState;
+        public float OuterRadius => outerRadius;
 
         public void Configure(QuickGameMinionSetupState state, float outerRadius)
         {
             setupState = state ?? throw new System.ArgumentNullException(nameof(state));
+            this.outerRadius = outerRadius;
             gameObject.name = $"{state.TeamSide} {state.MinionType} Minion {state.MinionId.Value}";
             transform.localPosition = HexWorldLayout.ToWorld(state.Coordinate, outerRadius) +
                 (Vector3.up * DefaultVerticalOffset);

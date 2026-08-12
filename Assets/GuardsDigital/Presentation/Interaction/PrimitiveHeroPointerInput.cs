@@ -20,6 +20,7 @@ namespace GuardsDigital.Presentation.Interaction
         private HeroSelectionController selectionController;
 
         private BoardInteractionUnityView boardView;
+        private StandardMinionPointerSelector[] minionSelectors;
         private HexTileView[] tiles;
         private System.Func<Vector2, bool> blocksPointer;
 
@@ -38,6 +39,7 @@ namespace GuardsDigital.Presentation.Interaction
             HeroSelectionController controller = null)
         {
             boardView = null;
+            minionSelectors = System.Array.Empty<StandardMinionPointerSelector>();
             tiles = System.Array.Empty<HexTileView>();
             blocksPointer = null;
             eventCamera = camera;
@@ -49,12 +51,17 @@ namespace GuardsDigital.Presentation.Interaction
         public void Configure(
             Camera camera,
             IEnumerable<PrimitiveHeroPointerSelector> pointerSelectors,
+            IEnumerable<StandardMinionPointerSelector> pointerMinionSelectors,
             BoardInteractionUnityView passiveBoardView,
             IEnumerable<HexTileView> boardTiles,
             System.Func<Vector2, bool> pointerBlocker)
         {
             eventCamera = camera ?? throw new System.ArgumentNullException(nameof(camera));
             selectors = (pointerSelectors ?? throw new System.ArgumentNullException(nameof(pointerSelectors)))
+                .Where(selector => selector != null)
+                .ToArray();
+            minionSelectors = (pointerMinionSelectors ??
+                throw new System.ArgumentNullException(nameof(pointerMinionSelectors)))
                 .Where(selector => selector != null)
                 .ToArray();
             boardView = passiveBoardView ?? throw new System.ArgumentNullException(nameof(passiveBoardView));
@@ -117,6 +124,14 @@ namespace GuardsDigital.Presentation.Interaction
             EnsureBindings();
 
             foreach (var selector in selectors)
+            {
+                if (selector != null && selector.TrySelectFromPointerRay(pointerRay))
+                {
+                    return true;
+                }
+            }
+
+            foreach (var selector in minionSelectors ?? System.Array.Empty<StandardMinionPointerSelector>())
             {
                 if (selector != null && selector.TrySelectFromPointerRay(pointerRay))
                 {

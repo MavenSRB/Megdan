@@ -14,6 +14,7 @@ using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 
 namespace GuardsDigital.Presentation.Match
 {
@@ -29,6 +30,7 @@ namespace GuardsDigital.Presentation.Match
             PlaceholderOneVsOneTestConfiguration configuration,
             IEnumerable<BoardMapDefinition> maps,
             IEnumerable<PrimitiveHeroView> heroes,
+            IEnumerable<StandardMinionView> minions,
             IEnumerable<HexTileView> tiles,
             System.Collections.Generic.IEnumerable<PlaceholderObstacleView> obstacles,
             UnityEngine.Material highlightMaterial,
@@ -44,6 +46,10 @@ namespace GuardsDigital.Presentation.Match
                 .Distinct()
                 .ToArray();
             var tileViews = (tiles ?? throw new ArgumentNullException(nameof(tiles)))
+                .Where(value => value != null)
+                .Distinct()
+                .ToArray();
+            var minionViews = (minions ?? throw new ArgumentNullException(nameof(minions)))
                 .Where(value => value != null)
                 .Distinct()
                 .ToArray();
@@ -65,7 +71,7 @@ namespace GuardsDigital.Presentation.Match
                 maps,
                 configuration));
 
-            BoardView = new BoardInteractionUnityView(heroViews, tileViews, highlightMaterial);
+            BoardView = new BoardInteractionUnityView(heroViews, tileViews, highlightMaterial, minionViews);
             HandsView = new DirectorHandsUnityView();
             RoundView = new RoundActionUnityView();
             UndoRestartView = new UndoRestartUnityView();
@@ -76,7 +82,10 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartPresenter = new UndoRestartPresenter(session, UndoRestartView);
             DiagnosticPresenter = new DiagnosticLogPresenter(session, DiagnosticView);
 
-            BoardView.BindIntentHandlers(BoardPresenter.SubmitHero, BoardPresenter.SubmitDestination);
+            BoardView.BindIntentHandlers(
+                BoardPresenter.SubmitHero,
+                BoardPresenter.SubmitMinion,
+                BoardPresenter.SubmitDestination);
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
             HandsView.PassRequested += heroId => HandsPresenter.Pass(heroId);

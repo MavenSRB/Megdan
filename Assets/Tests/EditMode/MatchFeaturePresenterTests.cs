@@ -171,6 +171,75 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void BoardPresenter_ProjectsAndSubmitsExactPendingMinionAttackTarget()
+        {
+            var session = CreateAdjacentMinionSession();
+            StartTiedTurn(session, ActionKind.Attack);
+            var sourceCardId = session.Projection.SelectedActor.CardInstanceId;
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Attack);
+            Assert.That(session.Execute(DirectorCommand.StartAction(attack.ActionDefinitionId)).Accepted, Is.True);
+            var choice = session.Projection.PendingAttackTargetChoice;
+            var targetId = choice.LegalTargetMinionIds.Single();
+            var attackingActorId = session.Projection.SelectedActor.ActorId;
+            var view = new CapturingBoardView();
+            var presenter = new BoardInteractionPresenter(session, view);
+
+            presenter.Refresh();
+            Assert.That(view.Model.Minions.Select(value => value.MinionId), Is.EqualTo(new[] { targetId }));
+            Assert.That(view.Model.MinionAttackTargets, Is.EqualTo(new[] { targetId }));
+            var snapshot = session.CaptureSnapshot();
+            var commandCount = session.Projection.AcceptedCommands.Count;
+            Assert.That(presenter.SubmitMinion(new MinionId("stale-minion")), Is.False);
+            Assert.That(session.CaptureSnapshot(), Is.EqualTo(snapshot));
+            Assert.That(session.Projection.AcceptedCommands, Has.Count.EqualTo(commandCount));
+
+            Assert.That(presenter.SubmitMinion(targetId), Is.True);
+            var command = session.Projection.AcceptedCommands.Last();
+            Assert.That(command.Kind, Is.EqualTo(DirectorCommandKind.ChooseAttackTarget));
+            Assert.That(command.ResolutionId, Is.EqualTo(choice.ResolutionId));
+            Assert.That(command.ChoiceId, Is.EqualTo(choice.ChoiceId));
+            Assert.That(command.MinionId, Is.EqualTo(targetId));
+            Assert.That(session.Projection.PendingAttackTargetChoice, Is.Null);
+            Assert.That(session.Projection.Minions, Is.Empty);
+            Assert.That(session.Projection.Cards.Single(card => card.Id.Equals(sourceCardId)).State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(session.Projection.SelectedActor.ActorId, Is.Not.EqualTo(attackingActorId));
+            var completedSnapshot = session.CaptureSnapshot();
+            var completedCommandCount = session.Projection.AcceptedCommands.Count;
+            Assert.That(presenter.SubmitMinion(targetId), Is.False);
+            Assert.That(session.CaptureSnapshot(), Is.EqualTo(completedSnapshot));
+            Assert.That(session.Projection.AcceptedCommands, Has.Count.EqualTo(completedCommandCount));
+            presenter.Refresh();
+            Assert.That(view.Model.Minions, Is.Empty);
+            Assert.That(view.Model.MinionAttackTargets, Is.Empty);
+        }
+
+        [Test]
+        public void BoardPresenter_PreservesHeroTargetProjectionAndTypedDefenseContinuation()
+        {
+            var session = CreateAdjacentSession();
+            StartTiedTurn(session, ActionKind.Attack);
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Attack);
+            Assert.That(session.Execute(DirectorCommand.StartAction(attack.ActionDefinitionId)).Accepted, Is.True);
+            var choice = session.Projection.PendingAttackTargetChoice;
+            var targetId = choice.LegalTargetHeroIds.Single();
+            var view = new CapturingBoardView();
+            var presenter = new BoardInteractionPresenter(session, view);
+
+            presenter.Refresh();
+            Assert.That(view.Model.AttackTargets, Is.EqualTo(new[] { targetId }));
+            Assert.That(view.Model.MinionAttackTargets, Is.Empty);
+            Assert.That(presenter.SubmitHero(targetId), Is.True);
+            Assert.That(session.Projection.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.ChooseAttackTarget));
+            Assert.That(session.Projection.AcceptedCommands.Last().HeroId, Is.EqualTo(targetId));
+            Assert.That(session.Projection.AcceptedCommands.Last().MinionId.IsDefined, Is.False);
+            Assert.That(session.Projection.PendingDefenseChoice, Is.Not.Null);
+        }
+
+        [Test]
         public void ConfiguredPresenters_RequireExplicitFastTravelSelectionBeforeDestinationSubmission()
         {
             var session = CreateSession();
@@ -456,6 +525,74 @@ namespace GuardsDigital.Tests.EditMode
                         blueCoordinate)
                 },
                 Array.Empty<QuickGameMinionSetupState>());
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                new[]
+                {
+                    new HeroOccupancy(redHeroId, redCoordinate),
+                    new HeroOccupancy(blueHeroId, blueCoordinate)
+                },
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        private static MatchSession CreateAdjacentMinionSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var map = BoardMapDefinition.CreateSynthetic(
+                new MapId("presenter-adjacent-minion-fixture"),
+                1,
+                new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0), new HexCoordinate(2, 0) });
+            var redHeroId = configuration.RedHand.Instances[0].OwnerId;
+            var blueHeroId = configuration.BlueHand.Instances[0].OwnerId;
+            var redTeam = configuration.Participants.GetTeamForHero(redHeroId);
+            var blueTeam = configuration.Participants.GetTeamForHero(blueHeroId);
+            var redCoordinate = new HexCoordinate(0, 0);
+            var minionCoordinate = new HexCoordinate(1, 0);
+            var blueCoordinate = new HexCoordinate(2, 0);
+            var minion = new QuickGameMinionSetupState(
+                new MinionId("blue-presenter-minion"),
+                blueTeam.Id,
+                TeamSide.Blue,
+                StandardMinionType.Melee,
+                new ConfiguredSpawnPointReference(map.Id, new SpawnPointId("blue-minion-spawn")),
+                new ConfiguredSpaceReference(map.Id, new SpaceId("q1_r0")),
+                minionCoordinate);
+            var setup = new QuickGameSetupState(
+                map.Reference,
+                3,
+                configuration.TieBreakerState,
+                new[]
+                {
+                    new QuickGameTeamSetupState(redTeam.Id, TeamSide.Red, 4, new ZoneId("red-zone")),
+                    new QuickGameTeamSetupState(blueTeam.Id, TeamSide.Blue, 4, new ZoneId("blue-zone"))
+                },
+                new[]
+                {
+                    new QuickGameHeroSetupState(
+                        redHeroId,
+                        new HeroContentId("red-presenter"),
+                        "Red Presenter",
+                        redTeam.Id,
+                        TeamSide.Red,
+                        new ConfiguredSpawnPointReference(map.Id, new SpawnPointId("red-spawn")),
+                        new ConfiguredSpaceReference(map.Id, new SpaceId("q0_r0")),
+                        redCoordinate),
+                    new QuickGameHeroSetupState(
+                        blueHeroId,
+                        new HeroContentId("blue-presenter"),
+                        "Blue Presenter",
+                        blueTeam.Id,
+                        TeamSide.Blue,
+                        new ConfiguredSpawnPointReference(map.Id, new SpawnPointId("blue-spawn")),
+                        new ConfiguredSpaceReference(map.Id, new SpaceId("q2_r0")),
+                        blueCoordinate)
+                },
+                new[] { minion });
             var scenario = new InitialScenarioDescription(
                 configuration.Participants,
                 configuration.CardDefinitions,

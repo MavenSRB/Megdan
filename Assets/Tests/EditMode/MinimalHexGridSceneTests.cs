@@ -287,6 +287,7 @@ namespace GuardsDigital.Tests.EditMode
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var controllers = Object.FindObjectsByType<HeroSelectionController>();
             var selectors = Object.FindObjectsByType<PrimitiveHeroPointerSelector>();
+            var minionSelectors = Object.FindObjectsByType<StandardMinionPointerSelector>();
             var inputs = Object.FindObjectsByType<PrimitiveHeroPointerInput>();
             var compositionRoots = Object.FindObjectsByType<MatchSceneCompositionRoot>();
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
@@ -294,6 +295,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(controllers, Is.Empty,
                 "The configured scene must not retain the unconfigured legacy controller drill.");
             Assert.That(selectors, Has.Length.EqualTo(2));
+            Assert.That(minionSelectors, Has.Length.EqualTo(12));
+            Assert.That(minionSelectors, Has.All.Matches<StandardMinionPointerSelector>(selector =>
+                selector.GetComponent<StandardMinionView>() != null &&
+                selector.GetComponent<SphereCollider>() != null));
             Assert.That(inputs, Has.Length.EqualTo(1));
             Assert.That(compositionRoots, Has.Length.EqualTo(1));
             Assert.That(compositionRoots[0].Runtime, Is.Not.Null);

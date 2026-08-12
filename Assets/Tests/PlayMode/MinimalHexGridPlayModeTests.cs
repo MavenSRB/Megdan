@@ -110,6 +110,132 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_RoutesConfiguredMinionAttackCuePointerAndRemovalThroughFeatureBoundary()
+        {
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+            var redHeroId = new GuardsDigital.Core.Units.Heroes.HeroId(
+                PlaceholderOneVsOneParticipants.RedHeroIdValue);
+
+            for (var approachTurn = 0; approachTurn < 3; approachTurn++)
+            {
+                var red = Hand(runtime, TeamSide.Red).Cards
+                    .OrderByDescending(card => runtime.Definitions.Single(definition =>
+                        definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
+                    .First();
+                var blue = Hand(runtime, TeamSide.Blue).Cards
+                    .OrderBy(card => runtime.Definitions.Single(definition =>
+                        definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
+                    .First();
+                Assert.That(runtime.SelectCommitmentCard(red.Id), Is.True);
+                Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+                Assert.That(runtime.SelectCommitmentCard(blue.Id), Is.True);
+                Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+                if (runtime.PendingInitiativeChoice != null)
+                {
+                    Assert.That(runtime.SubmitInitiativeChoice(red.Id), Is.True);
+                }
+
+                if (!runtime.SelectedActor.ActorId.Equals(redHeroId))
+                {
+                    Assert.That(runtime.SubmitEndTurn(), Is.True,
+                        "The earlier opposing actor should complete by Hold before the Red approach action.");
+                }
+
+                Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
+                var movement = runtime.RoundView.Model.Actions.Single(value =>
+                    ActionKind(runtime, value.Command.ActionDefinitionId) ==
+                    GuardsDigital.Core.Cards.ActionKind.Movement);
+                Assert.That(runtime.RoundPresenter.Submit(movement), Is.True);
+                while (runtime.PendingMovementChoice != null)
+                {
+                    var blueMinions = runtime.BoardView.Model.Minions
+                        .Where(value => value.TeamSide == TeamSide.Blue &&
+                            value.MinionType != StandardMinionType.Heavy)
+                        .ToArray();
+                    var destination = runtime.PendingMovementChoice.LegalDestinations
+                        .OrderBy(value => blueMinions.Min(minion =>
+                            HexDistance(value.Destination, minion.Coordinate)))
+                        .ThenByDescending(value => value.Cost)
+                        .First().Destination;
+                    Assert.That(runtime.BoardPresenter.SubmitDestination(destination), Is.True);
+                }
+
+                if (runtime.IsTurnActive)
+                {
+                    Assert.That(runtime.SelectedActor.ActorId, Is.Not.EqualTo(redHeroId));
+                    Assert.That(runtime.SubmitEndTurn(), Is.True,
+                        "The later opposing actor should complete by Hold after the approach action.");
+                }
+            }
+
+            var attackCard = Hand(runtime, TeamSide.Red).Cards
+                .Where(card => runtime.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)).ActionDefinitions.Any(action =>
+                        action.Kind == GuardsDigital.Core.Cards.ActionKind.Attack &&
+                        action.AttackRange == AttackRangeKind.Ranged))
+                .OrderByDescending(card => runtime.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
+                .First();
+            var finalBlueCard = Hand(runtime, TeamSide.Blue).Cards
+                .OrderBy(card => runtime.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
+                .First();
+            Assert.That(runtime.SelectCommitmentCard(attackCard.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            Assert.That(runtime.SelectCommitmentCard(finalBlueCard.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            if (runtime.PendingInitiativeChoice != null)
+            {
+                Assert.That(runtime.SubmitInitiativeChoice(attackCard.Id), Is.True);
+            }
+
+            if (!runtime.SelectedActor.ActorId.Equals(redHeroId))
+            {
+                Assert.That(runtime.SubmitEndTurn(), Is.True,
+                    "The earlier opposing actor should complete by Hold before the Red Attack.");
+            }
+
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
+            var attack = runtime.RoundView.Model.Actions.Single(value =>
+                ActionKind(runtime, value.Command.ActionDefinitionId) ==
+                GuardsDigital.Core.Cards.ActionKind.Attack);
+            Assert.That(runtime.RoundPresenter.Submit(attack), Is.True);
+            Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Is.Not.Empty);
+            var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.First();
+            var minion = Object.FindObjectsByType<StandardMinionView>()
+                .Single(value => value.SetupState.MinionId.Equals(targetId));
+            var tile = Object.FindObjectsByType<HexTileView>()
+                .Single(value => value.Coordinate.Equals(minion.SetupState.Coordinate));
+            Assert.That(runtime.BoardView.Model.MinionAttackTargets, Does.Contain(targetId));
+            Assert.That(tile.IsHighlighted, Is.True,
+                "The exact projected minion occupancy must receive the configured target cue.");
+            Assert.That(minion.GetComponent<StandardMinionPointerSelector>(), Is.Not.Null);
+            var commandCount = runtime.AcceptedCommands.Count;
+            Assert.That(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>()
+                .TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
+            yield return null;
+
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandCount + 1));
+            Assert.That(runtime.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.ChooseAttackTarget));
+            Assert.That(runtime.AcceptedCommands.Last().MinionId, Is.EqualTo(targetId));
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(attackCard.Id)).State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(runtime.BoardView.Model.Minions.Select(value => value.MinionId),
+                Has.None.EqualTo(targetId));
+            Assert.That(minion.gameObject.activeSelf, Is.False);
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(runtime.DiagnosticEvents.Select(value => value.EventType), Does.Contain(
+                "Action.MinionDefeatRecorded"));
+            Assert.That(runtime.DiagnosticEvents.Select(value => value.EventType), Does.Contain(
+                "Action.MinionRewardAwarded"));
+            Assert.That(runtime.DiagnosticEvents.Select(value => value.EventType), Does.Contain(
+                "Action.MinionRemovalCompleted"));
+        }
+
+        [UnityTest]
         public IEnumerator Scene_CommitsBothHandsAndResolvesHoldThroughFeaturePresenters()
         {
             yield return LoadScene();
@@ -436,6 +562,14 @@ namespace GuardsDigital.Tests.PlayMode
             return runtime.Definitions.Single(value =>
                     value.Reference.Equals(offer.SourceDefinitionReference))
                 .ActionDefinitions.Single(value => value.Id.Equals(actionId)).Kind;
+        }
+
+        private static int HexDistance(HexCoordinate first, HexCoordinate second)
+        {
+            var deltaQ = first.Q - second.Q;
+            var deltaR = first.R - second.R;
+            return (System.Math.Abs(deltaQ) + System.Math.Abs(deltaR) +
+                System.Math.Abs(deltaQ + deltaR)) / 2;
         }
 
         private static Ray DownRay(Vector3 position) =>

@@ -10,6 +10,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Presentation.Match
@@ -19,17 +20,22 @@ namespace GuardsDigital.Presentation.Match
         public BoardInteractionViewModel(
             long version,
             IEnumerable<HeroOccupancy> heroes,
+            IEnumerable<QuickGameMinionSetupState> minions,
             IEnumerable<HexCoordinate> movementDestinations,
             IEnumerable<HeroId> attackTargets,
+            IEnumerable<MinionId> minionAttackTargets,
             HeroId focusedHeroId,
             IEnumerable<HexCoordinate> fastTravelDestinations = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
+            Minions = Array.AsReadOnly((minions ?? throw new ArgumentNullException(nameof(minions))).ToArray());
             MovementDestinations = Array.AsReadOnly((movementDestinations ??
                 throw new ArgumentNullException(nameof(movementDestinations))).ToArray());
             AttackTargets = Array.AsReadOnly((attackTargets ??
                 throw new ArgumentNullException(nameof(attackTargets))).ToArray());
+            MinionAttackTargets = Array.AsReadOnly((minionAttackTargets ??
+                throw new ArgumentNullException(nameof(minionAttackTargets))).ToArray());
             FocusedHeroId = focusedHeroId;
             FastTravelDestinations = Array.AsReadOnly((fastTravelDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
@@ -37,8 +43,10 @@ namespace GuardsDigital.Presentation.Match
 
         public long Version { get; }
         public IReadOnlyList<HeroOccupancy> Heroes { get; }
+        public IReadOnlyList<QuickGameMinionSetupState> Minions { get; }
         public IReadOnlyList<HexCoordinate> MovementDestinations { get; }
         public IReadOnlyList<HeroId> AttackTargets { get; }
+        public IReadOnlyList<MinionId> MinionAttackTargets { get; }
         public HeroId FocusedHeroId { get; }
         public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
     }
@@ -80,9 +88,11 @@ namespace GuardsDigital.Presentation.Match
                 lastViewModel = new BoardInteractionViewModel(
                     projection.Version,
                     projection.Heroes,
+                    projection.Minions,
                     projection.PendingMovementChoice?.LegalDestinations.Select(value => value.Destination) ??
                         Enumerable.Empty<HexCoordinate>(),
                     projection.PendingAttackTargetChoice?.LegalTargetHeroIds ?? Array.Empty<HeroId>(),
+                    projection.PendingAttackTargetChoice?.LegalTargetMinionIds ?? Array.Empty<MinionId>(),
                     projection.SelectedActor.IsDefined ? projection.SelectedActor.ActorId : default,
                     GetSelectedFastTravelOption(projection)?.LegalDestinations ??
                         Array.Empty<HexCoordinate>());
@@ -143,6 +153,20 @@ namespace GuardsDigital.Presentation.Match
                 choice.ResolutionId,
                 choice.ChoiceId,
                 heroId));
+        }
+
+        public bool SubmitMinion(MinionId minionId)
+        {
+            var choice = session.Projection.PendingAttackTargetChoice;
+            if (choice == null || !choice.LegalTargetMinionIds.Contains(minionId))
+            {
+                return false;
+            }
+
+            return Execute(DirectorCommand.ChooseAttackTarget(
+                choice.ResolutionId,
+                choice.ChoiceId,
+                minionId));
         }
 
         private FastTravelOptionProjection GetSelectedFastTravelOption(MatchSessionProjection projection)

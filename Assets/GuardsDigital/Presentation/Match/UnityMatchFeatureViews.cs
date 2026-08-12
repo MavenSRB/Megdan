@@ -4,9 +4,11 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Match
@@ -14,17 +16,22 @@ namespace GuardsDigital.Presentation.Match
     public sealed class BoardInteractionUnityView : IBoardInteractionView
     {
         private readonly IReadOnlyList<PrimitiveHeroView> heroes;
+        private readonly IReadOnlyList<StandardMinionView> minions;
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly Material highlightMaterial;
         private Func<HeroId, bool> heroIntentHandler;
+        private Func<MinionId, bool> minionIntentHandler;
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
 
         public BoardInteractionUnityView(
             IEnumerable<PrimitiveHeroView> heroes,
             IEnumerable<HexTileView> tiles,
-            Material highlightMaterial)
+            Material highlightMaterial,
+            IEnumerable<StandardMinionView> minions = null)
         {
             this.heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes)))
+                .Where(value => value != null).Distinct().ToArray());
+            this.minions = Array.AsReadOnly((minions ?? Enumerable.Empty<StandardMinionView>())
                 .Where(value => value != null).Distinct().ToArray());
             this.tiles = Array.AsReadOnly((tiles ?? throw new ArgumentNullException(nameof(tiles)))
                 .Where(value => value != null).Distinct().ToArray());
@@ -34,13 +41,16 @@ namespace GuardsDigital.Presentation.Match
         public BoardInteractionViewModel Model { get; private set; }
 
         public event Action<HeroId> HeroSubmitted;
+        public event Action<MinionId> MinionSubmitted;
         public event Action<GuardsDigital.Core.Board.HexCoordinate> DestinationSubmitted;
 
         public void BindIntentHandlers(
             Func<HeroId, bool> submitHero,
+            Func<MinionId, bool> submitMinion,
             Func<GuardsDigital.Core.Board.HexCoordinate, bool> submitDestination)
         {
             heroIntentHandler = submitHero ?? throw new ArgumentNullException(nameof(submitHero));
+            minionIntentHandler = submitMinion ?? throw new ArgumentNullException(nameof(submitMinion));
             destinationIntentHandler = submitDestination ??
                 throw new ArgumentNullException(nameof(submitDestination));
         }
@@ -63,11 +73,40 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
+            var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);
+            foreach (var minion in minions)
+            {
+                if (minion.SetupState != null && projectedMinions.TryGetValue(minion.SetupState.MinionId, out var state))
+                {
+                    minion.gameObject.SetActive(true);
+                    if (!ReferenceEquals(minion.SetupState, state))
+                    {
+                        minion.Configure(state, minion.OuterRadius);
+                    }
+
+                    projectedMinions.Remove(state.MinionId);
+                }
+                else
+                {
+                    minion.gameObject.SetActive(false);
+                }
+            }
+
+            if (projectedMinions.Count > 0)
+            {
+                throw new InvalidOperationException("The configured board has no view for a projected minion identity.");
+            }
+
             var targetCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(model.MovementDestinations);
             targetCoordinates.UnionWith(model.FastTravelDestinations);
             foreach (var targetId in model.AttackTargets)
             {
                 var target = model.Heroes.Single(value => value.HeroId.Equals(targetId));
+                targetCoordinates.Add(target.Coordinate);
+            }
+            foreach (var targetId in model.MinionAttackTargets)
+            {
+                var target = model.Minions.Single(value => value.MinionId.Equals(targetId));
                 targetCoordinates.Add(target.Coordinate);
             }
 
@@ -88,6 +127,11 @@ namespace GuardsDigital.Presentation.Match
             TryForwardDestinationIntent(destination);
         }
 
+        public void ForwardMinionIntent(MinionId minionId)
+        {
+            TryForwardMinionIntent(minionId);
+        }
+
         public bool TryForwardHeroIntent(HeroId heroId)
         {
             if (heroIntentHandler != null)
@@ -101,6 +145,22 @@ namespace GuardsDigital.Presentation.Match
             }
 
             HeroSubmitted.Invoke(heroId);
+            return true;
+        }
+
+        public bool TryForwardMinionIntent(MinionId minionId)
+        {
+            if (minionIntentHandler != null)
+            {
+                return minionIntentHandler(minionId);
+            }
+
+            if (MinionSubmitted == null)
+            {
+                return false;
+            }
+
+            MinionSubmitted.Invoke(minionId);
             return true;
         }
 

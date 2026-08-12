@@ -7,6 +7,7 @@ using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Interaction
@@ -70,6 +71,10 @@ namespace GuardsDigital.Presentation.Interaction
             mapView.Rebuild(map, setup);
 
             var tiles = mapView.GetComponentsInChildren<HexTileView>(true);
+            var minions = mapView.GetComponentsInChildren<StandardMinionView>(true);
+            var minionSelectors = minions.Select(view =>
+                view.GetComponent<StandardMinionPointerSelector>() ??
+                view.gameObject.AddComponent<StandardMinionPointerSelector>()).ToArray();
             var obstacles = mapView.GetComponentsInChildren<PlaceholderObstacleView>(true);
             highlightOwner = new DestinationHighlightMaterialOwner(assignedHighlightMaterial);
             hud = GetComponent<ConfiguredMatchHudRenderer>();
@@ -84,6 +89,7 @@ namespace GuardsDigital.Presentation.Interaction
                 configuration,
                 catalog.Definitions,
                 heroViews,
+                minions,
                 tiles,
                 obstacles,
                 highlightOwner.Material,
@@ -93,10 +99,15 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 selector.Configure(runtime.BoardView);
             }
+            foreach (var selector in minionSelectors)
+            {
+                selector.Configure(runtime.BoardView);
+            }
 
             pointerInput.Configure(
                 eventCamera,
                 pointerSelectors,
+                minionSelectors,
                 runtime.BoardView,
                 tiles,
                 hud.BlocksPointerAt);

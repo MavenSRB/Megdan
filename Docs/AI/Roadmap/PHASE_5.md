@@ -199,7 +199,7 @@ Acceptance checks:
 
 Historical evidence: [milestone 5.8 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58-complete-the-general-hero-attack-and-defense-order-completion-evidence).
 
-### [ ] 5.8a Expose authoritative minion Attack targets in the configured board
+### [x] 5.8a Expose authoritative minion Attack targets in the configured board
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -214,6 +214,8 @@ Acceptance checks:
 - T2 validation covers focused presenter/view-model/passive-view behavior and the affected configured saved-scene Play Mode path, including a visible inspection of the minion target cue; the immediately preceding 5.8 T3 evidence is not treated as proof of this new UI path.
 
 Non-goals: No Attack, Range, Heavy-immunity, reward, Defeat, or removal-rule changes; no Minion Battle, last-minion Lane Push, displacement correction, respawn, Wasp content, legacy-controller expansion, production animation, or audio.
+
+Historical evidence: [milestone 5.8a handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58a-expose-authoritative-minion-attack-targets-in-the-configured-board-completion-evidence).
 
 ### [ ] 5.8b Preview authoritative Defense breakdowns on hover
 
