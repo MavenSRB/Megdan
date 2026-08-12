@@ -26,6 +26,8 @@ Milestone 5.3 adds focused authoritative-minion occupancy and typed Defense-cont
 
 Milestone 5.4 adds pure lifecycle definition validation; exact `This Turn`, `This Round`, `Next Turn`, and `Next Turn after Playing Cards` activation/expiration; source-card, defeat, retrieval, explicit, and cross-round cancellation; uniqueness and Tie-Breaker-side simultaneous ordering; continuous-source separation; typed event order; snapshot schema v3 round trips; explicit v2 rejection; restore plus continuation; replay; and retained-prefix Undo coverage. It is T2 because shared timing, event, snapshot, and replay boundaries change. No Unity-facing path changes, so Play Mode is omitted; complete suites remain reserved for milestone 5.8.
 
+Milestone 5.5 adds focused pure-C# Defeat-reward accounting coverage for the configured 1v1 participant graph, a synthetic three-hero team, exact Defeat/Assist recipients and typed operations, deterministic accumulation, invalid/friendly/duplicate rejection, atomic overflow rejection, and reward survival across a separately typed prevented-removal result. It is T1 because the new authority is a bounded pure capability and does not yet change Attack, application-session, snapshot, replay, scene, or presentation paths. Run the directly affected participant fixture with it; omit Play Mode and complete suites.
+
 Run commands from PowerShell. Each focused Unity command opens the project, runs only its named test fixture or case, writes NUnit XML plus a Unity log under `tmp/`, and exits without producing a player build. Scene-dependent filters load the saved validation scene.
 
 ## Risk-tiered validation policy

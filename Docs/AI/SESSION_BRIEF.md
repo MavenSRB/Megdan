@@ -22,6 +22,8 @@ Milestone 5.3 binds the twelve existing configured standard-minion records direc
 
 Milestone 5.4 adds pure named timing checkpoints and validated serializable Active-effect lifecycles for synthetic definitions. Explicit metadata owns controller/team, affected scope, source/action, trigger set, uniqueness, `This Turn`/`This Round`/`Next Turn`/`Next Turn after Playing Cards` duration, creation/activation/expiration anchors, early cancellation, cross-round policy, and deterministic Tie-Breaker-side simultaneous ordering without a flip. Dormant/active/ended state and separate Ultimate/token/marker continuous sources round-trip in snapshot schema version 3; schema v2 is explicitly rejected rather than silently acquiring timing state. Typed lifecycle facts remain deterministic through live execution, restore plus continuation, replay, and retained-prefix Undo. No Wasp text, printed-text parsing, typed modifier application from these effects, or full Phase 6 retrieval/defeat integration was added.
 
+Milestone 5.5 adds pure Defeat-reward accounting over the participant collection. A typed Defeat outcome names its stable source/target, defeated team, acting hero, and already-verified Defeat/Assist amounts; deterministic typed coin-gain operations record recipient hero/team, reward kind, minimum/failure contract, and before/after balances. The acting hero receives the Defeat award, every other friendly participant can receive the Assist award, duplicate outcomes and invalid/friendly sources reject without mutation, and all recipients are planned atomically before balances change. A linked removal result remains a separate fact, so prevented removal cannot erase or duplicate an awarded Defeat. Exact hero-Level/lowest-Tier amount derivation, Attack integration, persistence, and UI remain with their later owning milestones.
+
 Authoritative pure C# state currently covers map-scoped identity, the immutable selected map revision, participant `PlayerId`/`HeroId` relationships, initial Tie Breaker, five-card synthetic hands, owned commitment or empty-hand Pass for every configured hero, joint reveal, Initiative and tied-Initiative choice, Hold, printed Movement with cumulative waypoint routes and Stop, adjacent/Ranged Attack with one legal Defense discard or decline, immutable four-turn assignment history, and a resumable end-of-round cursor whose test fixture implements retrieval and emits typed `NotApplicable` outcomes for unavailable stages. Eligible cards return to canonical owners; two uninterrupted synthetic rounds and reuse are visible in the saved validation scene.
 
 Schema-versioned snapshots cover participants, selected map ID/revision, board occupancy, card facets, Initiative/Tie Breaker, current/completed assignments, end-of-round state, and pending Movement or Attack/Defense continuations. Director Undo retains immutable initial scenario inputs plus accepted typed commands, rebuilds fresh authority, replays the retained prefix through live command paths, and verifies byte-identical state/events across two rebuilds. Snapshots remain the separate persistence/diagnostics/resynchronization boundary. The read-only HUD exposes Tie Breaker, Undo, Restart, and the rule-event log.
@@ -32,11 +34,11 @@ The project does not yet implement current-Battle-Zone changes, Lane Push, the f
 
 ## Current authorization and next route
 
-- Current completed milestone: **5.4**.
+- Current completed milestone: **5.5**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **5.5**.
+- Next proposed milestone: **5.6**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
-- Milestone 5.5 is documentation-scheduled only; implementation requires explicit approval of that exact micro-milestone.
+- Milestone 5.6 is documentation-scheduled only; implementation requires explicit approval of that exact micro-milestone.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries

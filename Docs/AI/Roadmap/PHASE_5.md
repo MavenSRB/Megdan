@@ -150,7 +150,7 @@ Non-goals: No Wasp-specific text or duration interpretation, runtime printed-tex
 
 Historical evidence: [milestone 5.4 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-54-add-generic-timing-active-effect-and-continuous-source-lifecycles-completion-evidence).
 
-### [ ] 5.5 Add coin awards and assist-ready accounting
+### [x] 5.5 Add coin awards and assist-ready accounting
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -164,7 +164,11 @@ Acceptance checks:
 
 Non-goals: Exact hero-Level and lowest-Tier reward amounts remain part of complete hero-defeat integration at milestone 7.4.
 
+Historical evidence: [milestone 5.5 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-55-add-coin-awards-and-assist-ready-accounting-completion-evidence).
+
 ### [ ] 5.6 Attack and defeat minions with test cards
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: A synthetic Attack can legally target and defeat an enemy minion using the general minion rules.
 
