@@ -12,6 +12,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionId resolutionId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
+            ActionDefinitionId replacedActionDefinitionId,
             HeroId actorId,
             HeroId targetHeroId,
             ActionResolutionStepId stepId,
@@ -20,7 +21,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardInstanceId defenseCardInstanceId,
             int defenseTotal,
             AttackResolutionOutcome attackOutcome,
-            AdjacentMoveEvent movementEvent)
+            AdjacentMoveEvent movementEvent,
+            FastTravelEvent fastTravelEvent)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -56,6 +58,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ResolutionId = resolutionId;
             SourceCardInstanceId = sourceCardInstanceId;
             ActionDefinitionId = actionDefinitionId;
+            ReplacedActionDefinitionId = replacedActionDefinitionId;
             ActorId = actorId;
             TargetHeroId = targetHeroId;
             StepId = stepId;
@@ -65,6 +68,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefenseTotal = defenseTotal;
             AttackOutcome = attackOutcome;
             MovementEvent = movementEvent;
+            FastTravelEvent = fastTravelEvent;
         }
 
         public CardActionResolutionEventKind Kind { get; }
@@ -74,6 +78,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public CardInstanceId SourceCardInstanceId { get; }
 
         public ActionDefinitionId ActionDefinitionId { get; }
+
+        public ActionDefinitionId ReplacedActionDefinitionId { get; }
 
         public HeroId ActorId { get; }
 
@@ -92,6 +98,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public AttackResolutionOutcome AttackOutcome { get; }
 
         public AdjacentMoveEvent MovementEvent { get; }
+
+        public FastTravelEvent FastTravelEvent { get; }
 
         public static CardActionResolutionEvent MovementActionStarted(
             PendingCardActionResolution resolution)
@@ -117,6 +125,45 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             return FromResolution(CardActionResolutionEventKind.MovementActionCompleted, resolution, default);
         }
+
+        public static CardActionResolutionEvent FastTravelActionStarted(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            ActionDefinitionId replacedActionDefinitionId,
+            FastTravelEvent fastTravelEvent) =>
+            FromFastTravel(
+                CardActionResolutionEventKind.FastTravelActionStarted,
+                resolutionId,
+                offer,
+                replacedActionDefinitionId,
+                fastTravelEvent,
+                "fast-travel-start");
+
+        public static CardActionResolutionEvent FastTravelCommitted(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            ActionDefinitionId replacedActionDefinitionId,
+            FastTravelEvent fastTravelEvent) =>
+            FromFastTravel(
+                CardActionResolutionEventKind.FastTravelCommitted,
+                resolutionId,
+                offer,
+                replacedActionDefinitionId,
+                fastTravelEvent,
+                "fast-travel-commit");
+
+        public static CardActionResolutionEvent FastTravelActionCompleted(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            ActionDefinitionId replacedActionDefinitionId,
+            FastTravelEvent fastTravelEvent) =>
+            FromFastTravel(
+                CardActionResolutionEventKind.FastTravelActionCompleted,
+                resolutionId,
+                offer,
+                replacedActionDefinitionId,
+                fastTravelEvent,
+                "fast-travel-complete");
 
         public static CardActionResolutionEvent AttackTargetChoiceRequested(PendingAttackResolution resolution)
         {
@@ -190,6 +237,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ResolutionId.Equals(other.ResolutionId) &&
                 SourceCardInstanceId.Equals(other.SourceCardInstanceId) &&
                 ActionDefinitionId.Equals(other.ActionDefinitionId) &&
+                ReplacedActionDefinitionId.Equals(other.ReplacedActionDefinitionId) &&
                 ActorId.Equals(other.ActorId) &&
                 TargetHeroId.Equals(other.TargetHeroId) &&
                 StepId.Equals(other.StepId) &&
@@ -198,7 +246,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 DefenseCardInstanceId.Equals(other.DefenseCardInstanceId) &&
                 DefenseTotal == other.DefenseTotal &&
                 AttackOutcome == other.AttackOutcome &&
-                MovementEvent.Equals(other.MovementEvent);
+                MovementEvent.Equals(other.MovementEvent) &&
+                FastTravelEvent.Equals(other.FastTravelEvent);
         }
 
         public override bool Equals(object obj)
@@ -214,6 +263,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ ResolutionId.GetHashCode();
                 hashCode = (hashCode * 397) ^ SourceCardInstanceId.GetHashCode();
                 hashCode = (hashCode * 397) ^ ActionDefinitionId.GetHashCode();
+                hashCode = (hashCode * 397) ^ ReplacedActionDefinitionId.GetHashCode();
                 hashCode = (hashCode * 397) ^ ActorId.GetHashCode();
                 hashCode = (hashCode * 397) ^ TargetHeroId.GetHashCode();
                 hashCode = (hashCode * 397) ^ StepId.GetHashCode();
@@ -223,7 +273,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ DefenseTotal;
                 hashCode = (hashCode * 397) ^ (int)AttackOutcome;
                 hashCode = (hashCode * 397) ^ MovementEvent.GetHashCode();
-                return hashCode;
+                return (hashCode * 397) ^ FastTravelEvent.GetHashCode();
             }
         }
 
@@ -242,6 +292,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.ResolutionId,
                 resolution.SourceCardInstanceId,
                 resolution.ActionDefinitionId,
+                default,
                 resolution.ActorId,
                 default,
                 resolution.CurrentStepId,
@@ -250,7 +301,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 default,
                 0,
                 AttackResolutionOutcome.None,
-                movementEvent);
+                movementEvent,
+                default);
         }
 
         private static CardActionResolutionEvent FromAttackResolution(
@@ -268,6 +320,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.ResolutionId,
                 resolution.SourceCardInstanceId,
                 resolution.ActionDefinitionId,
+                default,
                 resolution.ActorId,
                 resolution.TargetHeroId,
                 resolution.CurrentStepId,
@@ -278,7 +331,41 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     : default,
                 resolution.DefenseTotal ?? 0,
                 outcome,
+                default,
                 default);
+        }
+
+        private static CardActionResolutionEvent FromFastTravel(
+            CardActionResolutionEventKind kind,
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            ActionDefinitionId replacedActionDefinitionId,
+            FastTravelEvent fastTravelEvent,
+            string stepId)
+        {
+            if (offer.InvocationContext != ActionInvocationContext.Replacement ||
+                !replacedActionDefinitionId.IsDefined ||
+                !fastTravelEvent.HeroId.Equals(offer.ActorId))
+            {
+                throw new ArgumentException("A Fast Travel event requires its replacement offer, replaced action, and actor move.");
+            }
+
+            return new CardActionResolutionEvent(
+                kind,
+                resolutionId,
+                offer.SourceCardInstanceId,
+                offer.ActionDefinitionId,
+                replacedActionDefinitionId,
+                offer.ActorId,
+                default,
+                new ActionResolutionStepId(stepId),
+                0,
+                0,
+                default,
+                0,
+                AttackResolutionOutcome.None,
+                default,
+                fastTravelEvent);
         }
     }
 }

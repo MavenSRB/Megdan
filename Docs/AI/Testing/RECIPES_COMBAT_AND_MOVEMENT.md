@@ -2,6 +2,34 @@
 
 Canonical active shard. Return to [../TESTING.md](../TESTING.md).
 
+## Fast Travel replacement T2 tests
+
+Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run these requests serially.
+
+Final affected Edit Mode request:
+
+```json
+{
+  "platform": "EditMode",
+  "filter": "GuardsDigital.Tests.EditMode.FastTravelActionTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.CardActionStrategyRegistryTests;GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.ApplicationArchitectureBoundaryTests;GuardsDigital.Tests.EditMode.ConfiguredMatchCutoverArchitectureTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests",
+  "results": "tmp/milestone-5.2-final-affected-edit-results.xml",
+  "log": "tmp/milestone-5.2-final-affected-edit.log"
+}
+```
+
+Configured saved-scene Play Mode request:
+
+```json
+{
+  "platform": "PlayMode",
+  "filter": "GuardsDigital.Tests.PlayMode.MinimalHexGridPlayModeTests",
+  "results": "tmp/milestone-5.2-configured-play-results.xml",
+  "log": "tmp/milestone-5.2-configured-play.log"
+}
+```
+
+Expected result: every discovered case passes with no skipped or inconclusive case. Edit Mode covers Fast Travel rules/query/backend/event/session/replay/Undo plus affected turn, round, snapshot, presenter, architecture, and configured-scene source contracts. Play Mode proves the configured passive offer/highlight/pointer/session path and the directly affected scene regressions. Unfiltered suites are intentionally deferred to milestone 5.8 unless an escalation trigger appears.
+
 ## Action-offer and printed-value focused Edit Mode tests
 
 ```powershell

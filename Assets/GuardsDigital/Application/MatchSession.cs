@@ -178,6 +178,8 @@ namespace GuardsDigital.Application
                     return AnswerDefense(command, true);
                 case DirectorCommandKind.AdvanceEndOfRound:
                     return DispatchResult.From(round.TryAdvanceEndOfRound());
+                case DirectorCommandKind.PerformFastTravel:
+                    return PerformFastTravel(command.ActionDefinitionId, command.Coordinate);
                 default:
                     return DispatchResult.Unavailable("The command kind is not supported by this match session.");
             }
@@ -240,6 +242,38 @@ namespace GuardsDigital.Application
                 ? MovementChoiceCommand.Stop(choice.ResolutionId, choice.ChoiceId)
                 : MovementChoiceCommand.SelectDestination(choice.ResolutionId, choice.ChoiceId, command.Coordinate);
             return DispatchResult.From(round.TryAnswerMovementChoice(movementCommand));
+        }
+
+        private DispatchResult PerformFastTravel(
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            GuardsDigital.Core.Board.HexCoordinate destination)
+        {
+            var turn = round.CurrentTurnAuthority;
+            if (turn == null || !turn.SelectedActor.IsDefined)
+            {
+                return DispatchResult.Unavailable("No current turn actor can perform Fast Travel.");
+            }
+
+            var replacementOffer = GeneralRuleActionOfferQuery.GetAvailableFastTravelOffer(
+                replacedMovementActionDefinitionId,
+                turn.SelectedActor.CardInstanceId,
+                turn.SelectedActor.ActorId,
+                configuration.CardDefinitions,
+                configuration.CardInstances);
+            if (!replacementOffer.HasValue)
+            {
+                return DispatchResult.Unavailable(
+                    "The requested Movement action is not currently eligible for Fast Travel replacement.");
+            }
+
+            var resolutionId = new ActionResolutionId(
+                $"session-r{round.RoundIndex}-t{round.TurnIndex}-{turn.SelectedActor.CardInstanceId.Value}-fast-travel-{replacedMovementActionDefinitionId.Value}");
+            return DispatchResult.From(round.TryPerformFastTravel(
+                resolutionId,
+                replacementOffer.Value,
+                replacedMovementActionDefinitionId,
+                destination,
+                initialState.Setup.Minions));
         }
 
         private DispatchResult AnswerAttackTarget(DirectorCommand command)
@@ -426,6 +460,52 @@ namespace GuardsDigital.Application
                     turn.SelectedActor.ActorId,
                     turn.SelectedActor.CardInstanceId)
                 : Array.Empty<ActionOffer>();
+            var hasPendingAction = turn?.PendingChoice != null ||
+                turn?.PendingMovementChoice != null || turn?.PendingMovementResolution != null ||
+                turn?.PendingAttackTargetChoice != null || turn?.PendingDefenseChoice != null ||
+                turn?.PendingAttackResolution != null;
+            var availableFastTravelOptions = turn != null &&
+                turn.SelectedActor.IsDefined && !hasPendingAction
+                ? availableActions.Select(offer =>
+                    {
+                        var definition = configuration.CardDefinitions.Single(value =>
+                            value.Reference.Equals(offer.SourceDefinitionReference));
+                        var action = definition.ActionDefinitions.Single(value =>
+                            value.Id.Equals(offer.ActionDefinitionId));
+                        if (action.Kind != ActionKind.Movement || !action.DefaultPolicy.CanBeReplaced)
+                        {
+                            return null;
+                        }
+
+                        var replacementOffer = GeneralRuleActionOfferQuery.GetAvailableFastTravelOffer(
+                            action.Id,
+                            offer.SourceCardInstanceId,
+                            offer.ActorId,
+                            configuration.CardDefinitions,
+                            configuration.CardInstances);
+                        if (!replacementOffer.HasValue)
+                        {
+                            return null;
+                        }
+
+                        var destinations = FastTravelActionQuery.FindLegalDestinations(
+                            replacementOffer.Value,
+                            action.Id,
+                            configuration.CardDefinitions,
+                            configuration.CardInstances,
+                            board,
+                            configuration.Participants,
+                            initialState.Setup.Minions);
+                        return destinations.Count == 0
+                            ? null
+                            : new FastTravelOptionProjection(
+                                replacementOffer.Value,
+                                action.Id,
+                                destinations);
+                    })
+                    .Where(option => option != null)
+                    .ToArray()
+                : Array.Empty<FastTravelOptionProjection>();
             var authoritative = AuthoritativeSnapshotSerializer.Serialize(round, board);
             var diagnostic = RuleEventLogSnapshotEnvelope.Serialize(authoritative, eventLog.Entries);
             return new MatchSessionProjection(
@@ -459,7 +539,8 @@ namespace GuardsDigital.Application
                 roundEvents,
                 eventLog.Entries,
                 authoritative,
-                diagnostic);
+                diagnostic,
+                availableFastTravelOptions);
         }
 
         private MatchCommandResult Rejected(

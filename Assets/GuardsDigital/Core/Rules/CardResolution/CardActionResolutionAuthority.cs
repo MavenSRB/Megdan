@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -12,6 +14,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly CardActionStrategyRegistry strategyRegistry;
         private readonly MovementCardActionStrategyBackend movementBackend;
         private readonly AttackDefenseCardActionStrategyBackend attackDefenseBackend;
+        private readonly FastTravelCardActionStrategyBackend fastTravelBackend;
 
         public CardActionResolutionAuthority(AdjacentMoveAuthority adjacentMoveAuthority)
             : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance)
@@ -26,20 +29,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     adjacentMoveAuthority,
                     movementActionStartRestrictions ?? throw new ArgumentNullException(
                         nameof(movementActionStartRestrictions))),
-                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority))
+                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority),
+                new FastTravelCardActionStrategyBackend(adjacentMoveAuthority))
         {
         }
 
         private CardActionResolutionAuthority(
             MovementCardActionStrategyBackend movementBackend,
-            AttackDefenseCardActionStrategyBackend attackDefenseBackend)
+            AttackDefenseCardActionStrategyBackend attackDefenseBackend,
+            FastTravelCardActionStrategyBackend fastTravelBackend)
         {
             this.movementBackend = movementBackend ?? throw new ArgumentNullException(nameof(movementBackend));
             this.attackDefenseBackend = attackDefenseBackend ?? throw new ArgumentNullException(nameof(attackDefenseBackend));
+            this.fastTravelBackend = fastTravelBackend ?? throw new ArgumentNullException(nameof(fastTravelBackend));
             strategyRegistry = new CardActionStrategyRegistry(new ICardActionStrategyHandler[]
             {
                 new MovementCardActionStrategyHandler(movementBackend),
-                new AttackDefenseCardActionStrategyHandler(attackDefenseBackend)
+                new AttackDefenseCardActionStrategyHandler(attackDefenseBackend),
+                new FastTravelCardActionStrategyHandler(fastTravelBackend)
             });
         }
 
@@ -66,7 +73,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     adjacentMoveAuthority,
                     pendingResolution,
                     pendingChoice),
-                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority));
+                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority),
+                new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
         }
 
         public static CardActionResolutionAuthority Restore(
@@ -75,7 +83,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             return new CardActionResolutionAuthority(
                 MovementCardActionStrategyBackend.Restore(adjacentMoveAuthority, pendingResolution),
-                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority));
+                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority),
+                new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
         }
 
         public CardActionResolutionResult StartMovementResolution(
@@ -142,6 +151,37 @@ namespace GuardsDigital.Core.Rules.CardResolution
             strategyRegistry.Dispatch<MovementCardActionStrategyHandler, CardActionResolutionResult>(
                 CardActionStrategyIds.Movement,
                 handler => handler.Answer(command));
+
+        public CardActionResolutionResult PerformTurnFastTravel(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            HexCoordinate destination,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            IEnumerable<QuickGameMinionSetupState> minions)
+        {
+            if (HasPendingResolution)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.ResolutionAlreadyPending,
+                    PendingResolution,
+                    PendingChoice);
+            }
+
+            return strategyRegistry.Dispatch<FastTravelCardActionStrategyHandler, CardActionResolutionResult>(
+                ActionKind.FastTravel,
+                handler => handler.PerformTurn(
+                    resolutionId,
+                    replacementOffer,
+                    replacedMovementActionDefinitionId,
+                    destination,
+                    definitions,
+                    instances,
+                    participants,
+                    minions));
+        }
 
         public AttackActionResolutionResult StartAttackResolution(
             ActionResolutionId resolutionId,
@@ -253,7 +293,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingDefenseChoice,
                     definitions,
                     instances,
-                    participants));
+                    participants),
+                new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
         }
 
         public static CardActionResolutionAuthority RestoreAttack(
@@ -270,7 +311,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingResolution,
                     definitions,
                     instances,
-                    participants));
+                    participants),
+                new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
         }
 
         private PreparedStart PrepareStart(

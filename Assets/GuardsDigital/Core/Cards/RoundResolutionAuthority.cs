@@ -657,6 +657,21 @@ namespace GuardsDigital.Core.Cards
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerMovementChoice(command));
         }
 
+        public RoundResolutionResult TryPerformFastTravel(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            GuardsDigital.Core.Board.HexCoordinate destination,
+            IEnumerable<QuickGameMinionSetupState> minions)
+        {
+            return ExecuteTurnCommand(() => CurrentTurnAuthority.TryPerformFastTravel(
+                resolutionId,
+                replacementOffer,
+                replacedMovementActionDefinitionId,
+                destination,
+                minions));
+        }
+
         public RoundResolutionResult TryStartAttack(
             ActionResolutionId resolutionId,
             ActionOffer offer)

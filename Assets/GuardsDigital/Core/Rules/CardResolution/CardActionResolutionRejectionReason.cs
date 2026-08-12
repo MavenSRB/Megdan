@@ -14,6 +14,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         ActorUnavailable = 9,
         UnsupportedAttackRange = 10,
         TargetUnavailable = 11,
-        MovementActionPrevented = 12
+        MovementActionPrevented = 12,
+        FastTravelDestinationUnavailable = 13,
+        FastTravelZoneNotEligible = 14,
+        FastTravelBlockedByEnemyInOriginZone = 15,
+        FastTravelBlockedByEnemyInDestinationZone = 16
     }
 }

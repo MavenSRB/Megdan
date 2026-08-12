@@ -141,6 +141,15 @@ namespace GuardsDigital.Core.Cards
                         nameof(SourceCardStateTransition));
                 }
             }
+            else if (Kind == ActionKind.FastTravel)
+            {
+                if (Origin != ActionDefinitionOrigin.Replacement || BaseValues.Count != 0)
+                {
+                    throw new ArgumentException(
+                        "Fast Travel must be a value-free replacement action definition.",
+                        nameof(baseValues));
+                }
+            }
 
             if (Kind != ActionKind.Attack && AttackRange != AttackRangeKind.None)
             {

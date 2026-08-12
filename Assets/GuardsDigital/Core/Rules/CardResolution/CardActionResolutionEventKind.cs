@@ -17,6 +17,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         DefenseResponseCompleted = 12,
         AttackSuccessfullyDefended = 13,
         AttackSuccessful = 14,
-        AttackResolutionCompleted = 15
+        AttackResolutionCompleted = 15,
+        FastTravelActionStarted = 16,
+        FastTravelCommitted = 17,
+        FastTravelActionCompleted = 18
     }
 }

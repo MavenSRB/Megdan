@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.AdjacentMove
@@ -136,6 +137,36 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 command.HeroId,
                 command.Origin,
                 command.Destination));
+        }
+
+        internal FastTravelEvent CommitValidatedFastTravel(HeroId heroId, HexCoordinate destination)
+        {
+            var heroIndex = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(heroId));
+            if (heroIndex < 0)
+            {
+                throw new InvalidOperationException("A validated Fast Travel actor is no longer on the board.");
+            }
+
+            if (!boardCoordinates.Contains(destination) ||
+                occupancies.Any(occupancy => occupancy.Coordinate.Equals(destination)) ||
+                obstacleOccupancies.Any(occupancy => occupancy.Coordinate.Equals(destination)))
+            {
+                throw new InvalidOperationException("A validated Fast Travel destination is no longer empty and playable.");
+            }
+
+            var origin = occupancies[heroIndex].Coordinate;
+            var originSpace = MapDefinition.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable && space.Coordinate.Equals(origin));
+            var destinationSpace = MapDefinition.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable && space.Coordinate.Equals(destination));
+            var travelEvent = new FastTravelEvent(
+                heroId,
+                origin,
+                destination,
+                MapDefinition.GetZoneForSpace(originSpace.Id).Id,
+                MapDefinition.GetZoneForSpace(destinationSpace.Id).Id);
+            occupancies[heroIndex] = new HeroOccupancy(heroId, destination);
+            return travelEvent;
         }
     }
 }

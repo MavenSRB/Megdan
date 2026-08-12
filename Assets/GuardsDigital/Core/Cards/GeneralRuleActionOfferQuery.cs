@@ -17,6 +17,57 @@ namespace GuardsDigital.Core.Cards
                 false,
                 false));
 
+        public static readonly ActionDefinition FastTravelDefinition = new ActionDefinition(
+            new ActionDefinitionId("general-fast-travel"),
+            ActionKind.FastTravel,
+            ActionDefinitionOrigin.Replacement,
+            Array.Empty<PrintedValueDefinition>(),
+            new ActionDefinitionPolicy(
+                CardTextApplicationPolicy.Suppressed,
+                false,
+                false));
+
+        public static ActionOffer? GetAvailableFastTravelOffer(
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            CardInstanceId sourceCardInstanceId,
+            HeroId actorId,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances)
+        {
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var movementOffers = ActionOfferQuery.GetAvailableTurnActionOffers(
+                materializedDefinitions,
+                materializedInstances,
+                actorId,
+                sourceCardInstanceId);
+            var matchingOffers = movementOffers
+                .Where(offer => offer.ActionDefinitionId.Equals(replacedMovementActionDefinitionId))
+                .ToArray();
+            if (matchingOffers.Length != 1)
+            {
+                return null;
+            }
+
+            var movementOffer = matchingOffers[0];
+            var sourceDefinition = materializedDefinitions.Single(definition =>
+                definition.Reference.Equals(movementOffer.SourceDefinitionReference));
+            var replacedAction = sourceDefinition.ActionDefinitions.Single(action =>
+                action.Id.Equals(replacedMovementActionDefinitionId));
+            if (replacedAction.Kind != ActionKind.Movement || !replacedAction.DefaultPolicy.CanBeReplaced)
+            {
+                return null;
+            }
+
+            return new ActionOffer(
+                movementOffer.SourceCardInstanceId,
+                movementOffer.SourceDefinitionReference,
+                FastTravelDefinition.Id,
+                movementOffer.ActorId,
+                ActionInvocationContext.Replacement,
+                true);
+        }
+
         public static ActionOffer? GetAvailableHoldOffer(
             CardInstanceId sourceCardInstanceId,
             HeroId actorId,

@@ -14,6 +14,34 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application
 {
+    public sealed class FastTravelOptionProjection
+    {
+        public FastTravelOptionProjection(
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            IEnumerable<HexCoordinate> legalDestinations)
+        {
+            if (replacementOffer.InvocationContext != ActionInvocationContext.Replacement ||
+                !replacedMovementActionDefinitionId.IsDefined)
+            {
+                throw new ArgumentException("Fast Travel projection requires replacement and replaced-action identities.");
+            }
+
+            ReplacementOffer = replacementOffer;
+            ReplacedMovementActionDefinitionId = replacedMovementActionDefinitionId;
+            LegalDestinations = Array.AsReadOnly((legalDestinations ??
+                throw new ArgumentNullException(nameof(legalDestinations))).ToArray());
+            if (LegalDestinations.Count == 0 || LegalDestinations.Distinct().Count() != LegalDestinations.Count)
+            {
+                throw new ArgumentException("Fast Travel projection requires unique legal destinations.", nameof(legalDestinations));
+            }
+        }
+
+        public ActionOffer ReplacementOffer { get; }
+        public ActionDefinitionId ReplacedMovementActionDefinitionId { get; }
+        public IReadOnlyList<HexCoordinate> LegalDestinations { get; }
+    }
+
     public readonly struct MatchCommitmentProjection
     {
         public MatchCommitmentProjection(
@@ -67,7 +95,8 @@ namespace GuardsDigital.Application
             IEnumerable<RoundResolutionEvent> roundEvents,
             IEnumerable<RuleEventLogEntry> diagnosticEvents,
             string authoritativeSnapshot,
-            string diagnosticSnapshot)
+            string diagnosticSnapshot,
+            IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -100,6 +129,8 @@ namespace GuardsDigital.Application
             DiagnosticEvents = Array.AsReadOnly((diagnosticEvents ?? throw new ArgumentNullException(nameof(diagnosticEvents))).ToArray());
             AuthoritativeSnapshot = authoritativeSnapshot ?? throw new ArgumentNullException(nameof(authoritativeSnapshot));
             DiagnosticSnapshot = diagnosticSnapshot ?? throw new ArgumentNullException(nameof(diagnosticSnapshot));
+            AvailableFastTravelOptions = Array.AsReadOnly((availableFastTravelOptions ??
+                Enumerable.Empty<FastTravelOptionProjection>()).ToArray());
         }
 
         public long Version { get; }
@@ -133,6 +164,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<RuleEventLogEntry> DiagnosticEvents { get; }
         public string AuthoritativeSnapshot { get; }
         public string DiagnosticSnapshot { get; }
+        public IReadOnlyList<FastTravelOptionProjection> AvailableFastTravelOptions { get; }
 
         public bool IsTurnActive =>
             Phase == RoundResolutionPhase.ResolvingTurn && IsTurnStarted && !IsTurnEnded;

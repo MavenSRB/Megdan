@@ -167,7 +167,8 @@ namespace GuardsDigital.Core.Diagnostics
             }
 
             if (ruleEvent.Kind == TurnResolutionEventKind.MovementActionProgressed ||
-                ruleEvent.Kind == TurnResolutionEventKind.AttackActionProgressed)
+                ruleEvent.Kind == TurnResolutionEventKind.AttackActionProgressed ||
+                ruleEvent.Kind == TurnResolutionEventKind.FastTravelActionProgressed)
             {
                 AppendCardAction(roundReference, ruleEvent.CardActionEvent);
                 return;
@@ -192,6 +193,9 @@ namespace GuardsDigital.Core.Diagnostics
                 $"hero={ruleEvent.ActorId.Value}",
                 $"card={ruleEvent.SourceCardInstanceId.Value}",
                 $"action={ruleEvent.ActionDefinitionId.Value}",
+                ruleEvent.ReplacedActionDefinitionId.IsDefined
+                    ? $"replaces={ruleEvent.ReplacedActionDefinitionId.Value}"
+                    : null,
                 ruleEvent.TargetHeroId.IsDefined ? $"target={ruleEvent.TargetHeroId.Value}" : null,
                 ruleEvent.DefenseCardInstanceId.IsDefined ? $"defenseCard={ruleEvent.DefenseCardInstanceId.Value}" : null);
 
@@ -206,6 +210,16 @@ namespace GuardsDigital.Core.Diagnostics
                 {
                     detailParts.Add($"move={ruleEvent.MovementEvent.Origin}->{ruleEvent.MovementEvent.Destination}");
                 }
+            }
+
+            if (ruleEvent.Kind == CardActionResolutionEventKind.FastTravelActionStarted ||
+                ruleEvent.Kind == CardActionResolutionEventKind.FastTravelCommitted ||
+                ruleEvent.Kind == CardActionResolutionEventKind.FastTravelActionCompleted)
+            {
+                detailParts.Add(
+                    $"fastTravel={ruleEvent.FastTravelEvent.Origin}->{ruleEvent.FastTravelEvent.Destination}");
+                detailParts.Add(
+                    $"zones={ruleEvent.FastTravelEvent.OriginZoneId.Value}->{ruleEvent.FastTravelEvent.DestinationZoneId.Value}");
             }
 
             if (ruleEvent.AttackTotal > 0)

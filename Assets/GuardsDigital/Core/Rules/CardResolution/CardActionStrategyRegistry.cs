@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -38,6 +40,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public static readonly CardActionStrategyId AttackDefense =
             new CardActionStrategyId("attack-defense-v1");
+
+        public static readonly CardActionStrategyId FastTravel =
+            new CardActionStrategyId("fast-travel-v1");
     }
 
     public interface ICardActionStrategyHandler
@@ -195,6 +200,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants);
     }
 
+    public interface IFastTravelCardActionStrategyBackend
+    {
+        CardActionResolutionResult PerformTurnFastTravel(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            HexCoordinate destination,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            IEnumerable<QuickGameMinionSetupState> minions);
+    }
+
     public sealed class MovementCardActionStrategyHandler : ICardActionStrategyHandler
     {
         private readonly IMovementCardActionStrategyBackend backend;
@@ -274,5 +292,38 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants) =>
             backend.ResolveOutcome(definitions, instances, participants);
+    }
+
+    public sealed class FastTravelCardActionStrategyHandler : ICardActionStrategyHandler
+    {
+        private readonly IFastTravelCardActionStrategyBackend backend;
+
+        public FastTravelCardActionStrategyHandler(IFastTravelCardActionStrategyBackend backend)
+        {
+            this.backend = backend ?? throw new ArgumentNullException(nameof(backend));
+        }
+
+        public CardActionStrategyId StrategyId => CardActionStrategyIds.FastTravel;
+
+        public ActionKind ActionKind => ActionKind.FastTravel;
+
+        public CardActionResolutionResult PerformTurn(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            HexCoordinate destination,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            IEnumerable<QuickGameMinionSetupState> minions) =>
+            backend.PerformTurnFastTravel(
+                resolutionId,
+                replacementOffer,
+                replacedMovementActionDefinitionId,
+                destination,
+                definitions,
+                instances,
+                participants,
+                minions);
     }
 }

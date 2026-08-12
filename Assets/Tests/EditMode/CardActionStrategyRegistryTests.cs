@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -14,6 +15,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             Assert.That(CardActionStrategyIds.Movement, Is.EqualTo(new CardActionStrategyId("movement-v1")));
             Assert.That(CardActionStrategyIds.AttackDefense, Is.Not.EqualTo(CardActionStrategyIds.Movement));
+            Assert.That(CardActionStrategyIds.FastTravel,
+                Is.EqualTo(new CardActionStrategyId("fast-travel-v1")));
         }
 
         [Test]
@@ -48,17 +51,29 @@ namespace GuardsDigital.Tests.EditMode
         {
             var movementBackend = new RecordingMovementBackend();
             var attackBackend = new RecordingAttackBackend();
+            var fastTravelBackend = new RecordingFastTravelBackend();
             var movement = new MovementCardActionStrategyHandler(movementBackend);
             var attack = new AttackDefenseCardActionStrategyHandler(attackBackend);
+            var fastTravel = new FastTravelCardActionStrategyHandler(fastTravelBackend);
 
             movement.Answer(default);
             attack.ResolveOutcome(
                 Array.Empty<CardDefinition>(),
                 Array.Empty<CardInstance>(),
                 null);
+            fastTravel.PerformTurn(
+                default,
+                default,
+                default,
+                default,
+                Array.Empty<CardDefinition>(),
+                Array.Empty<CardInstance>(),
+                null,
+                Array.Empty<GuardsDigital.Core.Setup.QuickGameMinionSetupState>());
 
             Assert.That(movementBackend.AnswerWasCalled, Is.True);
             Assert.That(attackBackend.ResolveOutcomeWasCalled, Is.True);
+            Assert.That(fastTravelBackend.PerformWasCalled, Is.True);
         }
 
         [Test]
@@ -72,6 +87,9 @@ namespace GuardsDigital.Tests.EditMode
             var attackBackendType = coreAssembly.GetType(
                 "GuardsDigital.Core.Rules.CardResolution.AttackDefenseCardActionStrategyBackend",
                 true);
+            var fastTravelBackendType = coreAssembly.GetType(
+                "GuardsDigital.Core.Rules.CardResolution.FastTravelCardActionStrategyBackend",
+                true);
             var authorityFields = authorityType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
 
             Assert.That(Array.IndexOf(
@@ -80,17 +98,25 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Array.IndexOf(
                 authorityType.GetInterfaces(),
                 typeof(IAttackDefenseCardActionStrategyBackend)), Is.LessThan(0));
+            Assert.That(Array.IndexOf(
+                authorityType.GetInterfaces(),
+                typeof(IFastTravelCardActionStrategyBackend)), Is.LessThan(0));
             Assert.That(movementBackendType, Is.Not.EqualTo(attackBackendType));
             Assert.That(movementBackendType.IsSealed, Is.True);
             Assert.That(attackBackendType.IsSealed, Is.True);
+            Assert.That(fastTravelBackendType.IsSealed, Is.True);
             Assert.That(Array.IndexOf(
                 movementBackendType.GetInterfaces(),
                 typeof(IMovementCardActionStrategyBackend)), Is.GreaterThanOrEqualTo(0));
             Assert.That(Array.IndexOf(
                 attackBackendType.GetInterfaces(),
                 typeof(IAttackDefenseCardActionStrategyBackend)), Is.GreaterThanOrEqualTo(0));
+            Assert.That(Array.IndexOf(
+                fastTravelBackendType.GetInterfaces(),
+                typeof(IFastTravelCardActionStrategyBackend)), Is.GreaterThanOrEqualTo(0));
             Assert.That(Array.Exists(authorityFields, field => field.FieldType == movementBackendType), Is.True);
             Assert.That(Array.Exists(authorityFields, field => field.FieldType == attackBackendType), Is.True);
+            Assert.That(Array.Exists(authorityFields, field => field.FieldType == fastTravelBackendType), Is.True);
         }
 
         private sealed class SyntheticSkillStrategyHandler : ICardActionStrategyHandler
@@ -168,6 +194,25 @@ namespace GuardsDigital.Tests.EditMode
                 MatchParticipants participants)
             {
                 ResolveOutcomeWasCalled = true;
+                return null;
+            }
+        }
+
+        private sealed class RecordingFastTravelBackend : IFastTravelCardActionStrategyBackend
+        {
+            public bool PerformWasCalled { get; private set; }
+
+            public CardActionResolutionResult PerformTurnFastTravel(
+                ActionResolutionId resolutionId,
+                ActionOffer replacementOffer,
+                ActionDefinitionId replacedMovementActionDefinitionId,
+                HexCoordinate destination,
+                System.Collections.Generic.IEnumerable<CardDefinition> definitions,
+                System.Collections.Generic.IEnumerable<CardInstance> instances,
+                MatchParticipants participants,
+                System.Collections.Generic.IEnumerable<GuardsDigital.Core.Setup.QuickGameMinionSetupState> minions)
+            {
+                PerformWasCalled = true;
                 return null;
             }
         }

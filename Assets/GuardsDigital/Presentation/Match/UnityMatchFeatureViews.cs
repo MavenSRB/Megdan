@@ -64,6 +64,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var targetCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(model.MovementDestinations);
+            targetCoordinates.UnionWith(model.FastTravelDestinations);
             foreach (var targetId in model.AttackTargets)
             {
                 var target = model.Heroes.Single(value => value.HeroId.Equals(targetId));
@@ -239,6 +240,11 @@ namespace GuardsDigital.Presentation.Match
             foreach (var action in Model.Actions)
             {
                 DrawInvocation(action);
+            }
+
+            foreach (var fastTravel in Model.FastTravelOffers)
+            {
+                GUILayout.Box(fastTravel.Label, GUILayout.Height(46f));
             }
 
             GUILayout.FlexibleSpace();

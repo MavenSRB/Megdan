@@ -21,7 +21,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HeroOccupancy> heroes,
             IEnumerable<HexCoordinate> movementDestinations,
             IEnumerable<HeroId> attackTargets,
-            HeroId focusedHeroId)
+            HeroId focusedHeroId,
+            IEnumerable<HexCoordinate> fastTravelDestinations = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -30,6 +31,8 @@ namespace GuardsDigital.Presentation.Match
             AttackTargets = Array.AsReadOnly((attackTargets ??
                 throw new ArgumentNullException(nameof(attackTargets))).ToArray());
             FocusedHeroId = focusedHeroId;
+            FastTravelDestinations = Array.AsReadOnly((fastTravelDestinations ??
+                Enumerable.Empty<HexCoordinate>()).ToArray());
         }
 
         public long Version { get; }
@@ -37,6 +40,7 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<HexCoordinate> MovementDestinations { get; }
         public IReadOnlyList<HeroId> AttackTargets { get; }
         public HeroId FocusedHeroId { get; }
+        public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
     }
 
     public interface IBoardInteractionView
@@ -71,7 +75,8 @@ namespace GuardsDigital.Presentation.Match
                     projection.PendingMovementChoice?.LegalDestinations.Select(value => value.Destination) ??
                         Enumerable.Empty<HexCoordinate>(),
                     projection.PendingAttackTargetChoice?.LegalTargetHeroIds ?? Array.Empty<HeroId>(),
-                    projection.SelectedActor.IsDefined ? projection.SelectedActor.ActorId : default);
+                    projection.SelectedActor.IsDefined ? projection.SelectedActor.ActorId : default,
+                    projection.AvailableFastTravelOptions.SelectMany(value => value.LegalDestinations).Distinct());
             }
 
             view.Render(lastViewModel);
@@ -82,7 +87,17 @@ namespace GuardsDigital.Presentation.Match
             var choice = session.Projection.PendingMovementChoice;
             if (choice == null || choice.LegalDestinations.Count(value => value.Destination.Equals(destination)) != 1)
             {
-                return false;
+                var fastTravelOptions = session.Projection.AvailableFastTravelOptions
+                    .Where(option => option.LegalDestinations.Contains(destination))
+                    .ToArray();
+                if (fastTravelOptions.Length != 1)
+                {
+                    return false;
+                }
+
+                return Execute(DirectorCommand.PerformFastTravel(
+                    fastTravelOptions[0].ReplacedMovementActionDefinitionId,
+                    destination));
             }
 
             return Execute(DirectorCommand.ChooseMovementDestination(
@@ -342,6 +357,30 @@ namespace GuardsDigital.Presentation.Match
         public DirectorCommand Command { get; }
     }
 
+    public sealed class FastTravelOfferViewModel
+    {
+        public FastTravelOfferViewModel(
+            string label,
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            int legalDestinationCount)
+        {
+            Label = string.IsNullOrWhiteSpace(label)
+                ? throw new ArgumentException("A Fast Travel offer requires a label.", nameof(label))
+                : label;
+            if (!replacedMovementActionDefinitionId.IsDefined || legalDestinationCount <= 0)
+            {
+                throw new ArgumentException("A Fast Travel offer requires its replaced action and legal destinations.");
+            }
+
+            ReplacedMovementActionDefinitionId = replacedMovementActionDefinitionId;
+            LegalDestinationCount = legalDestinationCount;
+        }
+
+        public string Label { get; }
+        public ActionDefinitionId ReplacedMovementActionDefinitionId { get; }
+        public int LegalDestinationCount { get; }
+    }
+
     public sealed class RoundActionViewModel
     {
         public RoundActionViewModel(
@@ -354,7 +393,8 @@ namespace GuardsDigital.Presentation.Match
             TypedInvocationViewModel endTurnInvocation,
             TypedInvocationViewModel continueEndOfRoundInvocation,
             IEnumerable<TypedInvocationViewModel> initiativeChoices,
-            IEnumerable<TypedInvocationViewModel> defenseChoices)
+            IEnumerable<TypedInvocationViewModel> defenseChoices,
+            IEnumerable<FastTravelOfferViewModel> fastTravelOffers = null)
         {
             Version = version;
             RoundIndex = roundIndex;
@@ -368,6 +408,8 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentNullException(nameof(initiativeChoices))).ToArray());
             DefenseChoices = Array.AsReadOnly((defenseChoices ??
                 throw new ArgumentNullException(nameof(defenseChoices))).ToArray());
+            FastTravelOffers = Array.AsReadOnly((fastTravelOffers ??
+                Enumerable.Empty<FastTravelOfferViewModel>()).ToArray());
             HudHeader = $"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
                 $"TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound} - {phase.ToString().ToUpperInvariant()}";
         }
@@ -382,6 +424,7 @@ namespace GuardsDigital.Presentation.Match
         public TypedInvocationViewModel ContinueEndOfRoundInvocation { get; }
         public IReadOnlyList<TypedInvocationViewModel> InitiativeChoices { get; }
         public IReadOnlyList<TypedInvocationViewModel> DefenseChoices { get; }
+        public IReadOnlyList<FastTravelOfferViewModel> FastTravelOffers { get; }
         public string HudHeader { get; }
     }
 
@@ -471,6 +514,14 @@ namespace GuardsDigital.Presentation.Match
                             cardId)))
                     .ToArray();
             var defenseChoices = CreateDefenseChoices(projection);
+            var fastTravelOffers = hasPendingResolution
+                ? Array.Empty<FastTravelOfferViewModel>()
+                : projection.AvailableFastTravelOptions
+                    .Select(option => new FastTravelOfferViewModel(
+                        "REPLACEMENT FAST TRAVEL\nSELECT A HIGHLIGHTED SPACE",
+                        option.ReplacedMovementActionDefinitionId,
+                        option.LegalDestinations.Count))
+                    .ToArray();
 
             return new RoundActionViewModel(
                 projection.Version,
@@ -484,7 +535,8 @@ namespace GuardsDigital.Presentation.Match
                     ? new TypedInvocationViewModel("CONTINUE END OF ROUND", DirectorCommand.AdvanceEndOfRound())
                     : null,
                 initiativeChoices,
-                defenseChoices);
+                defenseChoices,
+                fastTravelOffers);
         }
 
         private RoundActionViewModel GetOrCreateViewModel(MatchSessionProjection projection)

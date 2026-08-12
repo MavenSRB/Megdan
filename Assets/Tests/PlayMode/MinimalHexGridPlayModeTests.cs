@@ -175,8 +175,46 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(actorId)).Coordinate,
                 Is.EqualTo(destination));
+            Assert.That(runtime.BoardView.Model.MovementDestinations, Is.Empty);
+            var fastTravelDestinations = runtime.BoardView.Model.FastTravelDestinations;
             Assert.That(Object.FindObjectsByType<HexTileView>(),
-                Has.All.Matches<HexTileView>(value => !value.IsHighlighted));
+                Has.All.Matches<HexTileView>(value =>
+                    value.IsHighlighted == fastTravelDestinations.Contains(value.Coordinate)));
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_OffersAndRoutesFastTravelThroughConfiguredPassiveViews()
+        {
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+            CommitNextTurn(runtime);
+            yield return null;
+
+            var actorId = runtime.SelectedActor.ActorId;
+            var sourceCardId = runtime.SelectedActor.CardInstanceId;
+            Assert.That(runtime.RoundView.Model.FastTravelOffers, Has.Count.EqualTo(1));
+            Assert.That(runtime.RoundView.Model.FastTravelOffers[0].Label,
+                Is.EqualTo("REPLACEMENT FAST TRAVEL\nSELECT A HIGHLIGHTED SPACE"));
+            Assert.That(runtime.BoardView.Model.FastTravelDestinations,
+                Has.Count.EqualTo(runtime.RoundView.Model.FastTravelOffers[0].LegalDestinationCount));
+
+            var destination = runtime.BoardView.Model.FastTravelDestinations[0];
+            var tile = Object.FindObjectsByType<HexTileView>()
+                .Single(value => value.Coordinate.Equals(destination));
+            Assert.That(tile.IsHighlighted, Is.True);
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var commandCount = runtime.AcceptedCommands.Count;
+
+            Assert.That(pointer.TryHandlePointerRay(DownRay(tile.transform.position)), Is.True);
+            yield return null;
+
+            Assert.That(runtime.AcceptedCommands.Count, Is.EqualTo(commandCount + 1));
+            Assert.That(runtime.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.PerformFastTravel));
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(actorId)).Coordinate,
+                Is.EqualTo(destination));
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(sourceCardId)).State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved));
         }
 
         [UnityTest]

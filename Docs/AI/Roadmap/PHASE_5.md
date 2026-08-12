@@ -75,7 +75,7 @@ Non-goals: No Defense rules, label-content change, card content, value calculati
 
 Historical evidence: [milestone 5.1c handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-51c-restore-readable-content-sized-defense-choice-buttons-completion-evidence).
 
-### [ ] 5.2 Implement Fast Travel replacement
+### [x] 5.2 Implement Fast Travel replacement
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
@@ -86,8 +86,15 @@ Acceptance checks:
 - Enemy presence in the origin or destination zone blocks eligibility.
 - No empty-space path between origin and destination is required.
 - Fast Travel replaces the entire Movement action and suppresses Primary card text.
+- The configured player UI visibly offers Fast Travel only when the application projection contains an eligible replacement with at least one authoritative legal destination.
+- The board highlights only the projected legal destinations; selecting one submits the typed Fast Travel command through the existing board presenter and match session, while presentation owns no zone, enemy-presence, or destination legality.
+- Configured saved-scene Play Mode coverage proves the offer, destination highlights, pointer submission, authoritative relocation, source-card resolution, and accepted-command identity.
+
+Historical evidence: [milestone 5.2 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-52-implement-fast-travel-replacement-completion-evidence).
 
 ### [ ] 5.3 Add minion obstacle behavior and Defense contributions
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Standard minions are authoritative units/obstacles and contribute their general Defense modifiers through the typed value service.
 

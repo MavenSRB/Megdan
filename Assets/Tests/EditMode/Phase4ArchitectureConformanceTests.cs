@@ -64,6 +64,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             "IMovementCardActionStrategyBackend,",
             "IAttackDefenseCardActionStrategyBackend",
+            "IFastTravelCardActionStrategyBackend",
             "new MovementSession(",
             ".TryCommitStep(",
             "AttackTargetQuery.FindLegalEnemyHeroes(",
@@ -142,7 +143,8 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var backendFile in new[]
                      {
                          "MovementCardActionStrategyBackend.cs",
-                         "AttackDefenseCardActionStrategyBackend.cs"
+                         "AttackDefenseCardActionStrategyBackend.cs",
+                         "FastTravelCardActionStrategyBackend.cs"
                      })
             {
                 if (!File.Exists(Path.Combine(cardResolution, backendFile)))

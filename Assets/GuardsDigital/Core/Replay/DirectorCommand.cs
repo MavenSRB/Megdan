@@ -19,7 +19,8 @@ namespace GuardsDigital.Core.Replay
         ChooseAttackTarget = 7,
         ChooseDefenseCard = 8,
         DeclineDefense = 9,
-        AdvanceEndOfRound = 10
+        AdvanceEndOfRound = 10,
+        PerformFastTravel = 11
     }
 
     public sealed class DirectorCommand : IEquatable<DirectorCommand>
@@ -67,6 +68,14 @@ namespace GuardsDigital.Core.Replay
 
         public static DirectorCommand StartAction(ActionDefinitionId actionDefinitionId) =>
             new DirectorCommand(DirectorCommandKind.StartAction, actionDefinitionId: actionDefinitionId);
+
+        public static DirectorCommand PerformFastTravel(
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            HexCoordinate destination) =>
+            new DirectorCommand(
+                DirectorCommandKind.PerformFastTravel,
+                actionDefinitionId: replacedMovementActionDefinitionId,
+                coordinate: destination);
 
         public static DirectorCommand ChooseMovementDestination(HexCoordinate destination) =>
             new DirectorCommand(DirectorCommandKind.ChooseMovementDestination, coordinate: destination);

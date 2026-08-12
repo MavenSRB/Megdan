@@ -149,6 +149,47 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void FastTravelCommand_ReplaysDeterministicallyAcrossUndo()
+        {
+            var session = CreateSession();
+            var red = GetCards(session, TeamSide.Red);
+            var blue = GetCards(session, TeamSide.Blue);
+            Commit(session, red[3], blue[3], null);
+            var actorId = session.Projection.SelectedActor.ActorId;
+            var origin = session.Projection.Heroes.Single(hero => hero.HeroId.Equals(actorId)).Coordinate;
+            var movement = GetCurrentAction(session, ActionKind.Movement);
+            var originSpace = session.Projection.SelectedMap.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable && space.Coordinate.Equals(origin));
+            var originZone = session.Projection.SelectedMap.GetZoneForSpace(originSpace.Id).Id;
+            var destination = session.Projection.SelectedMap.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Playable)
+                .Where(space => session.Projection.SelectedMap.GetZoneForSpace(space.Id).Id.Equals(originZone))
+                .Select(space => space.Coordinate)
+                .First(coordinate =>
+                    session.Projection.Heroes.All(hero => !hero.Coordinate.Equals(coordinate)) &&
+                    session.Projection.Setup.Minions.All(minion => !minion.Coordinate.Equals(coordinate)) &&
+                    session.Projection.Obstacles.All(obstacle => !obstacle.Coordinate.Equals(coordinate)));
+            var command = DirectorCommand.PerformFastTravel(movement.ActionDefinitionId, destination);
+
+            var first = Accept(session, command, null);
+            var expectedSnapshot = first.Projection.AuthoritativeSnapshot;
+            Assert.That(first.Events.Any(value =>
+                value.TurnEvent.Kind == TurnResolutionEventKind.FastTravelActionProgressed), Is.True);
+            Assert.That(session.Projection.Heroes.Single(hero => hero.HeroId.Equals(actorId)).Coordinate,
+                Is.EqualTo(destination));
+            Assert.That(session.Projection.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.PerformFastTravel));
+
+            var undo = session.Undo();
+            Assert.That(undo.Accepted, Is.True, undo.Detail);
+            Assert.That(session.Projection.Heroes.Single(hero => hero.HeroId.Equals(actorId)).Coordinate,
+                Is.EqualTo(origin));
+
+            var replayed = Accept(session, command, null);
+            Assert.That(replayed.Projection.AuthoritativeSnapshot, Is.EqualTo(expectedSnapshot));
+        }
+
+        [Test]
         public void OfficialMapMovement_RulebookPage11CommitsShortestAndLongerWaypointRoutesToSameDestination()
         {
             var shortestSession = CreateSession();
@@ -464,14 +505,19 @@ namespace GuardsDigital.Tests.EditMode
             ActionKind actionKind,
             ISet<DirectorCommandKind> kinds)
         {
-            var action = session.Projection.AvailableTurnActions.Single(offer =>
+            var action = GetCurrentAction(session, actionKind);
+            Accept(session, DirectorCommand.StartAction(action.ActionDefinitionId), kinds);
+        }
+
+        private static ActionOffer GetCurrentAction(MatchSession session, ActionKind actionKind)
+        {
+            return session.Projection.AvailableTurnActions.Single(offer =>
             {
                 var definition = session.Projection.Definitions.Single(value =>
                     value.Reference.Equals(offer.SourceDefinitionReference));
                 return definition.ActionDefinitions.Single(value =>
                     value.Id.Equals(offer.ActionDefinitionId)).Kind == actionKind;
             });
-            Accept(session, DirectorCommand.StartAction(action.ActionDefinitionId), kinds);
         }
 
         private static void HoldCurrentActor(MatchSession session, ISet<DirectorCommandKind> kinds)

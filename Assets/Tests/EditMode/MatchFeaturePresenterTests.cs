@@ -171,6 +171,36 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ConfiguredPresenters_ProjectAndSubmitAuthoritativeFastTravelDestination()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var option = session.Projection.AvailableFastTravelOptions.Single();
+            var roundModel = RoundActionPresenter.CreateViewModel(session.Projection);
+            var boardView = new CapturingBoardView();
+            var boardPresenter = new BoardInteractionPresenter(session, boardView);
+
+            boardPresenter.Refresh();
+            Assert.That(roundModel.FastTravelOffers, Has.Count.EqualTo(1));
+            Assert.That(roundModel.FastTravelOffers[0].Label,
+                Is.EqualTo("REPLACEMENT FAST TRAVEL\nSELECT A HIGHLIGHTED SPACE"));
+            Assert.That(roundModel.FastTravelOffers[0].ReplacedMovementActionDefinitionId,
+                Is.EqualTo(option.ReplacedMovementActionDefinitionId));
+            Assert.That(roundModel.FastTravelOffers[0].LegalDestinationCount,
+                Is.EqualTo(option.LegalDestinations.Count));
+            Assert.That(boardView.Model.FastTravelDestinations,
+                Is.EquivalentTo(option.LegalDestinations));
+
+            var actorId = session.Projection.SelectedActor.ActorId;
+            var destination = option.LegalDestinations[0];
+            Assert.That(boardPresenter.SubmitDestination(destination), Is.True);
+            Assert.That(session.Projection.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.PerformFastTravel));
+            Assert.That(session.Projection.Heroes.Single(hero => hero.HeroId.Equals(actorId)).Coordinate,
+                Is.EqualTo(destination));
+        }
+
+        [Test]
         public void RoundPresenter_ProjectsContextualEndTurnAsExactTypedInvocation()
         {
             var holdSession = CreateSession();

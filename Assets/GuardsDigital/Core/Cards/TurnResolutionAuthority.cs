@@ -25,7 +25,9 @@ namespace GuardsDigital.Core.Cards
         MovementCommandRejected = 12,
         AttackAuthorityUnavailable = 13,
         AttackActionRejected = 14,
-        AttackCommandRejected = 15
+        AttackCommandRejected = 15,
+        FastTravelAuthorityUnavailable = 16,
+        FastTravelActionRejected = 17
     }
 
     public enum TurnResolutionEventKind
@@ -37,7 +39,8 @@ namespace GuardsDigital.Core.Cards
         TurnOnlyEffectsCancellationCheckpoint = 4,
         TurnEnded = 5,
         MovementActionProgressed = 6,
-        AttackActionProgressed = 7
+        AttackActionProgressed = 7,
+        FastTravelActionProgressed = 8
     }
 
     public readonly struct TurnResolutionEvent
@@ -139,6 +142,11 @@ namespace GuardsDigital.Core.Cards
         public static TurnResolutionEvent FromAttackAction(CardActionResolutionEvent cardActionEvent)
         {
             return FromCardAction(cardActionEvent, TurnResolutionEventKind.AttackActionProgressed);
+        }
+
+        public static TurnResolutionEvent FromFastTravelAction(CardActionResolutionEvent cardActionEvent)
+        {
+            return FromCardAction(cardActionEvent, TurnResolutionEventKind.FastTravelActionProgressed);
         }
 
         private static TurnResolutionEvent FromCardAction(
@@ -509,6 +517,75 @@ namespace GuardsDigital.Core.Cards
             {
                 throw new InvalidOperationException(
                     "A card resolved after turn Movement could not be acknowledged by Initiative authority.");
+            }
+
+            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
+            return AdvanceInitiative(events);
+        }
+
+        public TurnResolutionResult TryPerformFastTravel(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            GuardsDigital.Core.Board.HexCoordinate destination,
+            IEnumerable<QuickGameMinionSetupState> minions)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.NoActorSelected);
+            }
+
+            if (!initiative.SelectedActor.CardInstanceId.Equals(replacementOffer.SourceCardInstanceId) ||
+                !initiative.SelectedActor.ActorId.Equals(replacementOffer.ActorId))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardNotSelectedForAction);
+            }
+
+            if (cardActions == null)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.FastTravelAuthorityUnavailable);
+            }
+
+            if (cardActions.HasPendingResolution)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+            }
+
+            var result = cardActions.PerformTurnFastTravel(
+                resolutionId,
+                replacementOffer,
+                replacedMovementActionDefinitionId,
+                destination,
+                definitions,
+                instances,
+                participants,
+                minions);
+            if (!result.Accepted || !result.IsComplete)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.FastTravelActionRejected);
+            }
+
+            var card = instances.Single(candidate =>
+                candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            {
+                throw new InvalidOperationException(
+                    "A completed Fast Travel could not resolve its prevalidated source card.");
+            }
+
+            var events = result.Events.Select(TurnResolutionEvent.FromFastTravelAction).ToList();
+            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            if (!acknowledgement.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A card resolved after Fast Travel could not be acknowledged by Initiative authority.");
             }
 
             events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
