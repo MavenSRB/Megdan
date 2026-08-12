@@ -32,9 +32,10 @@ The project does not yet implement current-Battle-Zone changes, Lane Push, the f
 
 - Current completed milestone: **5.2**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **5.3**.
+- Next proposed milestone: **5.2a**.
 - Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**.
-- Milestone 5.3 is documentation-scheduled only; implementation requires explicit approval of that exact micro-milestone.
+- Milestone 5.2a is documentation-scheduled only; implementation requires explicit approval of that exact micro-milestone.
+- Milestone 5.3 remains queued after 5.2a.
 - The local repository is on `main`; no remote is configured or authorized.
 
 ## Durable boundaries

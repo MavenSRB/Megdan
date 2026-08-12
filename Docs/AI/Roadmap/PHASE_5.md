@@ -92,6 +92,23 @@ Acceptance checks:
 
 Historical evidence: [milestone 5.2 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-52-implement-fast-travel-replacement-completion-evidence).
 
+### [ ] 5.2a Require explicit Fast Travel selection in the configured player UI
+
+Required Codex profile: GPT-5.6 Sol with medium reasoning.
+
+Observable outcome: Fast Travel is an explicit player-selected action mode rather than the configured UI's default assumption whenever an eligible replacement exists.
+
+Acceptance checks:
+
+- The configured player UI presents Fast Travel as a clickable button only when the application projection contains an eligible replacement with at least one authoritative legal destination.
+- When no eligible Fast Travel replacement is projected, the button is absent rather than disabled or presented as unavailable.
+- Merely receiving an eligible Fast Travel projection does not activate Fast Travel or expose its destination highlights; the normal projected action choices remain the default interaction state.
+- Clicking the Fast Travel button activates its selection mode and exposes only the authoritative projected legal destinations.
+- Selecting a highlighted destination after explicit activation submits the existing typed Fast Travel command through `BoardInteractionPresenter` and `IMatchSession`; presentation still performs no zone, enemy-presence, or destination-legality calculation.
+- Focused presenter/view-model coverage proves visible-versus-hidden button state and explicit activation, while configured saved-scene Play Mode coverage proves button selection, destination highlights, pointer submission, and authoritative relocation.
+
+Non-goals: No Fast Travel rule, eligibility, destination-query, command, replay, Undo, card-resolution, general action-selection, or production-styling change.
+
 ### [ ] 5.3 Add minion obstacle behavior and Defense contributions
 
 Required Codex profile: GPT-5.6 Sol with medium reasoning.
