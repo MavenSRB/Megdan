@@ -155,11 +155,24 @@ Verified real cards require definition/schema validation plus a scenario for eve
 - Changing a shared capability runs its conformance fixture and every known directly dependent scenario; once Wasp exists, include its source-linked consumer scenarios.
 - A complete suite does not compensate for a missing focused regression.
 
+## Token-efficient execution and reporting
+
+Validation scope follows risk and affectedness, not the desire to accumulate evidence. Preserve the required focused, regression, Play Mode, visual, compatibility, replay, and gate coverage, while applying these limits:
+
+- Run each required filter once at the final candidate revision. Rerun only a failed filter, a filter invalidated by a later code/content/test change, or a broader tier newly triggered by evidence. Do not rerun an unchanged green filter merely to produce a newer timestamp or repeat another layer's proof.
+- Count a consumer as directly affected only when the changed contract, state, data, serialized form, scene/presentation path, or shared infrastructure can reach it. Document the dependency route when inclusion is not obvious. Mere conceptual similarity, historical co-selection, or membership in a broad subsystem is insufficient.
+- Prefer one test at the lowest layer that owns an invariant. Add higher-layer coverage only for behavior unique to that boundary: serialization/rebinding, command forwarding, scene wiring, Unity lifecycle, rendering, input, or an end-to-end player path. Do not duplicate exhaustive rule permutations through presenter, scene, and Play Mode layers.
+- Reuse earlier evidence only when it is from the same revision or the intervening diff provably cannot affect the tested surface, and only when the applicable tier or gate permits reuse. Identify the prior revision/result and the bounded unaffected diff; never use reuse to bypass a required current-revision gate.
+- Keep milestone handoff evidence concise and canonical. Record final required filters/checks, totals, revision, failures that affected runtime behavior or validation conclusions, and their dispositions. Aggregate repeated attempts with the same root cause. Summarize test-authoring, compilation, assertion-shape, launcher, or environment iterations by root cause and final disposition unless their exact sequence is needed to explain residual risk, a quarantine, or why evidence is invalid.
+- Link to the one archive handoff record instead of repeating validation narratives in active documents or the user-facing report. The user-facing result normally states the tier, final pass totals, material limitations, and archive link; expand only for a failure, risk decision, requested audit, or hard gate.
+
+These limits reduce execution and reporting cost; they do not authorize fewer rule-authority scenarios, weaker assertions, ignored failures, stale required results, or omission of a regression that reproduces a demonstrated defect.
+
 ## Evidence and pass criteria
 
 A Unity run counts only when the process exits successfully, a fresh NUnit XML exists, the requested filter discovers at least one test, the XML reports zero failures/errors and no unexpected skipped/inconclusive tests, and the log contains no compile/import exception.
 
-Completion reports record the tier, exact focused filters, result totals, directly affected regressions, any complete-suite result, and source/visual/manual/build checks. They also record any unaffected suite intentionally omitted and why. Exact totals in historical `ROADMAP.md` completion notes are evidence from those runs, not permanent expected counts.
+The canonical archive completion record states the tier, final revision, exact focused filters, result totals, directly affected regressions, any complete-suite result, and source/visual/manual/build checks. It identifies any required failure or material limitation and its disposition, and records an unaffected suite's omission with one bounded affectedness reason rather than a repeated coverage narrative. Exact totals in historical `ROADMAP.md` completion notes are evidence from those runs, not permanent expected counts.
 
 ## Living-document governance validation
 
