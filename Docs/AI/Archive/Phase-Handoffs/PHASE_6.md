@@ -251,4 +251,4 @@ The required review-only pass found no remaining demonstrated defect beyond the 
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 6.1o | The rejected-command comparison and its rollback run in every build configuration and `MatchDiagnosticsMode` is deleted; both rule-event streams become constant-time append-only snapshots, so no command copies the accumulated log; `RISK-PERF-001` is reopened and re-retired, `RISK-STATE-002` receives its overdue reassessment, and two living-document checks close the governance findings. Reopens and closes `F613-08`. | `PENDING` |
+| 6.1o | The rejected-command comparison and its rollback run in every build configuration and `MatchDiagnosticsMode` is deleted; both rule-event streams become constant-time append-only snapshots, so no command copies the accumulated log; `RISK-PERF-001` is reopened and re-retired, `RISK-STATE-002` receives its overdue reassessment, and two living-document checks close the governance findings. Reopens and closes `F613-08`. | `bf127b0` |
