@@ -8,7 +8,7 @@ This repository is private and not distributable. See [Rights and privacy](#righ
 
 A rules-accurate implementation of the board game, built as a pure C# rules engine with Unity acting only as passive presentation. The current build plays a synthetic vertical slice: a 1v1 match on the official single-lane map with placeholder cards, movement, attack/defense, minions, and an end-of-round minion battle. No real hero card content is implemented yet.
 
-Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1g**.
+Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1c**.
 
 ## Requirements
 
