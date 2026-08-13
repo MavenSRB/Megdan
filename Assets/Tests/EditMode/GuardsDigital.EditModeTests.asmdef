@@ -3,6 +3,7 @@
   "rootNamespace": "GuardsDigital.Tests.EditMode",
   "references": [
     "GuardsDigital.Core",
+    "GuardsDigital.Core.CardState",
     "GuardsDigital.Application",
     "GuardsDigital.Presentation",
     "Unity.InputSystem"

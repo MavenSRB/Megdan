@@ -2,7 +2,8 @@
   "name": "GuardsDigital.Application",
   "rootNamespace": "GuardsDigital.Application",
   "references": [
-    "GuardsDigital.Core"
+    "GuardsDigital.Core",
+    "GuardsDigital.Core.CardState"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

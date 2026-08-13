@@ -1,0 +1,33 @@
+// Probe for finding F613-06, milestone 6.1f.
+//
+// The act: mutate authoritative card state from OUTSIDE the card-state assembly, bypassing
+// CardLifecycleAuthority. This is verbatim what AttackDefenseCardActionStrategyBackend did before
+// 6.1f rerouted it.
+//
+// Copy this file to:
+//   Assets/GuardsDigital/Core/Rules/CardResolution/CardMutationBypassProbe.cs
+// It must land inside the GuardsDigital.Core assembly - the whole point is that Core is no longer
+// the assembly that owns CardInstance's mutators. Compile, record the answer, then delete it.
+//
+//   Before 6.1f  compiles cleanly. CardInstance lived in GuardsDigital.Core, so `internal` meant
+//                "anywhere in Core", and every rules type could transition a card directly. That
+//                clean compile is the defect.
+//   After 6.1f   does not compile. CardInstance lives in GuardsDigital.Core.CardState, so its
+//                internal members are invisible to Core and the call cannot be written at all.
+//
+// Unlike the 6.1g probes, one file serves both revisions: 6.1f changed no signature, only which
+// assembly owns the type, so the act is expressible as the same source text either way.
+
+using GuardsDigital.Core.Cards;
+
+namespace GuardsDigital.Core.Rules.CardResolution
+{
+    internal static class CardMutationBypassProbe
+    {
+        internal static bool Bypass(CardInstance card)
+        {
+            return card.TryApplyLocationTransition(
+                new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
+        }
+    }
+}

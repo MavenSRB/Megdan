@@ -3,6 +3,7 @@
   "rootNamespace": "GuardsDigital.Presentation",
   "references": [
     "GuardsDigital.Core",
+    "GuardsDigital.Core.CardState",
     "GuardsDigital.Application",
     "Unity.InputSystem"
   ],

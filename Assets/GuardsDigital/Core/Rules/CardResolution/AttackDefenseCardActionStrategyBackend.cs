@@ -466,7 +466,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 adjacentMoveAuthority);
             var resumedWithDefense = CreateOutcomeComparisonResolution(defenseOffer, defenseValue);
 
-            if (!defenseCard.TryApplyLocationTransition(transition))
+            // Routed through the lifecycle authority rather than transitioning the card directly.
+            // The guards above already pin this transition to Hand -> DiscardPile, which is exactly
+            // what TryDiscardDefenseFromHand performs, so the discard semantics are unchanged - but
+            // the authority additionally requires the card to be unplayed with no resolution status,
+            // which the duplicated guard here never checked. See milestone 6.1f / finding F613-06.
+            if (!CardLifecycleAuthority.TryDiscardDefenseFromHand(defenseCard))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }

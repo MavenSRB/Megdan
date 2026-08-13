@@ -1,7 +1,9 @@
 {
   "name": "GuardsDigital.Core",
   "rootNamespace": "GuardsDigital.Core",
-  "references": [],
+  "references": [
+    "GuardsDigital.Core.CardState"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
