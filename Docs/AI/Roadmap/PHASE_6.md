@@ -45,7 +45,7 @@ Every milestone here names the exact check that closes its findings. Per the mec
 | 6 | 6.1i | `F613-08`, `F613-09`, `F613-10` | Diagnosability and measured cost. Complete |
 | 7 | 6.1h | `F613-11` | Pure maintainability; lowest risk to defer. Complete |
 | 8 | 6.1k | `F613-13` | Must land after 7, whose renames its replacement assertions have to survive. Complete |
-| - | 6.1l | `F613-14` | Reinstated 2026-08-13; `[!]` blocked on a non-Windows host, so it carries no ordinal |
+| - | 6.1l | `F613-14` | Reinstated 2026-08-13 as `[!]` blocked; executed later that day when the ER2 session's Linux workstation supplied the missing non-Windows host. Complete |
 
 Milestones 6.1j, 6.1l, and 6.1m were merged into 6.1d on 2026-08-13 under the granularity floor in [ROADMAP.md](../ROADMAP.md). Their acceptance checks are preserved verbatim inside it; no check was dropped in the merge.
 
@@ -277,7 +277,7 @@ Closing checks:
 
 Non-goals: No plan-only conversion of the authorities beneath the aggregate, so `RISK-STATE-002` is not retired. No `InternalsVisibleTo` for `GuardsDigital.Core`. No rewrite of the moved section's content - it is relocated, not restated.
 
-### [!] 6.1l Confirm the validation toolchain on a non-Windows platform
+### [x] 6.1l Confirm the validation toolchain on a non-Windows platform
 
 Reinstated on 2026-08-13 with explicit user approval, having previously been merged into 6.1d. It owns the one part of `F613-14` that is evidence rather than code: 6.1d makes the toolchain portable, and this milestone proves it.
 

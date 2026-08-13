@@ -58,11 +58,12 @@ if (Test-IsWindowsHost) {
     )
 }
 else {
-    $home = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
+    # $home is a read-only automatic variable under PowerShell 7; use a distinct name.
+    $userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
     $unityCandidates = @(
         # macOS Hub layout, then the common Linux Hub layout.
         [System.IO.Path]::Combine('/Applications', 'Unity', 'Hub', 'Editor', $unityEditorVersion, 'Unity.app', 'Contents', 'MacOS', 'Unity'),
-        [System.IO.Path]::Combine($home, 'Unity', 'Hub', 'Editor', $unityEditorVersion, 'Editor', 'Unity'),
+        [System.IO.Path]::Combine($userProfile, 'Unity', 'Hub', 'Editor', $unityEditorVersion, 'Editor', 'Unity'),
         [System.IO.Path]::Combine('/opt', 'unity', 'editors', $unityEditorVersion, 'Editor', 'Unity')
     )
     $hubCandidates = @(

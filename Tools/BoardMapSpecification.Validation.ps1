@@ -35,7 +35,8 @@ function Test-BoardMapSpecificationInvariant {
     Assert-MapCondition ($Map.'$schema' -eq 'guards-digital/map-specification/v1') "$Label has an unexpected map schema."
     Assert-MapCondition ($Map.schemaVersion -eq 1) "$Label has an unexpected schema version."
     Assert-MapCondition (-not [string]::IsNullOrWhiteSpace($Map.mapId)) "$Label must have a stable mapId."
-    Assert-MapCondition ($Map.revision -is [int] -and $Map.revision -ge 1) "$Label must have a positive integer revision."
+    # ConvertFrom-Json yields [int] under Windows PowerShell 5.1 but [long] under PowerShell 7.
+    Assert-MapCondition (($Map.revision -is [int] -or $Map.revision -is [long]) -and $Map.revision -ge 1) "$Label must have a positive integer revision."
 
     Assert-MapCondition ($Map.identity.spaceIdScope -eq 'map-local') "$Label SpaceId values must be map-local."
     Assert-MapCondition ($Map.identity.zoneIdScope -eq 'map-local') "$Label ZoneId values must be map-local."

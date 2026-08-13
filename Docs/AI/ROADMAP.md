@@ -41,9 +41,7 @@ Enforced by the living-document validator, and no longer reviewer-owned:
 - **Documented-contract truth.** The `undeclared-contract-type` and `incoherent-status` checks prove every documented contract resolves to a real type and that the three canonical status statements agree. Retired from this list on 2026-08-13; these checks found `F613-15`.
 - **Buildability.** The player-build smoke gate in `Testing/FUTURE_GATES.md` builds the real Windows player, runs it, and requires it to report that it composed a configured match and completed one authoritative command. Retired from the reviewer-owned list at milestone 6.1d, after being observed to fail on a deliberate removal of the Standard shader from the always-included list and to pass once restored. The deliberate break is worth recording precisely: the **build still succeeded**, and only the running player failed, so a build-only check would have reported that violation as a pass.
 
-Still reviewer-owned, because no check enforces it yet:
-
-1. **Toolchain and platform portability.** Whether the validation and build toolchain still runs on every declared development platform. Becomes mechanical when milestone `6.1l` confirms the validators on a non-Windows host; 6.1d made them portable but could not confirm them, as no non-Windows host exists on the current machine.
+No dimension is currently reviewer-owned. **Toolchain and platform portability** left this list at milestone `6.1l`, which confirmed every validator script on a non-Windows host (the Linux workstation, PowerShell 7.6.4) after correcting the three portability defects the failing runs exposed; a dimension returns to this list only if its check is retired without replacement.
 
 The implementing agent's review-only milestone handoff pass is a routine self-check and does not satisfy or replace a separately numbered fresh-task independent engineering review.
 

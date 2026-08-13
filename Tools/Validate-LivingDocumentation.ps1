@@ -310,7 +310,7 @@ function Invoke-SelfTests {
 if (-not $SkipSelfTests) { Invoke-SelfTests }
 
 # Active leaf thresholds.
-$activeFiles = Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName -notlike '*\Archive\*' -and $_.FullName -notlike '*\Maps\*' }
+$activeFiles = Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/*' -and $_.FullName.Replace('\', '/') -notlike '*/Maps/*' }
 foreach ($file in $activeFiles) {
     $relative = Get-RelativePath $projectRoot $file.FullName
     $limit = Get-Limit $relative
@@ -365,7 +365,7 @@ foreach ($file in $activeFiles) {
 foreach ($marker in $routeMarkerCounts.Keys) { if ($routeMarkerCounts[$marker] -ne 1) { Add-Issue 'ERROR' 'duplicate-route' "Expected exactly one '$marker' route, found $($routeMarkerCounts[$marker])." } }
 
 # Markdown paths and anchors for active indexes and archives.
-$linkFiles = Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName -notlike '*\Archive\Pre-Governance\*' }
+$linkFiles = Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/Pre-Governance/*' }
 foreach ($file in $linkFiles) {
     $text = Read-Utf8 $file.FullName
     foreach ($match in [regex]::Matches($text, '(?<!\!)\[[^\]]+\]\(([^)]+)\)')) {
