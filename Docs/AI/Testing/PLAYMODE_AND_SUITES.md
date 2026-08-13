@@ -60,6 +60,17 @@ Expected result: the shell fixture discovers at least one test, all discovered c
 
 Run both unfiltered suites only for T3 validation: a final implementation milestone of a phase, an explicit hard gate, shared test/package/assembly infrastructure, the pre-build regression gate, or a change promoted because its blast radius cannot be enumerated. Resolve focused failures before spending time on these suites. These commands intentionally omit `-testFilter`.
 
+### Known-good complete-suite baseline
+
+The most recent green unfiltered totals, so a task can tell a regression it introduced from a pre-existing failure without re-running anything first. This is a current reference point, not historical evidence; replace it whenever a milestone legitimately changes a total, and state in that milestone's evidence why the total moved.
+
+| Suite | Passed | Failed | Skipped | Inconclusive | Revision |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Complete Edit Mode | 354 | 0 | 0 | 0 | `df965cd` |
+| Complete Play Mode | 15 | 0 | 0 | 0 | `df965cd` |
+
+A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
+
 ```powershell
 $completeEditArguments = @(
     '-batchmode',
