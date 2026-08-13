@@ -484,6 +484,94 @@ Closing check: the moved text is verified byte-identical against its pre-move re
 
 Non-goals: No sharding of the `Rule-system ledger` section, which remains its own later milestone. No shard for a hero without an approved roster slot - the five heroes joining Wasp are selected at 8.17. No Wasp inventory content, which is 8.1's work. No rule meaning, status, or verification change, no threshold change, and no validator change.
 
+## Documentation-truth milestones from the 2026-08-14 validator-coverage finding
+
+Scheduled by a user-approved roadmap amendment on 2026-08-14. Their source is a documentation-truth finding raised against the validator's coverage, **not** the ER2 external review and **not** review 5.8c; do not attribute them to either record. Scheduling is not authorization: each milestone requires exact user approval before execution, one at a time.
+
+The finding is that a green validator run establishes link hygiene rather than governing-document truth. [Testing/POLICY.md](../Testing/POLICY.md) states the validator must verify "indexed active shards and archive backlinks"; it verifies neither. The link pass resolves every path and anchor that *is written*, and nothing requires a link to exist. A second class is invisible for a different reason: statements that are structurally well-formed and semantically false - a schema version the serializer no longer writes, a structure a milestone deleted, a retirement assigned to a milestone that already shipped, completion narrative governance routed to commit bodies.
+
+All six were present at `dd535ae`, where the validator reported 51/51 self-tests, 41 governed active leaves, and **zero warnings**. That run is the finding's evidence, not a counterexample to it.
+
+Milestone IDs continue the Phase 6.1 letter sequence into two letters. The unused single letters `j`, `m`, `n`, and `z` would serve equally well; the two-letter form was chosen so the reading order matches the scheduling order, and nothing mechanical depends on the choice.
+
+6.1z is ordered first because the other three depend on nothing it changes, while its backlink corrections touch the same milestone blocks they would otherwise contend with. 6.1aa, 6.1ab, and 6.1ac are unordered against each other and against the rest of Phase 6. Each pairs its new check with the real stale content that check exposes, so closure is an observed failing-then-passing transition against a genuine defect rather than a synthetic mutation - the 6.1v precedent.
+
+Semantic checks state their claims in explicitly declared ledgers that the validator reads, never inferring them from prose. This is the existing `absence-intended` and `Tools/ArchiveNarrativeBaseline.txt` pattern. [Testing/POLICY.md](../Testing/POLICY.md) requires stable text rules rather than heuristic semantic rewriting, and inference over active prose would report legitimate milestone-qualified history as a defect.
+
+Every new check carries a vacuity guard that fails when its input set is empty, matching the existing `no-declared-types`, `no-authored-scripts`, `no-reflection-sites`, and `no-archived-bodies` guards. A check that has never been observed failing is not evidence.
+
+### [ ] 6.1z Prove the documentation graph is connected
+
+Observable outcome: Every active shard is reachable from its family index, and every completed milestone has a stated evidence destination and a link to it.
+
+Context: the governance ownership matrix assigns each subject a canonical home "plus its indexed shards", and [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md) requires the active milestone definition to keep its stable `Historical evidence` backlink. Neither is checked. Today 14 of the 99 complete milestones carry no backlink - `0.1`, `6.1c`, `6.1d`, `6.1e`, `6.1k`, `6.1l`, `6.1o`, `6.1p`, `6.1q`, `6.1r`, `6.1s`, `6.1t`, `6.1w`, `6.1x` - and `6.1e` has neither an archive row nor a `## Milestone 6.1e` section, so a completed corrective milestone's closure survives only inside an addendum to another milestone's record. The shard graph happens to be connected today; the invariant is simply unenforced, so a shard added without an index entry passes.
+
+Acceptance checks:
+
+- `orphan-shard` fails when a governed shard is linked from no index in its family. The family table reuses the shape of `Get-Limit` so threshold ownership and index ownership cannot drift apart. `Card-System/` has two indexes owning three shards each, so the check takes their union rather than reporting all six.
+- `missing-evidence-backlink` fails when a `### [x]` milestone block carries no `Historical evidence` line. Target and anchor validity remain the existing link pass's job; this check proves only that the link exists.
+- `missing-archive-destination` fails when a complete milestone has neither a one-row entry nor a `## Milestone <id>` section in its phase handoff archive. Both forms are legitimate: the row is the post-2026-08-13 policy and the section is the baselined history, and a check that accepted only one would report 85 valid historical records.
+- The 14 missing backlinks are added and `6.1e` receives its archive row, written from its completion commit. Milestone `0.1` created the documentation system itself and predates the archive, so it carries a stated exemption rather than a reconstructed evidence row; an invented record is a worse failure than an admitted gap.
+- Validator self-tests cover a linked shard, an orphaned shard, a two-index family, a milestone with and without a backlink, both archive destination forms, an exempted milestone, and each vacuity guard.
+
+Closing check: the three checks run at `dd535ae`, observed reporting the 14 backlink gaps and the `6.1e` destination gap; run at the post-fix revision, observed passing.
+
+Non-goals: No rewriting of archive sections, which are append-only. No change to any milestone's status, acceptance checks, or non-goals. No new shard and no relocation of content.
+
+### [ ] 6.1aa Pin documented constants to their source
+
+Observable outcome: A documented value that names a source constant cannot disagree with that constant.
+
+Context: `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` is 7 and has been since 6.1s. [SESSION_BRIEF.md](../SESSION_BRIEF.md) still states v6 as the current persisted schema, as do [Project/ARCHITECTURE.md](../Project/ARCHITECTURE.md) and the Minion Battle status row in [RULES_LEDGER.md](../RULES_LEDGER.md); [Project/CURRENT_IMPLEMENTATION.md](../Project/CURRENT_IMPLEMENTATION.md) states only 6.1q's historical "schema stays v6" and never names the current value. `RISK-COMPAT-001` records the v7 advance correctly, so the register and the documents it governs disagree with each other. No existing check reads a source constant into a documentation comparison: `Test-StatusCoherence` compares documents to documents, and the contract check resolves type names rather than values.
+
+Acceptance checks:
+
+- A declared ledger names each pinned constant, its source symbol and file, and the documents whose current-claim sections must agree. The validator reads the value from source and compares.
+- `stale-pinned-constant` fails when a designated current-claim section states a different value. Milestone-qualified historical statements remain legal and untouched, which is already how the corpus writes them - the Phase 5 recipes' schema v4 and v5 references are correct history and must stay.
+- The check fails loudly when a declared symbol resolves to no declaration in source, so a renamed constant cannot silently retire its own check.
+- The three v6-as-current statements are corrected, and `Project/CURRENT_IMPLEMENTATION.md` states the current schema value in its own right.
+- Validator self-tests cover an agreeing document, a disagreeing one, a milestone-qualified historical mention, and the missing-symbol guard.
+
+Closing check: the check run at `dd535ae`, observed reporting the three v6 sites; run at the post-fix revision, observed passing.
+
+Non-goals: No serializer change, no schema change, no reopening of the v7 migrate-or-reject decision, and no rewriting of correctly milestone-qualified history.
+
+### [ ] 6.1ab Fail on retired structures and shipped retirement owners
+
+Observable outcome: Documentation cannot describe a deleted structure in the present tense, and cannot assign a retirement to a milestone that already completed.
+
+Context: 6.1h deleted the card-action strategy registry, its marker interface, its pass-through handlers, and its backend interfaces; no `*Registry` type exists under `Assets/`. [Card-System/RESOLUTION_AND_EFFECTS.md](../Card-System/RESOLUTION_AND_EFFECTS.md) was corrected to past tense in that sweep, but [Project/ARCHITECTURE.md](../Project/ARCHITECTURE.md) still states the dispatcher "is decomposed behind an explicit typed strategy registry" as a current architecture constraint. This is a missed site, not a policy disagreement. `Get-UndeclaredContractTypes` structurally cannot reach it: the prose is ordinary English, not a backticked identifier carrying a known suffix, and the check that catches a documented type which never existed is blind to one that existed and was deleted. Separately, the temporary-structure register assigns the shader dependency of `HexFillPlaceholder.mat` and `HexEdgePlaceholder.mat` to milestone 6.1d, which completed; both files still exist and the row is still `Active`.
+
+Acceptance checks:
+
+- A declared retired-structure ledger names each retired structure, the milestone that retired it, and the prose phrase that must no longer appear as a current claim. `retired-structure-language` fails when an active document carries the phrase outside a milestone-qualified historical construction.
+- `stale-retirement-owner` fails when a `Retirement owner` cell in the temporary-structure register, or a `Retirement or reassessment` cell in the active risk register, names a milestone that is already `[x]`. A phase-scale owner such as "Phase 9 presentation" stays legal.
+- The vacuity guard fails when either register parses to zero rows, so a table rename cannot silently retire the check.
+- `Project/ARCHITECTURE.md` is corrected to past tense, matching the correction `Card-System/RESOLUTION_AND_EFFECTS.md` already received. The present-tense handler-registry claim in [CARD_EFFECT_CAPABILITIES.md](../CARD_EFFECT_CAPABILITIES.md) is adjudicated in the same pass: it is either stale in the same way, or a planned 6.2a contract, in which case it belongs in that document's `Contract implementation status` section where the existing check already honours it.
+- The shader-dependency retirement owner moves off the completed 6.1d.
+- Validator self-tests cover a retired phrase in a current claim, the same phrase in milestone-qualified history, a complete retirement owner, an incomplete one, a phase-scale owner, and both vacuity guards.
+
+Closing check: the two checks run at `dd535ae`, observed reporting the `Project/ARCHITECTURE.md` registry prose and the 6.1d retirement owner; run at the post-fix revision, observed passing.
+
+Non-goals: No deletion of the placeholder materials, which retire at Phase 9. No risk-register lifecycle change beyond correcting the stale owner. No production code change.
+
+### [ ] 6.1ac Keep completion history out of active documents
+
+Observable outcome: A completed milestone's narrative lives in its commit body and its archive row, not in the session brief.
+
+Context: governance routes new milestone outcome and validation evidence to the commit message body, gives the archive one row, and leaves the active definition its backlink. [SESSION_BRIEF.md](../SESSION_BRIEF.md) currently carries five multi-sentence completion narratives - 6.1w, 6.1v, 6.1x, 6.1s, and 6.1l - four of which are superseded. `duplicate-history` cannot see them: it matches an archived body copied verbatim into an active document, and since archive rows became one-liners there is no ≥200-character paragraph to match against. The narrative that never left the active document is exactly the case it cannot reach. This is also the growth 6.1x recorded when the brief crossed its warning threshold.
+
+Acceptance checks:
+
+- `completion-history-in-active-doc` fails when `SESSION_BRIEF.md` carries more than one milestone completion statement, or when the one it carries does not name the same ID as `Current completed milestone`. This is the governance rule stated as a countable one, and it reaches what `duplicate-history` cannot.
+- The four superseded narratives are routed to their archive rows, and each fact is verified present in its archive row or commit body **before** removal from the brief. Standing operational facts - the player-build smoke gate, repository and authorization state, durable boundaries, approved scheduling amendments - are not completion history and stay.
+- The vacuity guard fails when no completion statement is found at all, so a phrasing change cannot silently retire the check.
+- Validator self-tests cover one matching statement, one mismatched statement, several statements, and the vacuity guard.
+
+Closing check: the check run at `dd535ae`, observed reporting five completion statements; run at the post-fix revision, observed reporting one.
+
+Non-goals: No loss of any recorded fact. No change to the route markers themselves, whose exactly-one rule is already enforced. No archive rewriting.
+
 ## Phase 6 gameplay milestones (continued)
 
 **Sequencing amendment (2026-08-14, user approved).** Milestone 6.2a completes before 6.2, and 6.2 completes before 6.2b. The source is this sequencing finding, **not** the ER2 external review and **not** review 5.8c; do not attribute it to either record. The existing 6.1r-before-6.2 and 6.1q-before-6.2a constraints are unchanged, and 6.3 stays gated on 6.2b. Scheduling is not authorization: each milestone still requires exact user approval before execution.
