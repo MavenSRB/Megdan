@@ -190,7 +190,7 @@ The gate is a typed `MatchDiagnosticsMode` rather than a preprocessor directive.
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 6.1h | The card-action strategy registry, its marker interface, its three pass-through handlers, and its three backend interfaces are deleted; the dispatcher calls three concrete backends directly. The two largest Core files are decomposed by type and by serialization subject, taking the top four from 25.15% of Core to 18.65%, and the round authority's constructor from ten parameters with six optional to six with none. Closes `F613-11`. | pending |
+| 6.1h | The card-action strategy registry, its marker interface, its three pass-through handlers, and its three backend interfaces are deleted; the dispatcher calls three concrete backends directly. The two largest Core files are decomposed by type and by serialization subject, taking the top four from 25.15% of Core to 18.65%, and the round authority's constructor from ten parameters with six optional to six with none. Closes `F613-11`. | `afc0380` |
 
 ### 2026-08-13 addendum: finding closed by milestone 6.1h
 
