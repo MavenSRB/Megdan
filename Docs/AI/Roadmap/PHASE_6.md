@@ -138,7 +138,7 @@ Closing checks:
 
 Non-goals: No presentation redesign, no board view-model contract change, no change to authoritative map content or setup.
 
-### [ ] 6.1f Establish a single card mutation path and an aggregate root
+### [~] 6.1f Establish a single card mutation path and an aggregate root
 
 Observable outcome: Authoritative card state has exactly one mutation path and one transactional commit boundary, replacing four independently mutable graphs reachable through read-only collection wrappers.
 

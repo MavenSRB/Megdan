@@ -15,9 +15,9 @@ Configured minion views retain serialized stable binding identity across editor 
 ## Current authorization and next route
 
 - Current completed milestone: **6.1d**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.1f**, in progress.
 - Next proposed milestone: **6.1f**.
-- Milestone 6.1f is proposed and remains unauthorized until separately approved.
+- Milestone 6.1f is authorized and mid-flight. Its behaviour-invariance baseline is captured and pinned at the pre-refactor revision in `CardAggregateInvarianceTests`; the refactor itself - one card mutation path, an aggregate root, and one commit boundary - is outstanding.
 - Milestones 6.1c through 6.1k are an approved corrective sequence scheduled by the 2026-08-13 out-of-band foundation audit. They precede 6.1a, which stays proposed behind them. The shard defines their execution order by severity; 6.1e, 6.1g, 6.1c, and 6.1d are complete and 6.1f is next. Former 6.1j and 6.1m are merged into 6.1d, and former 6.1n was removed when review-correction closure became mechanical.
 - Milestone **6.1l** was reinstated on 2026-08-13 and is `[!]` blocked: confirming the validation toolchain on a non-Windows platform needs a non-Windows host, and this machine has no WSL distribution, no Docker, and no PowerShell Core. It owns `F613-14`, which 6.1d did not close.
 - The **player-build smoke gate** is now a standing check. Run `Tools/Invoke-PlayerBuildSmoke.ps1` whenever the always-included shader list, the enabled scene list, the render pipeline, `Assets/Resources`, an assembly definition, or a stripping setting changes; see [Testing/FUTURE_GATES.md](Testing/FUTURE_GATES.md).
