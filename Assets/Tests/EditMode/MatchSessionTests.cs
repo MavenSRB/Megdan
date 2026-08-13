@@ -63,6 +63,37 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.AcceptedCommands, Is.EqualTo(before.AcceptedCommands));
         }
 
+        /// <summary>
+        /// A rolled-back operation must leave the current round's ordered events exactly as it
+        /// found them. The rollback above already proves authoritative state and the diagnostic log
+        /// survive; the round-event stream is the third thing the projection publishes, and it was
+        /// being discarded because the pre-image is a serialized snapshot and the snapshot does not
+        /// carry it.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 6.1f makes state acceptance and event emission one commit. This pins the other
+        /// side of that guarantee: a refused operation commits nothing, to any of the three streams.
+        /// </remarks>
+        [Test]
+        public void RestoreSnapshot_MalformedEnvelopeLeavesTheCurrentRoundEventsIntact()
+        {
+            var session = CreateSession();
+            var redCard = GetCards(session, TeamSide.Red)[0];
+            Assert.That(session.Execute(DirectorCommand.CommitCard(redCard.OwnerId, redCard.Id)).Accepted, Is.True);
+            var before = session.Projection.RoundEvents.ToArray();
+            Assert.That(before, Is.Not.Empty,
+                "The scenario must actually have produced round events, or it pins nothing.");
+            var bytes = Convert.FromBase64String(session.CaptureSnapshot());
+            var malformed = Convert.ToBase64String(bytes.Concat(new byte[] { 0x4d }).ToArray());
+
+            var result = session.RestoreSnapshot(malformed);
+
+            Assert.That(result.Accepted, Is.False);
+            Assert.That(session.Projection.RoundEvents, Is.EqualTo(before),
+                "The rollback restored authoritative state but discarded the current round's " +
+                "ordered events, so a refused operation left partial state behind.");
+        }
+
         [Test]
         public void Session_DispatchesEveryConfiguredLiveCommandFamilyThroughOnePort()
         {

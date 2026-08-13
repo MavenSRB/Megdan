@@ -15,15 +15,10 @@ namespace GuardsDigital.Application
     public sealed class MatchSession : IMatchSession
     {
         private readonly MatchSessionInitialState initialState;
+        private readonly MatchAggregate aggregate;
         private readonly DirectorCommandHistory history = new DirectorCommandHistory();
-        private readonly RuleEventLogProjection eventLog = new RuleEventLogProjection();
-        private readonly List<RoundResolutionEvent> roundEvents = new List<RoundResolutionEvent>();
         private readonly bool deferAcceptedProjectionRefresh;
 
-        private PlaceholderOneVsOneTestConfiguration configuration;
-        private AdjacentMoveAuthority board;
-        private CardActionResolutionAuthority cardActions;
-        private RoundResolutionAuthority round;
         private long version;
         private bool canRecordHistory;
 
@@ -39,9 +34,19 @@ namespace GuardsDigital.Application
         {
             this.initialState = initialState ?? throw new ArgumentNullException(nameof(initialState));
             this.deferAcceptedProjectionRefresh = deferAcceptedProjectionRefresh;
+            aggregate = new MatchAggregate(this.initialState);
             RebuildInitialState(useProvidedConfiguration);
             Projection = CreateProjection();
         }
+
+        // The authoritative graphs live in the aggregate; these read-only forwards keep their former
+        // field names so that every one of the reads below is unchanged by the move, and the diff
+        // that introduced the aggregate shows the structural change rather than a rename sweep. The
+        // two rule-event streams deliberately get no forward: their few remaining reads name the
+        // aggregate, because only its commit boundary may append to them.
+        private PlaceholderOneVsOneTestConfiguration configuration => aggregate.Configuration;
+        private AdjacentMoveAuthority board => aggregate.Board;
+        private RoundResolutionAuthority round => aggregate.Round;
 
         public MatchSessionProjection Projection { get; private set; }
 
@@ -49,32 +54,26 @@ namespace GuardsDigital.Application
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
 
-            var before = CaptureSnapshot();
-            DispatchResult dispatch;
-            try
+            // One boundary decides whether this command's state and its ordered events are kept.
+            var outcome = aggregate.Commit(() => Dispatch(command));
+            if (outcome.Status == MatchCommitStatus.Faulted)
             {
-                dispatch = Dispatch(command);
-            }
-            catch (Exception exception)
-            {
-                RestoreInternal(before, false);
                 Projection = CreateProjection();
-                return Rejected(command, MatchSessionRejectionReason.DomainRejected, exception.Message);
+                return Rejected(command, MatchSessionRejectionReason.DomainRejected, outcome.Fault.Message);
             }
 
-            if (!dispatch.Accepted)
+            if (outcome.Status == MatchCommitStatus.AtomicityViolation)
             {
-                var after = CaptureSnapshot();
-                if (!string.Equals(before, after, StringComparison.Ordinal))
-                {
-                    RestoreInternal(before, false);
-                    Projection = CreateProjection();
-                    return Rejected(
-                        command,
-                        MatchSessionRejectionReason.AtomicityViolation,
-                        "A rejected command attempted to mutate authoritative state and was rolled back.");
-                }
+                Projection = CreateProjection();
+                return Rejected(
+                    command,
+                    MatchSessionRejectionReason.AtomicityViolation,
+                    "A rejected command attempted to mutate authoritative state and was rolled back.");
+            }
 
+            var dispatch = outcome.Plan;
+            if (outcome.Status == MatchCommitStatus.Rejected)
+            {
                 Projection = CreateProjection();
                 return new MatchCommandResult(
                     false,
@@ -88,8 +87,6 @@ namespace GuardsDigital.Application
                     Projection);
             }
 
-            roundEvents.AddRange(dispatch.Events);
-            eventLog.Append(dispatch.Events);
             if (canRecordHistory)
             {
                 history.Append(command);
@@ -133,10 +130,14 @@ namespace GuardsDigital.Application
 
         public MatchSessionOperationResult RestoreSnapshot(string payload)
         {
-            var rollback = CaptureSnapshot();
+            var rollback = aggregate.CapturePreImage();
             try
             {
-                RestoreInternal(payload, true);
+                // A snapshot restore begins a fresh round position, so it installs no prior round
+                // events. A rollback goes through the aggregate instead, carrying the pre-image it
+                // captured, because a refused operation must leave that stream as it found it.
+                aggregate.Restore(payload, Array.Empty<RoundResolutionEvent>());
+                history.Clear();
                 canRecordHistory = false;
                 version++;
                 Projection = CreateProjection();
@@ -148,7 +149,7 @@ namespace GuardsDigital.Application
             }
             catch (Exception exception)
             {
-                RestoreInternal(rollback, false);
+                aggregate.Rollback(rollback);
                 Projection = CreateProjection();
                 return OperationRejected(MatchSessionRejectionReason.SnapshotRejected, exception.Message);
             }
@@ -156,8 +157,7 @@ namespace GuardsDigital.Application
 
         public string CaptureSnapshot()
         {
-            var authoritative = AuthoritativeSnapshotSerializer.Serialize(round, board);
-            return RuleEventLogSnapshotEnvelope.Serialize(authoritative, eventLog.Entries);
+            return aggregate.CaptureSnapshot();
         }
 
         private DispatchResult Dispatch(DirectorCommand command)
@@ -360,7 +360,7 @@ namespace GuardsDigital.Application
             IReadOnlyList<DirectorCommand> commands,
             string operation)
         {
-            var rollback = CaptureSnapshot();
+            var rollback = aggregate.CapturePreImage();
             var rollbackHistory = history.Commands.ToArray();
             var oldVersion = version;
             try
@@ -385,7 +385,7 @@ namespace GuardsDigital.Application
             }
             catch (Exception exception)
             {
-                RestoreInternal(rollback, false);
+                aggregate.Rollback(rollback);
                 history.ReplaceWith(rollbackHistory);
                 version = oldVersion;
                 Projection = CreateProjection();
@@ -416,75 +416,15 @@ namespace GuardsDigital.Application
 
         private void Adopt(ReplayCandidate candidate)
         {
-            configuration = candidate.Configuration;
-            board = candidate.Board;
-            cardActions = candidate.CardActions;
-            round = candidate.Round;
+            aggregate.Adopt(candidate.Graphs);
             history.ReplaceWith(candidate.Commands);
-            eventLog.Restore(candidate.EventLogEntries);
-            roundEvents.Clear();
-            roundEvents.AddRange(candidate.RoundEvents);
         }
 
         private void RebuildInitialState(bool useProvidedConfiguration)
         {
-            configuration = useProvidedConfiguration && initialState.InitialConfiguration != null
-                ? initialState.InitialConfiguration
-                : initialState.Scenario.CreateConfiguration();
-            board = initialState.Scenario.CreateBoard(initialState.AvailableMaps, initialState.Setup.Minions);
-            cardActions = new CardActionResolutionAuthority(board);
-            round = new RoundResolutionAuthority(
-                configuration.CardDefinitions,
-                configuration.CardInstances,
-                configuration.Participants,
-                initialState.Scenario.InitialTieBreakerState,
-                cardActions: cardActions,
-                timing: initialState.CreateTiming(),
-                board: board);
+            aggregate.RebuildInitialState(useProvidedConfiguration);
             history.Clear();
             canRecordHistory = true;
-            roundEvents.Clear();
-            eventLog.ResetToSetup(configuration.Participants, initialState.Scenario.InitialTieBreakerState);
-        }
-
-        private void RestoreInternal(string payload, bool clearHistory)
-        {
-            var hasEnvelope = RuleEventLogSnapshotEnvelope.TryDeserialize(payload, out var envelope);
-            var authoritativePayload = hasEnvelope ? envelope.AuthoritativePayload : payload;
-            var restored = AuthoritativeSnapshotSerializer.Deserialize(
-                authoritativePayload,
-                initialState.Scenario.CardDefinitions,
-                initialState.AvailableMaps,
-                initialState.Setup.Minions);
-
-            if (!restored.Board.SelectedMap.Equals(initialState.Setup.SelectedMap))
-            {
-                throw new InvalidOperationException("The restored snapshot does not match the configured setup map.");
-            }
-
-            configuration = PlaceholderOneVsOneTestConfiguration.Restore(
-                new PlaceholderConfigurationRestoreState(
-                    restored.Participants,
-                    initialState.Scenario.CardDefinitions,
-                    restored.Cards,
-                    restored.Round.TieBreakerState));
-            board = restored.Board;
-            cardActions = restored.CardActions;
-            round = restored.Round;
-            roundEvents.Clear();
-            if (hasEnvelope)
-            {
-                eventLog.Restore(envelope.Entries);
-            }
-            else
-            {
-                eventLog.ResetToSetup(restored.Participants, restored.Round.TieBreakerState);
-            }
-
-            if (clearHistory)
-            {
-                history.Clear();
-            }
         }
 
         private MatchSessionProjection CreateProjection()
@@ -554,7 +494,7 @@ namespace GuardsDigital.Application
                 : Array.Empty<FastTravelOptionProjection>();
             var defensePreview = CreateDefensePreview(turn);
             var authoritative = AuthoritativeSnapshotSerializer.Serialize(round, board);
-            var diagnostic = RuleEventLogSnapshotEnvelope.Serialize(authoritative, eventLog.Entries);
+            var diagnostic = RuleEventLogSnapshotEnvelope.Serialize(authoritative, aggregate.EventLogEntries);
             return new MatchSessionProjection(
                 version,
                 initialState.Setup,
@@ -583,8 +523,8 @@ namespace GuardsDigital.Application
                 turn?.PendingDefenseChoice,
                 availableActions,
                 history.Commands,
-                roundEvents,
-                eventLog.Entries,
+                aggregate.RoundEvents,
+                aggregate.EventLogEntries,
                 authoritative,
                 diagnostic,
                 availableFastTravelOptions,
@@ -710,7 +650,7 @@ namespace GuardsDigital.Application
             return new MatchSessionOperationResult(false, reason, detail, Projection);
         }
 
-        private sealed class DispatchResult
+        private sealed class DispatchResult : IMatchCommitPlan
         {
             private DispatchResult(
                 bool accepted,
@@ -784,23 +724,13 @@ namespace GuardsDigital.Application
         {
             public ReplayCandidate(MatchSession source)
             {
-                Configuration = source.configuration;
-                Board = source.board;
-                CardActions = source.cardActions;
-                Round = source.round;
+                Graphs = source.aggregate.Capture();
                 Commands = source.history.Commands.ToArray();
-                EventLogEntries = source.eventLog.Entries.ToArray();
-                RoundEvents = source.roundEvents.ToArray();
                 Snapshot = source.CaptureSnapshot();
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
-            public AdjacentMoveAuthority Board { get; }
-            public CardActionResolutionAuthority CardActions { get; }
-            public RoundResolutionAuthority Round { get; }
+            public MatchGraphSet Graphs { get; }
             public IReadOnlyList<DirectorCommand> Commands { get; }
-            public IReadOnlyList<RuleEventLogEntry> EventLogEntries { get; }
-            public IReadOnlyList<RoundResolutionEvent> RoundEvents { get; }
             public string Snapshot { get; }
         }
     }

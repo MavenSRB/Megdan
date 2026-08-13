@@ -141,3 +141,23 @@ Two corrections to the findings' stated scope are recorded here rather than in t
 The buildability observation is worth preserving in full because it is the argument for the gate. With the Standard shader removed from the always-included list, **the build still succeeded** - `GUARDS_BUILD: PASS`, exit 0, 116 managed assemblies shipped - and only the running player failed, throwing the named guards added earlier in the milestone. The violation is invisible to the build and to every Editor-side test. A build-only gate would have reported it as a pass.
 
 Two process notes. The first player build failed for real and produced a *present but broken* artifact: a complete-looking player whose `Managed` folder held one assembly against the 117 stripping had produced. The cause was isolated by restoring `BuildOptions.StrictMode` alone and observing the gate still pass, which proved StrictMode was never the cause - deleting the output tree and immediately rebuilding into it races Windows' directory-handle release. Concluding "StrictMode was too strict" would have been the easy answer and would have weakened the gate permanently. Separately, the gate's first failure came via its 180-second timeout reporting "the player did not exit", because an exception in `Awake` meant the driver never attached and never quit; the gate now watches the player log while waiting and reports the fatal line instead of the symptom.
+
+## Milestone 6.1f Establish a single card mutation path and an aggregate root completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1f | Card state cannot be mutated outside `CardLifecycleAuthority`, enforced by an assembly split; `MatchAggregate` owns the four authoritative graphs behind one assignment site and one commit boundary at which state and its ordered events are kept or discarded together. Closes `F613-06`, raises `RISK-STATE-002`. | `be4d359`, `8846025` |
+
+### 2026-08-13 addendum: finding closed by milestone 6.1f
+
+Explicit correction under the append-only archive rule. The disposition table above records `F613-06` as `Scheduled`; it is closed by milestone 6.1f. The table text is preserved as written.
+
+Three corrections to the milestone's stated scope are recorded here rather than in the preserved definitions.
+
+First, the acceptance check says the aggregate "uses the plan, validate, then commit pattern already proven by `DefeatRewardAccounting.Award`". The resemblance is partial and is stated here rather than left to be discovered. `Award` plans into a copied dictionary and writes real state only at the end, so a rejected operation never wrote anything. The authorities beneath this aggregate mutate in place, so the boundary instead captures a pre-image and restores it. The guarantee to the caller is identical - a refused operation leaves no partial state - but the mechanism is a rollback, not a deferred write. Converting those authorities to plan-only is deeper than 6.1f; `RISK-STATE-002` records the residual, which is that the rollback protects only state the snapshot round-trips.
+
+Second, that residual was not hypothetical when the milestone began. The rollback discarded the current round's ordered events on every fault, atomicity-violation, and failed-restore path, because the pre-image is a serialized snapshot and the snapshot carries the whole-match rule-event log rather than the round's slice. `Projection.RoundEvents` is published and consumed, so this was the milestone's own "a rejected operation cannot leave partial state" check failing in the code it was written about. The nine pinned invariance digests could not see it: they hash the authoritative and diagnostic snapshots, and no pinned scenario takes a rollback path. The pre-image now carries the slice in memory, which needed no schema, envelope, or serializer change.
+
+Third, the closing check's snapshot comparison was specified over six scenarios; the harness pinned **nine**. The three additions drive an Attack through to a chosen Defense card, live and then restored and replayed. That is the one path that discards a card through the direct location transition this milestone reroutes, so a six-scenario harness would not have measured the change it exists to guard.
+
+The behaviour-invariance evidence is worth stating exactly, because a refactor of this size cannot be argued safe from a green suite alone - the suites would also pass if the refactor quietly reordered an event or dropped a field no assertion happens to name. All nine scenarios produced digests byte-identical to those captured at pre-refactor revision `18bf74d`, including the three defense-discard cases that exercise the rerouted transition.

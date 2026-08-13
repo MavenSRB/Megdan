@@ -41,7 +41,7 @@ Every milestone here names the exact check that closes its findings. Per the mec
 | 2 | 6.1g | `F613-07` | Silent state loss across thirteen restore back doors (6.1g verified sixteen) |
 | 3 | 6.1c | `F613-01` | Deletes ~4,900 lines, shrinking every later milestone's surface. Complete |
 | 4 | 6.1d | `F613-02`, `F613-03`, `F613-12` | Merged build and toolchain integrity; its smoke gate is the standing buildability check. Complete |
-| 5 | 6.1f | `F613-06` | Largest refactor; benefits from 1-3 landing first |
+| 5 | 6.1f | `F613-06` | Largest refactor; benefits from 1-3 landing first. Complete |
 | 6 | 6.1i | `F613-08`, `F613-09`, `F613-10` | Diagnosability and measured cost |
 | 7 | 6.1h | `F613-11` | Pure maintainability; lowest risk to defer |
 | 8 | 6.1k | `F613-13` | Must land after 7, whose renames its replacement assertions have to survive |
@@ -138,7 +138,7 @@ Closing checks:
 
 Non-goals: No presentation redesign, no board view-model contract change, no change to authoritative map content or setup.
 
-### [~] 6.1f Establish a single card mutation path and an aggregate root
+### [x] 6.1f Establish a single card mutation path and an aggregate root
 
 Observable outcome: Authoritative card state has exactly one mutation path and one transactional commit boundary, replacing four independently mutable graphs reachable through read-only collection wrappers.
 
@@ -153,6 +153,8 @@ Acceptance checks:
 Closing check for `F613-06`: a byte-identical snapshot and ordered-event comparison across all six scenarios, captured at the pre-refactor revision and re-run at the post-refactor revision. Because this refactor must change no observable behavior, its closure evidence is the comparison passing, plus a demonstration that mutating card state outside the lifecycle authority no longer compiles - the latter observed failing before the change.
 
 Non-goals: No rule meaning change, no schema-version change unless the refactor requires one with an explicit migrate-or-reject decision, no presentation change, no performance work, which is milestone 6.1i.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61f-establish-a-single-card-mutation-path-and-an-aggregate-root-completion-evidence).
 
 ### [x] 6.1g Make snapshot restore compile-enforced
 
