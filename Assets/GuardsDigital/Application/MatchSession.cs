@@ -15,7 +15,13 @@ namespace GuardsDigital.Application
     public sealed class MatchSession : IMatchSession
     {
         private readonly MatchSessionInitialState initialState;
-        private readonly MatchAggregate aggregate;
+
+        /// <summary>
+        /// Internal rather than private so a fixture can assert what a live session's aggregate
+        /// does. Constructing an aggregate directly covers its contract; this covers the one thing
+        /// that needs a real session behind it - that real commands leave the streams uncopied.
+        /// </summary>
+        internal readonly MatchAggregate aggregate;
         private readonly DirectorCommandHistory history = new DirectorCommandHistory();
         private readonly bool deferAcceptedProjectionRefresh;
 

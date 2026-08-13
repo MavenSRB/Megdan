@@ -330,6 +330,7 @@ $requiredHeadings = @{
     'ROADMAP.md' = @('Status legend','Execution rule','Active milestone definition index')
     'PROJECT_CONTEXT.md' = @('Canonical active shards','Historical status snapshot')
     'Project/CURRENT_IMPLEMENTATION.md' = @('Current implementation','Maintenance rule')
+    'Project/FOUNDATION_CORRECTIONS.md' = @('Audit findings and corrective sequence','Maintenance rule')
     'TESTING.md' = @('Canonical active shards','Historical recipes','Required launcher')
     'CARD_SYSTEM_ARCHITECTURE.md' = @('Canonical active shards')
     'RULES_LEDGER.md' = @('Authority hierarchy','Approved deviations','Rule-system ledger','Open source and rules questions')

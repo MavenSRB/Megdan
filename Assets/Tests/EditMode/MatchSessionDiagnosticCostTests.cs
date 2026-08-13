@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -127,14 +126,12 @@ namespace GuardsDigital.Tests.EditMode
         /// Asserted as identity rather than as a size or a duration: the pre-image must hold the
         /// aggregate's own snapshot instances, which is true only if the capture copied nothing.
         /// A `ToArray()` anywhere on this path fails it immediately, whatever the machine.
-        ///
-        /// The boundary is internal with no `InternalsVisibleTo`, so it is read reflectively.
         /// </remarks>
         [Test]
         public void CapturePreImage_CopiesNothingHoweverLongTheSessionIs()
         {
             var session = CreateSession();
-            var aggregate = GetAggregate(session);
+            var aggregate = session.aggregate;
 
             AssertPreImageSharesTheAggregatesStreams(aggregate, "at the start of the session");
 
@@ -145,35 +142,20 @@ namespace GuardsDigital.Tests.EditMode
 
             AssertPreImageSharesTheAggregatesStreams(aggregate, "after sixteen accepted commands");
 
-            Assert.That(
-                session.Projection.DiagnosticEvents,
-                Is.SameAs(aggregate.GetType().GetProperty("EventLogEntries").GetValue(aggregate)),
+            Assert.That(session.Projection.DiagnosticEvents, Is.SameAs(aggregate.EventLogEntries),
                 "The projection copied the whole rule-event log on refresh. It is handed a snapshot " +
                 "that cannot change, so the defensive copy defends against nothing and costs more " +
                 "with every command in the session.");
         }
 
-        private static void AssertPreImageSharesTheAggregatesStreams(object aggregate, string position)
+        private static void AssertPreImageSharesTheAggregatesStreams(MatchAggregate aggregate, string position)
         {
-            var preImage = aggregate.GetType()
-                .GetMethod("CapturePreImage", BindingFlags.Public | BindingFlags.Instance)
-                .Invoke(aggregate, Array.Empty<object>());
+            var preImage = aggregate.CapturePreImage();
 
-            Assert.That(
-                preImage.GetType().GetProperty("EventLogEntries").GetValue(preImage),
-                Is.SameAs(aggregate.GetType().GetProperty("EventLogEntries").GetValue(aggregate)),
+            Assert.That(preImage.EventLogEntries, Is.SameAs(aggregate.EventLogEntries),
                 $"The pre-image copied the whole rule-event log {position}.");
-            Assert.That(
-                preImage.GetType().GetProperty("RoundEvents").GetValue(preImage),
-                Is.SameAs(aggregate.GetType().GetProperty("RoundEvents").GetValue(aggregate)),
+            Assert.That(preImage.RoundEvents, Is.SameAs(aggregate.RoundEvents),
                 $"The pre-image copied the current round's events {position}.");
-        }
-
-        private static object GetAggregate(MatchSession session)
-        {
-            var field = typeof(MatchSession).GetField("aggregate", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.That(field, Is.Not.Null, "MatchSession holds its aggregate in a private field.");
-            return field.GetValue(session);
         }
 
         /// <summary>

@@ -5,6 +5,7 @@ Current implementation detail lives in the indexed subject shard below. Exact au
 ## Canonical active shards
 
 - [Current implementation inventory](Project/CURRENT_IMPLEMENTATION.md)
+- [Foundation corrections and governance state](Project/FOUNDATION_CORRECTIONS.md)
 - [Product scope and durable constraints](Project/PRODUCT.md)
 - [Core architecture constraints](Project/ARCHITECTURE.md)
 - [Presentation and accessibility direction](Project/PRESENTATION.md)

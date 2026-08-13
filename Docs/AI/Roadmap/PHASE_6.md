@@ -255,6 +255,28 @@ Closing checks:
 
 Non-goals: No conversion of the in-place authorities beneath the aggregate to a plan-only shape - that is `RISK-STATE-002`'s deeper subject and stays open. No rewrite of existing archive narratives, which the append-only rule protects; the new check is forward-looking and grandfathers what is already written. No change to the snapshot format, schema version, or the pinned compatibility digests.
 
+### [x] 6.1p Close the three limitations milestone 6.1o declared
+
+Approved on 2026-08-13. Milestone 6.1o closed five review findings and recorded three limitations in its commit body rather than fixing them. None is a defect in what 6.1o delivered; each is a place where the honest record was "this is as far as this milestone goes". This one takes each the rest of the way.
+
+Observable outcome: The commit boundary's contract is asserted by a compile-checked test rather than through reflection; the implementation inventory is under its size threshold by sharding rather than by losing content; and `RISK-STATE-002`'s mitigation is a check that fails rather than a sentence that is read.
+
+Acceptance checks:
+
+- No fixture reaches the aggregate's commit boundary by naming a type or member in a string literal. A rename breaks compilation rather than leaving a test passing against nothing.
+- Granting test access does not weaken the rule that keeps Core and Application free of Unity, and this is confirmed by observation rather than asserted.
+- `Project/CURRENT_IMPLEMENTATION.md` is below its warning threshold, and no content was deleted to achieve it. The split shard is registered as a canonical home in the ownership matrix, the shard index, and the routing table.
+- Adding a field to `MatchAggregate` without deciding whether a rollback preserves it fails a test.
+- `RISK-STATE-002` states what the enforcement catches and what it does not, and stays active.
+
+Closing checks:
+
+- Limitation 1: the rewritten `MatchAggregateAtomicityTests` still fails when the rejected-command comparison is disabled, re-running 6.1o's probe. A refactor that quietly stopped testing anything is the specific risk, so the pre-fix half is re-observed rather than assumed to carry over.
+- Limitation 2: the living-document validator's `Project/CURRENT_IMPLEMENTATION.md` threshold warning is present before and absent after, with the `RULES_LEDGER.md` warning unchanged in both.
+- Limitation 3: a deliberately unclassified field added to `MatchAggregate` is named by the classification test, and removing it restores the pass.
+
+Non-goals: No plan-only conversion of the authorities beneath the aggregate, so `RISK-STATE-002` is not retired. No `InternalsVisibleTo` for `GuardsDigital.Core`. No rewrite of the moved section's content - it is relocated, not restated.
+
 ### [!] 6.1l Confirm the validation toolchain on a non-Windows platform
 
 Reinstated on 2026-08-13 with explicit user approval, having previously been merged into 6.1d. It owns the one part of `F613-14` that is evidence rather than code: 6.1d makes the toolchain portable, and this milestone proves it.
