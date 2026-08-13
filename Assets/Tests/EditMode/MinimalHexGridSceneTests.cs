@@ -323,7 +323,7 @@ namespace GuardsDigital.Tests.EditMode
                 .OrderBy(value => value.BoundMinionId.Value)
                 .ToArray();
             var transientSetupField = typeof(StandardMinionView).GetField(
-                "setupState",
+                "occupancy",
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
             Assert.That(root, Is.Not.Null);
@@ -335,7 +335,7 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(originalViews, Has.All.Matches<StandardMinionView>(view =>
-                view.SetupState == null && view.BoundMinionId.IsDefined));
+                view.Occupancy == null && view.BoundMinionId.IsDefined));
             Assert.DoesNotThrow(() => mapView.Rebuild(mapView.RenderedDefinition, root.Runtime.Setup));
 
             var retainedViews = Object.FindObjectsByType<StandardMinionView>()
@@ -344,7 +344,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(retainedViews, Is.EqualTo(originalViews),
                 "A backup/domain reload that only loses transient setup objects must retain the stable views.");
 
-            var replacedState = retainedViews[0].SetupState;
+            var replacedState = retainedViews[0].Occupancy;
             Object.DestroyImmediate(retainedViews[0].gameObject);
             var replacementObject = new GameObject("Deliberate Bound Minion Replacement");
             replacementObject.transform.SetParent(mapView.transform, false);

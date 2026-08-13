@@ -29,7 +29,7 @@ namespace GuardsDigital.Tests.EditMode
                 minion.Configure(state, HexWorldLayout.DefaultOuterRadius);
 
                 typeof(StandardMinionView)
-                    .GetField("setupState", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .GetField("occupancy", BindingFlags.Instance | BindingFlags.NonPublic)
                     .SetValue(minion, null);
 
                 Assert.That(minion.Occupancy, Is.Null,

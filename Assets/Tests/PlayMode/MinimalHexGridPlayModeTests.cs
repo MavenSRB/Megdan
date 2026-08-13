@@ -122,7 +122,7 @@ namespace GuardsDigital.Tests.PlayMode
             var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             var transientSetupField = typeof(StandardMinionView).GetField(
-                "setupState",
+                "occupancy",
                 BindingFlags.Instance | BindingFlags.NonPublic);
             foreach (var configuredMinion in Object.FindObjectsByType<StandardMinionView>())
             {

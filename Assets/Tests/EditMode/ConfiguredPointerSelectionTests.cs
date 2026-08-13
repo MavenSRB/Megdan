@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
@@ -136,7 +137,7 @@ namespace GuardsDigital.Tests.EditMode
                 view.Render(new BoardInteractionViewModel(
                     1,
                     new[] { occupancy },
-                    Array.Empty<QuickGameMinionSetupState>(),
+                    Array.Empty<MinionOccupancy>(),
                     new[] { new HexCoordinate(1, 0) },
                     Array.Empty<HeroId>(),
                     Array.Empty<MinionId>(),
@@ -221,7 +222,7 @@ namespace GuardsDigital.Tests.EditMode
             return new BoardInteractionViewModel(
                 version,
                 new[] { occupancy },
-                Array.Empty<QuickGameMinionSetupState>(),
+                Array.Empty<MinionOccupancy>(),
                 movementDestinations,
                 Array.Empty<HeroId>(),
                 Array.Empty<MinionId>(),
