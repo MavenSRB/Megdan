@@ -166,7 +166,7 @@ The behaviour-invariance evidence is worth stating exactly, because a refactor o
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 6.1i | A command's serialization cost is measured, asserted exactly, and no longer grows with session length; self-verification is gated by a typed diagnostics mode; a thrown defect reports as `EngineFault` rather than a rule rejection; and the projection states history unavailability explicitly. Closes `F613-08`, `F613-09`, `F613-10`; retires `RISK-PERF-001`. | pending |
+| 6.1i | A command's serialization cost is measured, asserted exactly, and no longer grows with session length; self-verification is gated by a typed diagnostics mode; a thrown defect reports as `EngineFault` rather than a rule rejection; and the projection states history unavailability explicitly. Closes `F613-08`, `F613-09`, `F613-10`; retires `RISK-PERF-001`. | `b714b64` |
 
 ### 2026-08-13 addendum: findings closed by milestone 6.1i
 
