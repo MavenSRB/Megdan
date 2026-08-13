@@ -85,11 +85,11 @@ namespace GuardsDigital.Core.Timing
         {
             if (effects.Any(effect => effect.Id.Equals(id)))
                 throw new ArgumentException("Active-effect instance IDs must be unique.", nameof(id));
-            if (effects.Any(effect => effect.Phase != ActiveEffectPhase.Ended &&
-                    string.Equals(effect.Definition.UniquenessKey, definition.UniquenessKey, StringComparison.Ordinal)))
+            var duplicate = effects.FirstOrDefault(effect => effect.Phase != ActiveEffectPhase.Ended &&
+                SharesUniquenessIdentity(effect.Definition, definition));
+            if (duplicate != null)
                 return new ActiveEffectLifecycleEvent(ActiveEffectLifecycleEventKind.DuplicateSuppressed,
-                    effects.First(effect => effect.Phase != ActiveEffectPhase.Ended &&
-                        string.Equals(effect.Definition.UniquenessKey, definition.UniquenessKey, StringComparison.Ordinal)).Id,
+                    duplicate.Id,
                     definition.CreationCheckpoint,
                     roundIndex,
                     turnIndex);
@@ -157,7 +157,8 @@ namespace GuardsDigital.Core.Timing
                         effect.Id, context.Checkpoint, context.RoundIndex, context.TurnIndex));
                 }
                 else if (!activatedNow && effect.Phase == ActiveEffectPhase.Active &&
-                    effect.Definition.TriggerCheckpoints.Contains(context.Checkpoint))
+                    effect.Definition.TriggerCheckpoints.Contains(context.Checkpoint) &&
+                    IsRelevantHero(effect, context.AffectedHeroId))
                 {
                     results.Add(new ActiveEffectLifecycleEvent(ActiveEffectLifecycleEventKind.Triggered,
                         effect.Id, context.Checkpoint, context.RoundIndex, context.TurnIndex));
@@ -207,11 +208,15 @@ namespace GuardsDigital.Core.Timing
                     source.SourceCardInstanceId))));
         }
 
+        // Every live effect is visited at every checkpoint; the hero named by the context narrows
+        // only the identity-targeted concerns (activation targeting, triggers, and the
+        // AffectedHeroDefeated cancellation). An effect's own expiration window and its
+        // non-identity cancellations must not depend on which hero happens to be acting.
         private IEnumerable<ActiveEffectInstance> OrderForCheckpoint(
             ActiveEffectCheckpointContext context,
             TieBreakerState tieBreaker)
         {
-            return effects.Where(effect => IsRelevantHero(effect, context.AffectedHeroId))
+            return effects
                 .OrderBy(effect => effect.Definition.ControllerTeamSide == tieBreaker.RevealedSide ? 0 : 1)
                 .ThenBy(effect => effect.CreationSequence)
                 .ThenBy(effect => effect.Id);
@@ -227,9 +232,30 @@ namespace GuardsDigital.Core.Timing
                 effect.Definition.AffectedHeroId.Equals(heroId);
         }
 
+        private static bool SharesUniquenessIdentity(ActiveEffectDefinition existing, ActiveEffectDefinition candidate)
+        {
+            if (!string.Equals(existing.UniquenessKey, candidate.UniquenessKey, StringComparison.Ordinal))
+                return false;
+            if (existing.AffectedScope != candidate.AffectedScope)
+                return false;
+            switch (candidate.AffectedScope)
+            {
+                case ActiveEffectAffectedScopeKind.ControllerHero:
+                    return existing.ControllerHeroId.Equals(candidate.ControllerHeroId);
+                case ActiveEffectAffectedScopeKind.Hero:
+                    return existing.AffectedHeroId.Equals(candidate.AffectedHeroId);
+                case ActiveEffectAffectedScopeKind.ControllerTeam:
+                    return existing.ControllerTeamSide == candidate.ControllerTeamSide;
+                default:
+                    return true;
+            }
+        }
+
         private static bool ShouldActivate(ActiveEffectInstance effect, ActiveEffectCheckpointContext context)
         {
             if (effect.Phase != ActiveEffectPhase.Dormant || effect.Definition.ActivationCheckpoint != context.Checkpoint)
+                return false;
+            if (!IsRelevantHero(effect, context.AffectedHeroId))
                 return false;
             if (effect.Definition.DurationKind == ActiveEffectDurationKind.NextTurn ||
                 effect.Definition.DurationKind == ActiveEffectDurationKind.NextTurnAfterPlayingCards)
@@ -268,6 +294,7 @@ namespace GuardsDigital.Core.Timing
                     break;
                 case TimingCheckpoint.AffectedHeroDefeated:
                     condition = ActiveEffectCancellationCondition.AffectedHeroDefeated;
+                    if (!IsRelevantHero(effect, context.AffectedHeroId)) return false;
                     break;
                 case TimingCheckpoint.CardsRetrieved:
                     condition = ActiveEffectCancellationCondition.CardsRetrieved;

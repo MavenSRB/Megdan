@@ -329,7 +329,7 @@ Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#mile
 
 These milestones were scheduled by a user-approved roadmap amendment on 2026-08-13 from the [ER2 external review record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2), which owns their findings, evidence, and closing checks. Scheduling is not authorization: each milestone still requires exact user approval before execution. Ordering constraints: 6.1q must complete before 6.2a, 6.1r before 6.2, and 6.1s before 6.4; 6.1t and 6.1u are unordered. 6.1r closes an architectural-direction finding, so per the mechanical-closure rule in [ROADMAP.md](../ROADMAP.md) its closure is verified by the already-scheduled fresh-task review 6.2b rather than by a named check.
 
-### [ ] 6.1q Scope Active-effect checkpoints and uniqueness correctly
+### [x] 6.1q Scope Active-effect checkpoints and uniqueness correctly
 
 Observable outcome: An Active effect scoped to a hero is visited at its own checkpoints, including its expiration checkpoint, regardless of which hero is acting, and uniqueness suppression compares the identity scope the definition declares instead of one global key namespace.
 

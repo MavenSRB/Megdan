@@ -376,6 +376,91 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True);
         }
 
+        [Test]
+        public void HeroScopedEffect_ExpiresAtItsWindowWhileAnotherHeroActs()
+        {
+            // ER2 closing check for F-ER2-03 (expiration half). The current duration vocabulary
+            // permits expiration only at the turn-only and round checkpoints (ValidateDuration),
+            // so the roadmap's ActionEnded example is realized at the valid turn-only checkpoint;
+            // the correction removes the hero filter from every expiration checkpoint, which
+            // covers the 6.2a action-window durations when they arrive.
+            var lifecycle = new ActiveEffectLifecycle();
+            lifecycle.Create(new ActiveEffectId("blue-window"), Definition(
+                ActiveEffectDurationKind.ThisTurn,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                false,
+                id: "blue-window",
+                scope: ActiveEffectAffectedScopeKind.Hero,
+                affectedHero: BlueHero), SourceCard, SourceAction, 1, 2);
+            Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Active));
+
+            var visitedWhileRedActs = Apply(
+                lifecycle, TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded, 1, 2, RedHero);
+
+            Assert.That(visitedWhileRedActs.Select(value => value.Kind),
+                Is.EqualTo(new[] { ActiveEffectLifecycleEventKind.Expired }),
+                "A Hero-scoped effect must reach its own expiration checkpoint regardless of which hero the checkpoint context names.");
+            Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Ended));
+        }
+
+        [Test]
+        public void SameUniquenessKey_DifferentControllers_Coexist()
+        {
+            // ER2 closing check for F-ER2-03 (uniqueness half): suppression compares the identity
+            // scope the definition declares, not one global key namespace.
+            var lifecycle = new ActiveEffectLifecycle();
+            var red = lifecycle.Create(new ActiveEffectId("red-copy"), Definition(
+                ActiveEffectDurationKind.ThisTurn,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                false,
+                id: "shared-card-effect",
+                controller: RedHero,
+                side: TeamSide.Red), SourceCard, SourceAction, 1, 1);
+            var blue = lifecycle.Create(new ActiveEffectId("blue-copy"), Definition(
+                ActiveEffectDurationKind.ThisTurn,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                false,
+                id: "shared-card-effect",
+                controller: BlueHero,
+                side: TeamSide.Blue), SourceCard, SourceAction, 1, 1);
+
+            Assert.That(red.Kind, Is.EqualTo(ActiveEffectLifecycleEventKind.Created));
+            Assert.That(blue.Kind, Is.EqualTo(ActiveEffectLifecycleEventKind.Created),
+                "Two controllers activating the same definition must coexist; uniqueness is scoped to the declared identity.");
+            Assert.That(lifecycle.Effects.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void AffectedHeroDefeated_CancellationStillRequiresTheMatchingHero()
+        {
+            // Guard: unfiltering expiration must not widen identity-targeted cancellation.
+            var lifecycle = new ActiveEffectLifecycle();
+            lifecycle.Create(new ActiveEffectId("blue-anchored"), Definition(
+                ActiveEffectDurationKind.ThisRound,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.RoundEnd,
+                false,
+                id: "blue-anchored",
+                scope: ActiveEffectAffectedScopeKind.Hero,
+                affectedHero: BlueHero), SourceCard, SourceAction, 1, 1);
+
+            var wrongHero = Apply(lifecycle, TimingCheckpoint.AffectedHeroDefeated, 1, 2, RedHero);
+            Assert.That(wrongHero, Is.Empty,
+                "Another hero's defeat must not cancel a Hero-scoped effect anchored to a different hero.");
+            Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Active));
+
+            var matchingHero = Apply(lifecycle, TimingCheckpoint.AffectedHeroDefeated, 1, 2, BlueHero);
+            Assert.That(matchingHero.Select(value => value.Kind),
+                Is.EqualTo(new[] { ActiveEffectLifecycleEventKind.Cancelled }));
+        }
+
         private static ActiveEffectDefinition Definition(
             ActiveEffectDurationKind duration,
             TimingCheckpoint creation,
@@ -385,11 +470,13 @@ namespace GuardsDigital.Tests.EditMode
             string id = "synthetic-definition",
             HeroId controller = default,
             TeamSide side = TeamSide.Red,
-            TimingCheckpoint[] triggers = null)
+            TimingCheckpoint[] triggers = null,
+            ActiveEffectAffectedScopeKind scope = ActiveEffectAffectedScopeKind.ControllerHero,
+            HeroId affectedHero = default)
         {
             if (!controller.IsDefined) controller = RedHero;
             return new ActiveEffectDefinition(id, controller, side,
-                ActiveEffectAffectedScopeKind.ControllerHero, default, duration, creation, activation,
+                scope, affectedHero, duration, creation, activation,
                 expiration, Conditions(), carries, "SyntheticModifier", id + "-unique",
                 triggers ?? Array.Empty<TimingCheckpoint>());
         }
