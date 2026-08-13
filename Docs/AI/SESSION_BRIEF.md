@@ -14,9 +14,10 @@ Configured minion views retain serialized stable binding identity across editor 
 
 ## Current authorization and next route
 
-- Current completed milestone: **6.1v**.
+- Current completed milestone: **6.1w**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **6.1w**.
+- Next proposed milestone: **6.1a**.
+- Milestone **6.1w** completed on 2026-08-13, clearing the last validator warning. `RULES_LEDGER.md` had sat at its 85% threshold since milestone 6.1; the two coverage maps moved byte-identically to [Rules/CARD_COVERAGE.md](Rules/CARD_COVERAGE.md), which the validator already reserved at the same family limit, and the ledger keeps a routing summary and link for each. The `Rule-system ledger` section is 5,695 words on its own and will re-cross the threshold as Wasp and the six heroes land; sharding it by rule system, leaving the ledger as a routing index, is the known answer and belongs to its own milestone.
 - Milestone **6.1v** completed on 2026-08-13. Code-truth check 5 in the living-document validator resolves every reflected member and type name in the test corpus against the declaring type's own source, so a rename cannot leave a fixture resolving to `null`. It is a text scan by design: it runs on the non-Windows host where these fixtures cannot run at all, which is the only way it catches the drift before a Windows tier. Deliberate absence assertions carry an `absence-intended` marker stated in the source, and the check fails loudly if it finds no sites. `ReflectedMember.RequiredInstanceField` is the runtime half, named in both test assemblies rather than a shared one, because a shared test assembly would escalate every milestone touching it to T3. The snapshot recipe now names both digest-pinning fixtures and requires a schema-version change to run both.
 - On 2026-08-13 the user approved a roadmap amendment scheduling **6.1x**, **6.1v**, and **6.1w** from the 6.1s Windows handoff and the complete-suite run that followed it - not from the ER2 review. Each closes a way the validation route can report green while a directly affected fixture never executed.
 - Milestone **6.1x** completed on 2026-08-13. The complete unfiltered suites ran for the first time since 6.1k: Play Mode 19/19 green, Edit Mode 370/371, with `CardAggregateInvarianceTests` failing on nine digests pinned at 6.1f. The delta was located by decoding the payloads either side of 6.1s rather than inferred, and both causes are intended: the version field moved 6 to 7, and the board section gained an 8-byte coordinate per remaining minion, 96 bytes across twelve minions. No unintended authoritative-state change. Re-pinned, complete Edit Mode now 371/371 green, and the [baseline table](Testing/PLAYMODE_AND_SUITES.md) records the new totals with per-milestone delta attribution. The finding is the selection failure, not the stale digest: that fixture is in the dotnet harness exclude list and was in no focused filter, so 6.1s was marked complete without it running. A schema change must now run both digest-pinning fixtures.
@@ -52,6 +53,7 @@ Go straight to the shard that owns the subject. The index files still exist and 
 | Presentation and accessibility direction | [Project/PRESENTATION.md](Project/PRESENTATION.md) |
 | Workflow, references, terminology | [Project/WORKFLOW_AND_TERMS.md](Project/WORKFLOW_AND_TERMS.md) |
 | Rule authority/status/deviations/open questions | [RULES_LEDGER.md](RULES_LEDGER.md), plus exact local rulebook pages when implicated |
+| Card architecture and effect capability coverage maps | [Rules/CARD_COVERAGE.md](Rules/CARD_COVERAGE.md) |
 | Card core model, resolution/effects, validation/extension | [Card-System/CORE_MODEL.md](Card-System/CORE_MODEL.md), [Card-System/RESOLUTION_AND_EFFECTS.md](Card-System/RESOLUTION_AND_EFFECTS.md), [Card-System/VALIDATION_AND_EXTENSION.md](Card-System/VALIDATION_AND_EXTENSION.md) |
 | Effects/queries/modifiers/tokens/timing/transitions | [CARD_EFFECT_CAPABILITIES.md](CARD_EFFECT_CAPABILITIES.md) matching capability section |
 | Validation policy, tiers, evidence rules | [Testing/POLICY.md](Testing/POLICY.md) |

@@ -445,7 +445,7 @@ Closing check: the new check run against commit `5676c64`, where the three `setu
 
 Non-goals: No change to what any test asserts, no new test assembly (a shared test-utility assembly would escalate this to T3 under the testing policy), no shrinking of the harness exclude list, no removal of reflection from tests that legitimately need it.
 
-### [ ] 6.1w Route the rules-ledger coverage sections to a shard
+### [x] 6.1w Route the rules-ledger coverage sections to a shard
 
 Observable outcome: `RULES_LEDGER.md` returns below its warning threshold with no content deleted, abbreviated, or weakened.
 

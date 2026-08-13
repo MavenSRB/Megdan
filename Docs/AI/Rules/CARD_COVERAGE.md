@@ -1,0 +1,42 @@
+# Card Architecture and Effect Capability Coverage
+
+Canonical active shard. Return to [../RULES_LEDGER.md](../RULES_LEDGER.md).
+
+Both tables below are architecture and planning maps, not implementation claims. The rule status they
+depend on stays in the ledger; what lives here is the seam each rule pressure requires and the
+milestone that proves it.
+## Card architecture coverage
+
+Milestones 0.4-0.5 specify these representation and capability seams; they do not implement the rules:
+
+| Rule pressure | Required architecture seam | Planned proving milestone(s) |
+| --- | --- | --- |
+| UI must not own rule mutation | Intent commands and ordered rule events | 1.5 implemented a pure adjacent-move command/event slice |
+| Static print data versus mutable physical card | Versioned definition plus stable owned instance | 1.10 implemented the pure placeholder definition/instance foundation |
+| One card exposes context-dependent actions | Immutable action definitions plus runtime offers selected separately from card | 1.11 implemented placeholder printed Primary/Secondary Movement definitions and offers |
+| Printed icons gain distinct modifiers | Typed value query with contribution provenance | 1.11 implemented placeholder printed Movement value contributions; extended in 5.3-5.4, 5.8, 7.2-7.3, and verified Wasp slices |
+| Actions pause for route/target/option/other-player choices | Serializable pending resolution and pending choice | 1.12 implemented the first placeholder Movement pending-choice shell; 1.12b binds immutable destination/route/cost candidates to one destination command |
+| Defense interrupts Attack | Reaction offer nested in the same resolution | 2.3 opens the defender-owned response frame; 2.4-2.5 answer and resume it |
+| Undo/networking must preserve partial resolution | Deterministic initial-scenario plus typed accepted-command replay for internal Undo; versioned snapshot of participant/round/board/card state and resolver-validated pending choice for persistence/resynchronization | 3.9 snapshots remain implemented and verified; corrective 3.10a replaces 3.10's per-command snapshot history with command replay; later networking milestones reuse the snapshot boundary rather than internal Undo history |
+| Played/resolved/discarded/facedown facts overlap | Orthogonal lifecycle axes and validated transitions | 3.1-3.8; verified Wasp data in 8.3 |
+| Real Wasp cards introduce ordered effects and dependencies | Verified Wasp capability matrix before Wasp effect work | 8.1-8.2 |
+| Timed and persistent text outlives one resolver step | Serializable active-effect instances and timing windows | 5.4, 6.13, and verified Wasp slices |
+| Ultimate/token rules persist without ordinary Active-effect semantics | Distinct continuous-rule sources and effective-characteristic queries | 6.3, 7.3, and verified Wasp slices |
+
+## Effect capability coverage
+
+The capability catalog is source-reviewed architecture, not an implementation claim. Phases 1 through 7 prove verified general/core slices with synthetic definitions. After the deterministic core-match gate, milestone 8.2 maps verified Wasp content to the smallest Wasp-specific slices and records any capability deltas without retroactively gating the core rules.
+
+| Capability family | Primary general source | Architecture status | Planned proving/integration milestones |
+| --- | --- | --- | --- |
+| Movement action and Fast Travel | Rulebook p.11 | Exact full-map Movement and typed Fast Travel replacement implemented; milestone verified | 1.11-1.13a establish typed Movement values, resumable segmented choices, and visible synthetic integration. 4.3 verifies same/adjacent/non-adjacent zone queries from shared borders. 5.1 integrates exact Movement plus action-start restrictions on the full map. 5.2 adds atomic pathless Fast Travel replacement with endpoint-zone enemy checks and suppressed source-card text. Direct Move remains distinct and 8.5 later integrates verified Wasp Movement |
+| Direct Move, including source-relative destinations | Verified cards | Architecture specified; not implemented | Milestone 6.4 proves the reusable synthetic core capability; 8.6 composes verified Wasp definitions and source-required variants |
+| Place, Spawn, and Respawn | Rulebook pp.7-8, 18-19 plus verified cards | Architecture specified; not implemented | 6.4a minimum Place, 6.5 general Place/Spawn, 6.11 minion Respawn, and 7.4 hero Respawn core/system integration; 8.6 verified Wasp composition if required |
+| Object Push, Swap, and Replace | Rulebook pp.18-19 plus verified cards | Architecture specified; not implemented | Milestone 6.4 proves Object Push and 6.6 proves board-object Swap/Replace with synthetic effects; 8.6 composes verified Wasp definitions and source-required variants |
+| Remove, Defeat, prevention, and Clear | Rulebook pp.8, 12-14, 18-19 plus verified cards | Architecture specified; not implemented | Phase 2 foundation; 5.6, 5.8, 6.1, 6.3, 6.6, 6.9-6.11, and 7.4 consequences |
+| Tokens, markers, obstacles, and persistent properties | Rulebook pp.8, 18-19 plus verified cards | Generic obstacle foundation implemented; broader capabilities architecture specified | 1.9 implemented generic placeholder obstacle blocking only. Token supply/properties, marker attachments, concrete terrain, and reusable spatial interactions remain planned for 6.2-6.8, with cleanup at 6.12 and verified Wasp composition assigned by 8.2 |
+| Card-state, ownership, value, and resource operations | Rulebook pp.7-10, 13, 15-16 plus verified cards | Placeholder card/value foundation, Defense discard, and pure typed coin-gain accounting implemented; broader architecture specified | 1.10 implemented stable placeholder definitions, instances, ownership, definition references, and initial in-hand state. 1.11 implemented placeholder offer-bound Movement value queries; 2.2 added Attack/Defense, 2.3a added Range, and 2.4 added the authoritative exactly-one-card Defense Hand-to-Discard-Pile transition. Milestone 5.5 adds atomic per-hero coin balances and source-linked Defeat/Assist gain operations with a zero minimum, reject-without-mutation failure contract, participant/team validation, deterministic friendly-recipient order, and outcome idempotency. Exact hero reward derivation remains 7.4; 6.13 and 7.1-7.6 own broader resource/progression integration; 8.8 owns Wasp integration |
+| Target/presence and spatial queries | Rulebook pp.9-11, 13, 17-19 plus verified cards | Adjacent/Range enemy-hero target, axial distance, and same/adjacent/non-adjacent full-map zone queries implemented; broader architecture specified | 2.3 implemented adjacent enemy-hero targeting; 2.3a added offer-bound Range and rulebook distance without line of sight. 4.3 added selected-map zone membership and symmetric shared-border relationships. Milestones 6.4-6.8 complete the reusable presence, object, geometry, immunity, and characteristic-query core before verified Phase 8 composition |
+| Modifiers, restrictions, permissions, immunity, and effective characteristics | Rulebook pp.9, 11-19 plus verified cards | Minion Defense modifier subset implemented; broader architecture specified | 1.11 foundation; 5.3 minion Defense contributions; 5.4 and 5.8 timing/combat readiness; 6.8 reusable synthetic core; 7.2-7.3 progression sources; 8.9 and 8.11-8.14 verified Wasp composition or explicit source-required extension |
+| Timing, control flow, Active effects, and continuous sources | Rulebook pp.7-10, 13-19 plus verified cards | Architecture specified; not implemented | 1.12 and 2.3-2.5 foundation; Phase 3, 5.4, 6.7-6.9, 6.13, and 7.8 core integration; 8.10 and 8.13 verified Wasp composition |
+| Lane/minion/end-of-round/progression system transitions | Rulebook pp.7-8, 15-16 | Minion Battle and its deferred end-of-round Lane-Push request implemented; remaining transitions scheduled | Phases 6-7 |
