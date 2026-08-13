@@ -20,8 +20,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 2.2 Extend the test cards with Attack and Defense action offers
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: The Phase 1 placeholder definitions gain non-Ranged Attack and Defense-reaction action definitions, from which the authority derives typed runtime offers owned by the correct test heroes.
 
 Acceptance checks:
@@ -39,8 +37,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 2.3 Initiate a basic adjacent hero Attack
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: One test hero can select its non-Ranged Attack offer and target the adjacent enemy test hero through the shared command and resumable-resolution boundary.
 
 Acceptance checks:
@@ -56,8 +52,6 @@ Non-goals: No ranged targeting, minions, items, modifiers, Before/After Attack t
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_2.md#milestone-23-initiate-a-basic-adjacent-hero-attack-completion-evidence).
 
 ### [x] 2.3a Initiate a basic Ranged hero Attack
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: One test hero can select a synthetic Ranged Attack offer and target the enemy test hero within the offer's typed printed Range through the same shared target-query, command, and resumable-resolution boundary introduced by milestone 2.3.
 
@@ -76,8 +70,6 @@ Non-goals: No minion targets, Range modifiers from card text/items/Active effect
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_2.md#milestone-23a-initiate-a-basic-ranged-hero-attack-completion-evidence).
 
 ### [x] 2.4 Defend with one test card or decline
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The targeted hero answers the pending Defense reaction by discarding exactly one legal card from its own hand for its Defense value or declining, after which the Attack resolution resumes.
 
@@ -98,8 +90,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 2.5 Compare Attack and Defense and report the test outcome
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: The authority completes the basic test Attack/Defense sequence and reports either successfully defended or attack successful.
 
 Acceptance checks:
@@ -116,8 +106,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 2.6 Add Tie Breaker setup state
 
-Required Codex profile: GPT-5.6 Sol with high reasoning.
-
 Observable outcome: Normal setup chooses the initial Tie Breaker side; internal tests can explicitly select Red or Blue.
 
 Acceptance checks:
@@ -129,8 +117,6 @@ Acceptance checks:
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_2.md#milestone-26-add-tie-breaker-setup-state-completion-evidence).
 
 ### [x] 2.6a Display the authoritative Tie Breaker side
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: The validation HUD shows a top-right Tie Breaker coin indicator that clearly identifies whether the current authoritative side is Red or Blue.
 

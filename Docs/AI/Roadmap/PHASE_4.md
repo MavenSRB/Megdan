@@ -6,8 +6,6 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 ### [x] 4.1 Inventory the complete single-lane board reference
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Every part of the complete official single-lane board - including all spaces, connections, terrain, zones, spawn points, Thrones, and the starting Battle Zone - has a reviewed data specification.
 
 Acceptance checks:
@@ -21,8 +19,6 @@ Non-goals: No production board art or models.
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-41-inventory-the-complete-single-lane-board-reference-completion-evidence).
 
 ### [x] 4.1a Harden map-scoped identity and validation contracts
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The map specification and source-validation boundary can admit additional future map definitions without weakening the reviewed `official-single-lane` evidence or relying on globally unique child IDs.
 
@@ -41,8 +37,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 4.2 Load the selected map definition into authoritative state
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: A match loads one selected map definition through a reusable boundary, and authoritative state plus snapshots retain and validate that map's stable identity and content revision.
 
 Acceptance checks:
@@ -59,8 +53,6 @@ Non-goals: No Unity scene replacement, second playable map, zone adjacency queri
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-42-load-the-selected-map-definition-into-authoritative-state-completion-evidence).
 
 ### [x] 4.2a Upgrade the test grid to the full official placeholder map
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The temporary Phases 1-3 test grid is replaced in the main validation scene by placeholder geometry driven by the selected complete official multi-zone single-lane map definition.
 
@@ -79,8 +71,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 4.3 Define and validate zones and zone adjacency
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Every board space belongs to the correct official zone, and authoritative queries can distinguish the same zone, an adjacent zone, and a non-adjacent zone.
 
 Acceptance checks:
@@ -96,8 +86,6 @@ Non-goals: No Fast Travel validation, current-Battle-Zone changes, lane pushing,
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-43-define-and-validate-zones-and-zone-adjacency-completion-evidence).
 
 ### [x] 4.4 Place the 1v1 Quick Game setup
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: Red Wasp, Blue Wasp, standard minions, Lives, Waves, and Tie Breaker state are placed from configuration data while their hands still use synthetic test cards.
 
@@ -119,8 +107,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 4.4a Establish the transport-neutral match application service
 
-Required Codex profile: GPT-5.6 Sol with high reasoning.
-
 Observable outcome: One pure C# application-service boundary owns the configured authoritative match and accepts typed gameplay commands for both live director input and deterministic replay, while Unity components no longer coordinate low-level rules authorities directly.
 
 Acceptance checks:
@@ -139,8 +125,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 4.4b Decompose card-action resolution behind typed strategy handlers
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: The shared card-action dispatcher preserves one deterministic resumable resolution boundary while Movement and Attack/Defense behavior live behind separately testable typed handlers rather than continuing to grow one action-kind authority.
 
 Acceptance checks:
@@ -156,8 +140,6 @@ Non-goals: No new action kind, card text, effect capability, Attack consequence,
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44b-decompose-card-action-resolution-behind-typed-strategy-handlers-completion-evidence).
 
 ### [x] 4.4c Replace the validation god-controller with feature MVP
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: The validation scene uses Model-View-Presenter over the match-session port: feature presenters translate user intent and immutable projections, passive Unity views render view models, and one small composition root owns scene wiring.
 
@@ -176,8 +158,6 @@ Non-goals: No production HUD, UI Toolkit migration, animation, sound, networking
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44c-replace-the-validation-god-controller-with-feature-mvp-completion-evidence).
 
 ### [x] 4.4d Close Phase 4 runtime hygiene and architecture gate
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: The refactored Phase 4 match runs with explicit generated-resource ownership, no known project-authored hot-path allocation churn or obsolete Unity object-discovery APIs, robust malformed-envelope rejection, and a recorded performance baseline before Phase 5 expands the action system.
 
@@ -199,8 +179,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 4.4e Independently review the Phase 4 architecture baseline
 
-Required Codex profile: GPT-5.6 Sol with high reasoning.
-
 Observable outcome: A fresh analysis-only review determines whether the completed application-service, command-replay, action-strategy, MVP, resource-lifetime, diagnostic-envelope, and performance-baseline work is a sound foundation for expanding the general action system.
 
 Acceptance checks:
@@ -219,8 +197,6 @@ Hard gate: Phase 5 does not begin until milestone 4.4e is reviewed and every fin
 
 ### [x] 4.4f Complete the configured MVP cutover and highlight-resource ownership
 
-Required Codex profile: GPT-5.6 Sol with high reasoning.
-
 Observable outcome: The configured saved scene routes every board intent through the feature MVP boundary, the legacy controller no longer owns configured-match orchestration/rendering, and every generated highlight resource has explicit lifetime ownership.
 
 Acceptance checks:
@@ -238,8 +214,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 4.4g Extract the production Movement and Attack/Defense strategy backends
 
-Required Codex profile: GPT-5.6 Sol with high reasoning.
-
 Observable outcome: Production Movement and Attack/Defense behavior is owned by distinct typed strategy backends rather than delegating both handlers back into the combined card-action authority.
 
 Acceptance checks:
@@ -255,8 +229,6 @@ Non-goals: No new action kind, Fast Travel, card text, effect capability, Attack
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44g-extract-the-production-movement-and-attack-defense-strategy-backends).
 
 ### [x] 4.4h Re-close the corrected Phase 4 architecture and performance gate
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: The corrected Phase 4 foundation has direct projection-cost evidence, all 4.4e findings have completed dispositions, and the T3 gate is green at one final revision before Phase 5.
 
@@ -276,8 +248,6 @@ Hard gate: Phase 5 does not begin until milestone 4.4h completes and every 4.4e 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_4.md#milestone-44h-re-close-the-corrected-phase-4-architecture-and-performance-gate-completion-evidence).
 
 ### [x] 4.4i Independently verify the corrected Phase 4 foundation
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: A fresh analysis-only review determines whether the 4.4f-4.4h corrections genuinely close the 4.4e findings without introducing replacement ownership, authority, lifecycle, performance-evidence, or test-quality problems before Phase 5 expands the action system.
 

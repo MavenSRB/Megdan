@@ -6,8 +6,6 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 ### [x] 3.1 Extend the test-card foundation with turn lifecycle
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Synthetic card instances can represent and transition through the lifecycle facts needed to play a turn without using Wasp data.
 
 Acceptance checks:
@@ -24,8 +22,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.2 Display both director-mode test hands
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Separate Red and Blue synthetic hands are visible and independently selectable by the director-mode controller.
 
 Acceptance checks:
@@ -37,8 +33,6 @@ Acceptance checks:
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_3.md#milestone-32-display-both-director-mode-test-hands-completion-evidence).
 
 ### [x] 3.3 Play and reveal one test card per side
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The controller selects and confirms one card for each side, both cards enter the correct played/unresolved state, and they reveal together.
 
@@ -55,8 +49,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.4 Resolve Initiative and tied Initiative
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: The authority identifies the next unresolved actor from current Initiative values and applies the Tie Breaker rules without depending on Wasp cards.
 
 Acceptance checks:
@@ -71,8 +63,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.5 Resolve Hold and complete one turn
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Both unresolved test cards can perform Hold in Initiative order, become resolved, and end the turn.
 
 Acceptance checks:
@@ -86,8 +76,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.6 Resolve test-card Movement within a turn
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: A hero can choose its synthetic Movement offer during its Initiative position, complete the Phase 1 movement flow, resolve its card, and yield to the next actor.
 
 Acceptance checks:
@@ -99,8 +87,6 @@ Acceptance checks:
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_3.md#milestone-36-resolve-test-card-movement-within-a-turn-completion-evidence).
 
 ### [x] 3.6a Connect in-turn Movement to the validation controller
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: After both synthetic cards reveal, the validation controller starts Initiative, exposes the current actor's played-card Movement offers, accepts destination/Stop input through the turn authority, moves the authoritative hero occupancy, resolves the acting card, and visibly advances to the next actor.
 
@@ -117,8 +103,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.7 Resolve test-card Attack and Defense within a turn
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: A hero can perform the Phase 2 test Attack during its Initiative position, pause for the enemy Defense reaction, resume, resolve the attacking card, and continue the turn.
 
 Acceptance checks:
@@ -133,8 +117,6 @@ Non-goals: No Attack consequences, defeat/removal, automated action choice, new 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_3.md#milestone-37-resolve-test-card-attack-and-defense-within-a-turn-completion-evidence).
 
 ### [x] 3.7b Expand both synthetic heroes to five-card playable hands
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Each current test hero owns five distinct synthetic cards and can commit any eligible card, then perform its supported Primary Attack, Secondary Movement, or general Hold during its Initiative position.
 
@@ -169,8 +151,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.8 Complete the four-turn round skeleton
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Four turns advance, cards occupy the correct turn slots, and the round reaches an explicit end-of-round phase.
 
 Acceptance checks:
@@ -183,8 +163,6 @@ Acceptance checks:
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_3.md#milestone-38-complete-the-four-turn-round-skeleton-completion-evidence).
 
 ### [x] 3.8a Connect the complete round to the validation controller
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: The saved validation scene uses one authoritative round instance to play all four indexed turns from commitment through action resolution and visibly reaches the explicit end-of-round phase.
 
@@ -203,8 +181,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.8b Generalize turn commitments and round slots for hero ownership
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: For every configured hero, its controlling player must commit exactly one hero-owned card when that hero's hand is nonempty and may Pass only when it is empty; after every hero has a response, each indexed turn slot stores the resulting immutable ordered hero-assignment collection without assuming exactly one hero per team.
 
 Acceptance checks:
@@ -221,8 +197,6 @@ Non-goals: No six-player setup, additional heroes or cards, 3v3 turn execution, 
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_3.md#milestone-38b-generalize-turn-commitments-and-round-slots-for-hero-ownership-completion-evidence).
 
 ### [x] 3.8c Scaffold end-of-round progression and repeated synthetic rounds
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: After the fourth turn, the synthetic round advances through an explicit resumable end-of-round stage sequence, retrieves eligible cards, preserves the completed round, and starts turn 1 of the next round so the validation scene can play at least two uninterrupted rounds.
 
@@ -241,8 +215,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.9 Serialize and restore authoritative snapshots
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: A versioned snapshot round-trips without changing logical state.
 
 Acceptance checks:
@@ -258,8 +230,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.10 Add director-mode Undo and restart
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Undo restores the snapshot before the last committed command; restart restores the initial scenario.
 
 Acceptance checks:
@@ -272,8 +242,6 @@ Non-goals: No redo requirement and no competitive availability.
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_3.md#milestone-310-add-director-mode-undo-and-restart-completion-evidence).
 
 ### [x] 3.10a Replace snapshot-history Undo with deterministic command replay
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Director Undo removes the latest accepted gameplay command, reconstructs the authoritative match from its immutable initial scenario inputs, and replays the remaining accepted command prefix through the normal rules authorities; Undo history no longer stores a full authoritative snapshot per command.
 
@@ -296,8 +264,6 @@ Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHAS
 
 ### [x] 3.11 Add the internal rule-event log
 
-Required Codex profile: GPT-5.6 Sol with high reasoning.
-
 Observable outcome: A primitive internal panel shows accepted ordered rule events and rebuilds consistently after restore, Undo, or restart.
 
 Acceptance checks:
@@ -313,8 +279,6 @@ Non-goals: No final visual styling, export format, analytics, telemetry, or play
 Historical evidence: [lossless completion record](../Archive/Phase-Handoffs/PHASE_3.md#milestone-311-add-the-internal-rule-event-log-completion-evidence).
 
 ### [x] 3.11a Consolidate living-document ownership, history, and routing controls
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Routine startup and targeted context loading stays bounded by explicit per-file routing thresholds, while the complete precise current authority remains in indexed active documents and detailed historical completion/test evidence remains losslessly preserved in indexed phase archives excluded from normal startup loading.
 

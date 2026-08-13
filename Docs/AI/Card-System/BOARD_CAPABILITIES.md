@@ -135,3 +135,30 @@ Milestone 5.8 implements the Hero subset only through a staged Defeat outcome. A
 ### Clear
 
 `ClearAction` is a rule-provided optional replacement for an entire Attack action. Once selected, its controller may choose any subset of tokens adjacent to the acting hero, including none, and removes the chosen tokens through token removal capabilities. It suppresses the replaced Primary Attack text and is not an Attack that happens to target tokens.
+
+## Contract implementation status
+
+See [CORE_MODEL.md](CORE_MODEL.md#contract-implementation-status) for what this section is and how to maintain it.
+
+Every query contract below is specified but not yet implemented as a named type. Targeting, adjacency, range, and empty-space rules are currently enforced by concrete authorities and backends rather than by a reusable typed query layer. Milestone 6.8 owns the general modifier and query contracts; 6.4 and 6.4a own the displacement queries they require.
+
+| Contract | State | Owning milestone |
+| --- | --- | --- |
+| `TargetQuery` | Specified, not implemented | 6.8 |
+| `PresenceQuery` | Specified, not implemented | 6.8 |
+| `AdjacentSpaceQuery` | Specified, not implemented | 6.4 |
+| `AdjacentObjectQuery` | Specified, not implemented | 6.4 |
+| `RangeQuery` | Specified, not implemented | 6.8 |
+| `RadiusQuery` | Specified, not implemented | 6.8 |
+| `DirectionQuery` | Specified, not implemented | 6.4 |
+| `StraightLineQuery` | Specified, not implemented | 6.4 |
+| `DistanceQuery` | Specified, not implemented | 6.4 |
+| `CloserQuery` | Specified, not implemented | 6.4 |
+| `FartherQuery` | Specified, not implemented | 6.4 |
+| `FarthestQuery` | Specified, not implemented | 6.4 |
+| `NearestQuery` | Specified, not implemented | 6.4a |
+| `SameZoneQuery` | Specified, not implemented | 6.8 |
+| `AdjacentZoneQuery` | Specified, not implemented | 6.8 |
+| `BattleZoneQuery` | Specified, not implemented | 6.4a |
+| `EmptySpaceQuery` | Specified, not implemented | 6.5 |
+| `EmptySpawnPointQuery` | Specified, not implemented | 6.5 |

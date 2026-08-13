@@ -205,3 +205,13 @@ Milestone 5.6 advances the snapshot to schema version 4 for mutable remaining-mi
 Milestone 5.8 advanced the snapshot to schema version 5 for durable combat timing/value discriminators. Milestone 6.1 advances it to schema version 6 because the durable round vocabulary now includes stable Minion-Battle resolution/choice identity, typed candidates/selection/invocations, and a pending end-of-round Lane-Push request. Schema version 5 is explicitly rejected rather than silently reconstructing or omitting continuation meaning. The setup, active-turn, Movement-choice, end-of-round, and selected Minion-Battle-choice v6 fixtures round-trip byte-identically; no prototype-save migration is claimed.
 
 Upgrading replaces the applicable runtime card with a new definition-backed instance/state transition; it does not mutate the old immutable definition. Set-aside item cards and the Ultimate remain traceable to their own definitions and distinct rules roles.
+
+## Contract implementation status
+
+See [CORE_MODEL.md](CORE_MODEL.md#contract-implementation-status) for what this section is and how to maintain it.
+
+| Contract | State | Owning milestone |
+| --- | --- | --- |
+| `PendingResolution` | Specified, not implemented as a general frame | 6.2a |
+| `DistanceQuery` | Specified, not implemented | 6.4 |
+| `RangeQuery` | Specified, not implemented | 6.8 |

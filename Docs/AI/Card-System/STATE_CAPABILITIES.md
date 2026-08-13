@@ -102,3 +102,13 @@ Other typed state changes include gain/spend coins, spend Lives, flip/remove Wav
 Milestone 5.5 implements the pure coin-gain subset for Defeat outcomes. Each outcome carries a stable outcome/target identity, defeated team, acting hero, and already-verified Defeat/Assist amounts. Accounting validates the participant graph and enemy team, awards the acting hero first and every other friendly hero in stable participant order, and emits typed operations containing source, recipient hero/team, Defeat-versus-Assist kind, positive amount, zero minimum, reject-without-mutation behavior, and before/after balances. The entire recipient batch is planned before mutation, duplicate outcomes reject, and a separately typed removed/removal-prevented result cannot reverse the reward. Milestone 7.4 owns exact hero Level/lowest-Tier derivation; spending and presentation remain with their owning milestones.
 
 Milestone 5.6 supplies the verified minion values, integrates the acting-hero-only award with minion Attack, and persists balances plus awarded-outcome identity in snapshot schema v4. Exact hero Level/lowest-Tier derivation remains milestone 7.4; spending and presentation remain deferred.
+
+## Contract implementation status
+
+See [CORE_MODEL.md](CORE_MODEL.md#contract-implementation-status) for what this section is and how to maintain it.
+
+| Contract | State | Owning milestone |
+| --- | --- | --- |
+| `ObstacleQuery` | Specified, not implemented. Obstacle rules are enforced today by the board and movement authorities. | 6.8 |
+| `CardCharacteristicQuery` | Specified, not implemented | 6.8 |
+| `IntrinsicKindQuery` | Specified, not implemented | 6.8 |

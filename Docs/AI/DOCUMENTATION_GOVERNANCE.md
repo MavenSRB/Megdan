@@ -11,8 +11,8 @@ Every fact has exactly one canonical active home. Other active documents use a s
 | Information category | One canonical home | Permitted noncanonical content |
 | --- | --- | --- |
 | Current implementation inventory | [`Project/CURRENT_IMPLEMENTATION.md`](Project/CURRENT_IMPLEMENTATION.md) | Compact startup status and one stable link from [`SESSION_BRIEF.md`](SESSION_BRIEF.md); no duplicated chronology or test totals |
-| Current authorization, exact next milestone, and next profile | [`SESSION_BRIEF.md`](SESSION_BRIEF.md) | One stable link; no duplicated route markers |
-| Roadmap sequencing, milestone status/profile, exact acceptance checks, and non-goals | [`ROADMAP.md`](ROADMAP.md) plus its indexed [`Roadmap/`](Roadmap/) phase shards | Status/routing summaries that link to the exact milestone |
+| Current authorization and exact next milestone | [`SESSION_BRIEF.md`](SESSION_BRIEF.md) | One stable link; no duplicated route markers |
+| Roadmap sequencing, milestone status, exact acceptance checks, and non-goals | [`ROADMAP.md`](ROADMAP.md) plus its indexed [`Roadmap/`](Roadmap/) phase shards | Status/routing summaries that link to the exact milestone |
 | Durable product scope, architecture, platform, presentation, terminology, and workflow | [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) plus its indexed [`Project/`](Project/) subject shards | Minimal dependency-routing summaries |
 | Rule/source authority, verification and implementation status, approved deviations, and open questions | [`RULES_LEDGER.md`](RULES_LEDGER.md) | Links from architecture or milestone definitions |
 | Durable card/action engine contracts and extension boundaries | [`CARD_SYSTEM_ARCHITECTURE.md`](CARD_SYSTEM_ARCHITECTURE.md) plus its indexed [`Card-System/`](Card-System/) shards | Links and narrowly necessary dependency summaries |

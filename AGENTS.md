@@ -2,7 +2,7 @@
 
 ## Startup and targeted context loading
 
-At the start of each new Codex task or run, read `Docs/AI/SESSION_BRIEF.md` once before the first plan or workspace change. Treat it as loaded for the rest of that task; do not reread it merely because the user sends a follow-up. Use `Docs/AI/DOCUMENTATION_GOVERNANCE.md` when ownership, archive, threshold, or risk routing is implicated.
+At the start of each new agent task or run, read `Docs/AI/SESSION_BRIEF.md` once before the first plan or workspace change. Treat it as loaded for the rest of that task; do not reread it merely because the user sends a follow-up. Use `Docs/AI/DOCUMENTATION_GOVERNANCE.md` when ownership, archive, threshold, or risk routing is implicated.
 
 Do not automatically read the full continuity documents. Use `rg` to find the required headings or terms, then read only the relevant section and enough surrounding context to preserve its dependencies:
 
@@ -25,23 +25,15 @@ Expand to a full-document read only when the task is genuinely cross-cutting, ta
 - Never shorten a current rule, contract, acceptance/non-goal check, source citation, deviation, open question, exact active test recipe, or historical pass/failure record merely to meet a threshold.
 - At every milestone handoff and phase gate, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1`, then `git diff --check`; update indexes, manifest, preservation inventory, and risk disposition when implicated.
 
-## Milestone model selection
+## Milestone start transition
 
-The exact current or proposed roadmap milestone declares its `Required Codex profile`. The project-local `.codex/config.toml` must mirror that profile as the default for the next new Codex task. State the active milestone, model, and reasoning effort in the first milestone-work update.
-
-After the exact milestone is approved and the profile gate passes, but before any substantive milestone analysis, implementation, review, or test execution, perform the milestone-start transition in the shared workspace: change that milestone's roadmap status from `[ ]` to `[~]`, set `Active authorized milestone` in `Docs/AI/SESSION_BRIEF.md` to that exact ID, retain the validator-required `Next proposed milestone` and `Required Codex profile for next milestone` route fields for the same active ID/profile, and run the living-document validator. Do not proceed until the transition validates. This applies equally to analysis-only and independent-review milestones. At most one milestone may be `[~]`.
-
-At every milestone handoff, assign the next milestone's profile and update all three locations before the handoff commit:
-
-1. The next milestone's `Required Codex profile` in `Docs/AI/ROADMAP.md`.
-2. The next milestone and profile in `Docs/AI/SESSION_BRIEF.md`.
-3. `model` and `model_reasoning_effort` in `.codex/config.toml`, including its milestone comment.
-
-Do not pre-label the entire roadmap with model names that may become stale. Use GPT-5.6 Terra with medium reasoning for bounded routine work, GPT-5.6 Sol with medium reasoning for rules, architecture, authority, or multi-system work, and GPT-5.6 Sol with high reasoning for explicit integration or hard gates. A declared profile is an execution requirement, not authorization to begin the milestone.
+After the exact milestone is approved, but before any substantive milestone analysis, implementation, review, or test execution, perform the milestone-start transition in the shared workspace: change that milestone's roadmap status from `[ ]` to `[~]`, set `Active authorized milestone` in `Docs/AI/SESSION_BRIEF.md` to that exact ID, retain the validator-required `Next proposed milestone` route field for the same active ID, and run the living-document validator. Do not proceed until the transition validates. This applies equally to analysis-only and independent-review milestones. At most one milestone may be `[~]`.
 
 For a normal new milestone task, the user only needs to open a new task in this trusted project and explicitly approve the milestone by ID, for example: `I explicitly approve milestone 2.2. Implement it and stop after its required handoff.` The agent then performs the normal targeted loading, implementation, validation, continuity updates, and local commit without asking the user to repeat the stored workflow.
 
-If the roadmap, session brief, and project config disagree, do not implement the milestone. Reconcile the stored profile first. Project configuration supplies the default for a new task but cannot change an already-open task; if the active task uses a different profile, state the exact required `/model` and `/reasoning` change and wait for the user before implementation.
+If the roadmap and session brief disagree, do not implement the milestone. Reconcile the stored route first.
+
+Model and reasoning-effort selection is not a governed per-milestone artifact. The previous `Required Codex profile` contract, its `.codex/config.toml` mirroring requirement, and the corresponding validator checks were retired on 2026-08-13; see the provenance record in `Docs/AI/Archive/MIGRATION_MANIFEST.md`. Do not reintroduce per-milestone model labels into the roadmap.
 
 ## Current authorization
 
@@ -52,7 +44,7 @@ The detailed current implementation lives in `Docs/AI/Project/CURRENT_IMPLEMENTA
 - Treat the second-printing rulebook, verified card data, and published official rulings as authoritative according to the hierarchy in `Docs/AI/RULES_LEDGER.md`.
 - Do not invent, simplify, rebalance, or silently reinterpret a rule. Record every approved deviation in `Docs/AI/RULES_LEDGER.md`.
 - Work on exactly one user-approved micro-milestone at a time. Satisfy its acceptance checks, update the living documents, report the result, and stop for approval.
-- Mark the approved milestone `[~]` and record it as the active authorized milestone immediately after approval/profile confirmation and before substantive work. A milestone task must never perform its analysis, implementation, review, or tests while its canonical status remains proposed `[ ]`.
+- Mark the approved milestone `[~]` and record it as the active authorized milestone immediately after approval and before substantive work. A milestone task must never perform its analysis, implementation, review, or tests while its canonical status remains proposed `[ ]`.
 - Before declaring any approved milestone complete, perform a review-only pass from the player-experience, rules-authority, maintainability, and project-risk perspectives. Distinguish demonstrated defects from measured or plausible risks and from optional improvements. Report the review in the milestone handoff even when it finds no issues. Correct only demonstrated defects that fall within the approved milestone and are required for its acceptance; do not implement optional improvements or expand scope without separate user approval.
 - Apply the recursive review-correction closure rule in `Docs/AI/ROADMAP.md`: when a separately numbered independent engineering review requires one or more corrective micro-milestones before the affected downstream gate, its proposed corrective sequence must also include a separately numbered fresh-task independent verification review after the final correction. Corrective handoff self-reviews do not satisfy that verification. If the verification requires further pre-gate corrections, repeat the correction-plus-verification cycle; keep downstream work blocked through the latest required verification. Roadmap scheduling and each milestone's execution still require their applicable explicit user approvals.
 - After every completed user-approved roadmap milestone, create a local Git commit containing that milestone and its continuity updates. Do not configure a remote or push without explicit user authorization.
@@ -76,7 +68,7 @@ The detailed current implementation lives in `Docs/AI/Project/CURRENT_IMPLEMENTA
 
 After an approved decision or completed milestone:
 
-- Update `Docs/AI/Project/CURRENT_IMPLEMENTATION.md` in place when implementation status changes. Update `Docs/AI/SESSION_BRIEF.md` and `.codex/config.toml` when authorization, the next milestone, its required Codex profile, or startup routing changes; revise the brief's compact status summary only when the routed overview materially changes.
+- Update `Docs/AI/Project/CURRENT_IMPLEMENTATION.md` in place when implementation status changes. Update `Docs/AI/SESSION_BRIEF.md` when authorization, the next milestone, or startup routing changes; revise the brief's compact status summary only when the routed overview materially changes.
 - Update the subject shard indexed by `Docs/AI/PROJECT_CONTEXT.md` when product scope, constraints, terminology, or architecture changes.
 - Update the phase shard indexed by `Docs/AI/ROADMAP.md` when milestone status or sequencing changes, and append completed evidence once to the matching phase-handoff archive.
 - Update `Docs/AI/RULES_LEDGER.md` when a rule is verified, implemented, tested, clarified, or intentionally deviated from.

@@ -97,3 +97,15 @@ Legal combinations and transitions are validated centrally. For example, resolve
 Milestone 3.1 implements the narrow pure transition foundation: an initial in-hand card may become played/unresolved in the turn area Facedown, reveal Faceup, and become resolved after its action. Defense discard remains a Hand-to-Discard location transition that does not set played or resolved. Milestone 3.3 initially composed those transitions through a staged two-side authority. `MatchParticipants` retains distinct `PlayerId` controller/seat and `HeroId` game-entity identities while enforcing exactly one hero per player. Milestone 3.4 queries revealed unresolved cards for the next actor, milestones 3.5-3.7 perform Hold, Movement, and Attack/Defense through a turn authority, and milestone 3.8 retains resolved cards in indexed turn slots through the explicit end-of-round boundary. Milestone 3.8b replaces the staged side approximation with canonical `HeroId` commitment/assignment ownership: every configured hero's controlling player must commit exactly one hero-owned card from a nonempty valid hand, only an empty hand permits Pass, board presence is irrelevant, invalid in-hand lifecycle state rejects rather than authorizing Pass, and joint reveal waits for every hero response. Each immutable assignment carries canonical `HeroId` plus exactly one committed card ID or explicit empty-hand Pass outcome; controlling `PlayerId` and team are derived and validated through `MatchParticipants`, not duplicated as independently supplied assignment facts. The current fixture supplies two assignments; the official 3v3 configuration later supplies six without replacing the snapshot shape or allowing presentation to infer ownership. Card retrieval, new-round start, and resolve-without-action remain distinct unimplemented transitions.
 
 State changes such as play, reveal, resolve, discard, retrieve, swap, set aside, equip as an item, and become facedown are explicit rules transitions. UI code cannot assign these properties directly.
+
+## Contract implementation status
+
+This section is the one place that distinguishes a contract this document specifies from a contract the code actually has. This document is an architecture specification, so naming an unbuilt contract is legitimate; leaving a reader unable to tell which is which is not. The living-document validator fails when a named contract is neither declared under `Assets/` nor listed here.
+
+Remove a row when its type is implemented. Do not add a row to silence the validator for a contract that was supposed to exist.
+
+| Contract | State | Owning milestone |
+| --- | --- | --- |
+| `EffectDefinition` | Specified, not implemented | 6.2a |
+| `PendingResolution` | Specified, not implemented. Concrete per-action pending state exists today inside the registered backends; the general serializable frame does not. | 6.2a |
+| `RuleEvent` | Specified, not implemented as a single named type. Ordered rule facts are emitted today through the event log and its projection. | 6.2a |

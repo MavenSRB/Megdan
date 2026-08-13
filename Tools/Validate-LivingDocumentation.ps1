@@ -98,13 +98,12 @@ function Get-CompletionBody([string] $RoadmapText, [string] $Milestone) {
     return $note.Value.TrimEnd()
 }
 
-function Test-RouteValues([string] $Session, [string] $RoadmapCorpus, [string] $Config) {
+function Test-RouteValues([string] $Session, [string] $RoadmapCorpus) {
     $codes = New-Object System.Collections.Generic.List[string]
     $currentMatches = [regex]::Matches($Session, '(?m)^- Current completed milestone: \*\*([^*]+)\*\*\.$')
     $activeMatches = [regex]::Matches($Session, '(?m)^- Active authorized milestone: \*\*([^*]+)\*\*(?:,[^\r\n]*)?\.$')
     $nextMatches = [regex]::Matches($Session, '(?m)^- Next proposed milestone: \*\*([^*]+)\*\*\.$')
-    $profileMatches = [regex]::Matches($Session, '(?m)^- Required Codex profile for next milestone: \*\*GPT-5\.6 (Sol|Terra) with ([^*]+) reasoning\*\*\.$')
-    if ($currentMatches.Count -ne 1 -or $activeMatches.Count -ne 1 -or $nextMatches.Count -ne 1 -or $profileMatches.Count -ne 1) {
+    if ($currentMatches.Count -ne 1 -or $activeMatches.Count -ne 1 -or $nextMatches.Count -ne 1) {
         $codes.Add('missing-route')
         return $codes.ToArray()
     }
@@ -124,16 +123,59 @@ function Test-RouteValues([string] $Session, [string] $RoadmapCorpus, [string] $
         $codes.Add('next-status')
         return $codes.ToArray()
     }
-    $expectedModel = if ($profileMatches[0].Groups[1].Value -eq 'Sol') { 'gpt-5.6-sol' } else { 'gpt-5.6-terra' }
-    $expectedReasoning = $profileMatches[0].Groups[2].Value.Trim().ToLowerInvariant().Replace(' ', '')
-    $roadmapProfile = [regex]::Match($nextBlock.Value, '(?m)^Required Codex profile: GPT-5\.6 (Sol|Terra) with ([^.\r\n]+) reasoning\.$')
-    $configModel = [regex]::Match($Config, '(?m)^model\s*=\s*"([^"]+)"').Groups[1].Value
-    $configReasoning = [regex]::Match($Config, '(?m)^model_reasoning_effort\s*=\s*"([^"]+)"').Groups[1].Value
-    $configMilestone = [regex]::Match($Config, '(?m)^# Milestone:\s*(\S+)').Groups[1].Value
-    if (-not $roadmapProfile.Success -or $roadmapProfile.Groups[1].Value -ne $profileMatches[0].Groups[1].Value -or $roadmapProfile.Groups[2].Value.Trim().ToLowerInvariant().Replace(' ', '') -ne $expectedReasoning -or $configModel -ne $expectedModel -or $configReasoning -ne $expectedReasoning -or $configMilestone -ne $next) {
-        $codes.Add('mismatched-profile')
-    }
     return $codes.ToArray()
+}
+
+# Code-truth check 1: a type named as a contract must either exist in the source or be listed as
+# planned in that document's own "Contract implementation status" section. These are specification
+# documents, so naming an unbuilt contract is legitimate; leaving a reader unable to tell which
+# contracts are real is not. The status section is the one place that distinction is recorded.
+function Get-PlannedContractNames([string] $Text) {
+    $planned = @{}
+    $section = Get-SectionByHeading $Text 'Contract implementation status'
+    if ($null -eq $section) { return $planned }
+    foreach ($match in [regex]::Matches($section, '`([A-Za-z_][A-Za-z0-9_]*)`')) { $planned[$match.Groups[1].Value] = $true }
+    return $planned
+}
+
+function Get-UndeclaredContractTypes([string] $Text, [hashtable] $DeclaredTypes) {
+    $missing = New-Object System.Collections.Generic.List[string]
+    $planned = Get-PlannedContractNames $Text
+    foreach ($match in [regex]::Matches($Text, '`([A-Z][A-Za-z0-9]*(?:Definition|Resolution|Event|Authority|Backend|Projection|Instance|Registry|Serializer|Query|Handler))`')) {
+        $name = $match.Groups[1].Value
+        if ($DeclaredTypes.ContainsKey($name)) { continue }
+        if ($planned.ContainsKey($name)) { continue }
+        if ($missing.Contains($name)) { continue }
+        $missing.Add($name)
+    }
+    return $missing.ToArray()
+}
+
+# Code-truth check 2: the three canonical statements of "how far are we" must name the same milestone.
+function Test-StatusCoherence([string] $Session, [string] $Implementation, [string] $RoadmapCorpus) {
+    $codes = New-Object System.Collections.Generic.List[string]
+    $sessionMatch = [regex]::Match($Session, '(?m)^- Current completed milestone: \*\*([^*]+)\*\*\.$')
+    $implementationMatch = [regex]::Match($Implementation, 'completed roadmap milestones through \*\*([^*]+)\*\*')
+    if (-not $sessionMatch.Success -or -not $implementationMatch.Success) {
+        $codes.Add('missing-status-statement')
+        return $codes.ToArray()
+    }
+    if ($sessionMatch.Groups[1].Value -ne $implementationMatch.Groups[1].Value) { $codes.Add('incoherent-status') }
+    if (-not [regex]::IsMatch($RoadmapCorpus, "(?m)^### \[x\] $([regex]::Escape($implementationMatch.Groups[1].Value))(?:\s|$)")) { $codes.Add('incoherent-status') }
+    return $codes.ToArray()
+}
+
+# Code-truth check 3: a deliberately temporary structure must name the milestone that owns its removal.
+# Without this, a temporary structure that no document admits is temporary never becomes anyone's job.
+function Get-UnregisteredTemporaryTypes([string[]] $SourceTypeNames, [string] $RiskRegister) {
+    $missing = New-Object System.Collections.Generic.List[string]
+    foreach ($name in $SourceTypeNames) {
+        if ($name -notmatch '^(Placeholder|Legacy|Temporary|Stub|Fake)') { continue }
+        if ($RiskRegister.Contains($name)) { continue }
+        if ($missing.Contains($name)) { continue }
+        $missing.Add($name)
+    }
+    return $missing.ToArray()
 }
 
 function Test-DuplicateBodies([string[]] $Bodies, [string] $ActiveCorpus) {
@@ -149,7 +191,9 @@ function Test-PreservationCount([string] $Name, [int] $Before, [int] $After) {
 
 function Invoke-SelfTests {
     $failed = New-Object System.Collections.Generic.List[string]
+    $script:selfTestCount = 0
     function Expect([string] $Name, [bool] $Condition) {
+        $script:selfTestCount++
         if (-not $Condition) { $failed.Add($Name) }
     }
 
@@ -157,19 +201,17 @@ function Invoke-SelfTests {
     Expect 'warning threshold' ((Test-ThresholdValues 85 100 100 1000) -eq 'warning')
     Expect 'hard-threshold failure' ((Test-ThresholdValues 101 100 100 1000) -eq 'hard')
 
-    $validSession = "- Current completed milestone: **1.0**.`n- Active authorized milestone: **none**.`n- Next proposed milestone: **1.1**.`n- Required Codex profile for next milestone: **GPT-5.6 Sol with medium reasoning**."
-    $validRoadmap = "### [x] 1.0 Done`n`n### [ ] 1.1 Next`n`nRequired Codex profile: GPT-5.6 Sol with medium reasoning.`n"
+    $validSession = "- Current completed milestone: **1.0**.`n- Active authorized milestone: **none**.`n- Next proposed milestone: **1.1**."
+    $validRoadmap = "### [x] 1.0 Done`n`n### [ ] 1.1 Next`n`nObservable outcome: something.`n"
     $activeSession = $validSession -replace 'Active authorized milestone: \*\*none\*\*', 'Active authorized milestone: **1.1**, in progress'
     $activeRoadmap = $validRoadmap -replace '### \[ \] 1\.1', '### [~] 1.1'
-    $validConfig = "# Milestone: 1.1`nmodel = `"gpt-5.6-sol`"`nmodel_reasoning_effort = `"medium`""
-    Expect 'valid route structure' ((Test-RouteValues $validSession $validRoadmap $validConfig).Count -eq 0)
-    Expect 'valid in-progress route' ((Test-RouteValues $activeSession $activeRoadmap $validConfig).Count -eq 0)
-    Expect 'missing route' ((Test-RouteValues ($validSession -replace '(?m)^- Next proposed.*\r?\n?', '') $validRoadmap $validConfig) -contains 'missing-route')
-    Expect 'mismatched profile' ((Test-RouteValues $validSession $validRoadmap ($validConfig -replace 'medium', 'high')) -contains 'mismatched-profile')
-    Expect 'active milestone left proposed' ((Test-RouteValues $activeSession $validRoadmap $validConfig) -contains 'active-status')
-    Expect 'orphaned in-progress milestone' ((Test-RouteValues $validSession $activeRoadmap $validConfig) -contains 'active-status')
-    $multipleActiveRoadmap = $activeRoadmap + "`n### [~] 1.2 Also active`n`nRequired Codex profile: GPT-5.6 Sol with medium reasoning.`n"
-    Expect 'multiple in-progress milestones' ((Test-RouteValues $activeSession $multipleActiveRoadmap $validConfig) -contains 'active-status')
+    Expect 'valid route structure' ((Test-RouteValues $validSession $validRoadmap).Count -eq 0)
+    Expect 'valid in-progress route' ((Test-RouteValues $activeSession $activeRoadmap).Count -eq 0)
+    Expect 'missing route' ((Test-RouteValues ($validSession -replace '(?m)^- Next proposed.*\r?\n?', '') $validRoadmap) -contains 'missing-route')
+    Expect 'active milestone left proposed' ((Test-RouteValues $activeSession $validRoadmap) -contains 'active-status')
+    Expect 'orphaned in-progress milestone' ((Test-RouteValues $validSession $activeRoadmap) -contains 'active-status')
+    $multipleActiveRoadmap = $activeRoadmap + "`n### [~] 1.2 Also active`n`nObservable outcome: something else.`n"
+    Expect 'multiple in-progress milestones' ((Test-RouteValues $activeSession $multipleActiveRoadmap) -contains 'active-status')
 
     $virtualTargets = @('index.md','archive.md#record')
     Expect 'broken archive/shard link' (-not ($virtualTargets -contains 'missing.md#record'))
@@ -189,11 +231,29 @@ function Invoke-SelfTests {
     Expect 'lost milestone definition' (-not (Test-PreservationCount 'milestones' 10 9))
     Expect 'lost acceptance check' (-not (Test-PreservationCount 'acceptance' 10 9))
     Expect 'lost non-goal' (-not (Test-PreservationCount 'non-goals' 10 9))
-    Expect 'new milestone profile declaration' (Test-PreservationCount 'profiles' 10 11)
-    Expect 'lost milestone profile declaration' (-not (Test-PreservationCount 'profiles' 10 9))
+
+    $declared = @{ 'RealAuthority' = $true }
+    # Literal backticks inside a double-quoted PowerShell string must be doubled; `n stays a newline.
+    $plannedSection = "`n## Contract implementation status`n`n| Contract | State |`n| --- | --- |`n| ``GhostDefinition`` | Planned |`n"
+    Expect 'documented type with no implementation' ((Get-UndeclaredContractTypes 'The `GhostDefinition` owns this.' $declared) -contains 'GhostDefinition')
+    Expect 'documented type that exists' ((Get-UndeclaredContractTypes 'The `RealAuthority` owns this.' $declared).Count -eq 0)
+    Expect 'documented type listed as planned' ((Get-UndeclaredContractTypes ("The ``GhostDefinition`` will own this." + $plannedSection) $declared).Count -eq 0)
+    Expect 'unlisted type still reported alongside a planned one' ((Get-UndeclaredContractTypes ("The ``OtherDefinition`` owns this." + $plannedSection) $declared) -contains 'OtherDefinition')
+
+    $coherentSession = '- Current completed milestone: **2.5**.'
+    $coherentImplementation = 'The project has completed roadmap milestones through **2.5**. Details follow.'
+    $coherentRoadmap = "### [x] 2.5 Done`n`n### [ ] 2.6 Next`n"
+    Expect 'coherent status triple' ((Test-StatusCoherence $coherentSession $coherentImplementation $coherentRoadmap).Count -eq 0)
+    Expect 'incoherent implementation summary' ((Test-StatusCoherence $coherentSession ($coherentImplementation -replace '2\.5', '2.3') $coherentRoadmap) -contains 'incoherent-status')
+    Expect 'status naming an incomplete milestone' ((Test-StatusCoherence '- Current completed milestone: **2.6**.' 'The project has completed roadmap milestones through **2.6**.' $coherentRoadmap) -contains 'incoherent-status')
+    Expect 'missing status statement' ((Test-StatusCoherence $coherentSession 'No parseable statement here.' $coherentRoadmap) -contains 'missing-status-statement')
+
+    Expect 'unregistered temporary structure' ((Get-UnregisteredTemporaryTypes @('PlaceholderThing') 'register mentions nothing') -contains 'PlaceholderThing')
+    Expect 'registered temporary structure' ((Get-UnregisteredTemporaryTypes @('PlaceholderThing') '| `PlaceholderThing` | reason | 6.1c | Active |').Count -eq 0)
+    Expect 'ordinary type is not temporary' ((Get-UnregisteredTemporaryTypes @('RoundResolutionAuthority') 'register mentions nothing').Count -eq 0)
 
     if ($failed.Count -gt 0) { throw "Living-document validator self-test failure: $($failed -join ', ')" }
-    Write-Host 'Self-tests: 11/11 fixture classes passed.'
+    Write-Host "Self-tests: $script:selfTestCount/$script:selfTestCount checks passed."
 }
 
 if (-not $SkipSelfTests) { Invoke-SelfTests }
@@ -236,17 +296,15 @@ foreach ($relative in $requiredHeadings.Keys) {
     }
 }
 
-# Exactly one current/active/next/profile route and roadmap/session/config agreement.
+# Exactly one current/active/next route and roadmap/session agreement.
 $session = Read-Utf8 (Join-Path $docsRoot 'SESSION_BRIEF.md')
 $roadmapCorpus = ((Get-ChildItem (Join-Path $docsRoot 'Roadmap') -File -Filter '*.md' | Sort-Object Name | ForEach-Object { Read-Utf8 $_.FullName }) -join "`n")
-$config = Read-Utf8 (Join-Path $projectRoot '.codex\config.toml')
-$routeCodes = Test-RouteValues $session $roadmapCorpus $config
-foreach ($code in $routeCodes) { Add-Issue 'ERROR' $code 'SESSION_BRIEF.md, the next roadmap milestone, and .codex/config.toml do not agree.' }
+$routeCodes = Test-RouteValues $session $roadmapCorpus
+foreach ($code in $routeCodes) { Add-Issue 'ERROR' $code 'SESSION_BRIEF.md and the next roadmap milestone do not agree.' }
 $routeMarkerCounts = @{
     'Current completed milestone:' = 0
     'Active authorized milestone:' = 0
     'Next proposed milestone:' = 0
-    'Required Codex profile for next milestone:' = 0
 }
 foreach ($file in $activeFiles) {
     $text = Read-Utf8 $file.FullName
@@ -332,6 +390,59 @@ foreach ($row in $manifestRows) {
     }
 }
 
+# Code-truth checks. Document-to-document consistency cannot detect documentation that has
+# drifted from the source it describes, which is how milestones 4.4i and 5.8c both reported
+# no defects while documented contracts named types the codebase did not contain.
+$assetsRoot = Join-Path $projectRoot 'Assets'
+if (-not (Test-Path -LiteralPath $assetsRoot)) {
+    Add-Issue 'ERROR' 'missing-source-root' 'Assets/ is missing; code-truth checks cannot run.'
+}
+else {
+    $declaredTypes = @{}
+    $sourceTypeNames = New-Object System.Collections.Generic.List[string]
+    foreach ($sourceFile in (Get-ChildItem -LiteralPath $assetsRoot -Recurse -File -Filter '*.cs')) {
+        # Tests are excluded from the temporary-structure scan: a fixture covering a placeholder type
+        # is not itself a separate temporary structure needing its own retirement owner.
+        $isTest = $sourceFile.FullName -like '*\Assets\Tests\*'
+        foreach ($declaration in [regex]::Matches((Read-Utf8 $sourceFile.FullName), '(?m)^\s*(?:public|internal|private|protected|sealed|abstract|static|partial|readonly|record|\s)*\b(?:class|struct|interface|enum|record)\s+([A-Za-z_][A-Za-z0-9_]*)')) {
+            $name = $declaration.Groups[1].Value
+            if (-not $declaredTypes.ContainsKey($name)) {
+                $declaredTypes[$name] = $true
+                if (-not $isTest) { $sourceTypeNames.Add($name) }
+            }
+        }
+    }
+    if ($declaredTypes.Count -eq 0) { Add-Issue 'ERROR' 'no-declared-types' 'No C# type declarations were found under Assets/; the contract check would pass vacuously.' }
+
+    foreach ($contractRelative in @('CARD_SYSTEM_ARCHITECTURE.md','CARD_EFFECT_CAPABILITIES.md')) {
+        $contractPath = Join-Path $docsRoot $contractRelative
+        if (Test-Path -LiteralPath $contractPath) {
+            foreach ($undeclared in (Get-UndeclaredContractTypes (Read-Utf8 $contractPath) $declaredTypes)) {
+                Add-Issue 'ERROR' 'undeclared-contract-type' "$contractRelative names ``$undeclared`` as a contract, but no such type exists under Assets/. Implement it, or list it in that document's 'Contract implementation status' section."
+            }
+        }
+    }
+    foreach ($shard in (Get-ChildItem -LiteralPath (Join-Path $docsRoot 'Card-System') -File -Filter '*.md' -ErrorAction SilentlyContinue)) {
+        foreach ($undeclared in (Get-UndeclaredContractTypes (Read-Utf8 $shard.FullName) $declaredTypes)) {
+            Add-Issue 'ERROR' 'undeclared-contract-type' "Card-System/$($shard.Name) names ``$undeclared`` as a contract, but no such type exists under Assets/. Implement it, or list it in that document's 'Contract implementation status' section."
+        }
+    }
+
+    $implementationPath = Join-Path $docsRoot 'Project\CURRENT_IMPLEMENTATION.md'
+    if (Test-Path -LiteralPath $implementationPath) {
+        foreach ($code in (Test-StatusCoherence $session (Read-Utf8 $implementationPath) $roadmapCorpus)) {
+            Add-Issue 'ERROR' $code 'SESSION_BRIEF.md, Project/CURRENT_IMPLEMENTATION.md, and the roadmap do not name the same completed milestone.'
+        }
+    }
+
+    $riskPath = Join-Path $docsRoot 'TECHNICAL_RISKS.md'
+    if (Test-Path -LiteralPath $riskPath) {
+        foreach ($unregistered in (Get-UnregisteredTemporaryTypes $sourceTypeNames.ToArray() (Read-Utf8 $riskPath))) {
+            Add-Issue 'WARNING' 'unregistered-temporary-structure' "``$unregistered`` looks deliberately temporary but has no row in the temporary-structure register of TECHNICAL_RISKS.md naming its retirement owner."
+        }
+    }
+}
+
 # Completed-note bodies must not be copied into active noncanonical files.
 $activeCorpus = ($activeFiles | ForEach-Object { Read-Utf8 $_.FullName }) -join "`n"
 if (-not (Test-DuplicateBodies $completionBodies.ToArray() $activeCorpus)) { Add-Issue 'ERROR' 'duplicate-history' 'An archived completion-note body is duplicated in active documentation.' }
@@ -341,17 +452,17 @@ $inventoryPath = Join-Path $docsRoot 'Archive\PRESERVATION_INVENTORY.md'
 if (-not (Test-Path -LiteralPath $inventoryPath)) { Add-Issue 'ERROR' 'missing-preservation-inventory' 'Archive/PRESERVATION_INVENTORY.md is missing.' }
 else {
     $inventoryText = Read-Utf8 $inventoryPath
-    $requiredCategories = @('milestone-definitions','milestone-profiles','acceptance-checks','non-goals','rule-authority-and-status','deviations-and-open-questions','card-contracts','effect-contracts','test-commands-and-gates','historical-results','rights-and-privacy','active-leaf-measurements')
+    $requiredCategories = @('milestone-definitions','acceptance-checks','non-goals','rule-authority-and-status','deviations-and-open-questions','card-contracts','effect-contracts','test-commands-and-gates','historical-results','rights-and-privacy','active-leaf-measurements')
     foreach ($category in $requiredCategories) {
         if (-not [regex]::IsMatch($inventoryText, "(?m)^\| ``$([regex]::Escape($category))`` \|.*\| ``PASS`` \|$")) { Add-Issue 'ERROR' 'preservation-coverage' "Missing PASS inventory row: $category." }
     }
 }
 
-# Structural baseline floors prove that sharding did not delete milestone checks or assigned profiles while allowing newly authorized milestones, acceptance checks, non-goals, and profile declarations to be added.
+# Structural baseline floors prove that sharding did not delete milestone definitions or their checks while allowing newly authorized milestones, acceptance checks, and non-goals to be added.
+# The former 'profiles' floor was retired with the per-milestone model/profile contract; see Archive/MIGRATION_MANIFEST.md.
 $baselineRoadmap = Read-Utf8 (Join-Path $baselineRoot 'ROADMAP.md')
 $countPatterns = @{
     'milestones' = '(?m)^### \[[x!~ ]\] \S+'
-    'profiles' = '(?m)^Required Codex profile:'
     'acceptance' = '(?m)^Acceptance checks:'
     'non-goals' = '(?m)^Non-goals:'
 }

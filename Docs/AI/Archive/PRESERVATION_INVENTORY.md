@@ -79,3 +79,20 @@ No active leaf is at the 85% warning threshold. Archive files are excluded from 
 | `Card-System/TIMING_AND_TRANSITIONS.md` | 917 | 6,711 | 7,000 / 64 KiB |
 
 This correction changes routing and ownership only. It preserves current implementation facts and capability contracts, introduces no gameplay or milestone-status change, and leaves archives outside active-leaf thresholds.
+
+## 2026-08-13 addendum: retirement of the `milestone-profiles` category
+
+This addendum is an explicit correction under the append-only archive rule. The `milestone-profiles` row above is preserved verbatim as historical evidence of the category as it stood on 2026-08-12; it is no longer an active preservation requirement.
+
+The user explicitly retired the per-milestone model/profile contract on 2026-08-13. The following were removed together, so that no document continued to assert a contract the validator no longer enforced:
+
+| Retired artifact | Location | Disposition |
+| --- | --- | --- |
+| 60 `Required Codex profile:` declarations | `Roadmap/PHASE_2.md` through `PHASE_6.md` | Removed from active shards; every baseline declaration remains recoverable in immutable `Archive/Pre-Governance/ROADMAP.md` |
+| `Required Codex profile for next milestone` route field | `SESSION_BRIEF.md` | Removed |
+| Model-selection section and three-location sync rule | `AGENTS.md` | Removed; a non-reintroduction note replaces it |
+| Permitted-model paragraph and profile execution steps | `ROADMAP.md` | Removed; the execution rule renumbers from nine steps to eight |
+| Profile regex, config agreement check, required route marker, `milestone-profiles` required category, and `profiles` structural baseline floor | `Tools/Validate-LivingDocumentation.ps1` | Removed with their self-test fixtures |
+| Milestone-coupling comment | `.codex/config.toml` | Removed; the file remains a plain local Codex default |
+
+The `profiles` structural baseline floor is retired rather than lowered. Retiring it is what permits the active count to fall from 60 to 0 without a validation failure; no other structural floor changed, and `milestones`, `acceptance`, and `non-goals` floors continue to be enforced against the immutable baseline. Milestone definitions, acceptance checks, non-goals, rules, contracts, test commands, historical evidence, and rights/privacy boundaries are unaffected by this retirement.

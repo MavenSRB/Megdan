@@ -13,25 +13,29 @@ Last updated: 2026-08-12
 
 This roadmap is a sequence of micro-milestones, not authorization to execute them.
 
-GPT-5.6 Sol is the only permitted model for milestone work. Reasoning effort must be medium or higher: use medium by default, and raise it to high, extra high (`xhigh` in configuration), or ultra when the milestone's complexity, breadth, integration risk, or hard-gate role requires it.
-
 For every item:
 
-1. Confirm that the exact item declares its `Required Codex profile` and that `.codex/config.toml` matches it; this is execution metadata, not authorization.
-2. Obtain explicit user approval for that item.
-3. Before substantive milestone analysis, implementation, review, or test execution, mark the exact roadmap item `[~]`, record that same ID as the active authorized milestone in `Docs/AI/SESSION_BRIEF.md`, retain the canonical next-milestone/profile route for the active ID, and run the living-document validator. Do not proceed until the start transition validates; this rule includes analysis-only and independent-review milestones.
-4. Implement only its stated observable outcome.
-5. Respect its non-goals.
-6. Run the milestone's focused tests, directly affected regressions, and highest applicable validation tier from `Docs/AI/TESTING.md`.
-7. Update the project documents and `.codex/config.toml`, including the next proposed milestone's required profile and matching new-task defaults.
-8. Create a local Git commit containing the completed milestone and continuity updates.
-9. Report the result, the next proposed milestone and its required profile, then stop.
+1. Obtain explicit user approval for that item.
+2. Before substantive milestone analysis, implementation, review, or test execution, mark the exact roadmap item `[~]`, record that same ID as the active authorized milestone in `Docs/AI/SESSION_BRIEF.md`, retain the canonical next-milestone route, and run the living-document validator. Do not proceed until the start transition validates; this rule includes analysis-only and independent-review milestones.
+3. Implement only its stated observable outcome.
+4. Respect its non-goals.
+5. Run the milestone's focused tests, directly affected regressions, and highest applicable validation tier from `Docs/AI/TESTING.md`.
+6. Update the project documents, including the next proposed milestone.
+7. Create a local Git commit containing the completed milestone and continuity updates.
+8. Report the result and the next proposed milestone, then stop.
 
 Milestones may be split further if implementation reveals more than one independently testable behavior. They must not be silently combined.
 
 At each designated phase-gate roadmap audit, reassess the affected unstarted milestones against the evidence produced so far. The audit is a required handoff activity, not a separately numbered milestone, and does not authorize implementation. For each affected milestone, recommend whether to keep it unchanged, merge it with adjacent work that shares the same authority and validation boundary, split independently risky behavior, or defer/remove work that is not required for the private publisher pitch. Record an approximate remaining-effort range and identify the shortest dependency-safe path to the next hard integration outcome. Any resulting roadmap change requires explicit user approval and the applicable continuity updates before the next milestone profile is assigned. An audit must not weaken verified rules, architecture contracts, acceptance evidence, validation gates, or the one-approved-micro-milestone-at-a-time rule.
 
-Separately numbered independent engineering review milestones inspect the implementation accumulated by their preceding gate. Each runs in a fresh Codex task, is analysis-only, and may update only the approved review record and proposed roadmap/continuity documentation; it does not implement a fix. The reviewer must inspect actual source, tests, warnings, runtime paths, and applicable profiling or diagnostic evidence rather than relying on completion notes or assuming earlier decisions were correct. It assesses correctness, dependency direction, determinism and persistence/replay boundaries, performance and resource lifetime, Unity/presentation ownership, test quality, concrete maintainability/style consequences, temporary structures, and roadmap fitness as applicable to that gate.
+Separately numbered independent engineering review milestones inspect the implementation accumulated by their preceding gate. Each runs in a fresh task, is analysis-only, and may update only the approved review record and proposed roadmap/continuity documentation; it does not implement a fix. The reviewer must inspect actual source, tests, warnings, runtime paths, and applicable profiling or diagnostic evidence rather than relying on completion notes or assuming earlier decisions were correct. It assesses correctness, dependency direction, determinism and persistence/replay boundaries, performance and resource lifetime, Unity/presentation ownership, test quality, concrete maintainability/style consequences, temporary structures, and roadmap fitness as applicable to that gate.
+
+Every independent engineering review must additionally cover the following dimensions and state its finding for each, including an explicit "no observation" where that is the conclusion. These were added after an out-of-band audit found defects that earlier reviews had not examined because the review scope did not name them:
+
+1. **Buildability.** Whether the current source produces a working player build on every declared target platform, not merely a passing Editor session. Editor-only resolution paths, shader/material references, and stripping behavior are in scope.
+2. **Dead and temporary structures.** Whether any structure recorded in the temporary-structure register of `Docs/AI/TECHNICAL_RISKS.md` is now retirable, and whether any unregistered legacy, placeholder, or test-double structure has entered a production path.
+3. **Documented-contract truth.** Whether every contract, type, or capability named as current in the card-system, effect, testing, or implementation documents actually exists in the source, and whether every current-status statement matches the code.
+4. **Toolchain and platform portability.** Whether the validation and build toolchain still runs on every declared development platform.
 
 The implementing agent's review-only milestone handoff pass is a routine self-check and does not satisfy or replace a separately numbered fresh-task independent engineering review.
 

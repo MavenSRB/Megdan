@@ -82,7 +82,7 @@ Every removed, relocated, or rewritten pre-governance section is routed here. Ha
 | `TESTING.md` | Rule and content verification | `Testing/POLICY.md#rule-and-content-verification` | `authoritative shard` | `74adf77e851e234b2168ba7230aa0095d5d69d961e8bd63828430839ad6c3f29` | `74adf77e851e234b2168ba7230aa0095d5d69d961e8bd63828430839ad6c3f29` |
 | `TESTING.md` | Regression ownership | `Testing/POLICY.md#regression-ownership` | `authoritative shard` | `be653b936910eaefb2883203b0be440ce0b68f62867a2e871873d78c848ec137` | `be653b936910eaefb2883203b0be440ce0b68f62867a2e871873d78c848ec137` |
 | `TESTING.md` | Evidence and pass criteria | `Testing/POLICY.md#evidence-and-pass-criteria` | `authoritative shard` | `94da443782b5e39a044a7583265ca15290fea9d8618f70beaea98037798b27f8` | `d65e8c261d83f93fbf9f7482be8ac64036f6ce63dee201b898dbf08f53b9c9bd` |
-| `TESTING.md` | Living-document governance validation | `Testing/POLICY.md#living-document-governance-validation` | `authoritative shard` | `616136c3f4f3a27fd8d795e760d07d5f6bc82cae99296f4bee05242d15ab5be0` | `4713fe57623969ff2a9e7e1c9ff91657dea7c361c5ed215f413f26eb7ad0587e` |
+| `TESTING.md` | Living-document governance validation | `Testing/POLICY.md#living-document-governance-validation` | `authoritative shard` | `616136c3f4f3a27fd8d795e760d07d5f6bc82cae99296f4bee05242d15ab5be0` | `53d8393da767b7b568122dbdc5163eb039a56adef715d0149c8e3e459afbfacd` |
 | `TESTING.md` | Independent engineering review evidence | `Testing/POLICY.md#independent-engineering-review-evidence` | `authoritative shard` | `90c972085e088eb0192737f2ccb2b445640affaff528fba69288760f5b146f2c` | `114143911f368b7b0534176edde4bee9bae92fe2e62b88fbc88ad4ffd5792fbb` |
 | `TESTING.md` | Cross-cutting technical-risk controls | `Testing/POLICY.md#cross-cutting-technical-risk-controls` | `authoritative shard` | `f29b37580e05ef2861c31ac58900dd63953490886d11d7ad08e949240f98076e` | `f29b37580e05ef2861c31ac58900dd63953490886d11d7ad08e949240f98076e` |
 | `TESTING.md` | Action-offer and printed-value focused Edit Mode tests | `Testing/RECIPES_COMBAT_AND_MOVEMENT.md#action-offer-and-printed-value-focused-edit-mode-tests` | `authoritative shard` | `643929c398f867f0d79043fe6681ffd28985f3c3374cc53ccb41bc805a2c8ab2` | `643929c398f867f0d79043fe6681ffd28985f3c3374cc53ccb41bc805a2c8ab2` |
@@ -133,7 +133,7 @@ Every removed, relocated, or rewritten pre-governance section is routed here. Ha
 | `PROJECT_CONTEXT.md` | Product horizons | `Project/PRODUCT.md#product-horizons` | `authoritative shard` | `ee09cbf5c4fbe84b29f95c2cca2ae384dc88c52df06150fb12611517df478a98` | `ee09cbf5c4fbe84b29f95c2cca2ae384dc88c52df06150fb12611517df478a98` |
 | `PROJECT_CONTEXT.md` | Approved prototype deviations | `Project/PRODUCT.md#approved-prototype-deviations` | `authoritative shard` | `45418771aafb6f66c16f5e7d839bff42f31ea1a8db76df404874646a39c0daa0` | `45418771aafb6f66c16f5e7d839bff42f31ea1a8db76df404874646a39c0daa0` |
 | `PROJECT_CONTEXT.md` | Rules fidelity | `Project/PRODUCT.md#rules-fidelity` | `authoritative shard` | `d76457636f2e009656f85082b436e156e704dd4e98455d3b90be88d7c0e57152` | `d76457636f2e009656f85082b436e156e704dd4e98455d3b90be88d7c0e57152` |
-| `PROJECT_CONTEXT.md` | Technology and platforms | `Project/PRODUCT.md#technology-and-platforms` | `authoritative shard` | `15dda083f07b20b797b2a73624c0c5fb109aac6fe12d692843d804d4dcca8b35` | `15dda083f07b20b797b2a73624c0c5fb109aac6fe12d692843d804d4dcca8b35` |
+| `PROJECT_CONTEXT.md` | Technology and platforms | `Project/PRODUCT.md#technology-and-platforms` | `authoritative shard` | `15dda083f07b20b797b2a73624c0c5fb109aac6fe12d692843d804d4dcca8b35` | `2bb5001b852e91e8fd25718edc290b83941c337209b78784bbd17df8736288ec` |
 | `PROJECT_CONTEXT.md` | Development workflow | `Project/WORKFLOW_AND_TERMS.md#development-workflow` | `authoritative shard` | `` | `` |
 | `PROJECT_CONTEXT.md` | Available reference material | `Project/WORKFLOW_AND_TERMS.md#available-reference-material` | `authoritative shard` | `6a29e8cbf18474acfea5c9252813dc69873c0e6f7321da5d7f7f3697ac587040` | `03c442d841c4cc455d268b20cc49d13e3d4645183293a9b0764a937c5c83e81b` |
 | `PROJECT_CONTEXT.md` | Shared terminology | `Project/WORKFLOW_AND_TERMS.md#shared-terminology` | `authoritative shard` | `8027374abc7d54748dda24ccde7fee5fef3e2e0e846f469242e36e5505d58d36` | `8027374abc7d54748dda24ccde7fee5fef3e2e0e846f469242e36e5505d58d36` |
@@ -176,3 +176,18 @@ Every removed, relocated, or rewritten pre-governance section is routed here. Ha
 | `AGENTS.md` | Startup and targeted context loading | `DOCUMENTATION_GOVERNANCE.md#ownership-matrix` | `non-authoritative routing-summary replacement` | `` | `` |
 | `AGENTS.md` | Interim living-document hygiene | `DOCUMENTATION_GOVERNANCE.md#purpose-and-invariants` | `authoritative shard` | `` | `` |
 | `AGENTS.md` | Continuity updates | `DOCUMENTATION_GOVERNANCE.md#history-and-archive-workflow` | `authoritative shard` | `` | `` |
+
+## 2026-08-13 retirement of the per-milestone model/profile contract
+
+This section is provenance for a governance amendment, not a section migration, so it carries no source/destination hash pair. The user explicitly retired the per-milestone model/profile contract on 2026-08-13 after an out-of-band foundation audit.
+
+Removed together, in one commit, so that no active document asserted a contract the validator no longer enforced: 60 `Required Codex profile:` declarations across `Roadmap/PHASE_2.md`-`PHASE_6.md`; the `Required Codex profile for next milestone` route field in `SESSION_BRIEF.md`; the model-selection section and three-location sync rule in `AGENTS.md`; the permitted-model paragraph and profile execution steps in `ROADMAP.md`; the profile regex, config-agreement check, required route marker, `milestone-profiles` required category, and `profiles` structural baseline floor in `Tools/Validate-LivingDocumentation.ps1`; and the milestone-coupling comment in `.codex/config.toml`.
+
+The `profiles` structural floor is retired, not lowered. Every baseline profile declaration remains recoverable in immutable `Archive/Pre-Governance/ROADMAP.md`. The `milestones`, `acceptance`, and `non-goals` floors are unchanged and still enforced. See the matching addendum in [`PRESERVATION_INVENTORY.md`](PRESERVATION_INVENTORY.md#2026-08-13-addendum-retirement-of-the-milestone-profiles-category).
+
+Two tracked destinations changed body text in the same amendment. Both retain their immutable pre-governance source hashes, so the baseline remains verifiable.
+
+| Destination | Previous destination hash | New destination hash | Reason |
+| --- | --- | --- | --- |
+| `Testing/POLICY.md#living-document-governance-validation` | `4713fe57623969ff2a9e7e1c9ff91657dea7c361c5ed215f413f26eb7ad0587e` | `53d8393da767b7b568122dbdc5163eb039a56adef715d0149c8e3e459afbfacd` | Removes the retired profile/config assertions and adds the three code-truth checks defined by this amendment. |
+| `Project/PRODUCT.md#technology-and-platforms` | `15dda083f07b20b797b2a73624c0c5fb109aac6fe12d692843d804d4dcca8b35` | `2bb5001b852e91e8fd25718edc290b83941c337209b78784bbd17df8736288ec` | Records the user's 2026-08-13 platform-scope change from Windows-only to Windows, macOS, and iOS, and states that the two added platforms are declared rather than supported. |

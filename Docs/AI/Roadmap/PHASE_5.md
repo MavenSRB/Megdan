@@ -8,8 +8,6 @@ Phase 5 uses verified general rules and synthetic test definitions. It does not 
 
 ### [x] 5.1 Integrate and verify exact card-based Movement on the full map
 
-Required Codex profile: GPT-5.6 Sol with high reasoning.
-
 Observable outcome: A synthetic Movement action uses its typed allowance to traverse a chosen legal route on the official placeholder map.
 
 Acceptance checks:
@@ -25,8 +23,6 @@ Historical evidence: [milestone 5.1 handoff](../Archive/Phase-Handoffs/PHASE_5.m
 
 ### [x] 5.1a Increase synthetic Movement and keep Defense controls accessible
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: The ten synthetic test cards provide slightly more board traversal, and every pending Defense response remains reachable in the configured HUD at a 778-by-300 viewport.
 
 Acceptance checks:
@@ -41,8 +37,6 @@ Non-goals: No official card values, Fast Travel, direct Move, Defense rules, leg
 Historical evidence: [milestone 5.1a handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-51a-increase-synthetic-movement-and-keep-defense-controls-accessible-completion-evidence).
 
 ### [x] 5.1b Show printed Defense values on legal Defense choices
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: While a Defense response is pending, every selectable Defense-card button shows that card's authoritative printed Defense value before the player chooses whether to discard it.
 
@@ -60,8 +54,6 @@ Historical evidence: [milestone 5.1b handoff](../Archive/Phase-Handoffs/PHASE_5.
 
 ### [x] 5.1c Restore readable content-sized Defense choice buttons
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Every configured Defense-card choice renders its complete card name and `PRINTED DEFENSE` value without clipping while preserving the existing typed invocation and scrollable HUD.
 
 Acceptance checks:
@@ -77,8 +69,6 @@ Historical evidence: [milestone 5.1c handoff](../Archive/Phase-Handoffs/PHASE_5.
 
 ### [x] 5.2 Implement Fast Travel replacement
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Acceptance checks:
 
 - Fast Travel works within the same zone and into an adjacent zone.
@@ -93,8 +83,6 @@ Acceptance checks:
 Historical evidence: [milestone 5.2 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-52-implement-fast-travel-replacement-completion-evidence).
 
 ### [x] 5.2a Require explicit Fast Travel selection in the configured player UI
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: Fast Travel is an explicit player-selected action mode rather than the configured UI's default assumption whenever an eligible replacement exists.
 
@@ -113,8 +101,6 @@ Historical evidence: [milestone 5.2a handoff](../Archive/Phase-Handoffs/PHASE_5.
 
 ### [x] 5.3 Add minion obstacle behavior and Defense contributions
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Standard minions are authoritative units/obstacles and contribute their general Defense modifiers through the typed value service.
 
 Acceptance checks:
@@ -127,8 +113,6 @@ Acceptance checks:
 Historical evidence: [milestone 5.3 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-53-add-minion-obstacle-behavior-and-defense-contributions-completion-evidence).
 
 ### [x] 5.4 Add generic timing, Active-effect, and continuous-source lifecycles
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: Synthetic effects can occupy named timing windows and serializable lifetimes without Wasp-specific logic.
 
@@ -152,8 +136,6 @@ Historical evidence: [milestone 5.4 handoff](../Archive/Phase-Handoffs/PHASE_5.m
 
 ### [x] 5.5 Add coin awards and assist-ready accounting
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: Defeat outcomes can award coins to the correct hero/team collection through typed resource operations.
 
 Acceptance checks:
@@ -168,8 +150,6 @@ Historical evidence: [milestone 5.5 handoff](../Archive/Phase-Handoffs/PHASE_5.m
 
 ### [x] 5.6 Attack and defeat minions with test cards
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: A synthetic Attack can legally target and defeat an enemy minion using the general minion rules.
 
 Acceptance checks:
@@ -183,8 +163,6 @@ Acceptance checks:
 Historical evidence: [milestone 5.6 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-56-attack-and-defeat-minions-with-test-cards-completion-evidence).
 
 ### [x] 5.8 Complete the general Hero Attack and Defense order with test cards
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: Synthetic hero combat follows the complete general Attack/Defense order while still deferring Wasp-specific text.
 
@@ -201,8 +179,6 @@ Historical evidence: [milestone 5.8 handoff](../Archive/Phase-Handoffs/PHASE_5.m
 
 ### [x] 5.8a Expose authoritative minion Attack targets in the configured board
 
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
-
 Observable outcome: When a synthetic Attack has one or more legal enemy-minion targets, the configured board visibly identifies those exact projected minions and lets the player select one through the existing typed Attack-target command path.
 
 Acceptance checks:
@@ -218,8 +194,6 @@ Non-goals: No Attack, Range, Heavy-immunity, reward, Defeat, or removal-rule cha
 Historical evidence: [milestone 5.8a handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58a-expose-authoritative-minion-attack-targets-in-the-configured-board-completion-evidence).
 
 ### [x] 5.8a1 Repair configured minion-view lifetime across Unity reloads
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: The configured board retains or safely rebinds every projected minion view and pointer selector when Unity rebuilds, serializes/restores, destroys/replaces, or reloads generated scene objects, so later board refreshes never access a destroyed component or silently lose minion interaction.
 
@@ -239,8 +213,6 @@ Non-goals: No Attack, Defense, Range, Heavy-immunity, reward, Defeat, removal, U
 Historical evidence: [milestone 5.8a1 handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58a1-repair-configured-minion-view-lifetime-across-unity-reloads-completion-evidence).
 
 ### [x] 5.8b Preview authoritative Defense breakdowns on hover
-
-Required Codex profile: GPT-5.6 Sol with medium reasoning.
 
 Observable outcome: While a Hero Defense response is pending, hovering or keyboard-focusing any legal Defense card or Decline choice opens a compact non-interactive popup that explains the incoming Attack, that choice's authoritative Defense preview, and the predicted result before the player clicks.
 
@@ -264,8 +236,6 @@ Prerequisite: Milestones 5.8a and 5.8a1 must be complete so the popup milestone 
 Historical evidence: [milestone 5.8b handoff](../Archive/Phase-Handoffs/PHASE_5.md#milestone-58b-preview-authoritative-defense-breakdowns-on-hover-completion-evidence).
 
 ### [x] 5.8c Independently review the full-map action and combat foundation
-
-Required Codex profile: GPT-5.6 Sol with high reasoning.
 
 Observable outcome: A fresh analysis-only review determines whether full-map Movement, Fast Travel, minion interactions, Attack/Defense, timing readiness, and their shared action-resolution seams can safely support the end-of-round systems in Phase 6.
 
