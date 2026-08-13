@@ -259,6 +259,12 @@ The required review-only pass found no remaining demonstrated defect beyond the 
 | --- | --- | --- |
 | 6.1p | `GuardsDigital.Application` grants internals to the Edit Mode test assembly, so the commit boundary is asserted by a compile-checked contract test rather than an expression tree; the foundation-audit record splits into `Project/FOUNDATION_CORRECTIONS.md`, putting the inventory back under its threshold without deleting content; and `RISK-STATE-002`'s mitigation becomes a field-classification check plus a rollback-completeness test, with the risk retained. | `31400dd` |
 
+## Milestone 6.1l Confirm the validation toolchain on a non-Windows platform completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1l | Every validator script confirmed on the Linux workstation (PowerShell 7.6.4) running to a pass or its documented guard; the failing pre-fix runs exposed and the milestone corrected three portability defects (backslash exclusion wildcards in the living-document validator, a PowerShell 7 `[long]` revision type in the board-map library, a read-only `$home` assignment in the Unity launcher); the toolchain-portability reviewer dimension is retired. Closes `F613-14`. | `a6fb231` |
+
 ## 2026-08-13 external engineering review ER2
 
 A second external engineering review (architecture, implementation, code, tests, and the documentation corpus) was performed on 2026-08-13 by Claude (Anthropic) on the Linux workstation at the user's direct request, initially against the pre-divergence external line and revised the same day against milestone 6.1p after the histories were reconciled: the user confirmed the 6.1c-6.1p line as canonical, the superseded ER1/ER2 external line is preserved losslessly on branch `er2-external-review-line`, and the rulebook working copy clobbered by that reconciliation was restored byte-identically from Git LFS (`sha256 2c19b11d...ba98`). The user approved recording this review and executing only its documentation-truth corrections; every other disposition is a proposal and authorizes no implementation.
