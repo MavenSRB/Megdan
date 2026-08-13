@@ -257,4 +257,4 @@ The required review-only pass found no remaining demonstrated defect beyond the 
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 6.1p | `GuardsDigital.Application` grants internals to the Edit Mode test assembly, so the commit boundary is asserted by a compile-checked contract test rather than an expression tree; the foundation-audit record splits into `Project/FOUNDATION_CORRECTIONS.md`, putting the inventory back under its threshold without deleting content; and `RISK-STATE-002`'s mitigation becomes a field-classification check plus a rollback-completeness test, with the risk retained. | `PENDING` |
+| 6.1p | `GuardsDigital.Application` grants internals to the Edit Mode test assembly, so the commit boundary is asserted by a compile-checked contract test rather than an expression tree; the foundation-audit record splits into `Project/FOUNDATION_CORRECTIONS.md`, putting the inventory back under its threshold without deleting content; and `RISK-STATE-002`'s mitigation becomes a field-classification check plus a rollback-completeness test, with the risk retained. | `31400dd` |
