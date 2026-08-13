@@ -407,7 +407,7 @@ These milestones were scheduled by a user-approved roadmap amendment on 2026-08-
 
 6.1x is corrective and blocks the others: an active fixture is failing on `main`, and under [Testing/POLICY.md](../Testing/POLICY.md) an observed failure blocks the handoff. 6.1v and 6.1w are unordered against each other and against the rest of Phase 6.
 
-### [ ] 6.1x Re-pin the invariance digests to schema v7
+### [x] 6.1x Re-pin the invariance digests to schema v7
 
 Observable outcome: The complete Edit Mode suite is green, and `CardAggregateInvarianceTests` pins digests that express the schema the serializer actually writes.
 
@@ -416,11 +416,13 @@ Context: milestone 6.1s advanced `CurrentSchemaVersion` from 6 to 7 and re-pinne
 Acceptance checks:
 
 - The nine pinned scenario snapshot digests express schema v7, and the paired event digests are re-verified with their changed-or-unchanged status stated rather than assumed.
-- The re-pin is justified before it is applied: the delta is shown to be the serialized schema-version field alone. All nine scenarios construct a board with no minions, and both v6 and v7 write the remaining-minion count first, so a zero-minion board section is byte-identical across the change. A re-pin that cannot explain its own delta is indistinguishable from pinning over a regression.
+- The re-pin is justified before it is applied, at the byte level rather than by inference: the payloads either side of the change are decoded and diffed, and every differing byte is attributed to an intended cause. A re-pin that cannot explain its own delta is indistinguishable from pinning over a regression, which is what the fixture's own "do not update to match a failing run" comment exists to prevent.
 - The complete Edit Mode suite is green at the post-fix revision, and the known-good baseline table in [Testing/PLAYMODE_AND_SUITES.md](../Testing/PLAYMODE_AND_SUITES.md) records the new totals with per-milestone delta attribution.
 - The record states plainly that 6.1s was marked complete on evidence that omitted a directly affected fixture.
 
 Closing check: `CardAggregateInvarianceTests.SixScenarios_ProduceByteIdenticalSnapshotsAndOrderedEvents` observed failing at `4253eb9` and passing at the post-fix revision, with the complete unfiltered Edit Mode suite green at that same revision.
+
+Recorded outcome: the diff found two causes, both intended by 6.1s and neither an unintended state change. The serialized version field moved 6 to 7, and the board section gained an 8-byte coordinate per remaining minion - 96 bytes across this setup's twelve minions, accounting exactly for the payload's 1972 to 2068 byte growth. An intermediate reading that the version field alone was responsible was wrong, because it assumed these scenarios build a minion-free board; `CreateSession` uses `QuickGameSetupAuthority.Create`, which lays out the official setup's twelve minions. Reverting only the version constant therefore produced a hybrid encoding that never shipped, and the byte-level diff is what settled it.
 
 Non-goals: No schema change, no serializer change, no new fixture, no reopening of the v7 migrate-or-reject decision, no change to what the invariance fixture asserts.
 

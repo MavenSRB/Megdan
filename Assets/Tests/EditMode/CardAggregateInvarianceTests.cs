@@ -38,18 +38,31 @@ namespace GuardsDigital.Tests.EditMode
     /// </remarks>
     public sealed class CardAggregateInvarianceTests
     {
-        // Captured at pre-refactor revision 18bf74d. Do not "update to match" a failing run.
+        // Do not "update to match" a failing run. A difference here means authoritative state or the
+        // event stream changed; re-pin only after the delta is explained at the byte level, and record
+        // that explanation in the re-pinning commit.
+        //
+        // Originally captured at pre-refactor revision 18bf74d and re-pinned once, at milestone 6.1x,
+        // for the deliberate schema v6 -> v7 change in 6.1s. That delta was located by decoding the
+        // payloads either side of the change rather than assumed: two causes, both intended. The
+        // serialized version field moved 6 -> 7, and the board section gained an 8-byte coordinate per
+        // remaining minion, which is 96 bytes across this setup's twelve minions and accounts exactly
+        // for the observed 1972 -> 2068 byte growth. Nothing else moved.
+        //
+        // 6.1s did not run this fixture: it is in the dotnet harness exclude list, so the Linux harness
+        // could not run it, and it was not in the focused Windows filter either. The complete Edit Mode
+        // suite caught it afterwards. Any milestone changing CurrentSchemaVersion must run this fixture.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "36185da66c358dccfc10d1739088d9a50dae193b60f244a95609b93e32f9626d", "36f7e3ee424f823aff4510c04c8b65819c04145dbf5ba641dc2656baba35d2cb"),
-            new ScenarioDigest("rejected", "36185da66c358dccfc10d1739088d9a50dae193b60f244a95609b93e32f9626d", "36f7e3ee424f823aff4510c04c8b65819c04145dbf5ba641dc2656baba35d2cb"),
-            new ScenarioDigest("stale", "36185da66c358dccfc10d1739088d9a50dae193b60f244a95609b93e32f9626d", "36f7e3ee424f823aff4510c04c8b65819c04145dbf5ba641dc2656baba35d2cb"),
-            new ScenarioDigest("restored", "36185da66c358dccfc10d1739088d9a50dae193b60f244a95609b93e32f9626d", "36f7e3ee424f823aff4510c04c8b65819c04145dbf5ba641dc2656baba35d2cb"),
-            new ScenarioDigest("replayed", "36185da66c358dccfc10d1739088d9a50dae193b60f244a95609b93e32f9626d", "36f7e3ee424f823aff4510c04c8b65819c04145dbf5ba641dc2656baba35d2cb"),
-            new ScenarioDigest("undo-truncated", "b64dfb1808e615ee98056dad98ec9022baa02dd762205d1a14483ae12d27be2d", "e6a2f133474546332f55732d1b835759a48d7d17de603b02acd6890292294dee"),
-            new ScenarioDigest("defense-discarded", "1aeb67526c3a7c5d16ca957b467e316e487fdb2396f3a299cc66601d2e9db0e2", "95a64c0f33626ed20fcd871bdf15f9089586a490cef02cbb3681b4189a46b3d5"),
-            new ScenarioDigest("defense-discarded-restored", "1aeb67526c3a7c5d16ca957b467e316e487fdb2396f3a299cc66601d2e9db0e2", "95a64c0f33626ed20fcd871bdf15f9089586a490cef02cbb3681b4189a46b3d5"),
-            new ScenarioDigest("defense-discarded-replayed", "1aeb67526c3a7c5d16ca957b467e316e487fdb2396f3a299cc66601d2e9db0e2", "95a64c0f33626ed20fcd871bdf15f9089586a490cef02cbb3681b4189a46b3d5")
+            new ScenarioDigest("accepted", "5f84e97ad6cabf3cd859af62126de62e3da1ffe2c4f8c7d4b8619cc6771c3d23", "4b1682a6a7718f25b0fbe4b75f3494899b56c41d0bb362d9f2cfa588f2fe5293"),
+            new ScenarioDigest("rejected", "5f84e97ad6cabf3cd859af62126de62e3da1ffe2c4f8c7d4b8619cc6771c3d23", "4b1682a6a7718f25b0fbe4b75f3494899b56c41d0bb362d9f2cfa588f2fe5293"),
+            new ScenarioDigest("stale", "5f84e97ad6cabf3cd859af62126de62e3da1ffe2c4f8c7d4b8619cc6771c3d23", "4b1682a6a7718f25b0fbe4b75f3494899b56c41d0bb362d9f2cfa588f2fe5293"),
+            new ScenarioDigest("restored", "5f84e97ad6cabf3cd859af62126de62e3da1ffe2c4f8c7d4b8619cc6771c3d23", "4b1682a6a7718f25b0fbe4b75f3494899b56c41d0bb362d9f2cfa588f2fe5293"),
+            new ScenarioDigest("replayed", "5f84e97ad6cabf3cd859af62126de62e3da1ffe2c4f8c7d4b8619cc6771c3d23", "4b1682a6a7718f25b0fbe4b75f3494899b56c41d0bb362d9f2cfa588f2fe5293"),
+            new ScenarioDigest("undo-truncated", "429c5f12e21a0cc9cdc735b855b12bf026c3f7429e5db795afe43a9ed6f627e7", "c815ac01a13aa0d5d778dc005f74e0123e74435bcc8274484b92b360c49e5407"),
+            new ScenarioDigest("defense-discarded", "97f0cc8dbec5de890f9d036e852b85ab162e9f3b11c3ab6c2b4782883d03ac62", "fdf39ee528256c2aa458a6a87b6b30a85f243609c701a0d205420ace1154aca3"),
+            new ScenarioDigest("defense-discarded-restored", "97f0cc8dbec5de890f9d036e852b85ab162e9f3b11c3ab6c2b4782883d03ac62", "fdf39ee528256c2aa458a6a87b6b30a85f243609c701a0d205420ace1154aca3"),
+            new ScenarioDigest("defense-discarded-replayed", "97f0cc8dbec5de890f9d036e852b85ab162e9f3b11c3ab6c2b4782883d03ac62", "fdf39ee528256c2aa458a6a87b6b30a85f243609c701a0d205420ace1154aca3")
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

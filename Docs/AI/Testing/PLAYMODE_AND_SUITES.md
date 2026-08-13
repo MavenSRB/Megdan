@@ -66,8 +66,12 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 357 | 0 | 0 | 0 | `6.1k` |
-| Complete Play Mode | 19 | 0 | 0 | 0 | `6.1k` |
+| Complete Edit Mode | 371 | 0 | 0 | 0 | `6.1x` |
+| Complete Play Mode | 19 | 0 | 0 | 0 | `6.1x` |
+
+Milestone 6.1x moved Edit Mode from `357` to `371`, and every one of the `+14` is a fixture added between `6.1k` and here: `+6` at 6.1o (`AppendOnlyEventLogTests` `+3`, `MatchAggregateAtomicityTests` `+2`, `MatchSessionDiagnosticCostTests` `+1`), `+3` at 6.1p (`MatchAggregateAtomicityTests` from `2` to `5`), `+3` at 6.1q (`ActiveEffectLifecycleTests` from `12` to `15`), and `+2` at 6.1s (`MinionAttackResolutionTests` from `6` to `8`). Milestones 6.1l, 6.1r, and 6.1t added no Unity fixture: 6.1l changed validator scripts, 6.1r was behaviour-invariant, and 6.1t's harness lives outside `Assets/`. Play Mode is unchanged at `19`; 6.1s edited `MinimalHexGridPlayModeTests` without adding a method.
+
+The run that produced this row is also the one that caught the stale `CardAggregateInvarianceTests` digests, which no focused filter had selected since 6.1f. Any milestone that changes `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` must run both digest-pinning fixtures - `CardAggregateInvarianceTests` and `SnapshotCompatibilityCorpusTests` - because a schema change invalidates every pinned digest by construction, and both fixtures sit in the dotnet harness exclude list where the Linux harness cannot reach them.
 
 A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
 
