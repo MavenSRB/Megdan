@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -16,6 +17,15 @@ namespace GuardsDigital.Tests.EditMode
     /// shader into the build - so deleting or reassigning that material would have shipped magenta
     /// while the Editor kept working. This fixture makes that dependency explicit: a runtime shader
     /// name that is not declared fails here rather than in a player nobody has built yet.
+    ///
+    /// Milestone 6.1k replaced the two source regexes. Shader names now come from the <c>ldstr</c>
+    /// operands the compiler emitted for each <see cref="Shader.Find"/> argument, and the
+    /// fail-loudly guard is expressed as instruction order rather than as the textual layout of the
+    /// surrounding lines. Both changes widen what is caught: a fully-qualified or aliased
+    /// <c>Shader.Find</c>, and a guard that is reformatted or wrapped, all read the same way now.
+    /// A name that is not a literal - built by concatenation, or read from a field - is invisible to
+    /// this and was invisible to the regex; the always-included list is asserted non-empty so the
+    /// fixture cannot pass by finding nothing.
     /// </summary>
     public sealed class RuntimeShaderResolutionTests
     {
@@ -26,12 +36,12 @@ namespace GuardsDigital.Tests.EditMode
         {
             var runtimeShaderNames = FindRuntimeShaderNames();
 
-            // Without this the fixture would pass vacuously the moment the search pattern or the
-            // production folder layout changed - the same failure mode the living-document
-            // validator guards with its no-declared-behaviours check.
+            // Without this the fixture would pass vacuously the moment the scan or the production
+            // assembly set changed - the same failure mode the living-document validator guards with
+            // its no-declared-behaviours check.
             Assert.That(runtimeShaderNames, Is.Not.Empty,
-                "No runtime Shader.Find call was discovered in production source. The search is " +
-                "wrong, or production moved; either way this fixture would otherwise pass vacuously.");
+                "No runtime Shader.Find call was discovered in production code. The scan is wrong, or " +
+                "production moved; either way this fixture would otherwise pass vacuously.");
 
             var alwaysIncluded = AlwaysIncludedShaderNames();
             Assert.That(alwaysIncluded, Is.Not.Empty,
@@ -52,51 +62,41 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryRuntimeShaderLookup_FailsLoudlyInsteadOfBuildingANullMaterial()
         {
+            var find = ShaderFindMethod();
+            var materialFromShader = ILConformanceScanner.Constructor(typeof(Material), typeof(Shader));
             var offenders = new List<string>();
+            var inspected = 0;
 
-            foreach (var sourceFile in ProductionSourceFiles())
+            // Per method rather than per file. A file-level search gives a false negative on any file
+            // that null-checks something else, which is most of them - so it would report one offender
+            // while two more went unfixed.
+            foreach (var method in ILConformanceScanner.Scan(ProductionTypes()))
             {
-                var text = File.ReadAllText(sourceFile);
-                var fileName = Path.GetFileName(sourceFile);
-
-                // Per call site, not per file. A file-level search for "== null" gives a false
-                // negative on any file that happens to null-check something else, which is most of
-                // them - so it would report one offender while two more went unfixed.
-                foreach (Match match in Regex.Matches(text, @"Shader\.Find\(\s*""[^""]+""\s*\)"))
+                var lookupIndex = method.FirstIndexOf(find);
+                if (lookupIndex < 0)
                 {
-                    var lineNumber = text.Take(match.Index).Count(character => character == '\n') + 1;
+                    continue;
+                }
 
-                    // The accepted pattern assigns the lookup, tests the local for null, and throws.
-                    // A lookup used directly as a constructor argument was never null-checked at all.
-                    var precedingText = text.Substring(0, match.Index);
-                    if (Regex.IsMatch(precedingText, @"new\s+Material\(\s*$"))
-                    {
-                        offenders.Add($"{fileName}:{lineNumber} constructs a Material directly from Shader.Find");
-                        continue;
-                    }
+                inspected++;
+                var throwIndex = method.FirstIndexOf(System.Reflection.Emit.OpCodes.Throw);
+                var materialIndex = method.FirstIndexOf(materialFromShader);
 
-                    var assignment = Regex.Match(precedingText, @"(?:var|Shader)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*$");
-                    if (!assignment.Success)
-                    {
-                        offenders.Add($"{fileName}:{lineNumber} resolves a shader in an unrecognised shape");
-                        continue;
-                    }
+                if (throwIndex < 0)
+                {
+                    offenders.Add($"{method.Description} resolves a shader without throwing on null");
+                    continue;
+                }
 
-                    var local = Regex.Escape(assignment.Groups[1].Value);
-                    var following = text.Substring(match.Index + match.Length);
-                    var guard = new Regex($@"if\s*\(\s*{local}\s*==\s*null\s*\)\s*\{{[^}}]*throw\b");
-                    var guardMatch = guard.Match(following);
-
-                    // The guard has to come before the local is used to build anything.
-                    var firstUse = new Regex($@"new\s+Material\(\s*{local}\b").Match(following);
-                    if (!guardMatch.Success || (firstUse.Success && firstUse.Index < guardMatch.Index))
-                    {
-                        offenders.Add(
-                            $"{fileName}:{lineNumber} assigns '{assignment.Groups[1].Value}' without throwing on null first");
-                    }
+                if (materialIndex >= 0 && materialIndex < throwIndex)
+                {
+                    offenders.Add(
+                        $"{method.Description} builds a Material from the lookup before the guard throws");
                 }
             }
 
+            Assert.That(inspected, Is.GreaterThan(0),
+                "No production method resolves a shader by name, so this rule inspected nothing.");
             Assert.That(offenders, Is.Empty,
                 "Every runtime shader lookup must fail loudly, using the explicit-failure pattern in " +
                 "DestinationHighlightMaterialOwner, rather than assigning a null material: " +
@@ -105,30 +105,32 @@ namespace GuardsDigital.Tests.EditMode
 
         private static IReadOnlyList<string> FindRuntimeShaderNames()
         {
-            var names = new SortedSet<string>(StringComparer.Ordinal);
-
-            foreach (var sourceFile in ProductionSourceFiles())
-            {
-                foreach (Match match in Regex.Matches(
-                    File.ReadAllText(sourceFile), @"Shader\.Find\(\s*""([^""]+)""\s*\)"))
-                {
-                    names.Add(match.Groups[1].Value);
-                }
-            }
-
+            var find = ShaderFindMethod();
+            var names = new SortedSet<string>(
+                ILConformanceScanner.Scan(ProductionTypes()).SelectMany(method => method.StringsPassedTo(find)),
+                StringComparer.Ordinal);
             return names.ToArray();
         }
 
+        private static System.Reflection.MethodInfo ShaderFindMethod() =>
+            ILConformanceScanner.Method(typeof(Shader), nameof(Shader.Find), typeof(string));
+
         /// <summary>
-        /// Production source only. Test scaffolding also resolves shaders to build throwaway
-        /// materials, and a fixture is not a runtime path - the same exclusion the living-document
-        /// validator applies when it scans for reachable components.
+        /// Production code only. Test scaffolding also resolves shaders to build throwaway materials,
+        /// and a fixture is not a runtime path - the same exclusion the living-document validator
+        /// applies when it scans for reachable components. The pure assemblies are included even
+        /// though they cannot reference Unity, because that is a boundary
+        /// <see cref="Phase4ArchitectureConformanceTests"/> enforces rather than something this
+        /// fixture should assume.
         /// </summary>
-        private static IEnumerable<string> ProductionSourceFiles()
-        {
-            var productionRoot = Path.Combine(UnityEngine.Application.dataPath, "GuardsDigital");
-            return Directory.EnumerateFiles(productionRoot, "*.cs", SearchOption.AllDirectories);
-        }
+        private static IEnumerable<Type> ProductionTypes() =>
+            new[]
+            {
+                typeof(RoundResolutionAuthority).Assembly,
+                typeof(CardInstance).Assembly,
+                typeof(MatchSession).Assembly,
+                typeof(DestinationHighlightMaterialOwner).Assembly
+            }.Distinct().SelectMany(ILConformanceScanner.TypesIn);
 
         private static IReadOnlyList<string> AlwaysIncludedShaderNames()
         {

@@ -66,10 +66,14 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 331 | 0 | 0 | 0 | `6.1d` |
-| Complete Play Mode | 17 | 0 | 0 | 0 | `6.1d` |
+| Complete Edit Mode | 357 | 0 | 0 | 0 | `6.1k` |
+| Complete Play Mode | 19 | 0 | 0 | 0 | `6.1k` |
 
 A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
+
+Milestone 6.1k moved Edit Mode from `335` to `357`: `+15` for the new `MinionBattleResolutionTests` cases and `+7` for the new `ILConformanceScannerTests`. The four rewritten architecture fixtures kept their method counts. Play Mode moved `17` to `19`: `+2` for the new `DestinationHighlightMaterialPlayModeTests`, which exercises the `Object.Destroy` teardown branch no Edit Mode fixture can reach.
+
+The starting figure was `335`, not the `331` this table recorded at `6.1d`. Milestone 6.1k ran the complete Edit Mode suite once **before** touching anything, precisely so the delta it claims would be measured rather than inferred; that run reported `335/335` green. The `+4` accumulated across 6.1e through 6.1i, whose handoffs added fixtures without refreshing this table. Refresh it whenever a milestone legitimately moves a total - a stale baseline sends the next task hunting a regression that never existed, which is the same failure the Play Mode figure had at 6.1g.
 
 Milestone 6.1d's first commit moved the Edit Mode total from 328 to 331: `+2` for the new
 `RuntimeShaderResolutionTests`, and `+1` for the Editor-assembly case added to

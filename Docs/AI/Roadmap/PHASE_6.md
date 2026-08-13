@@ -44,7 +44,7 @@ Every milestone here names the exact check that closes its findings. Per the mec
 | 5 | 6.1f | `F613-06` | Largest refactor; benefits from 1-3 landing first. Complete |
 | 6 | 6.1i | `F613-08`, `F613-09`, `F613-10` | Diagnosability and measured cost. Complete |
 | 7 | 6.1h | `F613-11` | Pure maintainability; lowest risk to defer. Complete |
-| 8 | 6.1k | `F613-13` | Must land after 7, whose renames its replacement assertions have to survive |
+| 8 | 6.1k | `F613-13` | Must land after 7, whose renames its replacement assertions have to survive. Complete |
 | - | 6.1l | `F613-14` | Reinstated 2026-08-13; `[!]` blocked on a non-Windows host, so it carries no ordinal |
 
 Milestones 6.1j, 6.1l, and 6.1m were merged into 6.1d on 2026-08-13 under the granularity floor in [ROADMAP.md](../ROADMAP.md). Their acceptance checks are preserved verbatim inside it; no check was dropped in the merge.
@@ -214,7 +214,7 @@ Non-goals: No removal of the atomicity or determinism guarantees themselves, no 
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61i-report-errors-honestly-and-gate-diagnostic-cost-completion-evidence).
 
-### [ ] 6.1k Replace brittle structural assertions and deepen the newest coverage
+### [x] 6.1k Replace brittle structural assertions and deepen the newest coverage
 
 Observable outcome: Architecture tests survive renames that change no behavior, and the newest stateful subsystem carries coverage proportionate to its statefulness.
 

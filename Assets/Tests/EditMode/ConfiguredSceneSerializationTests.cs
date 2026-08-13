@@ -39,7 +39,9 @@ namespace GuardsDigital.Tests.EditMode
             var offenders = new List<string>();
             foreach (var type in generatedTypes)
             {
-                var guid = ScriptGuid(type);
+                // Milestone 6.1k moved this derivation into SceneAssetInspection, unchanged, so the
+                // cutover fixture stops carrying its own copy. What it computes is identical.
+                var guid = SceneAssetInspection.ScriptGuid(type);
                 Assert.That(
                     guid,
                     Is.Not.Null.And.Not.Empty,
@@ -60,21 +62,6 @@ namespace GuardsDigital.Tests.EditMode
                 "The saved scene serializes presentation objects the composition root generates and " +
                 $"owns: {string.Join(", ", offenders)}. Delete them from the scene; composition " +
                 "recreates them at load.");
-        }
-
-        private static string ScriptGuid(System.Type type)
-        {
-            foreach (var assetGuid in AssetDatabase.FindAssets($"t:MonoScript {type.Name}"))
-            {
-                var path = AssetDatabase.GUIDToAssetPath(assetGuid);
-                var script = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
-                if (script != null && script.GetClass() == type)
-                {
-                    return assetGuid;
-                }
-            }
-
-            return null;
         }
 
         private static int CountOccurrences(string text, string value)

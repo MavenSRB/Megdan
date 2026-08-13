@@ -461,7 +461,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8afd8b34e4f3489c9d8f8d3276b8e5cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Board.PlaceholderTestGridView
-  gridRadius: 2
   outerRadius: 1
 --- !u!1 &1029945703
 GameObject:
