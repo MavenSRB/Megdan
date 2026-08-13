@@ -66,11 +66,29 @@ namespace GuardsDigital.Core.Snapshots
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
         public const int CurrentSchemaVersion = 6;
 
+        /// <summary>
+        /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full
+        /// state serializations an accepted and a rejected command perform, which finding `F613-08`
+        /// requires to be measured rather than inspected. The project is single-threaded, so a plain
+        /// counter is sufficient; a fixture resets it and reads it around a known command.
+        /// </summary>
+        public static long SerializeCallCount { get; private set; }
+
+        /// <summary>Total encoded characters produced. See the envelope's counterpart.</summary>
+        public static long SerializedCharacterCount { get; private set; }
+
+        public static void ResetSerializeCallCount()
+        {
+            SerializeCallCount = 0;
+            SerializedCharacterCount = 0;
+        }
+
         public static string Serialize(RoundResolutionAuthority round, AdjacentMoveAuthority board)
         {
             if (round == null) throw new ArgumentNullException(nameof(round));
             if (board == null) throw new ArgumentNullException(nameof(board));
 
+            SerializeCallCount++;
             using (var stream = new MemoryStream())
             using (var writer = new BinaryWriter(stream))
             {
@@ -82,7 +100,9 @@ namespace GuardsDigital.Core.Snapshots
                 WriteCards(writer, round.Instances);
                 WriteRound(writer, round);
                 writer.Flush();
-                return Convert.ToBase64String(stream.ToArray());
+                var encoded = Convert.ToBase64String(stream.ToArray());
+                SerializedCharacterCount += encoded.Length;
+                return encoded;
             }
         }
 

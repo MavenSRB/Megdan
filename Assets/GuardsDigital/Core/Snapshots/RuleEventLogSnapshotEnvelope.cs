@@ -50,10 +50,30 @@ namespace GuardsDigital.Core.Snapshots
 
         public IReadOnlyList<RuleEventLogEntry> Entries { get; }
 
+        /// <summary>
+        /// Instrumentation, not production state. This encode is the cost that grew with session
+        /// length, because it re-encodes the whole accumulated log; milestone 6.1i asserts how often
+        /// a command reaches it. See <see cref="AuthoritativeSnapshotSerializer.SerializeCallCount"/>.
+        /// </summary>
+        public static long SerializeCallCount { get; private set; }
+
+        /// <summary>
+        /// Total encoded characters produced. This is the quantity that grew with session length,
+        /// and unlike a managed-allocation probe it is exact and machine-independent.
+        /// </summary>
+        public static long SerializedCharacterCount { get; private set; }
+
+        public static void ResetSerializeCallCount()
+        {
+            SerializeCallCount = 0;
+            SerializedCharacterCount = 0;
+        }
+
         public static string Serialize(
             string authoritativePayload,
             IEnumerable<RuleEventLogEntry> entries)
         {
+            SerializeCallCount++;
             var snapshot = new RuleEventLogSnapshotEnvelope(authoritativePayload, entries);
             if (StrictUtf8.GetByteCount(snapshot.AuthoritativePayload) > MaximumAuthoritativePayloadBytes)
             {
@@ -92,7 +112,9 @@ namespace GuardsDigital.Core.Snapshots
                         nameof(entries));
                 }
 
-                return Convert.ToBase64String(stream.ToArray());
+                var encoded = Convert.ToBase64String(stream.ToArray());
+                SerializedCharacterCount += encoded.Length;
+                return encoded;
             }
         }
 

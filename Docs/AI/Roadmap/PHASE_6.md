@@ -42,7 +42,7 @@ Every milestone here names the exact check that closes its findings. Per the mec
 | 3 | 6.1c | `F613-01` | Deletes ~4,900 lines, shrinking every later milestone's surface. Complete |
 | 4 | 6.1d | `F613-02`, `F613-03`, `F613-12` | Merged build and toolchain integrity; its smoke gate is the standing buildability check. Complete |
 | 5 | 6.1f | `F613-06` | Largest refactor; benefits from 1-3 landing first. Complete |
-| 6 | 6.1i | `F613-08`, `F613-09`, `F613-10` | Diagnosability and measured cost |
+| 6 | 6.1i | `F613-08`, `F613-09`, `F613-10` | Diagnosability and measured cost. Complete |
 | 7 | 6.1h | `F613-11` | Pure maintainability; lowest risk to defer |
 | 8 | 6.1k | `F613-13` | Must land after 7, whose renames its replacement assertions have to survive |
 | - | 6.1l | `F613-14` | Reinstated 2026-08-13; `[!]` blocked on a non-Windows host, so it carries no ordinal |
@@ -189,7 +189,7 @@ Closing check for `F613-11`: the byte-identical behavior/event/snapshot comparis
 
 Non-goals: No rule change, no new abstraction layer introduced to replace the removed one, no renaming for its own sake, no schema change.
 
-### [ ] 6.1i Report errors honestly and gate diagnostic cost
+### [x] 6.1i Report errors honestly and gate diagnostic cost
 
 Observable outcome: Genuine defects surface as defects rather than as rule rejections, and debug-grade self-verification no longer runs unconditionally in shipped builds.
 
@@ -209,6 +209,8 @@ Closing checks:
 - `F613-10`: a projection test asserting history-unavailable is distinguishable from nothing-to-undo, observed failing before the fix.
 
 Non-goals: No removal of the atomicity or determinism guarantees themselves, no snapshot format redesign beyond the envelope growth fix, no speculative optimization outside the measured paths.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61i-report-errors-honestly-and-gate-diagnostic-cost-completion-evidence).
 
 ### [ ] 6.1k Replace brittle structural assertions and deepen the newest coverage
 

@@ -17,24 +17,37 @@ namespace GuardsDigital.Application
         private readonly MatchSessionInitialState initialState;
         private readonly MatchAggregate aggregate;
         private readonly DirectorCommandHistory history = new DirectorCommandHistory();
+        private readonly MatchDiagnosticsMode diagnostics;
         private readonly bool deferAcceptedProjectionRefresh;
 
         private long version;
         private bool canRecordHistory;
 
+        /// <summary>
+        /// A session that self-verifies every refusal. This is the historical behaviour and stays
+        /// the default, so nothing silently loses the check; a build that does not want to pay for
+        /// it says so by passing <see cref="MatchDiagnosticsMode.Off"/> to the other constructor.
+        /// </summary>
         public MatchSession(MatchSessionInitialState initialState)
-            : this(initialState, true, false)
+            : this(initialState, MatchDiagnosticsMode.Verified)
+        {
+        }
+
+        public MatchSession(MatchSessionInitialState initialState, MatchDiagnosticsMode diagnostics)
+            : this(initialState, diagnostics, true, false)
         {
         }
 
         private MatchSession(
             MatchSessionInitialState initialState,
+            MatchDiagnosticsMode diagnostics,
             bool useProvidedConfiguration,
             bool deferAcceptedProjectionRefresh)
         {
             this.initialState = initialState ?? throw new ArgumentNullException(nameof(initialState));
+            this.diagnostics = diagnostics;
             this.deferAcceptedProjectionRefresh = deferAcceptedProjectionRefresh;
-            aggregate = new MatchAggregate(this.initialState);
+            aggregate = new MatchAggregate(this.initialState, diagnostics);
             RebuildInitialState(useProvidedConfiguration);
             Projection = CreateProjection();
         }
@@ -58,8 +71,14 @@ namespace GuardsDigital.Application
             var outcome = aggregate.Commit(() => Dispatch(command));
             if (outcome.Status == MatchCommitStatus.Faulted)
             {
+                // A throw is a defect in this engine, not a rule saying no. Naming the exception
+                // type puts that distinction in the log as well as in the reported reason, so a
+                // NullReferenceException can never be read back as a rules outcome.
                 Projection = CreateProjection();
-                return Rejected(command, MatchSessionRejectionReason.DomainRejected, outcome.Fault.Message);
+                return Rejected(
+                    command,
+                    MatchSessionRejectionReason.EngineFault,
+                    $"{outcome.Fault.GetType().Name}: {outcome.Fault.Message}");
             }
 
             if (outcome.Status == MatchCommitStatus.AtomicityViolation)
@@ -136,7 +155,7 @@ namespace GuardsDigital.Application
                 // A snapshot restore begins a fresh round position, so it installs no prior round
                 // events. A rollback goes through the aggregate instead, carrying the pre-image it
                 // captured, because a refused operation must leave that stream as it found it.
-                aggregate.Restore(payload, Array.Empty<RoundResolutionEvent>());
+                aggregate.Restore(payload);
                 history.Clear();
                 canRecordHistory = false;
                 version++;
@@ -400,7 +419,7 @@ namespace GuardsDigital.Application
             // Replay still traverses the normal typed Execute path and retains its atomic rollback
             // checks. Its intermediate immutable projections are private and unobserved, so defer
             // rebuilding them until the adopted live session publishes the final projection.
-            var candidate = new MatchSession(initialState, false, true);
+            var candidate = new MatchSession(initialState, diagnostics, false, true);
             foreach (var command in commands)
             {
                 var result = candidate.Execute(command);
@@ -493,8 +512,11 @@ namespace GuardsDigital.Application
                     .ToArray()
                 : Array.Empty<FastTravelOptionProjection>();
             var defensePreview = CreateDefensePreview(turn);
-            var authoritative = AuthoritativeSnapshotSerializer.Serialize(round, board);
-            var diagnostic = RuleEventLogSnapshotEnvelope.Serialize(authoritative, aggregate.EventLogEntries);
+            // Reads the aggregate's memo rather than re-serializing state the previous command
+            // already encoded. The diagnostic envelope is not built here at all: the projection
+            // computes it on demand from these same immutable inputs, so a reader pays for it and a
+            // command does not.
+            var authoritative = aggregate.CaptureAuthoritativeSnapshot();
             return new MatchSessionProjection(
                 version,
                 initialState.Setup,
@@ -526,7 +548,7 @@ namespace GuardsDigital.Application
                 aggregate.RoundEvents,
                 aggregate.EventLogEntries,
                 authoritative,
-                diagnostic,
+                canRecordHistory,
                 availableFastTravelOptions,
                 board.Minions,
                 defensePreview,

@@ -195,6 +195,7 @@ namespace GuardsDigital.Application
     internal sealed class MatchAggregate
     {
         private readonly MatchSessionInitialState initialState;
+        private readonly MatchDiagnosticsMode diagnostics;
         private readonly RuleEventLogProjection eventLog = new RuleEventLogProjection();
         private readonly List<RoundResolutionEvent> roundEvents = new List<RoundResolutionEvent>();
         private readonly ReadOnlyCollection<RoundResolutionEvent> publishedRoundEvents;
@@ -203,10 +204,12 @@ namespace GuardsDigital.Application
         private AdjacentMoveAuthority board;
         private CardActionResolutionAuthority cardActions;
         private RoundResolutionAuthority round;
+        private string memoizedAuthoritative;
 
-        public MatchAggregate(MatchSessionInitialState initialState)
+        public MatchAggregate(MatchSessionInitialState initialState, MatchDiagnosticsMode diagnostics)
         {
             this.initialState = initialState ?? throw new ArgumentNullException(nameof(initialState));
+            this.diagnostics = diagnostics;
             publishedRoundEvents = new ReadOnlyCollection<RoundResolutionEvent>(roundEvents);
         }
 
@@ -219,10 +222,35 @@ namespace GuardsDigital.Application
         /// <summary>A live read-only view; appending is possible only through the commit boundary.</summary>
         public IReadOnlyList<RoundResolutionEvent> RoundEvents => publishedRoundEvents;
 
+        /// <summary>
+        /// The authoritative snapshot of the current graphs, computed once per state change.
+        /// </summary>
+        /// <remarks>
+        /// The memo is what removed most of finding `F613-08`'s cost. A command captured the
+        /// pre-image and then, on acceptance, the projection serialized the same graphs again; and
+        /// the next command's pre-image serialized them a third time, still unchanged. Only two
+        /// events can invalidate this: an accepted commit, and a graph replacement. Both are single
+        /// sites here, which is the property milestone 6.1f bought - before it, a fifth field could
+        /// be assigned anywhere and the memo would have been unsound.
+        /// </remarks>
+        public string CaptureAuthoritativeSnapshot()
+        {
+            return memoizedAuthoritative ?? (memoizedAuthoritative = SerializeAuthoritative());
+        }
+
+        /// <summary>
+        /// The full snapshot, authoritative state plus the rule-event log. Callers asking for this
+        /// pay the envelope encode, which is proportional to the whole accumulated log; nothing on
+        /// the per-command path calls it.
+        /// </summary>
         public string CaptureSnapshot()
         {
-            var authoritative = AuthoritativeSnapshotSerializer.Serialize(round, board);
-            return RuleEventLogSnapshotEnvelope.Serialize(authoritative, eventLog.Entries);
+            return RuleEventLogSnapshotEnvelope.Serialize(CaptureAuthoritativeSnapshot(), eventLog.Entries);
+        }
+
+        private string SerializeAuthoritative()
+        {
+            return AuthoritativeSnapshotSerializer.Serialize(round, board);
         }
 
         /// <summary>Detaches the current graphs and streams so another aggregate can adopt them.</summary>
@@ -272,21 +300,35 @@ namespace GuardsDigital.Application
 
         /// <summary>
         /// Installs the graphs a snapshot describes, and throws without changing anything when the
-        /// payload cannot be read or does not belong to this setup.
+        /// payload cannot be read or does not belong to this setup. A restored snapshot begins a
+        /// fresh round position, so it installs no prior round events.
         /// </summary>
-        /// <param name="roundEventsPreImage">
-        /// The current round's ordered events to install alongside the restored graphs. A caller
-        /// restoring a foreign snapshot supplies none, because that snapshot begins a fresh round
-        /// position; a rollback supplies the events it captured, because a refused operation must
-        /// leave this stream exactly as it found it. The serialized envelope cannot supply them: it
-        /// carries the whole-match rule-event log, not the current round's slice.
-        /// </param>
-        public void Restore(string payload, IReadOnlyList<RoundResolutionEvent> roundEventsPreImage)
+        public void Restore(string payload)
         {
-            if (roundEventsPreImage == null) throw new ArgumentNullException(nameof(roundEventsPreImage));
-
             var hasEnvelope = RuleEventLogSnapshotEnvelope.TryDeserialize(payload, out var envelope);
             var authoritativePayload = hasEnvelope ? envelope.AuthoritativePayload : payload;
+            var restored = DeserializeAuthoritative(authoritativePayload);
+
+            ReplaceGraphs(hasEnvelope
+                ? MatchGraphSet.ForRestore(
+                    restored.Configuration,
+                    restored.Board,
+                    restored.CardActions,
+                    restored.Round,
+                    envelope.Entries,
+                    Array.Empty<RoundResolutionEvent>())
+                : MatchGraphSet.ForSetup(
+                    restored.Configuration,
+                    restored.Board,
+                    restored.CardActions,
+                    restored.Round,
+                    restored.Participants,
+                    restored.Round.TieBreakerState,
+                    Array.Empty<RoundResolutionEvent>()));
+        }
+
+        private RestoredGraphs DeserializeAuthoritative(string authoritativePayload)
+        {
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
                 authoritativePayload,
                 initialState.Scenario.CardDefinitions,
@@ -298,29 +340,14 @@ namespace GuardsDigital.Application
                 throw new InvalidOperationException("The restored snapshot does not match the configured setup map.");
             }
 
-            var restoredConfiguration = PlaceholderOneVsOneTestConfiguration.Restore(
-                new PlaceholderConfigurationRestoreState(
-                    restored.Participants,
-                    initialState.Scenario.CardDefinitions,
-                    restored.Cards,
-                    restored.Round.TieBreakerState));
-
-            ReplaceGraphs(hasEnvelope
-                ? MatchGraphSet.ForRestore(
-                    restoredConfiguration,
-                    restored.Board,
-                    restored.CardActions,
-                    restored.Round,
-                    envelope.Entries,
-                    roundEventsPreImage)
-                : MatchGraphSet.ForSetup(
-                    restoredConfiguration,
-                    restored.Board,
-                    restored.CardActions,
-                    restored.Round,
-                    restored.Participants,
-                    restored.Round.TieBreakerState,
-                    roundEventsPreImage));
+            return new RestoredGraphs(
+                PlaceholderOneVsOneTestConfiguration.Restore(
+                    new PlaceholderConfigurationRestoreState(
+                        restored.Participants,
+                        initialState.Scenario.CardDefinitions,
+                        restored.Cards,
+                        restored.Round.TieBreakerState)),
+                restored);
         }
 
         /// <summary>
@@ -345,7 +372,13 @@ namespace GuardsDigital.Application
 
             if (!planned.Accepted)
             {
-                if (!string.Equals(preImage.Snapshot, CaptureSnapshot(), StringComparison.Ordinal))
+                // Debug-grade self-verification: prove the refusal moved nothing. It must serialize
+                // afresh rather than read the memo, because a mutation is exactly what it is looking
+                // for and the memo would still hold the pre-command value. Only the rule-event
+                // streams are excluded from the comparison, and only because they are private to
+                // this aggregate and reachable solely from the commit below.
+                if (diagnostics == MatchDiagnosticsMode.Verified &&
+                    !string.Equals(preImage.AuthoritativePayload, SerializeAuthoritative(), StringComparison.Ordinal))
                 {
                     Rollback(preImage);
                     return MatchCommitOutcome<TPlan>.AtomicityViolation(planned);
@@ -358,19 +391,36 @@ namespace GuardsDigital.Application
             // are appended here, and this is the only place they can be: both streams are private.
             roundEvents.AddRange(planned.Events);
             eventLog.Append(planned.Events);
+            memoizedAuthoritative = null;
             return MatchCommitOutcome<TPlan>.Committed(planned);
         }
 
         /// <summary>The pre-image a refused or faulted operation is rolled back to.</summary>
+        /// <remarks>
+        /// The two event streams travel as in-memory arrays rather than inside a serialized
+        /// envelope. The envelope re-encodes the whole accumulated log, so carrying one here made
+        /// per-command cost grow with session length, which is the second half of `F613-08`. Copying
+        /// two arrays of references carries the same state at a cost that does not grow.
+        /// </remarks>
         public MatchPreImage CapturePreImage()
         {
-            return new MatchPreImage(CaptureSnapshot(), roundEvents.ToArray());
+            return new MatchPreImage(
+                CaptureAuthoritativeSnapshot(),
+                eventLog.Entries.ToArray(),
+                roundEvents.ToArray());
         }
 
         public void Rollback(MatchPreImage preImage)
         {
             if (preImage == null) throw new ArgumentNullException(nameof(preImage));
-            Restore(preImage.Snapshot, preImage.RoundEvents);
+            var restored = DeserializeAuthoritative(preImage.AuthoritativePayload);
+            ReplaceGraphs(MatchGraphSet.ForRestore(
+                restored.Configuration,
+                restored.Board,
+                restored.CardActions,
+                restored.Round,
+                preImage.EventLogEntries,
+                preImage.RoundEvents));
         }
 
         /// <summary>
@@ -387,18 +437,45 @@ namespace GuardsDigital.Application
             roundEvents.Clear();
             roundEvents.AddRange(graphs.RoundEvents);
             graphs.ApplyEventLogTo(eventLog);
+            memoizedAuthoritative = null;
+        }
+
+        /// <summary>A deserialized snapshot's graphs, with the configuration rebuilt from it.</summary>
+        private sealed class RestoredGraphs
+        {
+            public RestoredGraphs(
+                PlaceholderOneVsOneTestConfiguration configuration,
+                RestoredAuthoritativeMatch restored)
+            {
+                Configuration = configuration;
+                Board = restored.Board;
+                CardActions = restored.CardActions;
+                Round = restored.Round;
+                Participants = restored.Participants;
+            }
+
+            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public AdjacentMoveAuthority Board { get; }
+            public CardActionResolutionAuthority CardActions { get; }
+            public RoundResolutionAuthority Round { get; }
+            public MatchParticipants Participants { get; }
         }
     }
 
     internal sealed class MatchPreImage
     {
-        public MatchPreImage(string snapshot, IReadOnlyList<RoundResolutionEvent> roundEvents)
+        public MatchPreImage(
+            string authoritativePayload,
+            IReadOnlyList<RuleEventLogEntry> eventLogEntries,
+            IReadOnlyList<RoundResolutionEvent> roundEvents)
         {
-            Snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
+            AuthoritativePayload = authoritativePayload ?? throw new ArgumentNullException(nameof(authoritativePayload));
+            EventLogEntries = eventLogEntries ?? throw new ArgumentNullException(nameof(eventLogEntries));
             RoundEvents = roundEvents ?? throw new ArgumentNullException(nameof(roundEvents));
         }
 
-        public string Snapshot { get; }
+        public string AuthoritativePayload { get; }
+        public IReadOnlyList<RuleEventLogEntry> EventLogEntries { get; }
         public IReadOnlyList<RoundResolutionEvent> RoundEvents { get; }
     }
 }

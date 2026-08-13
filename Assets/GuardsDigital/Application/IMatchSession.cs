@@ -11,7 +11,32 @@ namespace GuardsDigital.Application
         DomainRejected = 2,
         AtomicityViolation = 3,
         ReplayFailed = 4,
-        SnapshotRejected = 5
+        SnapshotRejected = 5,
+
+        /// <summary>
+        /// A defect in the engine, not a rule refusal: something in the command path threw. The
+        /// session rolled back and is usable, but the command was never a rules question. Kept
+        /// distinct from <see cref="DomainRejected"/> so a caller cannot present a
+        /// `NullReferenceException` to a player as though a rule said no.
+        /// </summary>
+        EngineFault = 6
+    }
+
+    /// <summary>
+    /// Whether the session runs its debug-grade self-verification. `Verified` re-reads authoritative
+    /// state after a refused command to prove nothing moved; `Off` skips that second read.
+    /// </summary>
+    /// <remarks>
+    /// This gates the check, never the guarantee. The rollback pre-image is captured in both modes,
+    /// because it is what makes a refused or faulted command leave no partial state - milestone
+    /// 6.1i's non-goals name "no removal of the atomicity or determinism guarantees themselves".
+    /// What `Off` removes is only the cost of proving the guarantee held on every single command,
+    /// which finding `F613-08` measured as running unconditionally in shipped builds.
+    /// </remarks>
+    public enum MatchDiagnosticsMode
+    {
+        Off = 0,
+        Verified = 1
     }
 
     public sealed class MatchCommandResult

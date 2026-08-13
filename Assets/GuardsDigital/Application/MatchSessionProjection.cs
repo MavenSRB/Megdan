@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
@@ -10,6 +11,7 @@ using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application
@@ -195,6 +197,8 @@ namespace GuardsDigital.Application
 
     public sealed class MatchSessionProjection
     {
+        private readonly Lazy<string> diagnosticSnapshot;
+
         public MatchSessionProjection(
             long version,
             QuickGameSetupState setup,
@@ -226,7 +230,7 @@ namespace GuardsDigital.Application
             IEnumerable<RoundResolutionEvent> roundEvents,
             IEnumerable<RuleEventLogEntry> diagnosticEvents,
             string authoritativeSnapshot,
-            string diagnosticSnapshot,
+            bool isHistoryAvailable,
             IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
             IEnumerable<QuickGameMinionSetupState> minions = null,
             PendingDefensePreviewProjection pendingDefensePreview = null,
@@ -264,7 +268,10 @@ namespace GuardsDigital.Application
             RoundEvents = Array.AsReadOnly((roundEvents ?? throw new ArgumentNullException(nameof(roundEvents))).ToArray());
             DiagnosticEvents = Array.AsReadOnly((diagnosticEvents ?? throw new ArgumentNullException(nameof(diagnosticEvents))).ToArray());
             AuthoritativeSnapshot = authoritativeSnapshot ?? throw new ArgumentNullException(nameof(authoritativeSnapshot));
-            DiagnosticSnapshot = diagnosticSnapshot ?? throw new ArgumentNullException(nameof(diagnosticSnapshot));
+            IsHistoryAvailable = isHistoryAvailable;
+            diagnosticSnapshot = new Lazy<string>(
+                () => RuleEventLogSnapshotEnvelope.Serialize(AuthoritativeSnapshot, DiagnosticEvents),
+                LazyThreadSafetyMode.None);
             AvailableFastTravelOptions = Array.AsReadOnly((availableFastTravelOptions ??
                 Enumerable.Empty<FastTravelOptionProjection>()).ToArray());
             PendingDefensePreview = pendingDefensePreview;
@@ -303,7 +310,32 @@ namespace GuardsDigital.Application
         public IReadOnlyList<RoundResolutionEvent> RoundEvents { get; }
         public IReadOnlyList<RuleEventLogEntry> DiagnosticEvents { get; }
         public string AuthoritativeSnapshot { get; }
-        public string DiagnosticSnapshot { get; }
+
+        /// <summary>
+        /// The authoritative snapshot plus the ordered rule-event log, encoded on first read and
+        /// then held.
+        /// </summary>
+        /// <remarks>
+        /// Computed from <see cref="AuthoritativeSnapshot"/> and <see cref="DiagnosticEvents"/>,
+        /// both of which this projection already holds as immutable copies. That matters: a lazy
+        /// value reading the live authorities would hand a caller holding an older projection the
+        /// state as it is now, and fixtures compare exactly that way. Deferring it is what stopped
+        /// every command re-encoding the whole accumulated log - finding `F613-08`'s growth with
+        /// session length - because nothing on the command path reads this.
+        /// </remarks>
+        public string DiagnosticSnapshot => diagnosticSnapshot.Value;
+
+        /// <summary>
+        /// Whether this session can still record accepted commands. False once a snapshot has been
+        /// loaded, which permanently disables history.
+        /// </summary>
+        /// <remarks>
+        /// Distinct from an empty <see cref="AcceptedCommands"/>. A fresh session also has nothing
+        /// to undo, but its history is available and the next accepted command will appear there;
+        /// after a snapshot load no command ever will. Finding `F613-10` is that the two were
+        /// indistinguishable to everything downstream, including the Undo control.
+        /// </remarks>
+        public bool IsHistoryAvailable { get; }
         public IReadOnlyList<FastTravelOptionProjection> AvailableFastTravelOptions { get; }
         public PendingDefensePreviewProjection PendingDefensePreview { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }

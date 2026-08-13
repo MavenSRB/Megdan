@@ -65,11 +65,19 @@ namespace GuardsDigital.Presentation.Match
                 map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 obstacleViews.Select(view => view.Occupancy));
-            session = new MatchSession(new MatchSessionInitialState(
-                scenario,
-                setup,
-                maps,
-                configuration));
+            // The composition root is the layer that knows which build this is, so it makes the
+            // diagnostics choice and the pure assemblies stay free of Unity build symbols. A
+            // development build keeps the per-command self-verification that proves a refused
+            // command moved nothing; a release player does not pay for it on every command.
+            session = new MatchSession(
+                new MatchSessionInitialState(
+                    scenario,
+                    setup,
+                    maps,
+                    configuration),
+                UnityEngine.Debug.isDebugBuild
+                    ? MatchDiagnosticsMode.Verified
+                    : MatchDiagnosticsMode.Off);
 
             BoardView = new BoardInteractionUnityView(heroViews, tileViews, highlightMaterial, minionViews);
             HandsView = new DirectorHandsUnityView();

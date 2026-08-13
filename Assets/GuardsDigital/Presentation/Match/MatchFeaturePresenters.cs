@@ -895,18 +895,31 @@ namespace GuardsDigital.Presentation.Match
 
     public sealed class UndoRestartViewModel
     {
-        public UndoRestartViewModel(long version, bool canUndo, bool canRestart, int acceptedCommandCount)
+        public UndoRestartViewModel(
+            long version,
+            bool canUndo,
+            bool canRestart,
+            int acceptedCommandCount,
+            bool isHistoryAvailable)
         {
             Version = version;
             CanUndo = canUndo;
             CanRestart = canRestart;
             AcceptedCommandCount = acceptedCommandCount;
+            IsHistoryAvailable = isHistoryAvailable;
         }
 
         public long Version { get; }
         public bool CanUndo { get; }
         public bool CanRestart { get; }
         public int AcceptedCommandCount { get; }
+
+        /// <summary>
+        /// False once a snapshot has been loaded, which permanently disables history. Both states
+        /// leave <see cref="CanUndo"/> false, but only this one means no future command will ever
+        /// make it true, so a view can say "history unavailable" rather than "nothing to undo".
+        /// </summary>
+        public bool IsHistoryAvailable { get; }
     }
 
     public interface IUndoRestartView
@@ -939,7 +952,8 @@ namespace GuardsDigital.Presentation.Match
                     projection.Version,
                     projection.AcceptedCommands.Count > 0,
                     projection.AcceptedCommands.Count > 0,
-                    projection.AcceptedCommands.Count);
+                    projection.AcceptedCommands.Count,
+                    projection.IsHistoryAvailable);
             }
 
             view.Render(lastViewModel);
