@@ -73,3 +73,15 @@ The audit's own significance is process-level: the two sanctioned independent re
 | `F613-15` | Documented card-system contracts named `EffectDefinition`, `PendingResolution`, and `RuleEvent` exist as zero C# types. The current-implementation summary claimed completion through 5.8c while every other canonical document said 6.1b. No human-facing README existed anywhere in the repository. | Documentation truth, high | Governance amendment, 2026-08-13 | Code-truth validator checks observed to fail on deliberate violations | Closed by this amendment |
 
 `F613-15` is closed in the same change that records it. Every other finding remains open until its owning milestone completes and milestone 6.1n independently verifies the sequence.
+
+### 2026-08-13 addendum: corrective sequence rescheduled
+
+Explicit correction under the append-only archive rule. The disposition table above is preserved verbatim as it stood when written; the owner and closure columns below supersede it.
+
+The governance amendment committed the same day replaced automatic recursive verification with mechanical closure. Under that rule a finding closes on a named check observed failing at the pre-fix revision and passing at the post-fix revision, and a fresh-task independent verification is scheduled only for findings whose closure cannot be expressed as a check. All fourteen findings have such a check, so:
+
+- **Milestone 6.1n was removed.** It was scheduled by the recursive rule alone, not by any finding that needed judgment. The sequence now ends at 6.1k.
+- **Milestones 6.1j, 6.1l, and 6.1m were merged into 6.1d** under the roadmap's granularity floor. Findings `F613-12` and `F613-14` therefore have owner 6.1d, superseding the 6.1j and 6.1l entries above. Every acceptance check was preserved verbatim in the merge.
+- **Execution order is now by severity**: 6.1e, 6.1g, 6.1c, 6.1d, 6.1f, 6.1i, 6.1h, 6.1k. The table above lists findings in the order the audit wrote them, which placed the only confirmed live correctness defect (`F613-05`) behind a maintainability cleanup.
+
+The sanctioned reviews this audit criticised, 4.4i and 5.8c, remain the reason the closure rule changed: both produced a conclusion no check could contradict. Each finding above now names the check that can.

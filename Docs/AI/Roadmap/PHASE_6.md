@@ -25,11 +25,28 @@ Non-goals: No player-facing removal-choice UI, optional decline of a mandatory r
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61-resolve-the-end-of-round-minion-battle-completion-evidence).
 
-## Corrective sequence 6.1c-6.1n
+## Corrective sequence 6.1c-6.1k
 
-Milestones 6.1c through 6.1n are the corrective sequence scheduled by the 2026-08-13 out-of-band foundation audit recorded in [Phase 6 handoffs](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-out-of-band-foundation-audit). They precede 6.1a because several findings concern structures that further presentation work would build on top of.
+Milestones 6.1c through 6.1k are the corrective sequence scheduled by the 2026-08-13 out-of-band foundation audit recorded in [Phase 6 handoffs](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-out-of-band-foundation-audit). They precede 6.1a because several findings concern structures that further presentation work would build on top of.
 
-The audit was not a sanctioned fresh-task independent engineering review. It does not satisfy milestone 6.2b, and its findings do not authorize implementation: each milestone below still requires exact user approval. Milestone 6.1n is the terminal independent verification required by the recursive review-correction closure rule in [ROADMAP.md](../ROADMAP.md).
+The audit was not a sanctioned fresh-task independent engineering review. It does not satisfy milestone 6.2b, and its findings do not authorize implementation: each milestone below still requires exact user approval.
+
+Every milestone here names the exact check that closes its findings. Per the mechanical closure rule in [ROADMAP.md](../ROADMAP.md), a finding closes only when its named check has been observed to fail at the pre-fix revision and pass at the post-fix revision, with both observations recorded in the milestone's commit message. Every one of the fourteen audit findings has such a check, so this sequence has no terminal independent verification milestone; the former 6.1n was removed on 2026-08-13 in the same amendment that retired the automatic recursive verification requirement.
+
+**Execution order**, by severity rather than by the order the audit wrote them. IDs are unchanged so that the audit disposition table, the risk register, and existing cross-references stay valid.
+
+| Order | Milestone | Findings | Why here |
+| --- | --- | --- | --- |
+| 1 | 6.1e | `F613-05`, `F613-04` | The only confirmed live correctness defect |
+| 2 | 6.1g | `F613-07` | Silent state loss across thirteen restore back doors |
+| 3 | 6.1c | `F613-01` | Deletes ~4,900 lines, shrinking every later milestone's surface |
+| 4 | 6.1d | `F613-02`, `F613-03`, `F613-12`, `F613-14` | Merged build and toolchain integrity; its smoke gate is the standing buildability check |
+| 5 | 6.1f | `F613-06` | Largest refactor; benefits from 1-3 landing first |
+| 6 | 6.1i | `F613-08`, `F613-09`, `F613-10` | Diagnosability and measured cost |
+| 7 | 6.1h | `F613-11` | Pure maintainability; lowest risk to defer |
+| 8 | 6.1k | `F613-13` | Must land after 7, whose renames its replacement assertions have to survive |
+
+Milestones 6.1j, 6.1l, and 6.1m were merged into 6.1d on 2026-08-13 under the granularity floor in [ROADMAP.md](../ROADMAP.md). Their acceptance checks are preserved verbatim inside it; no check was dropped in the merge.
 
 ### [ ] 6.1c Retire the legacy HeroSelectionController drill and its fixtures
 
@@ -44,13 +61,17 @@ Acceptance checks:
 - The temporary-structure register row for the legacy drill is retired in the same milestone.
 - Focused configured-stack Edit Mode fixtures and the saved-scene Play Mode check remain green, proving deletion changed no live behavior.
 
+Closing check for `F613-01`: the validator's `unreachable-component` check. It has already been observed failing on `HeroSelectionController` when its temporary-structure register row is removed while the type still exists, which is the pre-fix half of the transition. The post-fix half is the validator passing after the type, its partial, its fixtures, and its register row are all deleted together. Deleting only the register row must still fail.
+
 Non-goals: No configured-stack behavior change, no new presentation feature, no Minion Battle UI, no refactor of the surviving presenters beyond what deletion requires.
 
-### [ ] 6.1d Make the build path explicit and assembly-bounded
+### [ ] 6.1d Make the build path explicit, single-sourced, and portable
 
-Observable outcome: Runtime shader resolution is declared rather than incidental, and Editor-only code cannot reach production types through an implicit assembly.
+Merged on 2026-08-13 from former milestones 6.1d, 6.1j, 6.1l, and 6.1m. All four concern one question - does this project build, resolve its resources, and run its toolchain on the platforms it declares - and each was too small to carry its own handoff. Every original acceptance check is preserved verbatim below.
 
-Acceptance checks:
+Observable outcome: Runtime shader resolution is declared rather than incidental, Editor-only code cannot reach production types through an implicit assembly, the board map has one source of truth, the validation toolchain runs on every declared development platform, and a real player build is proven to start and reach a configured match.
+
+Acceptance checks - build path and assembly boundary (former 6.1d):
 
 - Every shader named by a runtime `Shader.Find` call is present in the always-included shader list, so resolution does not depend on an unrelated material happening to be referenced from an enabled scene.
 - All five runtime `Shader.Find` sites fail loudly on a null result instead of assigning a null material, using the existing explicit-failure pattern already present in `DestinationHighlightMaterialOwner`.
@@ -58,7 +79,38 @@ Acceptance checks:
 - An Edit Mode fixture enumerates runtime shader names from source and asserts each resolves and is always-included, so a later deletion of the incidental material fails a test rather than shipping magenta.
 - The declared target platforms in `PROJECT_CONTEXT.md` are each considered for stripping behavior, and any platform-specific requirement is recorded rather than assumed.
 
-Non-goals: No render-pipeline migration, no production shader or material authoring, no visual change, no player-build automation, which is milestone 6.1m.
+Acceptance checks - single-source board map (former 6.1j):
+
+- The two byte-identical map copies are reduced to one canonical source with a generated or verified executable copy.
+- If two files remain, an automated check asserts byte equality and fails on drift; the check runs in the same validation tier as the existing map specification validator.
+- The existing reviewed counts, digests, and map-local identity contracts are unchanged, and the runtime resource remains byte-identical to the reviewed specification.
+- The relationship between the two paths is documented once in its canonical home rather than implied by a README sentence.
+
+Acceptance checks - cross-platform toolchain (former 6.1l):
+
+- Path segments are constructed portably rather than with backslash-separated literals passed to path joins.
+- The Unity and Hub executable locations are discovered through an environment override plus platform-appropriate probing, with a clear failure message when discovery fails.
+- Each script is confirmed to run on Windows and on at least one non-Windows platform, and the exact confirmation evidence is recorded.
+- The required launcher contract in `TESTING.md` remains a single fixed parameterless entry point; portability does not become a set of per-platform ad-hoc commands.
+
+Acceptance checks - player-build smoke gate (former 6.1m):
+
+- A headless player build is produced for the primary desktop target through a fixed project-local entry point consistent with the existing launcher contract.
+- The built player is started and verified to reach the configured scene and complete a scripted minimal interaction, with the exact evidence recorded.
+- Missing shaders, missing resources, stripped types, and failed scene loads fail the gate rather than degrading silently.
+- The gate is defined in `Testing/FUTURE_GATES.md` with its exact command, expected result, and the milestones and phase gates at which it is required.
+- The gate is proven to fail when a required shader is deliberately removed from the always-included list, then restored.
+
+Closing checks:
+
+- `F613-02`: the Edit Mode shader fixture, observed failing when a runtime shader name is absent from the always-included list and passing once declared.
+- `F613-03`: the existing assembly-boundary tests, observed failing when an Editor script references a production type directly.
+- `F613-12`: the map byte-equality check, observed failing on a deliberate one-byte divergence between the two paths.
+- `F613-14`: recorded successful runs of each validator script on Windows and on one non-Windows platform, with the exact commands and outputs.
+
+Once the player-build smoke gate passes, the **buildability** review dimension and the **toolchain portability** dimension are deleted from the prose list in [ROADMAP.md](../ROADMAP.md), per the rule that a dimension leaves that list only when its check has been observed to fail on a deliberate violation.
+
+Non-goals: No render-pipeline migration, no production shader or material authoring, no visual change, no map content change, no revision bump, no change to the map schema, loader, or catalog contracts, no continuous-integration service selection or configuration, no change to validation tiers, recipes, or gate definitions, no store packaging, signing, provisioning, distribution, mobile player support, or performance target, and no publication of any build.
 
 ### [ ] 6.1e Correct editor-time composition hazards
 
@@ -71,6 +123,11 @@ Acceptance checks:
 - The stale authored hex tiles left over from the milestone 1.2 naming convention are removed from the saved scene, and the scene contains no generated object that the composition root intends to own.
 - A focused regression proves that a rebuild followed immediately by view collection yields exactly the current generated set, with no destroyed, inactive, or duplicate entry.
 - Rebuild, Play Mode entry, scene reload, Undo, restart, and restore retain the configured identities without `MissingReferenceException` or duplicate registration.
+
+Closing checks:
+
+- `F613-05`: the focused rebuild-then-collect regression, observed failing against the current deferred-`Destroy` path before the fix and passing after. This is the sequence's only confirmed live correctness defect, so the pre-fix failure must be a genuine reproduction, not a fixture asserting the corrected behavior.
+- `F613-04`: a check that the saved scene contains no generated object the composition root intends to own, observed failing against the seven stale authored tiles before removal.
 
 Non-goals: No presentation redesign, no board view-model contract change, no change to authoritative map content or setup.
 
@@ -86,6 +143,8 @@ Acceptance checks:
 - Ordered rule events are emitted as part of the same commit rather than appended alongside state writes with nothing enforcing agreement.
 - Accepted, rejected, stale, restored, replayed, and Undo-truncated scenarios produce byte-identical authoritative snapshots and identical ordered events before and after the change.
 
+Closing check for `F613-06`: a byte-identical snapshot and ordered-event comparison across all six scenarios, captured at the pre-refactor revision and re-run at the post-refactor revision. Because this refactor must change no observable behavior, its closure evidence is the comparison passing, plus a demonstration that mutating card state outside the lifecycle authority no longer compiles - the latter observed failing before the change.
+
 Non-goals: No rule meaning change, no schema-version change unless the refactor requires one with an explicit migrate-or-reject decision, no presentation change, no performance work, which is milestone 6.1i.
 
 ### [ ] 6.1g Make snapshot restore compile-enforced
@@ -100,6 +159,8 @@ Acceptance checks:
 - Existing schema-version behavior, the compatibility corpus, and byte-identical round-trips are unchanged by the refactor.
 - `RISK-STATE-001` is reassessed and retired or explicitly accepted in the same milestone.
 
+Closing check for `F613-07`: a deliberately incomplete restore, demonstrated to compile cleanly at the pre-fix revision and to fail compilation at the post-fix revision. The existing acceptance check already requires this to be demonstrated rather than asserted; the pre-fix half is what makes it closure evidence rather than a passing test.
+
 Non-goals: No schema-version bump, no new persisted state, no change to what is persisted, no serializer format change.
 
 ### [ ] 6.1h Remove dispatch ceremony and decompose the largest authorities
@@ -112,6 +173,8 @@ Acceptance checks:
 - `RoundResolutionAuthority` and `AuthoritativeSnapshotSerializer` are decomposed so that no single file owns unrelated stage, choice, and serialization responsibilities, and constructor parameter counts fall correspondingly.
 - The architecture conformance tests still mechanically prevent action-specific algorithms from accumulating in the outer session, round, and turn dispatch seams.
 - Behavior, ordered events, snapshot bytes, and replay determinism are unchanged, proven by byte-identical comparison across the refactor.
+
+Closing check for `F613-11`: the byte-identical behavior/event/snapshot comparison across the refactor, plus the existing architecture conformance tests observed still failing when an action-specific algorithm is deliberately introduced into the outer dispatch seam. A decomposition milestone's risk is silent behavior change, so the comparison is the closure evidence.
 
 Non-goals: No rule change, no new abstraction layer introduced to replace the removed one, no renaming for its own sake, no schema change.
 
@@ -128,20 +191,13 @@ Acceptance checks:
 - Loading a snapshot no longer leaves Undo permanently unavailable without saying so: the projection states explicitly that history is unavailable, distinct from having nothing to undo.
 - A managed-allocation regression fixture covers the representative accepted-command path, with thresholds recorded as regression evidence rather than production targets.
 
+Closing checks:
+
+- `F613-08`: the per-command serialization-count assertion, recorded at four-per-accepted and six-per-rejected before the fix and at the reduced measured count after, plus the managed-allocation fixture showing envelope cost no longer growing with session length.
+- `F613-09`: a test that a deliberately injected `NullReferenceException` in a command path is reported as a programming defect rather than `DomainRejected`, observed failing before the fix.
+- `F613-10`: a projection test asserting history-unavailable is distinguishable from nothing-to-undo, observed failing before the fix.
+
 Non-goals: No removal of the atomicity or determinism guarantees themselves, no snapshot format redesign beyond the envelope growth fix, no speculative optimization outside the measured paths.
-
-### [ ] 6.1j Single-source the board map specification
-
-Observable outcome: The authoring specification and the runtime resource cannot drift apart silently.
-
-Acceptance checks:
-
-- The two byte-identical map copies are reduced to one canonical source with a generated or verified executable copy.
-- If two files remain, an automated check asserts byte equality and fails on drift; the check runs in the same validation tier as the existing map specification validator.
-- The existing reviewed counts, digests, and map-local identity contracts are unchanged, and the runtime resource remains byte-identical to the reviewed specification.
-- The relationship between the two paths is documented once in its canonical home rather than implied by a README sentence.
-
-Non-goals: No map content change, no revision bump, no change to the map schema, loader, or catalog contracts.
 
 ### [ ] 6.1k Replace brittle structural assertions and deepen the newest coverage
 
@@ -154,49 +210,9 @@ Acceptance checks:
 - `MinionBattleResolution` gains coverage beyond its four cases, including exact-count boundaries, Heavy-last ordering under multiple candidate shapes, and deterministic auto-resolution, using fixed-seed bounded property cases consistent with existing practice.
 - No test is weakened or deleted merely because it is brittle; each is replaced by an equivalent or stronger check.
 
+Closing check for `F613-13`: each replacement assertion run twice - once against a deliberately introduced real regression, where it must fail, and once against a pure rename that changes no behavior, where it must pass. The old assertion failing the rename case is the pre-fix half. `MinionBattleResolution`'s added coverage closes on its new cases failing against deliberately broken exact-count and Heavy-last ordering.
+
 Non-goals: No production behavior change, no new subsystem, no reduction in existing coverage, no change to the test assembly split.
-
-### [ ] 6.1l Make the validation toolchain cross-platform
-
-Observable outcome: The documentation and specification validators run on every declared development platform, and Unity discovery is not hardcoded to one installation path.
-
-Acceptance checks:
-
-- Path segments are constructed portably rather than with backslash-separated literals passed to path joins.
-- The Unity and Hub executable locations are discovered through an environment override plus platform-appropriate probing, with a clear failure message when discovery fails.
-- Each script is confirmed to run on Windows and on at least one non-Windows platform, and the exact confirmation evidence is recorded.
-- The required launcher contract in `TESTING.md` remains a single fixed parameterless entry point; portability does not become a set of per-platform ad-hoc commands.
-
-Non-goals: No continuous-integration service selection or configuration, no build automation, no change to validation tiers, recipes, or gate definitions.
-
-### [ ] 6.1m Add a player-build smoke gate
-
-Observable outcome: A defined gate produces a real player build and proves it starts and reaches a configured match, so editor-only regressions cannot pass unnoticed.
-
-Acceptance checks:
-
-- A headless player build is produced for the primary desktop target through a fixed project-local entry point consistent with the existing launcher contract.
-- The built player is started and verified to reach the configured scene and complete a scripted minimal interaction, with the exact evidence recorded.
-- Missing shaders, missing resources, stripped types, and failed scene loads fail the gate rather than degrading silently.
-- The gate is defined in `Testing/FUTURE_GATES.md` with its exact command, expected result, and the milestones and phase gates at which it is required.
-- The gate is proven to fail when a required shader is deliberately removed from the always-included list, then restored.
-
-Non-goals: No store packaging, signing, provisioning, distribution, mobile player support, or performance target; no publication of any build.
-
-### [ ] 6.1n Independently verify the corrective sequence
-
-Observable outcome: A fresh-task independent review determines whether milestones 6.1c through 6.1m actually closed the 2026-08-13 audit findings before Phase 6 feature work resumes.
-
-Acceptance checks:
-
-- Inspect the actual final source, tests, scene, tooling, and raw validation evidence rather than relying on milestone handoff summaries.
-- Confirm each audit finding's disposition individually against the code, and record any finding that was closed in documentation but not in fact.
-- Apply the four mandatory review dimensions in `ROADMAP.md`: buildability on every declared platform, dead and temporary structures, documented-contract truth, and toolchain portability.
-- Verify that the three code-truth validator checks are enforcing rather than passing vacuously, by confirming each has been observed to fail on a deliberate violation.
-- Classify every observation as a demonstrated defect, a measured or plausible risk, or an optional improvement, and assign the smallest corrective owner and required validation for each actionable finding.
-- Milestone 6.1a remains blocked until this review closes the sequence or the user approves a documented corrective disposition with a fresh terminal verification owner.
-
-Non-goals: No runtime, test, scene, package, assembly, content, or rule change; no implementation of a discovered correction inside the review milestone.
 
 ### [ ] 6.1a Add player-facing Minion Battle removal-choice UI
 
@@ -263,7 +279,7 @@ Acceptance checks:
 - Trace accepted, rejected, stale, paused, restored, replayed, and Undo-truncated Minion-Battle and synthetic Skill/effect paths through the application, round/turn, action/effect, and serialization boundaries.
 - Confirm mechanically that the first real end-of-round choice has no handler-local or presentation-owned continuation, and that adding the production Skill/effect handler did not deepen unrelated action-family branching.
 - Classify every observation as a demonstrated defect, measured or plausible risk, or optional improvement; assign the smallest corrective owner and required validation for each actionable finding.
-- Reassess the dependency-safe sequence and scope of milestones 6.3 through 6.13. Milestone 6.3 remains blocked until this review closes both findings or the user approves a documented corrective disposition with a fresh terminal verification owner.
+- Reassess the dependency-safe sequence and scope of milestones 6.3 through 6.13. Milestone 6.3 remains blocked until this review closes both findings, or the user approves a documented corrective disposition. Any corrective sequence this review schedules closes on named checks per [ROADMAP.md](../ROADMAP.md); it schedules a further verification milestone only for a finding whose closure cannot be expressed as a check.
 
 Non-goals: No runtime, test, scene, package, assembly, content, or rule change; no implementation of a discovered correction inside the review milestone.
 
