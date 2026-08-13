@@ -10,7 +10,7 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
-    internal sealed class AttackDefenseCardActionStrategyBackend : IAttackDefenseCardActionStrategyBackend
+    internal sealed class AttackDefenseCardActionStrategyBackend
     {
         private readonly AdjacentMoveAuthority adjacentMoveAuthority;
         private PendingAttackResolution pendingAttackResolution;
@@ -41,7 +41,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         internal DefeatRewardAccounting DefeatRewards => defeatRewards;
 
-        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.StartAttack(
+        public AttackActionResolutionResult StartAttack(
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
@@ -65,7 +65,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
 
-        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.StartTurnAttack(
+        public AttackActionResolutionResult StartTurnAttack(
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
@@ -181,7 +181,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
 
-        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.AnswerAttackTarget(
+        public AttackActionResolutionResult AnswerAttackTarget(
             AttackTargetChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
@@ -339,7 +339,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
 
-        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.AnswerDefense(
+        public AttackActionResolutionResult AnswerDefense(
             DefenseResponseChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
@@ -491,7 +491,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
 
-        AttackActionResolutionResult IAttackDefenseCardActionStrategyBackend.ResolveOutcome(
+        public AttackActionResolutionResult ResolveOutcome(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants)

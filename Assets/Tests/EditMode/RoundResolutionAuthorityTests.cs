@@ -241,7 +241,8 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardInstances,
                 configuration.Participants,
                 configuration.TieBreakerState,
-                cardActions: new CardActionResolutionAuthority(board));
+                1,
+                RoundResolutionComposition.ForCardActionsOnly(new CardActionResolutionAuthority(board)));
 
             var redMovementCard = configuration.RedHand.Instances[0];
             var blueFirstCard = configuration.BlueHand.Instances[0];
@@ -455,7 +456,9 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardDefinitions,
                 configuration.CardInstances,
                 configuration.Participants,
-                configuration.TieBreakerState);
+                configuration.TieBreakerState,
+                1,
+                RoundResolutionComposition.ForCardActionsOnly(null));
         }
 
         private static void ResolveCurrentTurnWithHold(RoundResolutionAuthority authority)
@@ -488,8 +491,8 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { red, blue },
                 participants,
                 new TieBreakerState(TeamSide.Red),
-                endOfRoundCapabilities: capabilities,
-                endOfRoundHandlers: handlers);
+                1,
+                new RoundResolutionComposition(null, null, null, capabilities, handlers));
             return new OneCardFixture(red, blue, authority);
         }
 

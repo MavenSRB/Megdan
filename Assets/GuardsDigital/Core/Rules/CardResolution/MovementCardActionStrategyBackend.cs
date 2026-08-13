@@ -7,7 +7,7 @@ using GuardsDigital.Core.Rules.Movement;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
-    internal sealed class MovementCardActionStrategyBackend : IMovementCardActionStrategyBackend
+    internal sealed class MovementCardActionStrategyBackend
     {
         private readonly AdjacentMoveAuthority adjacentMoveAuthority;
         private readonly IMovementActionStartRestrictionEvaluator actionStartRestrictions;
@@ -68,7 +68,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return backend;
         }
 
-        CardActionResolutionResult IMovementCardActionStrategyBackend.StartMovement(
+        public CardActionResolutionResult StartMovement(
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
@@ -89,7 +89,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 authoritativeOffers);
         }
 
-        CardActionResolutionResult IMovementCardActionStrategyBackend.StartTurnMovement(
+        public CardActionResolutionResult StartTurnMovement(
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
@@ -200,7 +200,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 });
         }
 
-        CardActionResolutionResult IMovementCardActionStrategyBackend.AnswerMovement(MovementChoiceCommand command)
+        public CardActionResolutionResult AnswerMovement(MovementChoiceCommand command)
         {
             if (pendingResolution == null || pendingChoice == null)
             {

@@ -193,7 +193,8 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardInstances,
                 configuration.Participants,
                 configuration.TieBreakerState,
-                cardActions: cardActions);
+                1,
+                RoundResolutionComposition.ForCardActionsOnly(cardActions));
             return new SnapshotFixture(configuration, board, round);
         }
 

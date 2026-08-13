@@ -60,15 +60,32 @@ namespace GuardsDigital.Tests.EditMode
             "Regex.IsMatch("
         };
 
+        // The outer card-action dispatcher must route to a backend, never perform the action itself.
+        // Milestone 6.1h removed the three I*CardActionStrategyBackend interfaces along with the
+        // registry that needed them, so the tokens naming those interfaces were re-pointed rather
+        // than left guarding names that no longer exist. What replaces them is the set of algorithm
+        // entry points each backend actually calls, read from the backends rather than invented: a
+        // dispatcher that names one of these has started owning the algorithm. `ActionOfferQuery` is
+        // deliberately absent - offer enumeration is a dispatcher-level concern and the authority
+        // legitimately calls it three times. `.TryApplyLocationTransition(` was dropped rather than
+        // kept: 6.1f moved that member into the `GuardsDigital.Core.CardState` assembly, so naming
+        // it from here is now a compile error, and a compile error outranks a text scan.
+        //
+        // Known limit of this instrument, measured during 6.1h rather than assumed: it matches
+        // substrings, so a fully-qualified `new GuardsDigital.Core.Rules.Movement.MovementSession(`
+        // evades every token here. It was observed doing exactly that. The rule catches the way the
+        // code is actually written, not a determined author; replacing structural assertions of this
+        // kind is milestone 6.1k's subject.
         private static readonly string[] CardActionDispatcherAlgorithmTokens =
         {
-            "IMovementCardActionStrategyBackend,",
-            "IAttackDefenseCardActionStrategyBackend",
-            "IFastTravelCardActionStrategyBackend",
             "new MovementSession(",
             ".TryCommitStep(",
-            "AttackTargetQuery.FindLegalEnemyHeroes(",
-            ".TryApplyLocationTransition("
+            "MovementReachabilityQuery.FindReachableDestinations(",
+            "AttackTargetQuery.FindLegalEnemyTargets(",
+            "DefenseValueQuery.Calculate(",
+            "PrintedValueQuery.CalculatePrintedValue(",
+            "FastTravelActionQuery.EvaluateDestination(",
+            "CardLifecycleAuthority.TryDiscardDefenseFromHand("
         };
 
         private static readonly Regex NameOrTextBranch = new Regex(
@@ -189,9 +206,18 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(NameOrTextBranch.IsMatch("switch (definition.PrintedText) { }"), Is.True);
             Assert.That(FindTokens("ParsePrintedText(source);", RuntimePrintedTextParsingTokens), Is.Not.Empty);
             Assert.That(FindTokens("ParseTypedEffect(source);", RuntimePrintedTextParsingTokens), Is.Empty);
-            Assert.That(FindTokens("handler.Start(command);", CardActionDispatcherAlgorithmTokens), Is.Empty);
+            Assert.That(FindTokens("movementBackend.StartMovement(offer);", CardActionDispatcherAlgorithmTokens), Is.Empty);
             Assert.That(FindTokens("new MovementSession(authority, state);", CardActionDispatcherAlgorithmTokens), Is.Not.Empty);
-            Assert.That(FindTokens("class Resolver : IAttackDefenseCardActionStrategyBackend", CardActionDispatcherAlgorithmTokens), Is.Not.Empty);
+            Assert.That(FindTokens("var total = DefenseValueQuery.Calculate(offer);", CardActionDispatcherAlgorithmTokens), Is.Not.Empty);
+            Assert.That(FindTokens("CardLifecycleAuthority.TryDiscardDefenseFromHand(card);", CardActionDispatcherAlgorithmTokens), Is.Not.Empty);
+
+            // The allowed example is the shape 6.1h introduced: the dispatcher naming its backend
+            // and forwarding. That must stay allowed, or the rule would forbid the very thing the
+            // milestone replaced the registry with.
+            Assert.That(
+                FindTokens("attackDefenseBackend.ResolveOutcome(definitions, instances, participants);",
+                    CardActionDispatcherAlgorithmTokens),
+                Is.Empty);
             Assert.That(FindTokens("FindObjectOfType<Camera>();", ObsoleteDiscoveryTokens), Is.Not.Empty);
             Assert.That(FindTokens("FindAnyObjectByType<Camera>();", ObsoleteDiscoveryTokens), Is.Empty);
         }

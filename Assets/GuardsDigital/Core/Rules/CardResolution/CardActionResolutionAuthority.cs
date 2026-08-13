@@ -12,7 +12,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
 {
     public sealed class CardActionResolutionAuthority
     {
-        private readonly CardActionStrategyRegistry strategyRegistry;
         private readonly MovementCardActionStrategyBackend movementBackend;
         private readonly AttackDefenseCardActionStrategyBackend attackDefenseBackend;
         private readonly FastTravelCardActionStrategyBackend fastTravelBackend;
@@ -43,12 +42,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
             this.movementBackend = movementBackend ?? throw new ArgumentNullException(nameof(movementBackend));
             this.attackDefenseBackend = attackDefenseBackend ?? throw new ArgumentNullException(nameof(attackDefenseBackend));
             this.fastTravelBackend = fastTravelBackend ?? throw new ArgumentNullException(nameof(fastTravelBackend));
-            strategyRegistry = new CardActionStrategyRegistry(new ICardActionStrategyHandler[]
-            {
-                new MovementCardActionStrategyHandler(movementBackend),
-                new AttackDefenseCardActionStrategyHandler(attackDefenseBackend),
-                new FastTravelCardActionStrategyHandler(fastTravelBackend)
-            });
         }
 
         public PendingCardActionResolution PendingResolution => movementBackend.PendingResolution;
@@ -163,13 +156,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     PendingChoice);
             }
 
-            return strategyRegistry.Dispatch<MovementCardActionStrategyHandler, CardActionResolutionResult>(
-                ActionKind.Movement,
-                handler => handler.Start(
+            return movementBackend.StartMovement(
                     resolutionId,
                     offer,
                     prepared.Definitions,
-                    prepared.Instances));
+                    prepared.Instances);
         }
 
         public CardActionResolutionResult StartTurnMovementResolution(
@@ -193,19 +184,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     PendingChoice);
             }
 
-            return strategyRegistry.Dispatch<MovementCardActionStrategyHandler, CardActionResolutionResult>(
-                ActionKind.Movement,
-                handler => handler.StartTurn(
+            return movementBackend.StartTurnMovement(
                     resolutionId,
                     offer,
                     prepared.Definitions,
-                    prepared.Instances));
+                    prepared.Instances);
         }
 
         public CardActionResolutionResult AnswerMovementChoice(MovementChoiceCommand command) =>
-            strategyRegistry.Dispatch<MovementCardActionStrategyHandler, CardActionResolutionResult>(
-                CardActionStrategyIds.Movement,
-                handler => handler.Answer(command));
+            movementBackend.AnswerMovement(command);
 
         public CardActionResolutionResult PerformTurnFastTravel(
             ActionResolutionId resolutionId,
@@ -225,17 +212,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     PendingChoice);
             }
 
-            return strategyRegistry.Dispatch<FastTravelCardActionStrategyHandler, CardActionResolutionResult>(
-                ActionKind.FastTravel,
-                handler => handler.PerformTurn(
-                    resolutionId,
-                    replacementOffer,
-                    replacedMovementActionDefinitionId,
-                    destination,
-                    definitions,
-                    instances,
-                    participants,
-                    minions));
+            return fastTravelBackend.PerformTurnFastTravel(
+                resolutionId,
+                replacementOffer,
+                replacedMovementActionDefinitionId,
+                destination,
+                definitions,
+                instances,
+                participants,
+                minions);
         }
 
         public AttackActionResolutionResult StartAttackResolution(
@@ -261,14 +246,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     PendingDefenseChoice);
             }
 
-            return strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
-                ActionKind.Attack,
-                handler => handler.Start(
-                    resolutionId,
-                    offer,
-                    prepared.Definitions,
-                    prepared.Instances,
-                    participants));
+            return attackDefenseBackend.StartAttack(
+                resolutionId,
+                offer,
+                prepared.Definitions,
+                prepared.Instances,
+                participants);
         }
 
         public AttackActionResolutionResult StartTurnAttackResolution(
@@ -294,14 +277,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     PendingDefenseChoice);
             }
 
-            return strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
-                ActionKind.Attack,
-                handler => handler.StartTurn(
-                    resolutionId,
-                    offer,
-                    prepared.Definitions,
-                    prepared.Instances,
-                    participants));
+            return attackDefenseBackend.StartTurnAttack(
+                resolutionId,
+                offer,
+                prepared.Definitions,
+                prepared.Instances,
+                participants);
         }
 
         public AttackActionResolutionResult AnswerAttackTarget(
@@ -309,26 +290,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants) =>
-            strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
-                CardActionStrategyIds.AttackDefense,
-                handler => handler.AnswerTarget(command, definitions, instances, participants));
+            attackDefenseBackend.AnswerAttackTarget(command, definitions, instances, participants);
 
         public AttackActionResolutionResult AnswerDefenseResponse(
             DefenseResponseChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants) =>
-            strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
-                CardActionStrategyIds.AttackDefense,
-                handler => handler.AnswerDefense(command, definitions, instances, participants));
+            attackDefenseBackend.AnswerDefense(command, definitions, instances, participants);
 
         public AttackActionResolutionResult ResolveAttackOutcome(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants) =>
-            strategyRegistry.Dispatch<AttackDefenseCardActionStrategyHandler, AttackActionResolutionResult>(
-                ActionKind.Attack,
-                handler => handler.ResolveOutcome(definitions, instances, participants));
+            attackDefenseBackend.ResolveOutcome(definitions, instances, participants);
 
         private PreparedStart PrepareStart(
             ActionResolutionId resolutionId,

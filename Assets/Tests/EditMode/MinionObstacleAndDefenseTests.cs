@@ -214,7 +214,8 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardInstances,
                 configuration.Participants,
                 configuration.TieBreakerState,
-                cardActions: cardActions);
+                1,
+                RoundResolutionComposition.ForCardActionsOnly(cardActions));
             Assert.That(round.TryCommitCard(red.OwnerId, red.Id).Accepted, Is.True);
             Assert.That(round.TryCommitCard(blue.OwnerId, blue.Id).Accepted, Is.True);
             var selected = round.CurrentTurnAuthority.SelectedActor;

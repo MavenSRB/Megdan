@@ -284,9 +284,11 @@ namespace GuardsDigital.Application
                 rebuiltConfiguration.CardInstances,
                 rebuiltConfiguration.Participants,
                 initialState.Scenario.InitialTieBreakerState,
-                cardActions: rebuiltCardActions,
-                timing: initialState.CreateTiming(),
-                board: rebuiltBoard);
+                1,
+                RoundResolutionComposition.ForMatch(
+                    rebuiltCardActions,
+                    rebuiltBoard,
+                    initialState.CreateTiming()));
 
             ReplaceGraphs(MatchGraphSet.ForSetup(
                 rebuiltConfiguration,

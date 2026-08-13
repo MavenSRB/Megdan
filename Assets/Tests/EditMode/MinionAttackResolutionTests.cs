@@ -116,7 +116,8 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Configuration.CardInstances,
                 fixture.Configuration.Participants,
                 new TieBreakerState(TeamSide.Red),
-                cardActions: fixture.Authority);
+                1,
+                RoundResolutionComposition.ForCardActionsOnly(fixture.Authority));
 
             var payload = AuthoritativeSnapshotSerializer.Serialize(round, fixture.Board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(

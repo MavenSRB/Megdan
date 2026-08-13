@@ -9,7 +9,7 @@ using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
-    internal sealed class FastTravelCardActionStrategyBackend : IFastTravelCardActionStrategyBackend
+    internal sealed class FastTravelCardActionStrategyBackend
     {
         private readonly AdjacentMoveAuthority board;
 

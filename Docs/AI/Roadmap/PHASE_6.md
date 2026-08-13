@@ -43,7 +43,7 @@ Every milestone here names the exact check that closes its findings. Per the mec
 | 4 | 6.1d | `F613-02`, `F613-03`, `F613-12` | Merged build and toolchain integrity; its smoke gate is the standing buildability check. Complete |
 | 5 | 6.1f | `F613-06` | Largest refactor; benefits from 1-3 landing first. Complete |
 | 6 | 6.1i | `F613-08`, `F613-09`, `F613-10` | Diagnosability and measured cost. Complete |
-| 7 | 6.1h | `F613-11` | Pure maintainability; lowest risk to defer |
+| 7 | 6.1h | `F613-11` | Pure maintainability; lowest risk to defer. Complete |
 | 8 | 6.1k | `F613-13` | Must land after 7, whose renames its replacement assertions have to survive |
 | - | 6.1l | `F613-14` | Reinstated 2026-08-13; `[!]` blocked on a non-Windows host, so it carries no ordinal |
 
@@ -174,7 +174,7 @@ Non-goals: No schema-version bump, no new persisted state, no change to what is 
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61g-make-snapshot-restore-compile-enforced-completion-evidence).
 
-### [ ] 6.1h Remove dispatch ceremony and decompose the largest authorities
+### [x] 6.1h Remove dispatch ceremony and decompose the largest authorities
 
 Observable outcome: Statically-known dispatch is direct, and the largest Core files are decomposed along their real responsibility seams.
 
@@ -188,6 +188,8 @@ Acceptance checks:
 Closing check for `F613-11`: the byte-identical behavior/event/snapshot comparison across the refactor, plus the existing architecture conformance tests observed still failing when an action-specific algorithm is deliberately introduced into the outer dispatch seam. A decomposition milestone's risk is silent behavior change, so the comparison is the closure evidence.
 
 Non-goals: No rule change, no new abstraction layer introduced to replace the removed one, no renaming for its own sake, no schema change.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61h-remove-dispatch-ceremony-and-decompose-the-largest-authorities-completion-evidence).
 
 ### [x] 6.1i Report errors honestly and gate diagnostic cost
 

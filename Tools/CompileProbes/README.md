@@ -47,3 +47,32 @@ assembly boundary is a contract, and the probe is temporary.
 
 Never leave a probe in `Assets/`. A probe that stays behind is either a build break or,
 worse, code that silently drops authoritative state.
+
+## `DispatcherAlgorithm` — milestone 6.1h (`F613-11`)
+
+Unlike the other probes here, this one is a **runtime fixture observation**, not a compile transition:
+`Phase4ArchitectureConformanceTests` is a text scanner, so its rule is demonstrated by making it fire.
+
+Procedure. Add a private method to
+`Assets/GuardsDigital/Core/Rules/CardResolution/CardActionResolutionAuthority.cs` that calls one
+action-specific algorithm entry point, run the fixture with the filter
+`GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests`, observe the violation, and remove
+the method. The method must compile: a file that does not compile runs no tests at all.
+
+Observations recorded for 6.1h:
+
+- Pre-refactor `e8ada69`, probe `new MovementSession(board, heroId, 1)`:
+  FAILED with `card-action dispatcher owns a strategy backend or action-specific algorithm: new MovementSession(`.
+- Post-refactor, probe `DefenseValueQuery.Calculate(...)` — a referent added by 6.1h, absent from the
+  token list before it: FAILED with
+  `card-action dispatcher owns a strategy backend or action-specific algorithm: DefenseValueQuery.Calculate(`.
+
+The post-refactor observation is the one the acceptance check requires, because it proves the
+re-pointed rule still has teeth after the three `I*CardActionStrategyBackend` tokens were removed
+along with the interfaces they named.
+
+**A measured limit of this instrument, worth knowing before trusting it.** The first attempt wrote
+the probe fully qualified as `new GuardsDigital.Core.Rules.Movement.MovementSession(...)` and the
+fixture PASSED: the scan matches substrings, and no token matched the qualified form. The rule
+catches the way this codebase actually writes calls, not a determined author. Replacing structural
+assertions of this kind is milestone 6.1k's subject.
