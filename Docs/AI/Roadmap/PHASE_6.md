@@ -486,9 +486,21 @@ Non-goals: No sharding of the `Rule-system ledger` section, which remains its ow
 
 ## Phase 6 gameplay milestones (continued)
 
+**Sequencing amendment (2026-08-14, user approved).** Milestone 6.2a completes before 6.2, and 6.2 completes before 6.2b. The source is this sequencing finding, **not** the ER2 external review and **not** review 5.8c; do not attribute it to either record. The existing 6.1r-before-6.2 and 6.1q-before-6.2a constraints are unchanged, and 6.3 stays gated on 6.2b. Scheduling is not authorization: each milestone still requires exact user approval before execution.
+
+6.2's third acceptance check makes token placement, reclamation, and marker attachment authoritative choices, and a stable-node serializable `Choose` frame is exactly what 6.2a builds. Under the former order those choices had nowhere to live. The source holds five bespoke pending-choice families and no shared contract, `DirectorCommandKind` is a closed enum over a fixed field union, and the pending card-action discriminator is `None | Movement | Attack`. Tokens would have bought a sixth pending-choice class, new command kinds, a new projection field, and a fourth discriminator arm - four shortcuts 6.2a is chartered to replace, and the `Execution rule` in [ROADMAP.md](../ROADMAP.md) already bars a narrow milestone from introducing a shortcut the next card milestone is expected to replace. The occupancy half was never at risk: 6.1r's index admits a token occupant by declaration.
+
+This supersedes the accepted dependency order recorded in the [post-5.8c amendment](../Archive/Phase-Handoffs/PHASE_5.md#post-58c-approved-phase-6-roadmap-amendment) - 6.1, 6.1a, 6.2, 6.2a, 6.2b, then 6.3 onward. That review judged 6.2 unblocked by `F58C-02` and was right about the board state; the ground for revisiting it is acceptance check 3, which its disposition did not weigh. The archive is append-only and is not edited, so this paragraph is where the supersession is recorded.
+
+6.2 precedes 6.2b rather than following it because `F-ER2-06`'s wording is that tokens would add a fourth per-kind collection and markers a fifth. A review closing that finding before any token exists verifies the prediction; one running after 6.2 verifies the outcome.
+
+Milestone IDs are unchanged and 6.2 keeps its position in numeric order below, so the ER2 disposition table, the risk register, and existing cross-references stay valid. Execution order is carried by this paragraph, as it is for the 6.1c-6.1k corrective sequence above.
+
 ### [ ] 6.2 Add token and marker instances, supplies, placement, and attachment
 
 Observable outcome: Synthetic tokens and markers have stable authoritative identity without requiring Wasp content.
+
+Prerequisite: milestone 6.2a has established the typed serializable effect frame, so this milestone's placement, reclamation, and attachment choices execute as `Choose` and effect nodes on that frame instead of becoming a sixth bespoke pending-choice family. Milestone 6.1r remains the separate board-occupancy prerequisite.
 
 Acceptance checks:
 
@@ -496,6 +508,8 @@ Acceptance checks:
 - Markers are attachments rather than board occupants and have explicit return state.
 - Token placement/reclamation and marker attachment are authoritative choices/transitions.
 - Token and marker lifetime is not inferred from art or UI objects.
+
+Non-goals: No token-specific `DirectorCommandKind` member, pending-choice class, `MatchSessionProjection` property, or `CardActionContinuationKind` arm - the supply-exhaustion reclamation choice and the marker give/return operations ride 6.2a's frame, and a token-shaped copy of the existing per-action pending state is the exact shortcut this ordering exists to prevent. No token property behavior or Clear (6.3), displacement (6.4), Place or Spawn (6.5), Swap/Replace/Remove (6.6), or end-of-round cleanup (6.12). No Wasp content, printed-text parsing, card-name/hero-name branch, production presentation, art, animation, or audio.
 
 ### [ ] 6.2a Establish typed Skill and serializable effect execution
 
@@ -527,7 +541,7 @@ Acceptance checks:
 
 Non-goals: No runtime, test, scene, package, assembly, content, or rule change; no implementation of a discovered correction inside the review milestone.
 
-ER2 note: this review's scope also verifies the 6.1r unified board-occupancy seam (`F-ER2-06`), the architectural-direction finding the mechanical-closure rule assigns to fresh-task verification.
+ER2 note: this review's scope also verifies the 6.1r unified board-occupancy seam (`F-ER2-06`), the architectural-direction finding the mechanical-closure rule assigns to fresh-task verification. Under the 2026-08-14 sequencing amendment above, milestone 6.2 lands first, so that verification observes tokens and markers actually declared on the seam rather than the prediction that they would be. One sub-question is named rather than left implicit: 6.1r's acceptance checks cover the constructor collision block and the commit-validation scan, while its observable outcome also names the parallel collection, serializer section, and projection field. Whether a token occupant joins by declaration across all five is this review's to determine. This sharpens a scope the review already holds; it widens none.
 
 ### [ ] 6.3 Add core token interactions, persistent properties, and Clear
 
