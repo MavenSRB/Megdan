@@ -271,6 +271,12 @@ The required review-only pass found no remaining demonstrated defect beyond the 
 | --- | --- | --- |
 | 6.1t | The dotnet harness from branch `er2-external-review-line` compiles Core/CardState/Application plus the Unity-free Edit Mode tests with a 20-entry exclude-list tripwire (observed failing on a deliberately un-excluded Unity file) and the map-loader shim parity fixture; 272/272 green on the Linux workstation; the harness project file is tracked past the blanket `*.csproj` ignore; POLICY/TESTING/DOTNET_HARNESS shards record the tier placement. Closes the harness half of `F-ER2-12`; Windows-direction run recorded as pending. | `eedc14d` |
 
+## Milestone 6.1q Scope Active-effect checkpoints and uniqueness correctly completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1q | Every live effect is visited at every checkpoint, with the context hero narrowing only activation targeting, triggers, and `AffectedHeroDefeated` cancellation, so Hero-scoped effects reach their own expiration windows regardless of the acting hero; uniqueness suppression compares the declared scope identity instead of one global key namespace. The two `F-ER2-03` closing-check tests were observed failing pre-fix (2 of 15) and pass post-fix; full harness 275/275; serialized format unchanged, schema stays v6. `ActionEnded` expiration remains unconstructible under `ValidateDuration`, so the check is realized at the valid turn-only checkpoint with all expiration checkpoints unfiltered for 6.2a. | `33fa799` |
+
 ## 2026-08-13 external engineering review ER2
 
 A second external engineering review (architecture, implementation, code, tests, and the documentation corpus) was performed on 2026-08-13 by Claude (Anthropic) on the Linux workstation at the user's direct request, initially against the pre-divergence external line and revised the same day against milestone 6.1p after the histories were reconciled: the user confirmed the 6.1c-6.1p line as canonical, the superseded ER1/ER2 external line is preserved losslessly on branch `er2-external-review-line`, and the rulebook working copy clobbered by that reconciliation was restored byte-identically from Git LFS (`sha256 2c19b11d...ba98`). The user approved recording this review and executing only its documentation-truth corrections; every other disposition is a proposal and authorizes no implementation.
