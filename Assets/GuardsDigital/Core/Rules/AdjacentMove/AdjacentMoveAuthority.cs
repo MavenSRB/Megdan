@@ -16,6 +16,11 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         private readonly List<HeroOccupancy> occupancies;
         private readonly List<ObstacleOccupancy> obstacleOccupancies;
         private readonly List<QuickGameMinionSetupState> minions;
+        private readonly BoardOccupancyIndex occupancyIndex;
+        private readonly IReadOnlyList<HeroOccupancy> occupanciesView;
+        private readonly IReadOnlyList<ObstacleOccupancy> obstacleOccupanciesView;
+        private readonly IReadOnlyList<QuickGameMinionSetupState> minionsView;
+        private readonly IReadOnlyList<HexCoordinate> boardCoordinatesView;
 
         public AdjacentMoveAuthority(
             IEnumerable<HexCoordinate> boardCoordinates,
@@ -75,8 +80,11 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             this.boardCoordinates = new HashSet<HexCoordinate>(mapDefinition.PlayableCoordinates);
             occupancies = new List<HeroOccupancy>();
             obstacleOccupancies = new List<ObstacleOccupancy>();
+            occupancyIndex = new BoardOccupancyIndex();
             var materializedMinions = initialMinions.ToArray();
 
+            // Per-kind identity validation stays with each kind; the shared occupancy index owns
+            // the one-obstacle-per-space rule for every kind through its single Add.
             foreach (var occupancy in initialOccupancies)
             {
                 if (!this.boardCoordinates.Contains(occupancy.Coordinate))
@@ -89,11 +97,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     throw new ArgumentException("Initial occupancies must have unique hero IDs.", nameof(initialOccupancies));
                 }
 
-                if (occupancies.Any(existing => existing.Coordinate.Equals(occupancy.Coordinate)))
-                {
-                    throw new ArgumentException("Initial occupancies must have unique coordinates.", nameof(initialOccupancies));
-                }
-
+                occupancyIndex.Add(occupancy.Coordinate, BoardOccupant.ForHero(occupancy.HeroId), nameof(initialOccupancies));
                 occupancies.Add(occupancy);
             }
 
@@ -109,12 +113,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     throw new ArgumentException("Initial obstacle occupancies must have unique obstacle IDs.", nameof(initialObstacleOccupancies));
                 }
 
-                if (obstacleOccupancies.Any(existing => existing.Coordinate.Equals(obstacleOccupancy.Coordinate)) ||
-                    occupancies.Any(existing => existing.Coordinate.Equals(obstacleOccupancy.Coordinate)))
-                {
-                    throw new ArgumentException("Initial obstacle occupancies must not share coordinates with another obstacle or unit.", nameof(initialObstacleOccupancies));
-                }
-
+                occupancyIndex.Add(obstacleOccupancy.Coordinate, BoardOccupant.ForObstacle(obstacleOccupancy.ObstacleId), nameof(initialObstacleOccupancies));
                 obstacleOccupancies.Add(obstacleOccupancy);
             }
 
@@ -145,28 +144,76 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     throw new ArgumentException("Initial minion occupancy must resolve to its exact playable space on the selected map.", nameof(initialMinions));
                 }
 
-                if (occupancies.Any(existing => existing.Coordinate.Equals(minion.Coordinate)) ||
-                    obstacleOccupancies.Any(existing => existing.Coordinate.Equals(minion.Coordinate)) ||
-                    materializedMinions.Count(existing => existing.Coordinate.Equals(minion.Coordinate)) != 1)
-                {
-                    throw new ArgumentException("Initial minions must not share a coordinate with another obstacle or unit.", nameof(initialMinions));
-                }
+                occupancyIndex.Add(minion.Coordinate, BoardOccupant.ForMinion(minion.MinionId), nameof(initialMinions));
             }
 
             minions = new List<QuickGameMinionSetupState>(materializedMinions);
+            occupanciesView = occupancies.AsReadOnly();
+            obstacleOccupanciesView = obstacleOccupancies.AsReadOnly();
+            minionsView = minions.AsReadOnly();
+            boardCoordinatesView = this.boardCoordinates.ToArray();
         }
 
-        public IReadOnlyList<HeroOccupancy> Occupancies => occupancies.ToArray();
+        // Already-validated copy constructor for CreateValidationFork: the source authority's
+        // state was validated when it was built and mutated only through validated commits, so a
+        // fork clones that state without re-running the constructor validation.
+        private AdjacentMoveAuthority(AdjacentMoveAuthority source)
+        {
+            MapDefinition = source.MapDefinition;
+            boardCoordinates = source.boardCoordinates;
+            occupancies = new List<HeroOccupancy>(source.occupancies);
+            obstacleOccupancies = new List<ObstacleOccupancy>(source.obstacleOccupancies);
+            minions = new List<QuickGameMinionSetupState>(source.minions);
+            occupancyIndex = source.occupancyIndex.Clone();
+            occupanciesView = occupancies.AsReadOnly();
+            obstacleOccupanciesView = obstacleOccupancies.AsReadOnly();
+            minionsView = minions.AsReadOnly();
+            boardCoordinatesView = source.boardCoordinatesView;
+        }
+
+        public IReadOnlyList<HeroOccupancy> Occupancies => occupanciesView;
 
         public BoardMapDefinition MapDefinition { get; }
 
         public MapDefinitionReference SelectedMap => MapDefinition.Reference;
 
-        public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupancies.ToArray();
+        public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupanciesView;
 
-        public IReadOnlyList<QuickGameMinionSetupState> Minions => minions.ToArray();
+        public IReadOnlyList<QuickGameMinionSetupState> Minions => minionsView;
 
-        public IReadOnlyList<HexCoordinate> BoardCoordinates => boardCoordinates.ToArray();
+        public IReadOnlyList<HexCoordinate> BoardCoordinates => boardCoordinatesView;
+
+        internal bool IsOccupied(HexCoordinate coordinate) => occupancyIndex.IsOccupied(coordinate);
+
+        internal IReadOnlyCollection<HexCoordinate> OccupiedCoordinates => occupancyIndex.OccupiedCoordinates;
+
+        internal IReadOnlyCollection<HexCoordinate> PlayableCoordinateSet => boardCoordinates;
+
+        internal AdjacentMoveAuthority CreateValidationFork() => new AdjacentMoveAuthority(this);
+
+        public BoardRestoreState CaptureRestoreState() =>
+            new BoardRestoreState(occupancies, obstacleOccupancies, minions.Select(minion => minion.MinionId));
+
+        public static AdjacentMoveAuthority Restore(
+            BoardRestoreState state,
+            BoardMapDefinition mapDefinition,
+            IEnumerable<QuickGameMinionSetupState> configuredMinions)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            if (mapDefinition == null) throw new ArgumentNullException(nameof(mapDefinition));
+            if (configuredMinions == null) throw new ArgumentNullException(nameof(configuredMinions));
+
+            var available = configuredMinions.ToArray();
+            if (state.RemainingMinionIds.Any(id => available.Count(minion => minion.MinionId.Equals(id)) != 1))
+            {
+                throw new ArgumentException(
+                    "Restored remaining-minion identities must match configured minion content.",
+                    nameof(state));
+            }
+
+            var remaining = available.Where(minion => state.RemainingMinionIds.Contains(minion.MinionId));
+            return new AdjacentMoveAuthority(mapDefinition, state.HeroOccupancies, state.ObstacleOccupancies, remaining);
+        }
 
         public AdjacentMoveResult TryCommit(AdjacentMoveCommand command)
         {
@@ -192,13 +239,12 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 return AdjacentMoveResult.Reject(AdjacentMoveRejectionReason.DestinationNotAdjacent);
             }
 
-            if (occupancies.Any(occupancy => occupancy.Coordinate.Equals(command.Destination)) ||
-                obstacleOccupancies.Any(occupancy => occupancy.Coordinate.Equals(command.Destination)) ||
-                minions.Any(minion => minion.Coordinate.Equals(command.Destination)))
+            if (occupancyIndex.IsOccupied(command.Destination))
             {
                 return AdjacentMoveResult.Reject(AdjacentMoveRejectionReason.DestinationOccupied);
             }
 
+            occupancyIndex.Move(command.Origin, command.Destination);
             occupancies[heroIndex] = new HeroOccupancy(command.HeroId, command.Destination);
             return AdjacentMoveResult.Accept(new AdjacentMoveEvent(
                 command.HeroId,
@@ -214,10 +260,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new InvalidOperationException("A validated Fast Travel actor is no longer on the board.");
             }
 
-            if (!boardCoordinates.Contains(destination) ||
-                occupancies.Any(occupancy => occupancy.Coordinate.Equals(destination)) ||
-                obstacleOccupancies.Any(occupancy => occupancy.Coordinate.Equals(destination)) ||
-                minions.Any(minion => minion.Coordinate.Equals(destination)))
+            if (!boardCoordinates.Contains(destination) || occupancyIndex.IsOccupied(destination))
             {
                 throw new InvalidOperationException("A validated Fast Travel destination is no longer empty and playable.");
             }
@@ -233,6 +276,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 destination,
                 MapDefinition.GetZoneForSpace(originSpace.Id).Id,
                 MapDefinition.GetZoneForSpace(destinationSpace.Id).Id);
+            occupancyIndex.Move(origin, destination);
             occupancies[heroIndex] = new HeroOccupancy(heroId, destination);
             return travelEvent;
         }
@@ -247,6 +291,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
             var removed = minions[index];
             minions.RemoveAt(index);
+            occupancyIndex.Remove(removed.Coordinate);
             return removed;
         }
     }

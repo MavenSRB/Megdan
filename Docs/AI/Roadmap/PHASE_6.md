@@ -343,7 +343,7 @@ Closing check for `F-ER2-03`: the two focused lifecycle tests named in the ER2 r
 
 Non-goals: No concrete card text, no modifier application, no new checkpoint kinds, no 6.2a effect execution.
 
-### [ ] 6.1r Design one board-occupancy seam for every occupant kind
+### [x] 6.1r Design one board-occupancy seam for every occupant kind
 
 Observable outcome: Heroes, minions, and generic obstacles occupy the board through one authoritative occupancy/collision seam that tokens (6.2) join by declaration, rather than each occupant kind owning a parallel collection, constructor collision block, transit scan, serializer section, and projection field.
 

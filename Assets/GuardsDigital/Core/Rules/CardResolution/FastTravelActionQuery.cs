@@ -127,10 +127,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     space.Kind == BoardMapSpaceKind.Playable &&
                     space.Coordinate.Equals(destination))
                 .ToArray();
-            if (destinationSpaces.Length != 1 ||
-                board.Occupancies.Any(occupancy => occupancy.Coordinate.Equals(destination)) ||
-                board.ObstacleOccupancies.Any(occupancy => occupancy.Coordinate.Equals(destination)) ||
-                minions.Any(minion => minion.Coordinate.Equals(destination)))
+            if (destinationSpaces.Length != 1 || board.IsOccupied(destination))
             {
                 return CardActionResolutionRejectionReason.FastTravelDestinationUnavailable;
             }

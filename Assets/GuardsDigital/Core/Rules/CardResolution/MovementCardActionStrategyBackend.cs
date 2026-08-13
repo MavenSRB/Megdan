@@ -355,10 +355,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var currentOccupancy = movementSession.CurrentOccupancy;
             var legalDestinations = MovementReachabilityQuery.FindReachableDestinations(
                 currentOccupancy,
-                adjacentMoveAuthority.BoardCoordinates,
-                adjacentMoveAuthority.Occupancies,
-                adjacentMoveAuthority.ObstacleOccupancies,
-                adjacentMoveAuthority.Minions,
+                adjacentMoveAuthority,
                 movementSession.RemainingAllowance);
 
             return new PendingMovementChoice(
@@ -377,11 +374,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ReachableMovementDestination destination,
             out MovementSessionStepResult rejectedStep)
         {
-            var validationAuthority = new AdjacentMoveAuthority(
-                adjacentMoveAuthority.MapDefinition,
-                adjacentMoveAuthority.Occupancies,
-                adjacentMoveAuthority.ObstacleOccupancies,
-                adjacentMoveAuthority.Minions);
+            // The fork clones already-validated board state without re-running the constructor's
+            // full occupancy validation on every accepted movement step.
+            var validationAuthority = adjacentMoveAuthority.CreateValidationFork();
             var validationSession = new MovementSession(validationAuthority, movementState);
             for (var routeIndex = 1; routeIndex < destination.Route.Count; routeIndex++)
             {

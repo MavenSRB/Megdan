@@ -98,26 +98,27 @@ namespace GuardsDigital.Core.Snapshots
 
         private static void WriteBoard(BinaryWriter writer, AdjacentMoveAuthority board)
         {
+            var (heroOccupancies, obstacleOccupancies, remainingMinionIds) = board.CaptureRestoreState();
             writer.Write(board.SelectedMap.MapId.Value);
             writer.Write(board.SelectedMap.ContentRevision);
-            writer.Write(board.Occupancies.Count);
-            foreach (var occupancy in board.Occupancies.OrderBy(value => value.HeroId.Value, StringComparer.Ordinal))
+            writer.Write(heroOccupancies.Count);
+            foreach (var occupancy in heroOccupancies.OrderBy(value => value.HeroId.Value, StringComparer.Ordinal))
             {
                 writer.Write(occupancy.HeroId.Value);
                 WriteCoordinate(writer, occupancy.Coordinate);
             }
 
-            writer.Write(board.ObstacleOccupancies.Count);
-            foreach (var occupancy in board.ObstacleOccupancies.OrderBy(value => value.ObstacleId.Value, StringComparer.Ordinal))
+            writer.Write(obstacleOccupancies.Count);
+            foreach (var occupancy in obstacleOccupancies.OrderBy(value => value.ObstacleId.Value, StringComparer.Ordinal))
             {
                 writer.Write(occupancy.ObstacleId.Value);
                 WriteCoordinate(writer, occupancy.Coordinate);
             }
 
-            writer.Write(board.Minions.Count);
-            foreach (var minion in board.Minions.OrderBy(value => value.MinionId.Value, StringComparer.Ordinal))
+            writer.Write(remainingMinionIds.Count);
+            foreach (var minionId in remainingMinionIds.OrderBy(value => value.Value, StringComparer.Ordinal))
             {
-                writer.Write(minion.MinionId.Value);
+                writer.Write(minionId.Value);
             }
         }
 
@@ -152,8 +153,10 @@ namespace GuardsDigital.Core.Snapshots
             {
                 throw Malformed("Snapshot remaining-minion identities do not match configured minion content.");
             }
-            var remaining = availableMinions.Where(minion => remainingIds.Contains(minion.MinionId)).ToArray();
-            return new AdjacentMoveAuthority(mapDefinition, heroes, obstacles, remaining);
+            return AdjacentMoveAuthority.Restore(
+                new BoardRestoreState(heroes, obstacles, remainingIds),
+                mapDefinition,
+                availableMinions);
         }
 
         private static void WriteCards(BinaryWriter writer, IReadOnlyList<CardInstance> cards)

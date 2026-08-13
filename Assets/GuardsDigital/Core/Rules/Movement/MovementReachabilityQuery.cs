@@ -10,6 +10,36 @@ namespace GuardsDigital.Core.Rules.Movement
 {
     public static class MovementReachabilityQuery
     {
+        // Authority-backed entry: the board's occupancy index supplies the blocked set directly,
+        // so every occupant kind blocks transit without this query enumerating per-kind lists.
+        public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
+            HeroOccupancy selectedHero,
+            GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
+            int movementAllowance)
+        {
+            if (board == null)
+            {
+                throw new ArgumentNullException(nameof(board));
+            }
+
+            if (movementAllowance < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(movementAllowance),
+                    movementAllowance,
+                    "Movement allowance must not be negative.");
+            }
+
+            if (movementAllowance == 0)
+            {
+                return Array.Empty<ReachableMovementDestination>();
+            }
+
+            var playable = new HashSet<HexCoordinate>(board.PlayableCoordinateSet);
+            var blocked = new HashSet<HexCoordinate>(board.OccupiedCoordinates);
+            return FindReachableCore(selectedHero, playable, blocked, movementAllowance);
+        }
+
         public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
             HeroOccupancy selectedHero,
             IEnumerable<HexCoordinate> boardCoordinates,
@@ -83,11 +113,6 @@ namespace GuardsDigital.Core.Rules.Movement
             }
 
             var board = new HashSet<HexCoordinate>(boardCoordinates);
-            if (!board.Contains(selectedHero.Coordinate))
-            {
-                return Array.Empty<ReachableMovementDestination>();
-            }
-
             var blocked = new HashSet<HexCoordinate>(occupancies.Select(occupancy => occupancy.Coordinate));
             foreach (var obstacleOccupancy in obstacleOccupancies)
             {
@@ -96,6 +121,20 @@ namespace GuardsDigital.Core.Rules.Movement
             foreach (var minion in minions)
             {
                 blocked.Add(minion.Coordinate);
+            }
+
+            return FindReachableCore(selectedHero, board, blocked, movementAllowance);
+        }
+
+        private static IReadOnlyList<ReachableMovementDestination> FindReachableCore(
+            HeroOccupancy selectedHero,
+            HashSet<HexCoordinate> board,
+            HashSet<HexCoordinate> blocked,
+            int movementAllowance)
+        {
+            if (!board.Contains(selectedHero.Coordinate))
+            {
+                return Array.Empty<ReachableMovementDestination>();
             }
 
             blocked.Remove(selectedHero.Coordinate);
