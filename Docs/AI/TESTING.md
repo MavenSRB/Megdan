@@ -13,7 +13,7 @@ This compact index routes to the exact active validation policy, reusable launch
 
 ## Historical recipes
 
-- [Superseded testing recipes](Archive/TESTING_HISTORY.md)
+- [Superseded testing recipes and the milestone coverage narrative](Archive/TESTING_HISTORY.md)
 
 ## Required launcher
 

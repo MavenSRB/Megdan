@@ -77,7 +77,7 @@ Every removed, relocated, or rewritten pre-governance section is routed here. Ha
 | `TESTING.md` | Play Mode shell test | `Testing/PLAYMODE_AND_SUITES.md#play-mode-shell-test` | `authoritative shard` | `e07758773858599996ceb387d146835284771c24c9952ddace851bf8eab3d433` | `e07758773858599996ceb387d146835284771c24c9952ddace851bf8eab3d433` |
 | `TESTING.md` | Complete gate suites | `Testing/PLAYMODE_AND_SUITES.md#complete-gate-suites` | `authoritative shard` | `a7f19e0f5aa7908eca5567a2f2d490a8d05996f22bd82b1c4b757f511c6a0f95` | `a7f19e0f5aa7908eca5567a2f2d490a8d05996f22bd82b1c4b757f511c6a0f95` |
 | `TESTING.md` | Test ownership | `Testing/PLAYMODE_AND_SUITES.md#test-ownership` | `authoritative shard` | `22a4c83d9eb90cc58ef6a31ef7ca58a31c6d40af2e21f63e62da3615a1338f0c` | `22a4c83d9eb90cc58ef6a31ef7ca58a31c6d40af2e21f63e62da3615a1338f0c` |
-| `TESTING.md` | Scope | `Testing/POLICY.md#scope` | `authoritative shard` | `c6515a8b9ccc11143e6199c7084d412e5497d72578965b3b07a997ef119dc04f` | `3a402d7be0d19d36ca46315c6590f9102a35bbbef8784cd138206efbaec8231e` |
+| `TESTING.md` | Scope | `Testing/POLICY.md#scope` | `authoritative shard` | `c6515a8b9ccc11143e6199c7084d412e5497d72578965b3b07a997ef119dc04f` | `fc8a5df99c19c9d1445592399547207c7f304d70aa4d8da9a2ff864219475894` |
 | `TESTING.md` | Risk-tiered validation policy | `Testing/POLICY.md#risk-tiered-validation-policy` | `authoritative shard` | `93bed185ac91c69248df02eb9538fe1cfa2e8b19f05e1411429cf22a292a8653` | `422e0369c4f5ce8cd2b9c855731adf43fdaf659bb5167edb14b16287dd278162` |
 | `TESTING.md` | Rule and content verification | `Testing/POLICY.md#rule-and-content-verification` | `authoritative shard` | `74adf77e851e234b2168ba7230aa0095d5d69d961e8bd63828430839ad6c3f29` | `74adf77e851e234b2168ba7230aa0095d5d69d961e8bd63828430839ad6c3f29` |
 | `TESTING.md` | Regression ownership | `Testing/POLICY.md#regression-ownership` | `authoritative shard` | `be653b936910eaefb2883203b0be440ce0b68f62867a2e871873d78c848ec137` | `be653b936910eaefb2883203b0be440ce0b68f62867a2e871873d78c848ec137` |
@@ -191,3 +191,23 @@ Two tracked destinations changed body text in the same amendment. Both retain th
 | --- | --- | --- | --- |
 | `Testing/POLICY.md#living-document-governance-validation` | `4713fe57623969ff2a9e7e1c9ff91657dea7c361c5ed215f413f26eb7ad0587e` | `53d8393da767b7b568122dbdc5163eb039a56adef715d0149c8e3e459afbfacd` | Removes the retired profile/config assertions and adds the three code-truth checks defined by this amendment. |
 | `Project/PRODUCT.md#technology-and-platforms` | `15dda083f07b20b797b2a73624c0c5fb109aac6fe12d692843d804d4dcca8b35` | `2bb5001b852e91e8fd25718edc290b83941c337209b78784bbd17df8736288ec` | Records the user's 2026-08-13 platform-scope change from Windows-only to Windows, macOS, and iOS, and states that the two added platforms are declared rather than supported. |
+
+## 2026-08-13 threshold ownership review: Testing/POLICY.md Scope
+
+Recorded as prose rather than as a manifest table row because the table's hash mechanism resolves every source against `Archive/Pre-Governance/`, and this relocation moves material out of a current active leaf rather than out of the pre-governance baseline. All fields the governance contract requires for a relocated section are recorded here.
+
+| Field | Value |
+| --- | --- |
+| Original path and heading | `Testing/POLICY.md` / `Scope` |
+| Destination anchor | [`Archive/TESTING_HISTORY.md#milestone-coverage-narrative-through-61b`](TESTING_HISTORY.md#milestone-coverage-narrative-through-61b) |
+| Category treatment | `verbatim archive` |
+| Relocated source SHA-256 | `5e6ffcf9eef41b7fcbf6ee42f1f0c7510274a82fb6da11313cdffd2f45fecf64` |
+| Destination SHA-256 | `5e6ffcf9eef41b7fcbf6ee42f1f0c7510274a82fb6da11313cdffd2f45fecf64` |
+
+The relocated body is 2,744 words across 18 paragraphs recording what each completed milestone added to automated coverage, with its validation tier and rationale. It was verified byte-identical (21,690 characters) between the removed text at commit `0047c3d` and the archived destination before this entry was written.
+
+This was required by the active-leaf threshold rule: `Testing/POLICY.md` stood at 6,533 of 7,000 words, 93.3 percent of its hard limit, after the same day's governance amendment added the code-truth check specification. The chronology is historical evidence rather than current policy, so archiving is the governance-designated response rather than sharding. The shard now measures 3,946 words, 56.4 percent of its limit.
+
+Nothing was shortened, paraphrased, or compressed. The retained `Scope` section keeps the operational command paragraph verbatim and adds a subject-oriented coverage statement plus a stable backlink. The `batchMode` request-field capability referenced by two relocated paragraphs remains documented as current policy in the launcher entry-point section.
+
+`RULES_LEDGER.md` was inspected in the same review at 7,720 of 9,000 words, 85.8 percent. It carries 1,280 words of headroom, is the project's rules authority, and its ledger entries are current rule status rather than relocatable history. No action was taken; it is scheduled for its own focused review before it approaches the hard limit.
