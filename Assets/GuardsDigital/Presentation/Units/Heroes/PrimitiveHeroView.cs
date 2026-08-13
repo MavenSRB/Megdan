@@ -233,6 +233,12 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private static Material CreatePlaceholderMaterial(TeamSide side)
         {
             var shader = Shader.Find("Standard");
+            if (shader == null)
+            {
+                throw new System.InvalidOperationException(
+                    "The primitive hero placeholder requires the Standard shader.");
+            }
+
             var material = new Material(shader)
             {
                 name = $"{side} Primitive Hero Placeholder",

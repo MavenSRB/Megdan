@@ -35,6 +35,29 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void EditorScripts_CompileIntoAnEditorOnlyAssemblyThatCannotReachTheSessionPort()
+        {
+            // Assets/Editor had no assembly definition before milestone 6.1d, so its scripts landed
+            // in the catch-all Assembly-CSharp-Editor, which auto-references every other assembly.
+            // A loose Editor script could therefore construct a MatchSession and bypass IMatchSession
+            // entirely, and nothing would have reported it.
+            var editorAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(candidate => candidate.GetTypes()
+                    .Any(type => type.FullName == "GuardsDigital.EditorTools.CurrentPrototypeLauncher"));
+
+            Assert.That(editorAssembly, Is.Not.Null,
+                "The Editor tools assembly was not found; this check would otherwise pass vacuously.");
+            Assert.That(editorAssembly.GetName().Name, Is.EqualTo("GuardsDigital.EditorTools"),
+                "Editor scripts must compile into their own Editor-only assembly definition, not into " +
+                "the catch-all Assembly-CSharp-Editor that references everything.");
+
+            var references = editorAssembly.GetReferencedAssemblies().Select(value => value.Name).ToArray();
+            Assert.That(references, Does.Not.Contain("GuardsDigital.Application"),
+                "The Editor tools assembly must not reference the application layer; an Editor script " +
+                "that can reach MatchSession directly can bypass the IMatchSession port.");
+        }
+
+        [Test]
         public void MatchSessionPortAndProjection_ExposeNoUnityTypesAndRemainImmutable()
         {
             var publicTypes = typeof(IMatchSession).Assembly.GetExportedTypes();

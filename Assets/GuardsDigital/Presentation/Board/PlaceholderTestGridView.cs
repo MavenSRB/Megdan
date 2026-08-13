@@ -410,7 +410,14 @@ namespace GuardsDigital.Presentation.Board
 
         private static Material CreateMaterial(string name, Color color)
         {
-            var material = new Material(Shader.Find("Standard")) { name = name, color = color };
+            var shader = Shader.Find("Standard");
+            if (shader == null)
+            {
+                throw new System.InvalidOperationException(
+                    $"The generated board material '{name}' requires the Standard shader.");
+            }
+
+            var material = new Material(shader) { name = name, color = color };
             material.hideFlags = HideFlags.DontSave;
             return material;
         }

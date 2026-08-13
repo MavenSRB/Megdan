@@ -1,0 +1,16 @@
+{
+  "name": "GuardsDigital.EditorTools",
+  "rootNamespace": "GuardsDigital.EditorTools",
+  "references": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

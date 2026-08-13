@@ -4,7 +4,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$docsRoot = Join-Path $projectRoot 'Docs\AI'
+$docsRoot = [System.IO.Path]::Combine($projectRoot, 'Docs', 'AI')
 $issues = New-Object System.Collections.Generic.List[object]
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
@@ -27,9 +27,13 @@ function Get-Anchor([string] $Heading) {
 }
 
 function Get-RelativePath([string] $BasePath, [string] $TargetPath) {
-    $baseUri = New-Object System.Uri(($BasePath.TrimEnd('\') + '\'))
+    # Forward slashes on every platform. The result is display text and a Get-Limit lookup key, never
+    # a path handed back to the filesystem, so one separator everywhere keeps messages identical
+    # across hosts instead of varying with the runner.
+    $separator = [System.IO.Path]::DirectorySeparatorChar
+    $baseUri = New-Object System.Uri(($BasePath.TrimEnd('\', '/') + $separator))
     $targetUri = New-Object System.Uri($TargetPath)
-    return [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($targetUri).ToString()).Replace('/', '\')
+    return [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($targetUri).ToString())
 }
 
 function Get-Limit([string] $RelativePath) {
@@ -345,7 +349,7 @@ else {
         # is not itself a separate temporary structure needing its own retirement owner. They are
         # excluded from the construction scan for the same reason - a component that only a fixture
         # ever instantiates is not reachable in a running player.
-        $isTest = $sourceFile.FullName -like '*\Assets\Tests\*'
+        $isTest = $sourceFile.FullName.Replace('\', '/') -like '*/Assets/Tests/*'
         $sourceText = Read-Utf8 $sourceFile.FullName
         if (-not $isTest) { [void]$productionSource.AppendLine($sourceText) }
         foreach ($declaration in [regex]::Matches($sourceText, '(?m)^\s*(?:public|internal|private|protected|sealed|abstract|static|partial|readonly|record|\s)*\b(?:class|struct|interface|enum|record)\s+([A-Za-z_][A-Za-z0-9_]*)')) {
@@ -397,7 +401,7 @@ else {
         }
     }
 
-    $implementationPath = Join-Path $docsRoot 'Project\CURRENT_IMPLEMENTATION.md'
+    $implementationPath = [System.IO.Path]::Combine($docsRoot, 'Project', 'CURRENT_IMPLEMENTATION.md')
     if (Test-Path -LiteralPath $implementationPath) {
         foreach ($code in (Test-StatusCoherence $session (Read-Utf8 $implementationPath) $roadmapCorpus)) {
             Add-Issue 'ERROR' $code 'SESSION_BRIEF.md, Project/CURRENT_IMPLEMENTATION.md, and the roadmap do not name the same completed milestone.'
@@ -421,7 +425,7 @@ else {
 # now expresses the rule it enforces instead of a property of one completed migration.
 $activeCorpus = ($activeFiles | ForEach-Object { Read-Utf8 $_.FullName }) -join "`n"
 $archivedBodies = New-Object System.Collections.Generic.List[string]
-foreach ($handoff in (Get-ChildItem -LiteralPath (Join-Path $docsRoot 'Archive\Phase-Handoffs') -File -Filter '*.md' -ErrorAction SilentlyContinue)) {
+foreach ($handoff in (Get-ChildItem -LiteralPath ([System.IO.Path]::Combine($docsRoot, 'Archive', 'Phase-Handoffs')) -File -Filter '*.md' -ErrorAction SilentlyContinue)) {
     foreach ($paragraph in ([regex]::Split((Read-Utf8 $handoff.FullName), '\r?\n\s*\r?\n'))) {
         $body = $paragraph.Trim()
         if ($body.Length -lt 200) { continue }

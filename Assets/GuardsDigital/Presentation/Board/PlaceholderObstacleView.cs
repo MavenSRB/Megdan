@@ -124,6 +124,12 @@ namespace GuardsDigital.Presentation.Board
         private static Material CreatePlaceholderMaterial()
         {
             var shader = Shader.Find("Standard");
+            if (shader == null)
+            {
+                throw new System.InvalidOperationException(
+                    "The placeholder obstacle requires the Standard shader.");
+            }
+
             return new Material(shader)
             {
                 name = "Placeholder Obstacle",

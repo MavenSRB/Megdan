@@ -4,9 +4,75 @@ param()
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$requestPath = Join-Path $projectRoot 'tmp\unity-validation-request.json'
-$unityPath = 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe'
-$hubPath = 'C:\Program Files\Unity Hub\Unity Hub.exe'
+$requestPath = [System.IO.Path]::Combine($projectRoot, 'tmp', 'unity-validation-request.json')
+
+$unityEditorVersion = '6000.5.7f1'
+
+function Test-IsWindowsHost {
+    # $IsWindows exists on PowerShell Core only; Windows PowerShell 5.1 predates it and is
+    # Windows by definition.
+    if (Test-Path -Path 'Variable:\IsWindows') { return $IsWindows }
+    return $true
+}
+
+<#
+.SYNOPSIS
+    Locates an executable through an explicit environment override, then platform-appropriate probing.
+
+.DESCRIPTION
+    The override always wins, so a machine with a non-standard install location needs no edit to this
+    script. Probing only covers the documented default install locations for each declared
+    development platform. Discovery failure names both the override variable and every probed path,
+    because "Unity not found" without the search list is unactionable.
+#>
+function Resolve-ToolPath {
+    param(
+        [Parameter(Mandatory = $true)] [string] $OverrideVariable,
+        [Parameter(Mandatory = $true)] [string[]] $Candidates,
+        [Parameter(Mandatory = $true)] [string] $Description
+    )
+
+    $override = [System.Environment]::GetEnvironmentVariable($OverrideVariable)
+    if (-not [string]::IsNullOrWhiteSpace($override)) {
+        if (Test-Path -LiteralPath $override -PathType Leaf) { return $override }
+        throw "$OverrideVariable is set to '$override', but no $Description exists there."
+    }
+
+    foreach ($candidate in $Candidates) {
+        if (-not [string]::IsNullOrWhiteSpace($candidate) -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+            return $candidate
+        }
+    }
+
+    throw ("Could not locate the $Description. Set $OverrideVariable to its full path, or install it " +
+        "at one of: " + ($Candidates -join '; '))
+}
+
+if (Test-IsWindowsHost) {
+    $programFiles = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::ProgramFiles)
+    $unityCandidates = @(
+        [System.IO.Path]::Combine($programFiles, 'Unity', 'Hub', 'Editor', $unityEditorVersion, 'Editor', 'Unity.exe')
+    )
+    $hubCandidates = @(
+        [System.IO.Path]::Combine($programFiles, 'Unity Hub', 'Unity Hub.exe')
+    )
+}
+else {
+    $home = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
+    $unityCandidates = @(
+        # macOS Hub layout, then the common Linux Hub layout.
+        [System.IO.Path]::Combine('/Applications', 'Unity', 'Hub', 'Editor', $unityEditorVersion, 'Unity.app', 'Contents', 'MacOS', 'Unity'),
+        [System.IO.Path]::Combine($home, 'Unity', 'Hub', 'Editor', $unityEditorVersion, 'Editor', 'Unity'),
+        [System.IO.Path]::Combine('/opt', 'unity', 'editors', $unityEditorVersion, 'Editor', 'Unity')
+    )
+    $hubCandidates = @(
+        [System.IO.Path]::Combine('/Applications', 'Unity Hub.app', 'Contents', 'MacOS', 'Unity Hub'),
+        [System.IO.Path]::Combine('/usr', 'bin', 'unityhub'),
+        [System.IO.Path]::Combine('/opt', 'unityhub', 'unityhub')
+    )
+}
+
+$unityPath = Resolve-ToolPath -OverrideVariable 'GUARDS_UNITY_PATH' -Candidates $unityCandidates -Description "Unity $unityEditorVersion Editor"
 
 function Resolve-ProjectOutputPath {
     param(
@@ -59,9 +125,7 @@ if ($activeEditor) {
 $hub = Get-Process -Name 'Unity Hub' -ErrorAction SilentlyContinue
 $licensing = Get-Process -Name 'Unity.Licensing.Client' -ErrorAction SilentlyContinue
 if (-not $hub -or -not $licensing) {
-    if (-not (Test-Path -LiteralPath $hubPath -PathType Leaf)) {
-        throw "Unity Hub not found at $hubPath"
-    }
+    $hubPath = Resolve-ToolPath -OverrideVariable 'GUARDS_UNITY_HUB_PATH' -Candidates $hubCandidates -Description 'Unity Hub'
 
     Get-Process -Name 'Unity Hub','Unity.Licensing.Client' -ErrorAction SilentlyContinue | Stop-Process -Force
     Start-Process -FilePath $hubPath -WindowStyle Hidden | Out-Null

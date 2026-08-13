@@ -1,5 +1,6 @@
 param(
-    [string]$SpecificationPath = (Join-Path $PSScriptRoot '..\Docs\AI\Maps\official-single-lane.map.json')
+    [string]$SpecificationPath = ([System.IO.Path]::Combine(
+        $PSScriptRoot, '..', 'Docs', 'AI', 'Maps', 'official-single-lane.map.json'))
 )
 
 Set-StrictMode -Version Latest
@@ -191,7 +192,26 @@ Assert-MapCondition ("$($syntheticAlpha.mapId)|$($syntheticAlpha.spaces[0].space
 Assert-MapCondition ("$($syntheticAlpha.mapId)|$($syntheticAlpha.zones[0].zoneId)" -ne "$($syntheticBeta.mapId)|$($syntheticBeta.zones[0].zoneId)") 'MapId-composed ZoneId references must remain distinct.'
 Assert-MapCondition ("$($syntheticAlpha.mapId)|$($syntheticAlpha.spawnPoints[0].spawnPointId)" -ne "$($syntheticBeta.mapId)|$($syntheticBeta.spawnPoints[0].spawnPointId)") 'MapId-composed SpawnPointId references must remain distinct.'
 
+# The runtime resource is generated from this specification, never edited alongside it. Unity cannot
+# load the Docs path, so a byte-identical copy lives under Assets/Resources; before milestone 6.1d
+# nothing compared them and a divergence would have been silent - this validator would keep passing
+# against the specification while the game loaded something else.
+$resourcePath = [System.IO.Path]::Combine(
+    $PSScriptRoot, '..', 'Assets', 'Resources', 'Maps', 'official-single-lane.json')
+Assert-MapCondition (Test-Path -LiteralPath $resourcePath -PathType Leaf) `
+    "The generated runtime board-map resource is missing. Run Tools/Sync-BoardMapResource.ps1."
+
+$specificationBytes = [System.IO.File]::ReadAllBytes($SpecificationPath)
+$resourceBytes = [System.IO.File]::ReadAllBytes($resourcePath)
+$resourceMatchesSpecification = $resourceBytes.Length -eq $specificationBytes.Length -and
+    [System.Linq.Enumerable]::SequenceEqual([byte[]] $resourceBytes, [byte[]] $specificationBytes)
+Assert-MapCondition $resourceMatchesSpecification (
+    "The runtime board-map resource has drifted from this specification " +
+    "($($resourceBytes.Length) bytes against $($specificationBytes.Length)). " +
+    'Run Tools/Sync-BoardMapResource.ps1 to regenerate it from the reviewed source.')
+
 Write-Output "PASS: $($map.mapId) revision $($map.revision)"
+Write-Output "Runtime resource byte-identical to specification: PASS ($($specificationBytes.Length) bytes)"
 Write-Output 'Reusable invariants: PASS; synthetic map-local identity isolation: PASS'
 Write-Output 'Cells: 292 total, 210 playable, 82 terrain'
 Write-Output 'Zones: 7; connections: 809 physical, 530 playable'

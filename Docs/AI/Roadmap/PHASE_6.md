@@ -45,8 +45,11 @@ Every milestone here names the exact check that closes its findings. Per the mec
 | 6 | 6.1i | `F613-08`, `F613-09`, `F613-10` | Diagnosability and measured cost |
 | 7 | 6.1h | `F613-11` | Pure maintainability; lowest risk to defer |
 | 8 | 6.1k | `F613-13` | Must land after 7, whose renames its replacement assertions have to survive |
+| - | 6.1l | `F613-14` | Reinstated 2026-08-13; `[!]` blocked on a non-Windows host, so it carries no ordinal |
 
 Milestones 6.1j, 6.1l, and 6.1m were merged into 6.1d on 2026-08-13 under the granularity floor in [ROADMAP.md](../ROADMAP.md). Their acceptance checks are preserved verbatim inside it; no check was dropped in the merge.
+
+Later that day, **6.1l was reinstated** with explicit user approval. The merge was sound on granularity grounds but assumed the confirmation was performable; it is not, in the current environment. 6.1d keeps 6.1l's implementation checks and 6.1l keeps its confirmation check, preserved verbatim. 6.1j and 6.1m remain merged.
 
 ### [x] 6.1c Retire the legacy HeroSelectionController drill and its fixtures
 
@@ -65,9 +68,11 @@ Closing check for `F613-01`: the validator's `unreachable-component` check. It h
 
 Non-goals: No configured-stack behavior change, no new presentation feature, no Minion Battle UI, no refactor of the surviving presenters beyond what deletion requires.
 
-### [ ] 6.1d Make the build path explicit, single-sourced, and portable
+### [~] 6.1d Make the build path explicit, single-sourced, and portable
 
 Merged on 2026-08-13 from former milestones 6.1d, 6.1j, 6.1l, and 6.1m. All four concern one question - does this project build, resolve its resources, and run its toolchain on the platforms it declares - and each was too small to carry its own handoff. Every original acceptance check is preserved verbatim below.
+
+**2026-08-13 amendment, approved by the user.** The former 6.1l cross-platform *confirmation* check is withdrawn from this milestone and returned to a reinstated milestone `6.1l`, because the confirmation cannot be performed in the current environment: WSL reports "not installed", Docker is absent, and PowerShell Core is not present, so there is no non-Windows host on which to run a PowerShell validator. 6.1d still implements the portable path construction and the environment-override discovery; only the per-platform confirmation moves. `F613-14` therefore stays open at 6.1d and is owned by 6.1l. The withdrawn check is preserved verbatim in the 6.1l section rather than deleted.
 
 Observable outcome: Runtime shader resolution is declared rather than incidental, Editor-only code cannot reach production types through an implicit assembly, the board map has one source of truth, the validation toolchain runs on every declared development platform, and a real player build is proven to start and reach a configured match.
 
@@ -90,8 +95,9 @@ Acceptance checks - cross-platform toolchain (former 6.1l):
 
 - Path segments are constructed portably rather than with backslash-separated literals passed to path joins.
 - The Unity and Hub executable locations are discovered through an environment override plus platform-appropriate probing, with a clear failure message when discovery fails.
-- Each script is confirmed to run on Windows and on at least one non-Windows platform, and the exact confirmation evidence is recorded.
 - The required launcher contract in `TESTING.md` remains a single fixed parameterless entry point; portability does not become a set of per-platform ad-hoc commands.
+
+The former third check in this group, requiring each script to be confirmed on Windows and on at least one non-Windows platform, moved to milestone `6.1l` under the 2026-08-13 amendment above.
 
 Acceptance checks - player-build smoke gate (former 6.1m):
 
@@ -106,9 +112,10 @@ Closing checks:
 - `F613-02`: the Edit Mode shader fixture, observed failing when a runtime shader name is absent from the always-included list and passing once declared.
 - `F613-03`: the existing assembly-boundary tests, observed failing when an Editor script references a production type directly.
 - `F613-12`: the map byte-equality check, observed failing on a deliberate one-byte divergence between the two paths.
-- `F613-14`: recorded successful runs of each validator script on Windows and on one non-Windows platform, with the exact commands and outputs.
 
-Once the player-build smoke gate passes, the **buildability** review dimension and the **toolchain portability** dimension are deleted from the prose list in [ROADMAP.md](../ROADMAP.md), per the rule that a dimension leaves that list only when its check has been observed to fail on a deliberate violation.
+`F613-14` is no longer closed here; see milestone `6.1l`.
+
+Once the player-build smoke gate passes, the **buildability** review dimension is deleted from the prose list in [ROADMAP.md](../ROADMAP.md), per the rule that a dimension leaves that list only when its check has been observed to fail on a deliberate violation. The **toolchain portability** dimension stays in that list until `6.1l` completes, because no check has yet been observed proving it.
 
 Non-goals: No render-pipeline migration, no production shader or material authoring, no visual change, no map content change, no revision bump, no change to the map schema, loader, or catalog contracts, no continuous-integration service selection or configuration, no change to validation tiers, recipes, or gate definitions, no store packaging, signing, provisioning, distribution, mobile player support, or performance target, and no publication of any build.
 
@@ -215,6 +222,24 @@ Acceptance checks:
 Closing check for `F613-13`: each replacement assertion run twice - once against a deliberately introduced real regression, where it must fail, and once against a pure rename that changes no behavior, where it must pass. The old assertion failing the rename case is the pre-fix half. `MinionBattleResolution`'s added coverage closes on its new cases failing against deliberately broken exact-count and Heavy-last ordering.
 
 Non-goals: No production behavior change, no new subsystem, no reduction in existing coverage, no change to the test assembly split.
+
+### [!] 6.1l Confirm the validation toolchain on a non-Windows platform
+
+Reinstated on 2026-08-13 with explicit user approval, having previously been merged into 6.1d. It owns the one part of `F613-14` that is evidence rather than code: 6.1d makes the toolchain portable, and this milestone proves it.
+
+**Blocked, and on what.** The confirmation requires a non-Windows host that can execute PowerShell. At the time of the 6.1d amendment the development machine had no such host: `wsl.exe` is present but reports "The Windows Subsystem for Linux is not installed", Docker is absent, and PowerShell Core is not installed. This milestone unblocks when any one of those exists. It is not blocked on a decision or on other roadmap work.
+
+Observable outcome: Every validator script is demonstrated to run on a non-Windows platform, and the exact evidence is recorded.
+
+Acceptance check, preserved verbatim from the former 6.1l:
+
+- Each script is confirmed to run on Windows and on at least one non-Windows platform, and the exact confirmation evidence is recorded.
+
+Closing check for `F613-14`: recorded successful runs of each validator script on Windows and on one non-Windows platform, with the exact commands and outputs. A run that fails on the non-Windows host is the pre-fix half, and whatever correction it forces is part of this milestone.
+
+Once it passes, the **toolchain portability** review dimension is deleted from the prose list in [ROADMAP.md](../ROADMAP.md).
+
+Non-goals: No new validator, no change to what any validator checks, no CI service selection or configuration, no change to the fixed parameterless launcher contract, and no Unity execution on the non-Windows host - the Editor itself is out of scope, only the PowerShell toolchain is confirmed.
 
 ### [ ] 6.1a Add player-facing Minion Battle removal-choice UI
 
