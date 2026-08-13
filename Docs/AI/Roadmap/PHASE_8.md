@@ -255,6 +255,23 @@ Non-goals: No provider/SDK selection, network prototype, public service, product
 
 Hard gate: Milestone 8.29 does not begin until milestone 8.28a and every networking-readiness blocker are reviewed and given an approved disposition.
 
+### [ ] 8.28b Establish a seeded, replayable randomness seam
+
+Scheduled by the user-approved 2026-08-13 ER2 roadmap amendment; findings and evidence live in the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2). It touches only Core setup, so it may be approved and executed at any earlier point; it must complete before 8.29 begins the online track.
+
+Observable outcome: The one Core randomness source - `TieBreakerSetupAuthority.CreateNormalSetupState`, which draws non-seeded `RandomNumberGenerator` output outside the command history - becomes a seeded seam whose draw is recorded in authoritative setup state, so deterministic replay and a future online authority reproduce normal setup exactly.
+
+Acceptance checks:
+
+- Normal setup's coin flip derives from a recorded seed or recorded outcome carried in immutable setup state and the snapshot, not from an unrecorded draw.
+- Replay of a normal-setup match reproduces the identical Tie Breaker side from recorded state alone.
+- The DEV-005 deterministic internal override is unchanged, and normal match flow still flips randomly from the player's perspective per the rulebook.
+- Future randomness consumers have one seam to join; no second unrecorded randomness source is introduced.
+
+Closing check for `F-ER2-04`: a determinism fixture replaying normal setup from recorded state and matching the flip result, observed failing at the pre-fix revision (the draw is unrecorded) and passing at the post-fix revision.
+
+Non-goals: No networking, no new randomness consumers, no rulebook deviation, no change to the tie-breaker's gameplay meaning.
+
 ### [!] 8.29 Select the minimum private-online architecture and re-baseline the track
 
 Observable outcome: A source-backed architecture decision defines the smallest supportable way for six invited Windows players on the internet to join one private 3v3 match, with one authoritative host/session and one independently owned hero per player.
@@ -289,6 +306,8 @@ Acceptance checks:
 - Director-only Undo, restart, hidden-state inspection, and Tie Breaker override remain outside the player projection and command surface.
 
 Non-goals: No network SDK, transport envelope, host/join flow, relay/NAT traversal, reconnect policy, production security claim, or polished UI.
+
+ER2 note (`F-ER2-07`): `MatchSessionProjection` is currently one global read model exposing every owner's cards and full state; this milestone is the recorded owner of the per-viewer seam, and every projection property added before it raises its cost.
 
 ### [!] 8.30b Build the primitive local player HUD and complete prompt flow
 

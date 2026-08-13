@@ -60,6 +60,8 @@ Acceptance checks:
 - Spawn-point and nearest-empty fallback use the full Phase 4 map.
 - The Defense exception remains distinct.
 
+ER2 note (`F-ER2-09`): when this milestone supplies verified reward derivation, relocate the hard-coded Melee/Ranged/Heavy coin literals and the standard-minion Defense modifier table out of the combat backend and defense query into configured content carrying their source citations; see the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2).
+
 ### [ ] 7.5 Resolve mandatory end-of-round leveling and upgrades
 
 Observable outcome: Every eligible synthetic hero buys as many consecutive levels as it can afford and completes the required upgrade, item, or Ultimate outcome for each level.
@@ -124,6 +126,8 @@ Acceptance checks:
 - Synthetic definitions are visibly test-only and contain no claim about Wasp values or effects.
 - A broader deterministic core-loop suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
+
+ER2 note (`F-ER2-08`): `Undo`/`Restart` reconstruct by full-prefix replay, so their cost grows with match length; this gate's runtime baseline must measure Undo at complete-match length and record a bound, reopening a performance disposition if it is exceeded.
 
 ### [!] 7.9a Independently review the complete synthetic core
 

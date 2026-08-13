@@ -325,6 +325,84 @@ Non-goals: No Defense calculation, contribution projection, cue identity/lifetim
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61b-correct-defense-contribution-cue-proportions-and-orientation-completion-evidence).
 
+## ER2-proposed foundation milestones (scheduled 2026-08-13)
+
+These milestones were scheduled by a user-approved roadmap amendment on 2026-08-13 from the [ER2 external review record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2), which owns their findings, evidence, and closing checks. Scheduling is not authorization: each milestone still requires exact user approval before execution. Ordering constraints: 6.1q must complete before 6.2a, 6.1r before 6.2, and 6.1s before 6.4; 6.1t and 6.1u are unordered. 6.1r closes an architectural-direction finding, so per the mechanical-closure rule in [ROADMAP.md](../ROADMAP.md) its closure is verified by the already-scheduled fresh-task review 6.2b rather than by a named check.
+
+### [ ] 6.1q Scope Active-effect checkpoints and uniqueness correctly
+
+Observable outcome: An Active effect scoped to a hero is visited at its own checkpoints, including its expiration checkpoint, regardless of which hero is acting, and uniqueness suppression compares the identity scope the definition declares instead of one global key namespace.
+
+Acceptance checks:
+
+- A Hero-scoped effect whose expiration checkpoint is `ActionEnded` ends during another hero's action end rather than outliving its window because `OrderForCheckpoint` filtered it out.
+- Uniqueness suppression is scoped to declared controller/affected identity: two controllers activating the same definition coexist unless the verified rule says otherwise, and correctness does not depend on identity strings being embedded in `UniquenessKey` by convention.
+- Existing lifecycle, snapshot, restore, replay, and retained-prefix Undo evidence stays green; the serialized format is unchanged or carries an explicit migrate-or-reject decision.
+
+Closing check for `F-ER2-03`: the two focused lifecycle tests named in the ER2 record - cross-hero `ActionEnded` expiration, and same-key different-controller coexistence - observed failing at the pre-fix revision and passing at the post-fix revision.
+
+Non-goals: No concrete card text, no modifier application, no new checkpoint kinds, no 6.2a effect execution.
+
+### [ ] 6.1r Design one board-occupancy seam for every occupant kind
+
+Observable outcome: Heroes, minions, and generic obstacles occupy the board through one authoritative occupancy/collision seam that tokens (6.2) join by declaration, rather than each occupant kind owning a parallel collection, constructor collision block, transit scan, serializer section, and projection field.
+
+Acceptance checks:
+
+- One authoritative occupancy index owns per-space occupancy and the one-obstacle-per-space rule for every occupant kind; adjacent-move, reachability, attack-target, and Fast-Travel queries consume it.
+- Adding an occupant kind requires no new hand-written cross-collision block in the board authority's constructor and no new per-kind occupancy scan in commit validation.
+- Behavior invariance: the existing movement, attack, minion, and obstacle suites pass unchanged, and the snapshot compatibility digests are byte-identical or carry an explicit migrate-or-reject decision.
+
+Closure for `F-ER2-06`: architectural direction; verified by the already-scheduled fresh-task review 6.2b, whose scope names this seam.
+
+Non-goals: No token or marker behavior, no minion movement (6.1s), no rule change, no board-authority rename beyond what the seam itself requires.
+
+### [ ] 6.1s Make minion occupancy mutable and fully serialized
+
+Observable outcome: A minion's board position is authoritative mutable state that snapshots round-trip, so Object Push (6.4), Lane Push (6.9-6.11), and minion Respawn can move minions.
+
+Acceptance checks:
+
+- Runtime minion board state is a Core occupancy record distinct from the immutable `QuickGameMinionSetupState`, which returns to being setup data only.
+- The snapshot serializes each remaining minion's identity and current coordinate; restore no longer reconstructs positions by filtering setup placements.
+- The snapshot schema advances to v7 with an explicit migrate-or-reject decision and refreshed pinned compatibility fixtures per `RISK-COMPAT-001`.
+- A validated authority-internal mutation path exists for a minion's position; no player-facing command is added yet.
+
+Closing check for `F-ER2-02`: a snapshot round-trip fixture asserting a restored match preserves a mutated minion coordinate, observed failing at the pre-fix revision (no mutation path exists) and passing at the post-fix revision.
+
+Non-goals: No Object Push, Lane Push, Spawn, or Respawn rules; no balance change; no presentation change beyond reading the authoritative coordinate.
+
+### [ ] 6.1t Port the cross-platform dotnet test harness
+
+Observable outcome: The Unity-free Core/Application test majority runs on any OS through the dotnet + NUnit harness preserved on branch `er2-external-review-line`, adapted to this line's assemblies and test files.
+
+Acceptance checks:
+
+- `Tools/DotnetTests/GuardsDigital.DotnetTests.csproj` compiles Core, CardState, Application, and the Unity-free Edit Mode test files unmodified by glob, with an explicit exclude list so a Unity-dependent newcomer breaks the harness build rather than being silently skipped.
+- The project file is tracked: the blanket `*.csproj` ignore gains a scoped negation, proven by `git check-ignore` and a fresh-checkout build.
+- The map-loader shim parity fixture proves the harness loader and the Unity loader produce the same 292/210/82/7/40 map inventory.
+- `dotnet test` passes on the Linux workstation and on the Windows workstation.
+
+Closing check for `F-ER2-12`: the harness's own build tripwire plus `dotnet test` green on Linux from a fresh checkout.
+
+Non-goals: No CI service selection or configuration, no test-behavior changes, no Unity batch-mode launcher port.
+
+### [ ] 6.1u Delete dead code and single-source duplicated resolution lookups
+
+Observable outcome: Code with no production caller is removed, the duplicated action-definition lookup has one implementation, and a wedged Lane-Push advance names its real cause.
+
+Acceptance checks:
+
+- `Core/Board/AdjacentDestinationQuery.cs` and its fixture, `MovementSessionCompletion`, the void `Forward*Intent` overloads in `BoardInteractionUnityView`, and the milestone-0 `TestShell*Tests` are deleted with their `.meta` files; repository-wide search proves zero remaining references.
+- `FindActionDefinition` has one shared implementation with a focused test; the three per-file copies are gone.
+- Advancing end-of-round with a pending Lane-Push request rejects with a typed reason naming the unimplemented consumption checkpoint instead of `MissingRequiredEndOfRoundHandler`, covered by a focused test.
+
+Closing check for `F-ER2-10`: compilation and the directly affected suites green after deletion, plus the shared-lookup and typed-rejection tests observed failing at the pre-fix revision and passing at the post-fix revision.
+
+Non-goals: No behavior change beyond the rejection reason, no refactor of live code paths, no relocation of coin/modifier content (owned by 7.4).
+
+## Phase 6 gameplay milestones (continued)
+
 ### [ ] 6.2 Add token and marker instances, supplies, placement, and attachment
 
 Observable outcome: Synthetic tokens and markers have stable authoritative identity without requiring Wasp content.
@@ -350,6 +428,8 @@ Acceptance checks:
 
 Non-goals: No Repeat, Clear, direct Move, Object Push, Place, Spawn, Swap, Replace, Remove, Wasp definition, production presentation, printed-text parser, universal scripting language, or source-unverified special case.
 
+ER2 note: corrective milestone 6.1q must land first so this engine does not build on mis-scoped checkpoints, and per `F-ER2-05` this milestone's design owns resolver-emitted timing checkpoints - replacing `TurnResolutionAuthority.ApplyActionTiming`'s post-hoc event-list rewriting rather than extending it. See the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2).
+
 ### [ ] 6.2b Independently verify the Phase 6 action/effect foundation
 
 Observable outcome: A fresh-task independent review determines whether milestones 6.1 and 6.2a actually close `F58C-01` and `F58C-02` before milestone 6.3 can begin.
@@ -363,6 +443,8 @@ Acceptance checks:
 - Reassess the dependency-safe sequence and scope of milestones 6.3 through 6.13. Milestone 6.3 remains blocked until this review closes both findings, or the user approves a documented corrective disposition. Any corrective sequence this review schedules closes on named checks per [ROADMAP.md](../ROADMAP.md); it schedules a further verification milestone only for a finding whose closure cannot be expressed as a check.
 
 Non-goals: No runtime, test, scene, package, assembly, content, or rule change; no implementation of a discovered correction inside the review milestone.
+
+ER2 note: this review's scope also verifies the 6.1r unified board-occupancy seam (`F-ER2-06`), the architectural-direction finding the mechanical-closure rule assigns to fresh-task verification.
 
 ### [ ] 6.3 Add core token interactions, persistent properties, and Clear
 
@@ -391,6 +473,8 @@ Acceptance checks:
 - Focused accepted, rejected, partial, zero-distance, simultaneous, restore, replay, and Undo scenarios preserve deterministic typed outcomes and occupancy.
 
 Non-goals: No Wasp definition, printed-text parsing, invented Pull keyword, card-name/hero-name branch, configured live action exposure before milestone 6.4a, production presentation, or specialized hero/minion Respawn transition.
+
+ER2 note: requires 6.1s (`F-ER2-02`) first - a pushed minion needs mutable, snapshot-serialized occupancy for the displacement to commit and survive restore.
 
 ### [ ] 6.4a Integrate after-action displaced-minion correction with core Push
 
