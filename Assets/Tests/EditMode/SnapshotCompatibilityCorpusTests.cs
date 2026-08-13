@@ -22,11 +22,11 @@ namespace GuardsDigital.Tests.EditMode
     {
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v6", "e819df8cdd38b6530184ccebd29f02065a1204af3579f87d8e73464bd3fa325d"),
-            new CompatibilityFixture("active-turn-v6", "d043ae4e325161c179d8c77b0d1f40e0ee1b13a8513e277b3dba477138af695f"),
-            new CompatibilityFixture("pending-choice-v6", "48518f5843b5e9ce94edd727af80ecbdaad71d4844e25468810a25420566c070"),
-            new CompatibilityFixture("end-of-round-v6", "c477f3c12d085be9838ef6c0a04b484ebea2d6cc94d0c2b1872f0c5395d66128"),
-            new CompatibilityFixture("pending-minion-battle-v6", "9561c5173a522b98b7b2f9376802819f3c61f19018dbfd68319d8459c5d03593")
+            new CompatibilityFixture("setup-v7", "456efc4c309b62db88d2be67020341187b9504b1af8d2a57bb15d81189e9adbc"),
+            new CompatibilityFixture("active-turn-v7", "17b19c06334340d4fde3fda61453f25262014486b3b2422b0fe1e60bf2f33441"),
+            new CompatibilityFixture("pending-choice-v7", "5befefe447a2353e6c729722a7395b73eb82eb8c35d6201756a3b34a1a961962"),
+            new CompatibilityFixture("end-of-round-v7", "de42a3842753fc592ae8931beeef27d743f40f82bbccdf7d8dbda5df7e33e39d"),
+            new CompatibilityFixture("pending-minion-battle-v7", "4ff2a08caffab630dd8de31eec183bbff40ec9e73012c9849c438a4b99030df4")
         };
 
         [Test]
@@ -82,7 +82,7 @@ namespace GuardsDigital.Tests.EditMode
                     new[] { session.Projection.SelectedMap }));
             Assert.That(priorSchemaException.Reason,
                 Is.EqualTo(SnapshotLoadRejectionReason.UnsupportedSchemaVersion),
-                "Schema v5 lacks milestone 6.1's durable Minion-Battle choice and Lane-Push request state and is explicitly rejected.");
+                "Schema v6 reconstructs minion positions from setup placements and cannot express a moved minion; milestone 6.1s serializes per-minion coordinates and explicitly rejects v6.");
 
             var changedDefinitions = session.Projection.Definitions.ToArray();
             var original = changedDefinitions[0];
@@ -106,16 +106,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v6", session.CaptureSnapshot());
+            values.Add("setup-v7", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v6", session.CaptureSnapshot());
+            values.Add("active-turn-v7", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v6", session.CaptureSnapshot());
+            values.Add("pending-choice-v7", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -131,7 +131,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v6", session.CaptureSnapshot());
+            values.Add("end-of-round-v7", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -140,7 +140,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v6", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v7", session.CaptureSnapshot());
             return values;
         }
 

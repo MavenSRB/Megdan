@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -105,7 +106,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         private static bool IsImmuneHeavy(
-            QuickGameMinionSetupState candidate,
+            MinionOccupancy candidate,
             AdjacentMoveAuthority board)
         {
             if (candidate.MinionType != StandardMinionType.Heavy)

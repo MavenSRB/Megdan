@@ -8,6 +8,7 @@ using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Timing;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -359,7 +360,7 @@ namespace GuardsDigital.Core.Cards
             ActionOffer replacementOffer,
             ActionDefinitionId replacedMovementActionDefinitionId,
             GuardsDigital.Core.Board.HexCoordinate destination,
-            IEnumerable<QuickGameMinionSetupState> minions)
+            IEnumerable<MinionOccupancy> minions)
         {
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryPerformFastTravel(
                 resolutionId,

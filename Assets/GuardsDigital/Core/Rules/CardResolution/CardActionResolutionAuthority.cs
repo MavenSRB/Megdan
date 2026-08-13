@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -202,7 +203,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            IEnumerable<QuickGameMinionSetupState> minions)
+            IEnumerable<MinionOccupancy> minions)
         {
             if (HasPendingResolution)
             {

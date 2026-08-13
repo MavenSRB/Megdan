@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.AdjacentMove
 {
@@ -15,11 +16,11 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly List<HeroOccupancy> occupancies;
         private readonly List<ObstacleOccupancy> obstacleOccupancies;
-        private readonly List<QuickGameMinionSetupState> minions;
+        private readonly List<MinionOccupancy> minions;
         private readonly BoardOccupancyIndex occupancyIndex;
         private readonly IReadOnlyList<HeroOccupancy> occupanciesView;
         private readonly IReadOnlyList<ObstacleOccupancy> obstacleOccupanciesView;
-        private readonly IReadOnlyList<QuickGameMinionSetupState> minionsView;
+        private readonly IReadOnlyList<MinionOccupancy> minionsView;
         private readonly IReadOnlyList<HexCoordinate> boardCoordinatesView;
 
         public AdjacentMoveAuthority(
@@ -54,11 +55,29 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         {
         }
 
+        // Boundary conversion: configured setup placements enter as QuickGameMinionSetupState and
+        // become runtime MinionOccupancy records here; the setup type itself is setup data only.
         public AdjacentMoveAuthority(
             BoardMapDefinition mapDefinition,
             IEnumerable<HeroOccupancy> initialOccupancies,
             IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
             IEnumerable<QuickGameMinionSetupState> initialMinions)
+            : this(
+                mapDefinition,
+                initialOccupancies,
+                initialObstacleOccupancies,
+                (initialMinions ?? throw new ArgumentNullException(nameof(initialMinions)))
+                    .Select(minion => minion == null
+                        ? throw new ArgumentException("Initial minions must be non-null and have unique IDs.", nameof(initialMinions))
+                        : MinionOccupancy.FromSetup(minion)))
+        {
+        }
+
+        public AdjacentMoveAuthority(
+            BoardMapDefinition mapDefinition,
+            IEnumerable<HeroOccupancy> initialOccupancies,
+            IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
+            IEnumerable<MinionOccupancy> initialMinions)
         {
             MapDefinition = mapDefinition ?? throw new ArgumentNullException(nameof(mapDefinition));
 
@@ -125,16 +144,6 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
             foreach (var minion in materializedMinions)
             {
-                if (!minion.MinionId.IsDefined ||
-                    !minion.TeamId.IsDefined ||
-                    (minion.TeamSide != TeamSide.Red && minion.TeamSide != TeamSide.Blue) ||
-                    (minion.MinionType != StandardMinionType.Melee &&
-                        minion.MinionType != StandardMinionType.Ranged &&
-                        minion.MinionType != StandardMinionType.Heavy))
-                {
-                    throw new ArgumentException("Initial minions require defined identity, team, and standard intrinsic type.", nameof(initialMinions));
-                }
-
                 if (!minion.OccupiedSpace.MapId.Equals(mapDefinition.Id) ||
                     !mapDefinition.Spaces.Any(space =>
                         space.Id.Equals(minion.OccupiedSpace.SpaceId) &&
@@ -147,7 +156,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 occupancyIndex.Add(minion.Coordinate, BoardOccupant.ForMinion(minion.MinionId), nameof(initialMinions));
             }
 
-            minions = new List<QuickGameMinionSetupState>(materializedMinions);
+            minions = new List<MinionOccupancy>(materializedMinions);
             occupanciesView = occupancies.AsReadOnly();
             obstacleOccupanciesView = obstacleOccupancies.AsReadOnly();
             minionsView = minions.AsReadOnly();
@@ -163,7 +172,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             boardCoordinates = source.boardCoordinates;
             occupancies = new List<HeroOccupancy>(source.occupancies);
             obstacleOccupancies = new List<ObstacleOccupancy>(source.obstacleOccupancies);
-            minions = new List<QuickGameMinionSetupState>(source.minions);
+            minions = new List<MinionOccupancy>(source.minions);
             occupancyIndex = source.occupancyIndex.Clone();
             occupanciesView = occupancies.AsReadOnly();
             obstacleOccupanciesView = obstacleOccupancies.AsReadOnly();
@@ -179,7 +188,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupanciesView;
 
-        public IReadOnlyList<QuickGameMinionSetupState> Minions => minionsView;
+        public IReadOnlyList<MinionOccupancy> Minions => minionsView;
 
         public IReadOnlyList<HexCoordinate> BoardCoordinates => boardCoordinatesView;
 
@@ -192,7 +201,10 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         internal AdjacentMoveAuthority CreateValidationFork() => new AdjacentMoveAuthority(this);
 
         public BoardRestoreState CaptureRestoreState() =>
-            new BoardRestoreState(occupancies, obstacleOccupancies, minions.Select(minion => minion.MinionId));
+            new BoardRestoreState(
+                occupancies,
+                obstacleOccupancies,
+                minions.Select(minion => new RestoredMinionPosition(minion.MinionId, minion.Coordinate)));
 
         public static AdjacentMoveAuthority Restore(
             BoardRestoreState state,
@@ -204,14 +216,32 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             if (configuredMinions == null) throw new ArgumentNullException(nameof(configuredMinions));
 
             var available = configuredMinions.ToArray();
-            if (state.RemainingMinionIds.Any(id => available.Count(minion => minion.MinionId.Equals(id)) != 1))
+            if (state.RemainingMinions.Any(position => available.Count(minion => minion.MinionId.Equals(position.MinionId)) != 1))
             {
                 throw new ArgumentException(
                     "Restored remaining-minion identities must match configured minion content.",
                     nameof(state));
             }
 
-            var remaining = available.Where(minion => state.RemainingMinionIds.Contains(minion.MinionId));
+            // Identity, team, type, and spawn come from the configured setup content; the current
+            // position comes from the restored state, not from the setup placement.
+            var remaining = state.RemainingMinions.Select(position =>
+            {
+                var setup = available.Single(minion => minion.MinionId.Equals(position.MinionId));
+                var space = mapDefinition.Spaces.SingleOrDefault(candidate =>
+                    candidate.Kind == BoardMapSpaceKind.Playable &&
+                    candidate.Coordinate.Equals(position.Coordinate));
+                if (space == null)
+                {
+                    throw new ArgumentException(
+                        "Restored minion positions must resolve to playable spaces on the selected map.",
+                        nameof(state));
+                }
+
+                return MinionOccupancy.FromSetup(setup).WithPosition(
+                    new ConfiguredSpaceReference(mapDefinition.Id, space.Id),
+                    position.Coordinate);
+            });
             return new AdjacentMoveAuthority(mapDefinition, state.HeroOccupancies, state.ObstacleOccupancies, remaining);
         }
 
@@ -281,7 +311,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             return travelEvent;
         }
 
-        internal QuickGameMinionSetupState CommitValidatedMinionRemoval(MinionId minionId)
+        internal MinionOccupancy CommitValidatedMinionRemoval(MinionId minionId)
         {
             var index = minions.FindIndex(minion => minion.MinionId.Equals(minionId));
             if (index < 0)
@@ -293,6 +323,39 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             minions.RemoveAt(index);
             occupancyIndex.Remove(removed.Coordinate);
             return removed;
+        }
+
+        // The validated authority-level minion position mutation required before Object Push
+        // (6.4), Lane Push (6.9-6.11), and minion Respawn can move minions. No player-facing
+        // command or session exposure exists yet; consumers arrive with those milestones.
+        public MinionMoveResult TryCommitMinionMove(MinionId minionId, HexCoordinate destination)
+        {
+            var index = minions.FindIndex(minion => minion.MinionId.Equals(minionId));
+            if (index < 0)
+            {
+                return MinionMoveResult.Reject(MinionMoveRejectionReason.UnknownMinion);
+            }
+
+            var space = MapDefinition.Spaces.SingleOrDefault(candidate =>
+                candidate.Kind == BoardMapSpaceKind.Playable &&
+                candidate.Coordinate.Equals(destination));
+            if (space == null)
+            {
+                return MinionMoveResult.Reject(MinionMoveRejectionReason.DestinationOffBoard);
+            }
+
+            if (occupancyIndex.IsOccupied(destination))
+            {
+                return MinionMoveResult.Reject(MinionMoveRejectionReason.DestinationOccupied);
+            }
+
+            var current = minions[index];
+            var moved = current.WithPosition(
+                new ConfiguredSpaceReference(MapDefinition.Id, space.Id),
+                destination);
+            occupancyIndex.Move(current.Coordinate, destination);
+            minions[index] = moved;
+            return MinionMoveResult.Accept(moved, current.Coordinate);
         }
     }
 }

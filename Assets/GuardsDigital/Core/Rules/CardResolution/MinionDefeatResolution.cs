@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -21,7 +22,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefeatRewardResult reward,
             DefeatRemovalAttempt removalAttempt,
             DefeatRemovalResult removalResult,
-            QuickGameMinionSetupState removedMinion)
+            MinionOccupancy removedMinion)
         {
             Defeat = defeat ?? throw new ArgumentNullException(nameof(defeat));
             Reward = reward ?? throw new ArgumentNullException(nameof(reward));
@@ -51,7 +52,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public DefeatRewardResult Reward { get; }
         public DefeatRemovalAttempt RemovalAttempt { get; }
         public DefeatRemovalResult RemovalResult { get; }
-        public QuickGameMinionSetupState RemovedMinion { get; }
+        public MinionOccupancy RemovedMinion { get; }
         public IReadOnlyList<MinionDefeatFactKind> Facts { get; }
     }
 }

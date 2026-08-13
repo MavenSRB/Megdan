@@ -98,7 +98,7 @@ namespace GuardsDigital.Core.Snapshots
 
         private static void WriteBoard(BinaryWriter writer, AdjacentMoveAuthority board)
         {
-            var (heroOccupancies, obstacleOccupancies, remainingMinionIds) = board.CaptureRestoreState();
+            var (heroOccupancies, obstacleOccupancies, remainingMinions) = board.CaptureRestoreState();
             writer.Write(board.SelectedMap.MapId.Value);
             writer.Write(board.SelectedMap.ContentRevision);
             writer.Write(heroOccupancies.Count);
@@ -115,10 +115,11 @@ namespace GuardsDigital.Core.Snapshots
                 WriteCoordinate(writer, occupancy.Coordinate);
             }
 
-            writer.Write(remainingMinionIds.Count);
-            foreach (var minionId in remainingMinionIds.OrderBy(value => value.Value, StringComparer.Ordinal))
+            writer.Write(remainingMinions.Count);
+            foreach (var minion in remainingMinions.OrderBy(value => value.MinionId.Value, StringComparer.Ordinal))
             {
-                writer.Write(minionId.Value);
+                writer.Write(minion.MinionId.Value);
+                WriteCoordinate(writer, minion.Coordinate);
             }
         }
 
@@ -147,14 +148,16 @@ namespace GuardsDigital.Core.Snapshots
                 new ObstacleId(reader.ReadString()),
                 ReadCoordinate(reader)));
             var availableMinions = (minions ?? throw new ArgumentNullException(nameof(minions))).ToArray();
-            var remainingIds = ReadMany(reader, "remaining minions", () => new MinionId(reader.ReadString()));
-            if (remainingIds.Distinct().Count() != remainingIds.Length ||
-                remainingIds.Any(id => availableMinions.Count(minion => minion.MinionId.Equals(id)) != 1))
+            var remainingMinions = ReadMany(reader, "remaining minions", () => new RestoredMinionPosition(
+                new MinionId(reader.ReadString()),
+                ReadCoordinate(reader)));
+            if (remainingMinions.Select(value => value.MinionId).Distinct().Count() != remainingMinions.Length ||
+                remainingMinions.Any(value => availableMinions.Count(minion => minion.MinionId.Equals(value.MinionId)) != 1))
             {
                 throw Malformed("Snapshot remaining-minion identities do not match configured minion content.");
             }
             return AdjacentMoveAuthority.Restore(
-                new BoardRestoreState(heroes, obstacles, remainingIds),
+                new BoardRestoreState(heroes, obstacles, remainingMinions),
                 mapDefinition,
                 availableMinions);
         }

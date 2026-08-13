@@ -227,9 +227,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Is.Not.Empty);
             var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.First();
             var minion = Object.FindObjectsByType<StandardMinionView>()
-                .Single(value => value.SetupState.MinionId.Equals(targetId));
+                .Single(value => value.Occupancy.MinionId.Equals(targetId));
             var tile = Object.FindObjectsByType<HexTileView>()
-                .Single(value => value.Coordinate.Equals(minion.SetupState.Coordinate));
+                .Single(value => value.Coordinate.Equals(minion.Occupancy.Coordinate));
             Assert.That(runtime.BoardView.Model.MinionAttackTargets, Does.Contain(targetId));
             Assert.That(tile.IsHighlighted, Is.True,
                 "The exact projected minion occupancy must receive the configured target cue.");

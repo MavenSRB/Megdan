@@ -9,6 +9,7 @@ using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
+using GuardsDigital.Core.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -31,7 +32,7 @@ namespace GuardsDigital.Tests.EditMode
                     .GetField("setupState", BindingFlags.Instance | BindingFlags.NonPublic)
                     .SetValue(minion, null);
 
-                Assert.That(minion.SetupState, Is.Null,
+                Assert.That(minion.Occupancy, Is.Null,
                     "The regression must exercise the transient setup-state loss seen during editor backup restoration.");
                 Assert.That(minion.BoundMinionId, Is.EqualTo(state.MinionId),
                     "Serialized binding identity must survive independently of transient setup state.");
@@ -105,14 +106,14 @@ namespace GuardsDigital.Tests.EditMode
             var material = new Material(Shader.Find("Standard"));
             try
             {
-                var state = new QuickGameMinionSetupState(
+                var state = MinionOccupancy.FromSetup(new QuickGameMinionSetupState(
                     new MinionId("blue-target"),
                     new TeamId("blue-team"),
                     TeamSide.Blue,
                     StandardMinionType.Melee,
                     new ConfiguredSpawnPointReference(new MapId("test-map"), new SpawnPointId("blue-target-spawn")),
                     new ConfiguredSpaceReference(new MapId("test-map"), new SpaceId("q1_r0")),
-                    new HexCoordinate(1, 0));
+                    new HexCoordinate(1, 0)));
                 var minion = minionObject.AddComponent<StandardMinionView>();
                 minion.Configure(state, HexWorldLayout.DefaultOuterRadius);
                 var selector = minionObject.AddComponent<StandardMinionPointerSelector>();
@@ -144,7 +145,7 @@ namespace GuardsDigital.Tests.EditMode
                 view.Render(new BoardInteractionViewModel(
                     2,
                     Array.Empty<GuardsDigital.Core.Units.Heroes.HeroOccupancy>(),
-                    Array.Empty<QuickGameMinionSetupState>(),
+                    Array.Empty<MinionOccupancy>(),
                     Array.Empty<HexCoordinate>(),
                     Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
                     Array.Empty<MinionId>(),
@@ -291,20 +292,20 @@ namespace GuardsDigital.Tests.EditMode
             try
             {
                 var view = gameObject.AddComponent<StandardMinionView>();
-                var state = new QuickGameMinionSetupState(
+                var state = MinionOccupancy.FromSetup(new QuickGameMinionSetupState(
                     new MinionId("blue-melee-01"),
                     new TeamId("blue-team"),
                     TeamSide.Blue,
                     StandardMinionType.Melee,
                     new ConfiguredSpawnPointReference(new MapId("official-single-lane"), new SpawnPointId("blue-melee-minion-03")),
                     new ConfiguredSpaceReference(new MapId("official-single-lane"), new SpaceId("q-3_r2")),
-                    new HexCoordinate(-3, 2));
+                    new HexCoordinate(-3, 2)));
 
                 view.Configure(state, HexWorldLayout.DefaultOuterRadius);
 
-                Assert.That(view.SetupState, Is.SameAs(state));
-                Assert.That(view.SetupState.TeamSide, Is.EqualTo(TeamSide.Blue));
-                Assert.That(view.SetupState.MinionType, Is.EqualTo(StandardMinionType.Melee));
+                Assert.That(view.Occupancy, Is.SameAs(state));
+                Assert.That(view.Occupancy.TeamSide, Is.EqualTo(TeamSide.Blue));
+                Assert.That(view.Occupancy.MinionType, Is.EqualTo(StandardMinionType.Melee));
                 Assert.That(view.GetComponent<SpriteRenderer>().sprite.name, Is.EqualTo("blue-melee"));
                 Assert.That(view.transform.localPosition,
                     Is.EqualTo(HexWorldLayout.ToWorld(state.Coordinate) + (Vector3.up * StandardMinionView.DefaultVerticalOffset)));
@@ -317,14 +318,14 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        private static QuickGameMinionSetupState CreateState(string id) =>
-            new QuickGameMinionSetupState(
+        private static MinionOccupancy CreateState(string id) =>
+            MinionOccupancy.FromSetup(new QuickGameMinionSetupState(
                 new MinionId(id),
                 new TeamId("blue-team"),
                 TeamSide.Blue,
                 StandardMinionType.Melee,
                 new ConfiguredSpawnPointReference(new MapId("test-map"), new SpawnPointId($"{id}-spawn")),
                 new ConfiguredSpaceReference(new MapId("test-map"), new SpaceId("q1_r0")),
-                new HexCoordinate(1, 0));
+                new HexCoordinate(1, 0)));
     }
 }

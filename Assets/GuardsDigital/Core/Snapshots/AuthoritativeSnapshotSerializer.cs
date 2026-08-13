@@ -21,7 +21,10 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
-        public const int CurrentSchemaVersion = 6;
+        // v7: the board section serializes each remaining minion's current coordinate alongside
+        // its identity; v6 reconstructed positions from setup placements and cannot express a
+        // moved minion, so it is explicitly rejected (milestone 6.1s migrate-or-reject decision).
+        public const int CurrentSchemaVersion = 7;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

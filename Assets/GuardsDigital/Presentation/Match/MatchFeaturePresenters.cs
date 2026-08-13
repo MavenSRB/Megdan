@@ -12,6 +12,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Presentation.Match
 {
@@ -37,7 +38,7 @@ namespace GuardsDigital.Presentation.Match
         public BoardInteractionViewModel(
             long version,
             IEnumerable<HeroOccupancy> heroes,
-            IEnumerable<QuickGameMinionSetupState> minions,
+            IEnumerable<MinionOccupancy> minions,
             IEnumerable<HexCoordinate> movementDestinations,
             IEnumerable<HeroId> attackTargets,
             IEnumerable<MinionId> minionAttackTargets,
@@ -63,7 +64,7 @@ namespace GuardsDigital.Presentation.Match
 
         public long Version { get; }
         public IReadOnlyList<HeroOccupancy> Heroes { get; }
-        public IReadOnlyList<QuickGameMinionSetupState> Minions { get; }
+        public IReadOnlyList<MinionOccupancy> Minions { get; }
         public IReadOnlyList<HexCoordinate> MovementDestinations { get; }
         public IReadOnlyList<HeroId> AttackTargets { get; }
         public IReadOnlyList<MinionId> MinionAttackTargets { get; }

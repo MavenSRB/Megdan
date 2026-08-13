@@ -13,6 +13,7 @@ using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Application
 {
@@ -231,8 +232,8 @@ namespace GuardsDigital.Application
             IReadOnlyList<RuleEventLogEntry> diagnosticEvents,
             string authoritativeSnapshot,
             bool isHistoryAvailable,
+            IEnumerable<MinionOccupancy> minions,
             IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
-            IEnumerable<QuickGameMinionSetupState> minions = null,
             PendingDefensePreviewProjection pendingDefensePreview = null,
             PendingMinionBattleChoice pendingMinionBattleChoice = null,
             PendingLanePushRequest pendingLanePushRequest = null)
@@ -245,7 +246,7 @@ namespace GuardsDigital.Application
             Cards = Array.AsReadOnly((cards ?? throw new ArgumentNullException(nameof(cards))).Select(CloneCard).ToArray());
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
             Obstacles = Array.AsReadOnly((obstacles ?? throw new ArgumentNullException(nameof(obstacles))).ToArray());
-            Minions = Array.AsReadOnly((minions ?? setup.Minions).ToArray());
+            Minions = Array.AsReadOnly((minions ?? throw new ArgumentNullException(nameof(minions))).ToArray());
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
             Phase = phase;
@@ -296,7 +297,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<CardInstance> Cards { get; }
         public IReadOnlyList<HeroOccupancy> Heroes { get; }
         public IReadOnlyList<ObstacleOccupancy> Obstacles { get; }
-        public IReadOnlyList<QuickGameMinionSetupState> Minions { get; }
+        public IReadOnlyList<MinionOccupancy> Minions { get; }
         public int RoundIndex { get; }
         public int TurnIndex { get; }
         public RoundResolutionPhase Phase { get; }

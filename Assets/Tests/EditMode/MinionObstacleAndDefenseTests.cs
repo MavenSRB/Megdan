@@ -40,7 +40,12 @@ namespace GuardsDigital.Tests.EditMode
                 board.Minions,
                 1);
 
-            Assert.That(board.Minions.Single(), Is.SameAs(minion));
+            // The board holds a runtime MinionOccupancy converted from the setup placement; its
+            // stable identity and configured position are preserved exactly.
+            var boardMinion = board.Minions.Single();
+            Assert.That(boardMinion.MinionId, Is.EqualTo(minion.MinionId));
+            Assert.That(boardMinion.Coordinate, Is.EqualTo(minion.Coordinate));
+            Assert.That(boardMinion.OccupiedSpace, Is.EqualTo(minion.OccupiedSpace));
             Assert.That(move.Accepted, Is.False);
             Assert.That(move.RejectionReason, Is.EqualTo(AdjacentMoveRejectionReason.DestinationOccupied));
             Assert.That(reachable.Any(value => value.Destination.Equals(minionCoordinate)), Is.False);

@@ -214,7 +214,8 @@ namespace GuardsDigital.Tests.EditMode
                     new HeroOccupancy(actorId, actorCoordinate),
                     new HeroOccupancy(enemyId, enemyCoordinate)
                 },
-                obstacles);
+                obstacles,
+                setup.Minions);
             var card = configuration.RedHand.Instances[0];
             Assert.That(CardLifecycleAuthority.TryPlayFacedown(card), Is.True);
             Assert.That(CardLifecycleAuthority.TryReveal(card), Is.True);
@@ -299,7 +300,7 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardDefinitions,
                     configuration.CardInstances,
                     configuration.Participants,
-                    setup.Minions);
+                    Board.Minions);
             }
 
             public IReadOnlyList<HexCoordinate> LegalDestinations()
@@ -311,7 +312,7 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     Board,
                     configuration.Participants,
-                    setup.Minions);
+                    Board.Minions);
             }
         }
     }

@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -19,7 +20,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            IEnumerable<QuickGameMinionSetupState> minions)
+            IEnumerable<MinionOccupancy> minions)
         {
             if (board == null)
             {
@@ -67,7 +68,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            IEnumerable<QuickGameMinionSetupState> minions)
+            IEnumerable<MinionOccupancy> minions)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -102,7 +103,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardInstance> instances,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            IReadOnlyList<QuickGameMinionSetupState> minions,
+            IReadOnlyList<MinionOccupancy> minions,
             bool offerAlreadyValidated)
         {
             if (!offerAlreadyValidated && !IsCurrentReplacementOffer(
@@ -185,7 +186,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             TeamSide actorSide,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            IEnumerable<QuickGameMinionSetupState> minions)
+            IEnumerable<MinionOccupancy> minions)
         {
             return board.Occupancies.Any(occupancy =>
                     !occupancy.HeroId.Equals(actorId) &&

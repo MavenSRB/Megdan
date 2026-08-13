@@ -126,10 +126,77 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(6));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(7));
             Assert.That(restored.Board.Minions, Is.Empty);
             Assert.That(restored.CardActions.DefeatRewards.GetCoins(fixture.AttackerId), Is.EqualTo(2));
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board), Is.EqualTo(payload));
+        }
+
+        [Test]
+        public void MovedMinionCoordinate_RoundTripsThroughSchemaSevenSnapshot()
+        {
+            // ER2 closing check for F-ER2-02: a restored match preserves a mutated minion
+            // coordinate instead of reconstructing the position from the setup placement.
+            // Pre-fix this fixture could not be expressed at all: no minion mutation path existed.
+            var minion = CreateMinion("blue-mover", TeamSide.Blue, StandardMinionType.Melee, new HexCoordinate(1, 0));
+            var fixture = CreateFixture(minion);
+            var destination = new HexCoordinate(1, 1);
+
+            var move = fixture.Board.TryCommitMinionMove(minion.MinionId, destination);
+
+            Assert.That(move.Accepted, Is.True);
+            Assert.That(move.MovedMinion.Coordinate, Is.EqualTo(destination));
+            Assert.That(move.Origin, Is.EqualTo(new HexCoordinate(1, 0)));
+            Assert.That(fixture.Board.Minions.Single().Coordinate, Is.EqualTo(destination));
+
+            var round = new RoundResolutionAuthority(
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants,
+                new TieBreakerState(TeamSide.Red),
+                1,
+                RoundResolutionComposition.ForCardActionsOnly(fixture.Authority));
+            var payload = AuthoritativeSnapshotSerializer.Serialize(round, fixture.Board);
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                payload,
+                fixture.Configuration.CardDefinitions,
+                new[] { fixture.Map },
+                new[] { minion });
+
+            var restoredMinion = restored.Board.Minions.Single();
+            Assert.That(restoredMinion.MinionId, Is.EqualTo(minion.MinionId));
+            Assert.That(restoredMinion.Coordinate, Is.EqualTo(destination),
+                "Restore must take the minion position from the stream, not from the setup placement.");
+            Assert.That(restoredMinion.Coordinate, Is.Not.EqualTo(minion.Coordinate));
+            Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board), Is.EqualTo(payload));
+        }
+
+        [Test]
+        public void TryCommitMinionMove_ValidatesIdentityBoardAndOccupancy()
+        {
+            var minion = CreateMinion("blue-guard", TeamSide.Blue, StandardMinionType.Melee, new HexCoordinate(1, 0));
+            var fixture = CreateFixture(minion);
+
+            var unknown = fixture.Board.TryCommitMinionMove(new MinionId("missing"), new HexCoordinate(1, 1));
+            Assert.That(unknown.Accepted, Is.False);
+            Assert.That(unknown.RejectionReason, Is.EqualTo(MinionMoveRejectionReason.UnknownMinion));
+
+            var offBoard = fixture.Board.TryCommitMinionMove(minion.MinionId, new HexCoordinate(9, 9));
+            Assert.That(offBoard.Accepted, Is.False);
+            Assert.That(offBoard.RejectionReason, Is.EqualTo(MinionMoveRejectionReason.DestinationOffBoard));
+
+            var occupied = fixture.Board.TryCommitMinionMove(minion.MinionId, new HexCoordinate(0, 0));
+            Assert.That(occupied.Accepted, Is.False);
+            Assert.That(occupied.RejectionReason, Is.EqualTo(MinionMoveRejectionReason.DestinationOccupied));
+            Assert.That(fixture.Board.Minions.Single().Coordinate, Is.EqualTo(new HexCoordinate(1, 0)));
+
+            var accepted = fixture.Board.TryCommitMinionMove(minion.MinionId, new HexCoordinate(1, 1));
+            Assert.That(accepted.Accepted, Is.True);
+
+            // The vacated space is genuinely free again: the hero can step onto it.
+            var heroMove = fixture.Board.TryCommit(new AdjacentMoveCommand(
+                fixture.AttackerId, new HexCoordinate(0, 0), new HexCoordinate(1, 0)));
+            Assert.That(heroMove.Accepted, Is.True);
         }
 
         private static AttackActionResolutionResult AttackMinion(

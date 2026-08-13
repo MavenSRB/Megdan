@@ -66,13 +66,13 @@ namespace GuardsDigital.Presentation.Interaction
         public bool TrySelectFromPointerRay(Ray pointerRay, float maxDistance = 500f)
         {
             var minion = GetComponent<StandardMinionView>();
-            if (boardView == null || !isActiveAndEnabled || minion.SetupState == null ||
+            if (boardView == null || !isActiveAndEnabled || minion.Occupancy == null ||
                 !GetComponent<SphereCollider>().Raycast(pointerRay, out _, maxDistance))
             {
                 return false;
             }
 
-            return boardView.TryForwardMinionIntent(minion.SetupState.MinionId);
+            return boardView.TryForwardMinionIntent(minion.Occupancy.MinionId);
         }
 
         private void EnsureColliderShape()

@@ -6,6 +6,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Timing;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -592,7 +593,7 @@ namespace GuardsDigital.Core.Cards
             ActionOffer replacementOffer,
             ActionDefinitionId replacedMovementActionDefinitionId,
             GuardsDigital.Core.Board.HexCoordinate destination,
-            IEnumerable<QuickGameMinionSetupState> minions)
+            IEnumerable<MinionOccupancy> minions)
         {
             var commonRejection = GetCommonRejection();
             if (commonRejection != TurnResolutionRejectionReason.None)

@@ -547,8 +547,8 @@ namespace GuardsDigital.Application
                 aggregate.EventLogEntries,
                 authoritative,
                 canRecordHistory,
-                availableFastTravelOptions,
                 board.Minions,
+                availableFastTravelOptions,
                 defensePreview,
                 round.PendingMinionBattleChoice,
                 round.PendingLanePushRequest);

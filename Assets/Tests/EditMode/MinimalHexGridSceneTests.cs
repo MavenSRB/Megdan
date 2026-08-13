@@ -257,15 +257,15 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(setup.WaveCount, Is.EqualTo(3));
             Assert.That(setup.Teams, Has.All.Matches<QuickGameTeamSetupState>(team => team.LifeCount == 4));
             Assert.That(minions, Has.Length.EqualTo(12));
-            Assert.That(minions.Select(view => view.SetupState.MinionId).Distinct().Count(), Is.EqualTo(12));
-            Assert.That(minions.Select(view => view.SetupState.OccupiedSpace).Distinct().Count(), Is.EqualTo(12));
+            Assert.That(minions.Select(view => view.Occupancy.MinionId).Distinct().Count(), Is.EqualTo(12));
+            Assert.That(minions.Select(view => view.Occupancy.OccupiedSpace).Distinct().Count(), Is.EqualTo(12));
             Assert.That(minions, Has.All.Matches<StandardMinionView>(view =>
                 view.GetComponent<SpriteRenderer>().sprite != null &&
-                mapView.RenderedDefinition.GetZoneForSpace(view.SetupState.OccupiedSpace.SpaceId).IsStartingBattleZone &&
+                mapView.RenderedDefinition.GetZoneForSpace(view.Occupancy.OccupiedSpace.SpaceId).IsStartingBattleZone &&
                 Vector3.Angle(view.transform.TransformDirection(Vector3.up), Vector3.forward) < Tolerance));
-            Assert.That(minions.Where(view => view.SetupState.TeamSide == TeamSide.Red),
+            Assert.That(minions.Where(view => view.Occupancy.TeamSide == TeamSide.Red),
                 Has.All.Matches<StandardMinionView>(view => view.GetComponent<SpriteRenderer>().sprite.name.StartsWith("red-")));
-            Assert.That(minions.Where(view => view.SetupState.TeamSide == TeamSide.Blue),
+            Assert.That(minions.Where(view => view.Occupancy.TeamSide == TeamSide.Blue),
                 Has.All.Matches<StandardMinionView>(view => view.GetComponent<SpriteRenderer>().sprite.name.StartsWith("blue-")));
         }
 

@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.Movement
 {
@@ -51,7 +52,7 @@ namespace GuardsDigital.Core.Rules.Movement
                 boardCoordinates,
                 occupancies,
                 Enumerable.Empty<ObstacleOccupancy>(),
-                Enumerable.Empty<QuickGameMinionSetupState>(),
+                Enumerable.Empty<MinionOccupancy>(),
                 movementAllowance);
         }
 
@@ -67,7 +68,7 @@ namespace GuardsDigital.Core.Rules.Movement
                 boardCoordinates,
                 occupancies,
                 obstacleOccupancies,
-                Enumerable.Empty<QuickGameMinionSetupState>(),
+                Enumerable.Empty<MinionOccupancy>(),
                 movementAllowance);
         }
 
@@ -76,7 +77,7 @@ namespace GuardsDigital.Core.Rules.Movement
             IEnumerable<HexCoordinate> boardCoordinates,
             IEnumerable<HeroOccupancy> occupancies,
             IEnumerable<ObstacleOccupancy> obstacleOccupancies,
-            IEnumerable<QuickGameMinionSetupState> minions,
+            IEnumerable<MinionOccupancy> minions,
             int movementAllowance)
         {
             if (boardCoordinates == null)

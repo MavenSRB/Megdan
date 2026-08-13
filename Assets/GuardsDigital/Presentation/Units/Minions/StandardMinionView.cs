@@ -1,5 +1,6 @@
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Core.Units.Minions;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Units.Minions
@@ -23,22 +24,22 @@ namespace GuardsDigital.Presentation.Units.Minions
         [SerializeField, HideInInspector]
         private float outerRadius = HexWorldLayout.DefaultOuterRadius;
 
-        private QuickGameMinionSetupState setupState;
+        private MinionOccupancy occupancy;
         private TextMesh defenseCue;
         private TextMesh defenseCueBackground;
 
-        public QuickGameMinionSetupState SetupState => setupState;
-        public MinionId BoundMinionId => setupState != null
-            ? setupState.MinionId
+        public MinionOccupancy Occupancy => occupancy;
+        public MinionId BoundMinionId => occupancy != null
+            ? occupancy.MinionId
             : string.IsNullOrWhiteSpace(boundMinionId)
                 ? default
                 : new MinionId(boundMinionId);
         public float OuterRadius => outerRadius;
         public int DefenseCueAmount { get; private set; }
 
-        public void Configure(QuickGameMinionSetupState state, float outerRadius)
+        public void Configure(MinionOccupancy state, float outerRadius)
         {
-            setupState = state ?? throw new System.ArgumentNullException(nameof(state));
+            occupancy = state ?? throw new System.ArgumentNullException(nameof(state));
             boundMinionId = state.MinionId.Value;
             this.outerRadius = outerRadius;
             gameObject.name = $"{state.TeamSide} {state.MinionType} Minion {state.MinionId.Value}";

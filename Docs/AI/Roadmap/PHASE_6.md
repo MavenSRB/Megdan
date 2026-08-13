@@ -357,7 +357,7 @@ Closure for `F-ER2-06`: architectural direction; verified by the already-schedul
 
 Non-goals: No token or marker behavior, no minion movement (6.1s), no rule change, no board-authority rename beyond what the seam itself requires.
 
-### [ ] 6.1s Make minion occupancy mutable and fully serialized
+### [~] 6.1s Make minion occupancy mutable and fully serialized
 
 Observable outcome: A minion's board position is authoritative mutable state that snapshots round-trip, so Object Push (6.4), Lane Push (6.9-6.11), and minion Respawn can move minions.
 

@@ -119,7 +119,7 @@ namespace GuardsDigital.Presentation.Match
                 if (boundId.IsDefined && projectedMinions.TryGetValue(boundId, out var state))
                 {
                     minion.gameObject.SetActive(true);
-                    if (!ReferenceEquals(minion.SetupState, state))
+                    if (!ReferenceEquals(minion.Occupancy, state))
                     {
                         minion.Configure(state, minion.OuterRadius);
                     }

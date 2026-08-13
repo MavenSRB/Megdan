@@ -323,7 +323,7 @@ namespace GuardsDigital.Presentation.Board
                     view = minionObject.AddComponent<StandardMinionView>();
                 }
 
-                view.Configure(setupMinion, outerRadius);
+                view.Configure(GuardsDigital.Core.Units.Minions.MinionOccupancy.FromSetup(setupMinion), outerRadius);
                 currentViews.Add(view);
                 viewsById.Remove(setupMinion.MinionId);
             }
