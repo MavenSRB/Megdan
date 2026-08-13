@@ -85,3 +85,15 @@ The governance amendment committed the same day replaced automatic recursive ver
 - **Execution order is now by severity**: 6.1e, 6.1g, 6.1c, 6.1d, 6.1f, 6.1i, 6.1h, 6.1k. The table above lists findings in the order the audit wrote them, which placed the only confirmed live correctness defect (`F613-05`) behind a maintainability cleanup.
 
 The sanctioned reviews this audit criticised, 4.4i and 5.8c, remain the reason the closure rule changed: both produced a conclusion no check could contradict. Each finding above now names the check that can.
+
+### 2026-08-13 addendum: findings closed by milestone 6.1e
+
+Explicit correction under the append-only archive rule. The disposition table above records `F613-04` and `F613-05` as `Scheduled`; both are closed by milestone 6.1e. The table text is preserved as written.
+
+`F613-05` closed against `ConfiguredViewCollectionPlayModeTests.RebuildThenImmediateCollection_ExcludesViewsAwaitingDeferredDestroy`, observed failing at the pre-fix revision with `1 of 13 collected minion views were awaiting deferred destruction and would have entered authoritative board state`, and passing after the composition root stopped re-discovering children.
+
+`F613-04` closed against `ConfiguredSceneSerializationTests.ConfiguredScene_SerializesNoGeneratedPresentationObject`, observed failing at the pre-fix revision with `HexTileView x7`, and passing after the seven authored tiles were removed and edit-mode composition became opt-in.
+
+Two statements in the original findings were wrong and are corrected here rather than in the preserved table. The seven authored tiles were not stale coordinates destroyed at load: all seven are playable spaces in the selected map, so the rebuild reconfigured and reused them, and one supplied the mesh template for every generated tile. Edit-mode composition was also not actively dirtying the saved scene; the serialization check found only those seven authored tiles and no generated minion, spawn marker, or obstacle, so the dirtying was latent rather than realized.
+
+`HideFlags.DontSave` was implemented first and reverted. It keeps generated objects out of the saved scene but also excludes them from `Object.FindObjectsByType`, which failed five configured Play Mode regressions that locate tiles and minions by type. The accepted correction is the acceptance check's other option: composition does not run on an edit-mode domain reload unless an explicit serialized opt-in is enabled, which additionally removes the per-reload regeneration of roughly 625 objects that the hide-flag approach left in place.

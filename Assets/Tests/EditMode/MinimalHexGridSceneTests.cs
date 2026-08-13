@@ -28,7 +28,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_RebuildsCompletePlaceholderMapFromSelectedDefinitionAtDerivedPositions()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             var mapView = RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>();
             var definition = mapView.RenderedDefinition;
@@ -56,7 +56,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_PresentationMatchesSelectedDefinitionClassificationsAndSpawnPoints()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             var mapView = RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>();
             var markers = Object.FindObjectsByType<BoardMapSpawnMarkerView>();
@@ -128,7 +128,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_UsesOneFixedTopDownCameraWithPointerInputAndNoCameraController()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             var cameras = Object.FindObjectsByType<Camera>();
 
             Assert.That(cameras, Has.Length.EqualTo(1));
@@ -149,7 +149,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_UsesSharedJungleColorAndDistinctNonJungleAndTerrainColors()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             var mapView = RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>();
             var playableMaterialsByZone = tiles.Where(tile => tile.IsPlayable)
@@ -173,7 +173,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_UsesOneDarkerGrayClosedEdgeForEveryTile()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>();
             var darkestFill = tiles.Min(tile => tile.GetComponent<MeshRenderer>().sharedMaterial.color.grayscale);
@@ -192,7 +192,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_ContainsVisibleRedAndBlueHeroesAtConfiguredTeamHeroSpawnPoints()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             RebuildOfficialMap();
             var tiles = Object.FindObjectsByType<HexTileView>();
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
@@ -248,7 +248,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_ProjectsConfiguredQuickGameCountersAndTwelveReviewedStandardMinions()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             var mapView = RebuildOfficialMap();
             var setup = mapView.RenderedSetup;
             var minions = Object.FindObjectsByType<StandardMinionView>();
@@ -272,7 +272,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_RemovesLegacyPlaceholderObstaclesFromOfficialMap()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             RebuildOfficialMap();
             var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>();
 
@@ -286,7 +286,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_ContainsInputSystemPointerSelectionPath()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             var controllers = Object.FindObjectsByType<HeroSelectionController>();
             var selectors = Object.FindObjectsByType<PrimitiveHeroPointerSelector>();
             var minionSelectors = Object.FindObjectsByType<StandardMinionPointerSelector>();
@@ -320,7 +320,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_RebuildReconcilesReloadedAndDeliberatelyReplacedMinionBindings()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             var mapView = RebuildOfficialMap();
             var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
@@ -387,7 +387,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_ContainsTopRightAuthoritativeTieBreakerIndicator()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
             var side = root.Session.Projection.TieBreakerState.RevealedSide;
             var indicatorRect = root.Hud.TieBreakerIndicatorRect;
@@ -404,7 +404,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Scene_SelectingSecondaryMovementOfferHighlightsAuthoritativeCardDestinations()
         {
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            OpenConfiguredScene();
             RebuildOfficialMap();
             var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
             var runtime = root.Runtime;
@@ -447,6 +447,19 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 highlightedCoordinates,
                 Has.No.Member(runtime.Projection.Heroes.Single(hero => !hero.HeroId.Equals(actor)).Coordinate));
+        }
+
+        /// <summary>
+        /// Opens the configured scene and explicitly composes it. Since milestone 6.1e the
+        /// composition root does not compose on an edit-mode domain reload, so these scene tests
+        /// request composition rather than depending on that implicit side effect.
+        /// </summary>
+        private static void OpenConfiguredScene()
+        {
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            Assert.That(root, Is.Not.Null, "The configured scene must contain a composition root.");
+            root.Compose();
         }
 
         private static PlaceholderTestGridView RebuildOfficialMap()

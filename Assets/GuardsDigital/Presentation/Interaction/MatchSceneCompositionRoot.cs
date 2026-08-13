@@ -25,6 +25,12 @@ namespace GuardsDigital.Presentation.Interaction
         [SerializeField] private PrimitiveHeroPointerSelector[] pointerSelectors;
         [SerializeField] private Material assignedHighlightMaterial;
 
+        [Tooltip(
+            "Compose the board while the editor is not playing. Off by default: edit-mode composition " +
+            "regenerates the full board on every domain reload and can serialize generated objects " +
+            "into the saved scene. Enable only to preview, and do not save the scene while enabled.")]
+        [SerializeField] private bool composeInEditMode;
+
         private DestinationHighlightMaterialOwner highlightOwner;
         private ConfiguredMatchHudRenderer hud;
         private ConfiguredMatchSceneRuntime runtime;
@@ -73,9 +79,13 @@ namespace GuardsDigital.Presentation.Interaction
             mapView.ConfigureSceneBindings(eventCamera, heroViews);
             mapView.Rebuild(map, setup);
 
-            var tiles = mapView.GetComponentsInChildren<HexTileView>(true);
-            var minions = mapView.GetComponentsInChildren<StandardMinionView>(true);
-            var obstacles = mapView.GetComponentsInChildren<PlaceholderObstacleView>(true);
+            // Use the sets the rebuild published rather than re-discovering children. In Play Mode a
+            // retired view is destroyed with the deferred Destroy and remains reachable through a
+            // child search until the end of the frame, so re-discovery admits doomed objects into
+            // authoritative board state. See milestone 6.1e / finding F613-05.
+            var tiles = mapView.CurrentTiles.ToArray();
+            var minions = mapView.CurrentMinionViews.ToArray();
+            var obstacles = mapView.CurrentObstacles.ToArray();
             highlightOwner = new DestinationHighlightMaterialOwner(assignedHighlightMaterial);
             hud = GetComponent<ConfiguredMatchHudRenderer>();
             if (hud == null)
@@ -143,6 +153,14 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void Awake()
         {
+            // Edit-mode composition is opt-in. Running it on every domain reload regenerates the
+            // whole board and lets generated objects reach the saved scene, which is what left the
+            // seven authored tiles behind. See milestone 6.1e / finding F613-04.
+            if (!UnityEngine.Application.isPlaying && !composeInEditMode)
+            {
+                return;
+            }
+
             Compose();
         }
 

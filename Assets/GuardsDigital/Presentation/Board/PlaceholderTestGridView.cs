@@ -31,6 +31,9 @@ namespace GuardsDigital.Presentation.Board
         [SerializeField] private PrimitiveHeroView[] heroViews;
 
         private readonly Dictionary<ZoneId, Material> zoneMaterials = new Dictionary<ZoneId, Material>();
+        private readonly List<HexTileView> currentTiles = new List<HexTileView>();
+        private readonly List<StandardMinionView> currentMinionViews = new List<StandardMinionView>();
+        private readonly List<PlaceholderObstacleView> currentObstacles = new List<PlaceholderObstacleView>();
         private BoardMapDefinition renderedDefinition;
         private QuickGameSetupState renderedSetup;
         private Material terrainMaterial;
@@ -52,6 +55,16 @@ namespace GuardsDigital.Presentation.Board
             (redSpawnMaterial != null ? 1 : 0) +
             (blueSpawnMaterial != null ? 1 : 0) +
             (generatedTileMesh != null ? 1 : 0);
+
+        /// <summary>
+        /// The views this rebuild actually produced, excluding any object it retired. Consumers must
+        /// use these instead of GetComponentsInChildren: in Play Mode a retired object is destroyed
+        /// with the deferred UnityEngine.Object.Destroy and is still returned by a child search until
+        /// the end of the frame, so re-discovery can admit doomed objects into authoritative state.
+        /// </summary>
+        public IReadOnlyList<HexTileView> CurrentTiles => currentTiles;
+        public IReadOnlyList<StandardMinionView> CurrentMinionViews => currentMinionViews;
+        public IReadOnlyList<PlaceholderObstacleView> CurrentObstacles => currentObstacles;
 
         public event System.Action<IReadOnlyList<StandardMinionView>> ConfiguredMinionViewsChanged;
 
@@ -106,9 +119,14 @@ namespace GuardsDigital.Presentation.Board
             {
                 if (!tilesByCoordinate.ContainsKey(space.Coordinate))
                 {
-                    CreateTile(space, templateTile);
+                    tilesByCoordinate.Add(space.Coordinate, CreateTile(space, templateTile));
                 }
             }
+
+            // Record the surviving tiles only. Retired tiles are excluded even though a deferred
+            // Destroy leaves them reachable through a child search for the rest of the frame.
+            currentTiles.Clear();
+            currentTiles.AddRange(tilesByCoordinate.Values);
 
             EnsureSpawnMarkers(definition);
             RemoveLegacyObstacles();
@@ -158,10 +176,22 @@ namespace GuardsDigital.Presentation.Board
             }
         }
 
+        /// <summary>
+        /// Generated presentation is deliberately left with default hide flags. `HideFlags.DontSave`
+        /// would keep it out of the saved scene but also hides it from `Object.FindObjectsByType`,
+        /// which the configured presentation and its regressions rely on. Scene cleanliness is
+        /// instead guaranteed by not composing in edit mode at all; see `MatchSceneCompositionRoot`.
+        /// </summary>
+        private static GameObject CreateGeneratedObject(string name, Transform parent)
+        {
+            var generated = new GameObject(name);
+            generated.transform.SetParent(parent, false);
+            return generated;
+        }
+
         private HexTileView CreateTile(BoardMapSpace space, HexTileView templateTile)
         {
-            var tileObject = new GameObject($"{space.Kind} {space.Id.Value}");
-            tileObject.transform.SetParent(transform, false);
+            var tileObject = CreateGeneratedObject($"{space.Kind} {space.Id.Value}", transform);
 
             var meshFilter = tileObject.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = templateTile != null && templateTile.GetComponent<MeshFilter>() != null
@@ -172,8 +202,7 @@ namespace GuardsDigital.Presentation.Board
             var tile = tileObject.AddComponent<HexTileView>();
             tile.Configure(space, outerRadius, GetSpaceMaterial(space));
 
-            var edgeObject = new GameObject("Debug Edge");
-            edgeObject.transform.SetParent(tileObject.transform, false);
+            var edgeObject = CreateGeneratedObject("Debug Edge", tileObject.transform);
             ConfigureEdge(edgeObject.AddComponent<LineRenderer>());
             return tile;
         }
@@ -218,8 +247,7 @@ namespace GuardsDigital.Presentation.Board
                 var space = spacesById[spawnPoint.SpaceId];
                 if (!markersById.TryGetValue(spawnPoint.Id, out var marker))
                 {
-                    var markerObject = new GameObject($"Spawn {spawnPoint.Id.Value}");
-                    markerObject.transform.SetParent(transform, false);
+                    var markerObject = CreateGeneratedObject($"Spawn {spawnPoint.Id.Value}", transform);
                     marker = markerObject.AddComponent<BoardMapSpawnMarkerView>();
                     markerObject.AddComponent<LineRenderer>();
                 }
@@ -249,6 +277,9 @@ namespace GuardsDigital.Presentation.Board
             {
                 DestroyObject(obstacle.gameObject);
             }
+
+            // Every legacy obstacle is retired unconditionally, so the surviving set is empty.
+            currentObstacles.Clear();
         }
 
         private void PlaceConfiguredHeroes(BoardMapDefinition definition, QuickGameSetupState setupState)
@@ -288,8 +319,7 @@ namespace GuardsDigital.Presentation.Board
             {
                 if (!viewsById.TryGetValue(setupMinion.MinionId, out var view))
                 {
-                    var minionObject = new GameObject();
-                    minionObject.transform.SetParent(transform, false);
+                    var minionObject = CreateGeneratedObject(string.Empty, transform);
                     view = minionObject.AddComponent<StandardMinionView>();
                 }
 
@@ -303,6 +333,8 @@ namespace GuardsDigital.Presentation.Board
                 RetireMinionView(staleView);
             }
 
+            currentMinionViews.Clear();
+            currentMinionViews.AddRange(currentViews);
             ConfiguredMinionViewsChanged?.Invoke(System.Array.AsReadOnly(currentViews.ToArray()));
         }
 
@@ -313,6 +345,7 @@ namespace GuardsDigital.Presentation.Board
                 RetireMinionView(minion);
             }
 
+            currentMinionViews.Clear();
             ConfiguredMinionViewsChanged?.Invoke(System.Array.Empty<StandardMinionView>());
         }
 

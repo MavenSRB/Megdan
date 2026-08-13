@@ -112,7 +112,7 @@ Once the player-build smoke gate passes, the **buildability** review dimension a
 
 Non-goals: No render-pipeline migration, no production shader or material authoring, no visual change, no map content change, no revision bump, no change to the map schema, loader, or catalog contracts, no continuous-integration service selection or configuration, no change to validation tiers, recipes, or gate definitions, no store packaging, signing, provisioning, distribution, mobile player support, or performance target, and no publication of any build.
 
-### [ ] 6.1e Correct editor-time composition hazards
+### [x] 6.1e Correct editor-time composition hazards
 
 Observable outcome: Edit-mode composition no longer dirties the saved scene with generated objects, and pending-destroy objects cannot enter authoritative board state.
 
