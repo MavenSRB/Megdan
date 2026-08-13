@@ -16,9 +16,6 @@ namespace GuardsDigital.Presentation.Interaction
         [SerializeField]
         private PrimitiveHeroPointerSelector[] selectors;
 
-        [SerializeField]
-        private HeroSelectionController selectionController;
-
         private BoardInteractionUnityView boardView;
         private StandardMinionPointerSelector[] minionSelectors;
         private HexTileView[] tiles;
@@ -34,21 +31,6 @@ namespace GuardsDigital.Presentation.Interaction
         public IReadOnlyList<PrimitiveHeroPointerSelector> Selectors => selectors;
         public IReadOnlyList<StandardMinionPointerSelector> MinionSelectors =>
             minionSelectors ?? System.Array.Empty<StandardMinionPointerSelector>();
-
-        public void Configure(
-            Camera camera,
-            IEnumerable<PrimitiveHeroPointerSelector> pointerSelectors,
-            HeroSelectionController controller = null)
-        {
-            boardView = null;
-            minionSelectors = System.Array.Empty<StandardMinionPointerSelector>();
-            tiles = System.Array.Empty<HexTileView>();
-            blocksPointer = null;
-            eventCamera = camera;
-            selectors = pointerSelectors?.Where(selector => selector != null).ToArray();
-            selectionController = controller ?? selectors?.Select(value => value.SelectionController)
-                .FirstOrDefault(value => value != null);
-        }
 
         public void Configure(
             Camera camera,
@@ -72,7 +54,6 @@ namespace GuardsDigital.Presentation.Interaction
                 .Distinct()
                 .ToArray();
             blocksPointer = pointerBlocker;
-            selectionController = null;
         }
 
         public void ReplaceMinionSelectors(
@@ -120,8 +101,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var screenPosition = Pointer.current.position.ReadValue();
-            if ((blocksPointer != null && blocksPointer(screenPosition)) ||
-                (selectionController != null && selectionController.BlocksPointerAt(screenPosition)))
+            if (blocksPointer != null && blocksPointer(screenPosition))
             {
                 return false;
             }
@@ -157,11 +137,6 @@ namespace GuardsDigital.Presentation.Interaction
                 return tile != null && boardView.TryForwardDestinationIntent(tile.Coordinate);
             }
 
-            if (selectionController != null && selectionController.TryCommitDestinationFromPointerRay(pointerRay))
-            {
-                return true;
-            }
-
             return false;
         }
 
@@ -170,19 +145,6 @@ namespace GuardsDigital.Presentation.Interaction
             if (selectors == null)
             {
                 selectors = System.Array.Empty<PrimitiveHeroPointerSelector>();
-            }
-
-            if (boardView == null && selectionController == null)
-            {
-                for (var index = 0; index < selectors.Length; index++)
-                {
-                    var selector = selectors[index];
-                    if (selector != null && selector.SelectionController != null)
-                    {
-                        selectionController = selector.SelectionController;
-                        break;
-                    }
-                }
             }
         }
 

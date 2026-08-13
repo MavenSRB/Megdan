@@ -214,6 +214,57 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(secondaryValue.Total, Is.EqualTo(1));
         }
 
+        // Relocated verbatim from CardDrivenMovementPresentationTests at milestone 6.1c. It was the
+        // one test in that fixture that never touched the legacy HeroSelectionController drill, so
+        // deleting the file wholesale would have dropped live Core coverage.
+        [Test]
+        public void PlaceholderHand_ContainsFiveVisibleTestCardsWithPrimaryAttackAndSecondaryMovement()
+        {
+            var ownerId = new HeroId("hero");
+            var hand = PlaceholderMovementHand.Create(ownerId);
+
+            Assert.That(hand.Definitions, Has.Count.EqualTo(5));
+            Assert.That(hand.Instances, Has.Count.EqualTo(5));
+            Assert.That(hand.Definitions, Has.All.Matches<CardDefinition>(definition =>
+                definition.DisplayName.StartsWith("TEST - ")));
+            Assert.That(hand.Instances.Select(instance => instance.OwnerId), Has.All.EqualTo(ownerId));
+
+            foreach (var instance in hand.Instances)
+            {
+                var offers = ActionOfferQuery.GetAvailableOffers(
+                        hand.Definitions,
+                        hand.Instances,
+                        ownerId,
+                        ActionOfferWindow.NormalPlay)
+                    .Where(offer => offer.SourceCardInstanceId.Equals(instance.Id))
+                    .ToArray();
+                var primary = offers.Single(offer =>
+                    offer.InvocationContext == ActionInvocationContext.PrintedPrimary);
+                var secondary = offers.Single(offer =>
+                    offer.InvocationContext == ActionInvocationContext.PrintedSecondary &&
+                    hand.Definitions.Single(candidate =>
+                            candidate.Reference.Equals(offer.SourceDefinitionReference))
+                        .ActionDefinitions.Single(action =>
+                            action.Id.Equals(offer.ActionDefinitionId)).Kind == ActionKind.Movement);
+                var definition = hand.Definitions.Single(candidate =>
+                    candidate.Reference.Equals(instance.DefinitionReference));
+
+                Assert.That(definition.ActionDefinitions.Single(action =>
+                        action.Id.Equals(primary.ActionDefinitionId)).Kind,
+                    Is.EqualTo(ActionKind.Attack));
+                Assert.That(PrintedValueQuery.CalculatePrintedValue(
+                    secondary,
+                    hand.Definitions,
+                    PrintedValueChannel.Movement).Total, Is.InRange(2, 3));
+                Assert.That(definition.ActionDefinitions.Single(action =>
+                        action.Id.Equals(primary.ActionDefinitionId)).DefaultPolicy.CardTextApplication,
+                    Is.EqualTo(CardTextApplicationPolicy.Applies));
+                Assert.That(definition.ActionDefinitions.Single(action =>
+                        action.Id.Equals(secondary.ActionDefinitionId)).DefaultPolicy.CardTextApplication,
+                    Is.EqualTo(CardTextApplicationPolicy.Suppressed));
+            }
+        }
+
         [Test]
         public void PlaceholderDefinitions_DeriveOwnedNonRangedAndRangedAttackAndDefenseReactionOffers()
         {

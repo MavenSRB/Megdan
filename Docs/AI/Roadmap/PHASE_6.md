@@ -39,7 +39,7 @@ Every milestone here names the exact check that closes its findings. Per the mec
 | --- | --- | --- | --- |
 | 1 | 6.1e | `F613-05`, `F613-04` | The only confirmed live correctness defect |
 | 2 | 6.1g | `F613-07` | Silent state loss across thirteen restore back doors (6.1g verified sixteen) |
-| 3 | 6.1c | `F613-01` | Deletes ~4,900 lines, shrinking every later milestone's surface |
+| 3 | 6.1c | `F613-01` | Deletes ~4,900 lines, shrinking every later milestone's surface. Complete |
 | 4 | 6.1d | `F613-02`, `F613-03`, `F613-12`, `F613-14` | Merged build and toolchain integrity; its smoke gate is the standing buildability check |
 | 5 | 6.1f | `F613-06` | Largest refactor; benefits from 1-3 landing first |
 | 6 | 6.1i | `F613-08`, `F613-09`, `F613-10` | Diagnosability and measured cost |
@@ -48,7 +48,7 @@ Every milestone here names the exact check that closes its findings. Per the mec
 
 Milestones 6.1j, 6.1l, and 6.1m were merged into 6.1d on 2026-08-13 under the granularity floor in [ROADMAP.md](../ROADMAP.md). Their acceptance checks are preserved verbatim inside it; no check was dropped in the merge.
 
-### [ ] 6.1c Retire the legacy HeroSelectionController drill and its fixtures
+### [x] 6.1c Retire the legacy HeroSelectionController drill and its fixtures
 
 Observable outcome: The unconfigured legacy controller, its two partial source files, and its pinning fixtures are removed, with any coverage unique to them first re-proved against the configured stack.
 

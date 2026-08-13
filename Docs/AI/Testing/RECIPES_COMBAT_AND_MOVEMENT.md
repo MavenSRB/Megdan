@@ -132,7 +132,7 @@ $attackInitiationEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-3-all-affected-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-3-all-affected.log"'
 )
@@ -159,7 +159,7 @@ $rangedAttackEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.HexCoordinateTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.HexCoordinateTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-3a-final-affected-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-3a-final-affected.log"'
 )
@@ -186,7 +186,7 @@ $defenseResponseEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.HexCoordinateTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.HexCoordinateTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-4-final-affected-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-4-final-affected.log"'
 )
@@ -213,7 +213,7 @@ $attackOutcomeEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.HexCoordinateTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.HexCoordinateTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-5-final-affected-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-5-final-affected.log"'
 )
@@ -267,7 +267,7 @@ $oneClickCardMovementArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-12b-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-12b-edit.log"'
 )
@@ -294,7 +294,7 @@ $visibleCardMovementArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-13-focused-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-13-focused-edit.log"'
 )

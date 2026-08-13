@@ -10,30 +10,17 @@ namespace GuardsDigital.Presentation.Interaction
     [RequireComponent(typeof(CapsuleCollider))]
     public sealed class PrimitiveHeroPointerSelector : MonoBehaviour
     {
-        [SerializeField]
-        private HeroSelectionController selectionController;
-
         private BoardInteractionUnityView boardView;
-
-        public HeroSelectionController SelectionController => selectionController;
-
-        public void Configure(HeroSelectionController controller)
-        {
-            boardView = null;
-            selectionController = controller;
-            EnsureColliderShape();
-        }
 
         public void Configure(BoardInteractionUnityView passiveBoardView)
         {
             boardView = passiveBoardView ?? throw new System.ArgumentNullException(nameof(passiveBoardView));
-            selectionController = null;
             EnsureColliderShape();
         }
 
         public bool TrySelectFromPointerRay(Ray pointerRay, float maxDistance = 500f)
         {
-            if (boardView == null && selectionController == null)
+            if (boardView == null)
             {
                 return false;
             }
@@ -45,9 +32,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var hero = GetComponent<PrimitiveHeroView>();
-            return boardView != null
-                ? boardView.TryForwardHeroIntent(hero.Occupancy.HeroId)
-                : selectionController.TrySelectHero(hero);
+            return boardView.TryForwardHeroIntent(hero.Occupancy.HeroId);
         }
 
         private void EnsureColliderShape()

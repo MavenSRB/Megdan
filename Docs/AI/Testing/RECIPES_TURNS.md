@@ -118,7 +118,7 @@ $tieBreakerIndicatorEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-6a-focused-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-2-6a-focused-edit.log"'
 )
@@ -145,7 +145,7 @@ $directorHandsEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.DirectorHandPresentationTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.DirectorHandPresentationTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-2-focused-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-2-focused-edit.log"'
 )
@@ -172,7 +172,7 @@ $turnCardCommitmentEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.TurnCardCommitmentAuthorityTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.DirectorHandPresentationTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.TurnCardCommitmentAuthorityTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.DirectorHandPresentationTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-3-focused-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-3-focused-edit.log"'
 )
@@ -253,7 +253,7 @@ $turnMovementEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.InitiativeResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.TurnCardCommitmentAuthorityTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.TieBreakerSetupTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.InitiativeResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.TurnCardCommitmentAuthorityTests;GuardsDigital.Tests.EditMode.MatchParticipantsTests;GuardsDigital.Tests.EditMode.TieBreakerSetupTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6-affected-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6-affected.log"'
 )
@@ -280,7 +280,7 @@ $visibleTurnMovementEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.DirectorHandPresentationTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.DirectorHandPresentationTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6a-focused-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-6a-focused-edit.log"'
 )
@@ -306,7 +306,7 @@ $turnAttackEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardDrivenMovementPresentationTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.CardLifecycleAuthorityTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-7-affected-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-3-7-affected.log"'
 )
@@ -378,7 +378,7 @@ Milestone 3.8c evidence passed focused pure Edit Mode 17/17, focused integrated 
 
 ## End-of-round Minion Battle and continuation tests
 
-For milestone 6.1, run `MinionBattleResolutionTests` and write outputs to `tmp/milestone-6-1-focused-results.xml` and `tmp/milestone-6-1-focused.log`. Run `SnapshotCompatibilityCorpusTests` and write outputs to `tmp/milestone-6-1-compatibility-results.xml` and `tmp/milestone-6-1-compatibility.log`. For directly affected Edit Mode coverage, run `MinionBattleResolutionTests`, `RoundResolutionAuthorityTests`, `MatchSessionTests`, `DirectorCommandReplayTests`, `AuthoritativeSnapshotSerializerTests`, `SnapshotCompatibilityCorpusTests`, `MinionAttackResolutionTests`, `CardDrivenMovementPresentationTests`, `MatchFeaturePresenterTests`, and `ActiveEffectLifecycleTests`; write outputs to `tmp/milestone-6-1-affected-results.xml` and `tmp/milestone-6-1-affected.log`. Run `MinimalHexGridPlayModeTests` and write outputs to `tmp/milestone-6-1-focused-play-results.xml` and `tmp/milestone-6-1-focused-play.log`. Because schema v6 adds durable round-owned pending-choice and Lane-Push request meaning, milestone 6.1 is T3: also run both unfiltered suites and write `tmp/milestone-6-1-complete-edit-results.xml`, `tmp/milestone-6-1-complete-edit.log`, `tmp/milestone-6-1-complete-play-results.xml`, and `tmp/milestone-6-1-complete-play.log`.
+For milestone 6.1, run `MinionBattleResolutionTests` and write outputs to `tmp/milestone-6-1-focused-results.xml` and `tmp/milestone-6-1-focused.log`. Run `SnapshotCompatibilityCorpusTests` and write outputs to `tmp/milestone-6-1-compatibility-results.xml` and `tmp/milestone-6-1-compatibility.log`. For directly affected Edit Mode coverage, run `MinionBattleResolutionTests`, `RoundResolutionAuthorityTests`, `MatchSessionTests`, `DirectorCommandReplayTests`, `AuthoritativeSnapshotSerializerTests`, `SnapshotCompatibilityCorpusTests`, `MinionAttackResolutionTests`, `MatchFeaturePresenterTests`, `MatchFeaturePresenterTests`, and `ActiveEffectLifecycleTests`; write outputs to `tmp/milestone-6-1-affected-results.xml` and `tmp/milestone-6-1-affected.log`. Run `MinimalHexGridPlayModeTests` and write outputs to `tmp/milestone-6-1-focused-play-results.xml` and `tmp/milestone-6-1-focused-play.log`. Because schema v6 adds durable round-owned pending-choice and Lane-Push request meaning, milestone 6.1 is T3: also run both unfiltered suites and write `tmp/milestone-6-1-complete-edit-results.xml`, `tmp/milestone-6-1-complete-edit.log`, `tmp/milestone-6-1-complete-play-results.xml`, and `tmp/milestone-6-1-complete-play.log`.
 
 Expected result: a configured full-map Minion Battle completes ties without effect, removes the exact difference or all remaining losing minions, auto-resolves only a forced final set, and otherwise pauses on a round-owned typed losing-team choice. Select/deselect progresses one minion at a time, never makes Heavy legal before all required earlier non-Heavy removals, rejects stale/wrong-team/duplicate/over-count/under-count/ineligible commands atomically, and confirms exactly once through ordered non-Heavy-before-Heavy removal events. Losing the last minion records but does not consume an end-of-round Lane-Push request before cleanup. Projection, schema-v6 snapshot restore, the five-fixture compatibility corpus, fresh replay, and retained-prefix Undo rebuild the exact selected continuation byte-identically. Reduced synthetic maps without a declared Battle Zone and explicit custom stage-handler fixtures retain their established unavailable/handler behavior.
 
@@ -392,7 +392,7 @@ Milestone 3.9 T2 evidence passed focused Edit Mode 21/21, directly affected Edit
 
 ## Deterministic command-replay Director Undo corrective tests
 
-For milestone 3.10a, run `CardDrivenMovementPresentationTests` plus the new pure command-history/replay fixture and `AuthoritativeSnapshotSerializerTests` together; write outputs to `tmp/milestone-3-10a-focused-edit-results.xml` and `tmp/milestone-3-10a-focused-edit.log`. For directly affected Edit Mode coverage, use the milestone 3.9 filter above plus every new command-envelope, initial-scenario, replay, and event-log fixture; write outputs to `tmp/milestone-3-10a-affected-edit-results.xml` and `tmp/milestone-3-10a-affected-edit.log`. Run `MinimalHexGridPlayModeTests` and write outputs to `tmp/milestone-3-10a-focused-play-results.xml` and `tmp/milestone-3-10a-focused-play.log`.
+For milestone 3.10a, run `MatchFeaturePresenterTests` plus the new pure command-history/replay fixture and `AuthoritativeSnapshotSerializerTests` together; write outputs to `tmp/milestone-3-10a-focused-edit-results.xml` and `tmp/milestone-3-10a-focused-edit.log`. For directly affected Edit Mode coverage, use the milestone 3.9 filter above plus every new command-envelope, initial-scenario, replay, and event-log fixture; write outputs to `tmp/milestone-3-10a-affected-edit-results.xml` and `tmp/milestone-3-10a-affected-edit.log`. Run `MinimalHexGridPlayModeTests` and write outputs to `tmp/milestone-3-10a-focused-play-results.xml` and `tmp/milestone-3-10a-focused-play.log`.
 
 Expected result: accepted typed commands and explicit choices append exactly once; rejected and presentation-only inputs append nothing. Reconstructing from immutable initial scenario inputs and replaying every retained command prefix through normal authority paths produces the same serialized authoritative state and ordered event projection as live execution across commitment/reveal, Initiative, Hold, multi-step Movement/Stop, Attack target/Defense, end-of-round continuation/retrieval, and repeated-round entry. Undo truncates one command and atomically exposes the reconstructed prefix; restart clears the command log and reconstructs setup. Replay rejection or a deterministic state/event mismatch exposes no partial rebuild and reports a clear failure. No per-command authoritative snapshot is retained, while standalone snapshot capture/restore regressions remain green.
 

@@ -14,11 +14,11 @@ Configured minion views retain serialized stable binding identity across editor 
 
 ## Current authorization and next route
 
-- Current completed milestone: **6.1g**.
+- Current completed milestone: **6.1c**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **6.1c**.
-- Milestone 6.1c is proposed and remains unauthorized until separately approved.
-- Milestones 6.1c through 6.1k are an approved corrective sequence scheduled by the 2026-08-13 out-of-band foundation audit. They precede 6.1a, which stays proposed behind them. The shard defines their execution order by severity; 6.1e and 6.1g are complete and 6.1c is next. Former 6.1j, 6.1l, and 6.1m are merged into 6.1d, and former 6.1n was removed when review-correction closure became mechanical.
+- Next proposed milestone: **6.1d**.
+- Milestone 6.1d is proposed and remains unauthorized until separately approved.
+- Milestones 6.1c through 6.1k are an approved corrective sequence scheduled by the 2026-08-13 out-of-band foundation audit. They precede 6.1a, which stays proposed behind them. The shard defines their execution order by severity; 6.1e, 6.1g, and 6.1c are complete and 6.1d is next. Former 6.1j, 6.1l, and 6.1m are merged into 6.1d, and former 6.1n was removed when review-correction closure became mechanical.
 - The local repository is on `main` with no Git remote configured. On 2026-08-13, the user explicitly requested removal of the prior `origin` configuration; local history and branches remain intact.
 
 ## Durable boundaries

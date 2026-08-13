@@ -19,7 +19,6 @@ Every knowingly temporary structure present in `Assets/` is registered here with
 
 | Structure | Why it is temporary | Retirement owner | Status |
 | --- | --- | --- | --- |
-| `HeroSelectionController` and its `CardDriven` partial | Superseded by the configured composition-root stack; retained only because fixtures pin it. It is in no scene and the composition root rejects it. | 6.1c | Active |
 | `PlaceholderOneVsOneTestConfiguration`, `PlaceholderOneVsOneParticipants`, `PlaceholderConfigurationRestoreState` | Synthetic 1v1 setup wired as the production session default until the official six-player Quick Game setup exists. The restore state added by 6.1g is that configuration's own restore contract and retires with it. | Phase 8 official setup | Active |
 | `PlaceholderMovementHand`, `PlaceholderMovementHandRestoreState` | Synthetic five-card hand standing in for verified hero content. The restore state added by 6.1g is that hand's own restore contract and retires with it. | Phase 8 verified hero content | Active |
 | `PlaceholderTestGridView`, `PlaceholderObstacleView` | Primitive generated board presentation standing in for production art. | Phase 9 presentation | Active |

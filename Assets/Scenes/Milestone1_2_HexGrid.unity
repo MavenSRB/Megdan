@@ -188,7 +188,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5ac89f53834b9b4bab6e22211b1e614, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Interaction.PrimitiveHeroPointerSelector
-  selectionController: {fileID: 0}
 --- !u!136 &311300005
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -338,7 +337,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5ac89f53834b9b4bab6e22211b1e614, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GuardsDigital.Presentation::GuardsDigital.Presentation.Interaction.PrimitiveHeroPointerSelector
-  selectionController: {fileID: 0}
 --- !u!136 &311310007
 CapsuleCollider:
   m_ObjectHideFlags: 0

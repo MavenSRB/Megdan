@@ -66,12 +66,22 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 354 | 0 | 0 | 0 | `6.1g` |
-| Complete Play Mode | 17 | 0 | 0 | 0 | `6.1g` |
+| Complete Edit Mode | 328 | 0 | 0 | 0 | `6.1c` |
+| Complete Play Mode | 17 | 0 | 0 | 0 | `6.1c` |
 
 A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
 
-The Play Mode figure was recorded as `15` when this table was created and is corrected here to `17`. Milestone 6.1g added no Play Mode fixture, and `Assets/Tests/PlayMode` declares exactly seventeen `[Test]`/`[UnityTest]` methods, all seventeen of which the 6.1g run discovered and passed - so seventeen was already the true total at `df965cd`. The original entry understated it. An understated baseline is worse than none: the next task to run both suites would have seen two fixtures apparently appear from nowhere and gone looking for a regression that never existed. The Edit Mode figure was recorded correctly and is unchanged.
+Milestone 6.1c moved the Edit Mode total from 354 to 328, and the drop is fully accounted for:
+`-11` for the deleted `HeroSelectionControllerTests`, `-20` for the deleted
+`CardDrivenMovementPresentationTests` (20 methods / 21 executed cases, less the one case relocated
+verbatim into `ActionOfferAndPrintedValueTests` because it never touched the drill), `-1` for the
+retired legacy-drill highlight teardown case, `+4` for the new `ConfiguredPointerSelectionTests`,
+`+1` for the fourth `DirectorHandPresentationTests` case added when that fixture was rewritten
+against `DirectorHandsPresenter`, and `+1` for the new pointer-adapter conformance case in
+`ConfiguredMatchCutoverArchitectureTests`. Play Mode is unchanged at 17: 6.1c removed and added
+assertions inside existing Play Mode tests but added or deleted no test method.
+
+The Play Mode figure was recorded as `15` when this table was created and was corrected at 6.1g to `17`. Milestone 6.1g added no Play Mode fixture, and `Assets/Tests/PlayMode` declares exactly seventeen `[Test]`/`[UnityTest]` methods, all seventeen of which the 6.1g run discovered and passed - so seventeen was already the true total at `df965cd`. The original entry understated it. An understated baseline is worse than none: the next task to run both suites would have seen two fixtures apparently appear from nowhere and gone looking for a regression that never existed. The Edit Mode figure was recorded correctly and is unchanged.
 
 ```powershell
 $completeEditArguments = @(

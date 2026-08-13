@@ -287,15 +287,12 @@ namespace GuardsDigital.Tests.EditMode
         public void Scene_ContainsInputSystemPointerSelectionPath()
         {
             OpenConfiguredScene();
-            var controllers = Object.FindObjectsByType<HeroSelectionController>();
             var selectors = Object.FindObjectsByType<PrimitiveHeroPointerSelector>();
             var minionSelectors = Object.FindObjectsByType<StandardMinionPointerSelector>();
             var inputs = Object.FindObjectsByType<PrimitiveHeroPointerInput>();
             var compositionRoots = Object.FindObjectsByType<MatchSceneCompositionRoot>();
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
 
-            Assert.That(controllers, Is.Empty,
-                "The configured scene must not retain the unconfigured legacy controller drill.");
             Assert.That(selectors, Has.Length.EqualTo(2));
             Assert.That(minionSelectors, Has.Length.EqualTo(12));
             Assert.That(minionSelectors, Has.All.Matches<StandardMinionPointerSelector>(selector =>
@@ -307,8 +304,6 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(compositionRoots[0].Session, Is.Not.Null);
             Assert.That(compositionRoots[0].Session.Projection.Cards, Has.Count.EqualTo(10));
             Assert.That(compositionRoots[0].Session.Projection.Heroes, Has.Count.EqualTo(2));
-            Assert.That(selectors, Has.All.Matches<PrimitiveHeroPointerSelector>(selector =>
-                selector.SelectionController == null));
             Assert.That(inputs[0].EventCamera, Is.Not.Null);
             Assert.That(inputs[0].Selectors.Count, Is.EqualTo(2));
             Assert.That(inputs[0].Selectors, Is.EquivalentTo(selectors));

@@ -118,7 +118,7 @@ $heroSelectionEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.AdjacentDestinationQueryTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.AdjacentDestinationQueryTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-4-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-4-edit-tests.log"'
 )
@@ -172,7 +172,7 @@ $adjacentClickMoveEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-6-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-6-edit-tests.log"'
 )
@@ -199,7 +199,7 @@ $movementSessionEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-8-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-8-edit-tests.log"'
 )
@@ -226,7 +226,7 @@ $obstacleBlockingEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.PlaceholderObstacleViewTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.HeroSelectionControllerTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.ObstacleOccupancyTests;GuardsDigital.Tests.EditMode.PlaceholderObstacleViewTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-9-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-9-edit-tests.log"'
 )

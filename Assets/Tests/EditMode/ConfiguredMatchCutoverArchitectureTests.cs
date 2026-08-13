@@ -13,7 +13,7 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class ConfiguredMatchCutoverArchitectureTests
     {
         [Test]
-        public void SavedScene_UsesCompositionRuntimeAndContainsNoLegacyControllerOrDirectSelectorBinding()
+        public void SavedScene_UsesCompositionRuntimeAndCarriesNoStaleSelectorBinding()
         {
             var scene = File.ReadAllText(Path.Combine(
                 UnityEngine.Application.dataPath,
@@ -22,8 +22,11 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(scene, Does.Contain("guid: e175f8893df543869e41ab5f42efc0ba"));
             Assert.That(scene, Does.Contain("guid: 926572b67b5c43ae88abb1568bd9f54a"));
-            Assert.That(scene, Does.Not.Contain("guid: dfc32a097684982449279851bed7aab5"));
-            Assert.That(scene, Does.Not.Match(@"selectionController: \{fileID: (?!0\})"));
+
+            // Milestone 6.1c deleted the legacy drill, so the former "this GUID is absent" pin became
+            // vacuous - a deleted asset's GUID is trivially absent from every scene. What is still
+            // worth pinning is that no serialized selector binding survives the field's removal.
+            Assert.That(scene, Does.Not.Contain("selectionController:"));
         }
 
         [Test]
@@ -34,7 +37,6 @@ namespace GuardsDigital.Tests.EditMode
             var hudFields = Fields(typeof(ConfiguredMatchHudRenderer));
             var pointerFields = Fields(typeof(PrimitiveHeroPointerInput));
 
-            Assert.That(rootFields.Any(value => value.FieldType == typeof(HeroSelectionController)), Is.False);
             Assert.That(runtimeFields.Count(value => value.FieldType == typeof(IMatchSession)), Is.EqualTo(1));
             Assert.That(typeof(MonoBehaviour).IsAssignableFrom(typeof(ConfiguredMatchSceneRuntime)), Is.False);
             Assert.That(runtimeFields.Any(value => value.FieldType == typeof(PrimitiveHeroPointerInput)), Is.False);
@@ -61,6 +63,41 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(root, Does.Contain("runtime.BoardView,"));
             Assert.That(root, Does.Not.Contain("controller.ConfigureSceneBindings"));
             Assert.That(root, Does.Not.Contain("pointerInput?.Configure(eventCamera, pointerSelectors, controller)"));
+        }
+
+        [Test]
+        public void ConfiguredPointerAdapters_ExposeExactlyOnePassiveConfigurePathEach()
+        {
+            // Replaces the milestone 6.1c-retired assertions that pinned the legacy drill's absence
+            // by scene GUID and by field type. Those could only ever say "the old thing is gone";
+            // this says the surviving adapters have no second, non-passive way to be wired at all.
+            foreach (var adapter in new[] { typeof(PrimitiveHeroPointerSelector), typeof(PrimitiveHeroPointerInput) })
+            {
+                var configureMethods = adapter
+                    .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                    .Where(method => method.Name == "Configure")
+                    .ToArray();
+
+                Assert.That(configureMethods, Has.Length.EqualTo(1),
+                    $"{adapter.Name} must offer one wiring path, not a passive one plus a legacy one.");
+                Assert.That(
+                    configureMethods[0].GetParameters()
+                        .Any(parameter => parameter.ParameterType == typeof(BoardInteractionUnityView)),
+                    Is.True,
+                    $"{adapter.Name} must be wired through the passive board view.");
+                Assert.That(
+                    Fields(adapter).Any(field => field.FieldType.Namespace != null &&
+                        field.FieldType.Namespace.StartsWith("GuardsDigital.Application", StringComparison.Ordinal)),
+                    Is.False,
+                    $"{adapter.Name} must not hold a session-side type directly.");
+            }
+
+            Assert.That(
+                typeof(PrimitiveHeroPointerSelector).GetProperty(
+                    "SelectionController",
+                    BindingFlags.Instance | BindingFlags.Public),
+                Is.Null,
+                "The legacy controller accessor is gone with the drill it exposed.");
         }
 
         [Test]

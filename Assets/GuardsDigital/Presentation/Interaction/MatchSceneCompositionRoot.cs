@@ -60,12 +60,6 @@ namespace GuardsDigital.Presentation.Interaction
                     "The configured match composition root requires a map, camera, pointer input, and hero views.");
             }
 
-            if (FindAnyObjectByType<HeroSelectionController>() != null)
-            {
-                throw new InvalidOperationException(
-                    "The configured saved scene cannot contain the legacy unconfigured HeroSelectionController drill.");
-            }
-
             var catalog = OfficialBoardMapCatalog.Load();
             var map = catalog.Load(OfficialBoardMapCatalog.SelectedMap);
             var configuration = PlaceholderOneVsOneTestConfiguration.Create();

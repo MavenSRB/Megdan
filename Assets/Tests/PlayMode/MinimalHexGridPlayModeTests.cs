@@ -35,7 +35,6 @@ namespace GuardsDigital.Tests.PlayMode
             var minions = Object.FindObjectsByType<StandardMinionView>();
             var root = Root();
 
-            Assert.That(Object.FindObjectsByType<HeroSelectionController>(), Is.Empty);
             Assert.That(root.Runtime.Setup.WaveCount, Is.EqualTo(3));
             Assert.That(root.Runtime.Setup.Teams,
                 Has.All.Matches<QuickGameTeamSetupState>(team => team.LifeCount == 4));
@@ -105,8 +104,10 @@ namespace GuardsDigital.Tests.PlayMode
                 PlaceholderOneVsOneParticipants.RedHeroIdValue,
                 PlaceholderOneVsOneParticipants.BlueHeroIdValue
             }));
+            Assert.That(selectors, Has.Length.EqualTo(2));
             Assert.That(selectors, Has.All.Matches<PrimitiveHeroPointerSelector>(selector =>
-                selector.SelectionController == null));
+                selector.GetComponent<PrimitiveHeroView>() != null &&
+                selector.GetComponent<CapsuleCollider>() != null));
             Assert.That(heroes, Has.All.Matches<PrimitiveHeroView>(hero =>
                 hero.GetComponent<MeshRenderer>().enabled &&
                 hero.GetComponent<MeshFilter>().sharedMesh != null));

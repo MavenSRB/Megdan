@@ -1,10 +1,7 @@
-using System.Collections;
 using System.Linq;
-using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.TestTools;
 
 namespace GuardsDigital.Tests.EditMode
 {
@@ -51,22 +48,11 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        [UnityTest]
-        public IEnumerator LegacyUnconfiguredDrill_DestroysOnlyItsGeneratedHighlightAtTeardown()
-        {
-            var baseline = CountGeneratedMaterials();
-            var drillObject = new GameObject("Unconfigured Highlight Drill");
-            var controller = drillObject.AddComponent<HeroSelectionController>();
-            _ = controller.HighlightMaterial;
-            Assert.That(controller.OwnsGeneratedHighlightMaterial, Is.True);
-            Assert.That(CountGeneratedMaterials(), Is.EqualTo(baseline + 1));
-
-            controller.DisposeGeneratedHighlightMaterial();
-            yield return null;
-
-            Assert.That(CountGeneratedMaterials(), Is.EqualTo(baseline));
-            Object.DestroyImmediate(drillObject);
-        }
+        // Milestone 6.1c removed LegacyUnconfiguredDrill_DestroysOnlyItsGeneratedHighlightAtTeardown
+        // with the drill that hosted it. Its subject - a generated highlight material being destroyed
+        // exactly once at teardown and leaving an assigned one alone - is covered by the two tests
+        // above, which construct DestinationHighlightMaterialOwner directly, and by
+        // ConfiguredMatchCutoverArchitectureTests.HighlightOwnerSource_RequiresGeneratedFlagReuseAndOwnedOnlyTeardown.
 
         private static int CountGeneratedMaterials() =>
             Resources.FindObjectsOfTypeAll<Material>().Count(value =>

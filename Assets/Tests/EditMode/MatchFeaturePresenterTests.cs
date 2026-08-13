@@ -86,7 +86,6 @@ namespace GuardsDigital.Tests.EditMode
 
             var presentationSources = new[]
             {
-                typeof(HeroSelectionController),
                 typeof(PrimitiveHeroPointerInput),
                 typeof(PrimitiveHeroPointerSelector)
             };
