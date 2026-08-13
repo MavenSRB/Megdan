@@ -8,12 +8,12 @@ This repository is private and not distributable. See [Rights and privacy](#righ
 
 A rules-accurate implementation of the board game, built as a pure C# rules engine with Unity acting only as passive presentation. The current build plays a synthetic vertical slice: a 1v1 match on the official single-lane map with placeholder cards, movement, attack/defense, minions, and an end-of-round minion battle. No real hero card content is implemented yet.
 
-Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1b**.
+Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1e**.
 
 ## Requirements
 
 - **Unity `6000.5.7f1`** — the exact version matters; the project is pinned to it in `ProjectSettings/ProjectVersion.txt`.
-- **Windows** for the validation tooling. macOS and iOS are declared target platforms but are not yet supported; making the toolchain cross-platform is scheduled as milestone 6.1l.
+- **Windows** for the validation tooling. macOS and iOS are declared target platforms but are not yet supported; making the toolchain cross-platform is scheduled as part of milestone 6.1d.
 - Built-In Render Pipeline (not URP/HDRP). A URP migration is scheduled much later, at milestone 8.28.
 
 ## Getting started
@@ -22,7 +22,7 @@ Progress is tracked as numbered micro-milestones. As of the last update the proj
 2. Open the only scene: `Assets/Scenes/Milestone1_2_HexGrid.unity`.
 3. Press Play. The scene's composition root builds the match session, board, and HUD at runtime — most of what you see is generated, not authored, so the scene looks nearly empty when not running.
 
-Note that the scene composes in edit mode as well, which currently generates several hundred objects on domain reload. That is a known defect scheduled as milestone 6.1e.
+The composition root does not run outside Play Mode unless you opt in: `MatchSceneCompositionRoot` has a serialized `composeInEditMode` flag, off by default. Enable it only to preview the board in the editor, and do not save the scene while it is enabled — edit-mode composition regenerates the whole board on every domain reload and can serialize generated objects into the scene.
 
 ## Running the tests
 
