@@ -461,6 +461,29 @@ Closing check: the validator reports the `warning-threshold` warning for `RULES_
 
 Non-goals: No rule content change, no re-verification of rule status, no sharding of the `Rule-system ledger` section itself, which is 5,695 words and belongs to its own later milestone.
 
+## Documentation-structure milestone from the 6.1w handoff
+
+Scheduled by a user-approved roadmap amendment on 2026-08-13. Its source is the growth the 6.1w handoff recorded, **not** a review. The approved decision is that hero content is owned per hero rather than held in one ledger section. 6.1y is unordered against the rest of Phase 6 and must complete before 8.1, which is the first milestone that would otherwise write hero content into `RULES_LEDGER.md`.
+
+### [ ] 6.1y Give each hero its own rules-ledger shard
+
+Observable outcome: Hero-specific rule authority lives in one shard per hero under `Docs/AI/Rules/`, starting with Wasp, and `RULES_LEDGER.md` keeps a routing summary and stable link rather than the content.
+
+Context: 6.1w left the `Rule-system ledger` at 5,695 words and recorded that the ledger re-crosses its threshold as Wasp and the six heroes land. Per-hero shards take the larger half of that growth. The `Wasp content ledger` specifies an implementation-grade inventory of roughly twenty fields per card face; seven heroes of that material would exceed the 9,000-word family limit several times over, and no amount of rule-system sharding would hold it. `Docs/AI/Rules/*.md` is already reserved at the same family threshold by `Get-Limit`, so this needs no validator change and no threshold amendment.
+
+Acceptance checks:
+
+- The `Wasp content ledger` section moves verbatim into `Docs/AI/Rules/HERO_WASP.md` carrying the standard backlink line, and `RULES_LEDGER.md` keeps a short routing summary and stable link, never a copy of the narrative.
+- The shard states the per-hero contract explicitly: one shard per approved hero, named `Rules/HERO_<NAME>.md`, owning that hero's inventory, capability mapping, source-verification status, hero-scoped deviations, and hero-scoped open questions. Rule systems that span heroes stay in the ledger's `Rule-system ledger`, and a deviation or open question that affects more than one hero stays in the ledger rather than being copied into each shard.
+- The four required `RULES_LEDGER.md` headings are unaffected, and the shard is reachable from the session brief's routing table.
+- Every roadmap milestone that currently routes hero content to `RULES_LEDGER.md` names the owning hero shard instead: 8.1's missing-or-ambiguous-content check and 8.18's per-hero equivalent. The first hero inventory must not be able to land in the wrong home by following its own acceptance check.
+
+The governance ownership matrix already names `RULES_LEDGER.md` plus its indexed `Rules/` shards as the canonical home for rule authority. That row had named the ledger alone since 6.1w created `Rules/CARD_COVERAGE.md` without updating it, and was corrected on 2026-08-13 at the user's instruction, ahead of this milestone and independently of it. The threshold row already covered any future rules-ledger shard, so the correction amended no limit and this milestone inherits a matrix that admits its shards.
+
+Closing check: the moved text is verified byte-identical against its pre-move revision from Git, no inbound link to a moved anchor breaks, and the validator passes with zero warnings at the post-fix revision. This milestone is preventive, so no failing pre-fix observation exists to record: `RULES_LEDGER.md` sits at 7,049 of 9,000 words and the validator is currently clean. The mechanical failing-then-passing rule governs review findings, and this is not one; claiming a transition here would be inventing evidence.
+
+Non-goals: No sharding of the `Rule-system ledger` section, which remains its own later milestone. No shard for a hero without an approved roster slot - the five heroes joining Wasp are selected at 8.17. No Wasp inventory content, which is 8.1's work. No rule meaning, status, or verification change, no threshold change, and no validator change.
+
 ## Phase 6 gameplay milestones (continued)
 
 ### [ ] 6.2 Add token and marker instances, supplies, placement, and attachment
