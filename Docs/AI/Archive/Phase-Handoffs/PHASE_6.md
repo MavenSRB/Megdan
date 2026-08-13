@@ -277,6 +277,12 @@ The required review-only pass found no remaining demonstrated defect beyond the 
 | --- | --- | --- |
 | 6.1q | Every live effect is visited at every checkpoint, with the context hero narrowing only activation targeting, triggers, and `AffectedHeroDefeated` cancellation, so Hero-scoped effects reach their own expiration windows regardless of the acting hero; uniqueness suppression compares the declared scope identity instead of one global key namespace. The two `F-ER2-03` closing-check tests were observed failing pre-fix (2 of 15) and pass post-fix; full harness 275/275; serialized format unchanged, schema stays v6. `ActionEnded` expiration remains unconstructible under `ValidateDuration`, so the check is realized at the valid turn-only checkpoint with all expiration checkpoints unfiltered for 6.2a. | `33fa799` |
 
+## Milestone 6.1r Design one board-occupancy seam for every occupant kind completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1r | An internal `BoardOccupancyIndex` owns per-space occupancy and one-obstacle-per-space for heroes, obstacles, and minions through one collision-checked `Add`, replacing the per-kind constructor blocks and commit scans; reachability consumes an authority-backed entry; route validation replays on an already-validated `CreateValidationFork` clone; occupancy properties become live views; the board joins the compile-enforced restore discipline via `BoardRestoreState`. Behavior-invariant: full harness 275/275 with all five schema-v6 corpus digests byte-identical. `F-ER2-06` closure is verified at the scheduled fresh-task review 6.2b. | `88513aa` |
+
 ## 2026-08-13 external engineering review ER2
 
 A second external engineering review (architecture, implementation, code, tests, and the documentation corpus) was performed on 2026-08-13 by Claude (Anthropic) on the Linux workstation at the user's direct request, initially against the pre-divergence external line and revised the same day against milestone 6.1p after the histories were reconciled: the user confirmed the 6.1c-6.1p line as canonical, the superseded ER1/ER2 external line is preserved losslessly on branch `er2-external-review-line`, and the rulebook working copy clobbered by that reconciliation was restored byte-identically from Git LFS (`sha256 2c19b11d...ba98`). The user approved recording this review and executing only its documentation-truth corrections; every other disposition is a proposal and authorizes no implementation.
