@@ -390,6 +390,28 @@ Expected result: deterministic schema-versioned round trips preserve participant
 
 Milestone 3.9 T2 evidence passed focused Edit Mode 21/21, directly affected Edit Mode 154/154, and saved-scene Play Mode 11/11 with zero failed, skipped, or inconclusive cases. The healthy 39-package baseline was registered. Complete unfiltered suites were intentionally omitted because this introduces schema version 1 rather than migrating an existing schema, affected consumers are enumerated, and milestone 3.11 remains the Phase 3 T3 gate.
 
+### Required selection on a schema-version change
+
+Two fixtures pin SHA-256 digests of serialized authoritative state, and a change to
+`AuthoritativeSnapshotSerializer.CurrentSchemaVersion` invalidates every one of them by construction,
+because the version is a serialized field:
+
+- `SnapshotCompatibilityCorpusTests` - the five versioned compatibility fixtures.
+- `CardAggregateInvarianceTests` - nine scenario digest pairs covering accepted, rejected, stale,
+  restored, replayed, undo-truncated, and the three defense-discard cases.
+
+Any milestone changing the schema version must run both. Neither is optional and neither can be
+inferred from a filter built by naming the types a change touches: both sit in the dotnet harness
+exclude list, so the cross-platform harness cannot reach them, and `CardAggregateInvarianceTests`
+names none of the types a schema change edits, so an enumerated focused filter will not select it.
+Milestone 6.1s hit exactly that gap - it re-pinned the corpus fixtures, closed as complete, and left
+the invariance fixture failing on `main` until 6.1x found it with the complete Edit Mode suite.
+
+When a digest moves, explain the delta before re-pinning. `CardAggregateInvarianceTests` carries a
+"do not update to match a failing run" warning for the reason 6.1x recorded: a re-pin that cannot
+account for its own bytes is indistinguishable from pinning over a regression. Decode the payloads
+either side of the change and attribute every differing byte.
+
 ## Deterministic command-replay Director Undo corrective tests
 
 For milestone 3.10a, run `MatchFeaturePresenterTests` plus the new pure command-history/replay fixture and `AuthoritativeSnapshotSerializerTests` together; write outputs to `tmp/milestone-3-10a-focused-edit-results.xml` and `tmp/milestone-3-10a-focused-edit.log`. For directly affected Edit Mode coverage, use the milestone 3.9 filter above plus every new command-envelope, initial-scenario, replay, and event-log fixture; write outputs to `tmp/milestone-3-10a-affected-edit-results.xml` and `tmp/milestone-3-10a-affected-edit.log`. Run `MinimalHexGridPlayModeTests` and write outputs to `tmp/milestone-3-10a-focused-play-results.xml` and `tmp/milestone-3-10a-focused-play.log`.

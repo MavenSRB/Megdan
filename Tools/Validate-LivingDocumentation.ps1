@@ -220,6 +220,102 @@ function Get-UnreachableBehaviourTypes($Behaviours, [hashtable] $AuthoredScriptG
     return $unreachable.ToArray()
 }
 
+# Code-truth check 5: a test that names a production member by string must name one that exists.
+#
+# Milestone 6.1s renamed a private field `setupState` to `occupancy`. Three fixtures resolve that
+# field reflectively by string name, and no compiler can check a string: `GetField` would have
+# returned `null` and each test would have died on a null dereference far from the cause.
+# `StandardMinionViewTests` had even had its assertion updated to `.Occupancy` while its reflection
+# string was missed, so one file disagreed with itself and nothing noticed. The fixtures involved sit
+# in the dotnet harness exclude list, so the Linux harness cannot reach them either.
+#
+# This is a text scan rather than a parser, deliberately: it runs anywhere PowerShell does, including
+# the non-Windows host where Unity cannot run, which is the only way it catches the drift before a
+# Windows tier. It answers exactly one question - does the named type's own source declare this name -
+# which is the question a rename gets wrong.
+function Get-ReflectionSites([string] $TestSource) {
+    $sites = New-Object System.Collections.Generic.List[object]
+    if ([string]::IsNullOrEmpty($TestSource)) { return $sites.ToArray() }
+    $lines = $TestSource -split "`n"
+
+    # `\s` spans newlines, so this matches the single-line form and both multi-line forms: a break
+    # before the `.`, and a break after the opening parenthesis. A pattern anchored to `GetField("`
+    # matches only the single-line form and silently misses the rest, which is how this class hides.
+    # Two idioms, both scanned. The raw form is what most fixtures use; the second is the project's
+    # ReflectedMember helper, which fails naming the type and member instead of returning null. Routing
+    # a call through that helper must not remove it from this scan - a guard that hides sites from the
+    # other guard is worse than neither.
+    $memberPatterns = @(
+        'typeof\(\s*([A-Za-z_]\w*)\s*\)\s*\.\s*Get(?:Field|Property|Method)\s*\(\s*"([^"]+)"',
+        'RequiredInstance(?:Field|Property|Method)\s*\(\s*typeof\(\s*([A-Za-z_]\w*)\s*\)\s*,\s*"([^"]+)"'
+    )
+    foreach ($pattern in $memberPatterns) {
+        foreach ($match in [regex]::Matches($TestSource, $pattern)) {
+            $sites.Add([pscustomobject]@{
+                Kind   = 'member'
+                Type   = $match.Groups[1].Value
+                Name   = $match.Groups[2].Value
+                Exempt = Test-AbsenceIntended $TestSource $lines $match
+            })
+        }
+    }
+
+    foreach ($match in [regex]::Matches($TestSource, '\.GetType\(\s*"([^"]+)"')) {
+        $full = $match.Groups[1].Value
+        $sites.Add([pscustomobject]@{
+            Kind   = 'type'
+            Type   = $full
+            Name   = $full.Split('.')[-1]
+            Exempt = Test-AbsenceIntended $TestSource $lines $match
+        })
+    }
+
+    return $sites.ToArray()
+}
+
+# The exemption is stated in the source, never inferred, because a check cannot tell "this member was
+# renamed" from "this test asserts the member does not exist" - and both exist here.
+# `ConfiguredMatchCutoverArchitectureTests` asserts one `OnGUI` is present and another is absent, four
+# lines apart. The window is the site's own lines plus one, so a marker cannot leak onto its neighbour.
+function Test-AbsenceIntended([string] $TestSource, [string[]] $Lines, $Match) {
+    $startLine = ($TestSource.Substring(0, $Match.Index) -split "`n").Count - 1
+    $endLine = ($TestSource.Substring(0, $Match.Index + $Match.Length) -split "`n").Count - 1
+    for ($i = $startLine; $i -le [Math]::Min($endLine + 1, $Lines.Count - 1); $i++) {
+        if ($Lines[$i] -match 'absence-intended') { return $true }
+    }
+    return $false
+}
+
+function Get-UnresolvedReflectedMembers($Sites, [hashtable] $TypeSources, [hashtable] $DeclaredTypes) {
+    $unresolved = New-Object System.Collections.Generic.List[string]
+    foreach ($site in $Sites) {
+        if ($site.Exempt) { continue }
+
+        if ($site.Kind -eq 'type') {
+            if (-not $DeclaredTypes.ContainsKey($site.Name)) {
+                $entry = "$($site.Type) (reflected type)"
+                if (-not $unresolved.Contains($entry)) { $unresolved.Add($entry) }
+            }
+            continue
+        }
+
+        # An unknown type is not this check's finding: the reflected name may belong to a Unity or BCL
+        # type the project does not declare, and flagging those would make the check unusable.
+        if (-not $TypeSources.ContainsKey($site.Type)) { continue }
+
+        $escaped = [regex]::Escape($site.Name)
+        # A declaration, not a use. `(?<![.\w])` rejects `.occupancy` and `myoccupancy`; the trailing
+        # set covers a field (`occupancy;`), an initialised field (`occupancy =`), a method or
+        # parameter (`occupancy(`), an auto-property (`Occupancy {`), and an expression body
+        # (`Occupancy =>`).
+        if ($TypeSources[$site.Type] -notmatch "(?<![.\w])$escaped\s*(?:[;=({,]|=>)") {
+            $entry = "$($site.Type).$($site.Name)"
+            if (-not $unresolved.Contains($entry)) { $unresolved.Add($entry) }
+        }
+    }
+    return $unresolved.ToArray()
+}
+
 function Test-DuplicateBodies([string[]] $Bodies, [string] $ActiveCorpus) {
     foreach ($body in $Bodies) {
         if ($body.Length -ge 80 -and $ActiveCorpus.Contains($body)) { return $false }
@@ -302,6 +398,23 @@ function Invoke-SelfTests {
     Expect 'asset created by CreateInstance' ((Get-UnreachableBehaviourTypes @($orphan) $authored 'ScriptableObject.CreateInstance<OrphanView>();' 'register mentions nothing').Count -eq 0)
     Expect 'unreachable component with a retirement owner' ((Get-UnreachableBehaviourTypes @($orphan) $authored 'nothing constructs it' '| `OrphanView` | superseded | 6.1c | Active |').Count -eq 0)
     Expect 'abstract component base is not unreachable' ((Get-UnreachableBehaviourTypes @($abstractOne) $authored 'nothing constructs it' 'register mentions nothing').Count -eq 0)
+
+    # Code-truth check 5.
+    $reflectSources = @{ 'ViewType' = 'private MinionOccupancy occupancy;' }
+    $reflectTypes = @{ 'ViewType' = $true; 'BackendType' = $true }
+    Expect 'reflected member that exists resolves' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'typeof(ViewType).GetField("occupancy", flags)') $reflectSources $reflectTypes).Count -eq 0)
+    Expect 'renamed reflected member is reported' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'typeof(ViewType).GetField("setupState", flags)') $reflectSources $reflectTypes) -contains 'ViewType.setupState')
+    Expect 'absence-intended site is exempt' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'typeof(ViewType).GetMethod("OnGUI"), Is.Null); // absence-intended') $reflectSources $reflectTypes).Count -eq 0)
+    Expect 'multi-line reflection form is matched' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites "typeof(ViewType).GetField(`n    `"setupState`",`n    flags)") $reflectSources $reflectTypes) -contains 'ViewType.setupState')
+    Expect 'reflection form broken before the dot is matched' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites "typeof(ViewType)`n    .GetField(`"setupState`", flags)") $reflectSources $reflectTypes) -contains 'ViewType.setupState')
+    Expect 'member declared in a second partial file resolves' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'typeof(PartialType).GetField("later", flags)') @{ 'PartialType' = "public partial class PartialType { }`nprivate int later;" } $reflectTypes).Count -eq 0)
+    Expect 'member access is not a declaration' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'typeof(ViewType).GetField("setupState", flags)') @{ 'ViewType' = 'var x = other.setupState;' } $reflectTypes) -contains 'ViewType.setupState')
+    Expect 'undeclared reflected type is reported' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'assembly.GetType("Guards.Core.GoneType")') $reflectSources $reflectTypes).Count -eq 1)
+    Expect 'declared reflected type resolves' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'assembly.GetType("Guards.Core.BackendType")') $reflectSources $reflectTypes).Count -eq 0)
+    Expect 'type the project does not declare is not a finding' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'typeof(SomeUnityType).GetField("anything", flags)') $reflectSources $reflectTypes).Count -eq 0)
+    Expect 'source with no reflection site yields none' ((Get-ReflectionSites 'var x = 1;').Count -eq 0)
+    Expect 'helper form is scanned too' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'ReflectedMember.RequiredInstanceField(typeof(ViewType), "setupState")') $reflectSources $reflectTypes) -contains 'ViewType.setupState')
+    Expect 'helper form resolving member passes' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites "ReflectedMember.RequiredInstanceField(`n    typeof(ViewType),`n    `"occupancy`")") $reflectSources $reflectTypes).Count -eq 0)
 
     if ($failed.Count -gt 0) { throw "Living-document validator self-test failure: $($failed -join ', ')" }
     Write-Host "Self-tests: $script:selfTestCount/$script:selfTestCount checks passed."
@@ -400,6 +513,9 @@ else {
     $sourceTypeNames = New-Object System.Collections.Generic.List[string]
     $behaviourTypes = New-Object System.Collections.Generic.List[object]
     $productionSource = New-Object System.Text.StringBuilder
+    $testSource = New-Object System.Text.StringBuilder
+    # Every file declaring a type, concatenated, so a member added by a second partial file resolves.
+    $typeSources = @{}
     foreach ($sourceFile in (Get-ChildItem -LiteralPath $assetsRoot -Recurse -File -Filter '*.cs')) {
         # Tests are excluded from the temporary-structure scan: a fixture covering a placeholder type
         # is not itself a separate temporary structure needing its own retirement owner. They are
@@ -408,8 +524,11 @@ else {
         $isTest = $sourceFile.FullName.Replace('\', '/') -like '*/Assets/Tests/*'
         $sourceText = Read-Utf8 $sourceFile.FullName
         if (-not $isTest) { [void]$productionSource.AppendLine($sourceText) }
+        else { [void]$testSource.AppendLine($sourceText) }
         foreach ($declaration in [regex]::Matches($sourceText, '(?m)^\s*(?:public|internal|private|protected|sealed|abstract|static|partial|readonly|record|\s)*\b(?:class|struct|interface|enum|record)\s+([A-Za-z_][A-Za-z0-9_]*)')) {
             $name = $declaration.Groups[1].Value
+            if ($typeSources.ContainsKey($name)) { $typeSources[$name] += "`n" + $sourceText }
+            else { $typeSources[$name] = $sourceText }
             if (-not $declaredTypes.ContainsKey($name)) {
                 $declaredTypes[$name] = $true
                 if (-not $isTest) { $sourceTypeNames.Add($name) }
@@ -479,6 +598,14 @@ else {
         foreach ($unreachable in (Get-UnreachableBehaviourTypes $behaviourTypes.ToArray() $authoredScriptGuids $productionSource.ToString() $riskText)) {
             Add-Issue 'ERROR' 'unreachable-component' "``$unreachable`` derives from MonoBehaviour/ScriptableObject but is in no scene, prefab, or asset and is never constructed by production code, so it cannot run. Delete it, construct it, or give it a retirement owner in the temporary-structure register of TECHNICAL_RISKS.md."
         }
+    }
+
+    $reflectionSites = Get-ReflectionSites $testSource.ToString()
+    if ($reflectionSites.Count -eq 0) {
+        Add-Issue 'ERROR' 'no-reflection-sites' 'No reflected member or type names were found under Assets/Tests/; the reflected-name check would pass vacuously.'
+    }
+    foreach ($unresolved in (Get-UnresolvedReflectedMembers $reflectionSites $typeSources $declaredTypes)) {
+        Add-Issue 'ERROR' 'unresolved-reflected-member' "A test reflects on ``$unresolved``, but the declaring type's source does not declare that name. The compiler cannot check a string, so a rename leaves the test resolving to null and failing on a dereference. Update the name, or mark a deliberate absence assertion with an ``absence-intended`` comment on the site."
     }
 }
 

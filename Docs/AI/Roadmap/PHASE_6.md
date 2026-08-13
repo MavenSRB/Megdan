@@ -426,7 +426,7 @@ Recorded outcome: the diff found two causes, both intended by 6.1s and neither a
 
 Non-goals: No schema change, no serializer change, no new fixture, no reopening of the v7 migrate-or-reject decision, no change to what the invariance fixture asserts.
 
-### [ ] 6.1v Make reflected member names and digest fixtures checkable
+### [x] 6.1v Make reflected member names and digest fixtures checkable
 
 Observable outcome: A test that names a production member by string, or pins a snapshot digest, cannot silently drift out of agreement with the source it describes.
 

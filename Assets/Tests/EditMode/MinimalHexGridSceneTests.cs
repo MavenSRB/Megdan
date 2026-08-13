@@ -322,9 +322,9 @@ namespace GuardsDigital.Tests.EditMode
             var originalViews = Object.FindObjectsByType<StandardMinionView>()
                 .OrderBy(value => value.BoundMinionId.Value)
                 .ToArray();
-            var transientSetupField = typeof(StandardMinionView).GetField(
-                "occupancy",
-                BindingFlags.Instance | BindingFlags.NonPublic);
+            var transientSetupField = ReflectedMember.RequiredInstanceField(
+                typeof(StandardMinionView),
+                "occupancy");
 
             Assert.That(root, Is.Not.Null);
             Assert.That(pointerInput, Is.Not.Null);

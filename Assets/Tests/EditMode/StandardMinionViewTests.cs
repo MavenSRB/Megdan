@@ -28,8 +28,7 @@ namespace GuardsDigital.Tests.EditMode
                 var minion = minionObject.AddComponent<StandardMinionView>();
                 minion.Configure(state, HexWorldLayout.DefaultOuterRadius);
 
-                typeof(StandardMinionView)
-                    .GetField("occupancy", BindingFlags.Instance | BindingFlags.NonPublic)
+                ReflectedMember.RequiredInstanceField(typeof(StandardMinionView), "occupancy")
                     .SetValue(minion, null);
 
                 Assert.That(minion.Occupancy, Is.Null,

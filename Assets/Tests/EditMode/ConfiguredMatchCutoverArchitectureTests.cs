@@ -74,7 +74,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.Not.Null);
             Assert.That(
                 typeof(MatchSceneCompositionRoot).GetMethod("OnGUI", BindingFlags.Instance | BindingFlags.NonPublic),
-                Is.Null);
+                Is.Null); // absence-intended: the composition root must not own an OnGUI.
         }
 
         [Test]
@@ -166,7 +166,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 typeof(PrimitiveHeroPointerSelector).GetProperty(
-                    "SelectionController",
+                    "SelectionController", // absence-intended: this accessor must stay deleted.
                     BindingFlags.Instance | BindingFlags.Public),
                 Is.Null,
                 "The legacy controller accessor is gone with the drill it exposed.");
