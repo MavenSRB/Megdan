@@ -8,12 +8,12 @@ This repository is private and not distributable. See [Rights and privacy](#righ
 
 A rules-accurate implementation of the board game, built as a pure C# rules engine with Unity acting only as passive presentation. The current build plays a synthetic vertical slice: a 1v1 match on the official single-lane map with placeholder cards, movement, attack/defense, minions, and an end-of-round minion battle. No real hero card content is implemented yet.
 
-Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1c**.
+Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1d**.
 
 ## Requirements
 
 - **Unity `6000.5.7f1`** — the exact version matters; the project is pinned to it in `ProjectSettings/ProjectVersion.txt`.
-- **Windows** for the validation tooling. macOS and iOS are declared target platforms but are not yet supported; making the toolchain cross-platform is scheduled as part of milestone 6.1d.
+- **Windows** for the validation tooling and for the player-build smoke gate, which targets Win64. macOS and iOS are declared target platforms but are not yet supported. The toolchain was made portable at milestone 6.1d — paths are separator-agnostic and the Unity/Hub locations come from `GUARDS_UNITY_PATH` and `GUARDS_UNITY_HUB_PATH` or platform probing — but it has not yet been *confirmed* on a non-Windows host; that is milestone 6.1l.
 - Built-In Render Pipeline (not URP/HDRP). A URP migration is scheduled much later, at milestone 8.28.
 
 ## Getting started
@@ -42,6 +42,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingD
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1
+```
+
+The player-build smoke gate builds a real Windows player, runs it, and requires it to reach a configured match and complete one authoritative command. It catches what no Editor test can — an unresolved shader, a missing resource, a stripped type — because those only appear in a built player:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Invoke-PlayerBuildSmoke.ps1
 ```
 
 ## How the code is organized
