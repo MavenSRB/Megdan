@@ -214,7 +214,7 @@ Fourth, the decomposition's shape and its measured effect. `RoundResolutionAutho
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 6.1k | Every raw-source-text, literal-GUID, and private-field-declaration assertion in the architecture fixtures is replaced by rules over compiled code, read through a new IL/reflection scanner; `MinionBattleResolution` gains fifteen cases covering exact-count boundaries, multi-Heavy Heavy-last ordering, and deterministic auto-resolution. Closes `F613-13`. | `PENDING` |
+| 6.1k | Every raw-source-text, literal-GUID, and private-field-declaration assertion in the architecture fixtures is replaced by rules over compiled code, read through a new IL/reflection scanner; `MinionBattleResolution` gains fifteen cases covering exact-count boundaries, multi-Heavy Heavy-last ordering, and deterministic auto-resolution. Closes `F613-13`. | `dc368ad` |
 
 ### 2026-08-13 addendum: finding closed by milestone 6.1k
 
