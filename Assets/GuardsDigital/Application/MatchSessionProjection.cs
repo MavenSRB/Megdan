@@ -228,7 +228,7 @@ namespace GuardsDigital.Application
             IEnumerable<ActionOffer> availableTurnActions,
             IEnumerable<DirectorCommand> acceptedCommands,
             IEnumerable<RoundResolutionEvent> roundEvents,
-            IEnumerable<RuleEventLogEntry> diagnosticEvents,
+            IReadOnlyList<RuleEventLogEntry> diagnosticEvents,
             string authoritativeSnapshot,
             bool isHistoryAvailable,
             IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
@@ -266,7 +266,16 @@ namespace GuardsDigital.Application
             AvailableTurnActions = Array.AsReadOnly((availableTurnActions ?? throw new ArgumentNullException(nameof(availableTurnActions))).ToArray());
             AcceptedCommands = Array.AsReadOnly((acceptedCommands ?? throw new ArgumentNullException(nameof(acceptedCommands))).ToArray());
             RoundEvents = Array.AsReadOnly((roundEvents ?? throw new ArgumentNullException(nameof(roundEvents))).ToArray());
-            DiagnosticEvents = Array.AsReadOnly((diagnosticEvents ?? throw new ArgumentNullException(nameof(diagnosticEvents))).ToArray());
+            // This is the whole accumulated rule-event log, so copying it on every refresh is a
+            // per-command cost that grows with session length - the surviving half of finding
+            // `F613-08`. The aggregate hands over a snapshot that cannot change, and copying one of
+            // those defends against nothing. The copy is kept for every other input, because this
+            // constructor is public and a projection that shares a caller's mutable list is not
+            // immutable.
+            if (diagnosticEvents == null) throw new ArgumentNullException(nameof(diagnosticEvents));
+            DiagnosticEvents = diagnosticEvents is IImmutableEventSnapshot
+                ? diagnosticEvents
+                : Array.AsReadOnly(diagnosticEvents.ToArray());
             AuthoritativeSnapshot = authoritativeSnapshot ?? throw new ArgumentNullException(nameof(authoritativeSnapshot));
             IsHistoryAvailable = isHistoryAvailable;
             diagnosticSnapshot = new Lazy<string>(

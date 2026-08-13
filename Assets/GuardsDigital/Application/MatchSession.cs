@@ -17,37 +17,29 @@ namespace GuardsDigital.Application
         private readonly MatchSessionInitialState initialState;
         private readonly MatchAggregate aggregate;
         private readonly DirectorCommandHistory history = new DirectorCommandHistory();
-        private readonly MatchDiagnosticsMode diagnostics;
         private readonly bool deferAcceptedProjectionRefresh;
 
         private long version;
         private bool canRecordHistory;
 
         /// <summary>
-        /// A session that self-verifies every refusal. This is the historical behaviour and stays
-        /// the default, so nothing silently loses the check; a build that does not want to pay for
-        /// it says so by passing <see cref="MatchDiagnosticsMode.Off"/> to the other constructor.
+        /// Every session verifies every refusal, in every build configuration. Milestone 6.1i made
+        /// that verification optional through a diagnostics mode; the mode is gone, because the
+        /// check is what delivers the aggregate's atomicity guarantee rather than a report about it.
         /// </summary>
         public MatchSession(MatchSessionInitialState initialState)
-            : this(initialState, MatchDiagnosticsMode.Verified)
-        {
-        }
-
-        public MatchSession(MatchSessionInitialState initialState, MatchDiagnosticsMode diagnostics)
-            : this(initialState, diagnostics, true, false)
+            : this(initialState, true, false)
         {
         }
 
         private MatchSession(
             MatchSessionInitialState initialState,
-            MatchDiagnosticsMode diagnostics,
             bool useProvidedConfiguration,
             bool deferAcceptedProjectionRefresh)
         {
             this.initialState = initialState ?? throw new ArgumentNullException(nameof(initialState));
-            this.diagnostics = diagnostics;
             this.deferAcceptedProjectionRefresh = deferAcceptedProjectionRefresh;
-            aggregate = new MatchAggregate(this.initialState, diagnostics);
+            aggregate = new MatchAggregate(this.initialState);
             RebuildInitialState(useProvidedConfiguration);
             Projection = CreateProjection();
         }
@@ -419,7 +411,7 @@ namespace GuardsDigital.Application
             // Replay still traverses the normal typed Execute path and retains its atomic rollback
             // checks. Its intermediate immutable projections are private and unobserved, so defer
             // rebuilding them until the adopted live session publishes the final projection.
-            var candidate = new MatchSession(initialState, diagnostics, false, true);
+            var candidate = new MatchSession(initialState, false, true);
             foreach (var command in commands)
             {
                 var result = candidate.Execute(command);

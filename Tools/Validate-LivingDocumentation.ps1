@@ -127,8 +127,10 @@ function Get-UndeclaredContractTypes([string] $Text, [hashtable] $DeclaredTypes)
     return $missing.ToArray()
 }
 
-# Code-truth check 2: the three canonical statements of "how far are we" must name the same milestone.
-function Test-StatusCoherence([string] $Session, [string] $Implementation, [string] $RoadmapCorpus) {
+# Code-truth check 2: the canonical statements of "how far are we" must name the same milestone.
+# README.md joined this set at 6.1o. It had drifted four milestones behind - it still said 6.1d after
+# 6.1h shipped - precisely because it was the one status statement no check read.
+function Test-StatusCoherence([string] $Session, [string] $Implementation, [string] $RoadmapCorpus, [string] $Readme) {
     $codes = New-Object System.Collections.Generic.List[string]
     $sessionMatch = [regex]::Match($Session, '(?m)^- Current completed milestone: \*\*([^*]+)\*\*\.$')
     $implementationMatch = [regex]::Match($Implementation, 'completed roadmap milestones through \*\*([^*]+)\*\*')
@@ -138,7 +140,46 @@ function Test-StatusCoherence([string] $Session, [string] $Implementation, [stri
     }
     if ($sessionMatch.Groups[1].Value -ne $implementationMatch.Groups[1].Value) { $codes.Add('incoherent-status') }
     if (-not [regex]::IsMatch($RoadmapCorpus, "(?m)^### \[x\] $([regex]::Escape($implementationMatch.Groups[1].Value))(?:\s|$)")) { $codes.Add('incoherent-status') }
+    if ($PSBoundParameters.ContainsKey('Readme')) {
+        $readmeMatch = [regex]::Match($Readme, 'completed milestones through \*\*([^*]+)\*\*')
+        if (-not $readmeMatch.Success) { $codes.Add('missing-status-statement') }
+        elseif ($readmeMatch.Groups[1].Value -ne $implementationMatch.Groups[1].Value) { $codes.Add('incoherent-status') }
+    }
     return $codes.ToArray()
+}
+
+# Governance check: a milestone's archive section carries one row, and its evidence lives in the
+# commit body. The policy was adopted on 2026-08-13 and then ignored by every milestone that
+# followed - 6.1c, 6.1d, 6.1f, 6.1g, 6.1h, 6.1i, and 6.1k each appended pages of narrative under it -
+# because nothing read it.
+#
+# The rule can only ever be forward-looking: the archive is append-only, so sections already written
+# are exempted rather than rewritten. The exemptions are a frozen baseline file rather than a literal
+# here, because there are 85 of them and a list that long inside a predicate stops being readable.
+function Get-NonConformingArchiveSections([string] $Text, [string] $FileName, [hashtable] $Baseline) {
+    $offenders = New-Object System.Collections.Generic.List[string]
+    foreach ($section in [regex]::Matches($Text, '(?ms)^## Milestone (\S+)[^\n]*completion evidence[^\n]*\n(.*?)(?=^## |\z)')) {
+        $id = $section.Groups[1].Value
+        if ($Baseline.ContainsKey("$FileName|$id")) { continue }
+        foreach ($line in ($section.Groups[2].Value -split '\r?\n')) {
+            $trimmed = $line.Trim()
+            if ($trimmed -eq '' -or $trimmed.StartsWith('|')) { continue }
+            if (-not $offenders.Contains($id)) { $offenders.Add($id) }
+            break
+        }
+    }
+    return $offenders.ToArray()
+}
+
+function Read-ArchiveNarrativeBaseline([string] $Path) {
+    $baseline = @{}
+    if (-not (Test-Path -LiteralPath $Path)) { return $baseline }
+    foreach ($line in [System.IO.File]::ReadAllLines($Path)) {
+        $entry = $line.Trim()
+        if ($entry -eq '' -or $entry.StartsWith('#')) { continue }
+        $baseline[$entry] = $true
+    }
+    return $baseline
 }
 
 # Code-truth check 3: a deliberately temporary structure must name the milestone that owns its removal.
@@ -231,6 +272,20 @@ function Invoke-SelfTests {
     Expect 'incoherent implementation summary' ((Test-StatusCoherence $coherentSession ($coherentImplementation -replace '2\.5', '2.3') $coherentRoadmap) -contains 'incoherent-status')
     Expect 'status naming an incomplete milestone' ((Test-StatusCoherence '- Current completed milestone: **2.6**.' 'The project has completed roadmap milestones through **2.6**.' $coherentRoadmap) -contains 'incoherent-status')
     Expect 'missing status statement' ((Test-StatusCoherence $coherentSession 'No parseable statement here.' $coherentRoadmap) -contains 'missing-status-statement')
+
+    $coherentReadme = 'As of the last update the project has completed milestones through **2.5**.'
+    Expect 'coherent status quadruple' ((Test-StatusCoherence $coherentSession $coherentImplementation $coherentRoadmap $coherentReadme).Count -eq 0)
+    Expect 'stale README status' ((Test-StatusCoherence $coherentSession $coherentImplementation $coherentRoadmap ($coherentReadme -replace '2\.5', '2.3')) -contains 'incoherent-status')
+    Expect 'README with no status statement' ((Test-StatusCoherence $coherentSession $coherentImplementation $coherentRoadmap 'No parseable statement here.') -contains 'missing-status-statement')
+
+    $oneRow = "## Milestone 9.9 Do the thing completion evidence`n`n| ID | Outcome | Commit |`n| --- | --- | --- |`n| 9.9 | It was done. | ``abc1234`` |`n"
+    $withNarrative = $oneRow + "`n### 2026-01-01 addendum: what really happened`n`nSeveral paragraphs of evidence.`n"
+    $noBaseline = @{}
+    Expect 'conforming one-row archive section' ((Get-NonConformingArchiveSections $oneRow 'PHASE_9.md' $noBaseline).Count -eq 0)
+    Expect 'archive section carrying narrative' ((Get-NonConformingArchiveSections $withNarrative 'PHASE_9.md' $noBaseline) -contains '9.9')
+    Expect 'baselined archive section' ((Get-NonConformingArchiveSections $withNarrative 'PHASE_9.md' @{ 'PHASE_9.md|9.9' = $true }).Count -eq 0)
+    Expect 'baseline entry is scoped to its file' ((Get-NonConformingArchiveSections $withNarrative 'PHASE_9.md' @{ 'PHASE_8.md|9.9' = $true }) -contains '9.9')
+    Expect 'narrative section bounded by the next milestone' ((Get-NonConformingArchiveSections ($oneRow + "`n" + $withNarrative.Replace('9.9', '9.8')) 'PHASE_9.md' $noBaseline) -contains '9.8')
 
     Expect 'unregistered temporary structure' ((Get-UnregisteredTemporaryTypes @('PlaceholderThing') 'register mentions nothing') -contains 'PlaceholderThing')
     Expect 'registered temporary structure' ((Get-UnregisteredTemporaryTypes @('PlaceholderThing') '| `PlaceholderThing` | reason | 6.1c | Active |').Count -eq 0)
@@ -402,9 +457,15 @@ else {
     }
 
     $implementationPath = [System.IO.Path]::Combine($docsRoot, 'Project', 'CURRENT_IMPLEMENTATION.md')
+    $readmePath = Join-Path $projectRoot 'README.md'
     if (Test-Path -LiteralPath $implementationPath) {
-        foreach ($code in (Test-StatusCoherence $session (Read-Utf8 $implementationPath) $roadmapCorpus)) {
-            Add-Issue 'ERROR' $code 'SESSION_BRIEF.md, Project/CURRENT_IMPLEMENTATION.md, and the roadmap do not name the same completed milestone.'
+        $statusCodes = if (Test-Path -LiteralPath $readmePath) {
+            Test-StatusCoherence $session (Read-Utf8 $implementationPath) $roadmapCorpus (Read-Utf8 $readmePath)
+        } else {
+            Test-StatusCoherence $session (Read-Utf8 $implementationPath) $roadmapCorpus
+        }
+        foreach ($code in $statusCodes) {
+            Add-Issue 'ERROR' $code 'SESSION_BRIEF.md, Project/CURRENT_IMPLEMENTATION.md, README.md, and the roadmap do not name the same completed milestone.'
         }
     }
 
@@ -424,8 +485,14 @@ else {
 # Sourced directly from the archive rather than from the retired migration manifest, so the check
 # now expresses the rule it enforces instead of a property of one completed migration.
 $activeCorpus = ($activeFiles | ForEach-Object { Read-Utf8 $_.FullName }) -join "`n"
+
+$archiveNarrativeBaseline = Read-ArchiveNarrativeBaseline (Join-Path $PSScriptRoot 'ArchiveNarrativeBaseline.txt')
+if ($archiveNarrativeBaseline.Count -eq 0) { Add-Issue 'ERROR' 'missing-archive-baseline' 'Tools/ArchiveNarrativeBaseline.txt is missing or empty, so the one-row archive check would report every historical section.' }
 $archivedBodies = New-Object System.Collections.Generic.List[string]
 foreach ($handoff in (Get-ChildItem -LiteralPath ([System.IO.Path]::Combine($docsRoot, 'Archive', 'Phase-Handoffs')) -File -Filter '*.md' -ErrorAction SilentlyContinue)) {
+    foreach ($offender in (Get-NonConformingArchiveSections (Read-Utf8 $handoff.FullName) $handoff.Name $archiveNarrativeBaseline)) {
+        Add-Issue 'ERROR' 'archive-narrative' "Archive/Phase-Handoffs/$($handoff.Name) carries body prose in the section for milestone $offender. Governance gives each milestone one row - ID, one-line outcome, commit SHA - and its evidence belongs in the commit message body, addressed by SHA."
+    }
     foreach ($paragraph in ([regex]::Split((Read-Utf8 $handoff.FullName), '\r?\n\s*\r?\n'))) {
         $body = $paragraph.Trim()
         if ($body.Length -lt 200) { continue }

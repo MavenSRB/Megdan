@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -47,33 +48,30 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// `F613-08`, rejected path. The atomicity self-check's second capture is the difference
-        /// between the two modes, which is why the gate is asserted from both sides: a compile gate
-        /// could only ever be observed from whichever side the test assembly compiles under.
+        /// `F613-08`, rejected path, as corrected after 6.1i. The count is one and not two, and it
+        /// is one in every build configuration.
         /// </summary>
+        /// <remarks>
+        /// This assertion replaces a pair that measured the two `MatchDiagnosticsMode` values
+        /// separately and recorded zero serializations for `Off`. That zero was the defect written
+        /// down as an expectation: the mode it described skipped the comparison, and skipping the
+        /// comparison skips the rollback, so the configuration a release player runs captured a
+        /// pre-image it could never act on. The comparison is now unconditional and the mode is
+        /// gone, so there is one number to assert rather than two.
+        /// </remarks>
         [Test]
-        public void RejectedCommand_PerformsTheRecordedNumberOfFullSerializationsInEachDiagnosticsMode()
+        public void RejectedCommand_PerformsExactlyOneFullSerialization()
         {
-            var verified = CreateSession(MatchDiagnosticsMode.Verified);
-            var verifiedMeasured = MeasureSerializations(() =>
-                Assert.That(verified.Execute(DirectorCommand.StopMovement()).Accepted, Is.False));
+            var session = CreateSession();
 
-            Assert.That(verifiedMeasured.Authoritative, Is.EqualTo(1),
-                "With self-verification on, the one serialization is the check's own fresh re-read. " +
-                "The pre-image costs nothing here because the memo still holds the state the " +
-                "previous command's projection encoded. Before 6.1i this path performed six.");
-            Assert.That(verifiedMeasured.Envelope, Is.EqualTo(0));
+            var measured = MeasureSerializations(() =>
+                Assert.That(session.Execute(DirectorCommand.StopMovement()).Accepted, Is.False));
 
-            var off = CreateSession(MatchDiagnosticsMode.Off);
-            var offMeasured = MeasureSerializations(() =>
-                Assert.That(off.Execute(DirectorCommand.StopMovement()).Accepted, Is.False));
-
-            Assert.That(offMeasured.Authoritative, Is.EqualTo(0),
-                "With self-verification off, a refused command serializes nothing at all: it moved " +
-                "no state, so the memo taken before it is still valid afterwards. The pre-image is " +
-                "still captured in both modes - it is the rollback guarantee, not a diagnostic - it " +
-                "simply costs no serialization when state has not changed.");
-            Assert.That(offMeasured.Envelope, Is.EqualTo(0));
+            Assert.That(measured.Authoritative, Is.EqualTo(1),
+                "The one serialization is the atomicity comparison's own fresh re-read. The " +
+                "pre-image costs nothing here because the memo still holds the state the previous " +
+                "command's projection encoded. Before 6.1i this path performed six.");
+            Assert.That(measured.Envelope, Is.EqualTo(0));
         }
 
         /// <summary>
@@ -87,9 +85,14 @@ namespace GuardsDigital.Tests.EditMode
         /// `GC.GetTotalAllocatedBytes` does not exist under this Unity profile, and
         /// `GC.GetAllocatedBytesForCurrentThread` compiles but returns a constant, so the delta
         /// measured zero for a batch that certainly allocated. A probe that cannot discriminate is
-        /// an inconclusive result rather than a pass. Encoded characters are the dominant managed
-        /// allocation on this path, are exact, and are machine-independent, so the substitution
-        /// measures the finding's subject more sharply than the instrument named for it.
+        /// an inconclusive result rather than a pass.
+        ///
+        /// The substitution is sound for the encode half of the finding and unsound for the other
+        /// half, which is the correction this fixture carries: 6.1i read it as covering both, and
+        /// declared `RISK-PERF-001` retired on that reading, while two array copies of the whole
+        /// accumulated log survived where encoded characters cannot see them. Those copies are the
+        /// subject of `CapturePreImage_CopiesNothingHoweverLongTheSessionIs` below; this test keeps
+        /// its original scope.
         /// </remarks>
         [Test]
         public void LongSession_PerCommandSerializedBytesDoNotGrowWithSessionLength()
@@ -113,6 +116,64 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(secondHalf, Is.LessThan(firstHalf * 2.0),
                 $"Per-command serialized size grew with session length: {firstHalf} characters for " +
                 $"the first {half} commands against {secondHalf} for the next {half}.");
+        }
+
+        /// <summary>
+        /// `F613-08`, the growth half, at the site the encoded-character measurement above cannot
+        /// reach. Every command captures a rollback pre-image, so a pre-image that copies the
+        /// accumulated rule-event log costs more with every command in the session.
+        /// </summary>
+        /// <remarks>
+        /// Asserted as identity rather than as a size or a duration: the pre-image must hold the
+        /// aggregate's own snapshot instances, which is true only if the capture copied nothing.
+        /// A `ToArray()` anywhere on this path fails it immediately, whatever the machine.
+        ///
+        /// The boundary is internal with no `InternalsVisibleTo`, so it is read reflectively.
+        /// </remarks>
+        [Test]
+        public void CapturePreImage_CopiesNothingHoweverLongTheSessionIs()
+        {
+            var session = CreateSession();
+            var aggregate = GetAggregate(session);
+
+            AssertPreImageSharesTheAggregatesStreams(aggregate, "at the start of the session");
+
+            foreach (var command in BuildHoldOnlyCommandSequence(session, 16))
+            {
+                Assert.That(session.Execute(command).Accepted, Is.True);
+            }
+
+            AssertPreImageSharesTheAggregatesStreams(aggregate, "after sixteen accepted commands");
+
+            Assert.That(
+                session.Projection.DiagnosticEvents,
+                Is.SameAs(aggregate.GetType().GetProperty("EventLogEntries").GetValue(aggregate)),
+                "The projection copied the whole rule-event log on refresh. It is handed a snapshot " +
+                "that cannot change, so the defensive copy defends against nothing and costs more " +
+                "with every command in the session.");
+        }
+
+        private static void AssertPreImageSharesTheAggregatesStreams(object aggregate, string position)
+        {
+            var preImage = aggregate.GetType()
+                .GetMethod("CapturePreImage", BindingFlags.Public | BindingFlags.Instance)
+                .Invoke(aggregate, Array.Empty<object>());
+
+            Assert.That(
+                preImage.GetType().GetProperty("EventLogEntries").GetValue(preImage),
+                Is.SameAs(aggregate.GetType().GetProperty("EventLogEntries").GetValue(aggregate)),
+                $"The pre-image copied the whole rule-event log {position}.");
+            Assert.That(
+                preImage.GetType().GetProperty("RoundEvents").GetValue(preImage),
+                Is.SameAs(aggregate.GetType().GetProperty("RoundEvents").GetValue(aggregate)),
+                $"The pre-image copied the current round's events {position}.");
+        }
+
+        private static object GetAggregate(MatchSession session)
+        {
+            var field = typeof(MatchSession).GetField("aggregate", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(field, Is.Not.Null, "MatchSession holds its aggregate in a private field.");
+            return field.GetValue(session);
         }
 
         /// <summary>
@@ -324,8 +385,7 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
         }
 
-        private static MatchSession CreateSession(
-            MatchDiagnosticsMode diagnostics = MatchDiagnosticsMode.Verified)
+        private static MatchSession CreateSession()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
@@ -342,9 +402,7 @@ namespace GuardsDigital.Tests.EditMode
                 map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 Array.Empty<ObstacleOccupancy>());
-            return new MatchSession(
-                new MatchSessionInitialState(scenario, setup, new[] { map }),
-                diagnostics);
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
         }
 
         /// <summary>

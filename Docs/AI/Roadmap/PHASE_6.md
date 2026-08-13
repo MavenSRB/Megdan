@@ -79,7 +79,7 @@ Observable outcome: Runtime shader resolution is declared rather than incidental
 Acceptance checks - build path and assembly boundary (former 6.1d):
 
 - Every shader named by a runtime `Shader.Find` call is present in the always-included shader list, so resolution does not depend on an unrelated material happening to be referenced from an enabled scene.
-- All five runtime `Shader.Find` sites fail loudly on a null result instead of assigning a null material, using the existing explicit-failure pattern already present in `DestinationHighlightMaterialOwner`.
+- All runtime `Shader.Find` sites fail loudly on a null result instead of assigning a null material, using the existing explicit-failure pattern already present in `DestinationHighlightMaterialOwner`. The audit counted five; the fifth was inside `HeroSelectionController`, which milestone 6.1c deleted at `2fa2212` before this milestone ran, so the check was met by the four that remain.
 - `Assets/Editor` declares an Editor-only assembly definition with explicit references, so a loose Editor script cannot bypass `IMatchSession`.
 - An Edit Mode fixture enumerates runtime shader names from source and asserts each resolves and is always-included, so a later deletion of the incidental material fails a test rather than shipping magenta.
 - The declared target platforms in `PROJECT_CONTEXT.md` are each considered for stripping behavior, and any platform-specific requirement is recorded rather than assumed.
@@ -228,6 +228,32 @@ Acceptance checks:
 Closing check for `F613-13`: each replacement assertion run twice - once against a deliberately introduced real regression, where it must fail, and once against a pure rename that changes no behavior, where it must pass. The old assertion failing the rename case is the pre-fix half. `MinionBattleResolution`'s added coverage closes on its new cases failing against deliberately broken exact-count and Heavy-last ordering.
 
 Non-goals: No production behavior change, no new subsystem, no reduction in existing coverage, no change to the test assembly split.
+
+### [x] 6.1o Honour the atomicity guarantee in every build, and measure what actually grows
+
+Approved on 2026-08-13 from an independent review of the work completed through 6.1h. The review produced five findings; all five were re-verified against `d093847` before this milestone was written. Two are defects in milestone 6.1i's work, and both share one cause: 6.1i read the rejected-command mutation comparison as debug-grade self-verification, when it is the mechanism that delivers the aggregate's atomicity guarantee rather than a report about it.
+
+The letter is `6.1o` because `6.1j` and `6.1m` were merged into `6.1d`, `6.1n` was removed when review-correction closure became mechanical, and `6.1l` is blocked rather than spent.
+
+Observable outcome: A refused command leaves no partial state in a shipping player build and not only in a development one; per-command cost stops growing with session length at every site rather than at the one an encoded-character measurement could see; and the risk register states what is actually true of both.
+
+Acceptance checks:
+
+- The rejected-command comparison and its rollback execute in every build configuration. No mode, symbol, or constructor overload selects a session that skips them.
+- The rollback pre-image captures in constant time. No path from a command to a pre-image copies the accumulated rule-event log or the current round's events.
+- The immutable projection stops copying the whole accumulated rule-event log on every refresh.
+- The regression fixture for the growth half measures something that a copy of the log would fail. The encoded-character measurement is retained for the encode half it does cover, with its scope stated.
+- `RISK-PERF-001` is reopened before it is retired again, and its record says why the first retirement was premature.
+- `RISK-STATE-002` receives the reassessment its own row scheduled for 6.1h.
+- The living-document validator gains a check for the one-row archive policy adopted on 2026-08-13, and one that includes `README.md` in the completed-milestone status set.
+
+Closing checks:
+
+- Finding 1: `MatchAggregateAtomicityTests` - a plan that mutates the board and then refuses is rolled back and reported as `AtomicityViolation`, on a branch that had no coverage at all beforehand; plus the type-level assertion that no session shape can skip the check. The pre-fix half is a compile transition in the precedent of 6.1g: `new MatchSession(state, MatchDiagnosticsMode.Off)` compiled before and does not exist after, and the cost fixture's `Off` case asserted zero serializations on the rejected path where the corrected fixture asserts one.
+- Finding 2: `CapturePreImage_CopiesNothingHoweverLongTheSessionIs`, which fails against the pre-fix `ToArray()` capture at any session length, plus `AppendOnlyEventLogTests` covering the snapshot's behaviour under growth and under the wholesale replacement a restore performs.
+- Findings 3, 4, and 5: the two new validator checks observed failing against the pre-fix documents and passing after.
+
+Non-goals: No conversion of the in-place authorities beneath the aggregate to a plan-only shape - that is `RISK-STATE-002`'s deeper subject and stays open. No rewrite of existing archive narratives, which the append-only rule protects; the new check is forward-looking and grandfathers what is already written. No change to the snapshot format, schema version, or the pinned compatibility digests.
 
 ### [!] 6.1l Confirm the validation toolchain on a non-Windows platform
 

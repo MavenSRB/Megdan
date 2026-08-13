@@ -22,23 +22,6 @@ namespace GuardsDigital.Application
         EngineFault = 6
     }
 
-    /// <summary>
-    /// Whether the session runs its debug-grade self-verification. `Verified` re-reads authoritative
-    /// state after a refused command to prove nothing moved; `Off` skips that second read.
-    /// </summary>
-    /// <remarks>
-    /// This gates the check, never the guarantee. The rollback pre-image is captured in both modes,
-    /// because it is what makes a refused or faulted command leave no partial state - milestone
-    /// 6.1i's non-goals name "no removal of the atomicity or determinism guarantees themselves".
-    /// What `Off` removes is only the cost of proving the guarantee held on every single command,
-    /// which finding `F613-08` measured as running unconditionally in shipped builds.
-    /// </remarks>
-    public enum MatchDiagnosticsMode
-    {
-        Off = 0,
-        Verified = 1
-    }
-
     public sealed class MatchCommandResult
     {
         internal MatchCommandResult(

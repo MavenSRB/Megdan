@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
@@ -189,16 +187,19 @@ namespace GuardsDigital.Application
     /// authorities below this root mutate in place, unlike <c>DefeatRewardAccounting.Award</c>,
     /// whose plan-validate-commit shape this boundary is modelled on. The guarantee to the caller is
     /// the same - a refused operation leaves no partial state - but the mechanism differs, and
-    /// converting the authorities to plan-only is deeper work than 6.1f. Milestone 6.1i owns the
-    /// pre-image's cost.
+    /// converting the authorities to plan-only is deeper work than 6.1f; `RISK-STATE-002` records
+    /// what that difference still exposes.
+    ///
+    /// Because the mechanism is a rollback, the comparison that decides whether to roll back is part
+    /// of the guarantee and runs unconditionally. Milestone 6.1i briefly made it optional, which
+    /// left the shipping configuration paying for a pre-image it could never act on.
     /// </remarks>
     internal sealed class MatchAggregate
     {
         private readonly MatchSessionInitialState initialState;
-        private readonly MatchDiagnosticsMode diagnostics;
         private readonly RuleEventLogProjection eventLog = new RuleEventLogProjection();
-        private readonly List<RoundResolutionEvent> roundEvents = new List<RoundResolutionEvent>();
-        private readonly ReadOnlyCollection<RoundResolutionEvent> publishedRoundEvents;
+        private readonly AppendOnlyEventLog<RoundResolutionEvent> roundEvents =
+            new AppendOnlyEventLog<RoundResolutionEvent>();
 
         private PlaceholderOneVsOneTestConfiguration configuration;
         private AdjacentMoveAuthority board;
@@ -206,11 +207,9 @@ namespace GuardsDigital.Application
         private RoundResolutionAuthority round;
         private string memoizedAuthoritative;
 
-        public MatchAggregate(MatchSessionInitialState initialState, MatchDiagnosticsMode diagnostics)
+        public MatchAggregate(MatchSessionInitialState initialState)
         {
             this.initialState = initialState ?? throw new ArgumentNullException(nameof(initialState));
-            this.diagnostics = diagnostics;
-            publishedRoundEvents = new ReadOnlyCollection<RoundResolutionEvent>(roundEvents);
         }
 
         public PlaceholderOneVsOneTestConfiguration Configuration => configuration;
@@ -219,8 +218,11 @@ namespace GuardsDigital.Application
         public RoundResolutionAuthority Round => round;
         public IReadOnlyList<RuleEventLogEntry> EventLogEntries => eventLog.Entries;
 
-        /// <summary>A live read-only view; appending is possible only through the commit boundary.</summary>
-        public IReadOnlyList<RoundResolutionEvent> RoundEvents => publishedRoundEvents;
+        /// <summary>
+        /// The current round's ordered events as an immutable value; appending is possible only
+        /// through the commit boundary.
+        /// </summary>
+        public IReadOnlyList<RoundResolutionEvent> RoundEvents => roundEvents.Entries;
 
         /// <summary>
         /// The authoritative snapshot of the current graphs, computed once per state change.
@@ -261,8 +263,8 @@ namespace GuardsDigital.Application
                 board,
                 cardActions,
                 round,
-                eventLog.Entries.ToArray(),
-                roundEvents.ToArray());
+                eventLog.Entries,
+                roundEvents.Entries);
         }
 
         public void Adopt(MatchGraphSet graphs)
@@ -374,13 +376,17 @@ namespace GuardsDigital.Application
 
             if (!planned.Accepted)
             {
-                // Debug-grade self-verification: prove the refusal moved nothing. It must serialize
-                // afresh rather than read the memo, because a mutation is exactly what it is looking
-                // for and the memo would still hold the pre-command value. Only the rule-event
-                // streams are excluded from the comparison, and only because they are private to
-                // this aggregate and reachable solely from the commit below.
-                if (diagnostics == MatchDiagnosticsMode.Verified &&
-                    !string.Equals(preImage.AuthoritativePayload, SerializeAuthoritative(), StringComparison.Ordinal))
+                // Prove the refusal moved nothing, and undo it when it did. This runs in every build
+                // configuration because it is not a diagnostic: it is the mechanism by which a
+                // refused command leaves no partial state. Milestone 6.1i gated it behind a
+                // diagnostics mode on the reading that it was debug-grade self-verification, which
+                // left the shipping configuration capturing a pre-image it could never use.
+                //
+                // It must serialize afresh rather than read the memo, because a mutation is exactly
+                // what it is looking for and the memo would still hold the pre-command value. Only
+                // the rule-event streams are excluded from the comparison, and only because they are
+                // private to this aggregate and reachable solely from the commit below.
+                if (!string.Equals(preImage.AuthoritativePayload, SerializeAuthoritative(), StringComparison.Ordinal))
                 {
                     Rollback(preImage);
                     return MatchCommitOutcome<TPlan>.AtomicityViolation(planned);
@@ -391,7 +397,11 @@ namespace GuardsDigital.Application
 
             // The commit. The graphs kept this operation's state, so the events that state produced
             // are appended here, and this is the only place they can be: both streams are private.
-            roundEvents.AddRange(planned.Events);
+            foreach (var ruleEvent in planned.Events)
+            {
+                roundEvents.Add(ruleEvent);
+            }
+
             eventLog.Append(planned.Events);
             memoizedAuthoritative = null;
             return MatchCommitOutcome<TPlan>.Committed(planned);
@@ -399,17 +409,19 @@ namespace GuardsDigital.Application
 
         /// <summary>The pre-image a refused or faulted operation is rolled back to.</summary>
         /// <remarks>
-        /// The two event streams travel as in-memory arrays rather than inside a serialized
-        /// envelope. The envelope re-encodes the whole accumulated log, so carrying one here made
-        /// per-command cost grow with session length, which is the second half of `F613-08`. Copying
-        /// two arrays of references carries the same state at a cost that does not grow.
+        /// Every command captures one, so nothing here may cost more as the session lengthens -
+        /// the second half of finding `F613-08`. Milestone 6.1i removed the expensive form, an
+        /// encode of the whole accumulated log, but replaced it with an array copy of the same log
+        /// and measured the result in encoded characters, which cannot see an array copy. Both
+        /// streams are now append-only logs whose snapshots are the buffer and a length, so this
+        /// captures two references and copies nothing.
         /// </remarks>
         public MatchPreImage CapturePreImage()
         {
             return new MatchPreImage(
                 CaptureAuthoritativeSnapshot(),
-                eventLog.Entries.ToArray(),
-                roundEvents.ToArray());
+                eventLog.Entries,
+                roundEvents.Entries);
         }
 
         public void Rollback(MatchPreImage preImage)
@@ -436,8 +448,7 @@ namespace GuardsDigital.Application
             board = graphs.Board;
             cardActions = graphs.CardActions;
             round = graphs.Round;
-            roundEvents.Clear();
-            roundEvents.AddRange(graphs.RoundEvents);
+            roundEvents.Reset(graphs.RoundEvents);
             graphs.ApplyEventLogTo(eventLog);
             memoizedAuthoritative = null;
         }

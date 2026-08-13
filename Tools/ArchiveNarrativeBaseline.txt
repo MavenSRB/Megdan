@@ -1,0 +1,97 @@
+# Frozen baseline for the archive one-row policy, captured at milestone 6.1o on 2026-08-13.
+#
+# Governance adopted "one archive row per milestone, evidence in the commit body" on
+# 2026-08-13, and the append-only rule forbids rewriting what was already written. Every
+# milestone section that existed when the check was added is listed here and exempted.
+# Seven of them - 6.1c, 6.1d, 6.1f, 6.1g, 6.1h, 6.1i, 6.1k - were written after the policy
+# took effect and are exempt only because the archive may not be rewritten, not because they
+# complied. The rest predate it.
+#
+# NOTHING MAY BE ADDED TO THIS FILE. A new milestone writes one row; if the check fires,
+# the fix is to move the prose into the commit message, not to append a line here.
+
+PHASE_0.md|0.2
+PHASE_0.md|0.3
+PHASE_0.md|0.4
+PHASE_0.md|0.5
+PHASE_0.md|0.6
+PHASE_0.md|0.7
+PHASE_1.md|1.1
+PHASE_1.md|1.2
+PHASE_1.md|1.3
+PHASE_1.md|1.4
+PHASE_1.md|1.5
+PHASE_1.md|1.6
+PHASE_1.md|1.7
+PHASE_1.md|1.8
+PHASE_1.md|1.9
+PHASE_1.md|1.10
+PHASE_1.md|1.11
+PHASE_1.md|1.12
+PHASE_1.md|1.12a
+PHASE_1.md|1.12b
+PHASE_1.md|1.13
+PHASE_1.md|1.13a
+PHASE_2.md|2.1
+PHASE_2.md|2.2
+PHASE_2.md|2.3
+PHASE_2.md|2.3a
+PHASE_2.md|2.4
+PHASE_2.md|2.5
+PHASE_2.md|2.6
+PHASE_2.md|2.6a
+PHASE_3.md|3.1
+PHASE_3.md|3.2
+PHASE_3.md|3.3
+PHASE_3.md|3.4
+PHASE_3.md|3.5
+PHASE_3.md|3.6
+PHASE_3.md|3.6a
+PHASE_3.md|3.7
+PHASE_3.md|3.7b
+PHASE_3.md|3.8
+PHASE_3.md|3.8a
+PHASE_3.md|3.8b
+PHASE_3.md|3.8c
+PHASE_3.md|3.9
+PHASE_3.md|3.10
+PHASE_3.md|3.10a
+PHASE_3.md|3.11
+PHASE_3.md|3.11a
+PHASE_4.md|4.1
+PHASE_4.md|4.1a
+PHASE_4.md|4.2
+PHASE_4.md|4.2a
+PHASE_4.md|4.3
+PHASE_4.md|4.4
+PHASE_4.md|4.4a
+PHASE_4.md|4.4b
+PHASE_4.md|4.4c
+PHASE_4.md|4.4d
+PHASE_4.md|4.4e
+PHASE_4.md|4.4h
+PHASE_4.md|4.4i
+PHASE_5.md|5.1
+PHASE_5.md|5.1a
+PHASE_5.md|5.1b
+PHASE_5.md|5.1c
+PHASE_5.md|5.2
+PHASE_5.md|5.2a
+PHASE_5.md|5.3
+PHASE_5.md|5.4
+PHASE_5.md|5.5
+PHASE_5.md|5.6
+PHASE_5.md|5.8
+PHASE_5.md|5.8a
+PHASE_5.md|5.8a1
+PHASE_5.md|5.8b
+PHASE_5.md|5.8c
+PHASE_6.md|6.1
+PHASE_6.md|6.1b
+PHASE_6.md|6.1g
+PHASE_6.md|6.1c
+PHASE_6.md|6.1d
+PHASE_6.md|6.1f
+PHASE_6.md|6.1i
+PHASE_6.md|6.1h
+PHASE_6.md|6.1k

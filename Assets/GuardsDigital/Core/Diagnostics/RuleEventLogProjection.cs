@@ -10,9 +10,13 @@ namespace GuardsDigital.Core.Diagnostics
 {
     public sealed class RuleEventLogProjection
     {
-        private readonly List<RuleEventLogEntry> entries = new List<RuleEventLogEntry>();
+        private readonly AppendOnlyEventLog<RuleEventLogEntry> entries = new AppendOnlyEventLog<RuleEventLogEntry>();
 
-        public IReadOnlyList<RuleEventLogEntry> Entries => entries.AsReadOnly();
+        /// <summary>
+        /// The log's contents as an immutable value, in constant time. Callers hold these across
+        /// commands - the rollback pre-image is one - so this must not copy the accumulated log.
+        /// </summary>
+        public IReadOnlyList<RuleEventLogEntry> Entries => entries.Entries;
 
         public void ResetToSetup(MatchParticipants participants, TieBreakerState tieBreakerState)
         {
@@ -26,7 +30,7 @@ namespace GuardsDigital.Core.Diagnostics
                 throw new ArgumentException("The setup log requires a defined Tie Breaker.", nameof(tieBreakerState));
             }
 
-            entries.Clear();
+            entries.Reset();
             var heroReferences = string.Join(",", participants.Heroes
                 .Select(hero => hero.Id.Value)
                 .OrderBy(value => value, StringComparer.Ordinal));
@@ -72,8 +76,7 @@ namespace GuardsDigital.Core.Diagnostics
                 }
             }
 
-            entries.Clear();
-            entries.AddRange(restored);
+            entries.Reset(restored);
         }
 
         private void Append(RoundResolutionEvent ruleEvent)

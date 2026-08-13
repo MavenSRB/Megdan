@@ -73,3 +73,15 @@ Three changes produced that. The aggregate memoizes its authoritative snapshot, 
 The gating is a typed `MatchDiagnosticsMode` rather than a preprocessor directive, so Core and Application keep no Unity build symbols and one fixture can assert the count from both sides of the gate. The composition root selects `Verified` for a development build and `Off` otherwise. The gate covers only the self-check; the rollback pre-image is captured in both modes, because it is the atomicity guarantee rather than a diagnostic.
 
 The mobile reassessment this row named is not inherited by a successor risk, because the growth-with-session-length property that made it a mobile-specific concern is gone. Absolute cost on a mobile device remains unmeasured, which is a measurement gap rather than an open risk; the first mobile player build is the natural point to measure it.
+
+### 2026-08-13 addendum: this retirement was premature, and the risk was reopened
+
+Explicit correction under the append-only archive rule. The record above is preserved as written; the paragraph beginning "Three changes produced that" and the one after it are wrong in two specific ways, found by an independent review of the work through 6.1h and re-verified against `d093847`.
+
+**The growth half was not closed.** The pre-image stopped carrying an *encoded envelope* and started carrying `eventLog.Entries.ToArray()` and `roundEvents.ToArray()` - still the whole accumulated log, copied on every command, still growing with session length. `MatchSessionProjection` copied the same log again on every refresh. The claim above that carrying arrays "is what removes the growth with session length" describes a reduction in the constant factor as though it were a change in the growth term.
+
+**The named evidence could not have detected it.** `LongSession_PerCommandSerializedBytesDoNotGrowWithSessionLength` measures encoded characters, which its own remarks state plainly. An array copy encodes nothing, so no result that fixture could produce would have failed. The acceptance check asked for a managed-allocation fixture; the substitution was recorded and justified for the encode half, and silently inherited for a half it does not cover.
+
+**The gating paragraph is also wrong about the guarantee.** It says the rollback pre-image is captured in both modes "because it is the atomicity guarantee rather than a diagnostic". The pre-image was indeed captured in both modes and was *unused* in `Off`: skipping the comparison skips the rollback it decides. `Off` was the mode every non-development build selected, so the configuration that shipped captured a pre-image it could never act on. That is `RISK-STATE-002`'s neighbouring concern but a distinct defect, and it is the subject of milestone 6.1o rather than of this risk.
+
+Milestone 6.1o removes both copies, makes the comparison unconditional, and replaces the growth evidence with an identity assertion that a copy fails at any session length. The risk is retired again there. Its active row records the reopening rather than presenting an unbroken retirement.
