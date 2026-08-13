@@ -1,5 +1,7 @@
 # Living-Documentation Migration Manifest
 
+**Frozen as of 2026-08-13. Do not update.** This manifest recorded one completed consolidation. Its per-handoff validator checks were retired by explicitly approved governance amendment; see [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md#retired-migration-bookkeeping). Rows below are historical evidence of that migration and are not maintained against later edits, so a hash here may no longer match a document that has since changed for unrelated reasons. Git history is the record for everything after the migration.
+
 Every removed, relocated, or rewritten pre-governance section is routed here. Hashes are SHA-256 over exact UTF-8 section text; both hashes are mandatory and equal for `verbatim archive` rows.
 
 | Original path | Original heading | Destination | Treatment | Source SHA-256 | Destination SHA-256 |

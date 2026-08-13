@@ -19,15 +19,17 @@ Expand to a full-document read only when the task is genuinely cross-cutting, ta
 `Docs/AI/DOCUMENTATION_GOVERNANCE.md` is the permanent ownership, routing-threshold, archive, migration, preservation, and active-risk contract. Its thresholds limit one active leaf, never the total corpus, and never permit deletion, lossy compression, weakened precision, or reliance on Git history alone.
 
 - Write each current fact in its one canonical home. Noncanonical active documents use a short routing summary and stable link instead of copying a narrative.
-- Write detailed completed-milestone outcome and validation evidence once in the applicable indexed `Docs/AI/Archive/Phase-Handoffs/` file. The active milestone definition keeps only its exact definition/status/profile and a historical backlink.
-- Keep `SESSION_BRIEF.md` limited to a compact current-status summary, authorization, exact next milestone/profile, boundaries, and routing. Maintain detailed current implementation by subject in `Docs/AI/Project/CURRENT_IMPLEMENTATION.md`, replacing affected statements rather than appending milestone chronology; keep product, rules, card/effect, testing, and risk material in the canonical homes named by the ownership matrix.
+- Write detailed completed-milestone outcome and validation evidence once, in that milestone's commit message body. The applicable `Docs/AI/Archive/Phase-Handoffs/` file receives one row - ID, one-line outcome, commit SHA. The active milestone definition keeps only its exact definition/status and a historical backlink.
+- Keep `SESSION_BRIEF.md` limited to a compact current-status summary, authorization, exact next milestone, boundaries, and routing. Maintain detailed current implementation by subject in `Docs/AI/Project/CURRENT_IMPLEMENTATION.md`, replacing affected statements rather than appending milestone chronology; keep product, rules, card/effect, testing, and risk material in the canonical homes named by the ownership matrix.
 - When an active leaf reaches the 85% warning threshold, review ownership in the same handoff. Move duplicated/completed history losslessly or split irreducible current material into an indexed authoritative shard. A hard-threshold failure blocks handoff unless routing is corrected or the user explicitly approves a governance amendment.
 - Never shorten a current rule, contract, acceptance/non-goal check, source citation, deviation, open question, exact active test recipe, or historical pass/failure record merely to meet a threshold.
-- At every milestone handoff and phase gate, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1`, then `git diff --check`; update indexes, manifest, preservation inventory, and risk disposition when implicated.
+- At every milestone handoff and phase gate, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1`, then `git diff --check`; update the affected indexes and risk disposition when implicated. The frozen migration manifest and preservation inventory are not updated.
 
-## Milestone start transition
+## Milestone start
 
-After the exact milestone is approved, but before any substantive milestone analysis, implementation, review, or test execution, perform the milestone-start transition in the shared workspace: change that milestone's roadmap status from `[ ]` to `[~]`, set `Active authorized milestone` in `Docs/AI/SESSION_BRIEF.md` to that exact ID, retain the validator-required `Next proposed milestone` route field for the same active ID, and run the living-document validator. Do not proceed until the transition validates. This applies equally to analysis-only and independent-review milestones. At most one milestone may be `[~]`.
+Once the exact milestone is approved, begin work. Status moves from `[ ]` to `[x]` in the completion commit, together with the continuity updates.
+
+The former pre-work transition - editing the roadmap to `[~]`, editing the session brief, and running the validator before any analysis - was retired on 2026-08-13. It cost a full document round trip and a commit before the work started, and the state it recorded is already visible: an uncommitted working tree on a known branch says what is in flight, and the approval itself is in the task. The `[~]` marker and the `Active authorized milestone` field remain available and remain validator-enforced when used; mark a milestone `[~]` when work will span sessions or be handed off mid-flight, and set the brief's active field to the same ID. At most one milestone may be `[~]`.
 
 For a normal new milestone task, the user only needs to open a new task in this trusted project and explicitly approve the milestone by ID, for example: `I explicitly approve milestone 2.2. Implement it and stop after its required handoff.` The agent then performs the normal targeted loading, implementation, validation, continuity updates, and local commit without asking the user to repeat the stored workflow.
 
@@ -37,14 +39,14 @@ Model and reasoning-effort selection is not a governed per-milestone artifact. T
 
 ## Current authorization
 
-The detailed current implementation lives in `Docs/AI/Project/CURRENT_IMPLEMENTATION.md`; authorization, next milestone, and required Codex profile live in `Docs/AI/SESSION_BRIEF.md`. Do not begin a proposed gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
+The detailed current implementation lives in `Docs/AI/Project/CURRENT_IMPLEMENTATION.md`; authorization and the next milestone live in `Docs/AI/SESSION_BRIEF.md`. Do not begin a proposed gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
 
 ## Non-negotiable working rules
 
 - Treat the second-printing rulebook, verified card data, and published official rulings as authoritative according to the hierarchy in `Docs/AI/RULES_LEDGER.md`.
 - Do not invent, simplify, rebalance, or silently reinterpret a rule. Record every approved deviation in `Docs/AI/RULES_LEDGER.md`.
 - Work on exactly one user-approved micro-milestone at a time. Satisfy its acceptance checks, update the living documents, report the result, and stop for approval.
-- Mark the approved milestone `[~]` and record it as the active authorized milestone immediately after approval and before substantive work. A milestone task must never perform its analysis, implementation, review, or tests while its canonical status remains proposed `[ ]`.
+- Do not begin substantive work on a milestone the user has not approved by exact ID. Record the completed status in the milestone's commit; mark `[~]` mid-flight only when work will span sessions or be handed off.
 - Before declaring any approved milestone complete, perform a review-only pass from the player-experience, rules-authority, maintainability, and project-risk perspectives. Distinguish demonstrated defects from measured or plausible risks and from optional improvements. Report the review in the milestone handoff even when it finds no issues. Correct only demonstrated defects that fall within the approved milestone and are required for its acceptance; do not implement optional improvements or expand scope without separate user approval.
 - Apply the recursive review-correction closure rule in `Docs/AI/ROADMAP.md`: when a separately numbered independent engineering review requires one or more corrective micro-milestones before the affected downstream gate, its proposed corrective sequence must also include a separately numbered fresh-task independent verification review after the final correction. Corrective handoff self-reviews do not satisfy that verification. If the verification requires further pre-gate corrections, repeat the correction-plus-verification cycle; keep downstream work blocked through the latest required verification. Roadmap scheduling and each milestone's execution still require their applicable explicit user approvals.
 - After every completed user-approved roadmap milestone, create a local Git commit containing that milestone and its continuity updates. Do not configure a remote or push without explicit user authorization.
@@ -66,12 +68,16 @@ The detailed current implementation lives in `Docs/AI/Project/CURRENT_IMPLEMENTA
 
 ## Continuity updates
 
-After an approved decision or completed milestone:
+Two documents change at essentially every milestone. Update these:
 
-- Update `Docs/AI/Project/CURRENT_IMPLEMENTATION.md` in place when implementation status changes. Update `Docs/AI/SESSION_BRIEF.md` when authorization, the next milestone, or startup routing changes; revise the brief's compact status summary only when the routed overview materially changes.
-- Update the subject shard indexed by `Docs/AI/PROJECT_CONTEXT.md` when product scope, constraints, terminology, or architecture changes.
-- Update the phase shard indexed by `Docs/AI/ROADMAP.md` when milestone status or sequencing changes, and append completed evidence once to the matching phase-handoff archive.
-- Update `Docs/AI/RULES_LEDGER.md` when a rule is verified, implemented, tested, clarified, or intentionally deviated from.
-- Update the contract shard indexed by `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` when a verified rule or card changes a card-engine contract or extension boundary.
-- Follow the `Docs/AI/CARD_EFFECT_CAPABILITIES.md` index and update its owning capability section or shard when a verified rule or card adds or changes an effect, keyword, query, modifier, timing, or system-transition contract.
-- If these files disagree, stop and resolve the conflict with the user before implementation.
+- `Docs/AI/SESSION_BRIEF.md` - authorization, completed/next milestone, and startup routing.
+- The `Docs/AI/Roadmap/PHASE_<N>.md` shard - milestone status, plus one archive row (ID, one-line outcome, commit SHA) in the matching `Docs/AI/Archive/Phase-Handoffs/` file. Detailed evidence goes in the commit message body, not the archive.
+
+Update the rest **only when that milestone actually changed their subject**, not as a routine checklist:
+
+- `Docs/AI/Project/CURRENT_IMPLEMENTATION.md` when implemented behavior changed. `Docs/AI/Project/*.md` when product scope, constraints, architecture, presentation, or terminology changed.
+- `Docs/AI/RULES_LEDGER.md` when a rule was verified, implemented, tested, clarified, or intentionally deviated from.
+- `Docs/AI/Card-System/*.md` when a card-engine contract or extension boundary changed; `Docs/AI/CARD_EFFECT_CAPABILITIES.md` when an effect, keyword, query, modifier, timing, or system-transition contract changed.
+- `Docs/AI/TECHNICAL_RISKS.md` when a risk was raised, reassessed, retired, or a temporary structure gained or lost its retirement owner.
+
+A milestone that touched none of a document's subject writes nothing to it; an unchanged document is the correct outcome, not a missed step. If any of these disagree with each other, stop and resolve the conflict with the user before implementation.

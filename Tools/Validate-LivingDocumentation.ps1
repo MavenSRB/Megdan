@@ -16,21 +16,6 @@ function Read-Utf8([string] $Path) {
     return [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
 }
 
-function Get-TextHash([string] $Text) {
-    $bytes = $utf8NoBom.GetBytes($Text)
-    $sha = [System.Security.Cryptography.SHA256]::Create()
-    try {
-        return ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
-    }
-    finally {
-        $sha.Dispose()
-    }
-}
-
-function Get-FileHashLower([string] $Path) {
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
-}
-
 function Get-WordCount([string] $Text) {
     return ([regex]::Matches($Text, '\b[\p{L}\p{N}][\p{L}\p{N}_''.-]*\b')).Count
 }
@@ -83,19 +68,6 @@ function Get-SectionByHeading([string] $Text, [string] $Heading) {
     $next = [regex]::Match($Text.Substring($tailStart), "(?m)^#{1,$level}\s+")
     $end = if ($next.Success) { $tailStart + $next.Index } else { $Text.Length }
     return $Text.Substring($match.Index, $end - $match.Index).TrimEnd()
-}
-
-function Get-CompletionBody([string] $RoadmapText, [string] $Milestone) {
-    $escaped = [regex]::Escape($Milestone)
-    $milestoneMatch = [regex]::Match($RoadmapText, "(?m)^### \[[^\]]+\] $escaped\s*$")
-    if (-not $milestoneMatch.Success) { return $null }
-    $tailStart = $milestoneMatch.Index + $milestoneMatch.Length
-    $next = [regex]::Match($RoadmapText.Substring($tailStart), '(?m)^### \[')
-    $end = if ($next.Success) { $tailStart + $next.Index } else { $RoadmapText.Length }
-    $block = $RoadmapText.Substring($tailStart, $end - $tailStart)
-    $note = [regex]::Match($block, '(?ms)^Completion note[^\r\n]*(?:\r?\n(?!\r?\n|### |## ).*)*')
-    if (-not $note.Success) { return $null }
-    return $note.Value.TrimEnd()
 }
 
 function Test-RouteValues([string] $Session, [string] $RoadmapCorpus) {
@@ -178,15 +150,36 @@ function Get-UnregisteredTemporaryTypes([string[]] $SourceTypeNames, [string] $R
     return $missing.ToArray()
 }
 
+# Code-truth check 4: a production component Unity cannot construct is dead code.
+# Check 3's name-prefix rule could never have caught the legacy controller drill, because nothing
+# about the name `HeroSelectionController` says "temporary" - which is exactly why 2,929 lines of it
+# survived milestones 4.4i and 5.8c untouched. Reachability is the property that actually holds:
+# a MonoBehaviour or ScriptableObject can only ever exist if it is authored into a scene/prefab by
+# script GUID or constructed at runtime. One that is neither cannot run, whatever references it.
+# Non-concrete types are excluded (a base class is reached through its subclasses), and the
+# temporary-structure register remains the explicit escape hatch for a knowingly retained structure.
+function Get-UnreachableBehaviourTypes($Behaviours, [hashtable] $AuthoredScriptGuids, [string] $ProductionSource, [string] $RiskRegister) {
+    $unreachable = New-Object System.Collections.Generic.List[string]
+    foreach ($behaviour in $Behaviours) {
+        if ($behaviour.IsAbstract) { continue }
+        if ($behaviour.Guid -and $AuthoredScriptGuids.ContainsKey($behaviour.Guid)) { continue }
+        $escaped = [regex]::Escape($behaviour.Name)
+        if ($ProductionSource -match "AddComponent<\s*$escaped\s*>") { continue }
+        if ($ProductionSource -match "AddComponent\(\s*typeof\(\s*$escaped\s*\)") { continue }
+        if ($ProductionSource -match "CreateInstance<\s*$escaped\s*>") { continue }
+        if ($ProductionSource -match "CreateInstance\(\s*typeof\(\s*$escaped\s*\)") { continue }
+        if ($RiskRegister.Contains($behaviour.Name)) { continue }
+        if ($unreachable.Contains($behaviour.Name)) { continue }
+        $unreachable.Add($behaviour.Name)
+    }
+    return $unreachable.ToArray()
+}
+
 function Test-DuplicateBodies([string[]] $Bodies, [string] $ActiveCorpus) {
     foreach ($body in $Bodies) {
         if ($body.Length -ge 80 -and $ActiveCorpus.Contains($body)) { return $false }
     }
     return $true
-}
-
-function Test-PreservationCount([string] $Name, [int] $Before, [int] $After) {
-    return $After -ge $Before
 }
 
 function Invoke-SelfTests {
@@ -215,22 +208,9 @@ function Invoke-SelfTests {
 
     $virtualTargets = @('index.md','archive.md#record')
     Expect 'broken archive/shard link' (-not ($virtualTargets -contains 'missing.md#record'))
-    Expect 'duplicate historical body' (-not (Test-DuplicateBodies @('This historical completion body is deliberately longer than eighty characters so exact duplicate detection exercises the production rule.') 'active prefix This historical completion body is deliberately longer than eighty characters so exact duplicate detection exercises the production rule. suffix'))
-
-    $manifestDestinations = @('archive.md#record')
-    Expect 'missing manifest destination' (-not ($manifestDestinations -contains 'missing.md#record'))
-    $goodHash = Get-TextHash 'verbatim'
-    Expect 'bad verbatim hash' ($goodHash -ne (Get-TextHash 'changed'))
-    $requiredInventory = @('milestones','rules','tests')
-    $fixtureInventory = @('milestones','rules')
-    Expect 'missing preservation-inventory item' (@($requiredInventory | Where-Object { $fixtureInventory -notcontains $_ }).Count -eq 1)
-    Expect 'preserved structural baseline' (Test-PreservationCount 'milestones' 10 10)
-    Expect 'additive milestone definition' (Test-PreservationCount 'milestones' 10 11)
-    Expect 'additive acceptance check' (Test-PreservationCount 'acceptance' 10 11)
-    Expect 'additive non-goal' (Test-PreservationCount 'non-goals' 10 11)
-    Expect 'lost milestone definition' (-not (Test-PreservationCount 'milestones' 10 9))
-    Expect 'lost acceptance check' (-not (Test-PreservationCount 'acceptance' 10 9))
-    Expect 'lost non-goal' (-not (Test-PreservationCount 'non-goals' 10 9))
+    $archivedBody = 'This archived handoff body is deliberately longer than eighty characters so exact duplicate detection exercises the production rule.'
+    Expect 'duplicate historical body' (-not (Test-DuplicateBodies @($archivedBody) "active prefix $archivedBody suffix"))
+    Expect 'archived body kept out of active docs' (Test-DuplicateBodies @($archivedBody) 'active documentation links to the archive instead of copying it')
 
     $declared = @{ 'RealAuthority' = $true }
     # Literal backticks inside a double-quoted PowerShell string must be doubled; `n stays a newline.
@@ -251,6 +231,18 @@ function Invoke-SelfTests {
     Expect 'unregistered temporary structure' ((Get-UnregisteredTemporaryTypes @('PlaceholderThing') 'register mentions nothing') -contains 'PlaceholderThing')
     Expect 'registered temporary structure' ((Get-UnregisteredTemporaryTypes @('PlaceholderThing') '| `PlaceholderThing` | reason | 6.1c | Active |').Count -eq 0)
     Expect 'ordinary type is not temporary' ((Get-UnregisteredTemporaryTypes @('RoundResolutionAuthority') 'register mentions nothing').Count -eq 0)
+
+    $authored = @{ 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' = $true }
+    $orphan     = [pscustomobject]@{ Name = 'OrphanView'; Guid = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'; IsAbstract = $false }
+    $authoredOne= [pscustomobject]@{ Name = 'AuthoredView'; Guid = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; IsAbstract = $false }
+    $abstractOne= [pscustomobject]@{ Name = 'AbstractView'; Guid = 'cccccccccccccccccccccccccccccccc'; IsAbstract = $true }
+    Expect 'component in no scene and never constructed' ((Get-UnreachableBehaviourTypes @($orphan) $authored 'nothing constructs it' 'register mentions nothing') -contains 'OrphanView')
+    Expect 'component authored into a scene' ((Get-UnreachableBehaviourTypes @($authoredOne) $authored 'nothing constructs it' 'register mentions nothing').Count -eq 0)
+    Expect 'component created by AddComponent' ((Get-UnreachableBehaviourTypes @($orphan) $authored 'go.AddComponent<OrphanView>();' 'register mentions nothing').Count -eq 0)
+    Expect 'component created by typeof AddComponent' ((Get-UnreachableBehaviourTypes @($orphan) $authored 'go.AddComponent(typeof(OrphanView));' 'register mentions nothing').Count -eq 0)
+    Expect 'asset created by CreateInstance' ((Get-UnreachableBehaviourTypes @($orphan) $authored 'ScriptableObject.CreateInstance<OrphanView>();' 'register mentions nothing').Count -eq 0)
+    Expect 'unreachable component with a retirement owner' ((Get-UnreachableBehaviourTypes @($orphan) $authored 'nothing constructs it' '| `OrphanView` | superseded | 6.1c | Active |').Count -eq 0)
+    Expect 'abstract component base is not unreachable' ((Get-UnreachableBehaviourTypes @($abstractOne) $authored 'nothing constructs it' 'register mentions nothing').Count -eq 0)
 
     if ($failed.Count -gt 0) { throw "Living-document validator self-test failure: $($failed -join ', ')" }
     Write-Host "Self-tests: $script:selfTestCount/$script:selfTestCount checks passed."
@@ -274,7 +266,7 @@ foreach ($file in $activeFiles) {
 # Required headings and canonical indexes.
 $requiredHeadings = @{
     'SESSION_BRIEF.md' = @('Purpose and authority','Current implementation','Current authorization and next route','Durable boundaries','Targeted routing')
-    'DOCUMENTATION_GOVERNANCE.md' = @('Purpose and invariants','Ownership matrix','Active leaf thresholds','Active risk lifecycle','History and archive workflow','Manifest and preservation rules','Required handoff and phase-gate review')
+    'DOCUMENTATION_GOVERNANCE.md' = @('Purpose and invariants','Ownership matrix','Active leaf thresholds','Active risk lifecycle','History and archive workflow','Retired migration bookkeeping','Required handoff and phase-gate review')
     'TECHNICAL_RISKS.md' = @('Active risks','Resolved-risk history')
     'ROADMAP.md' = @('Status legend','Execution rule','Active milestone definition index')
     'PROJECT_CONTEXT.md' = @('Canonical active shards','Historical status snapshot')
@@ -329,66 +321,12 @@ foreach ($file in $linkFiles) {
     }
 }
 
-# Immutable baseline inventory.
-$baselineRoot = Join-Path $docsRoot 'Archive\Pre-Governance'
-$sumsPath = Join-Path $baselineRoot 'SHA256SUMS.md'
-$sumText = Read-Utf8 $sumsPath
-$sumRows = [regex]::Matches($sumText, '(?m)^\| `([^`]+)` \| (\d+) \| `([0-9a-f]{64})` \|$')
-if ($sumRows.Count -ne 9) { Add-Issue 'ERROR' 'baseline-inventory' "Expected 9 immutable baseline rows, found $($sumRows.Count)." }
-foreach ($row in $sumRows) {
-    $path = Join-Path $baselineRoot $row.Groups[1].Value
-    if (-not (Test-Path -LiteralPath $path)) { Add-Issue 'ERROR' 'baseline-missing' "Missing preserved $($row.Groups[1].Value)."; continue }
-    $file = Get-Item $path
-    if ($file.Length -ne [int64]$row.Groups[2].Value -or (Get-FileHashLower $path) -ne $row.Groups[3].Value) { Add-Issue 'ERROR' 'baseline-hash' "Immutable baseline mismatch: $($row.Groups[1].Value)." }
-}
-
-# Migration destinations and exact hashes.
-$manifestPath = Join-Path $docsRoot 'Archive\MIGRATION_MANIFEST.md'
-$manifestText = Read-Utf8 $manifestPath
-$manifestRows = [regex]::Matches($manifestText, '(?m)^\| `([^`]+)` \| (.*?) \| `([^`]+)` \| `(verbatim archive|authoritative shard|non-authoritative routing-summary replacement)` \| `([0-9a-f]*)` \| `([0-9a-f]*)` \|$')
-if ($manifestRows.Count -lt 150) { Add-Issue 'ERROR' 'manifest-coverage' "Migration manifest has only $($manifestRows.Count) parsed rows." }
-$completionBodies = New-Object System.Collections.Generic.List[string]
-foreach ($row in $manifestRows) {
-    $sourceRelative = $row.Groups[1].Value
-    $heading = $row.Groups[2].Value.Replace('\|','|')
-    $destination = $row.Groups[3].Value
-    $treatment = $row.Groups[4].Value
-    $sourceHash = $row.Groups[5].Value
-    $destinationHash = $row.Groups[6].Value
-    $destinationParts = $destination.Split('#', 2)
-    $destinationPath = Join-Path $docsRoot $destinationParts[0]
-    if (-not (Test-Path -LiteralPath $destinationPath)) { Add-Issue 'ERROR' 'manifest-destination' "Missing manifest destination $destination."; continue }
-    if ($destinationParts.Count -eq 2 -and -not (Get-Headings (Read-Utf8 $destinationPath)).ContainsKey($destinationParts[1])) { Add-Issue 'ERROR' 'manifest-anchor' "Missing manifest anchor $destination."; continue }
-    if ($treatment -eq 'verbatim archive' -or ($sourceHash.Length -gt 0 -and $destinationHash.Length -gt 0)) {
-        $baselinePath = Join-Path $baselineRoot ([IO.Path]::GetFileName($sourceRelative))
-        if (-not (Test-Path -LiteralPath $baselinePath)) { Add-Issue 'ERROR' 'manifest-source' "Missing baseline source for $sourceRelative / $heading."; continue }
-        $baselineText = Read-Utf8 $baselinePath
-        $sourceSection = $null
-        if ($sourceRelative -eq 'ROADMAP.md' -and $heading.EndsWith(' / Completion note')) {
-            $milestone = $heading.Substring(0, $heading.Length - ' / Completion note'.Length)
-            $sourceSection = Get-CompletionBody $baselineText $milestone
-            if ($null -ne $sourceSection) { $completionBodies.Add($sourceSection) }
-        }
-        else { $sourceSection = Get-SectionByHeading $baselineText $heading }
-        if ($null -eq $sourceSection) { Add-Issue 'ERROR' 'manifest-source-section' "Cannot find baseline section $sourceRelative / $heading."; continue }
-        if ((Get-TextHash $sourceSection) -ne $sourceHash) { Add-Issue 'ERROR' 'manifest-source-hash' "$sourceRelative / $heading source hash mismatch." }
-        $destinationText = Read-Utf8 $destinationPath
-        $destinationSection = $null
-        if ($sourceRelative -eq 'ROADMAP.md' -and $heading.EndsWith(' / Completion note')) {
-            $destinationHeading = $null
-            foreach ($match in [regex]::Matches($destinationText, '(?m)^## (.+)$')) { if ((Get-Anchor $match.Groups[1].Value.Trim()) -eq $destinationParts[1]) { $destinationHeading = $match.Groups[1].Value.Trim(); break } }
-            if ($null -ne $destinationHeading) {
-                $wrapped = Get-SectionByHeading $destinationText $destinationHeading
-                $destinationSection = [regex]::Replace($wrapped, '(?s)^##[^\r\n]*\r?\n\s*', '').TrimEnd()
-            }
-        }
-        else { $destinationSection = Get-SectionByHeading $destinationText $heading }
-        if ($null -eq $destinationSection) { Add-Issue 'ERROR' 'manifest-destination-section' "Cannot find destination section $destination."; continue }
-        $actualDestinationHash = Get-TextHash $destinationSection
-        if ($actualDestinationHash -ne $destinationHash) { Add-Issue 'ERROR' 'manifest-destination-hash' "$destination hash mismatch." }
-        if ($treatment -eq 'verbatim archive' -and ($sourceHash -ne $destinationHash -or $sourceHash.Length -ne 64)) { Add-Issue 'ERROR' 'verbatim-hash' "$sourceRelative / $heading is not lossless." }
-    }
-}
+# The 2026 consolidation's baseline-hash, migration-manifest, and preservation-inventory checks were
+# retired on 2026-08-13 by an explicitly approved governance amendment. They proved one completed
+# migration was lossless; that migration is finished and Git history is its record. Re-verifying it on
+# every handoff cost a manifest hash recomputation for each edit to a tracked section and caught no
+# defect after the migration closed. Archive/MIGRATION_MANIFEST.md, Archive/PRESERVATION_INVENTORY.md,
+# and Archive/Pre-Governance/ remain in the repository as frozen historical records.
 
 # Code-truth checks. Document-to-document consistency cannot detect documentation that has
 # drifted from the source it describes, which is how milestones 4.4i and 5.8c both reported
@@ -400,19 +338,50 @@ if (-not (Test-Path -LiteralPath $assetsRoot)) {
 else {
     $declaredTypes = @{}
     $sourceTypeNames = New-Object System.Collections.Generic.List[string]
+    $behaviourTypes = New-Object System.Collections.Generic.List[object]
+    $productionSource = New-Object System.Text.StringBuilder
     foreach ($sourceFile in (Get-ChildItem -LiteralPath $assetsRoot -Recurse -File -Filter '*.cs')) {
         # Tests are excluded from the temporary-structure scan: a fixture covering a placeholder type
-        # is not itself a separate temporary structure needing its own retirement owner.
+        # is not itself a separate temporary structure needing its own retirement owner. They are
+        # excluded from the construction scan for the same reason - a component that only a fixture
+        # ever instantiates is not reachable in a running player.
         $isTest = $sourceFile.FullName -like '*\Assets\Tests\*'
-        foreach ($declaration in [regex]::Matches((Read-Utf8 $sourceFile.FullName), '(?m)^\s*(?:public|internal|private|protected|sealed|abstract|static|partial|readonly|record|\s)*\b(?:class|struct|interface|enum|record)\s+([A-Za-z_][A-Za-z0-9_]*)')) {
+        $sourceText = Read-Utf8 $sourceFile.FullName
+        if (-not $isTest) { [void]$productionSource.AppendLine($sourceText) }
+        foreach ($declaration in [regex]::Matches($sourceText, '(?m)^\s*(?:public|internal|private|protected|sealed|abstract|static|partial|readonly|record|\s)*\b(?:class|struct|interface|enum|record)\s+([A-Za-z_][A-Za-z0-9_]*)')) {
             $name = $declaration.Groups[1].Value
             if (-not $declaredTypes.ContainsKey($name)) {
                 $declaredTypes[$name] = $true
                 if (-not $isTest) { $sourceTypeNames.Add($name) }
             }
         }
+        if ($isTest) { continue }
+        $scriptGuid = ''
+        $metaPath = $sourceFile.FullName + '.meta'
+        if (Test-Path -LiteralPath $metaPath) {
+            $guidMatch = [regex]::Match((Read-Utf8 $metaPath), 'guid:\s*([0-9a-f]{32})')
+            if ($guidMatch.Success) { $scriptGuid = $guidMatch.Groups[1].Value }
+        }
+        foreach ($declaration in [regex]::Matches($sourceText, '(?m)^\s*((?:public|internal|private|protected|sealed|abstract|static|partial|\s)*)\bclass\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([^\r\n{]+)')) {
+            if ($declaration.Groups[3].Value -notmatch '\b(MonoBehaviour|ScriptableObject)\b') { continue }
+            $behaviourTypes.Add([pscustomobject]@{
+                Name       = $declaration.Groups[2].Value
+                Guid       = $scriptGuid
+                IsAbstract = $declaration.Groups[1].Value -match '\babstract\b'
+            })
+        }
     }
     if ($declaredTypes.Count -eq 0) { Add-Issue 'ERROR' 'no-declared-types' 'No C# type declarations were found under Assets/; the contract check would pass vacuously.' }
+    if ($behaviourTypes.Count -eq 0) { Add-Issue 'ERROR' 'no-declared-behaviours' 'No MonoBehaviour or ScriptableObject declarations were found under Assets/; the reachability check would pass vacuously.' }
+
+    # Script GUIDs Unity can actually construct from authored content.
+    $authoredScriptGuids = @{}
+    foreach ($authoredFile in (Get-ChildItem $assetsRoot -Recurse -File -Include '*.unity','*.prefab','*.asset')) {
+        foreach ($scriptRef in [regex]::Matches((Read-Utf8 $authoredFile.FullName), 'm_Script:\s*\{fileID:\s*11500000,\s*guid:\s*([0-9a-f]{32})')) {
+            $authoredScriptGuids[$scriptRef.Groups[1].Value] = $true
+        }
+    }
+    if ($authoredScriptGuids.Count -eq 0) { Add-Issue 'ERROR' 'no-authored-scripts' 'No authored script references were found in any scene, prefab, or asset; the reachability check would report every component.' }
 
     foreach ($contractRelative in @('CARD_SYSTEM_ARCHITECTURE.md','CARD_EFFECT_CAPABILITIES.md')) {
         $contractPath = Join-Path $docsRoot $contractRelative
@@ -437,41 +406,31 @@ else {
 
     $riskPath = Join-Path $docsRoot 'TECHNICAL_RISKS.md'
     if (Test-Path -LiteralPath $riskPath) {
-        foreach ($unregistered in (Get-UnregisteredTemporaryTypes $sourceTypeNames.ToArray() (Read-Utf8 $riskPath))) {
+        $riskText = Read-Utf8 $riskPath
+        foreach ($unregistered in (Get-UnregisteredTemporaryTypes $sourceTypeNames.ToArray() $riskText)) {
             Add-Issue 'WARNING' 'unregistered-temporary-structure' "``$unregistered`` looks deliberately temporary but has no row in the temporary-structure register of TECHNICAL_RISKS.md naming its retirement owner."
+        }
+        foreach ($unreachable in (Get-UnreachableBehaviourTypes $behaviourTypes.ToArray() $authoredScriptGuids $productionSource.ToString() $riskText)) {
+            Add-Issue 'ERROR' 'unreachable-component' "``$unreachable`` derives from MonoBehaviour/ScriptableObject but is in no scene, prefab, or asset and is never constructed by production code, so it cannot run. Delete it, construct it, or give it a retirement owner in the temporary-structure register of TECHNICAL_RISKS.md."
         }
     }
 }
 
-# Completed-note bodies must not be copied into active noncanonical files.
+# One canonical home: archived history must not be copied back into an active document.
+# Sourced directly from the archive rather than from the retired migration manifest, so the check
+# now expresses the rule it enforces instead of a property of one completed migration.
 $activeCorpus = ($activeFiles | ForEach-Object { Read-Utf8 $_.FullName }) -join "`n"
-if (-not (Test-DuplicateBodies $completionBodies.ToArray() $activeCorpus)) { Add-Issue 'ERROR' 'duplicate-history' 'An archived completion-note body is duplicated in active documentation.' }
-
-# Preservation category coverage and stable counts.
-$inventoryPath = Join-Path $docsRoot 'Archive\PRESERVATION_INVENTORY.md'
-if (-not (Test-Path -LiteralPath $inventoryPath)) { Add-Issue 'ERROR' 'missing-preservation-inventory' 'Archive/PRESERVATION_INVENTORY.md is missing.' }
-else {
-    $inventoryText = Read-Utf8 $inventoryPath
-    $requiredCategories = @('milestone-definitions','acceptance-checks','non-goals','rule-authority-and-status','deviations-and-open-questions','card-contracts','effect-contracts','test-commands-and-gates','historical-results','rights-and-privacy','active-leaf-measurements')
-    foreach ($category in $requiredCategories) {
-        if (-not [regex]::IsMatch($inventoryText, "(?m)^\| ``$([regex]::Escape($category))`` \|.*\| ``PASS`` \|$")) { Add-Issue 'ERROR' 'preservation-coverage' "Missing PASS inventory row: $category." }
+$archivedBodies = New-Object System.Collections.Generic.List[string]
+foreach ($handoff in (Get-ChildItem -LiteralPath (Join-Path $docsRoot 'Archive\Phase-Handoffs') -File -Filter '*.md' -ErrorAction SilentlyContinue)) {
+    foreach ($paragraph in ([regex]::Split((Read-Utf8 $handoff.FullName), '\r?\n\s*\r?\n'))) {
+        $body = $paragraph.Trim()
+        if ($body.Length -lt 200) { continue }
+        if ($body.StartsWith('#') -or $body.StartsWith('|')) { continue }
+        $archivedBodies.Add($body)
     }
 }
-
-# Structural baseline floors prove that sharding did not delete milestone definitions or their checks while allowing newly authorized milestones, acceptance checks, and non-goals to be added.
-# The former 'profiles' floor was retired with the per-milestone model/profile contract; see Archive/MIGRATION_MANIFEST.md.
-$baselineRoadmap = Read-Utf8 (Join-Path $baselineRoot 'ROADMAP.md')
-$countPatterns = @{
-    'milestones' = '(?m)^### \[[x!~ ]\] \S+'
-    'acceptance' = '(?m)^Acceptance checks:'
-    'non-goals' = '(?m)^Non-goals:'
-}
-foreach ($name in $countPatterns.Keys) {
-    $before = ([regex]::Matches($baselineRoadmap, $countPatterns[$name])).Count
-    $after = ([regex]::Matches($roadmapCorpus, $countPatterns[$name])).Count
-    if (-not (Test-PreservationCount $name $before $after)) { Add-Issue 'ERROR' 'roadmap-preservation' "$name count changed from $before to $after." }
-}
-if ($completionBodies.Count -ne ([regex]::Matches($baselineRoadmap, '(?m)^Completion note')).Count) { Add-Issue 'ERROR' 'history-preservation' 'Not every baseline completion note has a hashed archive manifest row.' }
+if ($archivedBodies.Count -eq 0) { Add-Issue 'ERROR' 'no-archived-bodies' 'No archived handoff bodies were found; the duplicate-history check would pass vacuously.' }
+if (-not (Test-DuplicateBodies $archivedBodies.ToArray() $activeCorpus)) { Add-Issue 'ERROR' 'duplicate-history' 'An archived handoff body is duplicated verbatim in active documentation. Replace the copy with a stable backlink.' }
 
 $warnings = @($issues | Where-Object Severity -eq 'WARNING')
 $errors = @($issues | Where-Object Severity -eq 'ERROR')
@@ -480,4 +439,4 @@ if ($errors.Count -gt 0) {
     Write-Error "Living-document validation failed with $($errors.Count) error(s) and $($warnings.Count) warning(s)."
     exit 1
 }
-Write-Host "Living-document validation passed: $($activeFiles.Count) governed active leaves, $($manifestRows.Count) manifest rows, $($completionBodies.Count) archived completion records, $($warnings.Count) warning(s)."
+Write-Host "Living-document validation passed: $($activeFiles.Count) governed active leaves, $($behaviourTypes.Count) production components, $($archivedBodies.Count) archived bodies, $($warnings.Count) warning(s)."

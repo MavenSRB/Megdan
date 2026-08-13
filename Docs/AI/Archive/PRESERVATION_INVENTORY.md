@@ -1,5 +1,7 @@
 # Before/After Preservation Inventory
 
+**Frozen as of 2026-08-13. Do not update.** This inventory recorded the one-time 3.11a consolidation. Its per-handoff validator checks were retired by explicitly approved governance amendment; see [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md#retired-migration-bookkeeping). The counts below are a snapshot taken at that migration, not running totals.
+
 This inventory accounts for the governed categories required by milestone 3.11a. `PASS` means exact current material is present in an active canonical destination or exact historical material is present in a hashed lossless archive destination. The immutable baseline and migration manifest remain the detailed evidence.
 
 ## Category coverage

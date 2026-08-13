@@ -4,7 +4,7 @@ Last updated: 2026-08-12
 
 ## Purpose and authority
 
-Read this compact startup route once per new task before planning or changing the workspace. `AGENTS.md` controls process. [DOCUMENTATION_GOVERNANCE.md](DOCUMENTATION_GOVERNANCE.md) assigns each subject one canonical home; this brief alone owns current implementation, authorization, and the exact next milestone/profile route.
+Read this compact startup route once per new task before planning or changing the workspace. `AGENTS.md` controls process. [DOCUMENTATION_GOVERNANCE.md](DOCUMENTATION_GOVERNANCE.md) assigns each subject one canonical home; this brief alone owns current implementation, authorization, and the exact next milestone route.
 
 ## Current implementation
 
@@ -28,21 +28,28 @@ Configured minion views retain serialized stable binding identity across editor 
 - Rules follow the second-printing rulebook, verified card data, and official rulings under [RULES_LEDGER.md](RULES_LEDGER.md). No rule may be invented, simplified, rebalanced, or silently reinterpreted.
 - Pure rules/state remain independent of Unity presentation. Preserve definition/instance, action-offer, command/event, pending-choice, timing, versioning, typed effect/query, map-scoped identity, snapshot, and deterministic replay boundaries.
 - The rulebook, extracted card corpus, project assets, builds, and project remain private. Do not add excluded references to Git or publish/upload/distribute anything without explicit authorization and applicable rights.
-- Work on one approved micro-milestone, run its routed validation, perform the required four-perspective review-only pass, update canonical continuity and history, create the local milestone commit, report the next proposal/profile, and stop.
+- Work on one approved micro-milestone, run its routed validation, perform the required four-perspective review-only pass, update the continuity documents its subject touched, create the local milestone commit carrying the evidence record, report the next proposal, and stop.
 
 ## Targeted routing
 
-Start from the compact index, then read only the linked active leaf and dependencies named by that leaf:
+Go straight to the shard that owns the subject. The index files still exist and remain valid link targets, but reading one only to reach a shard named below is a wasted hop.
 
 | Need | Canonical route |
 | --- | --- |
-| Ownership, thresholds, archives, active risks | [DOCUMENTATION_GOVERNANCE.md](DOCUMENTATION_GOVERNANCE.md), then [TECHNICAL_RISKS.md](TECHNICAL_RISKS.md) when applicable |
-| Milestone approval/implementation | [ROADMAP.md](ROADMAP.md) `Execution rule`, then the exact indexed phase shard |
-| Product, architecture, presentation, workflow, terminology | [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md), then the indexed subject shard |
+| Ownership, thresholds, archives | [DOCUMENTATION_GOVERNANCE.md](DOCUMENTATION_GOVERNANCE.md) |
+| Active technical risks, temporary-structure register | [TECHNICAL_RISKS.md](TECHNICAL_RISKS.md) |
+| Milestone approval/implementation | [ROADMAP.md](ROADMAP.md) `Execution rule`, then the exact phase shard in [Roadmap/](Roadmap/) |
+| Current implementation inventory | [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) |
+| Product scope and durable constraints | [Project/PRODUCT.md](Project/PRODUCT.md) |
+| Core architecture constraints | [Project/ARCHITECTURE.md](Project/ARCHITECTURE.md) |
+| Presentation and accessibility direction | [Project/PRESENTATION.md](Project/PRESENTATION.md) |
+| Workflow, references, terminology | [Project/WORKFLOW_AND_TERMS.md](Project/WORKFLOW_AND_TERMS.md) |
 | Rule authority/status/deviations/open questions | [RULES_LEDGER.md](RULES_LEDGER.md), plus exact local rulebook pages when implicated |
-| Card/action/turn/snapshot contracts | [CARD_SYSTEM_ARCHITECTURE.md](CARD_SYSTEM_ARCHITECTURE.md), then the indexed contract shard |
+| Card core model, resolution/effects, validation/extension | [Card-System/CORE_MODEL.md](Card-System/CORE_MODEL.md), [Card-System/RESOLUTION_AND_EFFECTS.md](Card-System/RESOLUTION_AND_EFFECTS.md), [Card-System/VALIDATION_AND_EXTENSION.md](Card-System/VALIDATION_AND_EXTENSION.md) |
 | Effects/queries/modifiers/tokens/timing/transitions | [CARD_EFFECT_CAPABILITIES.md](CARD_EFFECT_CAPABILITIES.md) matching capability section |
-| Validation policy or commands | [TESTING.md](TESTING.md), then the applicable policy/recipe shard |
+| Validation policy, tiers, evidence rules | [Testing/POLICY.md](Testing/POLICY.md) |
+| Exact test recipes | [Testing/RECIPES_FOUNDATION.md](Testing/RECIPES_FOUNDATION.md), [Testing/RECIPES_TURNS.md](Testing/RECIPES_TURNS.md), [Testing/RECIPES_COMBAT_AND_MOVEMENT.md](Testing/RECIPES_COMBAT_AND_MOVEMENT.md), [Testing/PLAYMODE_AND_SUITES.md](Testing/PLAYMODE_AND_SUITES.md) |
+| Future gates | [Testing/FUTURE_GATES.md](Testing/FUTURE_GATES.md) |
 | Historical outcome/evidence | [Archive/README.md](Archive/README.md); do not load history for routine startup |
 
 Expand beyond targeted leaves only for a genuinely cross-cutting task, a named dependency, or a conflict. At every handoff run the living-document validator and `git diff --check`; Unity validation remains controlled solely by the applicable testing tier.

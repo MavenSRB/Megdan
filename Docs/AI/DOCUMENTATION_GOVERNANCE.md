@@ -20,7 +20,7 @@ Every fact has exactly one canonical active home. Other active documents use a s
 | Validation policy, launcher resilience, active/future exact recipes, gate definitions, and test ownership | [`TESTING.md`](TESTING.md) plus its indexed [`Testing/`](Testing/) shards | Exact command link or short gate route |
 | Active technical risks | [`TECHNICAL_RISKS.md`](TECHNICAL_RISKS.md) | Milestone links to owning risk IDs |
 | Completed milestone narratives, historical run/failure evidence, superseded recipes, and resolved risks | [`Archive/README.md`](Archive/README.md) and its indexed lossless destinations | Short backlink only; never a copied body |
-| Consolidation provenance and preservation evidence | [`Archive/MIGRATION_MANIFEST.md`](Archive/MIGRATION_MANIFEST.md), [`Archive/PRESERVATION_INVENTORY.md`](Archive/PRESERVATION_INVENTORY.md), and [`Archive/Pre-Governance/SHA256SUMS.md`](Archive/Pre-Governance/SHA256SUMS.md) | Stable links only |
+| Consolidation provenance (frozen; not maintained) | [`Archive/MIGRATION_MANIFEST.md`](Archive/MIGRATION_MANIFEST.md), [`Archive/PRESERVATION_INVENTORY.md`](Archive/PRESERVATION_INVENTORY.md), and [`Archive/Pre-Governance/SHA256SUMS.md`](Archive/Pre-Governance/SHA256SUMS.md) | Stable links only |
 
 ## Active leaf thresholds
 
@@ -36,7 +36,7 @@ Thresholds apply per active leaf, never to the aggregate corpus. Word count uses
 | `RULES_LEDGER.md` and any future rules-ledger shard | 9,000 | 80 KiB |
 | `DOCUMENTATION_GOVERNANCE.md` and `TECHNICAL_RISKS.md` | 4,500 | 40 KiB |
 
-If irreducible precise current material cannot fit, create an indexed authoritative shard with the same family threshold or obtain an explicit governance amendment. Never abbreviate exact material or silently relax the validator. A validator cannot become passable merely by deleting content: preservation inventory, manifest coverage, baseline hashes, destination checks, and exact category fingerprints must also pass.
+If irreducible precise current material cannot fit, create an indexed authoritative shard with the same family threshold or obtain an explicit governance amendment. Never abbreviate exact material or silently relax the validator. A validator cannot become passable merely by deleting content: the code-truth checks compare documentation against the source, `duplicate-history` reads the archives, and both fail on content that was removed rather than routed.
 
 The current-implementation inventory is maintained by subject, not chronology: replace or consolidate affected statements when behavior changes, and route detailed completed outcome/validation evidence to the phase-handoff archive. Top-level startup and capability indexes remain compact routers; moving precise active authority to an indexed shard is the normal response to sustained growth, not compression.
 
@@ -48,22 +48,29 @@ At the owning milestone or phase gate, reassess the entry. A resolved risk moves
 
 ## History and archive workflow
 
-New detailed milestone outcome and validation evidence is written once, directly to the applicable `Archive/Phase-Handoffs/PHASE_<N>.md` file. The active milestone definition receives only a stable `Historical evidence` backlink. Superseded command recipes, resolved-risk records, and other historical evidence move verbatim to their indexed archive; exact hashes are recorded when the migration manifest classifies a move as `verbatim archive`.
+New milestone outcome and validation evidence is written **once, in the milestone's commit message body**: the validation tier, final revision, exact filters and results, each finding's named closing check and its observed failing-then-passing transition, and any material limitation. `Archive/Phase-Handoffs/PHASE_<N>.md` receives one row per milestone - ID, one-line outcome, commit SHA - and the active milestone definition keeps only its stable `Historical evidence` backlink.
+
+This replaced the per-handoff narrative append on 2026-08-13. Evidence stays recoverable and immutable in Git, addressed by SHA, instead of growing a 100 KB file that every handoff had to edit and every threshold check had to measure. Existing archive narratives are not rewritten; they remain valid history under the append-only rule.
+
+Superseded command recipes, resolved-risk records, and other historical evidence still move verbatim to their indexed archive.
 
 Archive files are version-controlled, append-only historical evidence. Corrections are explicit addenda; prior text is not rewritten. `Archive/Pre-Governance/` is immutable. Archive indexes link back to the active canonical definition or policy, and active definitions link to their historical evidence when it exists.
 
-## Manifest and preservation rules
+## Retired migration bookkeeping
 
-Every removed, relocated, or rewritten governed section is listed in `Archive/MIGRATION_MANIFEST.md` by original path and heading, destination anchor, category treatment, and applicable integrity hashes. Treatments are:
+`Archive/MIGRATION_MANIFEST.md`, `Archive/PRESERVATION_INVENTORY.md`, and `Archive/Pre-Governance/` are **frozen historical records** as of 2026-08-13. They document one completed consolidation. Do not update them at handoffs, do not add rows for later edits, and do not treat them as current authority.
 
-- `verbatim archive`: exact source section text is recoverable at the destination and source/destination SHA-256 values match.
-- `authoritative shard`: precise current material moves to an indexed canonical leaf; structural wrapper text may differ, but the section body remains exact unless separately mapped.
-- `non-authoritative routing-summary replacement`: replaceable overview or routing prose is rewritten and points to the canonical destination. This treatment cannot be the sole destination for authority, rules, sources, deviations, open questions, acceptance/non-goal checks, exact active recipes, historical pass/failure evidence, or rights/privacy boundaries.
+Their per-handoff validator checks — baseline hashes, manifest coverage and destination/source section hashes, verbatim-hash equality, preservation-category coverage, and structural baseline floors — were removed by explicitly approved governance amendment on the same date. The migration they verified is finished, Git history is its record, and re-proving it on every handoff cost a manifest hash recomputation for each edit to a tracked section while catching no defect after the migration closed.
 
-The preservation inventory accounts for milestone IDs/statuses/profiles and acceptance/non-goal checks; rule entries/citations/statuses/deviations/open questions; card/effect contract entries; test commands and gates; historical pass/failure evidence; and rights/privacy boundaries. Structural baseline counts are preservation floors: later explicitly authorized milestones, profiles, acceptance checks, and non-goals may increase them, while any count below the immutable baseline remains a validation failure. Manual review complements the validator and compares the baseline, manifest, active leaves, and archives for semantic preservation.
+What replaced them is narrower and enforces the rule directly rather than a property of one migration:
+
+- `duplicate-history` reads the phase-handoff archives themselves and fails when an archived body is copied verbatim into an active document, which is the one-canonical-home invariant stated as a check.
+- The code-truth checks (`undeclared-contract-type`, `incoherent-status`, `unregistered-temporary-structure`, `unreachable-component`) compare documentation against the source, which is the drift the manifest machinery could never detect.
+
+Preservation itself is unchanged: history still moves losslessly to its indexed archive, archives remain append-only, and `Archive/Pre-Governance/` remains immutable. What is retired is the obligation to re-verify a closed migration on every handoff.
 
 ## Required handoff and phase-gate review
 
-Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1` at every milestone handoff and phase-gate audit, followed by `git diff --check`. Inspect any warning-threshold leaf during that same handoff. Archive duplicated or completed material losslessly; shard irreducible current material authoritatively; update indexes, manifest, and preservation inventory.
+Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1` at every milestone handoff and phase-gate audit, followed by `git diff --check`. Inspect any warning-threshold leaf during that same handoff. Archive duplicated or completed material losslessly, shard irreducible current material authoritatively, and update the affected indexes. The frozen migration records are not part of a handoff.
 
 At each phase gate, review the ownership matrix, active risk register, threshold measurements, archive backlinks, and whether subject routing still matches how future tasks retrieve authority. Governance maintenance must not change gameplay scope, rule meaning, milestone status, validation evidence, or rights/privacy boundaries without the separate authority required for that change.
