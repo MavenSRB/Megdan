@@ -102,7 +102,7 @@ Two statements in the original findings were wrong and are corrected here rather
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 6.1g | Every restore entry point takes one required typed restore-state value; an incomplete restore no longer compiles. Closes `F613-07`, retires `RISK-STATE-001`. | `d765b12` |
+| 6.1g | Every restore entry point takes one required typed restore-state value; an incomplete restore no longer compiles. Closes `F613-07`, retires `RISK-STATE-001`. | `7284700` |
 
 ### 2026-08-13 addendum: finding closed by milestone 6.1g
 
