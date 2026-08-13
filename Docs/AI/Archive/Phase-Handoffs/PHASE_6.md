@@ -146,7 +146,7 @@ Two process notes. The first player build failed for real and produced a *presen
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 6.1f | Card state cannot be mutated outside `CardLifecycleAuthority`, enforced by an assembly split; `MatchAggregate` owns the four authoritative graphs behind one assignment site and one commit boundary at which state and its ordered events are kept or discarded together. Closes `F613-06`, raises `RISK-STATE-002`. | `be4d359`, `8846025` |
+| 6.1f | Card state cannot be mutated outside `CardLifecycleAuthority`, enforced by an assembly split; `MatchAggregate` owns the four authoritative graphs behind one assignment site and one commit boundary at which state and its ordered events are kept or discarded together. Closes `F613-06`, raises `RISK-STATE-002`. | `be4d359`, `8846025`, `8103338` |
 
 ### 2026-08-13 addendum: finding closed by milestone 6.1f
 
