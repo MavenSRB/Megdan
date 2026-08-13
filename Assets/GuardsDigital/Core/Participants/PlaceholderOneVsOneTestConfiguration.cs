@@ -67,15 +67,20 @@ namespace GuardsDigital.Core.Participants
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide));
         }
 
+        public PlaceholderConfigurationRestoreState CaptureRestoreState() =>
+            new PlaceholderConfigurationRestoreState(
+                Participants,
+                CardDefinitions,
+                CardInstances,
+                TieBreakerState);
+
         public static PlaceholderOneVsOneTestConfiguration Restore(
-            MatchParticipants participants,
-            IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances,
-            TieBreakerState tieBreakerState)
+            PlaceholderConfigurationRestoreState state)
         {
-            if (participants == null) throw new ArgumentNullException(nameof(participants));
-            var definitionArray = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
-            var instanceArray = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            var participants = state.Participants;
+            var definitionArray = state.Definitions;
+            var instanceArray = state.Instances;
             var redHero = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
             var blueHero = participants.Heroes.Single(hero =>
@@ -85,16 +90,16 @@ namespace GuardsDigital.Core.Participants
                 var ownedInstances = instanceArray.Where(instance => instance.OwnerId.Equals(ownerId)).ToArray();
                 var ownedReferences = new HashSet<CardDefinitionReference>(
                     ownedInstances.Select(instance => instance.DefinitionReference));
-                return PlaceholderMovementHand.Restore(
+                return PlaceholderMovementHand.Restore(new PlaceholderMovementHandRestoreState(
                     definitionArray.Where(definition => ownedReferences.Contains(definition.Reference)),
-                    ownedInstances);
+                    ownedInstances));
             }
 
             return new PlaceholderOneVsOneTestConfiguration(
                 participants,
                 BuildHand(redHero),
                 BuildHand(blueHero),
-                tieBreakerState,
+                state.TieBreakerState,
                 false);
         }
 

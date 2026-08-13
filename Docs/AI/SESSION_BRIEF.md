@@ -8,17 +8,17 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through **6.1e**. The configured vertical slice uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation, including reload-safe Hero/minion combat plus the end-of-round Minion Battle. That subsystem owns exact-count, one-at-a-time Heavy-last removal choices and records but does not yet consume a Lane-Push request; schema v6 persists both continuations. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
+The project has completed roadmap milestones through **6.1g**. The configured vertical slice uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation, including reload-safe Hero/minion combat plus the end-of-round Minion Battle. That subsystem owns exact-count, one-at-a-time Heavy-last removal choices and records but does not yet consume a Lane-Push request; schema v6 persists both continuations. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
 
 Configured minion views retain serialized stable binding identity across editor backup/domain restoration, and the grid atomically rebinds the passive board, pointer input, and all selectors whenever it replaces the generated view set. During a pending Hero Defense response, the immutable session projection supplies ordered Attack contributions and totals, per-card authoritative Defense previews, explicit Block/outcome meaning, readable sources, and exact signed minion identities. Hover/focus presentation is opaque, pointer-pass-through, viewport-bounded, and keeps the existing one-click typed response commands. Review 5.8c found no current gameplay or performance defect. Its approved Phase 6 disposition assigns typed serializable Minion-Battle continuation ownership to 6.1, inserts typed Skill/non-Repeat effect foundation milestone 6.2a and fresh independent verification 6.2b before 6.3, and narrows 6.7 to bounded Repeat integration.
 
 ## Current authorization and next route
 
-- Current completed milestone: **6.1e**.
+- Current completed milestone: **6.1g**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **6.1g**.
-- Milestone 6.1g is proposed and remains unauthorized until separately approved.
-- Milestones 6.1c through 6.1k are an approved corrective sequence scheduled by the 2026-08-13 out-of-band foundation audit. They precede 6.1a, which stays proposed behind them. The shard defines their execution order by severity; 6.1e is complete and 6.1g is next. Former 6.1j, 6.1l, and 6.1m are merged into 6.1d, and former 6.1n was removed when review-correction closure became mechanical.
+- Next proposed milestone: **6.1c**.
+- Milestone 6.1c is proposed and remains unauthorized until separately approved.
+- Milestones 6.1c through 6.1k are an approved corrective sequence scheduled by the 2026-08-13 out-of-band foundation audit. They precede 6.1a, which stays proposed behind them. The shard defines their execution order by severity; 6.1e and 6.1g are complete and 6.1c is next. Former 6.1j, 6.1l, and 6.1m are merged into 6.1d, and former 6.1n was removed when review-correction closure became mechanical.
 - The local repository is on `main` with no Git remote configured. On 2026-08-13, the user explicitly requested removal of the prior `origin` configuration; local history and branches remain intact.
 
 ## Durable boundaries

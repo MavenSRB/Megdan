@@ -345,40 +345,45 @@ namespace GuardsDigital.Core.Cards
 
         public ActiveEffectLifecycle Timing => timing;
 
+        internal TurnResolutionRestoreState CaptureRestoreState() =>
+            new TurnResolutionRestoreState(
+                IsStarted,
+                IsEnded,
+                TieBreakerState,
+                initiative.CaptureRestoreState(),
+                roundIndex,
+                turnIndex);
+
         internal static TurnResolutionAuthority Restore(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             CardActionResolutionAuthority cardActions,
-            bool isStarted,
-            bool isEnded,
-            TieBreakerState tieBreakerState,
-            PendingInitiativeChoice pendingChoice,
-            SelectedInitiativeActor selectedActor,
-            ActiveEffectLifecycle timing = null,
-            int roundIndex = 1,
-            int turnIndex = 1)
+            ActiveEffectLifecycle timing,
+            TurnResolutionRestoreState state)
         {
+            if (state == null) throw new ArgumentNullException(nameof(state));
             var authority = new TurnResolutionAuthority(
                 definitions,
                 instances,
                 participants,
-                tieBreakerState,
+                state.TieBreakerState,
                 cardActions,
                 timing,
-                roundIndex,
-                turnIndex)
+                state.RoundIndex,
+                state.TurnIndex)
             {
-                IsStarted = isStarted,
-                IsEnded = isEnded,
+                IsStarted = state.IsStarted,
+                IsEnded = state.IsEnded,
                 initiative = InitiativeResolutionAuthority.Restore(
-                    tieBreakerState,
-                    pendingChoice,
-                    selectedActor)
+                    state.TieBreakerState,
+                    state.Initiative)
             };
-            if (!isStarted || (!isEnded && pendingChoice == null && !selectedActor.IsDefined))
+            if (!state.IsStarted ||
+                (!state.IsEnded && state.Initiative.PendingChoice == null &&
+                    !state.Initiative.SelectedActor.IsDefined))
             {
-                throw new ArgumentException("Restored active turn state is incomplete.");
+                throw new ArgumentException("Restored active turn state is incomplete.", nameof(state));
             }
 
             return authority;

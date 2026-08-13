@@ -38,7 +38,7 @@ Every milestone here names the exact check that closes its findings. Per the mec
 | Order | Milestone | Findings | Why here |
 | --- | --- | --- | --- |
 | 1 | 6.1e | `F613-05`, `F613-04` | The only confirmed live correctness defect |
-| 2 | 6.1g | `F613-07` | Silent state loss across thirteen restore back doors |
+| 2 | 6.1g | `F613-07` | Silent state loss across thirteen restore back doors (6.1g verified sixteen) |
 | 3 | 6.1c | `F613-01` | Deletes ~4,900 lines, shrinking every later milestone's surface |
 | 4 | 6.1d | `F613-02`, `F613-03`, `F613-12`, `F613-14` | Merged build and toolchain integrity; its smoke gate is the standing buildability check |
 | 5 | 6.1f | `F613-06` | Largest refactor; benefits from 1-3 landing first |
@@ -147,7 +147,7 @@ Closing check for `F613-06`: a byte-identical snapshot and ordered-event compari
 
 Non-goals: No rule meaning change, no schema-version change unless the refactor requires one with an explicit migrate-or-reject decision, no presentation change, no performance work, which is milestone 6.1i.
 
-### [ ] 6.1g Make snapshot restore compile-enforced
+### [x] 6.1g Make snapshot restore compile-enforced
 
 Observable outcome: Adding a persisted field without restoring it becomes a compile error rather than silent state loss.
 
@@ -162,6 +162,8 @@ Acceptance checks:
 Closing check for `F613-07`: a deliberately incomplete restore, demonstrated to compile cleanly at the pre-fix revision and to fail compilation at the post-fix revision. The existing acceptance check already requires this to be demonstrated rather than asserted; the pre-fix half is what makes it closure evidence rather than a passing test.
 
 Non-goals: No schema-version bump, no new persisted state, no change to what is persisted, no serializer format change.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61g-make-snapshot-restore-compile-enforced-completion-evidence).
 
 ### [ ] 6.1h Remove dispatch ceremony and decompose the largest authorities
 

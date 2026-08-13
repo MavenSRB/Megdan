@@ -377,11 +377,19 @@ namespace GuardsDigital.Core.Rules.Consequences
         public IReadOnlyList<DefeatOutcomeId> AwardedOutcomeIds => Array.AsReadOnly(
             awardedOutcomeIds.OrderBy(value => value.Value, StringComparer.Ordinal).ToArray());
 
+        public DefeatRewardRestoreState CaptureRestoreState() =>
+            new DefeatRewardRestoreState(CoinBalances, AwardedOutcomeIds);
+
         public static DefeatRewardAccounting Restore(
             MatchParticipants participants,
-            IEnumerable<KeyValuePair<HeroId, int>> balances,
-            IEnumerable<DefeatOutcomeId> awardedOutcomeIds) =>
-            new DefeatRewardAccounting(participants, balances, awardedOutcomeIds);
+            DefeatRewardRestoreState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            return new DefeatRewardAccounting(
+                participants,
+                state.CoinBalances,
+                state.AwardedOutcomeIds);
+        }
 
         public int GetCoins(HeroId heroId)
         {

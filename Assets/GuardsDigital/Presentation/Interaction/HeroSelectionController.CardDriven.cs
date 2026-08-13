@@ -1622,10 +1622,11 @@ namespace GuardsDigital.Presentation.Interaction
             if (replaceConfiguration || placeholderConfiguration == null)
             {
                 placeholderConfiguration = PlaceholderOneVsOneTestConfiguration.Restore(
-                    projection.Participants,
-                    projection.Definitions,
-                    projection.Cards,
-                    projection.TieBreakerState);
+                    new PlaceholderConfigurationRestoreState(
+                        projection.Participants,
+                        projection.Definitions,
+                        projection.Cards,
+                        projection.TieBreakerState));
             }
             placeholderParticipants = projection.Participants;
             placeholderHands.Clear();

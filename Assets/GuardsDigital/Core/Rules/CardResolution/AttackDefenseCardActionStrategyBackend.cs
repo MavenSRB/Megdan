@@ -575,19 +575,32 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
 
+        internal AttackDefenseBackendRestoreState CaptureRestoreState() =>
+            new AttackDefenseBackendRestoreState(pendingAttackResolution);
+
+        /// <param name="verifiedTargetChoice">
+        /// An independently supplied Attack target choice to cross-check against the
+        /// derived one, or <c>null</c> to accept the derived choice. Supplying one for a
+        /// phase that has no target choice is rejected.
+        /// </param>
+        /// <param name="verifiedDefenseChoice">
+        /// An independently supplied Defense response choice to cross-check against the
+        /// authoritative Defense offers, or <c>null</c> to accept the derived choice.
+        /// Supplying one for a phase that has no Defense choice is rejected.
+        /// </param>
         internal static AttackDefenseCardActionStrategyBackend RestoreAttack(
             AdjacentMoveAuthority adjacentMoveAuthority,
-            PendingAttackResolution pendingResolution,
-            PendingAttackTargetChoice pendingTargetChoice,
-            PendingDefenseResponseChoice pendingDefenseChoice,
+            AttackDefenseBackendRestoreState state,
+            PendingAttackTargetChoice verifiedTargetChoice,
+            PendingDefenseResponseChoice verifiedDefenseChoice,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            DefeatRewardAccounting defeatRewards = null)
+            DefeatRewardAccounting defeatRewards)
         {
-            if (pendingResolution == null)
+            if (state == null)
             {
-                throw new ArgumentNullException(nameof(pendingResolution));
+                throw new ArgumentNullException(nameof(state));
             }
 
             if (participants == null)
@@ -595,15 +608,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentNullException(nameof(participants));
             }
 
+            var pendingResolution = state.PendingResolution;
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
             var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards);
             var offer = FindPendingAttackOffer(pendingResolution, materializedDefinitions, materializedInstances);
             if (!offer.HasValue)
             {
-                throw new ArgumentException("Pending Attack resolution no longer references an available offer.", nameof(pendingResolution));
+                throw new ArgumentException("Pending Attack resolution no longer references an available offer.", nameof(state));
             }
 
+            PendingAttackTargetChoice targetChoice = null;
+            PendingDefenseResponseChoice defenseChoice = null;
             if (pendingResolution.Phase == AttackResolutionPhase.ChooseTarget)
             {
                 var expectedChoice = backend.CreateAttackTargetChoice(
@@ -611,11 +627,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     offer.Value,
                     materializedDefinitions,
                     participants);
-                if (pendingTargetChoice == null || pendingDefenseChoice != null ||
-                    !AttackTargetChoicesMatch(expectedChoice, pendingTargetChoice))
+                if (verifiedDefenseChoice != null ||
+                    (verifiedTargetChoice != null &&
+                        !AttackTargetChoicesMatch(expectedChoice, verifiedTargetChoice)))
                 {
-                    throw new ArgumentException("Pending Attack target choice does not match authoritative state.", nameof(pendingTargetChoice));
+                    throw new ArgumentException("Pending Attack target choice does not match authoritative state.", nameof(verifiedTargetChoice));
                 }
+
+                targetChoice = verifiedTargetChoice ?? expectedChoice;
             }
             else
             {
@@ -633,10 +652,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     offer.Value,
                     materializedDefinitions,
                     PrintedValueChannel.Attack);
-                if (pendingTargetChoice != null ||
+                if (verifiedTargetChoice != null ||
                     !PrintedValuesMatch(pendingResolution.AttackValue, expectedAttackValue))
                 {
-                    throw new ArgumentException("Pending Attack continuation does not match authoritative state.", nameof(pendingResolution));
+                    throw new ArgumentException("Pending Attack continuation does not match authoritative state.", nameof(state));
                 }
 
                 if (pendingResolution.Phase == AttackResolutionPhase.DefenseResponse)
@@ -648,15 +667,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         ActionOfferWindow.Reaction)
                         .Where(candidate => FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
                         .ToArray();
-                    if (pendingDefenseChoice == null ||
-                        !DefenseChoicesMatch(pendingResolution, expectedDefenseOffers, pendingDefenseChoice))
+                    if (verifiedDefenseChoice != null &&
+                        !DefenseChoicesMatch(pendingResolution, expectedDefenseOffers, verifiedDefenseChoice))
                     {
-                        throw new ArgumentException("Pending Defense response choice does not match authoritative Attack state.", nameof(pendingDefenseChoice));
+                        throw new ArgumentException("Pending Defense response choice does not match authoritative Attack state.", nameof(verifiedDefenseChoice));
                     }
+
+                    defenseChoice = verifiedDefenseChoice ?? new PendingDefenseResponseChoice(
+                        pendingResolution.ResolutionId,
+                        pendingResolution.CurrentStepId,
+                        pendingResolution.TargetHeroId,
+                        pendingResolution.ActorId,
+                        pendingResolution.AttackTotal,
+                        expectedDefenseOffers,
+                        true);
                 }
                 else if (pendingResolution.Phase == AttackResolutionPhase.CompareOutcome)
                 {
-                    if (pendingDefenseChoice != null ||
+                    if (verifiedDefenseChoice != null ||
                         !pendingResolution.CurrentStepId.Equals(new ActionResolutionStepId("attack-outcome-comparison")) ||
                         !CompletedDefenseMatches(
                             pendingResolution,
@@ -665,73 +693,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             participants,
                             adjacentMoveAuthority))
                     {
-                        throw new ArgumentException("Completed Defense response does not match authoritative Attack state.", nameof(pendingResolution));
+                        throw new ArgumentException("Completed Defense response does not match authoritative Attack state.", nameof(state));
                     }
                 }
                 else
                 {
-                    throw new ArgumentException("Pending Attack resolution has an unsupported phase.", nameof(pendingResolution));
+                    throw new ArgumentException("Pending Attack resolution has an unsupported phase.", nameof(state));
                 }
             }
 
             backend.pendingAttackResolution = pendingResolution;
-            backend.pendingAttackTargetChoice = pendingTargetChoice;
-            backend.pendingDefenseChoice = pendingDefenseChoice;
+            backend.pendingAttackTargetChoice = targetChoice;
+            backend.pendingDefenseChoice = defenseChoice;
             return backend;
-        }
-
-        internal static AttackDefenseCardActionStrategyBackend RestoreAttack(
-            AdjacentMoveAuthority adjacentMoveAuthority,
-            PendingAttackResolution pendingResolution,
-            IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances,
-            MatchParticipants participants,
-            DefeatRewardAccounting defeatRewards = null)
-        {
-            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
-            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards);
-            var offer = FindPendingAttackOffer(pendingResolution, materializedDefinitions, materializedInstances);
-            if (!offer.HasValue)
-            {
-                throw new ArgumentException("Pending Attack resolution no longer references an available offer.", nameof(pendingResolution));
-            }
-
-            PendingAttackTargetChoice targetChoice = null;
-            PendingDefenseResponseChoice defenseChoice = null;
-            if (pendingResolution.Phase == AttackResolutionPhase.ChooseTarget)
-            {
-                targetChoice = backend.CreateAttackTargetChoice(
-                    pendingResolution, offer.Value, materializedDefinitions, participants);
-            }
-            else if (pendingResolution.Phase == AttackResolutionPhase.DefenseResponse)
-            {
-                var defenseOffers = ActionOfferQuery.GetAvailableOffers(
-                        materializedDefinitions,
-                        materializedInstances,
-                        pendingResolution.TargetHeroId,
-                        ActionOfferWindow.Reaction)
-                    .Where(candidate => FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
-                    .ToArray();
-                defenseChoice = new PendingDefenseResponseChoice(
-                    pendingResolution.ResolutionId,
-                    pendingResolution.CurrentStepId,
-                    pendingResolution.TargetHeroId,
-                    pendingResolution.ActorId,
-                    pendingResolution.AttackTotal,
-                    defenseOffers,
-                    true);
-            }
-
-            return RestoreAttack(
-                adjacentMoveAuthority,
-                pendingResolution,
-                targetChoice,
-                defenseChoice,
-                materializedDefinitions,
-                materializedInstances,
-                participants,
-                defeatRewards);
         }
 
         private AttackActionResolutionResult RejectAttack(CardActionResolutionRejectionReason reason)

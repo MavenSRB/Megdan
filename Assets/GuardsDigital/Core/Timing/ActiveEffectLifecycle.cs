@@ -167,16 +167,15 @@ namespace GuardsDigital.Core.Timing
             return new ReadOnlyCollection<ActiveEffectLifecycleEvent>(results);
         }
 
-        public static ActiveEffectLifecycle Restore(
-            IEnumerable<ActiveEffectInstance> effects,
-            IEnumerable<ContinuousRuleSource> continuousSources)
+        public ActiveEffectLifecycleRestoreState CaptureRestoreState() =>
+            new ActiveEffectLifecycleRestoreState(effects, continuousSources);
+
+        public static ActiveEffectLifecycle Restore(ActiveEffectLifecycleRestoreState state)
         {
+            if (state == null) throw new ArgumentNullException(nameof(state));
             var lifecycle = new ActiveEffectLifecycle();
-            lifecycle.effects.AddRange(effects ?? throw new ArgumentNullException(nameof(effects)));
-            lifecycle.continuousSources.AddRange(continuousSources ?? throw new ArgumentNullException(nameof(continuousSources)));
-            if (lifecycle.effects.Select(effect => effect.Id).Distinct().Count() != lifecycle.effects.Count ||
-                lifecycle.continuousSources.Select(source => source.SourceId).Distinct(StringComparer.Ordinal).Count() != lifecycle.continuousSources.Count)
-                throw new ArgumentException("Restored timing identities must be unique.");
+            lifecycle.effects.AddRange(state.Effects);
+            lifecycle.continuousSources.AddRange(state.ContinuousSources);
             lifecycle.nextCreationSequence = lifecycle.effects.Count == 0
                 ? 0
                 : lifecycle.effects.Max(effect => effect.CreationSequence) + 1;
@@ -197,13 +196,15 @@ namespace GuardsDigital.Core.Timing
                 effect.ActivatedRoundIndex,
                 effect.ActivatedTurnIndex,
                 effect.EndedAt));
-            return Restore(clonedEffects, continuousSources.Select(source => new ContinuousRuleSource(
-                source.SourceId,
-                source.Kind,
-                source.ControllerHeroId,
-                source.RuleKind,
-                source.ApplicabilityKind,
-                source.SourceCardInstanceId)));
+            return Restore(new ActiveEffectLifecycleRestoreState(
+                clonedEffects,
+                continuousSources.Select(source => new ContinuousRuleSource(
+                    source.SourceId,
+                    source.Kind,
+                    source.ControllerHeroId,
+                    source.RuleKind,
+                    source.ApplicabilityKind,
+                    source.SourceCardInstanceId))));
         }
 
         private IEnumerable<ActiveEffectInstance> OrderForCheckpoint(

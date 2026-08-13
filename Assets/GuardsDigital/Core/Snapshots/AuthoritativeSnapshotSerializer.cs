@@ -359,32 +359,47 @@ namespace GuardsDigital.Core.Snapshots
             });
         }
 
+        // Every Write* below destructures a restore state rather than reading authority
+        // properties. Adding a persisted field to one of those states changes its
+        // Deconstruct arity, so this method stops compiling instead of silently omitting
+        // the new field from the stream. That is the write half of milestone 6.1g.
         private static void WriteRound(BinaryWriter writer, RoundResolutionAuthority round)
         {
-            writer.Write(round.RoundIndex);
-            writer.Write(round.TurnIndex);
-            writer.Write((int)round.Phase);
-            writer.Write((int)round.TieBreakerState.RevealedSide);
-            WriteSlots(writer, round.TurnSlots);
-            writer.Write(round.CompletedRounds.Count);
-            foreach (var completed in round.CompletedRounds)
+            var (cursor, history, endOfRound, roundCardActions) = round.CaptureRestoreState();
+            var (roundIndex, turnIndex, phase, tieBreakerState) = cursor;
+            writer.Write(roundIndex);
+            writer.Write(turnIndex);
+            writer.Write((int)phase);
+            writer.Write((int)tieBreakerState.RevealedSide);
+
+            var (turnSlots, completedRounds) = history;
+            WriteSlots(writer, turnSlots);
+            writer.Write(completedRounds.Count);
+            foreach (var completed in completedRounds)
             {
                 writer.Write(completed.RoundIndex);
                 WriteSlots(writer, completed.TurnSlots);
                 WriteOutcomes(writer, completed.EndOfRoundOutcomes);
             }
 
-            writer.Write(round.CurrentEndOfRoundStage.HasValue);
-            if (round.CurrentEndOfRoundStage.HasValue) writer.Write((int)round.CurrentEndOfRoundStage.Value);
-            WriteOutcomes(writer, round.EndOfRoundOutcomes);
-            WritePendingMinionBattleChoice(writer, round.PendingMinionBattleChoice);
-            WritePendingLanePushRequest(writer, round.PendingLanePushRequest);
-            WriteTiming(writer, round.Timing);
-            writer.Write(round.CardActions != null);
-            WriteDefeatRewards(writer, round.CardActions?.DefeatRewards);
+            var (currentStage, outcomes, pendingMinionBattleChoice, pendingLanePushRequest) = endOfRound;
+            writer.Write(currentStage.HasValue);
+            if (currentStage.HasValue) writer.Write((int)currentStage.Value);
+            WriteOutcomes(writer, outcomes);
+            WritePendingMinionBattleChoice(writer, pendingMinionBattleChoice);
+            WritePendingLanePushRequest(writer, pendingLanePushRequest);
+            WriteTiming(writer, round.Timing.CaptureRestoreState());
+
+            var (hasCardActions, roundDefeatRewards) = roundCardActions;
+            writer.Write(hasCardActions);
+            WriteDefeatRewards(writer, roundDefeatRewards);
 
             writer.Write(round.CurrentCommitmentAuthority != null);
-            if (round.CurrentCommitmentAuthority != null) WriteCommitment(writer, round.CurrentCommitmentAuthority);
+            if (round.CurrentCommitmentAuthority != null)
+            {
+                WriteCommitment(writer, round.CurrentCommitmentAuthority.CaptureRestoreState());
+            }
+
             writer.Write(round.CurrentTurnAuthority != null);
             if (round.CurrentTurnAuthority != null) WriteTurn(writer, round.CurrentTurnAuthority);
         }
@@ -414,12 +429,15 @@ namespace GuardsDigital.Core.Snapshots
             var outcomes = ReadOutcomes(reader);
             var pendingMinionBattleChoice = ReadPendingMinionBattleChoice(reader);
             var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
-            var timing = ReadTiming(reader);
+            var timing = ActiveEffectLifecycle.Restore(ReadTiming(reader));
             var hasRoundCardActions = reader.ReadBoolean();
-            var roundDefeatRewards = ReadDefeatRewards(reader, participants);
+            var roundDefeatRewards = ReadDefeatRewards(reader);
 
             TurnCardCommitmentAuthority commitment = null;
-            if (reader.ReadBoolean()) commitment = ReadCommitment(reader, cards, participants);
+            if (reader.ReadBoolean())
+            {
+                commitment = TurnCardCommitmentAuthority.Restore(cards, participants, ReadCommitment(reader));
+            }
 
             CardActionResolutionAuthority cardActions = null;
             TurnResolutionAuthority turn = null;
@@ -430,29 +448,35 @@ namespace GuardsDigital.Core.Snapshots
             }
             else if (hasRoundCardActions)
             {
-                cardActions = CardActionResolutionAuthority.RestoreWithoutPendingAction(
-                    board, roundDefeatRewards);
+                cardActions = CardActionResolutionAuthority.Restore(
+                    board,
+                    CardActionResolutionRestoreState.WithoutPendingAction(roundDefeatRewards),
+                    null,
+                    null,
+                    null,
+                    definitions,
+                    cards,
+                    participants);
             }
 
             return RoundResolutionAuthority.Restore(
                 definitions,
                 cards,
                 participants,
-                tieBreaker,
-                roundIndex,
-                turnIndex,
-                phase,
-                slots,
-                completed,
-                stage,
-                outcomes,
+                new RoundResolutionRestoreState(
+                    new RoundCursorRestoreState(roundIndex, turnIndex, phase, tieBreaker),
+                    new RoundHistoryRestoreState(slots, completed),
+                    new EndOfRoundRestoreState(
+                        stage,
+                        outcomes,
+                        pendingMinionBattleChoice,
+                        pendingLanePushRequest),
+                    new RoundCardActionsRestoreState(hasRoundCardActions, roundDefeatRewards)),
                 commitment,
                 turn,
                 cardActions,
                 timing,
-                board,
-                pendingMinionBattleChoice,
-                pendingLanePushRequest);
+                board);
         }
 
         private static void WritePendingMinionBattleChoice(
@@ -549,43 +573,44 @@ namespace GuardsDigital.Core.Snapshots
                 new EndOfRoundResolutionId(reader.ReadString()));
         }
 
-        private static void WriteCommitment(BinaryWriter writer, TurnCardCommitmentAuthority authority)
+        private static void WriteCommitment(BinaryWriter writer, TurnCardCommitmentRestoreState state)
         {
-            writer.Write(authority.IsRevealed);
-            writer.Write(authority.CommittedCards.Count);
-            foreach (var pair in authority.CommittedCards.OrderBy(pair => pair.Key.Value, StringComparer.Ordinal))
+            var (commitments, passes, isRevealed) = state;
+            writer.Write(isRevealed);
+            writer.Write(commitments.Count);
+            foreach (var pair in commitments)
             {
                 writer.Write(pair.Key.Value);
                 writer.Write(pair.Value.Value);
             }
-            writer.Write(authority.PassedHeroes.Count);
-            foreach (var hero in authority.PassedHeroes.OrderBy(hero => hero.Value, StringComparer.Ordinal))
+            writer.Write(passes.Count);
+            foreach (var hero in passes)
             {
                 writer.Write(hero.Value);
             }
         }
 
-        private static TurnCardCommitmentAuthority ReadCommitment(
-            BinaryReader reader,
-            IReadOnlyList<CardInstance> cards,
-            MatchParticipants participants)
+        private static TurnCardCommitmentRestoreState ReadCommitment(BinaryReader reader)
         {
             var revealed = reader.ReadBoolean();
             var commitments = ReadMany(reader, "commitments", () => new KeyValuePair<HeroId, CardInstanceId>(
                 new HeroId(reader.ReadString()),
                 new CardInstanceId(reader.ReadString())));
             var passes = ReadMany(reader, "passes", () => new HeroId(reader.ReadString()));
-            return TurnCardCommitmentAuthority.Restore(cards, participants, commitments, passes, revealed);
+            return new TurnCardCommitmentRestoreState(commitments, passes, revealed);
         }
 
         private static void WriteTurn(BinaryWriter writer, TurnResolutionAuthority turn)
         {
-            writer.Write(turn.IsStarted);
-            writer.Write(turn.IsEnded);
-            writer.Write((int)turn.TieBreakerState.RevealedSide);
-            WritePendingInitiativeChoice(writer, turn.PendingChoice);
-            WriteSelectedActor(writer, turn.SelectedActor);
-            WriteCardAction(writer, turn.CardActions);
+            var state = turn.CaptureRestoreState();
+            var (isStarted, isEnded, tieBreakerState, initiative) = state;
+            writer.Write(isStarted);
+            writer.Write(isEnded);
+            writer.Write((int)tieBreakerState.RevealedSide);
+            var (pendingChoice, selectedActor) = initiative;
+            WritePendingInitiativeChoice(writer, pendingChoice);
+            WriteSelectedActor(writer, selectedActor);
+            WriteCardAction(writer, turn.CardActions?.CaptureRestoreState());
         }
 
         private static TurnResolutionAuthority ReadTurn(
@@ -610,20 +635,21 @@ namespace GuardsDigital.Core.Snapshots
                 cards,
                 participants,
                 cardActions,
-                started,
-                ended,
-                tieBreaker,
-                pendingChoice,
-                selectedActor,
                 timing,
-                roundIndex,
-                turnIndex);
+                new TurnResolutionRestoreState(
+                    started,
+                    ended,
+                    tieBreaker,
+                    new InitiativeResolutionRestoreState(pendingChoice, selectedActor),
+                    roundIndex,
+                    turnIndex));
         }
 
-        private static void WriteTiming(BinaryWriter writer, ActiveEffectLifecycle timing)
+        private static void WriteTiming(BinaryWriter writer, ActiveEffectLifecycleRestoreState state)
         {
-            writer.Write(timing.Effects.Count);
-            foreach (var effect in timing.Effects.OrderBy(value => value.Id.Value, StringComparer.Ordinal))
+            var (effects, continuousSources) = state;
+            writer.Write(effects.Count);
+            foreach (var effect in effects.OrderBy(value => value.Id.Value, StringComparer.Ordinal))
             {
                 writer.Write(effect.Id.Value);
                 var definition = effect.Definition;
@@ -658,8 +684,8 @@ namespace GuardsDigital.Core.Snapshots
                 if (effect.EndedAt.HasValue) writer.Write((int)effect.EndedAt.Value);
             }
 
-            writer.Write(timing.ContinuousSources.Count);
-            foreach (var source in timing.ContinuousSources.OrderBy(value => value.SourceId, StringComparer.Ordinal))
+            writer.Write(continuousSources.Count);
+            foreach (var source in continuousSources.OrderBy(value => value.SourceId, StringComparer.Ordinal))
             {
                 writer.Write(source.SourceId);
                 writer.Write((int)source.Kind);
@@ -671,7 +697,7 @@ namespace GuardsDigital.Core.Snapshots
             }
         }
 
-        private static ActiveEffectLifecycle ReadTiming(BinaryReader reader)
+        private static ActiveEffectLifecycleRestoreState ReadTiming(BinaryReader reader)
         {
             var effects = ReadMany(reader, "Active effects", () =>
             {
@@ -717,7 +743,7 @@ namespace GuardsDigital.Core.Snapshots
                 var sourceCard = reader.ReadBoolean() ? new CardInstanceId(reader.ReadString()) : default;
                 return new ContinuousRuleSource(sourceId, kind, controller, ruleKind, applicability, sourceCard);
             });
-            return ActiveEffectLifecycle.Restore(effects, continuous);
+            return new ActiveEffectLifecycleRestoreState(effects, continuous);
         }
 
         private static void WritePendingInitiativeChoice(BinaryWriter writer, PendingInitiativeChoice choice)
@@ -762,13 +788,29 @@ namespace GuardsDigital.Core.Snapshots
                 reader.ReadBoolean());
         }
 
-        private static void WriteCardAction(BinaryWriter writer, CardActionResolutionAuthority authority)
+        private const int NoCardActionAuthorityKind = -1;
+
+        private static void WriteCardAction(BinaryWriter writer, CardActionResolutionRestoreState state)
         {
-            var kind = authority == null ? -1 : authority.PendingResolution != null ? 1 : authority.PendingAttackResolution != null ? 2 : 0;
-            writer.Write(kind);
-            WriteDefeatRewards(writer, authority?.DefeatRewards);
-            if (kind == 1) WriteMovementResolution(writer, authority.PendingResolution);
-            if (kind == 2) WriteAttackResolution(writer, authority.PendingAttackResolution);
+            if (state == null)
+            {
+                writer.Write(NoCardActionAuthorityKind);
+                WriteDefeatRewards(writer, DefeatRewardRestoreStateHolder.Absent());
+                return;
+            }
+
+            var (continuationKind, pendingMovement, pendingAttack, defeatRewards) = state;
+            writer.Write((int)continuationKind);
+            WriteDefeatRewards(writer, defeatRewards);
+            if (continuationKind == CardActionContinuationKind.Movement)
+            {
+                WriteMovementResolution(writer, pendingMovement);
+            }
+
+            if (continuationKind == CardActionContinuationKind.Attack)
+            {
+                WriteAttackResolution(writer, pendingAttack);
+            }
         }
 
         private static CardActionResolutionAuthority ReadCardAction(
@@ -779,21 +821,31 @@ namespace GuardsDigital.Core.Snapshots
             MatchParticipants participants)
         {
             var kind = reader.ReadInt32();
-            var defeatRewards = ReadDefeatRewards(reader, participants);
-            if (kind == -1) return null;
-            if (kind == 0) return CardActionResolutionAuthority.RestoreWithoutPendingAction(board, defeatRewards);
-            if (kind == 1)
+            var defeatRewards = ReadDefeatRewards(reader);
+            if (kind == NoCardActionAuthorityKind) return null;
+
+            CardActionResolutionRestoreState state;
+            switch ((CardActionContinuationKind)kind)
             {
-                var pending = ReadMovementResolution(reader);
-                return CardActionResolutionAuthority.Restore(board, pending, defeatRewards);
+                case CardActionContinuationKind.None:
+                    state = CardActionResolutionRestoreState.WithoutPendingAction(defeatRewards);
+                    break;
+                case CardActionContinuationKind.Movement:
+                    state = CardActionResolutionRestoreState.WithPendingMovement(
+                        ReadMovementResolution(reader), defeatRewards);
+                    break;
+                case CardActionContinuationKind.Attack:
+                    state = CardActionResolutionRestoreState.WithPendingAttack(
+                        ReadAttackResolution(reader), defeatRewards);
+                    break;
+                default:
+                    throw Malformed("Unknown pending card-action kind.");
             }
-            if (kind == 2)
-            {
-                var pending = ReadAttackResolution(reader);
-                return CardActionResolutionAuthority.RestoreAttack(
-                    board, pending, definitions, cards, participants, defeatRewards);
-            }
-            throw Malformed("Unknown pending card-action kind.");
+
+            // The snapshot never stores the pending choices; they are derived during
+            // restore, so no verified choice is supplied here.
+            return CardActionResolutionAuthority.Restore(
+                board, state, null, null, null, definitions, cards, participants);
         }
 
         private static void WriteMovementResolution(BinaryWriter writer, PendingCardActionResolution pending)
@@ -858,30 +910,31 @@ namespace GuardsDigital.Core.Snapshots
                 attackValue, defenseOffer, defenseValue);
         }
 
-        private static void WriteDefeatRewards(BinaryWriter writer, DefeatRewardAccounting rewards)
+        private static void WriteDefeatRewards(BinaryWriter writer, DefeatRewardRestoreStateHolder holder)
         {
-            writer.Write(rewards != null);
-            if (rewards == null) return;
-            writer.Write(rewards.CoinBalances.Count);
-            foreach (var balance in rewards.CoinBalances)
+            var (isPresent, rewards) = holder;
+            writer.Write(isPresent);
+            if (!isPresent) return;
+            var (coinBalances, awardedOutcomeIds) = rewards;
+            writer.Write(coinBalances.Count);
+            foreach (var balance in coinBalances)
             {
                 writer.Write(balance.Key.Value);
                 writer.Write(balance.Value);
             }
-            writer.Write(rewards.AwardedOutcomeIds.Count);
-            foreach (var outcomeId in rewards.AwardedOutcomeIds) writer.Write(outcomeId.Value);
+            writer.Write(awardedOutcomeIds.Count);
+            foreach (var outcomeId in awardedOutcomeIds) writer.Write(outcomeId.Value);
         }
 
-        private static DefeatRewardAccounting ReadDefeatRewards(
-            BinaryReader reader,
-            MatchParticipants participants)
+        private static DefeatRewardRestoreStateHolder ReadDefeatRewards(BinaryReader reader)
         {
-            if (!reader.ReadBoolean()) return null;
+            if (!reader.ReadBoolean()) return DefeatRewardRestoreStateHolder.Absent();
             var balances = ReadMany(reader, "hero coin balances", () =>
                 new KeyValuePair<HeroId, int>(new HeroId(reader.ReadString()), reader.ReadInt32()));
             var outcomes = ReadMany(reader, "awarded Defeat outcomes", () =>
                 new DefeatOutcomeId(reader.ReadString()));
-            return DefeatRewardAccounting.Restore(participants, balances, outcomes);
+            return DefeatRewardRestoreStateHolder.Present(
+                new DefeatRewardRestoreState(balances, outcomes));
         }
 
         private static void WriteCommonResolution(BinaryWriter writer, ActionResolutionId resolutionId,

@@ -7,6 +7,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
@@ -170,9 +171,14 @@ namespace GuardsDigital.Tests.EditMode
                 !value.HasSourceActionDefinitionId &&
                 value.Channel == PrintedValueChannel.Defense), Is.True);
 
-            var restored = CardActionResolutionAuthority.RestoreAttack(
+            var restored = CardActionResolutionAuthority.Restore(
                 board,
-                answered.PendingResolution,
+                CardActionResolutionRestoreState.WithPendingAttack(
+                    answered.PendingResolution,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                null,
+                null,
+                null,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
                 configuration.Participants);

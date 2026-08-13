@@ -29,60 +29,43 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         internal bool HasPendingResolution => pendingResolution != null;
 
+        internal MovementBackendRestoreState CaptureRestoreState() =>
+            new MovementBackendRestoreState(pendingResolution);
+
+        /// <param name="verifiedChoice">
+        /// An independently supplied pending choice to cross-check against the one derived
+        /// from the resolution, or <c>null</c> to accept the derived choice. Required
+        /// rather than defaulted: skipping the cross-check is a decision the call site
+        /// states, not one it can omit.
+        /// </param>
         internal static MovementCardActionStrategyBackend Restore(
             AdjacentMoveAuthority adjacentMoveAuthority,
-            PendingCardActionResolution pendingResolution,
-            PendingMovementChoice pendingChoice)
+            MovementBackendRestoreState state,
+            PendingMovementChoice verifiedChoice)
         {
-            if (pendingResolution == null)
+            if (state == null)
             {
-                throw new ArgumentNullException(nameof(pendingResolution));
+                throw new ArgumentNullException(nameof(state));
             }
 
-            if (pendingChoice == null)
-            {
-                throw new ArgumentNullException(nameof(pendingChoice));
-            }
-
-            if (pendingResolution.MovementSessionState.IsComplete)
-            {
-                throw new ArgumentException("A restored pending resolution cannot contain a completed movement session.", nameof(pendingResolution));
-            }
-
+            var pendingResolution = state.PendingResolution;
             var backend = new MovementCardActionStrategyBackend(adjacentMoveAuthority);
             var movementSession = new MovementSession(adjacentMoveAuthority, pendingResolution.MovementSessionState);
             var expectedStepId = CreateStepId(movementSession.CaptureState().CommittedStepCount);
             if (!pendingResolution.CurrentStepId.Equals(expectedStepId))
             {
-                throw new ArgumentException("Pending resolution step ID does not match its movement continuation.", nameof(pendingResolution));
+                throw new ArgumentException("Pending resolution step ID does not match its movement continuation.", nameof(state));
             }
 
             var expectedChoice = backend.CreatePendingChoice(pendingResolution, movementSession);
-            if (!ChoicesMatch(expectedChoice, pendingChoice))
+            if (verifiedChoice != null && !ChoicesMatch(expectedChoice, verifiedChoice))
             {
-                throw new ArgumentException("Pending movement choice does not match the authoritative continuation state.", nameof(pendingChoice));
+                throw new ArgumentException("Pending movement choice does not match the authoritative continuation state.", nameof(verifiedChoice));
             }
 
             backend.pendingResolution = pendingResolution;
-            backend.pendingChoice = pendingChoice;
+            backend.pendingChoice = verifiedChoice ?? expectedChoice;
             return backend;
-        }
-
-        internal static MovementCardActionStrategyBackend Restore(
-            AdjacentMoveAuthority adjacentMoveAuthority,
-            PendingCardActionResolution pendingResolution)
-        {
-            if (pendingResolution == null)
-            {
-                throw new ArgumentNullException(nameof(pendingResolution));
-            }
-
-            var backend = new MovementCardActionStrategyBackend(adjacentMoveAuthority);
-            var movementSession = new MovementSession(adjacentMoveAuthority, pendingResolution.MovementSessionState);
-            return Restore(
-                adjacentMoveAuthority,
-                pendingResolution,
-                backend.CreatePendingChoice(pendingResolution, movementSession));
         }
 
         CardActionResolutionResult IMovementCardActionStrategyBackend.StartMovement(

@@ -5,6 +5,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -700,13 +701,27 @@ namespace GuardsDigital.Tests.EditMode
                 System.Array.Empty<ReachableMovementDestination>());
             Assert.Throws<System.ArgumentException>(() => CardActionResolutionAuthority.Restore(
                 restoredMovementAuthority,
-                start.PendingResolution,
-                tamperedChoice));
+                CardActionResolutionRestoreState.WithPendingMovement(
+                    start.PendingResolution,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                tamperedChoice,
+                null,
+                null,
+                new[] { definition },
+                new[] { instance },
+                null));
 
             var restoredAuthority = CardActionResolutionAuthority.Restore(
                 restoredMovementAuthority,
-                start.PendingResolution,
-                start.PendingChoice);
+                CardActionResolutionRestoreState.WithPendingMovement(
+                    start.PendingResolution,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                start.PendingChoice,
+                null,
+                null,
+                new[] { definition },
+                new[] { instance },
+                null);
             var completed = restoredAuthority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
                 restoredAuthority.PendingChoice.ResolutionId,
                 restoredAuthority.PendingChoice.ChoiceId,
@@ -746,8 +761,15 @@ namespace GuardsDigital.Tests.EditMode
             var movementAuthority = CreateMovementAuthority(actorId, firstDestination);
             var restored = CardActionResolutionAuthority.Restore(
                 movementAuthority,
-                partial.PendingResolution,
-                partial.PendingChoice);
+                CardActionResolutionRestoreState.WithPendingMovement(
+                    partial.PendingResolution,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                partial.PendingChoice,
+                null,
+                null,
+                new[] { definition },
+                new[] { instance },
+                null);
             var destination = firstDestination.GetNeighbor(HexDirection.NorthEast);
             Assert.That(restored.PendingResolution, Is.SameAs(partial.PendingResolution));
 

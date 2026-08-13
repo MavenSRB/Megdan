@@ -1,0 +1,65 @@
+// COMPILE PROBE - post-fix half of the F613-07 closure transition.
+//
+// Copy to Assets/GuardsDigital/Core/__CompileProbe.cs, compile, record the result, delete.
+// See Tools/CompileProbes/README.md. This file is never compiled where it sits.
+//
+// Expected result at the post-fix revision: FAILS TO COMPILE with CS7036.
+//
+// This performs the same act as IncompleteRestore.PreFix.cs.probe - restore a round while
+// omitting the persisted pending Minion Battle choice and pending Lane-Push request -
+// expressed against the API milestone 6.1g introduced. The two probe sources differ
+// because the signature under test is exactly what the milestone changed.
+
+using System.Collections.Generic;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
+
+namespace GuardsDigital.Core.CompileProbe
+{
+    internal static class IncompleteRestoreProbe
+    {
+        internal static RoundResolutionAuthority RestoreOmittingPersistedState(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            TieBreakerState tieBreakerState,
+            IEnumerable<RoundTurnSlot> turnSlots,
+            IEnumerable<CompletedRoundRecord> completedRounds,
+            IEnumerable<EndOfRoundStageOutcome> endOfRoundOutcomes,
+            TurnCardCommitmentAuthority commitmentAuthority,
+            TurnResolutionAuthority turnAuthority,
+            CardActionResolutionAuthority cardActions,
+            ActiveEffectLifecycle timing,
+            AdjacentMoveAuthority board)
+        {
+            return RoundResolutionAuthority.Restore(
+                definitions,
+                instances,
+                participants,
+                new RoundResolutionRestoreState(
+                    new RoundCursorRestoreState(1, 1, RoundResolutionPhase.EndOfRound, tieBreakerState),
+                    new RoundHistoryRestoreState(turnSlots, completedRounds),
+
+                    // CS7036 here. The two pending continuations are required constructor
+                    // arguments, so the omission that used to compile silently now cannot
+                    // be expressed at all.
+                    new EndOfRoundRestoreState(
+                        EndOfRoundStage.MinionBattle,
+                        endOfRoundOutcomes),
+
+                    new RoundCardActionsRestoreState(
+                        true,
+                        DefeatRewardRestoreStateHolder.Absent())),
+                commitmentAuthority,
+                turnAuthority,
+                cardActions,
+                timing,
+                board);
+        }
+    }
+}

@@ -62,10 +62,11 @@ namespace GuardsDigital.Core.Replay
         public PlaceholderOneVsOneTestConfiguration CreateConfiguration()
         {
             return PlaceholderOneVsOneTestConfiguration.Restore(
-                Participants,
-                definitions,
-                initialCards.Select(CloneCard),
-                InitialTieBreakerState);
+                new PlaceholderConfigurationRestoreState(
+                    Participants,
+                    definitions,
+                    initialCards.Select(CloneCard),
+                    InitialTieBreakerState));
         }
 
         public AdjacentMoveAuthority CreateBoard(IEnumerable<BoardMapDefinition> availableMaps)

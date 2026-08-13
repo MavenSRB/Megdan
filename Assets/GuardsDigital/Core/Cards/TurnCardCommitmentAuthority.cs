@@ -174,40 +174,45 @@ namespace GuardsDigital.Core.Cards
 
         internal IReadOnlyCollection<HeroId> PassedHeroes => passedHeroes;
 
+        internal TurnCardCommitmentRestoreState CaptureRestoreState() =>
+            new TurnCardCommitmentRestoreState(
+                committedCards.OrderBy(pair => pair.Key.Value, StringComparer.Ordinal).ToArray(),
+                passedHeroes.OrderBy(heroId => heroId.Value, StringComparer.Ordinal).ToArray(),
+                IsRevealed);
+
         internal static TurnCardCommitmentAuthority Restore(
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            IEnumerable<KeyValuePair<HeroId, CardInstanceId>> commitments,
-            IEnumerable<HeroId> passes,
-            bool isRevealed)
+            TurnCardCommitmentRestoreState state)
         {
+            if (state == null) throw new ArgumentNullException(nameof(state));
             var authority = new TurnCardCommitmentAuthority(instances, participants);
-            foreach (var pair in commitments ?? throw new ArgumentNullException(nameof(commitments)))
+            foreach (var pair in state.Commitments)
             {
                 if (!authority.IsExpectedHero(pair.Key) || !pair.Value.IsDefined ||
                     authority.committedCards.ContainsKey(pair.Key))
                 {
-                    throw new ArgumentException("Restored commitments contain invalid or duplicate identities.", nameof(commitments));
+                    throw new ArgumentException("Restored commitments contain invalid or duplicate identities.", nameof(state));
                 }
 
                 authority.committedCards.Add(pair.Key, pair.Value);
             }
 
-            foreach (var heroId in passes ?? throw new ArgumentNullException(nameof(passes)))
+            foreach (var heroId in state.Passes)
             {
                 if (!authority.IsExpectedHero(heroId) || authority.committedCards.ContainsKey(heroId) ||
                     !authority.passedHeroes.Add(heroId))
                 {
-                    throw new ArgumentException("Restored passes contain invalid or duplicate identities.", nameof(passes));
+                    throw new ArgumentException("Restored passes contain invalid or duplicate identities.", nameof(state));
                 }
             }
 
-            if (isRevealed && authority.expectedHeroIds.Any(heroId => !authority.HasResponded(heroId)))
+            if (state.IsRevealed && authority.expectedHeroIds.Any(heroId => !authority.HasResponded(heroId)))
             {
-                throw new ArgumentException("A revealed restored commitment requires every hero response.", nameof(isRevealed));
+                throw new ArgumentException("A revealed restored commitment requires every hero response.", nameof(state));
             }
 
-            authority.IsRevealed = isRevealed;
+            authority.IsRevealed = state.IsRevealed;
             return authority;
         }
 

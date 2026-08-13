@@ -97,3 +97,15 @@ Explicit correction under the append-only archive rule. The disposition table ab
 Two statements in the original findings were wrong and are corrected here rather than in the preserved table. The seven authored tiles were not stale coordinates destroyed at load: all seven are playable spaces in the selected map, so the rebuild reconfigured and reused them, and one supplied the mesh template for every generated tile. Edit-mode composition was also not actively dirtying the saved scene; the serialization check found only those seven authored tiles and no generated minion, spawn marker, or obstacle, so the dirtying was latent rather than realized.
 
 `HideFlags.DontSave` was implemented first and reverted. It keeps generated objects out of the saved scene but also excludes them from `Object.FindObjectsByType`, which failed five configured Play Mode regressions that locate tiles and minions by type. The accepted correction is the acceptance check's other option: composition does not run on an edit-mode domain reload unless an explicit serialized opt-in is enabled, which additionally removes the per-reload regeneration of roughly 625 objects that the hide-flag approach left in place.
+
+## Milestone 6.1g Make snapshot restore compile-enforced completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1g | Every restore entry point takes one required typed restore-state value; an incomplete restore no longer compiles. Closes `F613-07`, retires `RISK-STATE-001`. | `d765b12` |
+
+### 2026-08-13 addendum: finding closed by milestone 6.1g
+
+Explicit correction under the append-only archive rule. The disposition table above records `F613-07` as `Scheduled`; it is closed by milestone 6.1g. The table text is preserved as written.
+
+The finding's stated count is corrected here rather than in the preserved table. It reported "thirteen restore back doors across eleven types". Source enumeration at `4a5b337` found **seventeen restore entry points across eleven types, exposing sixteen distinct omission routes**: four defaulted parameters on `RoundResolutionAuthority.Restore`, three on `TurnResolutionAuthority.Restore`, five on `CardActionResolutionAuthority` (four `defeatRewards = null` defaults plus one overload dropping the pending movement choice), three on `AttackDefenseCardActionStrategyBackend` (two defaults plus one overload dropping both Attack choices), and one overload on `MovementCardActionStrategyBackend`. The eleven-type figure was correct; the route count was understated. `RuleEventLogProjection.Restore` was inspected and left unchanged: one required argument over a single homogeneous sequence with no field set that can silently drop.

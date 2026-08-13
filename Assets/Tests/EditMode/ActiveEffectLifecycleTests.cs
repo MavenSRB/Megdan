@@ -331,8 +331,8 @@ namespace GuardsDigital.Tests.EditMode
                 ActiveEffectPhase.Active,
                 1,
                 1);
-            var lifecycle = ActiveEffectLifecycle.Restore(
-                new[] { activeEffect }, Array.Empty<ContinuousRuleSource>());
+            var lifecycle = ActiveEffectLifecycle.Restore(new ActiveEffectLifecycleRestoreState(
+                new[] { activeEffect }, Array.Empty<ContinuousRuleSource>()));
             var definitions = configuration.CardDefinitions;
             var instances = configuration.CardInstances;
             var authority = new TurnResolutionAuthority(

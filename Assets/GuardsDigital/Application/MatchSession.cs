@@ -463,10 +463,11 @@ namespace GuardsDigital.Application
             }
 
             configuration = PlaceholderOneVsOneTestConfiguration.Restore(
-                restored.Participants,
-                initialState.Scenario.CardDefinitions,
-                restored.Cards,
-                restored.Round.TieBreakerState);
+                new PlaceholderConfigurationRestoreState(
+                    restored.Participants,
+                    initialState.Scenario.CardDefinitions,
+                    restored.Cards,
+                    restored.Round.TieBreakerState));
             board = restored.Board;
             cardActions = restored.CardActions;
             round = restored.Round;

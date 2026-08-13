@@ -66,10 +66,12 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 354 | 0 | 0 | 0 | `df965cd` |
-| Complete Play Mode | 15 | 0 | 0 | 0 | `df965cd` |
+| Complete Edit Mode | 354 | 0 | 0 | 0 | `6.1g` |
+| Complete Play Mode | 17 | 0 | 0 | 0 | `6.1g` |
 
 A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
+
+The Play Mode figure was recorded as `15` when this table was created and is corrected here to `17`. Milestone 6.1g added no Play Mode fixture, and `Assets/Tests/PlayMode` declares exactly seventeen `[Test]`/`[UnityTest]` methods, all seventeen of which the 6.1g run discovered and passed - so seventeen was already the true total at `df965cd`. The original entry understated it. An understated baseline is worse than none: the next task to run both suites would have seen two fixtures apparently appear from nowhere and gone looking for a regression that never existed. The Edit Mode figure was recorded correctly and is unchanged.
 
 ```powershell
 $completeEditArguments = @(
@@ -114,6 +116,21 @@ if ($completePlayProcess.ExitCode -ne 0) {
 ```
 
 Expected result at a T3 gate: every currently discovered Edit Mode and Play Mode test passes, each process exits with code `0`, and fresh complete NUnit XML files record the gate result with zero unexpected skipped or inconclusive tests.
+
+## Compile probes
+
+Some contracts are enforced by the compiler, not by a test. A test can assert that correct code behaves correctly; it cannot assert that incorrect code fails to build. When a milestone's closing check is "this must not compile", the evidence is a probe run, not a fixture.
+
+Probe sources live in `Tools/CompileProbes/`, outside `Assets/`, so Unity never imports them. The procedure and the standing probe set are documented in `Tools/CompileProbes/README.md`. In outline:
+
+1. Copy the probe into the assembly whose contract it tests - for a `GuardsDigital.Core` `internal` member that means `Assets/GuardsDigital/Core/__CompileProbe.cs`, because Core declares no `InternalsVisibleTo`. Do not add one to make a probe convenient.
+2. Write `tmp/unity-validation-request.json` with any focused Edit Mode filter and run the fixed launcher. The probe is answered at compile time, before test discovery, so the filter's own result is irrelevant.
+3. Record the revision, exact command, and compiler output. A probe that is *expected to compile* needs stronger evidence than a silent log: confirm the probe type is present inside the built assembly under `Library/ScriptAssemblies/`, which proves it was compiled rather than skipped.
+4. Delete the probe and its generated `.meta`, then re-run a focused filter to confirm the tree is clean again.
+
+A launcher exit code of `1` is the expected, correct result for a probe that must fail to compile. Do not treat it as a broken run.
+
+Never leave a probe in `Assets/`.
 
 ## Test ownership
 

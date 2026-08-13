@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Timing;
@@ -709,26 +710,41 @@ namespace GuardsDigital.Core.Cards
 
         public ActiveEffectLifecycle Timing => timing;
 
+        internal RoundResolutionRestoreState CaptureRestoreState()
+        {
+            var rewards = CardActions?.DefeatRewards == null
+                ? DefeatRewardRestoreStateHolder.Absent()
+                : DefeatRewardRestoreStateHolder.Present(CardActions.DefeatRewards.CaptureRestoreState());
+            return new RoundResolutionRestoreState(
+                new RoundCursorRestoreState(RoundIndex, TurnIndex, Phase, TieBreakerState),
+                new RoundHistoryRestoreState(TurnSlots, CompletedRounds),
+                new EndOfRoundRestoreState(
+                    CurrentEndOfRoundStage,
+                    EndOfRoundOutcomes,
+                    PendingMinionBattleChoice,
+                    PendingLanePushRequest),
+                new RoundCardActionsRestoreState(CardActions != null, rewards));
+        }
+
         internal static RoundResolutionAuthority Restore(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            TieBreakerState tieBreakerState,
-            int roundIndex,
-            int turnIndex,
-            RoundResolutionPhase phase,
-            IEnumerable<RoundTurnSlot> turnSlots,
-            IEnumerable<CompletedRoundRecord> completedRounds,
-            EndOfRoundStage? currentEndOfRoundStage,
-            IEnumerable<EndOfRoundStageOutcome> endOfRoundOutcomes,
+            RoundResolutionRestoreState state,
             TurnCardCommitmentAuthority commitmentAuthority,
             TurnResolutionAuthority turnAuthority,
             CardActionResolutionAuthority cardActions,
-            ActiveEffectLifecycle timing = null,
-            AdjacentMoveAuthority board = null,
-            PendingMinionBattleChoice pendingMinionBattleChoice = null,
-            PendingLanePushRequest pendingLanePushRequest = null)
+            ActiveEffectLifecycle timing,
+            AdjacentMoveAuthority board)
         {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            var roundIndex = state.Cursor.RoundIndex;
+            var turnIndex = state.Cursor.TurnIndex;
+            var phase = state.Cursor.Phase;
+            var tieBreakerState = state.Cursor.TieBreakerState;
+            var currentEndOfRoundStage = state.EndOfRound.CurrentStage;
+            var pendingMinionBattleChoice = state.EndOfRound.PendingMinionBattleChoice;
+            var pendingLanePushRequest = state.EndOfRound.PendingLanePushRequest;
             var authority = new RoundResolutionAuthority(
                 definitions,
                 instances,
@@ -748,11 +764,11 @@ namespace GuardsDigital.Core.Cards
             authority.Phase = phase;
             authority.tieBreakerState = tieBreakerState;
             authority.turnSlots.Clear();
-            authority.turnSlots.AddRange(turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)));
+            authority.turnSlots.AddRange(state.History.TurnSlots);
             authority.completedRounds.Clear();
-            authority.completedRounds.AddRange(completedRounds ?? throw new ArgumentNullException(nameof(completedRounds)));
+            authority.completedRounds.AddRange(state.History.CompletedRounds);
             authority.endOfRoundOutcomes.Clear();
-            authority.endOfRoundOutcomes.AddRange(endOfRoundOutcomes ?? throw new ArgumentNullException(nameof(endOfRoundOutcomes)));
+            authority.endOfRoundOutcomes.AddRange(state.EndOfRound.Outcomes);
             authority.CurrentEndOfRoundStage = currentEndOfRoundStage;
             authority.CurrentCommitmentAuthority = commitmentAuthority;
             authority.CurrentTurnAuthority = turnAuthority;

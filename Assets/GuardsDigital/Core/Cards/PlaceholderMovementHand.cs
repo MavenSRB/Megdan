@@ -52,15 +52,15 @@ namespace GuardsDigital.Core.Cards
             return Create(ownerId, BlueProfiles, null);
         }
 
-        internal static PlaceholderMovementHand Restore(
-            IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+        internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
+            new PlaceholderMovementHandRestoreState(Definitions, Instances);
+
+        internal static PlaceholderMovementHand Restore(PlaceholderMovementHandRestoreState state)
         {
-            if (definitions == null) throw new ArgumentNullException(nameof(definitions));
-            if (instances == null) throw new ArgumentNullException(nameof(instances));
-            var definitionArray = definitions.ToArray();
-            var instanceArray = instances.ToArray();
-            if (definitionArray.Length == 0 || instanceArray.Length == 0 ||
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            var definitionArray = state.Definitions;
+            var instanceArray = state.Instances;
+            if (definitionArray.Count == 0 || instanceArray.Count == 0 ||
                 instanceArray.Select(instance => instance.OwnerId).Distinct().Count() != 1 ||
                 instanceArray.Any(instance => !definitionArray.Any(definition =>
                     definition.Reference.Equals(instance.DefinitionReference))))
@@ -68,9 +68,7 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("A restored placeholder hand requires one owner's definition-backed cards.");
             }
 
-            return new PlaceholderMovementHand(
-                Array.AsReadOnly(definitionArray),
-                Array.AsReadOnly(instanceArray));
+            return new PlaceholderMovementHand(definitionArray, instanceArray);
         }
 
         private static PlaceholderMovementHand Create(

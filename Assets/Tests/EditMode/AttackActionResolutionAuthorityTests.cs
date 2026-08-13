@@ -7,6 +7,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -327,7 +328,7 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardInstances,
                 configuration.Participants);
 
-            var restoredTarget = CardActionResolutionAuthority.RestoreAttack(
+            var restoredTarget = CardActionResolutionAuthority.Restore(
                 new AdjacentMoveAuthority(
                     CreateRadiusThreeCoordinates(),
                     new[]
@@ -335,7 +336,10 @@ namespace GuardsDigital.Tests.EditMode
                         new HeroOccupancy(attackerId, new HexCoordinate(0, 0)),
                         new HeroOccupancy(defenderId, new HexCoordinate(2, 0))
                     }),
-                start.PendingResolution,
+                CardActionResolutionRestoreState.WithPendingAttack(
+                    start.PendingResolution,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                null,
                 start.PendingTargetChoice,
                 null,
                 configuration.CardDefinitions,
@@ -350,7 +354,7 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardDefinitions,
                 configuration.CardInstances,
                 configuration.Participants);
-            var restoredDefense = CardActionResolutionAuthority.RestoreAttack(
+            var restoredDefense = CardActionResolutionAuthority.Restore(
                 new AdjacentMoveAuthority(
                     CreateRadiusThreeCoordinates(),
                     new[]
@@ -358,7 +362,10 @@ namespace GuardsDigital.Tests.EditMode
                         new HeroOccupancy(attackerId, new HexCoordinate(0, 0)),
                         new HeroOccupancy(defenderId, new HexCoordinate(2, 0))
                     }),
-                answer.PendingResolution,
+                CardActionResolutionRestoreState.WithPendingAttack(
+                    answer.PendingResolution,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                null,
                 null,
                 answer.PendingDefenseChoice,
                 configuration.CardDefinitions,
@@ -461,9 +468,12 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Configuration.Participants);
             var restoredBoard = CreateBoardAuthority(fixture.AttackerId, fixture.DefenderId);
 
-            var restored = CardActionResolutionAuthority.RestoreAttack(
+            var restored = CardActionResolutionAuthority.Restore(
                 restoredBoard,
-                answer.PendingResolution,
+                CardActionResolutionRestoreState.WithPendingAttack(
+                    answer.PendingResolution,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                null,
                 null,
                 answer.PendingDefenseChoice,
                 fixture.Configuration.CardDefinitions,
@@ -481,9 +491,12 @@ namespace GuardsDigital.Tests.EditMode
                 answer.PendingDefenseChoice.AttackTotal + 1,
                 answer.PendingDefenseChoice.LegalDefenseOffers,
                 answer.PendingDefenseChoice.CanDecline);
-            Assert.Throws<ArgumentException>(() => CardActionResolutionAuthority.RestoreAttack(
+            Assert.Throws<ArgumentException>(() => CardActionResolutionAuthority.Restore(
                 CreateBoardAuthority(fixture.AttackerId, fixture.DefenderId),
-                answer.PendingResolution,
+                CardActionResolutionRestoreState.WithPendingAttack(
+                    answer.PendingResolution,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                null,
                 null,
                 tamperedChoice,
                 fixture.Configuration.CardDefinitions,
@@ -748,9 +761,12 @@ namespace GuardsDigital.Tests.EditMode
                 instancesWithFacedownDefense,
                 fixture.Configuration.Participants);
 
-            var restored = CardActionResolutionAuthority.RestoreAttack(
+            var restored = CardActionResolutionAuthority.Restore(
                 CreateBoardAuthority(fixture.AttackerId, fixture.DefenderId),
-                answered.PendingResolution,
+                CardActionResolutionRestoreState.WithPendingAttack(
+                    answered.PendingResolution,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                null,
                 null,
                 null,
                 fixture.Configuration.CardDefinitions,
