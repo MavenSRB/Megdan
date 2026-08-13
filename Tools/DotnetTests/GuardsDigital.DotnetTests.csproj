@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cross-platform harness for the Unity-free Core/Application test majority.
+       Scope, limits, and the exclude-list maintenance rule are documented in
+       Docs/AI/Testing/DOTNET_HARNESS.md. Unity-dependent Edit Mode files are
+       excluded explicitly so a new Unity-dependent test breaks this build
+       instead of being silently skipped. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Assets/GuardsDigital/Core/**/*.cs" />
+    <Compile Include="../../Assets/GuardsDigital/Application/**/*.cs" />
+    <Compile Include="Shims/**/*.cs" />
+    <Compile Include="HarnessTests/**/*.cs" />
+    <Compile Include="../../Assets/Tests/EditMode/*.cs"
+             Exclude="../../Assets/Tests/EditMode/ApplicationArchitectureBoundaryTests.cs;../../Assets/Tests/EditMode/CardAggregateInvarianceTests.cs;../../Assets/Tests/EditMode/ConfiguredMatchCutoverArchitectureTests.cs;../../Assets/Tests/EditMode/ConfiguredPointerSelectionTests.cs;../../Assets/Tests/EditMode/ConfiguredSceneSerializationTests.cs;../../Assets/Tests/EditMode/DestinationHighlightMaterialOwnershipTests.cs;../../Assets/Tests/EditMode/DirectorHandPresentationTests.cs;../../Assets/Tests/EditMode/FlatHexMeshBuilderTests.cs;../../Assets/Tests/EditMode/HexWorldLayoutTests.cs;../../Assets/Tests/EditMode/ILConformanceScannerTests.cs;../../Assets/Tests/EditMode/MatchFeaturePresenterTests.cs;../../Assets/Tests/EditMode/MatchSessionDiagnosticCostTests.cs;../../Assets/Tests/EditMode/MinimalHexGridSceneTests.cs;../../Assets/Tests/EditMode/Phase4ArchitectureConformanceTests.cs;../../Assets/Tests/EditMode/Phase4RuntimeHygieneTests.cs;../../Assets/Tests/EditMode/PlaceholderObstacleViewTests.cs;../../Assets/Tests/EditMode/PrimitiveHeroViewTests.cs;../../Assets/Tests/EditMode/RuntimeShaderResolutionTests.cs;../../Assets/Tests/EditMode/SceneAssetInspection.cs;../../Assets/Tests/EditMode/StandardMinionViewTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="../../Assets/Resources/Maps/official-single-lane.json"
+             CopyToOutputDirectory="PreserveNewest"
+             Link="Resources/Maps/official-single-lane.json" />
+  </ItemGroup>
+
+</Project>

@@ -8,7 +8,7 @@ The project owner states that the public repository and included rulebook are sh
 
 A rules-accurate implementation of the board game, built as a pure C# rules engine with Unity acting only as passive presentation. The current build plays a synthetic vertical slice: a 1v1 match on the official single-lane map with placeholder cards, movement, attack/defense, minions, and an end-of-round minion battle. No real hero card content is implemented yet.
 
-Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1l**.
+Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1t**.
 
 ## Requirements
 
@@ -33,6 +33,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Invoke-UnityVali
 ```
 
 Unity validation can take well over the default command timeout. Give it at least 15 minutes and do not kill the process if a wrapper times out.
+
+The Unity-free test majority (272 tests at milestone 6.1t) also runs on any OS with a .NET 10 SDK, no Unity required:
+
+```
+dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj
+```
 
 Two validators run without Unity and are fast:
 

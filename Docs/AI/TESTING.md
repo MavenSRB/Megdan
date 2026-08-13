@@ -5,6 +5,7 @@ This compact index routes to the exact active validation policy, reusable launch
 ## Canonical active shards
 
 - [Testing policy and evidence contract](Testing/POLICY.md)
+- [Cross-platform dotnet harness](Testing/DOTNET_HARNESS.md)
 - [Future validation gates and recipes](Testing/FUTURE_GATES.md)
 - [Foundation focused test recipes](Testing/RECIPES_FOUNDATION.md)
 - [Turn, round, snapshot, and replay test recipes](Testing/RECIPES_TURNS.md)
@@ -21,4 +22,10 @@ All Unity validation uses the exact parameterless project-local entry point defi
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Invoke-UnityValidation.ps1
+```
+
+The Unity-free Core/CardState/Application test majority also runs on any OS through the dotnet harness (see [the harness shard](Testing/DOTNET_HARNESS.md)):
+
+```
+dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj
 ```

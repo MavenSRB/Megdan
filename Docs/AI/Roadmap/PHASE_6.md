@@ -372,7 +372,7 @@ Closing check for `F-ER2-02`: a snapshot round-trip fixture asserting a restored
 
 Non-goals: No Object Push, Lane Push, Spawn, or Respawn rules; no balance change; no presentation change beyond reading the authoritative coordinate.
 
-### [ ] 6.1t Port the cross-platform dotnet test harness
+### [x] 6.1t Port the cross-platform dotnet test harness
 
 Observable outcome: The Unity-free Core/Application test majority runs on any OS through the dotnet + NUnit harness preserved on branch `er2-external-review-line`, adapted to this line's assemblies and test files.
 
