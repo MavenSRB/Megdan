@@ -109,3 +109,19 @@ Two statements in the original findings were wrong and are corrected here rather
 Explicit correction under the append-only archive rule. The disposition table above records `F613-07` as `Scheduled`; it is closed by milestone 6.1g. The table text is preserved as written.
 
 The finding's stated count is corrected here rather than in the preserved table. It reported "thirteen restore back doors across eleven types". Source enumeration at `4a5b337` found **seventeen restore entry points across eleven types, exposing sixteen distinct omission routes**: four defaulted parameters on `RoundResolutionAuthority.Restore`, three on `TurnResolutionAuthority.Restore`, five on `CardActionResolutionAuthority` (four `defeatRewards = null` defaults plus one overload dropping the pending movement choice), three on `AttackDefenseCardActionStrategyBackend` (two defaults plus one overload dropping both Attack choices), and one overload on `MovementCardActionStrategyBackend`. The eleven-type figure was correct; the route count was understated. `RuleEventLogProjection.Restore` was inspected and left unchanged: one required argument over a single homogeneous sequence with no field set that can silently drop.
+
+## Milestone 6.1c Retire the legacy HeroSelectionController drill completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1c | The legacy drill, its `CardDriven` partial, and the fixtures pinning it are deleted; the pointer adapters collapse to one passive wiring path each. Closes `F613-01`, retires the register's oldest row. | `2fa2212` |
+
+### 2026-08-13 addendum: finding closed by milestone 6.1c
+
+Explicit correction under the append-only archive rule. The disposition table above records `F613-01` as `Scheduled`; it is closed by milestone 6.1c. The table text is preserved as written.
+
+Three corrections to the finding's scope are recorded here rather than in the preserved table. First, the audit named two pinning fixtures; there were **three**. `DirectorHandPresentationTests` built the drill in all three of its tests, and its header, card-button, and commitment label assertions had no configured twin, so it was rewritten against `DirectorHandsPresenter` rather than deleted. Second, `CardDrivenMovementPresentationTests` contained **one test that never touched the drill** - the placeholder-hand offer and printed-value case - which was relocated verbatim into `ActionOfferAndPrintedValueTests`; deleting the file wholesale would have dropped live Core coverage. Third, the fixture line count was understated: the three pinning fixtures totalled 2,093 lines, not "roughly 1,950".
+
+Coverage enumeration found three genuine Edit Mode holes rather than the expected one. Hero pointer-ray hit and miss were expected. The third was not: `ClearSelection_RestoresTileMaterials` held the repository's only assertion that clearing a highlight restores a tile's default material **by object identity**. `HexTileView.SetHighlighted` assigns the material and the `IsHighlighted` flag in separate statements, so the surviving `IsHighlighted == false` assertions do not prove it. All three are closed by the new `ConfiguredPointerSelectionTests`, proven green before any deletion.
+
+Two `selector.SelectionController == null` assertions in `MinimalHexGridSceneTests` and `MinimalHexGridPlayModeTests` were discovered only by compiling. They name the removed property rather than the removed type, so a type-name search did not reach them - a reminder that a deletion's blast radius includes members, not just type references.
