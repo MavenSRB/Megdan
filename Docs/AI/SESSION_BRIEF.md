@@ -14,11 +14,13 @@ Configured minion views retain serialized stable binding identity across editor 
 
 ## Current authorization and next route
 
-- Current completed milestone: **6.1c**.
-- Active authorized milestone: **6.1d**, in progress across two commits.
-- Next proposed milestone: **6.1d**.
-- Milestone 6.1d is authorized and mid-flight. Its first commit landed the declared shaders, the Editor-only assembly boundary, the single-sourced board map, and the portable toolchain. Its second commit owes the player-build smoke gate.
-- Milestones 6.1c through 6.1k are an approved corrective sequence scheduled by the 2026-08-13 out-of-band foundation audit. They precede 6.1a, which stays proposed behind them. The shard defines their execution order by severity; 6.1e, 6.1g, and 6.1c are complete and 6.1d is active. Former 6.1j and 6.1m are merged into 6.1d, and former 6.1n was removed when review-correction closure became mechanical.
+- Current completed milestone: **6.1d**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **6.1f**.
+- Milestone 6.1f is proposed and remains unauthorized until separately approved.
+- Milestones 6.1c through 6.1k are an approved corrective sequence scheduled by the 2026-08-13 out-of-band foundation audit. They precede 6.1a, which stays proposed behind them. The shard defines their execution order by severity; 6.1e, 6.1g, 6.1c, and 6.1d are complete and 6.1f is next. Former 6.1j and 6.1m are merged into 6.1d, and former 6.1n was removed when review-correction closure became mechanical.
+- Milestone **6.1l** was reinstated on 2026-08-13 and is `[!]` blocked: confirming the validation toolchain on a non-Windows platform needs a non-Windows host, and this machine has no WSL distribution, no Docker, and no PowerShell Core. It owns `F613-14`, which 6.1d did not close.
+- The **player-build smoke gate** is now a standing check. Run `Tools/Invoke-PlayerBuildSmoke.ps1` whenever the always-included shader list, the enabled scene list, the render pipeline, `Assets/Resources`, an assembly definition, or a stripping setting changes; see [Testing/FUTURE_GATES.md](Testing/FUTURE_GATES.md).
 - Milestone **6.1l** was reinstated on 2026-08-13 and is `[!]` blocked: confirming the validation toolchain on a non-Windows platform needs a non-Windows host, and this machine has no WSL distribution, no Docker, and no PowerShell Core. It owns `F613-14`, which 6.1d does not close.
 - The local repository is on `main` with no Git remote configured. On 2026-08-13, the user explicitly requested removal of the prior `origin` configuration; local history and branches remain intact.
 

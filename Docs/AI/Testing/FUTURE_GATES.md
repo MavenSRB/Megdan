@@ -75,3 +75,33 @@ Expected result: the configured 1v1 acting hero receives the Defeat award withou
 For milestone 5.6, run focused Edit Mode `MinionAttackResolutionTests` and directly affected `AttackActionResolutionAuthorityTests;MinionObstacleAndDefenseTests;DefeatRewardAccountingTests;TurnResolutionAuthorityTests;RoundResolutionAuthorityTests;AuthoritativeSnapshotSerializerTests;SnapshotCompatibilityCorpusTests;MatchSessionTests;DirectorCommandReplayTests;CardActionStrategyRegistryTests;FastTravelActionTests;ApplicationArchitectureBoundaryTests;MatchFeaturePresenterTests`; write `tmp/milestone-5-6-focused-results.xml`, `tmp/milestone-5-6-focused.log`, `tmp/milestone-5-6-affected-results.xml`, and `tmp/milestone-5-6-affected.log`. Then run both unfiltered suites under `tmp/milestone-5-6-complete-edit-results.xml`, `tmp/milestone-5-6-complete-edit.log`, `tmp/milestone-5-6-complete-play-results.xml`, and `tmp/milestone-5-6-complete-play.log` because schema v4 is an incompatible durable-state change.
 
 Expected result: non-Ranged adjacency and typed Ranged distance project enemy minions without admitting friendly/out-of-range targets; Heavy remains Immune while a friendly non-Heavy remains in the current starting Battle Zone and becomes legal after that protection leaves. Targeting a minion opens no Defense frame and performs no hero-only Attack Total comparison. Melee/Ranged award 2 coins and Heavy awards 4 to the actor, with Defeat, reward, removal attempt, and removed facts ordered and independently typed before authoritative occupancy changes. The turn resolves its attacking card and advances Initiative. Snapshot schema v4 round-trips remaining-minion identity, balances, and awarded-outcome idempotency byte-identically; v3 rejects. No last-minion Lane-Push request, displaced-minion correction, removal prevention source, minion-selection UI, or complete hero consequence order is introduced.
+
+## Player-build smoke gate
+
+Added at milestone 6.1d. An Editor suite cannot observe a player that ships with an unresolved shader, a missing resource, or a type the build stripped: every Edit Mode and Play Mode test runs inside the Editor, where those assets are always present. This gate builds the real artifact, runs it, and requires the running player to say what it reached.
+
+Run from the project root:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Invoke-PlayerBuildSmoke.ps1
+```
+
+The script builds through the fixed Editor entry point `GuardsDigital.EditorTools.PlayerBuildEntryPoint.BuildWindowsSmokePlayer`, which targets Windows 64-bit standalone from the enabled scenes and writes to the gitignored `Builds/Win64Smoke/`. It then launches the player with `-batchmode -nographics -guardsSmokeTest`. That flag is the only thing that makes `MatchSceneCompositionRoot` attach `PlayerSmokeTestDriver`; a normally launched build constructs no test hook at all.
+
+Expected result: exit code `0` and `GATE PASSED`. The player log must contain, in order:
+
+```
+GUARDS_SMOKE: BEGIN
+GUARDS_SMOKE: SCENE Milestone1_2_HexGrid
+GUARDS_SMOKE: COMPOSED heroes=2 cards=10 version=0
+GUARDS_SMOKE: COMMAND_ACCEPTED kind=CommitCard version=1 commitment=CardCommittedFacedown
+GUARDS_SMOKE: PASS
+```
+
+`COMPOSED` proves the map resource loaded and the configured match composed inside the player. `COMMAND_ACCEPTED` proves a real typed `DirectorCommand` went through `IMatchSession` and advanced the authoritative projection - not that the scene merely opened.
+
+The gate fails on any of: a build result other than `Succeeded`; a missing executable; a player that does not exit within the timeout; a non-zero player exit code; a missing pass marker; or a log matching a degradation pattern such as an unresolved shader, a failed load, or a `NullReferenceException`. The marker check is independent of the exit code on purpose - a player that degrades silently still exits zero, which is the exact failure this gate exists to catch.
+
+Required at: milestone `6.1d`, where it was first proven; the Phase 6 gate `6.13`; the pre-build regression gate; and milestones `10.1` and `10.2`, which already depend on a launchable build. Rerun it whenever the always-included shader list, the enabled scene list, the render pipeline, `Assets/Resources`, an assembly definition, or a stripping setting changes.
+
+Do not run this gate as a substitute for the Unity test suites. It proves the artifact runs; it does not prove the rules are right.

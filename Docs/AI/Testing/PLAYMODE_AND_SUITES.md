@@ -66,8 +66,8 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 331 | 0 | 0 | 0 | `6.1d` first commit |
-| Complete Play Mode | 17 | 0 | 0 | 0 | `6.1d` first commit |
+| Complete Edit Mode | 331 | 0 | 0 | 0 | `6.1d` |
+| Complete Play Mode | 17 | 0 | 0 | 0 | `6.1d` |
 
 A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
 
@@ -75,6 +75,13 @@ Milestone 6.1d's first commit moved the Edit Mode total from 328 to 331: `+2` fo
 `RuntimeShaderResolutionTests`, and `+1` for the Editor-assembly case added to
 `ApplicationArchitectureBoundaryTests`. Play Mode is unchanged at 17; that commit added no Play Mode
 fixture.
+
+6.1d's second commit moved neither total. It added production and Editor code - the player-build
+entry point, the smoke driver, and the gate script - and no fixture. That is deliberate rather than
+an omission: the driver only does anything inside a built player, so the
+[player-build smoke gate](FUTURE_GATES.md) exercises it end to end and is stronger evidence than an
+Edit Mode fixture could be. A total that does not move when a commit adds no test is the correct
+outcome; what would be wrong is a commit that adds testable behavior and moves nothing.
 
 Milestone 6.1c moved the Edit Mode total from 354 to 328, and the drop is fully accounted for:
 `-11` for the deleted `HeroSelectionControllerTests`, `-20` for the deleted

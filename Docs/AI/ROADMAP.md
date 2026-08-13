@@ -39,11 +39,11 @@ Enforced by the living-document validator, and no longer reviewer-owned:
 
 - **Dead and temporary structures.** The `unreachable-component` check reports any `MonoBehaviour`/`ScriptableObject` that is in no scene, prefab, or asset and is never constructed by production code, unless the temporary-structure register of `Docs/AI/TECHNICAL_RISKS.md` names its retirement owner. Retired from this list on 2026-08-13 after being observed to fail on the legacy controller drill and pass once its register row was restored.
 - **Documented-contract truth.** The `undeclared-contract-type` and `incoherent-status` checks prove every documented contract resolves to a real type and that the three canonical status statements agree. Retired from this list on 2026-08-13; these checks found `F613-15`.
+- **Buildability.** The player-build smoke gate in `Testing/FUTURE_GATES.md` builds the real Windows player, runs it, and requires it to report that it composed a configured match and completed one authoritative command. Retired from the reviewer-owned list at milestone 6.1d, after being observed to fail on a deliberate removal of the Standard shader from the always-included list and to pass once restored. The deliberate break is worth recording precisely: the **build still succeeded**, and only the running player failed, so a build-only check would have reported that violation as a pass.
 
-Still reviewer-owned, because no check enforces them yet:
+Still reviewer-owned, because no check enforces it yet:
 
-1. **Buildability.** Whether the current source produces a working player build on every declared target platform, not merely a passing Editor session. Editor-only resolution paths, shader/material references, and stripping behavior are in scope. Becomes mechanical when the player-build smoke gate lands.
-2. **Toolchain and platform portability.** Whether the validation and build toolchain still runs on every declared development platform. Becomes mechanical when the validators are confirmed cross-platform.
+1. **Toolchain and platform portability.** Whether the validation and build toolchain still runs on every declared development platform. Becomes mechanical when milestone `6.1l` confirms the validators on a non-Windows host; 6.1d made them portable but could not confirm them, as no non-Windows host exists on the current machine.
 
 The implementing agent's review-only milestone handoff pass is a routine self-check and does not satisfy or replace a separately numbered fresh-task independent engineering review.
 

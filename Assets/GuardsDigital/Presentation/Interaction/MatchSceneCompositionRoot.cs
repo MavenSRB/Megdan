@@ -156,6 +156,22 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             Compose();
+            AttachSmokeDriverWhenRequested();
+        }
+
+        /// <summary>
+        /// Only a player launched with the smoke flag ever constructs the driver. A normally
+        /// launched build has no test hook in it at all.
+        /// </summary>
+        private void AttachSmokeDriverWhenRequested()
+        {
+            if (!UnityEngine.Application.isPlaying || !PlayerSmokeTestDriver.IsRequested())
+            {
+                return;
+            }
+
+            var driver = gameObject.AddComponent<PlayerSmokeTestDriver>();
+            driver.Configure(this);
         }
 
         private void OnDestroy()
