@@ -22,7 +22,7 @@ Configured minion views retain serialized stable binding identity across editor 
 - The corrective sequence 6.1c through 6.1p is complete and its account - what the 2026-08-13 audit found, what closed each finding, and which earlier claims were corrected - is maintained in [Project/FOUNDATION_CORRECTIONS.md](Project/FOUNDATION_CORRECTIONS.md). Per-milestone evidence is in each commit body, addressed by the SHA in the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md). `RISK-STATE-002` in [TECHNICAL_RISKS.md](TECHNICAL_RISKS.md) owns the one residual that sequence did not close: the commit boundary rolls back from a serialized pre-image rather than withholding a deferred write, so it protects only state the snapshot round-trips.
 - Milestone **6.1l** was reinstated on 2026-08-13 and is `[!]` blocked: confirming the validation toolchain on a non-Windows platform needs a non-Windows host, and this machine has no WSL distribution, no Docker, and no PowerShell Core. It owns `F613-14`, which 6.1d did not close.
 - The **player-build smoke gate** is now a standing check. Run `Tools/Invoke-PlayerBuildSmoke.ps1` whenever the always-included shader list, the enabled scene list, the render pipeline, `Assets/Resources`, an assembly definition, or a stripping setting changes; see [Testing/FUTURE_GATES.md](Testing/FUTURE_GATES.md).
-- The local repository is on `main` with no Git remote configured. On 2026-08-13, the user explicitly requested removal of the prior `origin` configuration; local history and branches remain intact.
+- The local repository is on `main`. On 2026-08-13, the user explicitly authorized the public `maven/guards-digital` Gitea repository as `origin` and confirmed relevant permission to publish the tracked source and rulebook there; excluded reference corpora, builds, and untracked material remain outside that authorization.
 
 ## Durable boundaries
 
@@ -30,7 +30,7 @@ Configured minion views retain serialized stable binding identity across editor 
 - Declared target platforms are Windows, macOS, and iOS as of 2026-08-13. Windows remains the active reference build target; macOS and iOS are declared, not supported, and iOS player work is unscheduled phase-scale work. See [Project/PRODUCT.md](Project/PRODUCT.md).
 - Rules follow the second-printing rulebook, verified card data, and official rulings under [RULES_LEDGER.md](RULES_LEDGER.md). No rule may be invented, simplified, rebalanced, or silently reinterpreted.
 - Pure rules/state remain independent of Unity presentation. Preserve definition/instance, action-offer, command/event, pending-choice, timing, versioning, typed effect/query, map-scoped identity, snapshot, and deterministic replay boundaries.
-- The rulebook, extracted card corpus, project assets, builds, and project remain private. Do not add excluded references to Git or publish/upload/distribute anything without explicit authorization and applicable rights.
+- The public source repository and rulebook are authorized under the user's 2026-08-13 permission confirmation. The extracted card corpus, map references, builds, and untracked material remain private; do not add or distribute them without separate explicit authorization and applicable rights.
 - Work on one approved micro-milestone, run its routed validation, perform the required four-perspective review-only pass, update the continuity documents its subject touched, create the local milestone commit carrying the evidence record, report the next proposal, and stop.
 
 ## Targeted routing

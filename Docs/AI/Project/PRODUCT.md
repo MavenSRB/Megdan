@@ -10,13 +10,13 @@ The private pitch prototype is a complete 3v3 match with six different heroes: W
 
 ## Rights and distribution boundary
 
-- The user does not currently have authorization to publicly distribute an adaptation.
-- The prototype is private, noncommercial, and intended for a direct publisher pitch.
+- On 2026-08-13, the user stated that they have relevant permission to publish this source repository and the included rulebook. This records the user's authorization for those artifacts; it is not a legal determination or authorization for builds, marketing, monetization, or excluded reference material.
+- The playable prototype remains private, noncommercial, and intended for a direct publisher pitch.
 - "Guards Digital" is a working title. Final naming is gated on authorization and publisher agreement.
-- Do not create a public download, public repository, marketing campaign, monetization, telemetry, or store listing before authorization.
+- Do not create a public build download, marketing campaign, monetization, telemetry, or store listing before separate authorization. The public source repository and tracked rulebook are the current bounded exception.
 - The initial pitch deliverable is a private Windows standalone build plus a short recorded walkthrough as backup.
 - Disposable online playtest builds may be shared only with specifically invited private testers and are not public releases.
-- Source code and builds for other platforms remain internal unless specifically requested.
+- Builds for all platforms remain internal unless specifically authorized.
 
 This is a project boundary, not a legal determination.
 
@@ -80,7 +80,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Active reference build target: Windows 64-bit standalone (`Win64`).
 - Input: Unity Input System package `1.19.0`, with **Input System Package (New)** as the only active input handler. The legacy Input Manager is not selected for gameplay input.
 - Automated testing: Unity Test Framework `1.7.0`, with independent Edit Mode and Play Mode assemblies. Validation tiers, focused commands, and full-suite gates are documented in `Docs/AI/TESTING.md`.
-- Version control: Local Git repository on branch `main`, with root `.gitignore` and `.gitattributes` policies. Unity-generated data, local validation output, the private rulebook, and the extracted card corpus are ignored. Completed roadmap milestones require a local commit after acceptance and continuity updates. No remote is configured.
+- Version control: Git repository on branch `main`, with root `.gitignore` and `.gitattributes` policies and the public `maven/guards-digital` Gitea repository as `origin`. The rulebook is tracked through Git LFS under the user's stated distribution permission. Unity-generated data, local validation output, the extracted card corpus, and map references remain ignored. Completed roadmap milestones require a local commit after acceptance and continuity updates; pushing still requires explicit authorization.
 - Declared target platforms: Windows, macOS, and iOS. The user set this scope on 2026-08-13, replacing the previous Windows-only target. Windows remains the active reference build target; macOS and iOS are declared targets, not yet supported ones.
 - Platform rollout direction: Windows first, then macOS, then iOS. Linux and closed platforms remain unscheduled.
 - iOS support is phase-scale work that is not yet scheduled as milestones. It requires at minimum: touch input replacing the current pointer-driven interaction, an IL2CPP and AOT audit of any reflection-dependent runtime path, ARM64 build configuration, a mobile allocation budget that `RISK-PERF-001` currently blocks, shader stripping verification covered by `RISK-BUILD-001`, and provisioning. Do not treat a passing Windows build as evidence of iOS viability.

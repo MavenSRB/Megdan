@@ -12,8 +12,7 @@
 # Local validation output
 /tmp/
 
-# Private local rule and card references; preserve in place, never commit or distribute
-/Docs/Guards of Atlantis II - 2nd Printing_web.pdf
+# Private local card and map references; preserve in place, never commit or distribute
 /Docs/Guards of Atlantis II - Tabletopia Cards/
 /Docs/Guards of Atlantis II - Map References/
 

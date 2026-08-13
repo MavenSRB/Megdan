@@ -44,13 +44,13 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ## Available reference material
 
-- `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` - primary local rulebook.
+- `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` - primary rulebook, tracked through Git LFS under the user's 2026-08-13 confirmation of relevant public-distribution permission.
 - `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` - project architecture contract derived from the general card/action rules; it is not a substitute for card-specific source verification.
 - `Docs/AI/CARD_EFFECT_CAPABILITIES.md` - effect and keyword capability index/catalog, routing to capability shards where needed; it is not evidence that a capability or card is implemented.
 - `Docs/Guards of Atlantis II - Tabletopia Cards/` - private reference extraction containing hero-card material and supporting scripts/assets.
 - The extracted card corpus has not been accepted as complete or fully verified for implementation.
 - Do not assume filenames, duplicates, image faces, or extraction completeness are authoritative without an explicit inventory milestone.
-- Do not distribute these references.
+- The tracked rulebook is the sole public reference authorized on 2026-08-13. Do not distribute the extracted card corpus, map references, or other excluded source material without separate explicit authorization and appropriate rights.
 
 ## Shared terminology
 

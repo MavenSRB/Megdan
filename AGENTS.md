@@ -63,8 +63,8 @@ The detailed current implementation lives in `Docs/AI/Project/CURRENT_IMPLEMENTA
 - Apply `Docs/AI/Testing/POLICY.md`'s token-efficient execution and reporting rules: run final-revision filters once unless invalidated, prove each non-obvious directly affected dependency route, avoid duplicating an owned invariant across layers, and keep the one canonical archive evidence record concise. This reduces reruns and repeated narration, never required coverage or failure accountability.
 - Record the validation tier, final revision, exact tests/checks, results, material limitations, and one bounded reason for any intentionally omitted unaffected suite in the milestone handoff; keep the user-facing summary shorter unless a failure, risk decision, requested audit, or hard gate needs detail.
 - Preserve user-created and reference files. Do not bulk-process or reorganize the card corpus unless the current milestone requires it.
-- The local rulebook and extracted card corpus are intentionally excluded from Git. Preserve them at their documented paths and never add them to a commit or distribute them without explicit authorization and appropriate rights.
-- Keep the project private. Do not publish, upload, market, monetize, or distribute game assets or builds without explicit authorization from the user and the relevant rights holder.
+- The rulebook is tracked through Git LFS under the user's 2026-08-13 confirmation of relevant distribution permission. The extracted card corpus and map references remain excluded from Git; preserve them at their documented paths and never add or distribute them without separate explicit authorization and appropriate rights.
+- The public source repository and tracked rulebook are the only currently authorized publication. Do not publish, upload, market, monetize, or distribute excluded references, builds, or other untracked material without explicit authorization from the user and the relevant rights holder.
 
 ## Continuity updates
 

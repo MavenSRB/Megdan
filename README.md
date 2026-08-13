@@ -1,8 +1,8 @@
 # Guards Digital
 
-A private digital adaptation of the board game **Guards of Atlantis II** (2nd printing), built in Unity.
+A public source repository for a private, noncommercial digital prototype of the board game **Guards of Atlantis II** (2nd printing), built in Unity.
 
-This repository is private and not distributable. See [Rights and privacy](#rights-and-privacy) before sharing anything from it.
+The project owner states that the public repository and included rulebook are shared with the relevant permission. Builds and excluded reference material are not public releases. See [Rights and distribution](#rights-and-distribution).
 
 ## What this is
 
@@ -89,10 +89,10 @@ If you contribute here, whether human or agent:
 - Keep rules and state independent of Unity objects, presentation, animation, and audio.
 - Commit locally after each completed milestone. Do not add a Git remote or push without explicit authorization.
 
-## Rights and privacy
+## Rights and distribution
 
 Guards of Atlantis II is the property of its rights holders. This is an unaffiliated private implementation.
 
-- The rulebook PDF and the extracted card corpus are deliberately excluded from Git. Preserve them at their documented paths; never commit or distribute them.
-- Do not publish, upload, market, monetize, or distribute any part of this project — including builds, assets, and screenshots — without explicit authorization from both the project owner and the relevant rights holder.
-- No remote is configured on this repository, and that is intentional.
+- The rulebook PDF is included through Git LFS under the project owner's stated distribution permission. The extracted card corpus and map references remain deliberately excluded from Git and must not be distributed without separate permission.
+- The public source repository and tracked rulebook are the only currently authorized publication. Builds and other excluded or untracked material remain private unless both the project owner and relevant rights holder authorize their distribution.
+- The public `origin` repository is `maven/guards-digital` on the project owner's Gitea service.
