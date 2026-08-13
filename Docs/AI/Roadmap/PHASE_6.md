@@ -401,6 +401,64 @@ Closing check for `F-ER2-10`: compilation and the directly affected suites green
 
 Non-goals: No behavior change beyond the rejection reason, no refactor of live code paths, no relocation of coin/modifier content (owned by 7.4).
 
+## Validation-integrity milestones from the 6.1s Windows handoff
+
+These milestones were scheduled by a user-approved roadmap amendment on 2026-08-13. Their source is the 6.1s Windows Unity tier and the complete-suite run that followed it, **not** the ER2 external review; do not attribute them to the ER2 record. Each closes a way the validation route can report green while a directly affected fixture was never executed.
+
+6.1x is corrective and blocks the others: an active fixture is failing on `main`, and under [Testing/POLICY.md](../Testing/POLICY.md) an observed failure blocks the handoff. 6.1v and 6.1w are unordered against each other and against the rest of Phase 6.
+
+### [ ] 6.1x Re-pin the invariance digests to schema v7
+
+Observable outcome: The complete Edit Mode suite is green, and `CardAggregateInvarianceTests` pins digests that express the schema the serializer actually writes.
+
+Context: milestone 6.1s advanced `CurrentSchemaVersion` from 6 to 7 and re-pinned the five compatibility-corpus fixtures, but `CardAggregateInvarianceTests` pins nine scenario digests of its own, last set at 6.1f. That fixture is in the dotnet harness exclude list, so the Linux harness never ran it, and it was absent from the focused Windows filter, so 6.1s was marked complete without it ever executing. The complete Edit Mode suite at `4253eb9` reported 370/371 with that fixture failing.
+
+Acceptance checks:
+
+- The nine pinned scenario snapshot digests express schema v7, and the paired event digests are re-verified with their changed-or-unchanged status stated rather than assumed.
+- The re-pin is justified before it is applied: the delta is shown to be the serialized schema-version field alone. All nine scenarios construct a board with no minions, and both v6 and v7 write the remaining-minion count first, so a zero-minion board section is byte-identical across the change. A re-pin that cannot explain its own delta is indistinguishable from pinning over a regression.
+- The complete Edit Mode suite is green at the post-fix revision, and the known-good baseline table in [Testing/PLAYMODE_AND_SUITES.md](../Testing/PLAYMODE_AND_SUITES.md) records the new totals with per-milestone delta attribution.
+- The record states plainly that 6.1s was marked complete on evidence that omitted a directly affected fixture.
+
+Closing check: `CardAggregateInvarianceTests.SixScenarios_ProduceByteIdenticalSnapshotsAndOrderedEvents` observed failing at `4253eb9` and passing at the post-fix revision, with the complete unfiltered Edit Mode suite green at that same revision.
+
+Non-goals: No schema change, no serializer change, no new fixture, no reopening of the v7 migrate-or-reject decision, no change to what the invariance fixture asserts.
+
+### [ ] 6.1v Make reflected member names and digest fixtures checkable
+
+Observable outcome: A test that names a production member by string, or pins a snapshot digest, cannot silently drift out of agreement with the source it describes.
+
+Context: 6.1s renamed a private field `setupState` to `occupancy`. Three fixtures resolve that field reflectively by string name, which no compiler can check; `GetField` would have returned `null` and each test would have died on a null dereference. `StandardMinionViewTests` had its assertion updated to `.Occupancy` while its reflection string was missed, so one file disagreed with itself. The 6.1x finding is the same failure mode in a second form: a fixture whose correctness depends on the schema, selected by no rule.
+
+Acceptance checks:
+
+- A code-truth check in `Tools/Validate-LivingDocumentation.ps1` resolves every reflected member name in the test corpus against the declaring type's source, and fails when the member does not exist. It matches the multi-line call form, not only the single-line one.
+- A site that deliberately asserts a member's absence carries an explicit source marker and is exempt; the exemption is stated in the source, never inferred.
+- The check fails loudly if it finds no reflection sites at all, matching the existing vacuity guards for declared types and behaviours.
+- Reflected private members resolve through a helper that fails naming the type and member, instead of returning `null`.
+- Every fixture that pins a snapshot digest is named in the snapshot test route, and the recipe states that a change to `CurrentSchemaVersion` requires running all of them. An enumerated focused filter must not be able to omit one again.
+- Validator self-tests cover a resolving member, a missing member, an absence-marked site, a member on a partial class declared in a second file, the multi-line form, and the vacuity guard.
+
+Closing check: the new check run against commit `5676c64`, where the three `setupState` references were genuinely stale, observed reporting them; and run at the post-fix revision, observed passing. Historical evidence rather than a synthetic mutation, because the defect existed at that commit.
+
+Non-goals: No change to what any test asserts, no new test assembly (a shared test-utility assembly would escalate this to T3 under the testing policy), no shrinking of the harness exclude list, no removal of reflection from tests that legitimately need it.
+
+### [ ] 6.1w Route the rules-ledger coverage sections to a shard
+
+Observable outcome: `RULES_LEDGER.md` returns below its warning threshold with no content deleted, abbreviated, or weakened.
+
+Context: the ledger is at 7,720 of its 9,000-word hard limit, so the validator warns and governance requires an ownership review. `Docs/AI/Rules/*.md` is already reserved at the same family threshold, so this needs no governance amendment or validator change.
+
+Acceptance checks:
+
+- The `Card architecture coverage` and `Effect capability coverage` sections move verbatim into an indexed `Docs/AI/Rules/` shard carrying the standard backlink line.
+- `RULES_LEDGER.md` keeps a short routing summary and stable link for each moved section, never a copy of the narrative.
+- The four required `RULES_LEDGER.md` headings are unaffected, and the shard is reachable from the session brief's routing table.
+
+Closing check: the validator reports the `warning-threshold` warning for `RULES_LEDGER.md` at the pre-fix revision and reports no such warning at the post-fix revision, with the moved text byte-identical in its new home.
+
+Non-goals: No rule content change, no re-verification of rule status, no sharding of the `Rule-system ledger` section itself, which is 5,695 words and belongs to its own later milestone.
+
 ## Phase 6 gameplay milestones (continued)
 
 ### [ ] 6.2 Add token and marker instances, supplies, placement, and attachment
