@@ -1,13 +1,20 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -196,6 +203,238 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.UnrecognizedEnumValue),
                 "An undefined enum is a distinct failure from a garbled byte stream; a resynchronizing client needs to tell them apart.");
             Assert.That(exception.Message, Does.Contain("TeamSide").And.Contains("9999"));
+        }
+
+        /// <summary>
+        /// Milestone 6.2c closing check for finding F62B-04: restore re-derives a paused
+        /// capability's candidates against the same resolved input bindings live execution
+        /// supplied, rebuilt from the persisted completed outcomes. The capability lives in a
+        /// test-local catalog so the registered set the compatibility corpus pins does not move;
+        /// the pending frame is injected through the dispatcher's own public restore seam because
+        /// the live composition roots name only the registered catalog.
+        /// </summary>
+        [Test]
+        public void RoundTrip_RederivesPausedCapabilityCandidatesFromPersistedInputBindings()
+        {
+            var participants = PlaceholderOneVsOneParticipants.Create();
+            var redHero = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var blueHero = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var redDefinition = CreateInputDependentSkillDefinition();
+            var blueDefinition = CreateMinimalMovementDefinition("test-input-blue", 3);
+            var definitions = new[] { redDefinition, blueDefinition };
+            var redCard = CardInstance.CreateInHand(
+                new CardInstanceId("test-input-red-card"), redDefinition.Reference, redHero);
+            var blueCard = CardInstance.CreateInHand(
+                new CardInstanceId("test-input-blue-card"), blueDefinition.Reference, blueHero);
+            var instances = new[] { redCard, blueCard };
+            var catalog = new EffectCapabilityCatalog(RegisteredHandlers()
+                .Concat(new IEffectCapabilityHandler[]
+                {
+                    new SeedSupplyHandler(),
+                    new InputDependentAskerHandler()
+                }));
+
+            var live = EffectResolutionSession.Start(
+                new EffectResolutionId("input-binding-resolution"),
+                redCard.Id,
+                redDefinition.Reference,
+                new ActionDefinitionId("primary-skill"),
+                redHero,
+                redHero,
+                ActionInvocationContext.PrintedPrimary,
+                new EffectResolutionContext(
+                    redDefinition.ActionDefinitions.Single().EffectRoot,
+                    catalog,
+                    participants,
+                    null,
+                    1,
+                    1));
+            Assert.That(live.Accepted, Is.True);
+            Assert.That(live.Frame, Is.Not.Null, "The asker capability must pause the resolution.");
+            var liveCandidates = live.Frame.PendingChoice.Candidates
+                .Select(candidate => candidate.ToString()).ToArray();
+            Assert.That(liveCandidates, Is.EqualTo(new[] { EffectValue.Hero(blueHero).ToString() }),
+                "The live candidate set must come from the bound input, or this test pins nothing.");
+
+            var board = new AdjacentMoveAuthority(
+                new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0) },
+                new[]
+                {
+                    new HeroOccupancy(redHero, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(blueHero, new HexCoordinate(1, 0))
+                });
+            var cardActions = CardActionResolutionAuthority.Restore(
+                board,
+                CardActionResolutionRestoreState.WithPendingSkill(
+                    live.Frame,
+                    DefeatRewardRestoreStateHolder.Absent()),
+                null,
+                null,
+                null,
+                definitions,
+                instances,
+                participants,
+                new MarkerAttachmentRegister());
+            var round = new RoundResolutionAuthority(
+                definitions,
+                instances,
+                participants,
+                new TieBreakerState(TeamSide.Red),
+                1,
+                RoundResolutionComposition.ForCardActionsOnly(cardActions));
+            Assert.That(round.TryCommitCard(redHero, redCard.Id).Accepted, Is.True);
+            Assert.That(round.TryCommitCard(blueHero, blueCard.Id).Accepted, Is.True);
+            Assert.That(round.CurrentTurnAuthority.SelectedActor.CardInstanceId, Is.EqualTo(redCard.Id));
+            Assert.That(round.CurrentTurnAuthority.PendingEffectChoice, Is.Not.Null);
+
+            var payload = AuthoritativeSnapshotSerializer.Serialize(round, board, catalog);
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                payload,
+                definitions,
+                new[] { board.MapDefinition },
+                Enumerable.Empty<QuickGameMinionSetupState>(),
+                catalog);
+
+            var restoredChoice = restored.Round.CurrentTurnAuthority.PendingEffectChoice;
+            Assert.That(restoredChoice, Is.Not.Null);
+            Assert.That(
+                restoredChoice.Candidates.Select(candidate => candidate.ToString()),
+                Is.EqualTo(liveCandidates),
+                "Restore must re-derive a paused capability's candidates against the same " +
+                "resolved input bindings live execution supplied, rebuilt from the persisted " +
+                "completed outcomes.");
+        }
+
+        private static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers()
+        {
+            var registered = SyntheticEffectCapabilities.CreateCatalog();
+            return registered.Registered.Select(reference => registered.Load(reference)).ToArray();
+        }
+
+        private static CardDefinition CreateInputDependentSkillDefinition()
+        {
+            var root = new EffectNodeId("input-skill-root");
+            var supply = new EffectNodeId("input-skill-supply");
+            var ask = new EffectNodeId("input-skill-ask");
+            var effect = new EffectDefinition(
+                new EffectDefinitionId("test-input-dependent-skill"),
+                "test-6-2c-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { supply, ask }),
+                    new EffectNodeDefinition(
+                        supply, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SeedSupplyHandler.SupplyReference,
+                        outputs: new[] { new EffectOutputBinding("seed", EffectValueKind.Hero) }),
+                    new EffectNodeDefinition(
+                        ask, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        InputDependentAskerHandler.AskerReference,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "seed", supply, "seed", EffectValueKind.Hero)
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Hero) })
+                });
+            return new CardDefinition(
+                new CardDefinitionId("test-input-dependent-card"),
+                "test-6-2c-rev-1",
+                "TEST - Input Dependent Skill",
+                new InitiativeValue(14),
+                CardContentAuthority.SyntheticTestFixture,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        private static CardDefinition CreateMinimalMovementDefinition(string id, int initiative)
+        {
+            return new CardDefinition(
+                new CardDefinitionId(id),
+                "test-6-2c-rev-1",
+                $"TEST - {id}",
+                new InitiativeValue(initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-movement"),
+                        ActionKind.Movement,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, 2) },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true))
+                });
+        }
+
+        /// <summary>Publishes the other hero as the seed the asker's candidates depend on.</summary>
+        private sealed class SeedSupplyHandler : IEffectCapabilityHandler
+        {
+            public static EffectCapabilityReference SupplyReference { get; } =
+                new EffectCapabilityReference(new EffectCapabilityId("test-seed-supply"), 1);
+
+            public EffectCapabilityReference Reference => SupplyReference;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                outputs: new[] { new EffectOutputBinding("seed", EffectValueKind.Hero) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var other = context.Participants.Heroes
+                    .Single(hero => !hero.Id.Equals(context.ActorId)).Id;
+                return EffectExecutionResult.Applied(
+                    new[] { new EffectOutcomeFact("seed", EffectValue.Hero(other)) });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+        }
+
+        /// <summary>
+        /// Offers the bound input when it arrived and the actor when it did not, so a restore that
+        /// drops the binding is observable as a different offered candidate set.
+        /// </summary>
+        private sealed class InputDependentAskerHandler : IEffectCapabilityHandler
+        {
+            public static EffectCapabilityReference AskerReference { get; } =
+                new EffectCapabilityReference(new EffectCapabilityId("test-input-dependent-asker"), 1);
+
+            public EffectCapabilityReference Reference => AskerReference;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                parameters: new[] { new EffectCapabilityParameter("seed", EffectValueKind.Hero, false) },
+                outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Hero) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var seed = context.Input("seed");
+                var candidate = seed.IsDefined ? seed : EffectValue.Hero(context.ActorId);
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.Actor, new[] { candidate }, 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                EffectExecutionResult.Applied(
+                    new[] { new EffectOutcomeFact("chosen", selected[0]) });
         }
 
         private static SnapshotFixture CreateFixture()

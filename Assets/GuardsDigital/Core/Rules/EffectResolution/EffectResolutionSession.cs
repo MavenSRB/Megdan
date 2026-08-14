@@ -559,12 +559,6 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<EffectNodeOutcome> outcomes,
             EffectResolutionContext context)
         {
-            var inputs = new Dictionary<string, EffectValue>(StringComparer.Ordinal);
-            foreach (var binding in node.Inputs)
-            {
-                inputs[binding.ParameterName] = ResolveInput(binding, frame, outcomes);
-            }
-
             return new EffectCapabilityContext(
                 node.Id,
                 node.FailurePolicy,
@@ -572,12 +566,31 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 frame.ControllerId,
                 frame.SourceCardInstanceId,
                 frame.ActionDefinitionId,
-                inputs,
+                ResolveInputBindings(node, frame, outcomes),
                 context.RoundIndex,
                 context.TurnIndex,
                 context.Participants,
                 context.Timing,
                 context.Components);
+        }
+
+        /// <summary>
+        /// The exact input dictionary live execution hands a capability. Internal so that snapshot
+        /// restore re-derives a paused choice's candidates through this same path, rebuilding the
+        /// bindings from the persisted completed outcomes rather than re-asking with none.
+        /// </summary>
+        internal static IReadOnlyDictionary<string, EffectValue> ResolveInputBindings(
+            EffectNodeDefinition node,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes)
+        {
+            var inputs = new Dictionary<string, EffectValue>(StringComparer.Ordinal);
+            foreach (var binding in node.Inputs)
+            {
+                inputs[binding.ParameterName] = ResolveInput(binding, frame, outcomes);
+            }
+
+            return inputs;
         }
 
         private static EffectValue ResolveInput(

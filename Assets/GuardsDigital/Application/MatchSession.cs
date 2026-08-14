@@ -492,7 +492,8 @@ namespace GuardsDigital.Application
             var hasPendingAction = turn?.PendingChoice != null ||
                 turn?.PendingMovementChoice != null || turn?.PendingMovementResolution != null ||
                 turn?.PendingAttackTargetChoice != null || turn?.PendingDefenseChoice != null ||
-                turn?.PendingAttackResolution != null;
+                turn?.PendingAttackResolution != null ||
+                turn?.PendingSkillResolution != null || turn?.PendingEffectChoice != null;
             var availableFastTravelOptions = turn != null &&
                 turn.SelectedActor.IsDefined && !hasPendingAction
                 ? availableActions.Select(offer =>

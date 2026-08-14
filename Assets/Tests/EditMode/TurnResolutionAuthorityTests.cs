@@ -7,6 +7,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -662,6 +663,110 @@ namespace GuardsDigital.Tests.EditMode
                 .Select(value => value.CardActionEvent.Kind), Does.Contain(CardActionResolutionEventKind.MinionDefeatRecorded));
         }
 
+        /// <summary>
+        /// Milestone 6.2c closing check for finding F62B-02, start side: a refused Skill start
+        /// reports Skill-specific typed reasons instead of borrowing ActionAlreadyPending for
+        /// every failure shape.
+        /// </summary>
+        [Test]
+        public void TryStartSkill_RefusalsReportSkillSpecificTypedReasons()
+        {
+            var withoutDispatcher = CreateSkillTurnFixture(false);
+            AssertRejected(
+                withoutDispatcher.Authority.TryStartSkill(
+                    new ActionResolutionId("skill-no-dispatcher"),
+                    SkillOffer(withoutDispatcher)),
+                TurnResolutionRejectionReason.SkillAuthorityUnavailable);
+
+            var fixture = CreateSkillTurnFixture();
+            var forged = new ActionOffer(
+                fixture.RedFocus.Id,
+                fixture.RedFocus.DefinitionReference,
+                new ActionDefinitionId("no-such-skill"),
+                fixture.RedFocus.OwnerId,
+                ActionInvocationContext.PrintedPrimary,
+                true);
+            AssertRejected(
+                fixture.Authority.TryStartSkill(new ActionResolutionId("skill-forged"), forged),
+                TurnResolutionRejectionReason.SkillActionRejected);
+            Assert.That(fixture.Authority.PendingSkillResolution, Is.Null);
+        }
+
+        /// <summary>
+        /// Milestone 6.2c closing check for finding F62B-02, answer side: a refused effect-choice
+        /// answer reports a Skill-specific typed reason rather than AttackCommandRejected.
+        /// </summary>
+        [Test]
+        public void TryAnswerEffectChoice_RefusalsReportSkillSpecificTypedReasons()
+        {
+            var fixture = CreateSkillTurnFixture();
+            AssertRejected(
+                fixture.Authority.TryAnswerEffectChoice(new EffectChoiceCommand(
+                    new EffectResolutionId("no-pending-skill"),
+                    new EffectChoiceId("no-pending-choice"),
+                    EffectChoiceCommandKind.Confirm)),
+                TurnResolutionRejectionReason.SkillCommandRejected);
+
+            Assert.That(fixture.Authority.TryStartSkill(
+                new ActionResolutionId("skill-stale-answer"),
+                SkillOffer(fixture)).Accepted, Is.True);
+            var choice = fixture.Authority.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null);
+            AssertRejected(
+                fixture.Authority.TryAnswerEffectChoice(new EffectChoiceCommand(
+                    choice.ResolutionId,
+                    new EffectChoiceId("stale-effect-choice"),
+                    EffectChoiceCommandKind.Confirm)),
+                TurnResolutionRejectionReason.SkillCommandRejected);
+            Assert.That(fixture.Authority.PendingEffectChoice, Is.SameAs(choice));
+        }
+
+        /// <summary>
+        /// Milestone 6.2c closing check for finding F62B-02, event side: accepted Skill facts
+        /// materialize under the Skill-specific turn event kind rather than
+        /// MovementActionProgressed.
+        /// </summary>
+        [Test]
+        public void AcceptedSkillFacts_MaterializeUnderTheSkillTurnEventKind()
+        {
+            var fixture = CreateSkillTurnFixture();
+
+            var started = fixture.Authority.TryStartSkill(
+                new ActionResolutionId("skill-event-kind"), SkillOffer(fixture));
+
+            Assert.That(started.Accepted, Is.True);
+            var cardActionKinds = started.Events
+                .Where(ruleEvent => ruleEvent.CardActionEvent.Kind != CardActionResolutionEventKind.None)
+                .Select(ruleEvent => ruleEvent.Kind)
+                .ToArray();
+            Assert.That(cardActionKinds, Is.Not.Empty);
+            Assert.That(cardActionKinds, Is.All.EqualTo(TurnResolutionEventKind.SkillActionProgressed),
+                "Skill facts must not materialize under another action family's event kind.");
+        }
+
+        /// <summary>
+        /// Milestone 6.2c closing check for the answer half of finding F62B-03: the effect-answer
+        /// path prechecks source-card state the way Movement's answer path does, so a bad state is
+        /// a typed rejection rather than a completion-time fault.
+        /// </summary>
+        [Test]
+        public void TryAnswerEffectChoice_BadSourceCardState_RejectsInsteadOfFaulting()
+        {
+            var fixture = CreateSkillTurnFixture();
+            Assert.That(fixture.Authority.TryStartSkill(
+                new ActionResolutionId("skill-bad-card-state"),
+                SkillOffer(fixture)).Accepted, Is.True);
+            var choice = fixture.Authority.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null);
+            Assert.That(CardLifecycleAuthority.TryResolveAfterAction(fixture.RedFocus), Is.True,
+                "The arrangement resolves the source card out from under the paused Skill.");
+
+            AssertRejected(
+                fixture.Authority.TryAnswerEffectChoice(choice.DeclineInvocation),
+                TurnResolutionRejectionReason.CardResolutionFailed);
+            Assert.That(fixture.Authority.PendingEffectChoice, Is.SameAs(choice));
+        }
+
         private static IEnumerable<InitiativeResolutionEventKind> EventKinds(
             TurnResolutionResult result)
         {
@@ -802,6 +907,63 @@ namespace GuardsDigital.Tests.EditMode
                     1));
         }
 
+        /// <summary>
+        /// The 6.2a Skill cards played and revealed under a real turn authority. Red's Focus card
+        /// (Initiative 14) wins the turn against Blue's (3), so the Skill under test is the
+        /// selected actor's without steering Initiative. The cache cards stay in hand and never
+        /// compete.
+        /// </summary>
+        private static SkillTurnTestFixture CreateSkillTurnFixture(bool withCardActions = true)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Red);
+            var redFocus = configuration.CardInstances.Single(card => card.Id.Value.Contains("red-focus"));
+            var blueFocus = configuration.CardInstances.Single(card => card.Id.Value.Contains("blue-focus"));
+            Assert.That(CardLifecycleAuthority.TryPlayFacedown(redFocus), Is.True);
+            Assert.That(CardLifecycleAuthority.TryReveal(redFocus), Is.True);
+            Assert.That(CardLifecycleAuthority.TryPlayFacedown(blueFocus), Is.True);
+            Assert.That(CardLifecycleAuthority.TryReveal(blueFocus), Is.True);
+            var board = new AdjacentMoveAuthority(
+                new[]
+                {
+                    new HexCoordinate(-1, 0),
+                    new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0),
+                    new HexCoordinate(2, 0)
+                },
+                new[]
+                {
+                    new HeroOccupancy(redFocus.OwnerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(blueFocus.OwnerId, new HexCoordinate(1, 0))
+                });
+            var authority = withCardActions
+                ? new TurnResolutionAuthority(
+                    configuration.CardDefinitions,
+                    configuration.CardInstances,
+                    configuration.Participants,
+                    configuration.TieBreakerState,
+                    new CardActionResolutionAuthority(board),
+                    new ActiveEffectLifecycle(),
+                    1,
+                    1)
+                : new TurnResolutionAuthority(
+                    configuration.CardDefinitions,
+                    configuration.CardInstances,
+                    configuration.Participants,
+                    configuration.TieBreakerState);
+            Assert.That(authority.TryStart().Accepted, Is.True);
+            Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(redFocus.Id));
+            return new SkillTurnTestFixture(configuration, redFocus, authority);
+        }
+
+        private static ActionOffer SkillOffer(SkillTurnTestFixture fixture)
+        {
+            return ActionOfferQuery.GetAvailableTurnActionOffers(
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.RedFocus.OwnerId,
+                fixture.RedFocus.Id).Single();
+        }
+
         private static CardDefinition CreateMovementDefinition(
             string id,
             int initiative,
@@ -892,6 +1054,25 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.Accepted, Is.False);
             Assert.That(result.RejectionReason, Is.EqualTo(reason));
             Assert.That(result.Events, Is.Empty);
+        }
+
+        private sealed class SkillTurnTestFixture
+        {
+            public SkillTurnTestFixture(
+                PlaceholderOneVsOneTestConfiguration configuration,
+                CardInstance redFocus,
+                TurnResolutionAuthority authority)
+            {
+                Configuration = configuration;
+                RedFocus = redFocus;
+                Authority = authority;
+            }
+
+            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+
+            public CardInstance RedFocus { get; }
+
+            public TurnResolutionAuthority Authority { get; }
         }
 
         private sealed class TestFixture

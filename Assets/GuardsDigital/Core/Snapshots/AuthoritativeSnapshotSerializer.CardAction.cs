@@ -235,45 +235,7 @@ namespace GuardsDigital.Core.Snapshots
                 return new EffectChoiceRecord(nodeId, choiceId, resolvedBy, selected);
             });
 
-            PendingEffectChoice pendingChoice = null;
-            if (reader.ReadBoolean())
-            {
-                var choiceId = new EffectChoiceId(reader.ReadString());
-                var nodeId = new EffectNodeId(reader.ReadString());
-                var chooserId = new HeroId(reader.ReadString());
-                var choiceKind = SnapshotEnumReader.Read<EffectChoiceKind>(reader, "pending effect choice kind");
-                var minimum = reader.ReadInt32();
-                var maximum = reader.ReadInt32();
-                var selected = ReadMany(reader, "pending effect choice selection", () => ReadEffectCandidate(reader));
-                if (!trusted.TryGetNode(nodeId, out var node))
-                {
-                    throw Malformed($"Snapshot pending effect choice names unknown node '{nodeId}'.");
-                }
-
-                // Candidates are never written. A control node's options come from the trusted
-                // definition; a capability's come from asking the trusted handler again. Either way a
-                // payload can only ever narrow an authoritative candidate set, never invent one.
-                // A confirm-or-decline choice offers nothing to pick between, so there is no candidate
-                // set to re-derive and no capability to ask - the control node itself opened it.
-                var candidates =
-                    choiceKind == EffectChoiceKind.ConfirmOrDecline
-                        ? Array.Empty<EffectChoiceCandidate>()
-                        : choiceKind == EffectChoiceKind.SelectOption
-                            ? node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray()
-                            : DeriveCapabilityCandidates(
-                                node, common, controllerId, capabilities, participants, components);
-                if (selected.Any(candidate => !candidates.Contains(candidate)))
-                {
-                    throw Malformed(
-                        $"Snapshot pending effect choice selects a candidate node '{nodeId}' does not offer.");
-                }
-
-                pendingChoice = new PendingEffectChoice(
-                    new EffectResolutionId(common.ResolutionId.Value), choiceId, nodeId, chooserId,
-                    choiceKind, candidates, minimum, maximum, selected);
-            }
-
-            return new PendingResolution(
+            var restored = new PendingResolution(
                 new EffectResolutionId(common.ResolutionId.Value),
                 common.CardId,
                 common.DefinitionReference,
@@ -284,8 +246,49 @@ namespace GuardsDigital.Core.Snapshots
                 common.InvocationContext,
                 continuation,
                 outcomes,
-                accepted,
-                pendingChoice);
+                accepted);
+            if (!reader.ReadBoolean())
+            {
+                return restored;
+            }
+
+            var choiceId = new EffectChoiceId(reader.ReadString());
+            var nodeId = new EffectNodeId(reader.ReadString());
+            var chooserId = new HeroId(reader.ReadString());
+            var choiceKind = SnapshotEnumReader.Read<EffectChoiceKind>(reader, "pending effect choice kind");
+            var minimum = reader.ReadInt32();
+            var maximum = reader.ReadInt32();
+            var selected = ReadMany(reader, "pending effect choice selection", () => ReadEffectCandidate(reader));
+            if (!trusted.TryGetNode(nodeId, out var node))
+            {
+                throw Malformed($"Snapshot pending effect choice names unknown node '{nodeId}'.");
+            }
+
+            // Candidates are never written. A control node's options come from the trusted
+            // definition; a capability's come from asking the trusted handler again. Either way a
+            // payload can only ever narrow an authoritative candidate set, never invent one.
+            // A confirm-or-decline choice offers nothing to pick between, so there is no candidate
+            // set to re-derive and no capability to ask - the control node itself opened it.
+            var candidates =
+                choiceKind == EffectChoiceKind.ConfirmOrDecline
+                    ? Array.Empty<EffectChoiceCandidate>()
+                    : choiceKind == EffectChoiceKind.SelectOption
+                        ? node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray()
+                        : DeriveCapabilityCandidates(
+                            node, restored, capabilities, participants, components);
+            if (selected.Any(candidate => !candidates.Contains(candidate)))
+            {
+                throw Malformed(
+                    $"Snapshot pending effect choice selects a candidate node '{nodeId}' does not offer.");
+            }
+
+            return restored.With(
+                restored.Continuation,
+                restored.CompletedOutcomes,
+                restored.AcceptedChoices,
+                new PendingEffectChoice(
+                    new EffectResolutionId(common.ResolutionId.Value), choiceId, nodeId, chooserId,
+                    choiceKind, candidates, minimum, maximum, selected));
         }
 
         /// <summary>
@@ -299,11 +302,14 @@ namespace GuardsDigital.Core.Snapshots
         /// against an empty context. The board and the marker register are both already read by the time
         /// a pending Skill is decoded, which is what makes that possible; before this milestone every
         /// capability derived its candidates from identities alone and the difference could not show.
+        /// Milestone 6.2c extended the same discipline to input bindings: the request resolves the
+        /// node's inputs from the choice-less restored frame through the resolver's own binding path,
+        /// so a capability whose candidates depend on a bound input re-derives what live execution
+        /// offered instead of being re-asked with none.
         /// </remarks>
         private static EffectChoiceCandidate[] DeriveCapabilityCandidates(
             EffectNodeDefinition node,
-            CommonResolution common,
-            HeroId controllerId,
+            PendingResolution restored,
             EffectCapabilityCatalog capabilities,
             MatchParticipants participants,
             MatchComponents components)
@@ -312,11 +318,11 @@ namespace GuardsDigital.Core.Snapshots
             var offered = handler.Execute(new EffectCapabilityContext(
                 node.Id,
                 node.FailurePolicy,
-                common.ActorId,
-                controllerId,
-                common.CardId,
-                common.ActionId,
-                null,
+                restored.ActorId,
+                restored.ControllerId,
+                restored.SourceCardInstanceId,
+                restored.ActionDefinitionId,
+                EffectResolutionSession.ResolveInputBindings(node, restored, restored.CompletedOutcomes),
                 1,
                 1,
                 participants,

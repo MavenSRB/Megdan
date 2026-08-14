@@ -4,10 +4,12 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -701,6 +703,64 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(staleResult.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.UnavailableOffer));
             Assert.That(mismatchedContextResult.Accepted, Is.False);
             Assert.That(mismatchedContextResult.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.UnavailableOffer));
+        }
+
+        /// <summary>
+        /// Milestone 6.2c closing check for finding F62B-03: starting a Skill revalidates the
+        /// offer against the authoritative offer set inside Core exactly as the shared
+        /// Movement/Attack prevalidation does. The live session derives its offers
+        /// authoritatively, so what this closes is the trust the seam extended to its caller
+        /// before a second Core caller (milestone 6.7's Repeat) could rely on it.
+        /// </summary>
+        [Test]
+        public void StartTurnSkill_RejectsFabricatedOrNoLongerAvailableOffer()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Red);
+            var redFocus = configuration.CardInstances.Single(card => card.Id.Value.Contains("red-focus"));
+            var forgedOffer = new ActionOffer(
+                redFocus.Id,
+                redFocus.DefinitionReference,
+                new ActionDefinitionId("primary-skill"),
+                redFocus.OwnerId,
+                ActionInvocationContext.PrintedPrimary,
+                true);
+            var mismatchedContextOffer = new ActionOffer(
+                redFocus.Id,
+                redFocus.DefinitionReference,
+                new ActionDefinitionId("primary-skill"),
+                redFocus.OwnerId,
+                ActionInvocationContext.GeneralRuleSecondary,
+                true);
+
+            // The card is still in hand, so the authoritative turn offer recompute yields nothing:
+            // an accepted start here executes an effect from an offer nobody derived.
+            var forgedResult = CreateResolutionAuthority(redFocus.OwnerId, new HexCoordinate(0, 0))
+                .StartTurnSkill(
+                    new ActionResolutionId("forged-skill"),
+                    forgedOffer,
+                    configuration.CardDefinitions,
+                    configuration.CardInstances,
+                    configuration.Participants,
+                    new ActiveEffectLifecycle(),
+                    1,
+                    1);
+            var mismatchedResult = CreateResolutionAuthority(redFocus.OwnerId, new HexCoordinate(0, 0))
+                .StartTurnSkill(
+                    new ActionResolutionId("mismatched-context-skill"),
+                    mismatchedContextOffer,
+                    configuration.CardDefinitions,
+                    configuration.CardInstances,
+                    configuration.Participants,
+                    new ActiveEffectLifecycle(),
+                    1,
+                    1);
+
+            Assert.That(forgedResult.Accepted, Is.False);
+            Assert.That(forgedResult.RejectionReason,
+                Is.EqualTo(CardActionResolutionRejectionReason.UnavailableOffer));
+            Assert.That(mismatchedResult.Accepted, Is.False);
+            Assert.That(mismatchedResult.RejectionReason,
+                Is.EqualTo(CardActionResolutionRejectionReason.UnsupportedInvocationContext));
         }
 
         [Test]

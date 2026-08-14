@@ -4,6 +4,8 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
@@ -393,6 +395,35 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(TestContext.CurrentContext.Test.Name, Does.Contain(seed.ToString()));
         }
 
+        /// <summary>
+        /// Milestone 6.2c closing check for finding F62B-01: a paused Skill frame suppresses the
+        /// projected Fast-Travel options exactly as paused Movement and Attack already do. The
+        /// authority always refused the forwarded invocation, so what this closes is the dead
+        /// projected offer, not a state change.
+        /// </summary>
+        [Test]
+        public void FastTravelOptions_AreSuppressedWhileASkillFrameIsPaused()
+        {
+            var session = CreateSkillWithMovementSession();
+            var red = GetCards(session, TeamSide.Red).Single();
+            var blue = GetCards(session, TeamSide.Blue).Single();
+            Commit(session, red, blue, null);
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id));
+            Assert.That(session.Projection.AvailableFastTravelOptions, Is.Not.Empty,
+                "The fixture card must expose a Fast-Travel option before its Skill starts, or " +
+                "the suppression assertion below can pass vacuously.");
+
+            StartCurrentAction(session, ActionKind.Skill, null);
+
+            Assert.That(session.Projection.PendingSkillResolution, Is.Not.Null);
+            Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
+                "The `may` step must leave the Skill paused on an authoritative choice.");
+            Assert.That(session.Projection.AvailableFastTravelOptions, Is.Empty,
+                "A paused Skill frame must suppress the projected Fast-Travel options. The " +
+                "authority already refuses the invocation, so an exposed option is a dead " +
+                "projected offer.");
+        }
+
         private static MatchSession CreateSession(bool useAdjacentSyntheticBoard = false)
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
@@ -477,6 +508,94 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 Array.Empty<ObstacleOccupancy>());
             return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        /// <summary>
+        /// A session whose committed card carries both a printed Skill and a replaceable secondary
+        /// Movement, which no shared fixture card does: the Skill-only fixture cards cannot expose
+        /// a Fast-Travel option while their frame is paused, so the suppression under test would be
+        /// unobservable against them. The card anatomy is the ordinary one - a primary top action
+        /// plus the bottom movement band - with the primary being a Skill whose effect pauses
+        /// immediately on its `may` step, before any capability executes.
+        /// </summary>
+        private static MatchSession CreateSkillWithMovementSession()
+        {
+            var participants = PlaceholderOneVsOneParticipants.Create();
+            var redHero = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var blueHero = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var definitions = new[]
+            {
+                CreatePausingSkillWithMovementDefinition("session-red-skill-move", 14),
+                CreatePausingSkillWithMovementDefinition("session-blue-skill-move", 3)
+            };
+            var instances = new[]
+            {
+                CardInstance.CreateInHand(
+                    new CardInstanceId("session-red-skill-move-card"), definitions[0].Reference, redHero),
+                CardInstance.CreateInHand(
+                    new CardInstanceId("session-blue-skill-move-card"), definitions[1].Reference, blueHero)
+            };
+            var tieBreakerState = TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                participants,
+                map,
+                tieBreakerState);
+            var scenario = new InitialScenarioDescription(
+                participants,
+                definitions,
+                instances,
+                tieBreakerState,
+                map.Reference,
+                setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        private static CardDefinition CreatePausingSkillWithMovementDefinition(string id, int initiative)
+        {
+            var root = new EffectNodeId($"{id}-may");
+            var mark = new EffectNodeId($"{id}-mark");
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"{id}-skill"),
+                "test-6-2c-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { mark },
+                        chooser: EffectChooserRole.Actor),
+                    new EffectNodeDefinition(
+                        mark, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.MarkActorV1,
+                        outputs: new[] { new EffectOutputBinding("marked", EffectValueKind.Hero) })
+                });
+            return new CardDefinition(
+                new CardDefinitionId(id),
+                "test-6-2c-rev-1",
+                $"TEST - {id}",
+                new InitiativeValue(initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect),
+                    new ActionDefinition(
+                        new ActionDefinitionId("secondary-movement"),
+                        ActionKind.Movement,
+                        ActionDefinitionOrigin.PrintedSecondary,
+                        new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, 2) },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true))
+                });
         }
 
         private static IReadOnlyList<CardInstance> GetCards(MatchSession session, TeamSide side)

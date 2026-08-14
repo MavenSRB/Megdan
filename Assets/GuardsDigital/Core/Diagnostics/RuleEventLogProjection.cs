@@ -215,7 +215,8 @@ namespace GuardsDigital.Core.Diagnostics
 
             if (ruleEvent.Kind == TurnResolutionEventKind.MovementActionProgressed ||
                 ruleEvent.Kind == TurnResolutionEventKind.AttackActionProgressed ||
-                ruleEvent.Kind == TurnResolutionEventKind.FastTravelActionProgressed)
+                ruleEvent.Kind == TurnResolutionEventKind.FastTravelActionProgressed ||
+                ruleEvent.Kind == TurnResolutionEventKind.SkillActionProgressed)
             {
                 AppendCardAction(roundReference, ruleEvent.CardActionEvent);
                 return;

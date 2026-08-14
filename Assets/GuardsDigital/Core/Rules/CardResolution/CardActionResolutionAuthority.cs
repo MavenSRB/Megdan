@@ -131,10 +131,27 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
             int roundIndex,
-            int turnIndex) =>
-            skillBackend.StartTurnSkill(
-                resolutionId, offer, definitions, instances, participants, timing, components,
-                roundIndex, turnIndex);
+            int turnIndex)
+        {
+            var prepared = PrepareStart(
+                resolutionId,
+                offer,
+                definitions,
+                instances,
+                ActionKind.Skill,
+                true);
+            if (prepared.RejectionReason.HasValue)
+            {
+                return CardActionResolutionResult.Reject(
+                    prepared.RejectionReason.Value,
+                    PendingResolution,
+                    PendingChoice);
+            }
+
+            return skillBackend.StartTurnSkill(
+                resolutionId, offer, prepared.Definitions, prepared.Instances, participants,
+                timing, components, roundIndex, turnIndex);
+        }
 
         public CardActionResolutionResult AnswerEffectChoice(
             GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command,

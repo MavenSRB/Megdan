@@ -30,7 +30,10 @@ namespace GuardsDigital.Core.Cards
         AttackActionRejected = 14,
         AttackCommandRejected = 15,
         FastTravelAuthorityUnavailable = 16,
-        FastTravelActionRejected = 17
+        FastTravelActionRejected = 17,
+        SkillAuthorityUnavailable = 18,
+        SkillActionRejected = 19,
+        SkillCommandRejected = 20
     }
 
     public enum TurnResolutionEventKind
@@ -44,7 +47,8 @@ namespace GuardsDigital.Core.Cards
         MovementActionProgressed = 6,
         AttackActionProgressed = 7,
         FastTravelActionProgressed = 8,
-        TimingProgressed = 9
+        TimingProgressed = 9,
+        SkillActionProgressed = 10
     }
 
     public readonly struct TurnResolutionEvent
@@ -155,6 +159,11 @@ namespace GuardsDigital.Core.Cards
         public static TurnResolutionEvent FromFastTravelAction(CardActionResolutionEvent cardActionEvent)
         {
             return FromCardAction(cardActionEvent, TurnResolutionEventKind.FastTravelActionProgressed);
+        }
+
+        public static TurnResolutionEvent FromSkillAction(CardActionResolutionEvent cardActionEvent)
+        {
+            return FromCardAction(cardActionEvent, TurnResolutionEventKind.SkillActionProgressed);
         }
 
         private static TurnResolutionEvent FromCardAction(
@@ -685,7 +694,12 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardNotSelectedForAction);
             }
 
-            if (cardActions == null || cardActions.HasPendingResolution)
+            if (cardActions == null)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillAuthorityUnavailable);
+            }
+
+            if (cardActions.HasPendingResolution)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
@@ -693,7 +707,7 @@ namespace GuardsDigital.Core.Cards
             var skillResult = cardActions.StartTurnSkill(
                 resolutionId, offer, definitions, instances, participants, timing, roundIndex, turnIndex);
             if (!skillResult.Accepted)
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillActionRejected);
             return CompleteSkillStep(skillResult);
         }
 
@@ -707,13 +721,29 @@ namespace GuardsDigital.Core.Cards
 
             if (cardActions?.PendingSkillResolution == null || !initiative.SelectedActor.IsDefined)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+            }
+
+            var pending = cardActions.PendingSkillResolution;
+            if (!pending.SourceCardInstanceId.Equals(initiative.SelectedActor.CardInstanceId) ||
+                !pending.ActorId.Equals(initiative.SelectedActor.ActorId))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+            }
+
+            var card = instances.Single(candidate => candidate.Id.Equals(pending.SourceCardInstanceId));
+            if (card.State.Location != CardLocation.TurnArea ||
+                !card.State.HasBeenPlayed ||
+                card.State.ResolutionStatus != CardResolutionStatus.Unresolved ||
+                card.State.FaceOrientation != CardFaceOrientation.FaceUp)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardResolutionFailed);
             }
 
             var answered = cardActions.AnswerEffectChoice(
                 command, definitions, participants, timing, roundIndex, turnIndex);
             if (!answered.Accepted)
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
             return CompleteSkillStep(answered);
         }
 
@@ -723,7 +753,7 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private TurnResolutionResult CompleteSkillStep(CardActionResolutionResult result)
         {
-            var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromCardAction);
+            var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromSkillAction);
             if (!result.IsComplete)
             {
                 return TurnResolutionResult.Accept(events);
