@@ -147,21 +147,6 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
-        public void ForwardHeroIntent(HeroId heroId)
-        {
-            TryForwardHeroIntent(heroId);
-        }
-
-        public void ForwardDestinationIntent(GuardsDigital.Core.Board.HexCoordinate destination)
-        {
-            TryForwardDestinationIntent(destination);
-        }
-
-        public void ForwardMinionIntent(MinionId minionId)
-        {
-            TryForwardMinionIntent(minionId);
-        }
-
         public bool TryForwardHeroIntent(HeroId heroId)
         {
             if (heroIntentHandler != null)

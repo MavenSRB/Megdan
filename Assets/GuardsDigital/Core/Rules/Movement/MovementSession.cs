@@ -141,15 +141,12 @@ namespace GuardsDigital.Core.Rules.Movement
                 stepEvents);
         }
 
-        public MovementSessionCompletion Complete()
+        /// <summary>Stops the session short of its allowance. The completed route, step events, and
+        /// remaining allowance stay readable on the session itself, which is where every caller
+        /// reads them from.</summary>
+        public void Complete()
         {
             IsComplete = true;
-            return new MovementSessionCompletion(
-                heroId,
-                route,
-                stepEvents,
-                MovementAllowance,
-                RemainingAllowance);
         }
     }
 }

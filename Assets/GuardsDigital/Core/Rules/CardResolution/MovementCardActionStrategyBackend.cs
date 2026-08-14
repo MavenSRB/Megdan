@@ -147,7 +147,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            var actionDefinition = FindActionDefinition(offer, materializedDefinitions);
+            var actionDefinition = ActionOfferQuery.FindActionDefinition(offer, materializedDefinitions);
             if (actionDefinition.Kind != ActionKind.Movement)
             {
                 return CardActionResolutionResult.Reject(
@@ -460,15 +460,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             return true;
-        }
-
-        private static ActionDefinition FindActionDefinition(
-            ActionOffer offer,
-            IEnumerable<CardDefinition> definitions)
-        {
-            var definitionsByReference = ActionOfferQuery.BuildDefinitionLookup(definitions);
-            var definition = definitionsByReference[offer.SourceDefinitionReference];
-            return definition.ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId));
         }
     }
 }

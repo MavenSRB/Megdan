@@ -146,7 +146,7 @@ Non-goals: No CI service selection or configuration, no test-behavior changes, n
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61t-port-the-cross-platform-dotnet-test-harness-completion-evidence).
 
-### [ ] 6.1u Delete dead code and single-source duplicated resolution lookups
+### [x] 6.1u Delete dead code and single-source duplicated resolution lookups
 
 Observable outcome: Code with no production caller is removed, the duplicated action-definition lookup has one implementation, and a wedged Lane-Push advance names its real cause.
 
@@ -159,6 +159,8 @@ Acceptance checks:
 Closing check for `F-ER2-10`: compilation and the directly affected suites green after deletion, plus the shared-lookup and typed-rejection tests observed failing at the pre-fix revision and passing at the post-fix revision.
 
 Non-goals: No behavior change beyond the rejection reason, no refactor of live code paths, no relocation of coin/modifier content (owned by 7.4).
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61u-delete-dead-code-and-single-source-duplicated-resolution-lookups-completion-evidence).
 
 ## Validation-integrity milestones from the 6.1s Windows handoff
 

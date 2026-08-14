@@ -17,12 +17,12 @@ namespace GuardsDigital.Tests.EditMode
             var origin = new HexCoordinate(0, 0);
             var session = CreateSession(heroId, origin, 3);
 
-            var completion = session.Complete();
+            session.Complete();
 
             Assert.That(session.IsComplete, Is.True);
-            Assert.That(completion.RemainingAllowance, Is.EqualTo(3));
-            Assert.That(completion.Route, Is.EqualTo(new[] { origin }));
-            Assert.That(completion.StepEvents, Is.Empty);
+            Assert.That(session.RemainingAllowance, Is.EqualTo(3));
+            Assert.That(session.Route, Is.EqualTo(new[] { origin }));
+            Assert.That(session.StepEvents, Is.Empty);
             Assert.That(session.CurrentOccupancy.Coordinate, Is.EqualTo(origin));
         }
 
@@ -35,15 +35,16 @@ namespace GuardsDigital.Tests.EditMode
             var session = CreateSession(heroId, origin, 3);
 
             var step = session.TryCommitStep(destination);
-            var completion = session.Complete();
+            session.Complete();
 
             Assert.That(step.Accepted, Is.True);
             Assert.That(step.RemainingAllowance, Is.EqualTo(2));
-            Assert.That(completion.RemainingAllowance, Is.EqualTo(2));
-            Assert.That(completion.Route, Is.EqualTo(new[] { origin, destination }));
-            Assert.That(completion.StepEvents.Count, Is.EqualTo(1));
-            Assert.That(completion.StepEvents[0].Origin, Is.EqualTo(origin));
-            Assert.That(completion.StepEvents[0].Destination, Is.EqualTo(destination));
+            Assert.That(session.IsComplete, Is.True);
+            Assert.That(session.RemainingAllowance, Is.EqualTo(2));
+            Assert.That(session.Route, Is.EqualTo(new[] { origin, destination }));
+            Assert.That(session.StepEvents.Count, Is.EqualTo(1));
+            Assert.That(session.StepEvents[0].Origin, Is.EqualTo(origin));
+            Assert.That(session.StepEvents[0].Destination, Is.EqualTo(destination));
             Assert.That(session.CurrentOccupancy.Coordinate, Is.EqualTo(destination));
         }
 

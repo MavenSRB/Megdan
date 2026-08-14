@@ -411,6 +411,34 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void EndOfRound_WithARecordedLanePushRequest_RejectsNamingTheUnimplementedConsumption()
+        {
+            var fixture = CreateBattleZoneFixture("MMMMM", "MH");
+            Assert.That(AdvanceToMinionBattle(fixture).Accepted, Is.True);
+            Assert.That(fixture.Authority.PendingLanePushRequest, Is.Not.Null);
+
+            while (fixture.Authority.CurrentEndOfRoundStage != EndOfRoundStage.ResolveRequestedLanePush)
+            {
+                Assert.That(fixture.Authority.TryAdvanceEndOfRound().Accepted, Is.True,
+                    "The stages before the Lane-Push checkpoint still resolve normally.");
+            }
+
+            var rejected = fixture.Authority.TryAdvanceEndOfRound();
+
+            Assert.That(rejected.Accepted, Is.False);
+            Assert.That(rejected.RejectionReason,
+                Is.EqualTo(RoundResolutionRejectionReason.UnimplementedLanePushConsumption),
+                "The round stops because nothing consumes a Lane-Push request yet, which is not " +
+                "the same as an end-of-round handler being absent.");
+            Assert.That(rejected.Events, Is.Empty);
+            Assert.That(fixture.Authority.CurrentEndOfRoundStage,
+                Is.EqualTo(EndOfRoundStage.ResolveRequestedLanePush),
+                "A rejected advance leaves the cursor on its own checkpoint.");
+            Assert.That(fixture.Authority.PendingLanePushRequest, Is.Not.Null,
+                "The request survives the rejection for the milestone that will consume it.");
+        }
+
+        [Test]
         public void BattleZonePlan_RemovesExactlyTheNonHeaviesWhenTheDeficitEqualsTheirCount()
         {
             var fixture = CreateBattleZoneFixture("MMMMM", "MRH");

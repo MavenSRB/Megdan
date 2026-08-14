@@ -357,7 +357,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedInstances);
             }
 
-            if (FindActionDefinition(offer, materializedDefinitions).Kind != expectedKind)
+            if (ActionOfferQuery.FindActionDefinition(offer, materializedDefinitions).Kind != expectedKind)
             {
                 return PreparedStart.Reject(
                     CardActionResolutionRejectionReason.UnsupportedActionKind,
@@ -366,15 +366,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             return PreparedStart.Accept(materializedDefinitions, materializedInstances);
-        }
-
-        private static ActionDefinition FindActionDefinition(
-            ActionOffer offer,
-            IEnumerable<CardDefinition> definitions)
-        {
-            var definitionsByReference = ActionOfferQuery.BuildDefinitionLookup(definitions);
-            var definition = definitionsByReference[offer.SourceDefinitionReference];
-            return definition.ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId));
         }
 
         private readonly struct PreparedStart

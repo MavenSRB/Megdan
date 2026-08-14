@@ -29,33 +29,6 @@ if ($minimalGridPlayProcess.ExitCode -ne 0) {
 
 Expected result: all discovered cases pass after loading the complete 292-space selected map with twelve configured minions, two configured heroes, one fixed camera, one composition-owned match session, passive feature views, and no legacy controller. The cases cover the configured director hands/commitments and Initiative path, contextual Hold and Movement Stop, passive-board-callback/presenter destination input, authoritative Movement mutation and cleared highlights, unavailable Attack rejection without mutation, configured legal-minion Attack cue and stable pointer intent, accepted Defeat/reward/removal completion with rendered-minion removal, Undo/restart/snapshot restore, diagnostic-log projection, two complete uninterrupted rounds, HUD pointer blocking, and exact generated-highlight counts across scene reload.
 
-## Play Mode shell test
-
-```powershell
-$playModeArguments = @(
-    '-batchmode',
-    '-runTests',
-    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
-    '-testPlatform', 'PlayMode',
-    '-testFilter', 'GuardsDigital.Tests.PlayMode.TestShellPlayModeTests.TestRunner_CanEnterPlayModeAndAdvanceOneFrame',
-    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\play-mode-results.xml"',
-    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\play-mode-tests.log"'
-)
-
-$playModeProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
-    -ArgumentList $playModeArguments `
-    -Wait `
-    -PassThru `
-    -WindowStyle Hidden
-
-if ($playModeProcess.ExitCode -ne 0) {
-    throw "Play Mode tests failed with exit code $($playModeProcess.ExitCode)."
-}
-```
-
-Expected result: the shell fixture discovers at least one test, all discovered cases pass after entering Play Mode and advancing one frame, and the process exits with code `0`.
-
 ## Complete gate suites
 
 Run both unfiltered suites only for T3 validation: a final implementation milestone of a phase, an explicit hard gate, shared test/package/assembly infrastructure, the pre-build regression gate, or a change promoted because its blast radius cannot be enumerated. Resolve focused failures before spending time on these suites. These commands intentionally omit `-testFilter`.
@@ -72,6 +45,8 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 The run that produced this row is also the one that caught the stale `CardAggregateInvarianceTests` digests, which no focused filter had selected since 6.1f. Any milestone that changes `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` must run both digest-pinning fixtures - `CardAggregateInvarianceTests` and `SnapshotCompatibilityCorpusTests` - because a schema change invalidates every pinned digest by construction. `CardAggregateInvarianceTests` sits in the dotnet harness exclude list where the Linux harness cannot reach it; `SnapshotCompatibilityCorpusTests` runs in the harness but must still be selected deliberately on the Windows tier, since neither is picked up by a filter built from the types a schema change touches.
 
 A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
+
+Both rows predate later focused-tier milestones that legitimately moved the totals without running an unfiltered suite, so reconcile against them rather than treating a mismatch as a regression: 6.1a and 6.1ao added Edit Mode and Play Mode cases, and 6.1u deleted four Edit Mode cases and one Play Mode case while adding two. Edit Mode discovery at 6.1u is 382. Replace the rows at the next run that measures them.
 
 ```powershell
 $completeEditArguments = @(

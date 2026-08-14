@@ -122,7 +122,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
             }
 
-            var actionDefinition = FindActionDefinition(offer, materializedDefinitions);
+            var actionDefinition = ActionOfferQuery.FindActionDefinition(offer, materializedDefinitions);
             if (actionDefinition.Kind != ActionKind.Attack)
             {
                 return RejectAttack(CardActionResolutionRejectionReason.UnsupportedActionKind);
@@ -255,7 +255,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedInstances,
                 command.TargetHeroId,
                 ActionOfferWindow.Reaction)
-                .Where(candidate => FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
+                .Where(candidate => ActionOfferQuery.FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
                 .ToArray();
             var defenseChoice = new PendingDefenseResponseChoice(
                 defenseResolution.ResolutionId,
@@ -398,7 +398,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedInstances,
                     pendingAttackResolution.TargetHeroId,
                     ActionOfferWindow.Reaction)
-                .Where(candidate => FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
+                .Where(candidate => ActionOfferQuery.FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
                 .ToArray();
             if (!DefenseChoicesMatch(pendingAttackResolution, currentDefenseOffers, pendingDefenseChoice))
             {
@@ -670,7 +670,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         materializedInstances,
                         pendingResolution.TargetHeroId,
                         ActionOfferWindow.Reaction)
-                        .Where(candidate => FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
+                        .Where(candidate => ActionOfferQuery.FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
                         .ToArray();
                     if (verifiedDefenseChoice != null &&
                         !DefenseChoicesMatch(pendingResolution, expectedDefenseOffers, verifiedDefenseChoice))
@@ -876,7 +876,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var instance = matchingInstances[0];
-            var action = FindActionDefinition(offer, definitions);
+            var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
             if (!instance.OwnerId.Equals(resolution.TargetHeroId) ||
                 !instance.DefinitionReference.Equals(offer.SourceDefinitionReference) ||
                 instance.State.Location != CardLocation.DiscardPile ||
@@ -896,16 +896,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 participants,
                 board);
             return PrintedValuesMatch(resolution.DefenseValue, expectedDefenseValue);
-        }
-
-
-        private static ActionDefinition FindActionDefinition(
-            ActionOffer offer,
-            IEnumerable<CardDefinition> definitions)
-        {
-            var definitionsByReference = ActionOfferQuery.BuildDefinitionLookup(definitions);
-            var definition = definitionsByReference[offer.SourceDefinitionReference];
-            return definition.ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId));
         }
     }
 }

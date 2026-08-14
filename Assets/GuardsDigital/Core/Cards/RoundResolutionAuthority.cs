@@ -600,10 +600,12 @@ namespace GuardsDigital.Core.Cards
                     RoundResolutionRejectionReason.IncompleteMinionBattleSelection);
             }
 
+            // Milestone 6.1 records Lane-Push requests without consuming them, so the round stops
+            // here by design until that rule lands. Say that, rather than blaming a missing handler.
             if (stage == EndOfRoundStage.ResolveRequestedLanePush && PendingLanePushRequest != null)
             {
                 return RoundResolutionResult.Reject(
-                    RoundResolutionRejectionReason.MissingRequiredEndOfRoundHandler);
+                    RoundResolutionRejectionReason.UnimplementedLanePushConsumption);
             }
 
             if (stage == EndOfRoundStage.MinionBattle &&

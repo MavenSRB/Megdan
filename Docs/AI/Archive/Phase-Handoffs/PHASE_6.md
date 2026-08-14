@@ -436,3 +436,9 @@ A user-approved roadmap amendment on 2026-08-13 scheduled the open ER2 dispositi
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 6.1ao | Both visible minion-choice cue kinds draw the same downward marker at a declared choice character size and differ only by color, because both say "this minion" and only the control state behind them differs. The cue view model no longer carries per-cue text and the ordinal/cue-text helpers, whose only remaining caller was a fixture, are gone; candidate identity stays in the control labels, which still carry team, intrinsic type, and ordinal as text. Backing proportions, orientation correction, board anchor, and cue lifetime are unchanged. | `6b02782` |
+
+## Milestone 6.1u Delete dead code and single-source duplicated resolution lookups completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1u | Closes `F-ER2-10`. `AdjacentDestinationQuery` and its fixture, `MovementSessionCompletion`, the three void `Forward*Intent` overloads, and the milestone-0 `TestShell*Tests` are gone with their `.meta` files and their two stale recipe references; `MovementSession.Complete` returns void because every production caller already read the route, step events, and remaining allowance off the session. One `ActionOfferQuery.FindActionDefinition` replaces three byte-identical private copies across the movement, attack/defense, and authority resolution files. A wedged end-of-round advance now rejects with `UnimplementedLanePushConsumption` instead of `MissingRequiredEndOfRoundHandler`, which keeps its own meaning; both new behaviors were observed failing at the pre-fix revision. | pending |

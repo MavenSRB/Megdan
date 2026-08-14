@@ -2,33 +2,6 @@
 
 Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md).
 
-## Edit Mode shell test
-
-```powershell
-$editModeArguments = @(
-    '-batchmode',
-    '-runTests',
-    '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
-    '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.TestShellEditModeTests.TestRunner_CanExecuteEditModeTest',
-    '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\edit-mode-results.xml"',
-    '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\edit-mode-tests.log"'
-)
-
-$editModeProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
-    -ArgumentList $editModeArguments `
-    -Wait `
-    -PassThru `
-    -WindowStyle Hidden
-
-if ($editModeProcess.ExitCode -ne 0) {
-    throw "Edit Mode tests failed with exit code $($editModeProcess.ExitCode)."
-}
-```
-
-Expected result: the shell fixture discovers at least one test, all discovered cases pass, and the process exits with code `0`.
-
 ## Hex-coordinate focused tests
 
 ```powershell
@@ -118,7 +91,7 @@ $heroSelectionEditArguments = @(
     '-runTests',
     '-projectPath', '"C:\Projects\Guards Digital\Guards 0.1"',
     '-testPlatform', 'EditMode',
-    '-testFilter', 'GuardsDigital.Tests.EditMode.AdjacentDestinationQueryTests;GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
+    '-testFilter', 'GuardsDigital.Tests.EditMode.ConfiguredPointerSelectionTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests',
     '-testResults', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-4-edit-results.xml"',
     '-logFile', '"C:\Projects\Guards Digital\Guards 0.1\tmp\milestone-1-4-edit-tests.log"'
 )

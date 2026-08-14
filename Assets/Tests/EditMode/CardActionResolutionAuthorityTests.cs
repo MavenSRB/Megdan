@@ -86,6 +86,58 @@ namespace GuardsDigital.Tests.EditMode
             }));
         }
 
+        // ActionOfferQuery.FindActionDefinition is internal and there is no InternalsVisibleTo, so
+        // milestone 6.1u's single shared lookup is exercised through a real caller. A card carrying
+        // two actions of different kinds is the case a wrong lookup cannot survive: resolving the
+        // offer's own action definition, rather than the definition's first one, is the whole job.
+        [Test]
+        public void StartMovementResolution_ResolvesTheOffersOwnActionDefinitionAmongSeveral()
+        {
+            var actorId = new HeroId("primitive-hero");
+            var definition = CreateDefinition(
+                CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 3),
+                new ActionDefinition(
+                    new ActionDefinitionId("secondary-attack"),
+                    ActionKind.Attack,
+                    ActionDefinitionOrigin.PrintedSecondary,
+                    new[]
+                    {
+                        new PrintedValueDefinition(PrintedValueChannel.Attack, 4),
+                        new PrintedValueDefinition(PrintedValueChannel.Range, 1)
+                    },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true),
+                    AttackRangeKind.Ranged,
+                    default));
+            var instance = CreateInstance(actorId, definition);
+            var offers = ActionOfferQuery.GetAvailableOffers(new[] { definition }, new[] { instance }, actorId);
+            var authority = CreateResolutionAuthority(actorId, new HexCoordinate(0, 0));
+
+            var movement = authority.StartMovementResolution(
+                new ActionResolutionId("resolution-move"),
+                offers.Single(candidate =>
+                    candidate.ActionDefinitionId.Equals(new ActionDefinitionId("primary-move"))),
+                new[] { definition },
+                new[] { instance });
+
+            Assert.That(movement.Accepted, Is.True,
+                "The Movement offer resolves to the Movement action definition.");
+            Assert.That(movement.PendingResolution.MovementAllowance, Is.EqualTo(3),
+                "The allowance comes from the resolved definition, not from the card.");
+
+            var attackThroughMovement = CreateResolutionAuthority(actorId, new HexCoordinate(0, 0))
+                .StartMovementResolution(
+                    new ActionResolutionId("resolution-attack"),
+                    offers.Single(candidate =>
+                        candidate.ActionDefinitionId.Equals(new ActionDefinitionId("secondary-attack"))),
+                    new[] { definition },
+                    new[] { instance });
+
+            Assert.That(attackThroughMovement.Accepted, Is.False);
+            Assert.That(attackThroughMovement.RejectionReason,
+                Is.EqualTo(CardActionResolutionRejectionReason.UnsupportedActionKind),
+                "The same lookup reads the Attack action's own kind off the second definition.");
+        }
+
         [Test]
         public void StartMovementResolution_UsesSelectedPrimaryOrSecondaryOfferAllowance()
         {

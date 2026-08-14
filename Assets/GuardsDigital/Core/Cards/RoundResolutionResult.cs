@@ -26,7 +26,15 @@ namespace GuardsDigital.Core.Cards
         StaleMinionBattleChoice = 10,
         WrongMinionBattleChooser = 11,
         IneligibleMinionBattleSelection = 12,
-        IncompleteMinionBattleSelection = 13
+        IncompleteMinionBattleSelection = 13,
+
+        /// <summary>
+        /// The round reached <see cref="EndOfRoundStage.ResolveRequestedLanePush"/> holding a
+        /// recorded Lane-Push request, and nothing consumes one yet. Distinct from
+        /// <see cref="MissingRequiredEndOfRoundHandler"/>: the handler is not missing by
+        /// misconfiguration, the rule it would apply is unimplemented.
+        /// </summary>
+        UnimplementedLanePushConsumption = 14
     }
 
     public readonly struct RoundResolutionResult

@@ -8,13 +8,13 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through **6.1ao**. The configured vertical slice uses a pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound snapshots, and passive Unity presentation; schema v7 persists both current continuations. It includes reload-safe Hero/minion combat and the end-of-round Minion Battle with serializable exact-count, one-at-a-time Heavy-last removal choices, now resolved by a configured player-facing prompt with board cues that forwards only the projected typed invocations; Lane-Push requests are recorded but not yet consumed. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps lives in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and is maintained by subject rather than milestone chronology.
+The project has completed roadmap milestones through **6.1u**. The configured vertical slice uses a pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound snapshots, and passive Unity presentation; schema v7 persists both current continuations. It includes reload-safe Hero/minion combat and the end-of-round Minion Battle with serializable exact-count, one-at-a-time Heavy-last removal choices, now resolved by a configured player-facing prompt with board cues that forwards only the projected typed invocations; Lane-Push requests are recorded but not yet consumed. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps lives in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and is maintained by subject rather than milestone chronology.
 
 ## Current authorization and next route
 
-- Current completed milestone: **6.1ao**.
+- Current completed milestone: **6.1u**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **6.1u**.
+- Next proposed milestone: **6.2a**.
 
 Standing route exceptions: trigger-only milestone **6.1am** remains unordered until the rules ledger reaches its warning threshold, and **6.1y** remains unordered but required before 8.1. Exact sequencing lives in [Roadmap/PHASE_6_DOCUMENTATION.md](Roadmap/PHASE_6_DOCUMENTATION.md) and [Roadmap/PHASE_6.md](Roadmap/PHASE_6.md); scheduling is not authorization.
 

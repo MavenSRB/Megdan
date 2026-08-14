@@ -159,6 +159,20 @@ namespace GuardsDigital.Core.Cards
             return Array.AsReadOnly(offers);
         }
 
+        /// <summary>
+        /// Resolves the action definition an offer was built from. This lives beside the lookup it
+        /// depends on because the resolution backends all need the same answer, and three private
+        /// copies of it could drift apart without anything noticing.
+        /// </summary>
+        internal static ActionDefinition FindActionDefinition(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions)
+        {
+            var definitionsByReference = BuildDefinitionLookup(definitions);
+            var definition = definitionsByReference[offer.SourceDefinitionReference];
+            return definition.ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId));
+        }
+
         internal static Dictionary<CardDefinitionReference, CardDefinition> BuildDefinitionLookup(
             IEnumerable<CardDefinition> definitions)
         {
