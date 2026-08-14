@@ -73,7 +73,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackTargetChoice pendingTargetChoice,
             PendingDefenseResponseChoice pendingDefenseChoice,
             AttackResolutionOutcome outcome,
-            IEnumerable<CardActionResolutionEvent> events,
+            IEnumerable<ResolutionStep> steps,
             MinionDefeatResolution minionDefeat,
             AttackOutcomeComparison outcomeComparison,
             HeroDefeatResolution heroDefeat)
@@ -87,7 +87,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MinionDefeat = minionDefeat;
             OutcomeComparison = outcomeComparison;
             HeroDefeat = heroDefeat;
-            Events = Array.AsReadOnly((events ?? throw new ArgumentNullException(nameof(events))).ToArray());
+            Steps = Array.AsReadOnly((steps ?? throw new ArgumentNullException(nameof(steps))).ToArray());
+            Events = Array.AsReadOnly(Steps
+                .Where(step => step.Kind == ResolutionStepKind.Fact)
+                .Select(step => step.Fact)
+                .ToArray());
 
             if (minionDefeat != null && heroDefeat != null)
                 throw new ArgumentException("An Attack cannot record both a minion and hero Defeat.");
@@ -110,13 +114,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public MinionDefeatResolution MinionDefeat { get; }
         public AttackOutcomeComparison OutcomeComparison { get; }
         public HeroDefeatResolution HeroDefeat { get; }
+        /// <summary>
+        /// The ordered stream the resolver emitted, facts and timing checkpoints interleaved at the
+        /// positions the resolver raised them (milestone 6.1ap).
+        /// </summary>
+        public IReadOnlyList<ResolutionStep> Steps { get; }
+
+        /// <summary>The fact subsequence of <see cref="Steps"/>, for callers that want facts alone.</summary>
         public IReadOnlyList<CardActionResolutionEvent> Events { get; }
 
         public static AttackActionResolutionResult Accept(
             PendingAttackResolution pendingResolution,
             PendingAttackTargetChoice pendingTargetChoice,
             PendingDefenseResponseChoice pendingDefenseChoice,
-            IEnumerable<CardActionResolutionEvent> events,
+            IEnumerable<ResolutionStep> steps,
             AttackResolutionOutcome outcome = AttackResolutionOutcome.None,
             MinionDefeatResolution minionDefeat = null,
             AttackOutcomeComparison outcomeComparison = null,
@@ -129,7 +140,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingTargetChoice,
                 pendingDefenseChoice,
                 outcome,
-                events,
+                steps,
                 minionDefeat,
                 outcomeComparison,
                 heroDefeat);
@@ -153,7 +164,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingTargetChoice,
                 pendingDefenseChoice,
                 AttackResolutionOutcome.None,
-                Array.Empty<CardActionResolutionEvent>(),
+                Array.Empty<ResolutionStep>(),
                 null,
                 null,
                 null);

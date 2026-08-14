@@ -380,7 +380,7 @@ Non-goals: No schema version change, wire-format change, or migration path, and 
 
 The ground for splitting is that the correction is behavior-preserving and 6.2a is not. `F-ER2-05` closes on its own named conformance check and its own evidence - that every pinned digest stays byte-identical and the schema version does not move. Milestone 6.2a's fifth acceptance check bumps the snapshot schema and re-pins fourteen digests. Landed together, a moved digest has two candidate causes and neither observation proves anything about the other. Landed apart, the timing correction proves the digests unmoved first, and 6.2a's re-pinning then has exactly one cause to explain. This is the `Execution rule` split test in [ROADMAP.md](../ROADMAP.md): genuinely independent risk and separate acceptance evidence, above the handoff-cost floor.
 
-### [ ] 6.1ap Emit timing checkpoints from resolver steps
+### [x] 6.1ap Emit timing checkpoints from resolver steps
 
 Observable outcome: Timing checkpoints originate from the resolution step that raises them rather than from a post-hoc rescan of the produced event list.
 
@@ -393,6 +393,10 @@ Acceptance checks:
 - The emitted checkpoint order for Movement, Attack with a Defense response, Attack against a minion, and Fast Travel is pinned by a fixture running on a session that actually carries Active effects, and is unchanged across the correction. A fixture on the placeholder configuration alone would be vacuous, because that configuration creates no Active effect and the checkpoint call returns nothing either way.
 - The Active-effect lifecycle mutation order changes deliberately and is asserted: action end now runs before source-card cancellation, which is the order [RESOLUTION_AND_EFFECTS.md](../Card-System/RESOLUTION_AND_EFFECTS.md) already specifies and the rewriter's late placement inverted.
 - The wire format is unchanged, asserted rather than assumed: `CurrentSchemaVersion` stays at 7 and all fifteen pinned digests pass unmoved.
+
+Closing check: two observed failing-then-passing transitions against genuine pre-fix defects. `ResolverEmittedCheckpointConformanceTests` at `2e47c97` reported exactly one subject, `TurnResolutionAuthority.ApplyActionTiming` reaching `CardActionResolutionEvent.get_Kind`, and reports none after. `TurnTimingCheckpointOrderTests.ActionEndCheckpoint_ReachesAnEffectBeforeItsSourceCardCancellation` was observed at `2e47c97` failing with the effect already cancelled - `Triggered@TurnStarted, Triggered@ActionStarted, Cancelled@SourceCardStateChanged` and no action-end trigger - and passing after; the four order pins and the vacuity guard in that same fixture pass at both revisions, which is what makes the pair evidence that only the lifecycle application order moved.
+
+Historical evidence: [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md).
 
 Non-goals: No Skill action, effect node, capability catalog, or execution frame, which 6.2a owns. No schema version, wire-format, or migration change. No new `TimingCheckpoint` member and no change to which checkpoints exist or what they mean. No change to Movement, Attack/Defense, or Fast-Travel rules behavior beyond where a checkpoint is raised, and no change to the harness exclude list.
 

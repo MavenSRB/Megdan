@@ -522,9 +522,8 @@ namespace GuardsDigital.Core.Cards
                 instances);
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementActionRejected);
-            var movementEvents = result.Events.Select(TurnResolutionEvent.FromCardAction).ToList();
-            ApplyActionTiming(movementEvents);
-            return TurnResolutionResult.Accept(movementEvents);
+            return TurnResolutionResult.Accept(
+                MaterializeSteps(result.Steps, TurnResolutionEvent.FromCardAction));
         }
 
         public TurnResolutionResult TryAnswerMovementChoice(MovementChoiceCommand command)
@@ -562,7 +561,7 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementCommandRejected);
             }
 
-            var events = result.Events.Select(TurnResolutionEvent.FromCardAction).ToList();
+            var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromCardAction);
             if (!result.IsComplete)
             {
                 return TurnResolutionResult.Accept(events);
@@ -644,7 +643,7 @@ namespace GuardsDigital.Core.Cards
                     "A completed Fast Travel could not resolve its prevalidated source card.");
             }
 
-            var events = result.Events.Select(TurnResolutionEvent.FromFastTravelAction).ToList();
+            var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromFastTravelAction);
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
@@ -698,9 +697,8 @@ namespace GuardsDigital.Core.Cards
                 participants);
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackActionRejected);
-            var attackEvents = result.Events.Select(TurnResolutionEvent.FromAttackAction).ToList();
-            ApplyActionTiming(attackEvents);
-            return TurnResolutionResult.Accept(attackEvents);
+            return TurnResolutionResult.Accept(
+                MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction));
         }
 
         public TurnResolutionResult TryAnswerAttackTarget(AttackTargetChoiceCommand command)
@@ -723,14 +721,10 @@ namespace GuardsDigital.Core.Cards
                 participants);
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
-            var targetEvents = result.Events.Select(TurnResolutionEvent.FromAttackAction).ToList();
-            if (result.MinionDefeat != null)
-            {
-                return CompleteAttackAndAdvance(targetEvents);
-            }
-
-            ApplyActionTiming(targetEvents);
-            return TurnResolutionResult.Accept(targetEvents);
+            var targetEvents = MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction);
+            return result.MinionDefeat != null
+                ? CompleteAttackAndAdvance(targetEvents)
+                : TurnResolutionResult.Accept(targetEvents);
         }
 
         public TurnResolutionResult TryAnswerDefenseResponse(DefenseResponseChoiceCommand command)
@@ -756,12 +750,9 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
             }
 
-            var events = new List<TurnResolutionEvent>();
-            events.AddRange(response.Events.Select(TurnResolutionEvent.FromAttackAction));
-            AddTiming(
-                events,
-                TimingCheckpoint.AttackResultComparison,
-                response.PendingResolution.TargetHeroId);
+            // The result-comparison checkpoint is emitted by the Defense resolver itself, as the last
+            // step of its own stream, rather than raised here between two backend calls.
+            var events = MaterializeSteps(response.Steps, TurnResolutionEvent.FromAttackAction);
             var outcome = cardActions.ResolveAttackOutcome(definitions, instances, participants);
             if (!outcome.Accepted)
             {
@@ -769,13 +760,12 @@ namespace GuardsDigital.Core.Cards
                     "An accepted turn Defense response could not resume its prevalidated Attack outcome.");
             }
 
-            events.AddRange(outcome.Events.Select(TurnResolutionEvent.FromAttackAction));
+            events.AddRange(MaterializeSteps(outcome.Steps, TurnResolutionEvent.FromAttackAction));
             return CompleteAttackAndAdvance(events);
         }
 
         private TurnResolutionResult CompleteAttackAndAdvance(List<TurnResolutionEvent> events)
         {
-            ApplyActionTiming(events);
             var card = instances.Single(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
@@ -795,7 +785,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
-            return AdvanceInitiative(events, false);
+            return AdvanceInitiative(events);
         }
 
         private bool IsPendingAttackForSelectedActor()
@@ -807,12 +797,9 @@ namespace GuardsDigital.Core.Cards
                 pending.ActorId.Equals(initiative.SelectedActor.ActorId);
         }
 
-        private TurnResolutionResult AdvanceInitiative(
-            IEnumerable<TurnResolutionEvent> priorEvents,
-            bool applyActionTiming = true)
+        private TurnResolutionResult AdvanceInitiative(IEnumerable<TurnResolutionEvent> priorEvents)
         {
             var events = new List<TurnResolutionEvent>(priorEvents);
-            if (applyActionTiming) ApplyActionTiming(events);
             var result = initiative.TrySelectNextActor(definitions, instances, participants);
             if (!result.Accepted)
             {
@@ -838,41 +825,40 @@ namespace GuardsDigital.Core.Cards
             return TurnResolutionResult.Accept(events);
         }
 
-        private void ApplyActionTiming(List<TurnResolutionEvent> events)
+        /// <summary>
+        /// Milestone 6.1ap, finding <c>F-ER2-05</c>. Turns the ordered stream a resolver emitted into
+        /// turn events, raising each checkpoint where the resolver placed it.
+        ///
+        /// This replaced <c>ApplyActionTiming</c>, which rescanned the produced event list and inferred
+        /// checkpoints from each fact's <see cref="CardActionResolutionEventKind"/>. Nothing here reads
+        /// a fact - the only branch is on whether a step is a fact or a checkpoint - so a new action or
+        /// effect family cannot require an arm in this method.
+        ///
+        /// The caller supplies <paramref name="toTurnEvent"/> because it already knows statically which
+        /// action family it is resolving; carrying that discriminator on the step would only move the
+        /// switch here.
+        /// </summary>
+        private List<TurnResolutionEvent> MaterializeSteps(
+            IEnumerable<ResolutionStep> steps,
+            Func<CardActionResolutionEvent, TurnResolutionEvent> toTurnEvent)
         {
-            var ordered = new List<TurnResolutionEvent>();
-            foreach (var turnEvent in events.ToArray())
+            var events = new List<TurnResolutionEvent>();
+            foreach (var step in steps)
             {
-                if (turnEvent.Kind != TurnResolutionEventKind.MovementActionProgressed &&
-                    turnEvent.Kind != TurnResolutionEventKind.AttackActionProgressed &&
-                    turnEvent.Kind != TurnResolutionEventKind.FastTravelActionProgressed)
+                if (step.Kind == ResolutionStepKind.Checkpoint)
                 {
-                    ordered.Add(turnEvent);
+                    AddTiming(
+                        events,
+                        step.Checkpoint,
+                        step.CheckpointAffectedHeroId,
+                        step.CheckpointSourceCardInstanceId);
                     continue;
                 }
 
-                var kind = turnEvent.CardActionEvent.Kind;
-                if (kind == CardActionResolutionEventKind.MovementActionStarted ||
-                    kind == CardActionResolutionEventKind.AttackStarted ||
-                    kind == CardActionResolutionEventKind.FastTravelActionStarted)
-                    AddTiming(ordered, TimingCheckpoint.ActionStarted);
-                if (kind == CardActionResolutionEventKind.AttackStarted)
-                    AddTiming(ordered, TimingCheckpoint.BeforeAttack);
-                if (kind == CardActionResolutionEventKind.DefenseResponseChoiceRequested)
-                    AddTiming(
-                        ordered,
-                        TimingCheckpoint.DefenseResponse,
-                        turnEvent.CardActionEvent.TargetHeroId);
-                if (kind == CardActionResolutionEventKind.AttackResolutionCompleted)
-                    AddTiming(ordered, TimingCheckpoint.AfterAttack);
-                ordered.Add(turnEvent);
-                if (kind == CardActionResolutionEventKind.MovementActionCompleted ||
-                    kind == CardActionResolutionEventKind.AttackResolutionCompleted ||
-                    kind == CardActionResolutionEventKind.FastTravelActionCompleted)
-                    AddTiming(ordered, TimingCheckpoint.ActionEnded);
+                events.Add(toTurnEvent(step.Fact));
             }
-            events.Clear();
-            events.AddRange(ordered);
+
+            return events;
         }
 
         private void AddTiming(

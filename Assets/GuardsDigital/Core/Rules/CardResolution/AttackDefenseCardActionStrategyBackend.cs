@@ -6,6 +6,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -177,7 +178,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution,
                 pendingAttackTargetChoice,
                 null,
-                new[] { CardActionResolutionEvent.AttackTargetChoiceRequested(pendingAttackResolution) });
+                new[]
+                {
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.AttackTargetChoiceRequested(pendingAttackResolution))
+                });
         }
 
 
@@ -276,10 +281,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingDefenseChoice,
                 new[]
                 {
-                    CardActionResolutionEvent.AttackTargetValidated(pendingAttackResolution),
-                    CardActionResolutionEvent.AttackStarted(pendingAttackResolution),
-                    CardActionResolutionEvent.AttackTotalCalculated(pendingAttackResolution),
-                    CardActionResolutionEvent.DefenseResponseChoiceRequested(pendingAttackResolution)
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.AttackTargetValidated(pendingAttackResolution)),
+                    ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted),
+                    ResolutionStep.AtCheckpoint(TimingCheckpoint.BeforeAttack),
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.AttackStarted(pendingAttackResolution)),
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.AttackTotalCalculated(pendingAttackResolution)),
+                    ResolutionStep.AtCheckpoint(
+                        TimingCheckpoint.DefenseResponse, pendingAttackResolution.TargetHeroId),
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.DefenseResponseChoiceRequested(pendingAttackResolution))
                 });
         }
 
@@ -320,15 +333,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 outcome.Id, outcome.TargetId, DefeatRemovalResultKind.Removed);
             var defeat = new MinionDefeatResolution(
                 outcome, reward, removalAttempt, removalResult, removed);
-            var events = new List<CardActionResolutionEvent>
+            var events = new List<ResolutionStep>
             {
-                CardActionResolutionEvent.AttackTargetValidated(resolution),
-                CardActionResolutionEvent.AttackStarted(resolution)
+                ResolutionStep.FromFact(CardActionResolutionEvent.AttackTargetValidated(resolution)),
+                ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted),
+                ResolutionStep.AtCheckpoint(TimingCheckpoint.BeforeAttack),
+                ResolutionStep.FromFact(CardActionResolutionEvent.AttackStarted(resolution))
             };
-            events.AddRange(defeat.Facts.Select(fact =>
-                CardActionResolutionEvent.MinionDefeatFact(resolution, defeat, fact)));
-            events.Add(CardActionResolutionEvent.AttackResolutionCompleted(
-                resolution, AttackResolutionOutcome.AttackSuccessful));
+            events.AddRange(defeat.Facts.Select(fact => ResolutionStep.FromFact(
+                CardActionResolutionEvent.MinionDefeatFact(resolution, defeat, fact))));
+            events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.AfterAttack));
+            events.Add(ResolutionStep.FromFact(CardActionResolutionEvent.AttackResolutionCompleted(
+                resolution, AttackResolutionOutcome.AttackSuccessful)));
+            events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
 
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;
@@ -421,8 +438,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     null,
                     new[]
                     {
-                        CardActionResolutionEvent.DefenseDeclined(pendingAttackResolution),
-                        CardActionResolutionEvent.DefenseResponseCompleted(pendingAttackResolution)
+                        ResolutionStep.FromFact(
+                            CardActionResolutionEvent.DefenseDeclined(pendingAttackResolution)),
+                        ResolutionStep.FromFact(
+                            CardActionResolutionEvent.DefenseResponseCompleted(pendingAttackResolution)),
+                        ResolutionStep.AtCheckpoint(
+                            TimingCheckpoint.AttackResultComparison, pendingAttackResolution.TargetHeroId)
                     });
             }
 
@@ -484,9 +505,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 null,
                 new[]
                 {
-                    CardActionResolutionEvent.DefenseCardDiscarded(pendingAttackResolution),
-                    CardActionResolutionEvent.DefenseTotalCalculated(pendingAttackResolution),
-                    CardActionResolutionEvent.DefenseResponseCompleted(pendingAttackResolution)
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.DefenseCardDiscarded(pendingAttackResolution)),
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.DefenseTotalCalculated(pendingAttackResolution)),
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.DefenseResponseCompleted(pendingAttackResolution)),
+                    ResolutionStep.AtCheckpoint(
+                        TimingCheckpoint.AttackResultComparison, pendingAttackResolution.TargetHeroId)
                 });
         }
 
@@ -550,9 +576,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 DefenseBlockResult.None);
             var outcome = comparison.Outcome;
             HeroDefeatResolution heroDefeat = null;
-            var events = new List<CardActionResolutionEvent>
+            var events = new List<ResolutionStep>
             {
-                CardActionResolutionEvent.AttackOutcomeDetermined(completedResolution, outcome)
+                ResolutionStep.FromFact(
+                    CardActionResolutionEvent.AttackOutcomeDetermined(completedResolution, outcome))
             };
             if (outcome == AttackResolutionOutcome.AttackSuccessful)
             {
@@ -562,9 +589,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     new DefeatTargetId(completedResolution.TargetHeroId.Value),
                     defeatedTeamId,
                     completedResolution.ActorId));
-                events.Add(CardActionResolutionEvent.HeroDefeatRecorded(completedResolution, heroDefeat));
+                events.Add(ResolutionStep.FromFact(
+                    CardActionResolutionEvent.HeroDefeatRecorded(completedResolution, heroDefeat)));
             }
-            events.Add(CardActionResolutionEvent.AttackResolutionCompleted(completedResolution, outcome));
+
+            events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.AfterAttack));
+            events.Add(ResolutionStep.FromFact(
+                CardActionResolutionEvent.AttackResolutionCompleted(completedResolution, outcome)));
+            events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
 
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;

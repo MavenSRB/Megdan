@@ -6,6 +6,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -63,21 +64,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 null,
                 new[]
                 {
-                    CardActionResolutionEvent.FastTravelActionStarted(
+                    ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted),
+                    ResolutionStep.FromFact(CardActionResolutionEvent.FastTravelActionStarted(
                         resolutionId,
                         replacementOffer,
                         replacedMovementActionDefinitionId,
-                        travelEvent),
-                    CardActionResolutionEvent.FastTravelCommitted(
+                        travelEvent)),
+                    ResolutionStep.FromFact(CardActionResolutionEvent.FastTravelCommitted(
                         resolutionId,
                         replacementOffer,
                         replacedMovementActionDefinitionId,
-                        travelEvent),
-                    CardActionResolutionEvent.FastTravelActionCompleted(
+                        travelEvent)),
+                    ResolutionStep.FromFact(CardActionResolutionEvent.FastTravelActionCompleted(
                         resolutionId,
                         replacementOffer,
                         replacedMovementActionDefinitionId,
-                        travelEvent)
+                        travelEvent)),
+                    ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded)
                 });
         }
 

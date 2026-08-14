@@ -39,14 +39,16 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 382 | 0 | 0 | 0 | `6.1u` |
-| Complete Play Mode | 19 | 0 | 0 | 0 | `6.1u` |
+| Complete Edit Mode | 392 | 0 | 0 | 0 | `6.1ap` |
+| Complete Play Mode | 19 | 0 | 0 | 0 | `6.1ap` |
 
 An earlier complete Edit Mode run, at the revision the superseded `6.1ad` row recorded, is what caught the stale `CardAggregateInvarianceTests` digests, which no focused filter had selected since 6.1f. Any milestone that changes `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` must run both digest-pinning fixtures - `CardAggregateInvarianceTests` and `SnapshotCompatibilityCorpusTests` - because a schema change invalidates every pinned digest by construction. `CardAggregateInvarianceTests` sits in the dotnet harness exclude list where the Linux harness cannot reach it; `SnapshotCompatibilityCorpusTests` runs in the harness but must still be selected deliberately on the Windows tier, since neither is picked up by a filter built from the types a schema change touches.
 
 A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
 
-Both rows were re-measured after 6.1u, because three intervening focused-tier milestones had legitimately moved the totals without an unfiltered run of their own. Edit Mode went 378 to 382: 6.1a and 6.1ao added cases, and 6.1u deleted four - three `AdjacentDestinationQueryTests` and one `TestShellEditModeTests` - while adding two. Play Mode reads 19 both before and after, but not the same 19: 6.1a added a `MinimalHexGridPlayModeTests` case, taking that fixture from 14 to 15, and 6.1u deleted `TestShellPlayModeTests`. Compare compositions, not just totals, when a number looks unchanged.
+Milestone 6.1ap moved Edit Mode 382 to 392 by adding two fixtures and deleting none: `ResolverEmittedCheckpointConformanceTests` (4) and `TurnTimingCheckpointOrderTests` (6). Play Mode is unchanged at 19 in both total and composition, which is the expected result for a Core-only correction.
+
+The 6.1u measurement behind the previous row is retained because it explains a case where the totals moved without an unfiltered run: Edit Mode went 378 to 382 as 6.1a and 6.1ao added cases and 6.1u deleted four - three `AdjacentDestinationQueryTests` and one `TestShellEditModeTests` - while adding two. Play Mode read 19 before and after but not the same 19: 6.1a added a `MinimalHexGridPlayModeTests` case, taking that fixture from 14 to 15, and 6.1u deleted `TestShellPlayModeTests`. Compare compositions, not just totals, when a number looks unchanged.
 
 ```powershell
 $completeEditArguments = @(

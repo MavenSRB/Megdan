@@ -16,11 +16,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AdjacentMoveRejectionReason adjacentMoveRejectionReason,
             PendingCardActionResolution pendingResolution,
             PendingMovementChoice pendingChoice,
-            IEnumerable<CardActionResolutionEvent> events)
+            IEnumerable<ResolutionStep> steps)
         {
-            if (events == null)
+            if (steps == null)
             {
-                throw new ArgumentNullException(nameof(events));
+                throw new ArgumentNullException(nameof(steps));
             }
 
             Accepted = accepted;
@@ -30,7 +30,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AdjacentMoveRejectionReason = adjacentMoveRejectionReason;
             PendingResolution = pendingResolution;
             PendingChoice = pendingChoice;
-            Events = events.ToArray();
+            Steps = steps.ToArray();
+            Events = Steps
+                .Where(step => step.Kind == ResolutionStepKind.Fact)
+                .Select(step => step.Fact)
+                .ToArray();
         }
 
         public bool Accepted { get; }
@@ -47,13 +51,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public PendingMovementChoice PendingChoice { get; }
 
+        /// <summary>
+        /// The ordered stream the resolver emitted, facts and timing checkpoints interleaved at the
+        /// positions the resolver raised them (milestone 6.1ap).
+        /// </summary>
+        public IReadOnlyList<ResolutionStep> Steps { get; }
+
+        /// <summary>The fact subsequence of <see cref="Steps"/>, for callers that want facts alone.</summary>
         public IReadOnlyList<CardActionResolutionEvent> Events { get; }
 
         public static CardActionResolutionResult Accept(
             bool isComplete,
             PendingCardActionResolution pendingResolution,
             PendingMovementChoice pendingChoice,
-            IEnumerable<CardActionResolutionEvent> events)
+            IEnumerable<ResolutionStep> steps)
         {
             return new CardActionResolutionResult(
                 true,
@@ -63,7 +74,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AdjacentMoveRejectionReason.None,
                 pendingResolution,
                 pendingChoice,
-                events);
+                steps);
         }
 
         public static CardActionResolutionResult Reject(
@@ -84,7 +95,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AdjacentMoveRejectionReason.None,
                 pendingResolution,
                 pendingChoice,
-                Array.Empty<CardActionResolutionEvent>());
+                Array.Empty<ResolutionStep>());
         }
 
         public static CardActionResolutionResult RejectMovementStep(
@@ -100,7 +111,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 stepResult.AdjacentMoveRejectionReason,
                 pendingResolution,
                 pendingChoice,
-                Array.Empty<CardActionResolutionEvent>());
+                Array.Empty<ResolutionStep>());
         }
     }
 }

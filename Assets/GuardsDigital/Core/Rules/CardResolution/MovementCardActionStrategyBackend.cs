@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -195,8 +196,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingChoice,
                 new[]
                 {
-                    CardActionResolutionEvent.MovementActionStarted(pendingResolution),
-                    CardActionResolutionEvent.MovementChoiceRequested(pendingResolution)
+                    ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted),
+                    ResolutionStep.FromFact(CardActionResolutionEvent.MovementActionStarted(pendingResolution)),
+                    ResolutionStep.FromFact(CardActionResolutionEvent.MovementChoiceRequested(pendingResolution))
                 });
         }
 
@@ -273,7 +275,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            var resolutionEvents = new List<CardActionResolutionEvent>();
+            var resolutionEvents = new List<ResolutionStep>();
             var stepResolution = pendingResolution;
             for (var routeIndex = 1; routeIndex < selectedDestination.Route.Count; routeIndex++)
             {
@@ -284,9 +286,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         "An backend-projected movement route failed after side-effect-free validation.");
                 }
 
-                resolutionEvents.Add(CardActionResolutionEvent.MovementStepCommitted(
+                resolutionEvents.Add(ResolutionStep.FromFact(CardActionResolutionEvent.MovementStepCommitted(
                     stepResolution,
-                    stepResult.NewEvents.Single()));
+                    stepResult.NewEvents.Single())));
                 stepResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
             }
 
@@ -294,7 +296,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 movementSession.Complete();
                 var completedResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
-                resolutionEvents.Add(CardActionResolutionEvent.MovementActionCompleted(completedResolution));
+                resolutionEvents.Add(ResolutionStep.FromFact(
+                    CardActionResolutionEvent.MovementActionCompleted(completedResolution)));
+                resolutionEvents.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
                 pendingResolution = null;
                 pendingChoice = null;
 
@@ -311,7 +315,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 movementSession.Complete();
                 var completedResolution = CreatePendingResolution(nextResolution, movementSession.CaptureState());
-                resolutionEvents.Add(CardActionResolutionEvent.MovementActionCompleted(completedResolution));
+                resolutionEvents.Add(ResolutionStep.FromFact(
+                    CardActionResolutionEvent.MovementActionCompleted(completedResolution)));
+                resolutionEvents.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
                 pendingResolution = null;
                 pendingChoice = null;
 
@@ -324,7 +330,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             pendingResolution = nextResolution;
             pendingChoice = nextChoice;
-            resolutionEvents.Add(CardActionResolutionEvent.MovementChoiceRequested(nextResolution));
+            resolutionEvents.Add(ResolutionStep.FromFact(
+                CardActionResolutionEvent.MovementChoiceRequested(nextResolution)));
 
             return CardActionResolutionResult.Accept(
                 false,
@@ -345,7 +352,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 true,
                 null,
                 null,
-                new[] { completedEvent });
+                new[]
+                {
+                    ResolutionStep.FromFact(completedEvent),
+                    ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded)
+                });
         }
 
         private PendingMovementChoice CreatePendingChoice(
