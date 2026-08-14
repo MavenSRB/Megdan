@@ -116,7 +116,7 @@ Non-goals: No contract meaning change, no new capability, no implementation of `
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ai-correct-the-card-system-architectures-current-claims-completion-evidence).
 
-### [ ] 6.1aj Reconcile the rules ledger with roadmap ownership
+### [x] 6.1aj Reconcile the rules ledger with roadmap ownership
 
 Observable outcome: Every rules-ledger row that routes work to a milestone names the milestone the roadmap actually assigns, the answered open question is retired, and the coverage map distinguishes implemented foundation from missing producers.
 
@@ -132,6 +132,8 @@ Acceptance checks:
 Closing check: preventive in 6.1y's sense, with the rationale stated: no honest check can own which milestone a rule routes to without a declared ledger heavier than the defect it guards, and roadmap fitness is already inside scheduled review 6.2b's scope. Closure is the correction inspected against the recorded 5.8c disposition and the 6.2a and 6.7 definitions, recorded in the commit body.
 
 Non-goals: No rule meaning, source, or verification-status change. No open question answered or invented beyond the user's recorded decision. No coverage-map row additions. No hero content.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61aj-reconcile-the-rules-ledger-with-roadmap-ownership-completion-evidence).
 
 ### [ ] 6.1ak Bring the Maps shard under governance
 
