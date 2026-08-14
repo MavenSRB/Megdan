@@ -75,11 +75,11 @@ Non-goals: No recipe meaning change, no archive rewriting, no baseline-table rem
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ag-route-completed-run-history-out-of-the-active-testing-shards-completion-evidence).
 
-### [ ] 6.1ah Reduce retired risk rows to archive links
+### [x] 6.1ah Reduce retired risk rows to archive links
 
 Observable outcome: Every row in the active risk register is an active risk; a retired one is a one-line archive link, and product scope cites platform gates rather than retired risk IDs.
 
-Context: governance moves a resolved risk losslessly to `Archive/RESOLVED_TECHNICAL_RISKS.md`, the active row becoming "a short archive link" - and the register already demonstrates the compliant form alongside four non-compliant rows: `RISK-PRESENTATION-001`, `RISK-BUILD-001`, `RISK-PERF-001`, and `RISK-STATE-001` are marked retired or resolved while their evidence cells retain multi-sentence closure history, `RISK-PERF-001` worst. `Project/PRODUCT.md` compounds it by citing two of them as current owners - "a mobile allocation budget that `RISK-PERF-001` currently blocks" and "shader stripping verification covered by `RISK-BUILD-001`" - although the register itself calls the mobile cost "a measurement gap for the first mobile player build, not an open risk". Mobile performance measurement and iOS shader stripping are platform-bring-up gates, not surviving states of retired prototype risks.
+Context: governance moves a resolved risk losslessly to `Archive/RESOLVED_TECHNICAL_RISKS.md`, the active row becoming "a short archive link" - and the register already demonstrates the compliant form alongside four non-compliant rows: `RISK-PRESENTATION-001`, `RISK-BUILD-001`, `RISK-PERF-001`, and `RISK-STATE-001` are marked retired or resolved (at 5.8a1, 6.1d, 6.1o, and 6.1g respectively) while their evidence cells retain multi-sentence closure history, `RISK-PERF-001` worst. `Project/PRODUCT.md` compounds it by citing two of them as current owners - "a mobile allocation budget that `RISK-PERF-001` currently blocks" and "shader stripping verification covered by `RISK-BUILD-001`" - although the register itself calls the mobile cost "a measurement gap for the first mobile player build, not an open risk". Mobile performance measurement and iOS shader stripping are platform-bring-up gates, not surviving states of retired prototype risks.
 
 Acceptance checks:
 
@@ -91,6 +91,8 @@ Acceptance checks:
 Closing check: `retired-risk-row` run at the pre-fix revision, observed reporting the four rows, and `retired-structure-language` observed reporting the two `PRODUCT.md` citations; both observed passing at the post-fix revision.
 
 Non-goals: No risk reassessment, no new risk, no archive rewriting beyond append-only addenda, no change to the active rows `RISK-STATE-002` and `RISK-COMPAT-001` or to the temporary-structure register beyond what 6.1ab already corrected.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ah-reduce-retired-risk-rows-to-archive-links-completion-evidence).
 
 ### [ ] 6.1ai Correct the card-system architecture's current claims
 

@@ -9,3 +9,5 @@ handler registry | 6.1h | The same registry as the capability documents name it
 once in the indexed phase-handoff archive | 2026-08-13 governance amendment | The per-handoff narrative append; evidence lives once in the commit message body with one archive row
 evidence to the phase-handoff archive | 2026-08-13 governance amendment | The same superseded routing as the governance threshold section phrased it
 milestone evidence in the phase handoff archives | 2026-08-13 governance amendment | The same superseded routing as the testing index phrased it
+RISK-PERF-001 | 6.1o | Retired performance risk; a current claim citing it as a live blocker misstates a platform gate as a surviving prototype risk
+RISK-BUILD-001 | 6.1d | Retired build risk; same rule as RISK-PERF-001

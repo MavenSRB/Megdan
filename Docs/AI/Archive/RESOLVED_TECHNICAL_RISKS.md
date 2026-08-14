@@ -85,3 +85,23 @@ Explicit correction under the append-only archive rule. The record above is pres
 **The gating paragraph is also wrong about the guarantee.** It says the rollback pre-image is captured in both modes "because it is the atomicity guarantee rather than a diagnostic". The pre-image was indeed captured in both modes and was *unused* in `Off`: skipping the comparison skips the rollback it decides. `Off` was the mode every non-development build selected, so the configuration that shipped captured a pre-image it could never act on. That is `RISK-STATE-002`'s neighbouring concern but a distinct defect, and it is the subject of milestone 6.1o rather than of this risk.
 
 Milestone 6.1o removes both copies, makes the comparison unconditional, and replaces the growth evidence with an identity assertion that a copy fails at any session length. The risk is retired again there. Its active row records the reopening rather than presenting an unbroken retirement.
+
+## 2026-08-14 addenda: closure evidence routed from the active register (milestone 6.1ah)
+
+Moved verbatim from the active register's Evidence and Retirement cells when milestone 6.1ah reduced the four retired rows to short archive links; each fragment belongs to the risk section named above it.
+
+### RISK-PRESENTATION-001 routed evidence
+
+Review 5.8c traced rebuild/rebind/removal/Undo/restore paths and reran the current cue-related Edit/Play fixtures without finding recurrence. Reassessed at 5.8c; remains resolved.
+
+### RISK-BUILD-001 routed evidence
+
+The Standard shader is declared always-included and all four runtime lookups throw on null, proved by `RuntimeShaderResolutionTests` failing before the fix and passing after. The player-build smoke gate was then observed failing on a deliberate removal from the always-included list and passing once restored. Retired at 6.1d.
+
+### RISK-PERF-001 routed evidence
+
+The count half was closed at 6.1i and remains so: the audit's figures were confirmed exactly at `2132619` and are one, one, and zero after that milestone. The growth half was not. An independent review found `CapturePreImage` still copying the whole accumulated rule-event log on every command, and the projection copying it again on every refresh; the fixture named as the retirement's evidence measures encoded characters, so by construction it could not observe either. Both copies are removed at 6.1o and the property is asserted as identity by `CapturePreImage_CopiesNothingHoweverLongTheSessionIs`, which fails against the pre-fix capture at any session length. Retired at 6.1o. Absolute cost on a mobile device remains unmeasured; that is a measurement gap for the first mobile player build, not an open risk.
+
+### RISK-STATE-001 routed evidence
+
+An incomplete restore was demonstrated to compile cleanly at `4a5b337` and to fail with CS7036 after the fix, both observations recorded in the 6.1g commit. Retired at 6.1g.

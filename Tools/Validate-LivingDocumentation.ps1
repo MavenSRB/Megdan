@@ -532,6 +532,21 @@ function Get-StalePinnedConstantSites($Entries, [hashtable] $SourceValues, [hash
 # there is no >=200-character archived paragraph to match against - so this check states the
 # governance rule as a countable one: the brief carries exactly one completion statement, and it
 # names the current completed milestone.
+# Retired-risk rows (milestone 6.1ah): governance moves a resolved risk losslessly to the archive and
+# leaves the active row "a short archive link". A row whose status records retirement or resolution
+# must therefore carry no more than the link-length remainder: its non-ID cells concatenate to at
+# most 300 characters and include the archive link. Active rows are not this check's business.
+function Get-OverweightRetiredRiskRows($RiskRows) {
+    $overweight = New-Object System.Collections.Generic.List[string]
+    foreach ($row in $RiskRows) {
+        if ($row.Count -lt 2) { continue }
+        $joined = ($row[1..($row.Count - 1)] -join ' ')
+        if ($joined -notmatch '(?:Retired|Resolved) at') { continue }
+        if ($joined.Length -gt 300 -or $joined -notmatch '\]\(') { $overweight.Add($row[0]) }
+    }
+    return $overweight.ToArray()
+}
+
 # Generalization (milestone 6.1ag): the same containment rule for the testing shards, under declared
 # historical-total patterns covering the corpus's real evidence forms. A recipe's applicability or
 # tier note ("Milestone 4.4 is T2; complete suites remain deferred") states no totals and stays
@@ -761,6 +776,12 @@ function Invoke-SelfTests {
     Expect 'a mismatched completion statement is reported' (@(Test-CompletionHistory ($historySession -replace 'Milestone \*\*2\.5\*\* completed', 'Milestone **2.4** completed')) -contains 'completion-history-in-active-doc')
     Expect 'several completion statements are reported' (@(Test-CompletionHistory ($historySession + "- Milestone **2.4** completed on 2026-08-13. Older narrative.`n")) -contains 'completion-history-in-active-doc')
     Expect 'no completion statement at all trips the vacuity guard' (@(Test-CompletionHistory '- Current completed milestone: **2.5**.') -contains 'no-completion-statement')
+    # Retired-risk rows (milestone 6.1ah).
+    $riskLink = 'Retired at milestone 2.5; see the [archived record](A.md#x).'
+    Expect 'a compliant retired row passes' (@(Get-OverweightRetiredRiskRows @(,@('`R-1`', $riskLink, '-', '-', '-', 'Retired at 2.5.', '-'))).Count -eq 0)
+    Expect 'an overweight retired row is reported' (@(Get-OverweightRetiredRiskRows @(,@('`R-1`', $riskLink, ('evidence narrative ' * 20), '-', '-', 'Retired at 2.5.', '-'))) -contains '`R-1`')
+    Expect 'a retired row without an archive link is reported' (@(Get-OverweightRetiredRiskRows @(,@('`R-1`', 'Retired at milestone 2.5.', '-', '-', '-', '-', '-'))) -contains '`R-1`')
+    Expect 'an active row is not this check''s business' (@(Get-OverweightRetiredRiskRows @(,@('`R-2`', ('a live risk with a long description ' * 20), 'evidence', 'trigger', '4.4a', 'Reassess at 9.9.', 'mitigation'))).Count -eq 0)
     Expect 'a clean testing shard passes' (@(Get-TestingHistorySites @{ 'Testing/R.md' = 'Run the fixture and expect all discovered cases to pass.' } $script:testingHistoryPatterns).Count -eq 0)
     Expect 'an evidence-passed narrative is reported' (@(Get-TestingHistorySites @{ 'Testing/R.md' = 'Milestone 3.8b evidence passed focused Edit Mode 7/7.' } $script:testingHistoryPatterns).Count -eq 1)
     Expect 'a tiered evidence narrative is reported' (@(Get-TestingHistorySites @{ 'Testing/R.md' = 'Milestone 3.9 T2 evidence passed focused Edit Mode 21/21.' } $script:testingHistoryPatterns).Count -ge 1)
@@ -865,6 +886,10 @@ $temporaryOwnerCells = @($temporaryStructureRows | Where-Object { $_.Count -ge 3
 $riskReassessmentCells = @($activeRiskRows | Where-Object { $_.Count -ge 6 } | ForEach-Object { $_[5] })
 foreach ($staleOwner in (Get-StaleRetirementOwners $temporaryOwnerCells $riskReassessmentCells $roadmapCorpus)) {
     Add-Issue 'ERROR' 'stale-retirement-owner' "$staleOwner. A retirement or reassessment assigned to a milestone that already shipped never happens; move it to a live owner."
+}
+# Retired-risk rows (milestone 6.1ah); shares the parsed register and its vacuity guard above.
+foreach ($overweightRow in (Get-OverweightRetiredRiskRows $activeRiskRows)) {
+    Add-Issue 'ERROR' 'retired-risk-row' "Active risk register row $overweightRow records a retired or resolved risk but is not a short archive link. Move its closure history losslessly to the archive and leave the ID, a one-line pointer, and the link."
 }
 
 # Pinned-constant checks (milestone 6.1aa).
