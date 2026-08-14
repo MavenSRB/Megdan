@@ -480,7 +480,7 @@ Review outcome (2026-08-14): `F58C-01`, `F58C-02`, and `F-ER2-06` are closed, so
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-62b-independently-verify-the-phase-6-actioneffect-foundation-completion-evidence).
 
-### [ ] 6.2c Close the Skill seam parity and vocabulary gaps
+### [~] 6.2c Close the Skill seam parity and vocabulary gaps
 
 Observable outcome: Skill's application, turn, and restore seams meet the same projection-gating, typed-vocabulary, and Core-revalidation bar as the Movement and Attack families, closing review findings `F62B-01` through `F62B-04` on their named checks.
 
