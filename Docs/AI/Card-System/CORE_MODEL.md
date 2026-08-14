@@ -100,7 +100,7 @@ State changes such as play, reveal, resolve, discard, retrieve, swap, set aside,
 
 ## Contract implementation status
 
-This section is the one place that distinguishes a contract this document specifies from a contract the code actually has. This document is an architecture specification, so naming an unbuilt contract is legitimate; leaving a reader unable to tell which is which is not. The living-document validator fails when a named contract is neither declared under `Assets/` nor listed here.
+This section is the one place that distinguishes a contract this document specifies from a contract the code actually has. This document is an architecture specification, so naming an unbuilt contract is legitimate; leaving a reader unable to tell which is which is not. The living-document validator fails when a named contract carrying one of its known suffixes - `Definition`, `Resolution`, `Event`, `Authority`, `Backend`, `Projection`, `Instance`, `Registry`, `Serializer`, `Query`, `Handler` - is neither declared under `Assets/` nor listed here. Capability names outside those suffixes are specification vocabulary the check cannot reach; the shards mark their implementation status themselves, as the timing shard's status section does.
 
 Remove a row when its type is implemented. Do not add a row to silence the validator for a contract that was supposed to exist.
 

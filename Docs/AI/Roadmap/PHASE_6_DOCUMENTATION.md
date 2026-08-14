@@ -96,7 +96,7 @@ Non-goals: No risk reassessment, no new risk, no archive rewriting beyond append
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ah-reduce-retired-risk-rows-to-archive-links-completion-evidence).
 
-### [ ] 6.1ai Correct the card-system architecture's current claims
+### [x] 6.1ai Correct the card-system architecture's current claims
 
 Observable outcome: The card-system shards distinguish implemented contracts from specified ones everywhere they name one, and the one sentence promising the validator catches the difference tells the truth about what it catches.
 
@@ -113,6 +113,8 @@ Acceptance checks:
 Closing check: `retired-structure-language` observed reporting the second registry directive at the pre-fix revision and passing post-fix; `stale-pinned-constant` observed on the schema note if the ledger form is chosen. The remaining prose corrections are preventive in 6.1y's sense - no existing check's failure would they have caused - and close on inspection recorded in the commit body.
 
 Non-goals: No contract meaning change, no new capability, no implementation of `DistanceQuery` or `RangeQuery`, no widening of the contract check's suffix list, no type rename.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ai-correct-the-card-system-architectures-current-claims-completion-evidence).
 
 ### [ ] 6.1aj Reconcile the rules ledger with roadmap ownership
 

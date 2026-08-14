@@ -53,3 +53,16 @@ Some card effects can trigger or depend on larger systems. These remain dedicate
 A card effect requests or triggers these transitions through typed operation facts/checkpoints; it does not duplicate their logic in a card handler. A generic `OccupancyChanged` event is insufficient because Move, Push, Swap, Remove, and Defeat have different systemic consequences.
 
 The implemented repeated-round scaffold uses one serializable end-of-round stage cursor over these stable checkpoint identities. A handler can complete, pause on a typed pending choice, stop on a game result, or report `NotApplicable` from authoritative state. Test-only fixture capability declarations may make a future subsystem explicitly unavailable, but a subsystem declared available without its required handler is an authority error. Minion Battle and owner-validated eligible-card retrieval now populate the cursor without replacing its continuation or event-order contract. The Minion-Battle choice is owned by the round rather than its stage handler: stable identities, losing team/side, required count, intrinsic candidate types, current selection, and exact invocations serialize directly and are rederived/validated after restore. A recorded Lane-Push request prevents the incomplete transition from being silently skipped when its checkpoint arrives. The next round begins only after all applicable stages complete, at which point the prior round's four slots and terminal stage outcomes become immutable history and only round-local state resets.
+
+## Contract implementation status
+
+The names in this shard are specification vocabulary rather than declared code types, so the validator's suffix-matched contract check cannot reach them; this section marks their status itself. Remove a row when its capability is implemented; do not add a row to soften an accidental gap.
+
+| Capability | Status | Owning milestone |
+| --- | --- | --- |
+| Active-effect lifecycle, checkpoints, and continuous sources | Implemented foundation (5.4, checkpoint scoping corrected at 6.1q); concrete effect producers and general execution pending | 6.2a onward |
+| End-of-round Minion Battle transition (`ResolveMinionBattle`) | Implemented (6.1); player-facing removal-choice UI open | 6.1a |
+| `RepeatAction`, `PerformAction`, `ReplaceAction`, `SimultaneousBatch` control flow | Specified, not implemented | 6.2a (non-Repeat), 6.7 (Repeat) |
+| `RequestLanePush` recording | Implemented at 6.1; consumption not implemented | 6.9 |
+| Lane Push Wave/Battle-Zone stages, respawn, and transition (`ResolveLanePushTransition`, `MinionRespawnEffect` vocabulary) | Specified, not implemented | 6.10-6.11 |
+| End-of-round token/marker cleanup and retrieval-time Active-effect cancellation | Retrieval and cancellation checkpoint implemented (3.8c); token/marker cleanup specified only | 6.12-6.13 |
