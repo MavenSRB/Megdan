@@ -11,3 +11,4 @@ AuthoritativeSnapshotSerializer.CurrentSchemaVersion | Assets/GuardsDigital/Core
 AuthoritativeSnapshotSerializer.CurrentSchemaVersion | Assets/GuardsDigital/Core/Snapshots/AuthoritativeSnapshotSerializer.cs | Project/ARCHITECTURE.md | durable schema-version-(\d+) compatibility corpus
 AuthoritativeSnapshotSerializer.CurrentSchemaVersion | Assets/GuardsDigital/Core/Snapshots/AuthoritativeSnapshotSerializer.cs | Project/CURRENT_IMPLEMENTATION.md | current persisted snapshot schema is v(\d+)
 AuthoritativeSnapshotSerializer.CurrentSchemaVersion | Assets/GuardsDigital/Core/Snapshots/AuthoritativeSnapshotSerializer.cs | RULES_LEDGER.md | Snapshot schema v(\d+), restore
+AuthoritativeSnapshotSerializer.CurrentSchemaVersion | Assets/GuardsDigital/Core/Snapshots/AuthoritativeSnapshotSerializer.cs | Maps/README.md | the snapshot schema has since advanced to v(\d+)

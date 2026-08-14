@@ -19,6 +19,7 @@ Every fact has exactly one canonical active home. Other active documents use a s
 | Durable effect, keyword, query, modifier, timing, token/marker, and transition capabilities | [`CARD_EFFECT_CAPABILITIES.md`](CARD_EFFECT_CAPABILITIES.md) plus its indexed [`Card-System/`](Card-System/) capability shards | Links and narrowly necessary dependency summaries |
 | Validation policy, launcher resilience, active/future exact recipes, gate definitions, and test ownership | [`TESTING.md`](TESTING.md) plus its indexed [`Testing/`](Testing/) shards | Exact command link or short gate route |
 | Active technical risks | [`TECHNICAL_RISKS.md`](TECHNICAL_RISKS.md) | Milestone links to owning risk IDs |
+| Official map data contract, reviewed inventory, and generated-resource rule | [`Maps/README.md`](Maps/README.md) | Links from the rules ledger's official-map row and the session brief's routing table |
 | Completed milestone narratives, historical run/failure evidence, superseded recipes, and resolved risks | [`Archive/README.md`](Archive/README.md) and its indexed lossless destinations | Short backlink only; never a copied body |
 | Consolidation provenance (frozen; not maintained) | [`Archive/MIGRATION_MANIFEST.md`](Archive/MIGRATION_MANIFEST.md), [`Archive/PRESERVATION_INVENTORY.md`](Archive/PRESERVATION_INVENTORY.md), and [`Archive/Pre-Governance/SHA256SUMS.md`](Archive/Pre-Governance/SHA256SUMS.md) | Stable links only |
 

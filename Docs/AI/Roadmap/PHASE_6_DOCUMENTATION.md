@@ -135,7 +135,7 @@ Non-goals: No rule meaning, source, or verification-status change. No open quest
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61aj-reconcile-the-rules-ledger-with-roadmap-ownership-completion-evidence).
 
-### [ ] 6.1ak Bring the Maps shard under governance
+### [x] 6.1ak Bring the Maps shard under governance
 
 Observable outcome: The official map data contract is a governed, indexed, threshold-bounded document, and its stale status claims are corrected.
 
@@ -152,6 +152,8 @@ Acceptance checks:
 Closing check: the staged `orphan-shard` failing-then-passing transition, plus `stale-pinned-constant` observed on the schema claim under its new ledger entry; both recorded in the commit body.
 
 Non-goals: No map data change, no regeneration of the JSON, no change to `Validate-BoardMapSpecification.ps1`, no new Maps content.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ak-bring-the-maps-shard-under-governance-completion-evidence).
 
 ### [ ] 6.1al Consolidate project-context and workflow truth
 

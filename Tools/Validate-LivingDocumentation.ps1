@@ -44,6 +44,7 @@ function Get-Limit([string] $RelativePath) {
     if ($p -eq 'Docs/AI/TESTING.md' -or $p -like 'Docs/AI/Testing/*.md') { return @(7000, 80KB) }
     if ($p -eq 'Docs/AI/CARD_SYSTEM_ARCHITECTURE.md' -or $p -eq 'Docs/AI/CARD_EFFECT_CAPABILITIES.md' -or $p -like 'Docs/AI/Card-System/*.md') { return @(7000, 64KB) }
     if ($p -eq 'Docs/AI/RULES_LEDGER.md' -or $p -like 'Docs/AI/Rules/*.md') { return @(9000, 80KB) }
+    if ($p -like 'Docs/AI/Maps/*.md') { return @(4500, 40KB) }
     if ($p -eq 'Docs/AI/DOCUMENTATION_GOVERNANCE.md' -or $p -eq 'Docs/AI/TECHNICAL_RISKS.md') { return @(4500, 40KB) }
     return $null
 }
@@ -370,6 +371,7 @@ function Get-ShardFamilies {
         [pscustomobject]@{ Pattern = 'Testing/*.md';     Indexes = @('TESTING.md') }
         [pscustomobject]@{ Pattern = 'Card-System/*.md'; Indexes = @('CARD_SYSTEM_ARCHITECTURE.md', 'CARD_EFFECT_CAPABILITIES.md') }
         [pscustomobject]@{ Pattern = 'Rules/*.md';       Indexes = @('RULES_LEDGER.md') }
+        [pscustomobject]@{ Pattern = 'Maps/*.md';        Indexes = @('RULES_LEDGER.md', 'SESSION_BRIEF.md') }
     )
 }
 
@@ -377,11 +379,15 @@ function Get-OrphanShards($Families, [string[]] $ShardPaths, [hashtable] $IndexT
     $orphans = New-Object System.Collections.Generic.List[string]
     foreach ($family in $Families) {
         foreach ($shard in ($ShardPaths | Where-Object { $_ -like $family.Pattern })) {
-            $fileName = [regex]::Escape(($shard -split '/')[-1])
+            # A link satisfies the index requirement as the shard's exact relative path, or as the
+            # bare filename for a same-directory link. Any-prefix filename matching would let a
+            # different directory's same-named file (Archive/README.md) satisfy Maps/README.md.
+            $exactPath = [regex]::Escape($shard)
+            $bareName = [regex]::Escape(($shard -split '/')[-1])
             $isLinked = $false
             foreach ($index in $family.Indexes) {
                 if (-not $IndexTexts.ContainsKey($index)) { continue }
-                if ([regex]::IsMatch($IndexTexts[$index], "\]\([^)]*$fileName(#[^)]*)?\)")) { $isLinked = $true; break }
+                if ([regex]::IsMatch($IndexTexts[$index], "\]\((?:$exactPath|$bareName)(?:#[^)]*)?\)")) { $isLinked = $true; break }
             }
             if (-not $isLinked) { $orphans.Add($shard) }
         }
@@ -762,6 +768,10 @@ function Invoke-SelfTests {
     Expect 'orphaned shard is reported' (@(Get-OrphanShards $graphFamilies @('Sub/ORPHAN.md') $graphIndexes) -contains 'Sub/ORPHAN.md')
     Expect 'second index of a two-index family links it' (@(Get-OrphanShards $graphFamilies @('Sub/OTHER.md') $graphIndexes).Count -eq 0)
     Expect 'empty shard set yields no orphans for the vacuity guard to catch' (@(Get-OrphanShards $graphFamilies @() $graphIndexes).Count -eq 0)
+    Expect 'a bare same-directory link satisfies the index' (@(Get-OrphanShards $graphFamilies @('Sub/PEER.md') @{ 'INDEX_A.md' = 'See [peer](PEER.md).' }).Count -eq 0)
+    Expect 'a same-named file in another directory does not satisfy the index' (@(Get-OrphanShards $graphFamilies @('Sub/README.md') @{ 'INDEX_A.md' = 'See [other](Elsewhere/README.md).' }) -contains 'Sub/README.md')
+    Expect 'the maps family is in the shard-family table' (@(Get-ShardFamilies | Where-Object { $_.Pattern -eq 'Maps/*.md' }).Count -eq 1)
+    Expect 'the maps family is governed at the project thresholds' ((Get-Limit 'Docs/AI/Maps/README.md')[0] -eq 4500)
     $graphBlocks = Get-CompleteMilestoneBlocks "### [x] 2.1 Done`nBody.`nHistorical evidence: [row](x.md).`n### [x] 2.2 Also done`nBody only.`n### [ ] 2.3 Open`nNot complete.`n"
     Expect 'complete blocks are parsed and open ones skipped' ($graphBlocks.Count -eq 2)
     Expect 'backlink present passes' (@(Get-MilestonesMissingEvidenceBacklink $graphBlocks) -notcontains '2.1')
@@ -845,7 +855,7 @@ function Invoke-SelfTests {
 if (-not $SkipSelfTests) { Invoke-SelfTests }
 
 # Active leaf thresholds.
-$activeFiles = Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/*' -and $_.FullName.Replace('\', '/') -notlike '*/Maps/*' }
+$activeFiles = Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/*' }
 foreach ($file in $activeFiles) {
     $relative = Get-RelativePath $projectRoot $file.FullName
     $limit = Get-Limit $relative

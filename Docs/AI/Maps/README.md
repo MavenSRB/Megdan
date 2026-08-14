@@ -12,7 +12,7 @@ The schema is map-scoped so future maps can coexist:
 - A match selects one immutable definition by `(mapId, revision)`. Coordinate-based rules and queries then operate locally within that selected definition instead of qualifying every internal coordinate individually.
 - Zones and spawn points are collections owned by the selected map specification. A future map receives its own zone and spawn collections rather than extending this map through name-based branches.
 
-Milestones 4.1-4.1a define and harden the data/validation contract. Milestone 4.2 loads an immutable selected definition through the reusable catalog boundary, binds it to authoritative board state, and stores its `mapId`/revision in snapshot schema version 2. Replacing the temporary scene geometry belongs to milestone 4.2a. Zone adjacency and the ordered Lane relationship belong to milestone 4.3.
+Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone 4.2 loaded an immutable selected definition through the reusable catalog boundary, bound it to authoritative board state, and began persisting its `mapId`/revision in the versioned snapshot at that era's schema version 2; the snapshot schema has since advanced to v7, and the map's `(mapId, revision)` identity still rides it. Milestone 4.2a replaced the temporary scene geometry, and milestone 4.3 added zone adjacency and the ordered Lane relationship.
 
 ## Source of truth and the generated runtime resource
 
@@ -31,7 +31,7 @@ Regenerate the runtime resource after any specification change:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Sync-BoardMapResource.ps1
 ```
 
-`Tools/Sync-BoardMapResource.ps1 -Check` compares without writing. `Validate-BoardMapSpecification.ps1` asserts byte equality on every run and fails on drift, so a divergence cannot reach a build silently - before milestone 6.1d the two files were maintained independently and nothing compared them, which meant the validator could keep passing against the specification while the game loaded something else.
+`Tools/Sync-BoardMapResource.ps1 -Check` compares without writing. `Validate-BoardMapSpecification.ps1` asserts byte equality against the generated resource on every run and fails on drift, so a divergence cannot reach a build silently; milestone 6.1d added that comparison gate, and its completion record carries the account of the drift it exists to prevent.
 
 The sync writes only the `.json`. `Assets/Resources/Maps/official-single-lane.json.meta` carries the asset GUID Unity resolves the resource by; regenerating that file would break the reference.
 
