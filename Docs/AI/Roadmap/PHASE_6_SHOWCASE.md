@@ -4,31 +4,49 @@ Canonical active roadmap subshard. It is indexed from [PHASE_6.md](PHASE_6.md); 
 
 ## Approved scheduling and durable hand shape
 
-**Mechanics-showcase scheduling amendment (2026-08-14, user approved).** Five of the ten configured synthetic cards become a staged mechanics-showcase hand immediately after their reusable dependencies are proven: 6.8a converts Red Bulwark after 6.8; 6.5a and 6.5b convert Red Needle and Red Bombard after 6.4-6.5 and the 6.4a/6.4b correction path; 6.6a converts Blue Sentinel after 6.6; and 6.7a converts Blue Longbow after 6.7. Execution therefore follows **6.3 -> 6.8 -> 6.8a -> 6.4 -> 6.4a -> 6.4b -> 6.5 -> 6.5a -> 6.5b -> 6.6 -> 6.6a -> 6.7 -> 6.7a -> 6.9 onward**.
+**Mechanics-showcase scheduling amendment (2026-08-14, user approved).** Six of the ten configured synthetic cards become a staged mechanics-showcase hand immediately after their reusable dependencies are proven: 6.8a converts Red Bulwark and 6.8b converts Blue Feint after 6.8; 6.5a and 6.5b convert Red Needle and Red Bombard after 6.4-6.5 and the 6.4a/6.4b correction path; 6.6a converts Blue Sentinel after 6.6; and 6.7a converts Blue Longbow after 6.7. Execution therefore follows **6.3 -> 6.8 -> 6.8a -> 6.8b -> 6.4 -> 6.4a -> 6.4b -> 6.5 -> 6.5a -> 6.5b -> 6.6 -> 6.6a -> 6.7 -> 6.7a -> 6.9 onward**.
 
-Each conversion replaces only that card's printed Primary Attack, retaining its stable definition/instance identities, Initiative, printed Secondary Movement, and Defense reaction while advancing its content revision. Red Lancer, Red Pursuit, Blue Feint, Blue Scout Shot, and Blue Hammer retain representative non-Ranged/Ranged Attack coverage; general Hold, Fast Travel, and Clear remain derived from their eligible source actions rather than being printed onto a showcase Skill. Red Bulwark also owns visible delayed-effect coverage for `This Turn`, `This Round`, `Next Turn`, and `Next Turn after Playing Cards`; 6.13 closes their retrieval/cancellation interactions and 7.9 gates the complete ten-card matrix. The existing Focus/Cache fixture-only cards remain narrow fixtures until 7.9 determines whether each still has a distinct isolation role.
+Each conversion replaces only that card's printed Primary Attack, retaining its stable definition/instance identities, Initiative, printed Secondary Movement, and Defense reaction while advancing its content revision. Red Lancer, Red Pursuit, Blue Scout Shot, and Blue Hammer retain exactly one non-Ranged and one Ranged printed Attack per team; general Hold, Fast Travel, and Clear remain derived from their eligible source actions rather than being printed onto a showcase Skill. Red Bulwark owns visible modifier/restriction/permission coverage over `This Turn`, `This Round`, and `Next Turn`; Blue Feint owns immunity/`Counts As` plus `This Round` and `Next Turn after Playing Cards`, so the four delayed lifetime forms remain distinct without one oversized rules-lab card. Milestone 6.13 closes their retrieval/cancellation interactions and 7.9 gates the complete ten-card matrix. The existing Focus/Cache fixture-only cards remain narrow fixtures until 7.9 determines whether each still has a distinct isolation role.
 
 These integration followers do not move first implementation out of 6.4-6.8 or claim future verified cards need no versioned extension. Scheduling is not authorization: every new milestone still requires exact user approval before execution.
 
 ## Milestone definitions in execution order
 
-### [ ] 6.8a Convert Red Bulwark into the delayed timing/rules-source showcase Skill
+### [ ] 6.8a Convert Red Bulwark into the modifier/restriction/permission showcase Skill
 
-Observable outcome: The configured Red hand's existing Red Bulwark card replaces its printed Primary Attack with one bounded synthetic modal Skill that reuses 6.8's exact proven examples to make value modifiers, restrictions, permissions, immunity, effective `Counts As` characteristics, and delayed Active/continuous lifetimes visible through the normal match session.
+Observable outcome: The configured Red hand's existing Red Bulwark card replaces its printed Primary Attack with one three-mode synthetic Skill that reuses 6.8's exact proven examples for a value modifier lasting `This Turn`, an action/effect restriction lasting `This Round`, and a narrower permission lasting through `Next Turn`.
 
 Prerequisite: Milestone 6.8 must be complete, and the integration must reuse its registered typed contracts rather than inventing card-local variants.
 
 Acceptance checks:
 
 - Red Bulwark retains its stable card-definition and instance identity, Initiative 11, printed Secondary Movement 2, Defense 3 reaction, ownership, and five-card-hand slot; only its printed Primary Attack is replaced, and its content revision advances with an explicit compatibility-corpus decision.
-- The immutable definition's bounded modes collectively instantiate one typed value modifier, one action/effect restriction, one narrower permission, one immunity, and one effective-characteristic `Counts As` source using the exact synthetic parameters and precedence cases already proven by 6.8.
-- The declared modes collectively cover `This Turn`, `This Round`, `Next Turn`, and `Next Turn after Playing Cards`; creation, dormant/active phase, trigger visits, applicability, expiration anchor, early cancellation, and source-card policy remain explicit definition data rather than presenter timers or text parsing.
-- A current-turn effect can influence a later Initiative actor at the applicable checkpoint, round and next-turn effects survive only their declared boundaries, and `Next Turn` remains distinct from `Next Turn after Playing Cards` through skipped/off-board or otherwise inapplicable windows.
-- Targeting versus presence, immunity, intrinsic versus effective type, and restriction/permission precedence use the shared queries; later Push integration in 6.5a adds the configured immunity consumer without changing this card's definition.
+- The immutable definition's three modes instantiate exactly one typed value modifier, one action/effect restriction, and one narrower permission using the exact synthetic parameters and precedence cases already proven by 6.8; no mode combines two rule-source families merely to reduce card count.
+- The modes respectively declare `This Turn`, `This Round`, and `Next Turn`; creation, dormant/active phase, trigger visits, applicability, expiration anchor, early cancellation, and source-card policy remain explicit definition data rather than presenter timers or text parsing.
+- The current-turn modifier can influence a later Initiative actor at the applicable checkpoint, the round restriction survives only the current-round boundary, and the next-turn permission survives intervening round work but applies only during its declared next turn.
+- Restriction/permission precedence and affected action/effect scope use the shared 6.8 queries. Immunity, effective `Counts As`, and `Next Turn after Playing Cards` are deliberately absent and belong to Blue Feint at 6.8b.
 - Mode/target choices, pending and live sources, snapshot/restore, replay, retained-prefix Undo/restart, rejection rollback, ordered simultaneous handling, projections, and passive presentation remain deterministic across the delayed boundaries.
 - Focused definition, lifecycle, modifier/query, Core/application, presentation, and saved-scene scenarios prove every mode and duration without claiming the synthetic values or text are official content.
 
-Non-goals: No Object Push implementation before 6.4, Wasp definition, source-unverified official rule claim, runtime printed-text parsing, card-name/hero-name rule branch, production art, animation, or audio. Milestone 6.13 owns final retrieval/cancellation integration for the delayed sources.
+Non-goals: No immunity, `Counts As`, `Next Turn after Playing Cards`, Object Push implementation before 6.4, Wasp definition, source-unverified official rule claim, runtime printed-text parsing, card-name/hero-name rule branch, production art, animation, or audio. Milestone 6.8b owns the separated immunity/effective-type card, and 6.13 owns final retrieval/cancellation integration for both cards' delayed sources.
+
+### [ ] 6.8b Convert Blue Feint into the immunity/effective-type timing showcase Skill
+
+Observable outcome: The configured Blue hand's existing Blue Feint card replaces its printed Primary Attack with one two-mode synthetic Skill: one mode gives the acting hero Push immunity under `Next Turn after Playing Cards`, and one mode makes the acting hero effectively `Counts As` a minion for `This Round`, separating defensive targeting and effective-type timing from Red Bulwark's action/value rules.
+
+Prerequisite: Milestones 6.8 and 6.8a must be complete; this milestone reuses the exact registered immunity, effective-characteristic, and delayed-lifetime contracts rather than extending them inside a card definition.
+
+Acceptance checks:
+
+- Blue Feint retains its stable card-definition and instance identity, Initiative 12, printed Secondary Movement 3, Defense 2 reaction, ownership, and five-card-hand slot; only its printed Primary Attack is replaced, and its content revision advances with an explicit compatibility-corpus decision.
+- The immunity mode names Object Push as the originating effect family and `Next Turn after Playing Cards` as its distinct activation/lifetime policy. It remains serializable before its consumer exists; milestone 6.5a later proves the configured Push target query rejects the immune hero without changing Blue Feint's definition.
+- The `Counts As` mode makes the acting hero effectively a minion for `This Round` while preserving intrinsic hero representation, identity, ownership, occupancy kind, supply rules, and intrinsic-miniature exceptions such as displaced-minion correction.
+- `Next Turn after Playing Cards` does not activate or expire as ordinary `Next Turn`; skipped, off-board, restored, replayed, and Undo-truncated paths retain the exact declared phase until the matching checkpoint.
+- TargetQuery rejects an immune target while PresenceQuery still observes it where applicable, and effective-type queries see the declared minion characteristic without allowing rules that explicitly require a minion miniature.
+- Mode choices, live sources, snapshot/restore, replay, retained-prefix Undo/restart, rejection rollback, ordered simultaneous handling, projections, and passive presentation remain deterministic across both delayed boundaries.
+- Focused definition, lifecycle, target/presence, effective-type, Core/application, presentation, and saved-scene scenarios prove both modes without claiming the synthetic values or text are official content.
+
+Non-goals: No value modifier, action restriction, narrow permission, Object Push implementation before 6.4, Wasp definition, source-unverified official rule claim, runtime printed-text parsing, card-name/hero-name rule branch, production art, animation, or audio. Milestone 6.13 owns final retrieval/cancellation integration for the delayed sources.
 
 ### [ ] 6.5a Convert Red Needle into the Push/Place showcase Skill
 
