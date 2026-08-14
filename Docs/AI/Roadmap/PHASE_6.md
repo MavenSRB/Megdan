@@ -457,7 +457,7 @@ Scope note: this milestone built the four control-node kinds its second acceptan
 
 ER2 note: corrective milestones 6.1q and 6.1ap must both land first, so this engine builds on neither mis-scoped checkpoints nor an inferred timing seam. `F-ER2-05` moved to 6.1ap in the 2026-08-14 sequencing amendment above; this milestone consumes the resolver-emitted checkpoint stream that milestone establishes rather than owning the correction itself. See the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2).
 
-### [~] 6.2b Independently verify the Phase 6 action/effect foundation
+### [x] 6.2b Independently verify the Phase 6 action/effect foundation
 
 Observable outcome: A fresh-task independent review determines whether milestones 6.1 and 6.2a actually close `F58C-01` and `F58C-02` before milestone 6.3 can begin.
 
@@ -473,6 +473,10 @@ Acceptance checks:
 Non-goals: No runtime, test, scene, package, assembly, content, or rule change; no implementation of a discovered correction inside the review milestone.
 
 ER2 note: this review's scope also verifies the 6.1r unified board-occupancy seam (`F-ER2-06`), the architectural-direction finding the mechanical-closure rule assigns to fresh-task verification. Under the 2026-08-14 sequencing amendment above, milestone 6.2 lands first, so that verification observes tokens and markers actually declared on the seam rather than the prediction that they would be. One sub-question is named rather than left implicit: 6.1r's acceptance checks cover the constructor collision block and the commit-validation scan, while its observable outcome also names the parallel collection, serializer section, and projection field. Whether a token occupant joins by declaration across all five is this review's to determine. This sharpens a scope the review already holds; it widens none.
+
+Review outcome (2026-08-14): `F58C-01`, `F58C-02`, and `F-ER2-06` are closed, so 6.3's prerequisite is satisfied. On the five-site sub-question: the collision block and commit-validation scan are joined by declaration; the per-kind identity collection and serializer section are additive with no cross-kind logic; the projection deliberately has no component field, and how a token occupant reaches a view belongs to the first presentation milestone that needs one. Five findings `F62B-01` through `F62B-07` were classified with dispositions in the completion commit; none is gate-blocking and every closure is a named check, so no further verification milestone is scheduled. Proposed and unauthorized: corrective micro-milestone 6.2c (Skill seam parity and vocabulary gaps, with `F62B-04` needed before 6.4 and `F62B-03` before 6.7) and a 6.10a split owning the reusable system-transition continuation contract before 6.11. `SimultaneousBatch` is assigned to 6.4; `ReplaceAction` and `PerformAction` stay specified with named triggers per the timing shard's status row. The amended 6.3-6.13 order was reassessed and kept, at an estimated 12-20 remaining focused implementation days.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-62b-independently-verify-the-phase-6-actioneffect-foundation-completion-evidence).
 
 ### [ ] 6.3 Add core token interactions, persistent properties, and Clear
 
