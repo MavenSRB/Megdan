@@ -1,0 +1,98 @@
+# Phase 6 - Mechanics-showcase card integrations
+
+Canonical active roadmap subshard. It is indexed from [PHASE_6.md](PHASE_6.md); return there for the general capability milestones and the rest of the Phase 6 route. Historical completion evidence will be indexed from the [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md) after each milestone completes.
+
+## Approved scheduling and durable hand shape
+
+**Mechanics-showcase scheduling amendment (2026-08-14, user approved).** Five of the ten configured synthetic cards become a staged mechanics-showcase hand immediately after their reusable dependencies are proven: 6.8a converts Red Bulwark after 6.8; 6.5a and 6.5b convert Red Needle and Red Bombard after 6.4-6.5 and the 6.4a/6.4b correction path; 6.6a converts Blue Sentinel after 6.6; and 6.7a converts Blue Longbow after 6.7. Execution therefore follows **6.3 -> 6.8 -> 6.8a -> 6.4 -> 6.4a -> 6.4b -> 6.5 -> 6.5a -> 6.5b -> 6.6 -> 6.6a -> 6.7 -> 6.7a -> 6.9 onward**.
+
+Each conversion replaces only that card's printed Primary Attack, retaining its stable definition/instance identities, Initiative, printed Secondary Movement, and Defense reaction while advancing its content revision. Red Lancer, Red Pursuit, Blue Feint, Blue Scout Shot, and Blue Hammer retain representative non-Ranged/Ranged Attack coverage; general Hold, Fast Travel, and Clear remain derived from their eligible source actions rather than being printed onto a showcase Skill. Red Bulwark also owns visible delayed-effect coverage for `This Turn`, `This Round`, `Next Turn`, and `Next Turn after Playing Cards`; 6.13 closes their retrieval/cancellation interactions and 7.9 gates the complete ten-card matrix. The existing Focus/Cache fixture-only cards remain narrow fixtures until 7.9 determines whether each still has a distinct isolation role.
+
+These integration followers do not move first implementation out of 6.4-6.8 or claim future verified cards need no versioned extension. Scheduling is not authorization: every new milestone still requires exact user approval before execution.
+
+## Milestone definitions in execution order
+
+### [ ] 6.8a Convert Red Bulwark into the delayed timing/rules-source showcase Skill
+
+Observable outcome: The configured Red hand's existing Red Bulwark card replaces its printed Primary Attack with one bounded synthetic modal Skill that reuses 6.8's exact proven examples to make value modifiers, restrictions, permissions, immunity, effective `Counts As` characteristics, and delayed Active/continuous lifetimes visible through the normal match session.
+
+Prerequisite: Milestone 6.8 must be complete, and the integration must reuse its registered typed contracts rather than inventing card-local variants.
+
+Acceptance checks:
+
+- Red Bulwark retains its stable card-definition and instance identity, Initiative 11, printed Secondary Movement 2, Defense 3 reaction, ownership, and five-card-hand slot; only its printed Primary Attack is replaced, and its content revision advances with an explicit compatibility-corpus decision.
+- The immutable definition's bounded modes collectively instantiate one typed value modifier, one action/effect restriction, one narrower permission, one immunity, and one effective-characteristic `Counts As` source using the exact synthetic parameters and precedence cases already proven by 6.8.
+- The declared modes collectively cover `This Turn`, `This Round`, `Next Turn`, and `Next Turn after Playing Cards`; creation, dormant/active phase, trigger visits, applicability, expiration anchor, early cancellation, and source-card policy remain explicit definition data rather than presenter timers or text parsing.
+- A current-turn effect can influence a later Initiative actor at the applicable checkpoint, round and next-turn effects survive only their declared boundaries, and `Next Turn` remains distinct from `Next Turn after Playing Cards` through skipped/off-board or otherwise inapplicable windows.
+- Targeting versus presence, immunity, intrinsic versus effective type, and restriction/permission precedence use the shared queries; later Push integration in 6.5a adds the configured immunity consumer without changing this card's definition.
+- Mode/target choices, pending and live sources, snapshot/restore, replay, retained-prefix Undo/restart, rejection rollback, ordered simultaneous handling, projections, and passive presentation remain deterministic across the delayed boundaries.
+- Focused definition, lifecycle, modifier/query, Core/application, presentation, and saved-scene scenarios prove every mode and duration without claiming the synthetic values or text are official content.
+
+Non-goals: No Object Push implementation before 6.4, Wasp definition, source-unverified official rule claim, runtime printed-text parsing, card-name/hero-name rule branch, production art, animation, or audio. Milestone 6.13 owns final retrieval/cancellation integration for the delayed sources.
+
+### [ ] 6.5a Convert Red Needle into the Push/Place showcase Skill
+
+Observable outcome: The configured Red hand's existing Red Needle card replaces its printed Primary Attack with the exact synthetic modal Skill `Choose one: choose another adjacent unit and Push it 3 spaces; or Place your hero in a different empty space within Radius 4`, making the completed Push, Place, Radius, occupancy, and displaced-minion-correction contracts visibly testable through the normal match session.
+
+Prerequisites: Milestones 6.4-6.5 and 6.4a/6.4b must be complete, so neither branch exposes an unimplemented operation or an uncorrected displaced-minion endpoint.
+
+Acceptance checks:
+
+- Red Needle retains its stable card-definition and instance identity, Initiative 13, printed Secondary Movement 2, Defense 1 reaction, ownership, and five-card-hand slot; only its printed Primary Attack is replaced, and its content revision advances with an explicit compatibility-corpus decision.
+- The Push branch targets exactly one other adjacent unit, records the acting hero as the pushing unit and fixed requested distance 3, moves the target directly away as far as possible including zero, and applies permission, immunity, occupancy, and legal-endpoint rules through the shared 6.8/6.4 queries.
+- The Place branch takes the acting hero from its current board space to a different empty playable space at inclusive Radius 4 from the actor's coordinate when that branch begins; Radius uses rulebook distance without invented line of sight or path traversal, and the operation emits Place rather than Movement, Fast-Travel, or Spawn facts.
+- Mode, target, and destination decisions use the existing authoritative effect-choice command/projection with explicit mandatory/impossible behavior; stale or invalid answers reject without card, occupancy, continuation, or event mutation.
+- Pushing a minion reaches the one 6.4a after-action correction boundary, including 6.4b's player-facing route or fallback-Place choice, before the Skill resolves; placing the acting hero does not create a displaced-minion correction of its own.
+- Focused definition, Core/application, snapshot/restore, replay, retained-prefix Undo/restart, presentation, and saved-scene scenarios exercise both modes, partial/zero Push, occupied/off-board Place refusal, stale choices, correction, action completion, and passive UI forwarding.
+
+Non-goals: No Direct Move, Spawn, Swap, Replace, Remove, Repeat, Wasp definition, official value/text claim, card-name/hero-name rule branch, production art, animation, or audio.
+
+### [ ] 6.5b Convert Red Bombard into the Direct-Move/Spawn showcase Skill
+
+Observable outcome: The configured Red hand's existing Red Bombard card replaces its printed Primary Attack with a bounded synthetic `Choose one` Skill whose first branch directly Moves another adjacent unit up to 2 spaces and whose second branch Spawns one declared synthetic reserve unit at an eligible empty source-defined Spawn point.
+
+Prerequisites: Milestones 6.4-6.5 and 6.4a/6.4b must be complete, so Direct Move, supply-backed Spawn, token-covered Spawn-point clearance, and displaced-minion correction are available before configured exposure.
+
+Acceptance checks:
+
+- Red Bombard retains its stable card-definition and instance identity, Initiative 5, printed Secondary Movement 2, Defense 2 reaction, ownership, and five-card-hand slot; only its printed Primary Attack is replaced, and its content revision advances with an explicit compatibility-corpus decision.
+- Direct Move declares the other adjacent unit target, chooser, `up to 2` distance policy, path/endpoint rules, ordinary restrictions and permissions, and cannot become a Movement action or Fast Travel; a moved minion reaches the shared after-action correction boundary.
+- Spawn uses one clearly test-only reserve identity and supply, declares the eligible piece and destination query, accepts only an empty source-defined Spawn point, and performs milestone 6.3's token-covered Spawn-point clearance inside the atomic Spawn transaction.
+- Place and Spawn remain observably distinct in facts, source-container validation, triggers, and failure outcomes; the Spawn branch cannot take an on-board object and the Direct-Move branch cannot consume supply.
+- Mode, target, destination, and reserve choices are authoritative pending inputs; rejection, no-candidate behavior, snapshot/restore, replay, retained-prefix Undo/restart, and action completion remain deterministic.
+- Focused definition, supply/occupancy, Core/application, presentation, and saved-scene scenarios exercise both modes, different legal destinations, token-covered Spawn, depleted/invalid supply, occupied endpoint, stale input, minion correction, and passive UI forwarding.
+
+Non-goals: No hero/minion Respawn specialization, Swap, Replace, Remove, Repeat, Wasp definition, official reserve setup claim, card-name/hero-name rule branch, production art, animation, or audio.
+
+### [ ] 6.6a Convert Blue Sentinel into the Swap/Replace/Remove showcase Skill
+
+Observable outcome: The configured Blue hand's existing Blue Sentinel card replaces its printed Primary Attack with a synthetic `Choose one` Skill that atomically Swaps the acting hero with another adjacent unit, Replaces an adjacent synthetic Hazard token with a declared alternate synthetic token from supply, or Removes an adjacent token to its declared supply destination.
+
+Prerequisite: Milestone 6.6 must be complete; the Swap branch also consumes 6.4a/6.4b correction, and the Replace branch consumes 6.5's supply and occupancy contracts.
+
+Acceptance checks:
+
+- Blue Sentinel retains its stable card-definition and instance identity, Initiative 11, printed Secondary Movement 2, Defense 4 reaction, ownership, and five-card-hand slot; only its printed Primary Attack is replaced, and its content revision advances with an explicit compatibility-corpus decision.
+- Swap validates the actor and one other adjacent unit plus both resulting occupancies against the same pre-effect state, commits one semantic transaction, emits neither Movement nor Place facts, and runs after-action minion correction when the exchanged unit is an intrinsic minion left outside the Battle Zone.
+- Replace declares the adjacent Hazard target, one trusted alternate test-token definition and finite incoming supply, return of the outgoing Hazard to its own supply, no property transfer, and one observable Replace operation rather than a hidden Remove-plus-Spawn sequence.
+- Remove targets only an adjacent token in this configured showcase, returns it to its declared supply, preserves prevention/outcome identity, and emits standalone Remove rather than Clear or Defeat. Turn-time last-minion Remove remains unexposed until 6.9 can emit its required immediate Lane-Push request.
+- Mode and nested object choices use the shared authoritative effect-choice path; atomic rejection, exhausted replacement supply, stale identity, snapshot/restore, replay, retained-prefix Undo/restart, and action completion preserve exact state and ordered facts.
+- Focused definition, component catalog/supply, occupancy, Core/application, presentation, and saved-scene scenarios exercise all three modes, correction, prevention, occupied/conflicting state, stale input, and passive UI forwarding.
+
+Non-goals: No minion-targeting configured Remove before 6.9, card-state Swap, card upgrade replacement, Defeat reward, Wasp definition, official token claim, card-name/hero-name rule branch, production art, animation, or audio.
+
+### [ ] 6.7a Convert Blue Longbow into the bounded-Repeat showcase Skill
+
+Observable outcome: The configured Blue hand's existing Blue Longbow card replaces its printed Primary Attack with the synthetic Skill `Choose another adjacent unit and Push it 1 space; you may Repeat this action once`, visibly proving a separate bounded repeated action instance and the correction boundary between instances.
+
+Prerequisite: Milestone 6.7 must be complete, with milestones 6.4a/6.4b available for each Push instance's possible displaced-minion correction.
+
+Acceptance checks:
+
+- Blue Longbow retains its stable card-definition and instance identity, Initiative 4, printed Secondary Movement 3, Defense 2 reaction, ownership, and five-card-hand slot; only its printed Primary Attack is replaced, and its content revision advances with an explicit compatibility-corpus decision.
+- The ordinary instance chooses one other adjacent unit and Pushes it with fixed requested distance 1; after its complete action and any displaced-minion correction, the optional Repeat creates one new instance of the same action under explicit repeated context.
+- The repeated instance may choose a different currently legal target, revalidates every target and endpoint against current authority, and cannot expose or execute its own Repeat node recursively.
+- Decline, no legal repeated target, partial/zero Push, correction choice, interruption, stale input, snapshot/restore between instances, replay, retained-prefix Undo/restart, and final card resolution produce deterministic state and ordered events without duplicate completion.
+- Focused definition, Core/application, timing/order, presentation, and saved-scene scenarios exercise ordinary/declined/repeated paths and prove passive UI forwarding of each authoritative choice.
+
+Non-goals: No unbounded or recursive Repeat, multi-action scripting language, new leaf mutation, Wasp definition, card-name/hero-name rule branch, production art, animation, or audio.

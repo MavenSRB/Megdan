@@ -123,20 +123,25 @@ Acceptance checks:
 
 ### [ ] 7.9 Complete a deterministic test-card core match
 
-Observable outcome: Synthetic test cards can start a match, play legal Movement/Hold/Attack/Defense turns, exercise the reusable core effect operations, complete rounds, resolve minions and Lane Pushes, progress, and end through every victory path.
+Observable outcome: The configured ten-card mechanics-showcase hands can start a match, play legal Movement/Hold/Attack/Defense/Skill turns, exercise every source-reviewed reusable core operation and delayed lifetime, complete rounds, resolve minions and Lane Pushes, progress, and end through every victory path.
 
 Acceptance checks:
 
 - Every general core rule used by the loop links to its authoritative source and focused tests.
+- The exact configured primary-action matrix is Red Needle Push/Place Skill, Red Bulwark timing/rules-source Skill, Red Lancer Ranged Attack, Red Pursuit non-Ranged Attack, Red Bombard Direct-Move/Spawn Skill, Blue Feint non-Ranged Attack, Blue Sentinel Swap/Replace/Remove Skill, Blue Scout Shot Ranged Attack, Blue Hammer non-Ranged Attack, and Blue Longbow bounded-Repeat Skill. All ten retain their stable definition/instance identities, approved Initiative values, printed Secondary Movement, Defense reactions, ownership, and five-card-per-hero shape under explicit current content revisions.
+- General Hold remains derived from a selected unresolved card, Fast Travel remains a replacement only for an eligible Movement offer, and Clear remains a replacement only for an eligible Attack; none becomes invented printed text on a showcase Skill. At least one non-Ranged and one Ranged printed Attack remains configured for each team.
 - Initiative, Tie Breaker flips, turns, rounds, immediate/end-of-round Lane Pushes, retrieval, leveling, respawn, and victory work together.
 - Synthetic effect scenarios exercise direct Move, Object Push, Place, Spawn, board-object Swap/Replace, standalone Remove, Defeat, and Clear through the same command, timing, pending-choice, snapshot, replay, Undo/restart, and event-log boundaries used by the match; Object Push and Lane Push remain observably distinct.
 - Synthetic Skill, ordered/optional/modal/Repeat control flow, modifiers, restrictions, permissions, immunity, and effective-characteristic scenarios prove that no source-reviewed general keyword or reusable core capability is deferred for first implementation to a verified hero milestone.
+- Red Bulwark's configured delayed sources exercise `This Turn`, `This Round`, `Next Turn`, and `Next Turn after Playing Cards` through creation, dormant/active applicability, triggering, expiration, source-card cancellation/retrieval, defeat/off-board interaction where declared, simultaneous ordering, snapshot/restore, replay, and retained-prefix Undo. The gate proves these are distinct authoritative lifetimes rather than presenter timers or one generic delayed flag.
+- Synthetic Phase 7 colors, tiers, upgrade relationships, items, and Ultimate sources layer onto the same showcase definitions/instances without replacing their primary-action identities or inferring progression from display names, art, team, or hand slots.
 - Snapshots, Undo, restart, and the event log remain deterministic across the complete loop.
 - The deterministic replay oracle covers representative complete matches and bounded multi-round generated/soak scenarios with fixed reported seeds; live, replayed, restored-and-continued, and Undo-truncated paths produce matching command/event/projection/snapshot/history evidence.
 - The complete-match runtime capture samples accepted-command projection refresh time and managed allocation at fixed reported command-history lengths, including an empty/short history and the complete-match history. It records the samples and growth against history length, and compares the complete-match result with the standing 25 ms refresh-time and 64 KiB managed-allocation investigation thresholds in `Testing/FUTURE_GATES.md`.
 - The maintained snapshot compatibility corpus covers the complete synthetic-loop state, and every schema/content incompatibility remains an explicit typed migration or rejection decision.
 - A disposable Win64 development build of the exact gate revision launches outside the Editor, starts and completes a deterministic synthetic-match smoke path, writes usable diagnostics, and exits cleanly. The artifact is validation-only and is neither retained as the pitch build nor distributed publicly.
 - Synthetic definitions are visibly test-only and contain no claim about Wasp values or effects.
+- The extra Focus/Cache fixture-only cards either retain a documented distinct isolation role for a lower-level effect/component contract or are retired with their dependent tests migrated to the configured showcase; they do not enlarge either normal hand beyond five or remain as unexplained duplicate coverage.
 - A broader deterministic core-loop suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 

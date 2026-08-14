@@ -416,6 +416,8 @@ Milestone IDs are unchanged and 6.2 keeps its position in numeric order below, s
 
 **Scheduling amendment (2026-08-14, user approved).** Review 6.2b's two proposals are scheduled. Corrective micro-milestone 6.2c closes findings `F62B-01` through `F62B-04` on the named checks in its block; it does not gate 6.3, and it must complete before milestone 6.4 begins, because `F62B-04` corrects the restore re-derivation context that 6.4's input-dependent choices would expose and `F62B-03` closes the Core-seam gap that 6.7's second caller would widen. Milestone 6.10a splits the reusable system-transition continuation contract out of 6.11 per the review's determination, sitting between 6.10's durable Battle-Zone state and the respawn transition; 6.11 keeps its observable outcome and gains the corresponding prerequisite. Every closure in this sequence is a named check or 6.2a-style acceptance evidence, so no further verification milestone is scheduled. Scheduling is not authorization: each milestone still requires exact user approval before execution.
 
+**Mechanics-showcase scheduling amendment (2026-08-14, user approved).** Five existing configured cards become staged Skill integrations after their reusable dependencies. The exact execution order, durable hand shape, acceptance checks, and non-goals for milestones 6.8a, 6.5a, 6.5b, 6.6a, and 6.7a live in the indexed [mechanics-showcase subshard](PHASE_6_SHOWCASE.md). The next proposed milestone remains 6.8, and scheduling still does not authorize any showcase implementation.
+
 ### [x] 6.2 Add token and marker instances, supplies, placement, and attachment
 
 Observable outcome: Synthetic tokens and markers have stable authoritative identity without requiring Wasp content.
@@ -700,6 +702,7 @@ Acceptance checks:
 - Retrieval never takes another hero's card.
 - Every eligible card returns regardless of its prior eligible state, while ineligible/set-aside/item cards do not.
 - Applicable Active effects, including relevant Next Turn effects, cancel through authoritative events.
+- Red Bulwark's configured `This Turn`, `This Round`, `Next Turn`, and `Next Turn after Playing Cards` showcase sources each expire or cancel only under their declared policy across action completion, turn/round advancement, card retrieval, source-card state change, and any applicable early-cancellation checkpoint; a focused multi-turn scenario distinguishes all four lifetimes before the Phase 6 gate.
 - The populated retrieval/cancellation handler replaces the synthetic fixture's limited availability declaration without changing the end-of-round stage identity, continuation, or event-order contract.
 - Focused tests cover resolved, discarded, facedown eligible, other-owner, and active-effect cases.
 - The Phase 6 gate performs a read-only folder/file housekeeping audit covering stale generated or temporary outputs, empty or misplaced directories, duplicate artifacts, and tracked-file reference integrity. It records a bounded proposed action list; deletion, broad reorganization, and structural moves remain separately approved work, and excluded rulebook/card-corpus sources plus Unity asset/`.meta` identity must be preserved.
