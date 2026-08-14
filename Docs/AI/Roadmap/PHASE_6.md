@@ -414,6 +414,8 @@ Milestone IDs are unchanged and 6.2 keeps its position in numeric order below, s
 
 **Sequencing amendment (2026-08-14, user approved).** After milestone 6.2b closes its gate, the dependency-safe gameplay order begins **6.3 -> 6.8 -> 6.4**. Milestone 6.4 consumes the targeting, presence, immunity, permission, and obstacle contracts owned by 6.8, so 6.8 is an explicit prerequisite of 6.4 rather than later work. Numeric placement below is unchanged; execution follows these prerequisite declarations. Scheduling is not authorization: each milestone still requires exact user approval before execution.
 
+**Scheduling amendment (2026-08-14, user approved).** Review 6.2b's two proposals are scheduled. Corrective micro-milestone 6.2c closes findings `F62B-01` through `F62B-04` on the named checks in its block; it does not gate 6.3, and it must complete before milestone 6.4 begins, because `F62B-04` corrects the restore re-derivation context that 6.4's input-dependent choices would expose and `F62B-03` closes the Core-seam gap that 6.7's second caller would widen. Milestone 6.10a splits the reusable system-transition continuation contract out of 6.11 per the review's determination, sitting between 6.10's durable Battle-Zone state and the respawn transition; 6.11 keeps its observable outcome and gains the corresponding prerequisite. Every closure in this sequence is a named check or 6.2a-style acceptance evidence, so no further verification milestone is scheduled. Scheduling is not authorization: each milestone still requires exact user approval before execution.
+
 ### [x] 6.2 Add token and marker instances, supplies, placement, and attachment
 
 Observable outcome: Synthetic tokens and markers have stable authoritative identity without requiring Wasp content.
@@ -474,9 +476,23 @@ Non-goals: No runtime, test, scene, package, assembly, content, or rule change; 
 
 ER2 note: this review's scope also verifies the 6.1r unified board-occupancy seam (`F-ER2-06`), the architectural-direction finding the mechanical-closure rule assigns to fresh-task verification. Under the 2026-08-14 sequencing amendment above, milestone 6.2 lands first, so that verification observes tokens and markers actually declared on the seam rather than the prediction that they would be. One sub-question is named rather than left implicit: 6.1r's acceptance checks cover the constructor collision block and the commit-validation scan, while its observable outcome also names the parallel collection, serializer section, and projection field. Whether a token occupant joins by declaration across all five is this review's to determine. This sharpens a scope the review already holds; it widens none.
 
-Review outcome (2026-08-14): `F58C-01`, `F58C-02`, and `F-ER2-06` are closed, so 6.3's prerequisite is satisfied. On the five-site sub-question: the collision block and commit-validation scan are joined by declaration; the per-kind identity collection and serializer section are additive with no cross-kind logic; the projection deliberately has no component field, and how a token occupant reaches a view belongs to the first presentation milestone that needs one. Five findings `F62B-01` through `F62B-07` were classified with dispositions in the completion commit; none is gate-blocking and every closure is a named check, so no further verification milestone is scheduled. Proposed and unauthorized: corrective micro-milestone 6.2c (Skill seam parity and vocabulary gaps, with `F62B-04` needed before 6.4 and `F62B-03` before 6.7) and a 6.10a split owning the reusable system-transition continuation contract before 6.11. `SimultaneousBatch` is assigned to 6.4; `ReplaceAction` and `PerformAction` stay specified with named triggers per the timing shard's status row. The amended 6.3-6.13 order was reassessed and kept, at an estimated 12-20 remaining focused implementation days.
+Review outcome (2026-08-14): `F58C-01`, `F58C-02`, and `F-ER2-06` are closed, so 6.3's prerequisite is satisfied. On the five-site sub-question: the collision block and commit-validation scan are joined by declaration; the per-kind identity collection and serializer section are additive with no cross-kind logic; the projection deliberately has no component field, and how a token occupant reaches a view belongs to the first presentation milestone that needs one. Five findings `F62B-01` through `F62B-07` were classified with dispositions in the completion commit; none is gate-blocking and every closure is a named check, so no further verification milestone is scheduled. Proposed at completion and scheduled by the 2026-08-14 scheduling amendment above: corrective micro-milestone 6.2c (Skill seam parity and vocabulary gaps, with `F62B-04` needed before 6.4 and `F62B-03` before 6.7) and a 6.10a split owning the reusable system-transition continuation contract before 6.11. `SimultaneousBatch` is assigned to 6.4; `ReplaceAction` and `PerformAction` stay specified with named triggers per the timing shard's status row. The amended 6.3-6.13 order was reassessed and kept, at an estimated 12-20 remaining focused implementation days.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-62b-independently-verify-the-phase-6-actioneffect-foundation-completion-evidence).
+
+### [ ] 6.2c Close the Skill seam parity and vocabulary gaps
+
+Observable outcome: Skill's application, turn, and restore seams meet the same projection-gating, typed-vocabulary, and Core-revalidation bar as the Movement and Attack families, closing review findings `F62B-01` through `F62B-04` on their named checks.
+
+Acceptance checks:
+
+- `F62B-01`: the projection exposes no Fast-Travel option while a Skill frame is paused, matching the suppression paused Movement and Attack already get. Closing check: a focused application-session case asserting empty Fast-Travel options during a paused Skill, observed failing at the pre-fix revision.
+- `F62B-02`: a refused Skill start and a refused effect-choice answer report Skill-specific typed rejection reasons, and Skill facts materialize under a Skill-specific turn event kind rather than `MovementActionProgressed`. Closing check: focused tests pinning the typed reason and event kind, observed failing pre-fix.
+- `F62B-03`: starting a Skill revalidates the offer against the authoritative offer set, availability, and invocation context inside Core exactly as the shared Movement/Attack prevalidation does, and the effect-answer path prechecks source-card state so a bad state rejects instead of faulting. Closing check: a Core-seam test passing a non-authoritative Skill offer, accepted pre-fix and rejected post-fix.
+- `F62B-04`: snapshot restore re-derives a paused capability's candidates against the same resolved input bindings live execution supplied, rebuilt from the persisted completed outcomes. Closing check: a test-local synthetic capability whose candidates depend on a bound input, paused across a snapshot round-trip, observed failing pre-fix.
+- The authoritative wire format is unchanged: `CurrentSchemaVersion` stays 9, and the closing-check capability lives in a test-local catalog so the registered set the corpus pins does not move. If a pinned diagnostic digest moves because a Skill event's kind value changed, the re-pin identifies that as its sole cause per the standing digest discipline.
+
+Non-goals: No new `DirectorCommandKind` member, pending-choice class, `MatchSessionProjection` property, or `CardActionContinuationKind` arm; no rule change; no schema version change; no production capability or content; no change to Movement, Attack/Defense, or Fast-Travel behavior.
 
 ### [ ] 6.3 Add core token interactions, persistent properties, and Clear
 
@@ -626,9 +642,27 @@ Acceptance checks:
 - Wave and Zone stages emit deterministic typed outcomes/events.
 - An early game-ending result prevents later stages.
 
+### [ ] 6.10a Establish the reusable system-transition continuation contract
+
+Observable outcome: A multi-step authoritative system transition pauses on a typed, serializable, authority-owned intra-stage continuation and resumes exactly where it stopped, proven on a bounded synthetic transition before milestone 6.11's respawn consumes the same contract.
+
+Acceptance checks:
+
+- The continuation records the owning transition identity, stable current step identity, chooser, legal choice context, and exact resume location, and is authority-owned state rather than a handler-local callback or presentation state.
+- Accepted, rejected, stale, restored, replayed, and Undo-truncated resumptions cannot skip, repeat, or restart a completed step.
+- The continuation crosses the versioned snapshot boundary with an explicit migrate-or-reject decision and reconstructs equivalently after restore, replay, and retained-prefix Undo.
+- A conformance rule proves no transition holds handler-local continuation state, shown against a deliberate violator and a compliant twin.
+- The contract's first consumer is a bounded synthetic multi-step transition fixture; milestone 6.11's Lane-Push respawn and milestone 7.5's progression are the named production consumers and are not implemented here.
+
+Closing check: acceptance evidence in the 6.2a style, because this milestone builds a contract that did not exist - the paused synthetic transition driven through snapshot restore, replay, and retained-prefix Undo, plus the conformance rule proved against its violator and compliant twin.
+
+Non-goals: No Lane Push Wave/Zone/respawn rules (6.10 and 6.11 own those), no minion Respawn behavior, no progression content (7.5), no production presentation, no schema change beyond the continuation itself.
+
 ### [ ] 6.11 Complete Lane Push minion respawn and transition
 
 Completes the transition by removing all minions from the previous Battle Zone and respawning the matching type at every verified Spawn point in the new Battle Zone.
+
+Prerequisite: milestone 6.10a has established the reusable system-transition continuation contract; this milestone's respawn continuation consumes that contract rather than defining its own shape.
 
 Acceptance checks:
 

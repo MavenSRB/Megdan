@@ -14,9 +14,9 @@ The project has completed roadmap milestones through **6.2b**. The configured ve
 
 - Current completed milestone: **6.2b**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **6.3**.
+- Next proposed milestone: **6.2c**.
 
-Milestone **6.2b** completed on 2026-08-14, closing `F58C-01`, `F58C-02`, and `F-ER2-06`. The fresh-task review verified the Minion Battle choice, the Skill/effect frame, and the token/marker occupancy seam against the actual source, tests, restore/replay/Undo paths, and raw gate evidence, so milestone 6.3's prerequisite is satisfied and 6.3 is the next proposed milestone. The review's five new findings are small and none blocks 6.3; two user decisions are open and unauthorized: proposed corrective micro-milestone 6.2c (Skill seam parity and vocabulary gaps, needed before 6.4/6.7), and a proposed 6.10a split owning the reusable system-transition continuation contract before 6.11. Dispositions live in the 6.2b completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
+Milestone **6.2b** completed on 2026-08-14, closing `F58C-01`, `F58C-02`, and `F-ER2-06`. The fresh-task review verified the Minion Battle choice, the Skill/effect frame, and the token/marker occupancy seam against the actual source, tests, restore/replay/Undo paths, and raw gate evidence, so milestone 6.3's prerequisite is satisfied. The review's five new findings are small and none blocks 6.3. On 2026-08-14 the user approved scheduling both review proposals: corrective micro-milestone **6.2c** (Skill seam parity and vocabulary gaps; before 6.4, not gating 6.3) and **6.10a** (the reusable system-transition continuation contract between 6.10 and 6.11). 6.2c is proposed next with 6.3 following; scheduling is not authorization and no milestone is currently authorized. Dispositions live in the 6.2b completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
 
 Standing route exceptions: trigger-only milestone **6.1am** remains unordered until the rules ledger reaches its warning threshold, and **6.1y** remains unordered but required before 8.1. Exact sequencing lives in [Roadmap/PHASE_6_DOCUMENTATION.md](Roadmap/PHASE_6_DOCUMENTATION.md) and [Roadmap/PHASE_6.md](Roadmap/PHASE_6.md); scheduling is not authorization.
 
