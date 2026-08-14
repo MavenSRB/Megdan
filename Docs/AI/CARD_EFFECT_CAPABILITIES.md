@@ -1,7 +1,5 @@
 # Guards Digital - Card Effect Capabilities
 
-Last updated: 2026-08-12
-
 ## Purpose and status
 
 This document is the effect-level companion to `CARD_SYSTEM_ARCHITECTURE.md`. It defines the reusable rules capabilities that card definitions may compose so future cards do not spread special-case logic through the resolver, board model, UI, or presentation.

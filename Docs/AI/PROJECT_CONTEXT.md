@@ -1,6 +1,6 @@
 # Guards Digital - Project Context Index
 
-Current implementation detail lives in the indexed subject shard below. Exact authorization and next-milestone routing live only in [SESSION_BRIEF.md](SESSION_BRIEF.md). This index carries no milestone history. [SESSION_BRIEF.md](SESSION_BRIEF.md) links these shards directly; reading this index only to reach one of them is a wasted hop.
+Current implementation detail lives in the indexed subject shards below. Exact authorization and next-milestone routing live only in [SESSION_BRIEF.md](SESSION_BRIEF.md). This index carries no milestone history. When the owning shard is already known, [SESSION_BRIEF.md](SESSION_BRIEF.md)'s routing table links it directly; when it is not, following this index per `AGENTS.md` is the instruction, not a wasted hop.
 
 ## Canonical active shards
 

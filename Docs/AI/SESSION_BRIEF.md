@@ -8,16 +8,16 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through **6.1ak**. The configured vertical slice uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation, including reload-safe Hero/minion combat plus the end-of-round Minion Battle. That subsystem owns exact-count, one-at-a-time Heavy-last removal choices and records but does not yet consume a Lane-Push request; schema v7 persists both continuations. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
+The project has completed roadmap milestones through **6.1al**. The configured vertical slice uses the pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound versioned snapshots, and passive Unity presentation, including reload-safe Hero/minion combat plus the end-of-round Minion Battle. That subsystem owns exact-count, one-at-a-time Heavy-last removal choices and records but does not yet consume a Lane-Push request; schema v7 persists both continuations. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps is maintained in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md); it is updated in place rather than extended as a milestone journal.
 
 Configured minion views retain serialized stable binding identity across editor backup/domain restoration, and the grid atomically rebinds the passive board, pointer input, and all selectors whenever it replaces the generated view set. During a pending Hero Defense response, the immutable session projection supplies ordered Attack contributions and totals, per-card authoritative Defense previews, explicit Block/outcome meaning, readable sources, and exact signed minion identities. Hover/focus presentation is opaque, pointer-pass-through, viewport-bounded, and keeps the existing one-click typed response commands. Review 5.8c found no current gameplay or performance defect. Its approved Phase 6 disposition assigns typed serializable Minion-Battle continuation ownership to 6.1, inserts typed Skill/non-Repeat effect foundation milestone 6.2a and fresh independent verification 6.2b before 6.3, and narrows 6.7 to bounded Repeat integration.
 
 ## Current authorization and next route
 
-- Current completed milestone: **6.1ak**.
+- Current completed milestone: **6.1al**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **6.1al**.
-- Milestone **6.1ak** completed on 2026-08-14. `Maps/README.md` joined the governed set - threshold family, ownership-matrix row, validator scan, and inbound links from the ledger's official-map row and this brief's routing table - with `orphan-shard` observed failing on the deliberately withheld links and passing once written; its stale future-tense milestone paragraph and snapshot-schema-2 claim are corrected under a new pinned current claim.
+- Next proposed milestone: **6.1u**.
+- Milestone **6.1al** completed on 2026-08-14, closing the documentation block: the implementation inventory's Minion-Battle contradiction is consolidated, the workflow shard's exclusion list and Phase-4 precondition match implemented reality, one routing doctrine stands under `AGENTS.md`, the matrix states both shared-directory index splits, `POST_PITCH.md` follows the canonical platform order, and the brief alone carries a `Last updated` stamp. The block's twelve ordered milestones are complete; 6.1am waits on its ledger-warning trigger.
 - On 2026-08-14 the user approved a roadmap amendment defining milestones **6.1ae**-**6.1am** in [Roadmap/PHASE_6_DOCUMENTATION.md](Roadmap/PHASE_6_DOCUMENTATION.md), which carries the documentation block's execution order (6.1z first) and the user's approval of the block's sequential execution; the same handoff's required ownership review moved the completed corrective-sequence definitions to [Roadmap/PHASE_6_COMPLETED.md](Roadmap/PHASE_6_COMPLETED.md). Gameplay resumes after the block as 6.1u, 6.1a, then 6.2a.
 - On 2026-08-14 the user approved a roadmap amendment ordering **6.2a** before **6.2**, and 6.2 before **6.2b**. 6.2 needs the serializable `Choose` frame 6.2a builds; 6.2b then verifies the 6.1r occupancy seam against real tokens. Scheduling is not authorization.
 - On 2026-08-14 the user approved a roadmap amendment scheduling **6.1z**, **6.1aa**, **6.1ab**, and **6.1ac** from a documentation-truth finding, not a review: a green validator run proves link hygiene, not governing-document truth. Scheduling is not authorization.
@@ -39,7 +39,7 @@ Configured minion views retain serialized stable binding identity across editor 
 
 ## Targeted routing
 
-Go straight to the shard that owns the subject. The index files still exist and remain valid link targets, but reading one only to reach a shard named below is a wasted hop.
+Go straight to the shard that owns the subject when this table names it. When the owner is unknown or the task is cross-cutting, follow the index files per `AGENTS.md`; the hop is only wasted when the destination is already known.
 
 | Need | Canonical route |
 | --- | --- |

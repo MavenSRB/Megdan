@@ -1,7 +1,5 @@
 # Guards Digital - Roadmap
 
-Last updated: 2026-08-14
-
 ## Status legend
 
 - `[x]` Complete and reviewed.

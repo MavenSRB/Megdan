@@ -11,3 +11,4 @@ evidence to the phase-handoff archive | 2026-08-13 governance amendment | The sa
 milestone evidence in the phase handoff archives | 2026-08-13 governance amendment | The same superseded routing as the testing index phrased it
 RISK-PERF-001 | 6.1o | Retired performance risk; a current claim citing it as a live blocker misstates a platform gate as a surviving prototype risk
 RISK-BUILD-001 | 6.1d | Retired build risk; same rule as RISK-PERF-001
+typed action strategies | 6.1h | The strategy-registry-era name for the action handler decomposition; current claims say direct backend composition

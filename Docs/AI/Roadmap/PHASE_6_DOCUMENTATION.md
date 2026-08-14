@@ -155,16 +155,16 @@ Non-goals: No map data change, no regeneration of the JSON, no change to `Valida
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ak-bring-the-maps-shard-under-governance-completion-evidence).
 
-### [ ] 6.1al Consolidate project-context and workflow truth
+### [x] 6.1al Consolidate project-context and workflow truth
 
 Observable outcome: The project-context and workflow shards state current scope, process, routing doctrine, and platform direction once each, in the present truth.
 
-Context: `Project/CURRENT_IMPLEMENTATION.md` describes the implemented Minion Battle authority and then says Minion Battle "remain deferred to Phase 6" two sections later - milestone-era statements accumulated where governance requires subject replacement. `Project/WORKFLOW_AND_TERMS.md` still lists concrete end-of-round systems beyond retrieval as excluded work, keeps "typed action strategies" as a Phase 5 precondition, and specifies reviews as "fresh Codex tasks" where the roadmap's own rule is tool-neutral, a form `Roadmap/PHASE_4.md` repeats. `PROJECT_CONTEXT.md` and the session brief call reading an index "a wasted hop" while `AGENTS.md` - which the brief itself declares the process authority - instructs following the indexes to the shard. The ownership matrix and `PROJECT_CONTEXT.md` disagree over `Project/FOUNDATION_CORRECTIONS.md`'s index parent, and the matrix never states the Card-System two-index split its own rows imply. `Project/PRODUCT.md`'s platform order is canonical by the user's recorded 2026-08-14 decision, and `Roadmap/POST_PITCH.md` still schedules macOS/Linux ahead of touch devices. Three leaves carry a `Last updated:` stamp, none enforced, and the brief's own stamp predates its newest dated entries.
+Context: `Project/CURRENT_IMPLEMENTATION.md` describes the implemented Minion Battle authority and then says Minion Battle "remain deferred to Phase 6" two sections later - milestone-era statements accumulated where governance requires subject replacement. `Project/WORKFLOW_AND_TERMS.md` still lists concrete end-of-round systems beyond retrieval as excluded work, keeps "typed action strategies" - the registry-era name 6.1h retired - as a Phase 5 precondition, and specifies reviews as "fresh Codex tasks" where the roadmap's own rule is tool-neutral, a form `Roadmap/PHASE_4.md` repeats. `PROJECT_CONTEXT.md` and the session brief call reading an index "a wasted hop" while `AGENTS.md` - which the brief itself declares the process authority - instructs following the indexes to the shard. The ownership matrix and `PROJECT_CONTEXT.md` disagree over `Project/FOUNDATION_CORRECTIONS.md`'s index parent, and the matrix never states the Card-System two-index split its own rows imply. `Project/PRODUCT.md`'s platform order is canonical by the user's recorded 2026-08-14 decision, and `Roadmap/POST_PITCH.md` still schedules macOS/Linux ahead of touch devices. Three leaves carry a `Last updated:` stamp, none enforced, and the brief's own stamp predates its newest dated entries.
 
 Acceptance checks:
 
 - The current-implementation inventory is consolidated by subject: the Minion Battle statements merge into one current description, milestone qualifiers surviving only where they mark history, and the remaining-gaps sentence lists only genuinely missing behavior.
-- `WORKFLOW_AND_TERMS.md`'s exclusion list matches implemented reality; "typed action strategies" is corrected under a retired-structure ledger entry like its sibling sites; both "Codex" phrasings become the roadmap's tool-neutral "fresh task" form.
+- `WORKFLOW_AND_TERMS.md`'s exclusion list matches implemented reality; "typed action strategies" is corrected under a 6.1ab-ledger retired-structure entry like its sibling sites; both "Codex" phrasings become the roadmap's tool-neutral "fresh task" form.
 - One routing doctrine stands, and `AGENTS.md` wins as the declared process authority: the two "wasted hop" notes are corrected to state when the direct shard route applies and when the index hop is the instruction, without contradicting `AGENTS.md`.
 - The ownership matrix states `FOUNDATION_CORRECTIONS.md`'s indexing explicitly and records the Card-System two-index split in the rows that share the directory, agreeing with the 6.1z family table.
 - `POST_PITCH.md`'s platform tranche is rewritten to the canonical order - macOS validation, then touch devices including iOS, with Linux and closed platforms unscheduled until separately approved - citing the recorded decision.
@@ -173,6 +173,8 @@ Acceptance checks:
 Closing check: `retired-structure-language` observed reporting the "typed action strategies" site at the pre-fix revision and passing post-fix. The consolidation, routing-doctrine, stamp, and platform corrections are preventive in 6.1y's sense and close on inspection recorded in the commit body, the platform half closing on the recorded user decision.
 
 Non-goals: No scope change - the exclusion-list correction records implemented reality and authorizes nothing. No `AGENTS.md` change. No platform scheduling beyond the recorded order. No archive rewriting.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61al-consolidate-project-context-and-workflow-truth-completion-evidence).
 
 ### [ ] 6.1am Shard the Rule-system ledger section
 

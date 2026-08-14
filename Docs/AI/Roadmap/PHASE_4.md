@@ -253,7 +253,7 @@ Observable outcome: A fresh analysis-only review determines whether the 4.4f-4.4
 
 Acceptance checks:
 
-- The review runs in a fresh Codex task at the final corrected Phase 4 revision and inspects actual source, tests, warnings, runtime paths, and the exact 4.4h T3 profiling/diagnostic evidence rather than relying on corrective completion notes.
+- The review runs in a fresh task at the final corrected Phase 4 revision and inspects actual source, tests, warnings, runtime paths, and the exact 4.4h T3 profiling/diagnostic evidence rather than relying on corrective completion notes.
 - It retraces representative configured board input, live command, replay, Undo/restart, snapshot restore, event, pending-choice, application-projection, and presentation paths and verifies that authority, dependency direction, atomicity, deterministic identity, and resource ownership still match the durable contracts.
 - It determines whether the configured runtime/HUD/presenter cutover and distinct Movement and Attack/Defense backends are genuine decompositions rather than replacement god objects, hidden service-location paths, cross-handler leakage, duplicated resolution routes, or test-only conformance.
 - It independently rechecks the evidence and closure claims for `F44E-01` through `F44E-05`, including generated-versus-assigned Material teardown, configured saved-scene input routing, strategy-backend ownership, accepted-command/projection metric ownership, and additive documentation-governance preservation.
