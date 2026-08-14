@@ -58,7 +58,7 @@ Corrective milestone 5.8a1 makes the configured minion presentation reload-safe.
 
 The 2026-08-13 out-of-band foundation audit, the corrective milestones 6.1c through 6.1p that closed it, the two audit statements those milestones corrected, and the governance state the sequence left behind are maintained in [FOUNDATION_CORRECTIONS.md](FOUNDATION_CORRECTIONS.md). They were split out at 6.1p, when this file passed its size threshold.
 
-The project does not yet implement current-Battle-Zone changes, Lane-Push consumption/transition/respawn, player-facing Minion-Battle removal UI, the final official six-player Quick Game setup, resolve-without-action, real Wasp content, general card-text effects, complete hero Attack consequences, the remaining concrete end-of-round subsystems, networking, production animation/audio, or build/distribution work.
+The project does not yet implement current-Battle-Zone changes, Lane-Push consumption/transition/respawn, the final official six-player Quick Game setup, resolve-without-action, real Wasp content, general card-text effects, complete hero Attack consequences, the remaining concrete end-of-round subsystems, networking, production animation/audio, or build/distribution work.
 
 ## Maintenance rule
 
