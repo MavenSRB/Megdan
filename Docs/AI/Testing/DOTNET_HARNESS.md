@@ -10,7 +10,7 @@ It does NOT prove: Presentation compilation or behavior, `[UnityTest]`/Play Mode
 
 ## Exclude-list maintenance rule
 
-Unity-free test files are included by glob; the 20 Unity-dependent Edit Mode files are named in the csproj `Exclude` attribute. A newly added Edit Mode test therefore compiles into the harness by default, and a Unity-dependent newcomer breaks the harness build immediately. That build failure is the tripwire: resolve it by adding the file to the `Exclude` list only when it genuinely requires Unity, never by weakening the harness. Deleting an excluded file must remove its `Exclude` entry.
+Unity-free test files are included by glob; the 21 Unity-dependent Edit Mode files are named in the csproj `Exclude` attribute. A newly added Edit Mode test therefore compiles into the harness by default, and a Unity-dependent newcomer breaks the harness build immediately. That build failure is the tripwire: resolve it by adding the file to the `Exclude` list only when it genuinely requires Unity, never by weakening the harness. Deleting an excluded file must remove its `Exclude` entry.
 
 ## The shim boundary (known drift risk)
 

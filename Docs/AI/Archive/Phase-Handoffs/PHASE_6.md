@@ -424,3 +424,9 @@ A user-approved roadmap amendment on 2026-08-13 scheduled the open ER2 dispositi
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 6.1an | Governing authority is reconciled and compacted: the conditional review-closure rule is canonical, the brief contains only current status/routing, root `AGENTS.md` is threshold-governed and scanned, commit-body evidence versus append-only archive ownership is explicit, retired process language is declared, and the validator rejects narrative completion bullets while preserving route/archive checks. | `5c12c82` |
+
+## Milestone 6.1a Add player-facing Minion Battle removal-choice UI completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1a | The configured HUD resolves a paused Minion Battle through a sixth passive view/presenter pair built entirely from the immutable pending choice: it offers a control only where the authority currently offers a select or deselect invocation, so a withheld Heavy carries none, exposes confirmation only at the exact required count, withholds the end-of-round advance while the choice stands, and forwards only the projected typed invocation. Pointing at or focusing a control marks that minion on the board with the reviewed 6.1b cue treatment carrying the control's ordinal; a selected minion keeps an `X` cue, and the highlight is anchored to the projection it was read from. | pending |

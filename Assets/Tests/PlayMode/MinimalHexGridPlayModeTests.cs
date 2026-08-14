@@ -613,6 +613,183 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// Milestone 6.1a. The configured setup is symmetric, so no round of it ever produces a
+        /// Minion Battle removal choice; the prompt and its board cues are proven here the same way
+        /// the Defense preview is - by rendering an authority-shaped model into the scene's own
+        /// views and checking what the configured scene does with it, including that a passive view
+        /// forwards controls without reaching authoritative state itself.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_MinionRemovalPromptAndBoardCuesUseConfiguredPassiveViews()
+        {
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+            Assert.That(runtime.PendingMinionBattleChoice, Is.Null);
+            Assert.That(runtime.MinionChoiceView.Model, Is.Null,
+                "With no pending choice the configured prompt exposes no controls.");
+
+            var blue = runtime.BoardView.Model.Minions
+                .Where(value => value.TeamSide == TeamSide.Blue)
+                .OrderBy(value => value.MinionId.Value, System.StringComparer.Ordinal)
+                .Take(2)
+                .ToArray();
+            var blueTeamId = runtime.Setup.Teams.Single(value => value.TeamSide == TeamSide.Blue).TeamId;
+            var resolutionId = new EndOfRoundResolutionId("configured-minion-battle");
+            var choiceId = new EndOfRoundChoiceId("configured-minion-battle-removals");
+            var baseBoard = runtime.BoardView.Model;
+            var acceptedBefore = runtime.AcceptedCommands.Count;
+            var snapshotBefore = runtime.CaptureSnapshot();
+
+            // Nothing selected yet: both candidates carry a removal control and there is nothing to
+            // confirm. The board marks only the candidate the pointer is on.
+            var unselected = blue.Select((minion, index) => new MinionChoiceCandidateViewModel(
+                    minion.MinionId,
+                    $"REMOVE {MinionChoiceLabels.CandidateLabel(TeamSide.Blue, minion.MinionType, index + 1)}",
+                    index + 1,
+                    false,
+                    DirectorCommand.SelectMinionBattleRemoval(new MinionBattleChoiceCommand(
+                        MinionBattleChoiceCommandKind.Select, resolutionId, choiceId,
+                        TeamSide.Blue, minion.MinionId))))
+                .ToArray();
+            runtime.MinionChoiceView.Render(new MinionChoiceViewModel(
+                baseBoard.Version,
+                resolutionId,
+                choiceId,
+                blueTeamId,
+                TeamSide.Blue,
+                1,
+                0,
+                unselected,
+                null));
+            RenderChoiceCues(runtime, baseBoard, baseBoard.Version + 1, new[]
+            {
+                new MinionChoiceCueViewModel(blue[1].MinionId, MinionChoiceCueKind.Highlighted, "#2")
+            });
+            yield return null;
+
+            Assert.That(runtime.MinionChoiceView.Model.PromptLabel,
+                Is.EqualTo("MINION BATTLE - [B] BLUE REMOVES 1 MINION"));
+            Assert.That(runtime.MinionChoiceView.Model.StatusLabel, Is.EqualTo("SELECTED 0 OF 1"));
+            Assert.That(runtime.MinionChoiceView.Model.Candidates, Has.Count.EqualTo(2));
+            Assert.That(runtime.MinionChoiceView.Model.ConfirmInvocation, Is.Null,
+                "Below the required count the configured prompt offers no confirmation control.");
+
+            var firstView = runtime.BoardView.MinionViews.Single(value =>
+                value.BoundMinionId.Equals(blue[0].MinionId));
+            var secondView = runtime.BoardView.MinionViews.Single(value =>
+                value.BoundMinionId.Equals(blue[1].MinionId));
+            Assert.That(firstView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
+            Assert.That(secondView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
+            Assert.That(secondView.ChoiceCueText, Is.EqualTo("#2"),
+                "The cue above the minion carries the same ordinal as the control that points at it.");
+
+            // One selected at the required count: the chosen minion keeps its board cue, its control
+            // becomes the projected deselect, and the confirmation appears.
+            var selectedCandidate = new MinionChoiceCandidateViewModel(
+                blue[0].MinionId,
+                $"KEEP {MinionChoiceLabels.CandidateLabel(TeamSide.Blue, blue[0].MinionType, 1)}",
+                1,
+                true,
+                DirectorCommand.DeselectMinionBattleRemoval(new MinionBattleChoiceCommand(
+                    MinionBattleChoiceCommandKind.Deselect, resolutionId, choiceId,
+                    TeamSide.Blue, blue[0].MinionId)));
+            var confirm = new TypedInvocationViewModel(
+                "CONFIRM REMOVAL",
+                DirectorCommand.ConfirmMinionBattleRemovals(new MinionBattleChoiceCommand(
+                    MinionBattleChoiceCommandKind.Confirm, resolutionId, choiceId, TeamSide.Blue)));
+            runtime.MinionChoiceView.Render(new MinionChoiceViewModel(
+                baseBoard.Version,
+                resolutionId,
+                choiceId,
+                blueTeamId,
+                TeamSide.Blue,
+                1,
+                1,
+                new[] { selectedCandidate },
+                confirm));
+            RenderChoiceCues(runtime, baseBoard, baseBoard.Version + 2, new[]
+            {
+                new MinionChoiceCueViewModel(blue[0].MinionId, MinionChoiceCueKind.Selected,
+                    MinionChoiceLabels.SelectedCueText),
+                new MinionChoiceCueViewModel(blue[1].MinionId, MinionChoiceCueKind.Highlighted, "#2")
+            });
+            yield return null;
+
+            Assert.That(runtime.MinionChoiceView.Model.StatusLabel, Is.EqualTo("SELECTED 1 OF 1"));
+            Assert.That(runtime.MinionChoiceView.Model.Candidates.Single().IsSelected, Is.True);
+            Assert.That(runtime.MinionChoiceView.Model.ConfirmInvocation.Command.Kind,
+                Is.EqualTo(DirectorCommandKind.ConfirmMinionBattleRemovals));
+            Assert.That(firstView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected));
+            Assert.That(firstView.ChoiceCueText, Is.EqualTo("X"));
+            Assert.That(secondView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted),
+                "A selected minion keeps its cue while the player points at another.");
+
+            var selectedCue = firstView.GetComponentsInChildren<TextMesh>(true).Single(value =>
+                value.gameObject.name == "Minion Choice Cue");
+            var selectedBacking = firstView.GetComponentsInChildren<TextMesh>(true).Single(value =>
+                value.gameObject.name == "Minion Choice Cue Background");
+            Assert.That(selectedCue.text, Is.EqualTo("X"));
+            Assert.That(selectedCue.characterSize, Is.EqualTo(StandardMinionView.DefenseCueCharacterSize));
+            Assert.That(selectedCue.transform.localScale, Is.EqualTo(new Vector3(-1f, 1f, 1f)),
+                "The cue reuses the token-orientation correction of the Defense contribution cue.");
+            Assert.That(selectedBacking.transform.localScale.y,
+                Is.GreaterThan(selectedBacking.transform.localScale.x));
+            var camera = Object.FindAnyObjectByType<Camera>();
+            Assert.That(camera.WorldToViewportPoint(selectedCue.transform.position).y,
+                Is.GreaterThan(camera.WorldToViewportPoint(firstView.transform.position).y),
+                "The cue reads above its minion under the configured top-down camera.");
+
+            MinionChoiceCandidateViewModel submitted = null;
+            var confirmed = 0;
+            var highlights = new List<MinionId>();
+            runtime.MinionChoiceView.CandidateSubmitted += value => submitted = value;
+            runtime.MinionChoiceView.ConfirmRequested += () => confirmed++;
+            runtime.MinionChoiceView.CandidateHighlighted += value => highlights.Add(value);
+
+            runtime.MinionChoiceView.ForwardCandidate(selectedCandidate);
+            Assert.That(submitted, Is.SameAs(selectedCandidate));
+            runtime.MinionChoiceView.ForwardConfirm();
+            Assert.That(confirmed, Is.EqualTo(1));
+            runtime.MinionChoiceView.ForwardHighlight(default);
+            runtime.MinionChoiceView.ForwardHighlight(blue[1].MinionId);
+            Assert.That(highlights.Last(), Is.EqualTo(blue[1].MinionId));
+            Assert.That(runtime.MinionChoiceView.HighlightedMinionId, Is.EqualTo(blue[1].MinionId));
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(acceptedBefore),
+                "The passive prompt reports intent; it never advances authoritative state itself.");
+            Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(snapshotBefore));
+
+            // Back to the ordinary no-choice state the configured scene actually sits in.
+            runtime.MinionChoicePresenter.Refresh();
+            RenderChoiceCues(runtime, baseBoard, baseBoard.Version + 3,
+                System.Array.Empty<MinionChoiceCueViewModel>());
+            yield return null;
+
+            Assert.That(runtime.MinionChoiceView.Model, Is.Null);
+            Assert.That(firstView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
+            Assert.That(secondView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
+            Assert.That(selectedCue.gameObject.activeSelf, Is.False);
+        }
+
+        private static void RenderChoiceCues(
+            ConfiguredMatchSceneRuntime runtime,
+            BoardInteractionViewModel baseBoard,
+            long version,
+            IEnumerable<MinionChoiceCueViewModel> cues)
+        {
+            runtime.BoardView.Render(new BoardInteractionViewModel(
+                version,
+                baseBoard.Heroes,
+                baseBoard.Minions,
+                baseBoard.MovementDestinations,
+                baseBoard.AttackTargets,
+                System.Array.Empty<MinionId>(),
+                baseBoard.FocusedHeroId,
+                baseBoard.FastTravelDestinations,
+                baseBoard.MinionDefenseCues,
+                cues));
+        }
+
         [UnityTest]
         public IEnumerator Scene_UndoRestartRestoreAndDiagnosticsStayEquivalent()
         {

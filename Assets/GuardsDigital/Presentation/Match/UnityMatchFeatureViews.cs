@@ -113,6 +113,7 @@ namespace GuardsDigital.Presentation.Match
         {
             var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);
             var defenseCues = model.MinionDefenseCues.ToDictionary(value => value.MinionId, value => value.Amount);
+            var choiceCues = model.MinionChoiceCues.ToDictionary(value => value.MinionId);
             foreach (var minion in minions)
             {
                 var boundId = minion.BoundMinionId;
@@ -126,12 +127,21 @@ namespace GuardsDigital.Presentation.Match
 
                     minion.SetDefenseContributionCue(
                         defenseCues.TryGetValue(boundId, out var amount) ? amount : 0);
+                    if (choiceCues.TryGetValue(boundId, out var choiceCue))
+                    {
+                        minion.SetChoiceCue(choiceCue.Kind, choiceCue.Label);
+                    }
+                    else
+                    {
+                        minion.SetChoiceCue(MinionChoiceCueKind.None, null);
+                    }
 
                     projectedMinions.Remove(state.MinionId);
                 }
                 else
                 {
                     minion.SetDefenseContributionCue(0);
+                    minion.SetChoiceCue(MinionChoiceCueKind.None, null);
                     minion.gameObject.SetActive(false);
                 }
             }
@@ -604,6 +614,141 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return Mathf.Ceil(style.CalcSize(new GUIContent(label)).x);
+        }
+    }
+
+    /// <summary>
+    /// The configured contextual prompt for a pending minion choice. It draws one control per
+    /// candidate the authority currently offers a legal invocation for, reports which control the
+    /// pointer or keyboard focus is on so the board can mark that minion, and forwards the projected
+    /// typed invocation on click. It holds no session and decides no legality.
+    /// </summary>
+    public sealed class MinionChoiceUnityView : IMinionChoiceView
+    {
+        private MinionId highlightedMinionId;
+
+        public MinionChoiceViewModel Model { get; private set; }
+
+        /// <summary>The candidate the pointer or keyboard focus is currently on, if any.</summary>
+        public MinionId HighlightedMinionId => highlightedMinionId;
+
+        public event Action<MinionChoiceCandidateViewModel> CandidateSubmitted;
+        public event Action ConfirmRequested;
+        public event Action<MinionId> CandidateHighlighted;
+
+        public void Render(MinionChoiceViewModel model)
+        {
+            if (ReferenceEquals(Model, model))
+            {
+                return;
+            }
+
+            Model = model;
+            if (Model == null)
+            {
+                SetHighlight(default);
+            }
+        }
+
+        public void Draw()
+        {
+            // The model is read once: forwarding an invocation below refreshes the presenters inside
+            // this same draw, and the loop must keep walking the controls it started with.
+            var model = Model;
+            if (model == null)
+            {
+                return;
+            }
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Minion Battle", GUILayout.Width(84f));
+            GUILayout.Label($"{model.PromptLabel}   {model.StatusLabel}");
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(84f);
+            var hovered = default(MinionId);
+            for (var index = 0; index < model.Candidates.Count; index++)
+            {
+                if (DrawCandidate(model, index))
+                {
+                    hovered = model.Candidates[index].MinionId;
+                }
+            }
+
+            if (model.ConfirmInvocation != null && GUILayout.Button(
+                model.ConfirmInvocation.Label,
+                GUILayout.MinWidth(RoundActionUnityView.CalculateContentWidth(
+                    model.ConfirmInvocation.Label,
+                    GUI.skin.button)),
+                GUILayout.Height(46f)))
+            {
+                ConfirmRequested?.Invoke();
+            }
+
+            GUILayout.EndHorizontal();
+            if (Event.current.type == EventType.Repaint)
+            {
+                SetHighlight(hovered);
+            }
+        }
+
+        public void ForwardCandidate(MinionChoiceCandidateViewModel candidate)
+        {
+            if (candidate != null)
+            {
+                CandidateSubmitted?.Invoke(candidate);
+            }
+        }
+
+        public void ForwardConfirm()
+        {
+            ConfirmRequested?.Invoke();
+        }
+
+        public void ForwardHighlight(MinionId minionId)
+        {
+            SetHighlight(minionId);
+        }
+
+        private bool DrawCandidate(MinionChoiceViewModel model, int index)
+        {
+            var candidate = model.Candidates[index];
+            var controlName = $"MinionChoice-{model.Version}-{index}";
+            GUI.SetNextControlName(controlName);
+            var previousBackground = GUI.backgroundColor;
+            GUI.backgroundColor = candidate.IsSelected
+                ? new Color(0.95f, 0.62f, 0.25f)
+                : previousBackground;
+            var pressed = GUILayout.Button(
+                candidate.Label,
+                GUILayout.MinWidth(RoundActionUnityView.CalculateContentWidth(candidate.Label, GUI.skin.button)),
+                GUILayout.Height(46f));
+            GUI.backgroundColor = previousBackground;
+            if (pressed)
+            {
+                ForwardCandidate(candidate);
+            }
+
+            if (Event.current.type != EventType.Repaint)
+            {
+                return false;
+            }
+
+            var rect = GUILayoutUtility.GetLastRect();
+            return rect.Contains(Event.current.mousePosition) ||
+                string.Equals(GUI.GetNameOfFocusedControl(), controlName, StringComparison.Ordinal);
+        }
+
+        private void SetHighlight(MinionId minionId)
+        {
+            if (highlightedMinionId.Equals(minionId))
+            {
+                return;
+            }
+
+            highlightedMinionId = minionId;
+            CandidateHighlighted?.Invoke(minionId);
         }
     }
 

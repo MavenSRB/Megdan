@@ -53,6 +53,7 @@ namespace GuardsDigital.Presentation.Match
         private RoundActionUnityView round;
         private UndoRestartUnityView undoRestart;
         private DiagnosticLogUnityView diagnostics;
+        private MinionChoiceUnityView minionChoice;
         private MatchHudHeaderViewModel header;
         private GUIStyle tieBreakerStyle;
         private Vector2 cardPanelScrollPosition;
@@ -66,12 +67,14 @@ namespace GuardsDigital.Presentation.Match
             DirectorHandsUnityView handsView,
             RoundActionUnityView roundView,
             UndoRestartUnityView undoRestartView,
-            DiagnosticLogUnityView diagnosticView)
+            DiagnosticLogUnityView diagnosticView,
+            MinionChoiceUnityView minionChoiceView)
         {
             hands = handsView ?? throw new ArgumentNullException(nameof(handsView));
             round = roundView ?? throw new ArgumentNullException(nameof(roundView));
             undoRestart = undoRestartView ?? throw new ArgumentNullException(nameof(undoRestartView));
             diagnostics = diagnosticView ?? throw new ArgumentNullException(nameof(diagnosticView));
+            minionChoice = minionChoiceView ?? throw new ArgumentNullException(nameof(minionChoiceView));
         }
 
         public void RenderHeader(MatchHudHeaderViewModel model)
@@ -89,8 +92,10 @@ namespace GuardsDigital.Presentation.Match
 
         private void OnGUI()
         {
+            // The minion-choice view is checked for presence only: its model is null whenever no
+            // minion choice is pending, which is the ordinary state and must not blank the HUD.
             if (header == null || hands?.Model == null || round?.Model == null ||
-                undoRestart?.Model == null || diagnostics?.Model == null)
+                undoRestart?.Model == null || diagnostics?.Model == null || minionChoice == null)
             {
                 return;
             }
@@ -107,6 +112,7 @@ namespace GuardsDigital.Presentation.Match
             cardPanelScrollPosition = GUILayout.BeginScrollView(cardPanelScrollPosition);
             hands.Draw();
             round.Draw();
+            minionChoice.Draw();
             GUILayout.EndScrollView();
             GUILayout.EndArea();
             round.DrawDefensePreviewOverlay();

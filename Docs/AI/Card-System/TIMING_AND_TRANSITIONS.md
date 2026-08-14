@@ -61,7 +61,6 @@ The names in this shard are specification vocabulary rather than declared code t
 | Capability | Status | Owning milestone |
 | --- | --- | --- |
 | Active-effect lifecycle, checkpoints, and continuous sources | Implemented foundation (5.4, checkpoint scoping corrected at 6.1q); concrete effect producers and general execution pending | 6.2a onward |
-| End-of-round Minion Battle transition (`ResolveMinionBattle`) | Implemented (6.1); player-facing removal-choice UI open | 6.1a |
 | `RepeatAction`, `PerformAction`, `ReplaceAction`, `SimultaneousBatch` control flow | Specified, not implemented | 6.2a (non-Repeat), 6.7 (Repeat) |
 | `RequestLanePush` recording | Implemented at 6.1; consumption not implemented | 6.9 |
 | Lane Push Wave/Battle-Zone stages, respawn, and transition (`ResolveLanePushTransition`, `MinionRespawnEffect` vocabulary) | Specified, not implemented | 6.10-6.11 |

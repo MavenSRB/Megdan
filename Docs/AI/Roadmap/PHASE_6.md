@@ -29,7 +29,7 @@ Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#mile
 
 The completed corrective sequence's definitions - the audit preamble, execution-order table, and milestones 6.1c through 6.1p plus 6.1l - moved verbatim to [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) on 2026-08-14 during the required warning-threshold ownership review. The sequence completed on 2026-08-13; its account is maintained in [Project/FOUNDATION_CORRECTIONS.md](../Project/FOUNDATION_CORRECTIONS.md), and per-milestone evidence is addressed by SHA in the [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md).
 
-### [ ] 6.1a Add player-facing Minion Battle removal-choice UI
+### [x] 6.1a Add player-facing Minion Battle removal-choice UI
 
 Observable outcome: When milestone 6.1's authority pauses for a Minion Battle removal choice, the configured passive presentation lets the authorized chooser select which eligible minions are removed and resumes the same authoritative end-of-round continuation.
 
@@ -43,6 +43,8 @@ Acceptance checks:
 - Focused application/presenter tests and a configured-scene Play Mode check prove the prompt, legal-candidate updates, exact-count completion, no-choice path, and passive-view authority boundary.
 
 Non-goals: No Minion Battle rule changes, optional decline of a mandatory removal, Lane-Push consumption, token/marker cleanup, production art, animation, or audio.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61a-add-player-facing-minion-battle-removal-choice-ui-completion-evidence).
 
 ### [x] 6.1b Correct Defense contribution cue proportions and orientation
 

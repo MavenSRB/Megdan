@@ -13,6 +13,7 @@ using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
+using GuardsDigital.Presentation.Units.Minions;
 
 namespace GuardsDigital.Presentation.Match
 {
@@ -33,6 +34,87 @@ namespace GuardsDigital.Presentation.Match
         public int Amount { get; }
     }
 
+    /// <summary>
+    /// What a board cue says about one minion in a pending minion choice, and the exact text it
+    /// shows. A selected minion keeps its cue while the pointer moves across the other controls, so
+    /// the board answers "which minions have I already chosen" without the player re-reading the
+    /// prompt; a highlighted one answers "which minion is this control".
+    /// </summary>
+    public readonly struct MinionChoiceCueViewModel
+    {
+        public MinionChoiceCueViewModel(MinionId minionId, MinionChoiceCueKind kind, string label)
+        {
+            if (!minionId.IsDefined || kind == MinionChoiceCueKind.None ||
+                string.IsNullOrWhiteSpace(label))
+            {
+                throw new ArgumentException(
+                    "A minion choice cue requires a stable identity, a visible kind, and readable text.");
+            }
+
+            MinionId = minionId;
+            Kind = kind;
+            Label = label;
+        }
+
+        public MinionId MinionId { get; }
+        public MinionChoiceCueKind Kind { get; }
+        public string Label { get; }
+    }
+
+    /// <summary>
+    /// The one place the minion-choice prompt and the board cues agree on how a candidate is named.
+    /// The ordinal is the candidate's position in the projection's own ordinal candidate order, so a
+    /// control and the cue above its minion carry the same `#n`, and two candidates of the same team
+    /// and type stay distinguishable by text rather than by color.
+    /// </summary>
+    public static class MinionChoiceLabels
+    {
+        public const string SelectedCueText = "X";
+
+        public static string TeamLabel(TeamSide side) =>
+            side == TeamSide.Red ? "[R] RED" : "[B] BLUE";
+
+        public static int Ordinal(IReadOnlyList<MinionBattleCandidate> candidates, MinionId minionId)
+        {
+            if (candidates == null)
+            {
+                throw new ArgumentNullException(nameof(candidates));
+            }
+
+            for (var index = 0; index < candidates.Count; index++)
+            {
+                if (candidates[index].MinionId.Equals(minionId))
+                {
+                    return index + 1;
+                }
+            }
+
+            throw new ArgumentException(
+                "The minion is not one of the projected candidates.",
+                nameof(minionId));
+        }
+
+        public static string CandidateLabel(TeamSide side, StandardMinionType minionType, int ordinal)
+        {
+            if (ordinal < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(ordinal));
+            }
+
+            return $"{TeamLabel(side)} {minionType.ToString().ToUpperInvariant()} #{ordinal}";
+        }
+
+        public static string CueText(MinionChoiceCueKind kind, int ordinal)
+        {
+            if (ordinal < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(ordinal));
+            }
+
+            return kind == MinionChoiceCueKind.Selected ? SelectedCueText : $"#{ordinal}";
+        }
+    }
+
     public sealed class BoardInteractionViewModel
     {
         public BoardInteractionViewModel(
@@ -44,7 +126,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<MinionId> minionAttackTargets,
             HeroId focusedHeroId,
             IEnumerable<HexCoordinate> fastTravelDestinations = null,
-            IEnumerable<MinionDefenseCueViewModel> minionDefenseCues = null)
+            IEnumerable<MinionDefenseCueViewModel> minionDefenseCues = null,
+            IEnumerable<MinionChoiceCueViewModel> minionChoiceCues = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -60,6 +143,15 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             MinionDefenseCues = Array.AsReadOnly((minionDefenseCues ??
                 Enumerable.Empty<MinionDefenseCueViewModel>()).ToArray());
+            MinionChoiceCues = Array.AsReadOnly((minionChoiceCues ??
+                Enumerable.Empty<MinionChoiceCueViewModel>()).ToArray());
+            if (MinionChoiceCues.Select(value => value.MinionId).Distinct().Count() !=
+                MinionChoiceCues.Count)
+            {
+                throw new ArgumentException(
+                    "One minion carries at most one choice cue.",
+                    nameof(minionChoiceCues));
+            }
         }
 
         public long Version { get; }
@@ -71,6 +163,7 @@ namespace GuardsDigital.Presentation.Match
         public HeroId FocusedHeroId { get; }
         public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
         public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
+        public IReadOnlyList<MinionChoiceCueViewModel> MinionChoiceCues { get; }
     }
 
     public interface IBoardInteractionView
@@ -86,6 +179,8 @@ namespace GuardsDigital.Presentation.Match
         private BoardInteractionViewModel lastViewModel;
         private MatchSessionProjection fastTravelSelectionProjection;
         private ActionDefinitionId? selectedFastTravelActionDefinitionId;
+        private MatchSessionProjection choiceHighlightProjection;
+        private MinionId highlightedChoiceMinionId;
 
         public BoardInteractionPresenter(IMatchSession session, IBoardInteractionView view)
         {
@@ -104,6 +199,15 @@ namespace GuardsDigital.Presentation.Match
                 fastTravelSelectionProjection = null;
             }
 
+            // A pointed-at candidate belongs to the projection it was read from. Anything that
+            // rebuilds authoritative state - an accepted command, a rejection, restore, replay, or
+            // Undo - drops it, so the board never keeps a cue for a choice that has moved on.
+            if (!ReferenceEquals(projection, choiceHighlightProjection))
+            {
+                highlightedChoiceMinionId = default;
+                choiceHighlightProjection = null;
+            }
+
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
@@ -120,10 +224,70 @@ namespace GuardsDigital.Presentation.Match
                         Array.Empty<HexCoordinate>(),
                     projection.PendingDefensePreview?.MinionContributions.Select(value =>
                         new MinionDefenseCueViewModel(value.SourceMinionId, value.Amount)) ??
-                        Enumerable.Empty<MinionDefenseCueViewModel>());
+                        Enumerable.Empty<MinionDefenseCueViewModel>(),
+                    CreateMinionChoiceCues(
+                        projection.PendingMinionBattleChoice,
+                        highlightedChoiceMinionId));
             }
 
             view.Render(lastViewModel);
+        }
+
+        /// <summary>
+        /// Marks one candidate of the pending minion choice as pointed at, so the board can say which
+        /// minion a hovered or focused prompt control refers to. Returns false when nothing changed,
+        /// which is what stops a per-frame hover notification from rebuilding the board every repaint.
+        /// </summary>
+        public bool HighlightMinionChoiceCandidate(MinionId minionId)
+        {
+            var projection = session.Projection;
+            var choice = projection.PendingMinionBattleChoice;
+            var resolved = choice != null && minionId.IsDefined &&
+                choice.Candidates.Any(candidate => candidate.MinionId.Equals(minionId))
+                    ? minionId
+                    : default;
+            if (resolved.Equals(highlightedChoiceMinionId) &&
+                (!resolved.IsDefined || ReferenceEquals(projection, choiceHighlightProjection)))
+            {
+                return false;
+            }
+
+            highlightedChoiceMinionId = resolved;
+            choiceHighlightProjection = resolved.IsDefined ? projection : null;
+            lastProjection = null;
+            return true;
+        }
+
+        private static IReadOnlyList<MinionChoiceCueViewModel> CreateMinionChoiceCues(
+            PendingMinionBattleChoice choice,
+            MinionId highlightedMinionId)
+        {
+            if (choice == null)
+            {
+                return Array.Empty<MinionChoiceCueViewModel>();
+            }
+
+            var cues = new List<MinionChoiceCueViewModel>();
+            for (var index = 0; index < choice.Candidates.Count; index++)
+            {
+                var candidate = choice.Candidates[index];
+                var kind = choice.SelectedMinionIds.Contains(candidate.MinionId)
+                    ? MinionChoiceCueKind.Selected
+                    : candidate.MinionId.Equals(highlightedMinionId)
+                        ? MinionChoiceCueKind.Highlighted
+                        : MinionChoiceCueKind.None;
+                if (kind == MinionChoiceCueKind.None)
+                {
+                    continue;
+                }
+
+                cues.Add(new MinionChoiceCueViewModel(
+                    candidate.MinionId,
+                    kind,
+                    MinionChoiceLabels.CueText(kind, index + 1)));
+            }
+
+            return cues;
         }
 
         public bool ActivateFastTravel(ActionDefinitionId replacedMovementActionDefinitionId)
@@ -678,7 +842,10 @@ namespace GuardsDigital.Presentation.Match
                 FormatStatus(projection),
                 actions,
                 CreateEndTurnInvocation(projection),
-                projection.Phase == RoundResolutionPhase.EndOfRound
+                // A pending removal choice is mandatory: the authority rejects an advance while it
+                // stands, so the control that would produce that rejection is not offered.
+                projection.Phase == RoundResolutionPhase.EndOfRound &&
+                    projection.PendingMinionBattleChoice == null
                     ? new TypedInvocationViewModel("CONTINUE END OF ROUND", DirectorCommand.AdvanceEndOfRound())
                     : null,
                 initiativeChoices,
@@ -894,6 +1061,273 @@ namespace GuardsDigital.Presentation.Match
         }
     }
 
+    public sealed class MinionChoiceCandidateViewModel
+    {
+        public MinionChoiceCandidateViewModel(
+            MinionId minionId,
+            string label,
+            int ordinal,
+            bool isSelected,
+            DirectorCommand command)
+        {
+            if (!minionId.IsDefined || ordinal < 1)
+            {
+                throw new ArgumentException(
+                    "A minion choice candidate requires a stable identity and its projected ordinal.");
+            }
+
+            MinionId = minionId;
+            Label = string.IsNullOrWhiteSpace(label)
+                ? throw new ArgumentException("A minion choice candidate requires a label.", nameof(label))
+                : label;
+            Ordinal = ordinal;
+            IsSelected = isSelected;
+            Command = command ?? throw new ArgumentNullException(nameof(command));
+        }
+
+        public MinionId MinionId { get; }
+        public string Label { get; }
+        public int Ordinal { get; }
+
+        /// <summary>
+        /// Whether this candidate is currently part of the authoritative selection. The control it
+        /// carries is then the projected deselect invocation rather than the select one.
+        /// </summary>
+        public bool IsSelected { get; }
+        public DirectorCommand Command { get; }
+    }
+
+    /// <summary>
+    /// The contextual prompt for a pending minion choice. It holds only what the authoritative
+    /// pending choice already decided - chooser identity, required count, current selection, the
+    /// candidates that carry a legal control right now, and the exact typed invocations - so the view
+    /// never compares minion counts, orders Heavy removals, or advances the owning continuation.
+    /// </summary>
+    public sealed class MinionChoiceViewModel
+    {
+        public MinionChoiceViewModel(
+            long version,
+            EndOfRoundResolutionId resolutionId,
+            EndOfRoundChoiceId choiceId,
+            TeamId choosingTeamId,
+            TeamSide choosingSide,
+            int requiredRemovalCount,
+            int selectedCount,
+            IEnumerable<MinionChoiceCandidateViewModel> candidates,
+            TypedInvocationViewModel confirmInvocation)
+        {
+            if (!resolutionId.IsDefined || !choiceId.IsDefined || !choosingTeamId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A minion choice prompt requires the authoritative resolution, choice, and team identities.");
+            }
+
+            if (choosingSide != TeamSide.Red && choosingSide != TeamSide.Blue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(choosingSide));
+            }
+
+            if (requiredRemovalCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(requiredRemovalCount));
+            }
+
+            if (selectedCount < 0 || selectedCount > requiredRemovalCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(selectedCount));
+            }
+
+            Version = version;
+            ResolutionId = resolutionId;
+            ChoiceId = choiceId;
+            ChoosingTeamId = choosingTeamId;
+            ChoosingSide = choosingSide;
+            RequiredRemovalCount = requiredRemovalCount;
+            SelectedCount = selectedCount;
+            Candidates = Array.AsReadOnly((candidates ??
+                throw new ArgumentNullException(nameof(candidates))).ToArray());
+            if (Candidates.Select(value => value.MinionId).Distinct().Count() != Candidates.Count)
+            {
+                throw new ArgumentException(
+                    "A minion choice prompt offers at most one control per minion.",
+                    nameof(candidates));
+            }
+
+            ConfirmInvocation = confirmInvocation;
+            PromptLabel = $"MINION BATTLE - {MinionChoiceLabels.TeamLabel(choosingSide)} REMOVES " +
+                $"{requiredRemovalCount} {(requiredRemovalCount == 1 ? "MINION" : "MINIONS")}";
+            StatusLabel = $"SELECTED {selectedCount} OF {requiredRemovalCount}";
+        }
+
+        public long Version { get; }
+        public EndOfRoundResolutionId ResolutionId { get; }
+        public EndOfRoundChoiceId ChoiceId { get; }
+        public TeamId ChoosingTeamId { get; }
+        public TeamSide ChoosingSide { get; }
+        public int RequiredRemovalCount { get; }
+        public int SelectedCount { get; }
+        public IReadOnlyList<MinionChoiceCandidateViewModel> Candidates { get; }
+
+        /// <summary>Present only while the authoritative choice reports it can be confirmed.</summary>
+        public TypedInvocationViewModel ConfirmInvocation { get; }
+        public string PromptLabel { get; }
+        public string StatusLabel { get; }
+    }
+
+    /// <summary>
+    /// The passive port for the minion-choice prompt. A null model means no minion choice is pending
+    /// and therefore no control may be shown.
+    /// </summary>
+    public interface IMinionChoiceView
+    {
+        void Render(MinionChoiceViewModel model);
+    }
+
+    public sealed class MinionChoicePresenter
+    {
+        private readonly IMatchSession session;
+        private readonly IMinionChoiceView view;
+        private MatchSessionProjection lastProjection;
+        private MinionChoiceViewModel lastViewModel;
+
+        public MinionChoicePresenter(IMatchSession session, IMinionChoiceView view)
+        {
+            this.session = session ?? throw new ArgumentNullException(nameof(session));
+            this.view = view ?? throw new ArgumentNullException(nameof(view));
+        }
+
+        public event Action<MatchSessionProjection> SessionProjectionChanged;
+
+        public void Refresh()
+        {
+            var projection = session.Projection;
+            if (!ReferenceEquals(projection, lastProjection))
+            {
+                lastProjection = projection;
+                lastViewModel = CreateViewModel(projection);
+            }
+
+            view.Render(lastViewModel);
+        }
+
+        /// <summary>
+        /// Forwards the exact projected select or deselect invocation the candidate carries. A control
+        /// left over from an earlier projection matches nothing current, so it submits nothing and the
+        /// view is rebuilt from the authoritative pending choice instead.
+        /// </summary>
+        public bool Submit(MinionChoiceCandidateViewModel candidate)
+        {
+            var current = GetOrCreateViewModel(session.Projection);
+            if (candidate == null || current == null ||
+                !current.Candidates.Any(value => value.Command.Equals(candidate.Command)))
+            {
+                Refresh();
+                return false;
+            }
+
+            return Execute(candidate.Command);
+        }
+
+        public bool Confirm()
+        {
+            var current = GetOrCreateViewModel(session.Projection);
+            if (current?.ConfirmInvocation == null)
+            {
+                Refresh();
+                return false;
+            }
+
+            return Execute(current.ConfirmInvocation.Command);
+        }
+
+        public static MinionChoiceViewModel CreateViewModel(MatchSessionProjection projection)
+        {
+            if (projection == null)
+            {
+                throw new ArgumentNullException(nameof(projection));
+            }
+
+            var choice = projection.PendingMinionBattleChoice;
+            if (choice == null)
+            {
+                return null;
+            }
+
+            var candidates = new List<MinionChoiceCandidateViewModel>();
+            for (var index = 0; index < choice.Candidates.Count; index++)
+            {
+                var candidate = choice.Candidates[index];
+                var select = choice.SelectInvocations.SingleOrDefault(value =>
+                    value.MinionId.Equals(candidate.MinionId));
+                var deselect = choice.DeselectInvocations.SingleOrDefault(value =>
+                    value.MinionId.Equals(candidate.MinionId));
+                if (select == null && deselect == null)
+                {
+                    // The authority currently offers neither invocation for this minion - a Heavy
+                    // while a non-Heavy is still unselected is the live case. Presentation offers no
+                    // control rather than reproducing the ordering rule that withheld it.
+                    continue;
+                }
+
+                var isSelected = deselect != null;
+                var ordinal = index + 1;
+                candidates.Add(new MinionChoiceCandidateViewModel(
+                    candidate.MinionId,
+                    $"{(isSelected ? "KEEP" : "REMOVE")} " +
+                        $"{MinionChoiceLabels.CandidateLabel(choice.ChoosingSide, candidate.MinionType, ordinal)}",
+                    ordinal,
+                    isSelected,
+                    isSelected
+                        ? DirectorCommand.DeselectMinionBattleRemoval(deselect)
+                        : DirectorCommand.SelectMinionBattleRemoval(select)));
+            }
+
+            return new MinionChoiceViewModel(
+                projection.Version,
+                choice.ResolutionId,
+                choice.ChoiceId,
+                choice.LosingTeamId,
+                choice.ChoosingSide,
+                choice.RequiredRemovalCount,
+                choice.SelectedMinionIds.Count,
+                candidates,
+                choice.CanConfirm
+                    ? new TypedInvocationViewModel(
+                        choice.RequiredRemovalCount == 1 ? "CONFIRM REMOVAL" : "CONFIRM REMOVALS",
+                        DirectorCommand.ConfirmMinionBattleRemovals(choice.ConfirmInvocation))
+                    : null);
+        }
+
+        private MinionChoiceViewModel GetOrCreateViewModel(MatchSessionProjection projection)
+        {
+            if (!ReferenceEquals(projection, lastProjection))
+            {
+                lastProjection = projection;
+                lastViewModel = CreateViewModel(projection);
+            }
+
+            return lastViewModel;
+        }
+
+        private bool Execute(DirectorCommand command)
+        {
+            var result = session.Execute(command);
+            if (result.Accepted)
+            {
+                SessionProjectionChanged?.Invoke(result.Projection);
+            }
+            else
+            {
+                // A refusal leaves the authoritative choice standing and hands back the projection
+                // that still holds it. Rebuilding from that is what puts the visible selection back
+                // in step with authority instead of with the control the player just used.
+                Refresh();
+            }
+
+            return result.Accepted;
+        }
+    }
+
     public sealed class UndoRestartViewModel
     {
         public UndoRestartViewModel(
@@ -1051,6 +1485,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly RoundActionPresenter round;
         private readonly UndoRestartPresenter undoRestart;
         private readonly DiagnosticLogPresenter diagnostics;
+        private readonly MinionChoicePresenter minionChoice;
 
         public MatchFeatureCoordinator(
             BoardInteractionPresenter board,
@@ -1058,6 +1493,7 @@ namespace GuardsDigital.Presentation.Match
             RoundActionPresenter round,
             UndoRestartPresenter undoRestart,
             DiagnosticLogPresenter diagnostics,
+            MinionChoicePresenter minionChoice,
             Action<MatchSessionProjection> afterSessionChange = null)
         {
             this.board = board ?? throw new ArgumentNullException(nameof(board));
@@ -1065,6 +1501,7 @@ namespace GuardsDigital.Presentation.Match
             this.round = round ?? throw new ArgumentNullException(nameof(round));
             this.undoRestart = undoRestart ?? throw new ArgumentNullException(nameof(undoRestart));
             this.diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+            this.minionChoice = minionChoice ?? throw new ArgumentNullException(nameof(minionChoice));
 
             void Changed(MatchSessionProjection projection)
             {
@@ -1076,6 +1513,7 @@ namespace GuardsDigital.Presentation.Match
             hands.SessionProjectionChanged += Changed;
             round.SessionProjectionChanged += Changed;
             undoRestart.SessionProjectionChanged += Changed;
+            minionChoice.SessionProjectionChanged += Changed;
         }
 
         public void RefreshAll()
@@ -1085,6 +1523,7 @@ namespace GuardsDigital.Presentation.Match
             round.Refresh();
             undoRestart.Refresh();
             diagnostics.Refresh();
+            minionChoice.Refresh();
         }
     }
 }

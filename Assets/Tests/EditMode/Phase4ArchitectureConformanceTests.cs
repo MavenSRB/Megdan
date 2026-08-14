@@ -183,14 +183,15 @@ namespace GuardsDigital.Tests.EditMode
                     typeof(IDirectorHandsView),
                     typeof(IRoundActionView),
                     typeof(IUndoRestartView),
-                    typeof(IDiagnosticLogView)
+                    typeof(IDiagnosticLogView),
+                    typeof(IMinionChoiceView)
                 };
                 var types = PresentationTypes
                     .Where(type => type.IsClass && viewInterfaces.Any(contract => contract.IsAssignableFrom(type)))
                     .ToArray();
 
-                Assert.That(types, Has.Length.EqualTo(5),
-                    "The passive Unity views are the five implementations of the view interfaces. " +
+                Assert.That(types, Has.Length.EqualTo(6),
+                    "The passive Unity views are the six implementations of the view interfaces. " +
                     "If that count changed legitimately, update this expectation deliberately: " +
                     string.Join(", ", types.Select(type => type.Name)));
                 return types;

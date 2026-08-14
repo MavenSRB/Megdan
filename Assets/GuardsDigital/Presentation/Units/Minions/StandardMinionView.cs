@@ -5,6 +5,17 @@ using UnityEngine;
 
 namespace GuardsDigital.Presentation.Units.Minions
 {
+    /// <summary>
+    /// What the board says about one minion while a minion choice is pending. `Selected` outranks
+    /// `Highlighted`: a minion already chosen keeps saying so while the player points at the others.
+    /// </summary>
+    public enum MinionChoiceCueKind
+    {
+        None = 0,
+        Highlighted = 1,
+        Selected = 2
+    }
+
     [DisallowMultipleComponent]
     [RequireComponent(typeof(SpriteRenderer))]
     public sealed class StandardMinionView : MonoBehaviour
@@ -27,6 +38,8 @@ namespace GuardsDigital.Presentation.Units.Minions
         private MinionOccupancy occupancy;
         private TextMesh defenseCue;
         private TextMesh defenseCueBackground;
+        private TextMesh choiceCue;
+        private TextMesh choiceCueBackground;
 
         public MinionOccupancy Occupancy => occupancy;
         public MinionId BoundMinionId => occupancy != null
@@ -36,6 +49,8 @@ namespace GuardsDigital.Presentation.Units.Minions
                 : new MinionId(boundMinionId);
         public float OuterRadius => outerRadius;
         public int DefenseCueAmount { get; private set; }
+        public MinionChoiceCueKind ChoiceCueKind { get; private set; }
+        public string ChoiceCueText { get; private set; } = string.Empty;
 
         public void Configure(MinionOccupancy state, float outerRadius)
         {
@@ -75,35 +90,7 @@ namespace GuardsDigital.Presentation.Units.Minions
 
             if (defenseCue == null)
             {
-                var cueObject = new GameObject("Defense Contribution Cue");
-                cueObject.transform.SetParent(transform, false);
-                cueObject.transform.localPosition = DefenseCueLocalPosition;
-                cueObject.transform.localRotation = Quaternion.identity;
-                cueObject.transform.localScale = new Vector3(-1f, 1f, 1f);
-                var backgroundObject = new GameObject("Defense Contribution Cue Background");
-                backgroundObject.transform.SetParent(transform, false);
-                backgroundObject.transform.localPosition = cueObject.transform.localPosition;
-                backgroundObject.transform.localRotation = Quaternion.identity;
-                backgroundObject.transform.localScale = new Vector3(
-                    1f,
-                    DefenseCueBackgroundVerticalScale,
-                    1f);
-                defenseCueBackground = backgroundObject.AddComponent<TextMesh>();
-                defenseCueBackground.anchor = TextAnchor.MiddleCenter;
-                defenseCueBackground.alignment = TextAlignment.Center;
-                defenseCueBackground.fontStyle = FontStyle.Bold;
-                defenseCueBackground.fontSize = 64;
-                defenseCueBackground.characterSize = DefenseCueBackgroundCharacterSize;
-                defenseCueBackground.text = "●";
-                defenseCueBackground.color = new Color(0.16f, 0.17f, 0.18f, 0.9f);
-                defenseCueBackground.GetComponent<MeshRenderer>().sortingOrder = 19;
-                defenseCue = cueObject.AddComponent<TextMesh>();
-                defenseCue.anchor = TextAnchor.MiddleCenter;
-                defenseCue.alignment = TextAlignment.Center;
-                defenseCue.fontStyle = FontStyle.Bold;
-                defenseCue.fontSize = 64;
-                defenseCue.characterSize = DefenseCueCharacterSize;
-                defenseCue.GetComponent<MeshRenderer>().sortingOrder = 20;
+                CreateCuePair("Defense Contribution Cue", out defenseCue, out defenseCueBackground);
             }
 
             defenseCue.gameObject.SetActive(true);
@@ -112,16 +99,99 @@ namespace GuardsDigital.Presentation.Units.Minions
             defenseCue.color = amount > 0
                 ? new Color(0.08f, 0.62f, 0.18f)
                 : new Color(0.72f, 0.12f, 0.08f);
-            CenterDefenseCueText();
+            CenterCueText(defenseCue, defenseCueBackground);
         }
 
-        private void CenterDefenseCueText()
+        /// <summary>
+        /// Shows this minion's part in a pending minion choice above the token, in the same board
+        /// position and proportions as the Defense contribution cue. The two cannot appear together:
+        /// a Defense response resolves inside a turn and a minion choice only at end of round.
+        /// </summary>
+        public void SetChoiceCue(MinionChoiceCueKind kind, string label)
         {
-            defenseCue.transform.localPosition = DefenseCueLocalPosition;
-            var cueCenter = defenseCue.GetComponent<MeshRenderer>().bounds.center;
-            var backgroundCenter = defenseCueBackground.GetComponent<MeshRenderer>().bounds.center;
+            if (kind != MinionChoiceCueKind.None && kind != MinionChoiceCueKind.Highlighted &&
+                kind != MinionChoiceCueKind.Selected)
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(kind));
+            }
+
+            if (kind != MinionChoiceCueKind.None && string.IsNullOrWhiteSpace(label))
+            {
+                throw new System.ArgumentException("A visible minion choice cue requires text.", nameof(label));
+            }
+
+            ChoiceCueKind = kind;
+            ChoiceCueText = kind == MinionChoiceCueKind.None ? string.Empty : label;
+            if (kind == MinionChoiceCueKind.None)
+            {
+                if (choiceCue != null)
+                {
+                    choiceCue.gameObject.SetActive(false);
+                    choiceCueBackground.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
+            if (choiceCue == null)
+            {
+                CreateCuePair("Minion Choice Cue", out choiceCue, out choiceCueBackground);
+            }
+
+            choiceCue.gameObject.SetActive(true);
+            choiceCueBackground.gameObject.SetActive(true);
+            choiceCue.text = ChoiceCueText;
+            choiceCue.color = kind == MinionChoiceCueKind.Selected
+                ? new Color(0.72f, 0.12f, 0.08f)
+                : new Color(0.86f, 0.55f, 0.06f);
+            CenterCueText(choiceCue, choiceCueBackground);
+        }
+
+        /// <summary>
+        /// Builds one board-facing cue: mirrored signed text over a vertically oval dark-grey backing.
+        /// The constants keep their `DefenseCue` names because milestone 6.1b's reviewed proportions
+        /// are pinned by documentation and fixtures; every cue reuses those exact values.
+        /// </summary>
+        private void CreateCuePair(string cueName, out TextMesh cue, out TextMesh backing)
+        {
+            var cueObject = new GameObject(cueName);
+            cueObject.transform.SetParent(transform, false);
+            cueObject.transform.localPosition = DefenseCueLocalPosition;
+            cueObject.transform.localRotation = Quaternion.identity;
+            cueObject.transform.localScale = new Vector3(-1f, 1f, 1f);
+            var backgroundObject = new GameObject($"{cueName} Background");
+            backgroundObject.transform.SetParent(transform, false);
+            backgroundObject.transform.localPosition = cueObject.transform.localPosition;
+            backgroundObject.transform.localRotation = Quaternion.identity;
+            backgroundObject.transform.localScale = new Vector3(
+                1f,
+                DefenseCueBackgroundVerticalScale,
+                1f);
+            backing = backgroundObject.AddComponent<TextMesh>();
+            backing.anchor = TextAnchor.MiddleCenter;
+            backing.alignment = TextAlignment.Center;
+            backing.fontStyle = FontStyle.Bold;
+            backing.fontSize = 64;
+            backing.characterSize = DefenseCueBackgroundCharacterSize;
+            backing.text = "●";
+            backing.color = new Color(0.16f, 0.17f, 0.18f, 0.9f);
+            backing.GetComponent<MeshRenderer>().sortingOrder = 19;
+            cue = cueObject.AddComponent<TextMesh>();
+            cue.anchor = TextAnchor.MiddleCenter;
+            cue.alignment = TextAlignment.Center;
+            cue.fontStyle = FontStyle.Bold;
+            cue.fontSize = 64;
+            cue.characterSize = DefenseCueCharacterSize;
+            cue.GetComponent<MeshRenderer>().sortingOrder = 20;
+        }
+
+        private void CenterCueText(TextMesh cue, TextMesh backing)
+        {
+            cue.transform.localPosition = DefenseCueLocalPosition;
+            var cueCenter = cue.GetComponent<MeshRenderer>().bounds.center;
+            var backgroundCenter = backing.GetComponent<MeshRenderer>().bounds.center;
             var localOffset = transform.InverseTransformVector(backgroundCenter - cueCenter);
-            defenseCue.transform.localPosition += new Vector3(
+            cue.transform.localPosition += new Vector3(
                 localOffset.x,
                 localOffset.y + DefenseCueOpticalVerticalOffset,
                 0f);

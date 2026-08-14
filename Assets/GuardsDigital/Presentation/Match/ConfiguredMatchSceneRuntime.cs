@@ -77,11 +77,13 @@ namespace GuardsDigital.Presentation.Match
             RoundView = new RoundActionUnityView();
             UndoRestartView = new UndoRestartUnityView();
             DiagnosticView = new DiagnosticLogUnityView();
+            MinionChoiceView = new MinionChoiceUnityView();
             BoardPresenter = new BoardInteractionPresenter(session, BoardView);
             HandsPresenter = new DirectorHandsPresenter(session, HandsView);
             RoundPresenter = new RoundActionPresenter(session, RoundView);
             UndoRestartPresenter = new UndoRestartPresenter(session, UndoRestartView);
             DiagnosticPresenter = new DiagnosticLogPresenter(session, DiagnosticView);
+            MinionChoicePresenter = new MinionChoicePresenter(session, MinionChoiceView);
 
             BoardView.BindIntentHandlers(
                 BoardPresenter.SubmitHero,
@@ -102,14 +104,27 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartView.UndoRequested += () => UndoRestartPresenter.Undo();
             UndoRestartView.RestartRequested += () => UndoRestartPresenter.Restart();
             DiagnosticView.ToggleRequested += () => DiagnosticPresenter.Toggle();
+            MinionChoiceView.CandidateSubmitted += candidate => MinionChoicePresenter.Submit(candidate);
+            MinionChoiceView.ConfirmRequested += () => MinionChoicePresenter.Confirm();
+            MinionChoiceView.CandidateHighlighted += minionId =>
+            {
+                // Only the board is refreshed here. This fires from inside the HUD's own draw, and
+                // rebuilding the immediate-mode models mid-pass would change the control count
+                // between the layout and repaint events of the same frame.
+                if (BoardPresenter.HighlightMinionChoiceCandidate(minionId))
+                {
+                    BoardPresenter.Refresh();
+                }
+            };
 
-            hud.Configure(HandsView, RoundView, UndoRestartView, DiagnosticView);
+            hud.Configure(HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView);
             coordinator = new MatchFeatureCoordinator(
                 BoardPresenter,
                 HandsPresenter,
                 RoundPresenter,
                 UndoRestartPresenter,
                 DiagnosticPresenter,
+                MinionChoicePresenter,
                 projection => hud.RenderHeader(new MatchHudHeaderViewModel(
                     projection.TieBreakerState,
                     projection.Setup)));
@@ -141,11 +156,13 @@ namespace GuardsDigital.Presentation.Match
         public RoundActionUnityView RoundView { get; }
         public UndoRestartUnityView UndoRestartView { get; }
         public DiagnosticLogUnityView DiagnosticView { get; }
+        public MinionChoiceUnityView MinionChoiceView { get; }
         public BoardInteractionPresenter BoardPresenter { get; }
         public DirectorHandsPresenter HandsPresenter { get; }
         public RoundActionPresenter RoundPresenter { get; }
         public UndoRestartPresenter UndoRestartPresenter { get; }
         public DiagnosticLogPresenter DiagnosticPresenter { get; }
+        public MinionChoicePresenter MinionChoicePresenter { get; }
         public string LastOperationDetail { get; private set; }
 
         public void RefreshAll()
@@ -205,6 +222,18 @@ namespace GuardsDigital.Presentation.Match
                 value.Command.Kind == DirectorCommandKind.DeclineDefense);
             return RoundPresenter.Submit(invocation);
         }
+
+        public PendingMinionBattleChoice PendingMinionBattleChoice =>
+            session.Projection.PendingMinionBattleChoice;
+
+        public bool SubmitMinionChoiceCandidate(MinionId minionId)
+        {
+            var candidate = MinionChoiceView.Model?.Candidates.SingleOrDefault(value =>
+                value.MinionId.Equals(minionId));
+            return MinionChoicePresenter.Submit(candidate);
+        }
+
+        public bool ConfirmMinionChoice() => MinionChoicePresenter.Confirm();
 
         public bool Undo() => UndoRestartPresenter.Undo();
 

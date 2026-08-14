@@ -83,6 +83,7 @@ namespace GuardsDigital.Tests.EditMode
             AssertPresenterDependencies<RoundActionPresenter, IRoundActionView>();
             AssertPresenterDependencies<UndoRestartPresenter, IUndoRestartView>();
             AssertPresenterDependencies<DiagnosticLogPresenter, IDiagnosticLogView>();
+            AssertPresenterDependencies<MinionChoicePresenter, IMinionChoiceView>();
 
             var presentationSources = new[]
             {
@@ -101,12 +102,14 @@ namespace GuardsDigital.Tests.EditMode
             var round = new CapturingRoundView();
             var undo = new CapturingUndoView();
             var diagnostics = new CapturingDiagnosticView();
+            var minionChoice = new CapturingMinionChoiceView();
             var coordinator = new MatchFeatureCoordinator(
                 new BoardInteractionPresenter(session, board),
                 new DirectorHandsPresenter(session, hands),
                 new RoundActionPresenter(session, round),
                 new UndoRestartPresenter(session, undo),
-                new DiagnosticLogPresenter(session, diagnostics));
+                new DiagnosticLogPresenter(session, diagnostics),
+                new MinionChoicePresenter(session, minionChoice));
 
             coordinator.RefreshAll();
 
@@ -124,6 +127,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(diagnostics.Model.Version, Is.EqualTo(session.Projection.Version));
             Assert.That(hands.Model.Hands, Has.Count.EqualTo(2));
             Assert.That(diagnostics.Model.Entries, Has.Count.EqualTo(1));
+            Assert.That(minionChoice.Model, Is.Null,
+                "No minion choice is pending here, so its prompt exposes no controls at all.");
+            Assert.That(minionChoice.RenderCount, Is.EqualTo(2),
+                "The prompt is refreshed with every other view even while it has nothing to show.");
             Assert.That(board.Model, Is.SameAs(firstBoard));
             Assert.That(hands.Model, Is.SameAs(firstHands));
             Assert.That(round.Model, Is.SameAs(firstRound));
@@ -961,6 +968,18 @@ namespace GuardsDigital.Tests.EditMode
         {
             public DiagnosticLogViewModel Model { get; private set; }
             public void Render(DiagnosticLogViewModel model) => Model = model;
+        }
+
+        private sealed class CapturingMinionChoiceView : IMinionChoiceView
+        {
+            public MinionChoiceViewModel Model { get; private set; }
+            public int RenderCount { get; private set; }
+
+            public void Render(MinionChoiceViewModel model)
+            {
+                Model = model;
+                RenderCount++;
+            }
         }
     }
 }
