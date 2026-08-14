@@ -482,6 +482,50 @@ function Get-StaleRetirementOwners($TempOwnerCells, $RiskCells, [string] $Roadma
     return $stale.ToArray()
 }
 
+# Pinned-constant checks (milestone 6.1aa): a documented value that names a source constant cannot
+# disagree with that constant. The ledger Tools/PinnedConstants.txt declares each pinned symbol, its
+# source file, and per governed document the designated current-claim pattern; the validator reads
+# the value from source and compares every pattern match. No existing check read a source constant
+# into a documentation comparison: Test-StatusCoherence compares documents to documents, and the
+# contract check resolves type names rather than values.
+function Read-PinnedConstantLedger([string[]] $Lines) {
+    $entries = New-Object System.Collections.Generic.List[object]
+    foreach ($line in $Lines) {
+        $trimmed = $line.Trim()
+        if ($trimmed.Length -eq 0 -or $trimmed.StartsWith('#')) { continue }
+        $parts = $trimmed.Split('|')
+        if ($parts.Count -lt 4) { continue }
+        $entries.Add([pscustomobject]@{ Symbol = $parts[0].Trim(); SourceFile = $parts[1].Trim(); Doc = $parts[2].Trim(); Pattern = $parts[3].Trim() })
+    }
+    return $entries.ToArray()
+}
+
+function Get-PinnedConstantValue([string] $SourceText, [string] $Symbol) {
+    $member = ($Symbol -split '\.')[-1]
+    $m = [regex]::Match($SourceText, "\bconst\s+\w+\s+$([regex]::Escape($member))\s*=\s*(\d+)")
+    if ($m.Success) { return [int]$m.Groups[1].Value }
+    return $null
+}
+
+function Get-StalePinnedConstantSites($Entries, [hashtable] $SourceValues, [hashtable] $DocTexts) {
+    $sites = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in $Entries) {
+        if (-not $SourceValues.ContainsKey($entry.Symbol)) { continue }
+        if (-not $DocTexts.ContainsKey($entry.Doc)) { continue }
+        $found = [regex]::Matches($DocTexts[$entry.Doc], $entry.Pattern)
+        if ($found.Count -eq 0) {
+            $sites.Add([pscustomobject]@{ Kind = 'missing-claim'; Doc = $entry.Doc; Symbol = $entry.Symbol; Stated = ''; Expected = $SourceValues[$entry.Symbol] })
+            continue
+        }
+        foreach ($m in $found) {
+            if ([int]$m.Groups[1].Value -ne $SourceValues[$entry.Symbol]) {
+                $sites.Add([pscustomobject]@{ Kind = 'stale'; Doc = $entry.Doc; Symbol = $entry.Symbol; Stated = $m.Groups[1].Value; Expected = $SourceValues[$entry.Symbol] })
+            }
+        }
+    }
+    return $sites.ToArray()
+}
+
 # Completion-history containment (milestone 6.1ac): governance routes a completed milestone's
 # narrative to its commit body and archive row, leaving the brief its compact route. duplicate-history
 # cannot reach a narrative that never left the active document - since archive rows became one-liners
@@ -674,6 +718,17 @@ function Invoke-SelfTests {
     Expect 'section table rows parse without header or separator' ($tableRows.Count -eq 2 -and $tableRows[0][1] -eq 'two')
     Expect 'a missing section parses to zero rows for the vacuity guard' (@(Get-SectionTableRows $tableText 'Absent').Count -eq 0)
 
+    # Pinned-constant checks (milestone 6.1aa).
+    $pinnedTestEntries = @(Read-PinnedConstantLedger @('# c', 'T.Version | src/T.cs | DOC.md | schema v(\d+) persists'))
+    Expect 'pinned ledger parses an entry' ($pinnedTestEntries.Count -eq 1 -and $pinnedTestEntries[0].Pattern -eq 'schema v(\d+) persists')
+    Expect 'pinned value reads from source' ((Get-PinnedConstantValue 'public const int Version = 7;' 'T.Version') -eq 7)
+    Expect 'a missing symbol resolves to null for the loud guard' ($null -eq (Get-PinnedConstantValue 'public int Version = 7;' 'T.Version'))
+    $pinnedValues = @{ 'T.Version' = 7 }
+    Expect 'an agreeing designated claim passes' (@(Get-StalePinnedConstantSites $pinnedTestEntries $pinnedValues @{ 'DOC.md' = 'Today schema v7 persists both continuations.' }).Count -eq 0)
+    Expect 'a disagreeing designated claim is reported' (@(Get-StalePinnedConstantSites $pinnedTestEntries $pinnedValues @{ 'DOC.md' = 'Today schema v6 persists both continuations.' })[0].Kind -eq 'stale')
+    Expect 'a milestone-qualified historical mention stays legal' (@(Get-StalePinnedConstantSites $pinnedTestEntries $pinnedValues @{ 'DOC.md' = "Milestone 5.4 pinned schema v4 digests. Today schema v7 persists both continuations." }).Count -eq 0)
+    Expect 'a document without its designated claim is reported' (@(Get-StalePinnedConstantSites $pinnedTestEntries $pinnedValues @{ 'DOC.md' = 'No claim here at all.' })[0].Kind -eq 'missing-claim')
+
     # Completion-history containment (milestone 6.1ac).
     $historySession = "- Current completed milestone: **2.5**.`n- Milestone **2.5** completed on 2026-08-14. One sentence.`n"
     Expect 'one matching completion statement passes' (@(Test-CompletionHistory $historySession).Count -eq 0)
@@ -777,6 +832,31 @@ $temporaryOwnerCells = @($temporaryStructureRows | Where-Object { $_.Count -ge 3
 $riskReassessmentCells = @($activeRiskRows | Where-Object { $_.Count -ge 6 } | ForEach-Object { $_[5] })
 foreach ($staleOwner in (Get-StaleRetirementOwners $temporaryOwnerCells $riskReassessmentCells $roadmapCorpus)) {
     Add-Issue 'ERROR' 'stale-retirement-owner' "$staleOwner. A retirement or reassessment assigned to a milestone that already shipped never happens; move it to a live owner."
+}
+
+# Pinned-constant checks (milestone 6.1aa).
+$pinnedLedgerPath = Join-Path $PSScriptRoot 'PinnedConstants.txt'
+$pinnedConstantEntries = if (Test-Path -LiteralPath $pinnedLedgerPath) { @(Read-PinnedConstantLedger ([IO.File]::ReadAllLines($pinnedLedgerPath))) } else { @() }
+if ($pinnedConstantEntries.Count -eq 0) { Add-Issue 'ERROR' 'no-pinned-constants' 'Tools/PinnedConstants.txt is missing or holds no entries; the stale-pinned-constant check would pass vacuously.' }
+$pinnedSourceValues = @{}
+foreach ($pinnedGroup in ($pinnedConstantEntries | Group-Object Symbol)) {
+    $groupEntry = $pinnedGroup.Group[0]
+    $pinnedSourcePath = Join-Path $projectRoot $groupEntry.SourceFile
+    $pinnedValue = if (Test-Path -LiteralPath $pinnedSourcePath) { Get-PinnedConstantValue (Read-Utf8 $pinnedSourcePath) $groupEntry.Symbol } else { $null }
+    if ($null -eq $pinnedValue) {
+        Add-Issue 'ERROR' 'missing-pinned-symbol' "Pinned constant $($groupEntry.Symbol) resolves to no declaration in $($groupEntry.SourceFile); a renamed constant cannot silently retire its own check."
+    }
+    else { $pinnedSourceValues[$groupEntry.Symbol] = $pinnedValue }
+}
+$pinnedDocTexts = @{}
+foreach ($pinnedDoc in ($pinnedConstantEntries | ForEach-Object { $_.Doc } | Sort-Object -Unique)) {
+    $pinnedDocPath = Join-Path $docsRoot $pinnedDoc
+    if (Test-Path -LiteralPath $pinnedDocPath) { $pinnedDocTexts[$pinnedDoc] = Read-Utf8 $pinnedDocPath }
+    else { Add-Issue 'ERROR' 'missing-pinned-claim' "Pinned-constant document $pinnedDoc does not exist." }
+}
+foreach ($pinnedSite in (Get-StalePinnedConstantSites $pinnedConstantEntries $pinnedSourceValues $pinnedDocTexts)) {
+    if ($pinnedSite.Kind -eq 'missing-claim') { Add-Issue 'ERROR' 'missing-pinned-claim' "$($pinnedSite.Doc) never states $($pinnedSite.Symbol)'s current value in its designated form; the current claim must exist, not merely avoid being wrong." }
+    else { Add-Issue 'ERROR' 'stale-pinned-constant' "$($pinnedSite.Doc) states $($pinnedSite.Stated) where $($pinnedSite.Symbol) is $($pinnedSite.Expected). A designated current-claim section cannot disagree with the source constant it pins." }
 }
 
 # Completion-history containment (milestone 6.1ac).

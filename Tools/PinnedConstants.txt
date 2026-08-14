@@ -1,0 +1,13 @@
+# Pinned-constant ledger, read by the stale-pinned-constant check in
+# Tools/Validate-LivingDocumentation.ps1 (milestone 6.1aa).
+# Each entry line: source symbol | source file | governed document | designated current-claim
+# pattern (a regex with one numeric capture group).
+# The validator reads the constant's value from the source file and requires every match of the
+# designated pattern in the governed document to state that value. A governed document in which
+# the pattern never matches fails loudly, so a rephrasing cannot silently retire the document's
+# current claim. Milestone-qualified historical statements do not use the designated forms and
+# stay legal untouched.
+AuthoritativeSnapshotSerializer.CurrentSchemaVersion | Assets/GuardsDigital/Core/Snapshots/AuthoritativeSnapshotSerializer.cs | SESSION_BRIEF.md | schema v(\d+) persists
+AuthoritativeSnapshotSerializer.CurrentSchemaVersion | Assets/GuardsDigital/Core/Snapshots/AuthoritativeSnapshotSerializer.cs | Project/ARCHITECTURE.md | durable schema-version-(\d+) compatibility corpus
+AuthoritativeSnapshotSerializer.CurrentSchemaVersion | Assets/GuardsDigital/Core/Snapshots/AuthoritativeSnapshotSerializer.cs | Project/CURRENT_IMPLEMENTATION.md | current persisted snapshot schema is v(\d+)
+AuthoritativeSnapshotSerializer.CurrentSchemaVersion | Assets/GuardsDigital/Core/Snapshots/AuthoritativeSnapshotSerializer.cs | RULES_LEDGER.md | Snapshot schema v(\d+), restore

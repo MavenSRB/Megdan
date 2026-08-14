@@ -270,7 +270,7 @@ Non-goals: No rewriting of archive sections, which are append-only. No change to
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61z-prove-the-documentation-graph-is-connected-completion-evidence).
 
-### [ ] 6.1aa Pin documented constants to their source
+### [x] 6.1aa Pin documented constants to their source
 
 Observable outcome: A documented value that names a source constant cannot disagree with that constant.
 
@@ -287,6 +287,8 @@ Acceptance checks:
 Closing check: the check run at `dd535ae`, observed reporting the three v6 sites; run at the post-fix revision, observed passing.
 
 Non-goals: No serializer change, no schema change, no reopening of the v7 migrate-or-reject decision, and no rewriting of correctly milestone-qualified history.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61aa-pin-documented-constants-to-their-source-completion-evidence).
 
 ### [x] 6.1ab Fail on retired structures and shipped retirement owners
 
