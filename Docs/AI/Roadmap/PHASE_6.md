@@ -616,7 +616,7 @@ Acceptance checks:
 
 Non-goals: No new Skill, Sequence, Optional, Conditional, or Choose foundation; no new leaf effect merely to exercise Repeat; no Wasp definition or text interpretation, invented scripting language, card-name/hero-name branch, production presentation, or source-unverified special case.
 
-### [ ] 6.8 Implement reusable modifiers, permissions, immunity, and effective characteristics
+### [~] 6.8 Implement reusable modifiers, permissions, immunity, and effective characteristics
 
 Observable outcome: Synthetic effects and continuous sources apply the general typed modifier, restriction, permission, immunity, and effective-characteristic contracts before verified hero content is introduced.
 
