@@ -103,14 +103,33 @@ namespace GuardsDigital.Core.Participants
                 false);
         }
 
+        /// <summary>
+        /// The ordinary configuration plus milestone 6.2a's Skill-bearing card in each hand.
+        ///
+        /// Separate from the default deliberately: the default configuration is what every pinned
+        /// digest and card-matrix fixture measures, so the Skill fixture must not change it.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForSkillFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                true);
+        }
+
         private static PlaceholderOneVsOneTestConfiguration Create(
-            TieBreakerState tieBreakerState)
+            TieBreakerState tieBreakerState,
+            bool withSkillCard = false)
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
-            var redHand = PlaceholderMovementHand.CreateRed(
-                new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue));
-            var blueHand = PlaceholderMovementHand.CreateBlue(
-                new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue));
+            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var redHand = withSkillCard
+                ? PlaceholderMovementHand.CreateRedWithSkill(redHeroId)
+                : PlaceholderMovementHand.CreateRed(redHeroId);
+            var blueHand = withSkillCard
+                ? PlaceholderMovementHand.CreateBlueWithSkill(blueHeroId)
+                : PlaceholderMovementHand.CreateBlue(blueHeroId);
 
             return new PlaceholderOneVsOneTestConfiguration(
                 participants,

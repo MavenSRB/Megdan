@@ -60,8 +60,10 @@ The names in this shard are specification vocabulary rather than declared code t
 
 | Capability | Status | Owning milestone |
 | --- | --- | --- |
-| Active-effect lifecycle, checkpoints, and continuous sources | Implemented foundation (5.4, checkpoint scoping corrected at 6.1q); concrete effect producers and general execution pending | 6.2a onward |
-| `RepeatAction`, `PerformAction`, `ReplaceAction`, `SimultaneousBatch` control flow | Specified, not implemented | 6.2a (non-Repeat), 6.7 (Repeat) |
+| Active-effect lifecycle, checkpoints, and continuous sources | Implemented. Milestone 5.4 built the lifecycle, 6.1q corrected checkpoint scoping, 6.1ap made checkpoints resolver-emitted, and 6.2a split definition semantics onto the catalog from runtime bindings on the instance and added the first concrete producer. | Implemented |
+| `Sequence`, `Optional`, `Conditional`, `Choose` control flow | Implemented at 6.2a on a stable flat node table, with `Mandatory`, `may`, `up to`, and `if able` kept as four distinct behaviors | Implemented |
+| `PerformAction`, `ReplaceAction`, `SimultaneousBatch` control flow | Specified, not implemented. Milestone 6.2a built only the four control nodes its acceptance check names; these three were never in its scope despite an earlier reading of this row. `PerformAction` needs a resolution stack the dispatcher does not have, `ReplaceAction` would generalise the Fast-Travel replacement seam, and `SimultaneousBatch` has nothing to batch until a board-mutating capability exists. | Unowned; reassess at 6.2b |
+| `RepeatAction` control flow | Specified, not implemented | 6.7 |
 | `RequestLanePush` recording | Implemented at 6.1; consumption not implemented | 6.9 |
 | Lane Push Wave/Battle-Zone stages, respawn, and transition (`ResolveLanePushTransition`, `MinionRespawnEffect` vocabulary) | Specified, not implemented | 6.10-6.11 |
 | End-of-round token/marker cleanup and retrieval-time Active-effect cancellation | Retrieval and cancellation checkpoint implemented (3.8c); token/marker cleanup specified only | 6.12-6.13 |

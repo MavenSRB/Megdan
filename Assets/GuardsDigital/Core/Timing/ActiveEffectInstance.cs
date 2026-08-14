@@ -1,5 +1,6 @@
 using System;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Timing
@@ -16,6 +17,9 @@ namespace GuardsDigital.Core.Timing
         public ActiveEffectInstance(
             ActiveEffectId id,
             ActiveEffectDefinition definition,
+            HeroId controllerHeroId,
+            TeamSide controllerTeamSide,
+            HeroId affectedHeroId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId sourceActionDefinitionId,
             int createdRoundIndex,
@@ -28,6 +32,12 @@ namespace GuardsDigital.Core.Timing
         {
             if (!id.IsDefined) throw new ArgumentException("An Active-effect instance requires an ID.", nameof(id));
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+            if (!controllerHeroId.IsDefined)
+                throw new ArgumentException("An Active effect requires a controller hero.", nameof(controllerHeroId));
+            if (controllerTeamSide == TeamSide.None)
+                throw new ArgumentException("An Active effect requires a controller team.", nameof(controllerTeamSide));
+            if (definition.AffectedScope == ActiveEffectAffectedScopeKind.Hero && !affectedHeroId.IsDefined)
+                throw new ArgumentException("A hero-scoped Active effect requires the affected hero.", nameof(affectedHeroId));
             if (!sourceCardInstanceId.IsDefined || !sourceActionDefinitionId.IsDefined)
                 throw new ArgumentException("An Active effect requires source card and action identities.");
             if (createdRoundIndex < 1 || createdTurnIndex < 1 || creationSequence < 0)
@@ -40,6 +50,9 @@ namespace GuardsDigital.Core.Timing
                 throw new ArgumentException("An ended effect requires its exact ending checkpoint.");
 
             Id = id;
+            ControllerHeroId = controllerHeroId;
+            ControllerTeamSide = controllerTeamSide;
+            AffectedHeroId = affectedHeroId;
             SourceCardInstanceId = sourceCardInstanceId;
             SourceActionDefinitionId = sourceActionDefinitionId;
             CreatedRoundIndex = createdRoundIndex;
@@ -53,6 +66,20 @@ namespace GuardsDigital.Core.Timing
 
         public ActiveEffectId Id { get; }
         public ActiveEffectDefinition Definition { get; }
+
+        /// <summary>
+        /// Runtime binding, not definition semantics. Milestone 6.2a moved these off
+        /// <see cref="ActiveEffectDefinition"/>: who controls this occurrence and whom it affects are
+        /// facts about this instance, while the definition describes what the effect is. The split is
+        /// what lets a restored snapshot supply these from the payload while taking every semantic
+        /// field from the trusted catalog.
+        /// </summary>
+        public HeroId ControllerHeroId { get; }
+
+        public TeamSide ControllerTeamSide { get; }
+
+        public HeroId AffectedHeroId { get; }
+
         public CardInstanceId SourceCardInstanceId { get; }
         public ActionDefinitionId SourceActionDefinitionId { get; }
         public int CreatedRoundIndex { get; }

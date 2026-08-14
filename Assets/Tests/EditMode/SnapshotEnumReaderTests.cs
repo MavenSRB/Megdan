@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
@@ -38,12 +40,18 @@ namespace GuardsDigital.Tests.EditMode
             typeof(AttackTargetKind),
             typeof(CardActionContinuationKind),
             typeof(TimingCheckpoint),
-            typeof(ActiveEffectDurationKind),
-            typeof(ActiveEffectAffectedScopeKind),
-            typeof(ActiveEffectCancellationCondition),
+            // Milestone 6.2a removed ActiveEffectDurationKind, ActiveEffectAffectedScopeKind and
+            // ActiveEffectCancellationCondition from this list because they left the wire entirely:
+            // they are definition semantics a restore now takes from the registered capability
+            // catalog, so no payload states them and there is nothing to decode.
             typeof(ActiveEffectPhase),
             typeof(ContinuousRuleSourceKind),
-            typeof(StandardMinionType)
+            typeof(StandardMinionType),
+            typeof(EffectExecutionResultKind),
+            typeof(EffectChoiceKind),
+            typeof(EffectChoiceCommandKind),
+            typeof(EffectValueKind),
+            typeof(EffectChoiceCandidateKind)
         };
 
         [Test]

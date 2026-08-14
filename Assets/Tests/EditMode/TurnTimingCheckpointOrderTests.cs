@@ -405,7 +405,10 @@ namespace GuardsDigital.Tests.EditMode
             var timing = new ActiveEffectLifecycle();
             timing.Create(
                 ObserverId,
-                ObservingDefinition(controller),
+                ObservingDefinition(),
+                controller,
+                TeamSide.Red,
+                default,
                 sourceCardInstanceId,
                 ObserverSourceAction,
                 1,
@@ -490,7 +493,8 @@ namespace GuardsDigital.Tests.EditMode
 
             var timing = new ActiveEffectLifecycle();
             timing.Create(
-                ObserverId, ObservingDefinition(redHeroId), ObserverSourceCard, ObserverSourceAction, 1, 1);
+                ObserverId, ObservingDefinition(), redHeroId, TeamSide.Red, default,
+                ObserverSourceCard, ObserverSourceAction, 1, 1);
 
             return new MatchSession(new MatchSessionInitialState(
                 scenario, setup, new[] { map }, initialTiming: timing));
@@ -506,13 +510,10 @@ namespace GuardsDigital.Tests.EditMode
         /// a card that is not in the match, so nothing an ordinary action does ends it early; that one
         /// scenario anchors it to the acting card precisely so the cancellation does fire.
         /// </summary>
-        private static ActiveEffectDefinition ObservingDefinition(HeroId controller) =>
+        private static ActiveEffectDefinition ObservingDefinition() =>
             new ActiveEffectDefinition(
                 "timing-order-observer-definition",
-                controller,
-                TeamSide.Red,
                 ActiveEffectAffectedScopeKind.Global,
-                default,
                 ActiveEffectDurationKind.ThisRound,
                 TimingCheckpoint.TurnStarted,
                 TimingCheckpoint.TurnStarted,

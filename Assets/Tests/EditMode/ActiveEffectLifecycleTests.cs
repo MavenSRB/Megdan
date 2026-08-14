@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Participants;
@@ -26,17 +27,17 @@ namespace GuardsDigital.Tests.EditMode
         public void Definition_RequiresCompleteNonContradictoryLifecycleMetadata()
         {
             Assert.Throws<ArgumentException>(() => new ActiveEffectDefinition(
-                "bad", RedHero, TeamSide.Red, ActiveEffectAffectedScopeKind.None, default,
+                "bad", ActiveEffectAffectedScopeKind.None,
                 ActiveEffectDurationKind.ThisTurn, TimingCheckpoint.ActionStarted,
                 TimingCheckpoint.ActionStarted, TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
                 Conditions(), false, "SyntheticModifier", "bad-unique", Array.Empty<TimingCheckpoint>()));
             Assert.Throws<ArgumentException>(() => new ActiveEffectDefinition(
-                "bad", RedHero, TeamSide.Red, ActiveEffectAffectedScopeKind.ControllerHero, default,
+                "bad", ActiveEffectAffectedScopeKind.ControllerHero,
                 ActiveEffectDurationKind.ThisTurn, TimingCheckpoint.ActionStarted,
                 TimingCheckpoint.ActionStarted, TimingCheckpoint.RoundEnd,
                 Conditions(), false, "SyntheticModifier", "bad-unique", Array.Empty<TimingCheckpoint>()));
             Assert.Throws<ArgumentException>(() => new ActiveEffectDefinition(
-                "bad", RedHero, TeamSide.Red, ActiveEffectAffectedScopeKind.ControllerHero, default,
+                "bad", ActiveEffectAffectedScopeKind.ControllerHero,
                 ActiveEffectDurationKind.NextTurnAfterPlayingCards, TimingCheckpoint.ActionEnded,
                 TimingCheckpoint.TurnStarted, TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
                 Conditions(), true, "SyntheticModifier", "bad-unique", Array.Empty<TimingCheckpoint>()));
@@ -213,13 +214,21 @@ namespace GuardsDigital.Tests.EditMode
             var redAction = configuration.CardDefinitions.Single(definition =>
                     definition.Reference.Equals(redCard.DefinitionReference))
                 .ActionDefinitions[0].Id;
+            // Milestone 6.2a: an Active effect that crosses the snapshot boundary must be one a
+            // registered capability declares, because restore rebinds its semantics from the catalog
+            // rather than rebuilding them from the payload. A fixture-local definition is exactly what
+            // that boundary now refuses, so this case uses the catalog-declared synthetic effect.
             var lifecycle = new ActiveEffectLifecycle();
-            lifecycle.Create(new ActiveEffectId("durable-next-turn"), Definition(
-                ActiveEffectDurationKind.NextTurn,
-                TimingCheckpoint.ActionEnded,
-                TimingCheckpoint.TurnStarted,
-                TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
-                true), redCard.Id, redAction, 1, 1);
+            lifecycle.Create(
+                new ActiveEffectId("durable-mark"),
+                SyntheticEffectCapabilities.DurableDefinition,
+                RedHero,
+                TeamSide.Red,
+                default,
+                redCard.Id,
+                redAction,
+                1,
+                1);
             lifecycle.AddContinuousSource(new ContinuousRuleSource(
                 "durable-ultimate", ContinuousRuleSourceKind.Ultimate, RedHero,
                 "SyntheticPermission", "WhileControllerHeroOnBoard", redCard.Id));
@@ -322,7 +331,10 @@ namespace GuardsDigital.Tests.EditMode
                 "source-card-definition");
             var activeEffect = new ActiveEffectInstance(
                 new ActiveEffectId("source-card-event"),
-                definition,
+                definition.Definition,
+                definition.ControllerHeroId,
+                definition.ControllerTeamSide,
+                definition.AffectedHeroId,
                 redCard.Id,
                 redAction,
                 1,
@@ -461,7 +473,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[] { ActiveEffectLifecycleEventKind.Cancelled }));
         }
 
-        private static ActiveEffectDefinition Definition(
+        private static EffectSpec Definition(
             ActiveEffectDurationKind duration,
             TimingCheckpoint creation,
             TimingCheckpoint activation,
@@ -475,10 +487,13 @@ namespace GuardsDigital.Tests.EditMode
             HeroId affectedHero = default)
         {
             if (!controller.IsDefined) controller = RedHero;
-            return new ActiveEffectDefinition(id, controller, side,
-                scope, affectedHero, duration, creation, activation,
-                expiration, Conditions(), carries, "SyntheticModifier", id + "-unique",
-                triggers ?? Array.Empty<TimingCheckpoint>());
+            return new EffectSpec(
+                new ActiveEffectDefinition(id, scope, duration, creation, activation,
+                    expiration, Conditions(), carries, "SyntheticModifier", id + "-unique",
+                    triggers ?? Array.Empty<TimingCheckpoint>()),
+                controller,
+                side,
+                affectedHero);
         }
 
         private static ActiveEffectCancellationCondition[] Conditions() => new[]

@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -375,6 +376,18 @@ namespace GuardsDigital.Core.Cards
             ActionOffer offer)
         {
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryStartAttack(resolutionId, offer));
+        }
+
+        public RoundResolutionResult TryStartSkill(
+            ActionResolutionId resolutionId,
+            ActionOffer offer)
+        {
+            return ExecuteTurnCommand(() => CurrentTurnAuthority.TryStartSkill(resolutionId, offer));
+        }
+
+        public RoundResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
+        {
+            return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerEffectChoice(command));
         }
 
         public RoundResolutionResult TryAnswerAttackTarget(AttackTargetChoiceCommand command)

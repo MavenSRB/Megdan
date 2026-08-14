@@ -216,6 +216,5 @@ See [CORE_MODEL.md](CORE_MODEL.md#contract-implementation-status) for what this 
 
 | Contract | State | Owning milestone |
 | --- | --- | --- |
-| `PendingResolution` | Specified, not implemented as a general frame | 6.2a |
 | `DistanceQuery` | Specified, not implemented | 6.4 |
 | `RangeQuery` | Specified, not implemented | 6.8 |

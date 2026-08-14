@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -21,10 +23,15 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
-        // v7: the board section serializes each remaining minion's current coordinate alongside
-        // its identity; v6 reconstructed positions from setup placements and cannot express a
-        // moved minion, so it is explicitly rejected (milestone 6.1s migrate-or-reject decision).
-        public const int CurrentSchemaVersion = 7;
+        // v8: the Active-effect section carries identity and runtime state only - scope, duration, the
+        // three lifecycle checkpoints, cancellation conditions, the cross-round flag, effect kind,
+        // uniqueness key, and trigger checkpoints are gone from the wire and come from the registered
+        // capability catalog instead; a pending Skill continuation is representable. v7 is explicitly
+        // rejected rather than migrated (milestone 6.2a migrate-or-reject decision): it states those
+        // semantics inline and carries no capability identity, so there is no field to migrate the
+        // trusted binding from, and accepting it would mean trusting a payload to say what an effect
+        // means. v7 itself rejected v6 for the analogous reason at milestone 6.1s.
+        public const int CurrentSchemaVersion = 8;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full
@@ -43,7 +50,10 @@ namespace GuardsDigital.Core.Snapshots
             SerializedCharacterCount = 0;
         }
 
-        public static string Serialize(RoundResolutionAuthority round, AdjacentMoveAuthority board)
+        public static string Serialize(
+            RoundResolutionAuthority round,
+            AdjacentMoveAuthority board,
+            EffectCapabilityCatalog capabilities = null)
         {
             if (round == null) throw new ArgumentNullException(nameof(round));
             if (board == null) throw new ArgumentNullException(nameof(board));
@@ -55,6 +65,8 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(Magic);
                 writer.Write(CurrentSchemaVersion);
                 WriteDefinitions(writer, round.Definitions);
+                WriteCapabilityRegistrations(
+                    writer, capabilities ?? SyntheticEffectCapabilities.CreateCatalog());
                 WriteParticipants(writer, round.Participants);
                 WriteBoard(writer, board);
                 WriteCards(writer, round.Instances);
@@ -82,8 +94,12 @@ namespace GuardsDigital.Core.Snapshots
             string payload,
             IEnumerable<CardDefinition> currentDefinitions,
             IEnumerable<BoardMapDefinition> currentMapDefinitions,
-            IEnumerable<QuickGameMinionSetupState> minions)
+            IEnumerable<QuickGameMinionSetupState> minions,
+            EffectCapabilityCatalog capabilities = null)
         {
+            // The trusted capability set a restore rebinds against. Defaulted rather than required so
+            // existing callers keep compiling; the configured session always supplies the real one.
+            capabilities = capabilities ?? SyntheticEffectCapabilities.CreateCatalog();
             if (string.IsNullOrWhiteSpace(payload))
             {
                 throw new SnapshotLoadException(
@@ -126,10 +142,11 @@ namespace GuardsDigital.Core.Snapshots
                     var mapCatalog = new BoardMapCatalog(
                         currentMapDefinitions ?? throw new ArgumentNullException(nameof(currentMapDefinitions)));
                     var definitions = ValidateDefinitions(reader, currentDefinitions);
+                    ValidateCapabilityRegistrations(reader, capabilities);
                     var participants = ReadParticipants(reader);
                     var board = ReadBoard(reader, mapCatalog, minions);
                     var cards = ReadCards(reader, definitions, participants);
-                    var round = ReadRound(reader, definitions, cards, participants, board);
+                    var round = ReadRound(reader, definitions, cards, participants, board, capabilities);
                     if (stream.Position != stream.Length)
                     {
                         throw Malformed("Snapshot contains unexpected trailing data.");

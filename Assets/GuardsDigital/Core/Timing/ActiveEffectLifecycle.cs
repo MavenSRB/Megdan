@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -78,6 +79,9 @@ namespace GuardsDigital.Core.Timing
         public ActiveEffectLifecycleEvent Create(
             ActiveEffectId id,
             ActiveEffectDefinition definition,
+            HeroId controllerHeroId,
+            TeamSide controllerTeamSide,
+            HeroId affectedHeroId,
             CardInstanceId sourceCardId,
             ActionDefinitionId sourceActionId,
             int roundIndex,
@@ -86,7 +90,8 @@ namespace GuardsDigital.Core.Timing
             if (effects.Any(effect => effect.Id.Equals(id)))
                 throw new ArgumentException("Active-effect instance IDs must be unique.", nameof(id));
             var duplicate = effects.FirstOrDefault(effect => effect.Phase != ActiveEffectPhase.Ended &&
-                SharesUniquenessIdentity(effect.Definition, definition));
+                SharesUniquenessIdentity(
+                    effect, definition, controllerHeroId, controllerTeamSide, affectedHeroId));
             if (duplicate != null)
                 return new ActiveEffectLifecycleEvent(ActiveEffectLifecycleEventKind.DuplicateSuppressed,
                     duplicate.Id,
@@ -94,8 +99,8 @@ namespace GuardsDigital.Core.Timing
                     roundIndex,
                     turnIndex);
 
-            var effect = new ActiveEffectInstance(id, definition, sourceCardId, sourceActionId,
-                roundIndex, turnIndex, nextCreationSequence++);
+            var effect = new ActiveEffectInstance(id, definition, controllerHeroId, controllerTeamSide,
+                affectedHeroId, sourceCardId, sourceActionId, roundIndex, turnIndex, nextCreationSequence++);
             effects.Add(effect);
             if (definition.ActivationCheckpoint == definition.CreationCheckpoint &&
                 definition.DurationKind != ActiveEffectDurationKind.NextTurn &&
@@ -188,6 +193,9 @@ namespace GuardsDigital.Core.Timing
             var clonedEffects = effects.Select(effect => new ActiveEffectInstance(
                 effect.Id,
                 effect.Definition,
+                effect.ControllerHeroId,
+                effect.ControllerTeamSide,
+                effect.AffectedHeroId,
                 effect.SourceCardInstanceId,
                 effect.SourceActionDefinitionId,
                 effect.CreatedRoundIndex,
@@ -217,7 +225,7 @@ namespace GuardsDigital.Core.Timing
             TieBreakerState tieBreaker)
         {
             return effects
-                .OrderBy(effect => effect.Definition.ControllerTeamSide == tieBreaker.RevealedSide ? 0 : 1)
+                .OrderBy(effect => effect.ControllerTeamSide == tieBreaker.RevealedSide ? 0 : 1)
                 .ThenBy(effect => effect.CreationSequence)
                 .ThenBy(effect => effect.Id);
         }
@@ -227,25 +235,35 @@ namespace GuardsDigital.Core.Timing
             if (!heroId.IsDefined) return true;
             if (effect.Definition.AffectedScope == ActiveEffectAffectedScopeKind.Global) return true;
             if (effect.Definition.AffectedScope == ActiveEffectAffectedScopeKind.ControllerHero)
-                return effect.Definition.ControllerHeroId.Equals(heroId);
+                return effect.ControllerHeroId.Equals(heroId);
             return effect.Definition.AffectedScope != ActiveEffectAffectedScopeKind.Hero ||
-                effect.Definition.AffectedHeroId.Equals(heroId);
+                effect.AffectedHeroId.Equals(heroId);
         }
 
-        private static bool SharesUniquenessIdentity(ActiveEffectDefinition existing, ActiveEffectDefinition candidate)
+        /// <summary>
+        /// Uniqueness compares the shared definition key against the scope-specific identity, which
+        /// milestone 6.2a moved onto the instance: the key is what the effect is, the controller and
+        /// affected hero are which occurrence of it this is. Milestone 6.1q established the scoping.
+        /// </summary>
+        private static bool SharesUniquenessIdentity(
+            ActiveEffectInstance existing,
+            ActiveEffectDefinition candidate,
+            HeroId candidateControllerHeroId,
+            TeamSide candidateControllerTeamSide,
+            HeroId candidateAffectedHeroId)
         {
-            if (!string.Equals(existing.UniquenessKey, candidate.UniquenessKey, StringComparison.Ordinal))
+            if (!string.Equals(existing.Definition.UniquenessKey, candidate.UniquenessKey, StringComparison.Ordinal))
                 return false;
-            if (existing.AffectedScope != candidate.AffectedScope)
+            if (existing.Definition.AffectedScope != candidate.AffectedScope)
                 return false;
             switch (candidate.AffectedScope)
             {
                 case ActiveEffectAffectedScopeKind.ControllerHero:
-                    return existing.ControllerHeroId.Equals(candidate.ControllerHeroId);
+                    return existing.ControllerHeroId.Equals(candidateControllerHeroId);
                 case ActiveEffectAffectedScopeKind.Hero:
-                    return existing.AffectedHeroId.Equals(candidate.AffectedHeroId);
+                    return existing.AffectedHeroId.Equals(candidateAffectedHeroId);
                 case ActiveEffectAffectedScopeKind.ControllerTeam:
-                    return existing.ControllerTeamSide == candidate.ControllerTeamSide;
+                    return existing.ControllerTeamSide == candidateControllerTeamSide;
                 default:
                     return true;
             }

@@ -198,8 +198,21 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 6.2a widened this from the card-action dispatcher alone to the round and turn
+        /// authorities, which is the literal wording of its fourth acceptance check: action-specific
+        /// algorithms must not accumulate in the outer session, round, or turn dispatcher seams.
+        ///
+        /// <c>MatchSession</c> is deliberately absent and cannot join. It calls
+        /// <c>DefenseValueQuery.Calculate</c> at <c>CreateDefensePreview</c>, which is legitimate:
+        /// milestone 5.8b put the Defense preview in the projection precisely so presentation never
+        /// re-queries modifiers. <c>EffectSeamConformanceTests</c> covers <c>MatchSession</c> for the
+        /// effect-node half of the same concern.
+        /// </summary>
         private static IEnumerable<Type> DispatcherTypes =>
-            ILConformanceScanner.WithNestedTypes(typeof(CardActionResolutionAuthority));
+            ILConformanceScanner.WithNestedTypes(typeof(CardActionResolutionAuthority))
+                .Concat(ILConformanceScanner.WithNestedTypes(typeof(RoundResolutionAuthority)))
+                .Concat(ILConformanceScanner.WithNestedTypes(typeof(TurnResolutionAuthority)));
 
         private static IEnumerable<Type> TestTypes
         {

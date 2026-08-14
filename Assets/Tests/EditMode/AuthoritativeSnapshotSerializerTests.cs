@@ -284,6 +284,17 @@ namespace GuardsDigital.Tests.EditMode
                         reader.ReadString();
                     }
 
+                    // Milestone 6.2a inserted the capability-registration section between the definition
+                    // table and the participants. Walked, not skipped by offset, for the same reason
+                    // this whole helper replays the writer's layout: a fixed offset would silently
+                    // point at the wrong field the next time a section moves.
+                    var capabilityCount = reader.ReadInt32();
+                    for (var index = 0; index < capabilityCount; index++)
+                    {
+                        reader.ReadString();
+                        reader.ReadInt32();
+                    }
+
                     var teamCount = reader.ReadInt32();
                     Assert.That(teamCount, Is.GreaterThan(0), "The fixture must serialize at least one team.");
                     reader.ReadString();

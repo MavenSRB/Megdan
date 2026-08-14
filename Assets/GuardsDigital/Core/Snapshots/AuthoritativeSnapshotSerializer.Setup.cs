@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -27,6 +28,55 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(definition.Id.Value);
                 writer.Write(definition.ContentRevision);
             }
+        }
+
+        /// <summary>
+        /// Milestone 6.2a. Records exactly which capability contract set this payload was written
+        /// against, so a restore can refuse a build whose registered capabilities differ rather than
+        /// discovering the mismatch later, mid-effect. Mirrors <see cref="WriteDefinitions"/>.
+        /// </summary>
+        private static void WriteCapabilityRegistrations(
+            BinaryWriter writer,
+            EffectCapabilityCatalog capabilities)
+        {
+            writer.Write(capabilities.Registered.Count);
+            foreach (var reference in capabilities.Registered)
+            {
+                writer.Write(reference.CapabilityId.Value);
+                writer.Write(reference.Revision);
+            }
+        }
+
+        private static void ValidateCapabilityRegistrations(
+            BinaryReader reader,
+            EffectCapabilityCatalog capabilities)
+        {
+            var stored = ReadMany(reader, "capability registrations", () =>
+            {
+                var id = reader.ReadString();
+                var revision = reader.ReadInt32();
+                return id + "@" + revision.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            });
+            var current = capabilities.Registered
+                .Select(reference => reference.ToString())
+                .ToArray();
+            if (stored.SequenceEqual(current, StringComparer.Ordinal))
+            {
+                return;
+            }
+
+            var missing = stored.Except(current, StringComparer.Ordinal).ToArray();
+            var knownIds = new HashSet<string>(
+                capabilities.Registered.Select(reference => reference.CapabilityId.Value),
+                StringComparer.Ordinal);
+            var unknownCapability = missing.Any(entry =>
+                !knownIds.Contains(entry.Substring(0, entry.LastIndexOf('@'))));
+            throw new SnapshotLoadException(
+                unknownCapability
+                    ? SnapshotLoadRejectionReason.EffectCapabilityMissing
+                    : SnapshotLoadRejectionReason.EffectCapabilityRevisionMismatch,
+                "Snapshot capability registrations do not match this build: stored [" +
+                string.Join(", ", stored) + "], current [" + string.Join(", ", current) + "].");
         }
 
         private static CardDefinition[] ValidateDefinitions(

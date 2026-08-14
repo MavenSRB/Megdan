@@ -106,6 +106,4 @@ Remove a row when its type is implemented. Do not add a row to silence the valid
 
 | Contract | State | Owning milestone |
 | --- | --- | --- |
-| `EffectDefinition` | Specified, not implemented | 6.2a |
-| `PendingResolution` | Specified, not implemented. Concrete per-action pending state exists today inside the registered backends; the general serializable frame does not. | 6.2a |
-| `RuleEvent` | Specified, not implemented as a single named type. Ordered rule facts are emitted today through the event log and its projection. | 6.2a |
+| `RuleEvent` | Specified, not implemented as a single named type. Ordered rule facts are emitted today through the event log and its projection. Milestone 6.2a deliberately left this alone: unifying the event model would move every pinned diagnostic digest for a reason unrelated to the effect frame. | Unowned; reassess at 6.2b |

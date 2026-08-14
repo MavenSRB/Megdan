@@ -9,6 +9,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
@@ -236,7 +237,9 @@ namespace GuardsDigital.Application
             IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
             PendingDefensePreviewProjection pendingDefensePreview = null,
             PendingMinionBattleChoice pendingMinionBattleChoice = null,
-            PendingLanePushRequest pendingLanePushRequest = null)
+            PendingLanePushRequest pendingLanePushRequest = null,
+            GuardsDigital.Core.Rules.EffectResolution.PendingResolution pendingSkillResolution = null,
+            PendingEffectChoice pendingEffectChoice = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -264,6 +267,8 @@ namespace GuardsDigital.Application
             PendingAttackResolution = pendingAttackResolution;
             PendingAttackTargetChoice = pendingAttackTargetChoice;
             PendingDefenseChoice = pendingDefenseChoice;
+            PendingSkillResolution = pendingSkillResolution;
+            PendingEffectChoice = pendingEffectChoice;
             AvailableTurnActions = Array.AsReadOnly((availableTurnActions ?? throw new ArgumentNullException(nameof(availableTurnActions))).ToArray());
             AcceptedCommands = Array.AsReadOnly((acceptedCommands ?? throw new ArgumentNullException(nameof(acceptedCommands))).ToArray());
             RoundEvents = Array.AsReadOnly((roundEvents ?? throw new ArgumentNullException(nameof(roundEvents))).ToArray());
@@ -315,6 +320,14 @@ namespace GuardsDigital.Application
         public PendingAttackResolution PendingAttackResolution { get; }
         public PendingAttackTargetChoice PendingAttackTargetChoice { get; }
         public PendingDefenseResponseChoice PendingDefenseChoice { get; }
+
+        /// <summary>
+        /// The Skill effect currently resolving, and the decision it is waiting on. Presentation reads
+        /// the projected invocations off the choice; it never derives Skill legality itself.
+        /// </summary>
+        public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution { get; }
+
+        public PendingEffectChoice PendingEffectChoice { get; }
         public IReadOnlyList<ActionOffer> AvailableTurnActions { get; }
         public IReadOnlyList<DirectorCommand> AcceptedCommands { get; }
         public IReadOnlyList<RoundResolutionEvent> RoundEvents { get; }

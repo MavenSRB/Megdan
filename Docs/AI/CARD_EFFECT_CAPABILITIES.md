@@ -197,4 +197,4 @@ Handler composition is explicit and typed. Milestone 6.1h removed the interim st
 
 | Contract | Status | Owner |
 | --- | --- | --- |
-| Registered action/effect dispatch seam with typed handler registration | Planned, not implemented; the concrete backends are composed directly since milestone 6.1h removed the interim registry | 6.2a |
+| Registered action/effect dispatch seam with typed handler registration | Implemented at milestone 6.2a, on two deliberately different mechanisms. Action-kind dispatch stays direct concrete composition, which is what milestone 6.1h established and what a statically known collaborator calls for. Capability dispatch is data-driven lookup through `EffectCapabilityCatalog`, because the capability reference arrives as data inside the definition the resolver is walking and cannot be named at compile time. | 6.2a |

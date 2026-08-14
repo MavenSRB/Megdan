@@ -429,7 +429,7 @@ Acceptance checks:
 
 Non-goals: No token-specific `DirectorCommandKind` member, pending-choice class, `MatchSessionProjection` property, or `CardActionContinuationKind` arm - the supply-exhaustion reclamation choice and the marker give/return operations ride 6.2a's frame, and a token-shaped copy of the existing per-action pending state is the exact shortcut this ordering exists to prevent. No token property behavior or Clear (6.3), displacement (6.4), Place or Spawn (6.5), Swap/Replace/Remove (6.6), or end-of-round cleanup (6.12). No Wasp content, printed-text parsing, card-name/hero-name branch, production presentation, art, animation, or audio.
 
-### [ ] 6.2a Establish typed Skill and serializable effect execution
+### [x] 6.2a Establish typed Skill and serializable effect execution
 
 Observable outcome: A bounded synthetic definition can offer and execute a first-class Skill through a stable-node, serializable non-Repeat effect frame before Clear or displacement effects extend the production action seam.
 
@@ -441,7 +441,13 @@ Acceptance checks:
 - Adding the Skill/effect handler does not require editing Movement, Attack/Defense, or Fast-Travel backend algorithms. Architecture tests mechanically prevent action-specific algorithms or effect-node switches from accumulating in the outer session/round/turn dispatcher seams.
 - Pending effect state and stable node/choice identities cross the versioned snapshot boundary with an explicit migrate-or-reject decision. Restore rebinds every pending or Active effect's definition ID/revision and capability ID/revision to the trusted immutable match-definition catalog and registered capability revision; snapshot payloads supply runtime state, not definition semantics, and cannot redefine effect kind, checkpoints, duration, triggers, uniqueness, or other capability behavior. Missing or incompatible trusted revisions and payloads carrying conflicting semantic data are rejected atomically, with focused tampering tests; accepted snapshots reconstruct equivalently after restore, replay, and Undo.
 
+Closing check: acceptance evidence rather than a failing-then-passing pair, because this milestone builds a frame that did not exist rather than correcting a defect. `MatchSessionSkillDispatchTests` drives the synthetic Skill end to end through `IMatchSession`; `EffectSnapshotTamperingTests` proves a restored Active effect is reference-equal to the catalog definition and that missing or mismatched capability revisions are refused atomically; `EffectSeamConformanceTests` and the widened dispatcher rule are each proved against a deliberate violator and a compliant twin.
+
+Historical evidence: [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md).
+
 Non-goals: No Repeat, Clear, direct Move, Object Push, Place, Spawn, Swap, Replace, Remove, Wasp definition, production presentation, printed-text parser, universal scripting language, or source-unverified special case.
+
+Scope note: this milestone built the four control-node kinds its second acceptance check names. `PerformAction`, `ReplaceAction`, and `SimultaneousBatch` were never in scope despite an earlier reading of the [timing shard](../Card-System/TIMING_AND_TRANSITIONS.md) status row, which is corrected here; they are unowned and reassessed at 6.2b.
 
 ER2 note: corrective milestones 6.1q and 6.1ap must both land first, so this engine builds on neither mis-scoped checkpoints nor an inferred timing seam. `F-ER2-05` moved to 6.1ap in the 2026-08-14 sequencing amendment above; this milestone consumes the resolver-emitted checkpoint stream that milestone establishes rather than owning the correction itself. See the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2).
 

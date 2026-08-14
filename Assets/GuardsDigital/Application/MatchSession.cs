@@ -211,6 +211,8 @@ namespace GuardsDigital.Application
                     return AnswerMinionBattle(command, MinionBattleChoiceCommandKind.Deselect);
                 case DirectorCommandKind.ConfirmMinionBattleRemovals:
                     return AnswerMinionBattle(command, MinionBattleChoiceCommandKind.Confirm);
+                case DirectorCommandKind.AnswerEffectChoice:
+                    return AnswerEffectChoice(command);
                 default:
                     return DispatchResult.Unavailable("The command kind is not supported by this match session.");
             }
@@ -252,7 +254,31 @@ namespace GuardsDigital.Application
                 return DispatchResult.From(round.TryStartAttack(resolutionId, offer));
             }
 
+            if (action.Kind == ActionKind.Skill)
+            {
+                return DispatchResult.From(round.TryStartSkill(resolutionId, offer));
+            }
+
             return DispatchResult.Unavailable("The requested action kind is not supported by this session.");
+        }
+
+        private DispatchResult AnswerEffectChoice(DirectorCommand command)
+        {
+            var choice = round.CurrentTurnAuthority?.PendingEffectChoice;
+            if (choice == null)
+            {
+                return DispatchResult.Unavailable("No effect choice is pending.");
+            }
+
+            if (command.EffectChoice == null ||
+                !command.EffectChoice.ResolutionId.Equals(choice.ResolutionId) ||
+                !command.EffectChoice.ChoiceId.Equals(choice.ChoiceId))
+            {
+                return DispatchResult.Unavailable(
+                    "The effect choice identity is stale or does not match the pending choice.");
+            }
+
+            return DispatchResult.From(round.TryAnswerEffectChoice(command.EffectChoice));
         }
 
         private DispatchResult AnswerMovement(DirectorCommand command, bool stop)
@@ -551,7 +577,9 @@ namespace GuardsDigital.Application
                 availableFastTravelOptions,
                 defensePreview,
                 round.PendingMinionBattleChoice,
-                round.PendingLanePushRequest);
+                round.PendingLanePushRequest,
+                turn?.PendingSkillResolution,
+                turn?.PendingEffectChoice);
         }
 
         private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn)

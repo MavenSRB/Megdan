@@ -39,10 +39,7 @@ namespace GuardsDigital.Core.Timing
     {
         public ActiveEffectDefinition(
             string definitionId,
-            HeroId controllerHeroId,
-            TeamSide controllerTeamSide,
             ActiveEffectAffectedScopeKind affectedScope,
-            HeroId affectedHeroId,
             ActiveEffectDurationKind durationKind,
             TimingCheckpoint creationCheckpoint,
             TimingCheckpoint activationCheckpoint,
@@ -55,14 +52,8 @@ namespace GuardsDigital.Core.Timing
         {
             if (string.IsNullOrWhiteSpace(definitionId))
                 throw new ArgumentException("An Active-effect definition requires a stable ID.", nameof(definitionId));
-            if (!controllerHeroId.IsDefined)
-                throw new ArgumentException("An Active-effect definition requires a controller hero.", nameof(controllerHeroId));
-            if (controllerTeamSide == TeamSide.None)
-                throw new ArgumentException("An Active-effect definition requires a controller team.", nameof(controllerTeamSide));
             if (affectedScope == ActiveEffectAffectedScopeKind.None)
                 throw new ArgumentException("An Active-effect definition requires an affected scope.", nameof(affectedScope));
-            if (affectedScope == ActiveEffectAffectedScopeKind.Hero && !affectedHeroId.IsDefined)
-                throw new ArgumentException("A hero-scoped Active effect requires the affected hero.", nameof(affectedHeroId));
             if (durationKind == ActiveEffectDurationKind.None)
                 throw new ArgumentException("An Active-effect definition requires a duration kind.", nameof(durationKind));
             if (creationCheckpoint == TimingCheckpoint.None || activationCheckpoint == TimingCheckpoint.None ||
@@ -84,10 +75,7 @@ namespace GuardsDigital.Core.Timing
 
             ValidateDuration(durationKind, creationCheckpoint, activationCheckpoint, expirationCheckpoint, carriesAcrossRoundBoundary);
             DefinitionId = definitionId;
-            ControllerHeroId = controllerHeroId;
-            ControllerTeamSide = controllerTeamSide;
             AffectedScope = affectedScope;
-            AffectedHeroId = affectedHeroId;
             DurationKind = durationKind;
             CreationCheckpoint = creationCheckpoint;
             ActivationCheckpoint = activationCheckpoint;
@@ -100,10 +88,7 @@ namespace GuardsDigital.Core.Timing
         }
 
         public string DefinitionId { get; }
-        public HeroId ControllerHeroId { get; }
-        public TeamSide ControllerTeamSide { get; }
         public ActiveEffectAffectedScopeKind AffectedScope { get; }
-        public HeroId AffectedHeroId { get; }
         public ActiveEffectDurationKind DurationKind { get; }
         public TimingCheckpoint CreationCheckpoint { get; }
         public TimingCheckpoint ActivationCheckpoint { get; }

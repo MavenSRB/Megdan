@@ -22,11 +22,11 @@ namespace GuardsDigital.Tests.EditMode
     {
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v7", "456efc4c309b62db88d2be67020341187b9504b1af8d2a57bb15d81189e9adbc"),
-            new CompatibilityFixture("active-turn-v7", "17b19c06334340d4fde3fda61453f25262014486b3b2422b0fe1e60bf2f33441"),
-            new CompatibilityFixture("pending-choice-v7", "5befefe447a2353e6c729722a7395b73eb82eb8c35d6201756a3b34a1a961962"),
-            new CompatibilityFixture("end-of-round-v7", "de42a3842753fc592ae8931beeef27d743f40f82bbccdf7d8dbda5df7e33e39d"),
-            new CompatibilityFixture("pending-minion-battle-v7", "4ff2a08caffab630dd8de31eec183bbff40ec9e73012c9849c438a4b99030df4")
+            new CompatibilityFixture("setup-v8", "c4c399ad8d98f73d7d7031683be55b636688b2a8f8bbe3efbac07682cb74e4a0"),
+            new CompatibilityFixture("active-turn-v8", "95f7b2c96cce614f601638237defcef76cf87a3872f4032de5582e4ea9bb3eb4"),
+            new CompatibilityFixture("pending-choice-v8", "e8e09f7aab159651bb152d9e1b19265d7fe5d007bd97209cce8dfe232e13a3f6"),
+            new CompatibilityFixture("end-of-round-v8", "372aab1952c3c967abff9d93e2a26e5b8a2b65118e143d6e63206d9bc573baec"),
+            new CompatibilityFixture("pending-minion-battle-v8", "41690c8ad6ce830ab0114c06b1d3ef7b93adf9d419a5acc5096e57e8aecf6eca")
         };
 
         [Test]
@@ -106,16 +106,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v7", session.CaptureSnapshot());
+            values.Add("setup-v8", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v7", session.CaptureSnapshot());
+            values.Add("active-turn-v8", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v7", session.CaptureSnapshot());
+            values.Add("pending-choice-v8", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -131,7 +131,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v7", session.CaptureSnapshot());
+            values.Add("end-of-round-v8", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -140,7 +140,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v7", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v8", session.CaptureSnapshot());
             return values;
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Effects;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -30,7 +31,8 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<PrintedValueDefinition> baseValues,
             ActionDefinitionPolicy defaultPolicy,
             AttackRangeKind attackRange,
-            ActionCardStateTransition sourceCardStateTransition)
+            ActionCardStateTransition sourceCardStateTransition,
+            EffectDefinition effectRoot = null)
         {
             if (!id.IsDefined)
             {
@@ -67,6 +69,7 @@ namespace GuardsDigital.Core.Cards
             DefaultPolicy = defaultPolicy;
             AttackRange = attackRange;
             SourceCardStateTransition = sourceCardStateTransition;
+            EffectRoot = effectRoot;
 
             if (BaseValues.Select(value => value.Channel).Distinct().Count() != BaseValues.Count)
             {
@@ -89,6 +92,12 @@ namespace GuardsDigital.Core.Cards
         public AttackRangeKind AttackRange { get; }
 
         public ActionCardStateTransition SourceCardStateTransition { get; }
+
+        /// <summary>
+        /// The effect this action executes, for kinds that resolve through the typed effect frame.
+        /// Null for Movement, Attack, Defense, Hold, and Fast Travel, which have their own algorithms.
+        /// </summary>
+        public EffectDefinition EffectRoot { get; }
 
         private void ValidateActionShape(IEnumerable<PrintedValueDefinition> baseValues)
         {
@@ -149,6 +158,36 @@ namespace GuardsDigital.Core.Cards
                         "Fast Travel must be a value-free replacement action definition.",
                         nameof(baseValues));
                 }
+            }
+
+            else if (Kind == ActionKind.Skill)
+            {
+                // A Skill carries no printed combat value: what it does is its effect, and the effect
+                // is data the resolver walks rather than a number an algorithm consumes.
+                if (EffectRoot == null)
+                {
+                    throw new ArgumentException(
+                        "Skill action definitions require an effect root.", nameof(EffectRoot));
+                }
+
+                if (BaseValues.Count != 0)
+                {
+                    throw new ArgumentException(
+                        "Skill action definitions carry no printed values.", nameof(baseValues));
+                }
+
+                if (Origin != ActionDefinitionOrigin.PrintedPrimary &&
+                    Origin != ActionDefinitionOrigin.PrintedSecondary)
+                {
+                    throw new ArgumentException(
+                        "Skill action definitions are printed on their card.", nameof(Origin));
+                }
+            }
+
+            if (Kind != ActionKind.Skill && EffectRoot != null)
+            {
+                throw new ArgumentException(
+                    "Only Skill action definitions execute through the typed effect frame.", nameof(EffectRoot));
             }
 
             if (Kind != ActionKind.Attack && AttackRange != AttackRangeKind.None)

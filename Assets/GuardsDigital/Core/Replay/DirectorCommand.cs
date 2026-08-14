@@ -3,6 +3,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -24,7 +25,14 @@ namespace GuardsDigital.Core.Replay
         PerformFastTravel = 11,
         SelectMinionBattleRemoval = 12,
         DeselectMinionBattleRemoval = 13,
-        ConfirmMinionBattleRemovals = 14
+        ConfirmMinionBattleRemovals = 14,
+
+        /// <summary>
+        /// Milestone 6.2a. Every decision inside an effect frame rides this one member, carrying the
+        /// projected typed invocation the pending choice built. A new player-decision family is not a
+        /// reason to add a command kind; a new authority-level operation is.
+        /// </summary>
+        AnswerEffectChoice = 15
     }
 
     public sealed class DirectorCommand : IEquatable<DirectorCommand>
@@ -40,7 +48,8 @@ namespace GuardsDigital.Core.Replay
             ActionResolutionStepId choiceId = default,
             MinionId minionId = default,
             EndOfRoundResolutionId endOfRoundResolutionId = default,
-            EndOfRoundChoiceId endOfRoundChoiceId = default)
+            EndOfRoundChoiceId endOfRoundChoiceId = default,
+            EffectChoiceCommand effectChoice = null)
         {
             Kind = kind;
             HeroId = heroId;
@@ -53,6 +62,7 @@ namespace GuardsDigital.Core.Replay
             MinionId = minionId;
             EndOfRoundResolutionId = endOfRoundResolutionId;
             EndOfRoundChoiceId = endOfRoundChoiceId;
+            EffectChoice = effectChoice;
         }
 
         public DirectorCommandKind Kind { get; }
@@ -66,6 +76,30 @@ namespace GuardsDigital.Core.Replay
         public MinionId MinionId { get; }
         public EndOfRoundResolutionId EndOfRoundResolutionId { get; }
         public EndOfRoundChoiceId EndOfRoundChoiceId { get; }
+
+        /// <summary>The projected typed invocation an effect choice is answered with.</summary>
+        public EffectChoiceCommand EffectChoice { get; }
+
+        /// <summary>
+        /// Answers a pending effect choice with an invocation the pending choice itself projected.
+        /// Composing one by hand is refused here rather than at the authority, the same guard the
+        /// Minion-Battle factories apply.
+        /// </summary>
+        public static DirectorCommand AnswerEffectChoice(EffectChoiceCommand invocation)
+        {
+            if (invocation == null)
+            {
+                throw new ArgumentNullException(nameof(invocation));
+            }
+
+            if (invocation.Kind == EffectChoiceCommandKind.None)
+            {
+                throw new ArgumentException(
+                    "An effect choice invocation requires a kind.", nameof(invocation));
+            }
+
+            return new DirectorCommand(DirectorCommandKind.AnswerEffectChoice, effectChoice: invocation);
+        }
 
         public static DirectorCommand CommitCard(HeroId heroId, CardInstanceId cardInstanceId) =>
             new DirectorCommand(DirectorCommandKind.CommitCard, heroId, cardInstanceId);
@@ -219,7 +253,8 @@ namespace GuardsDigital.Core.Replay
                 ResolutionId.Equals(other.ResolutionId) && ChoiceId.Equals(other.ChoiceId) &&
                 MinionId.Equals(other.MinionId) &&
                 EndOfRoundResolutionId.Equals(other.EndOfRoundResolutionId) &&
-                EndOfRoundChoiceId.Equals(other.EndOfRoundChoiceId);
+                EndOfRoundChoiceId.Equals(other.EndOfRoundChoiceId) &&
+                Equals(EffectChoice, other.EffectChoice);
         }
 
         public override bool Equals(object obj) => Equals(obj as DirectorCommand);
@@ -238,7 +273,8 @@ namespace GuardsDigital.Core.Replay
                 hash = (hash * 397) ^ ChoiceId.GetHashCode();
                 hash = (hash * 397) ^ MinionId.GetHashCode();
                 hash = (hash * 397) ^ EndOfRoundResolutionId.GetHashCode();
-                return (hash * 397) ^ EndOfRoundChoiceId.GetHashCode();
+                hash = (hash * 397) ^ EndOfRoundChoiceId.GetHashCode();
+                return (hash * 397) ^ (EffectChoice?.GetHashCode() ?? 0);
             }
         }
 

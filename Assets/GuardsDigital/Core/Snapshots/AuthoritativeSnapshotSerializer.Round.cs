@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -64,7 +65,8 @@ namespace GuardsDigital.Core.Snapshots
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> cards,
             MatchParticipants participants,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board,
+            EffectCapabilityCatalog capabilities)
         {
             var roundIndex = reader.ReadInt32();
             var turnIndex = reader.ReadInt32();
@@ -84,7 +86,7 @@ namespace GuardsDigital.Core.Snapshots
             var outcomes = ReadOutcomes(reader);
             var pendingMinionBattleChoice = ReadPendingMinionBattleChoice(reader);
             var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
-            var timing = ActiveEffectLifecycle.Restore(ReadTiming(reader));
+            var timing = ActiveEffectLifecycle.Restore(ReadTiming(reader, capabilities));
             var hasRoundCardActions = reader.ReadBoolean();
             var roundDefeatRewards = ReadDefeatRewards(reader);
 
@@ -99,7 +101,7 @@ namespace GuardsDigital.Core.Snapshots
             if (reader.ReadBoolean())
             {
                 turn = ReadTurn(reader, definitions, cards, participants, board, timing,
-                    roundIndex, turnIndex, out cardActions);
+                    roundIndex, turnIndex, capabilities, out cardActions);
             }
             else if (hasRoundCardActions)
             {

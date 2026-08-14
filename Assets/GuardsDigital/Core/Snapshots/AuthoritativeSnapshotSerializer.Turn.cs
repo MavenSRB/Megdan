@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -40,6 +41,7 @@ namespace GuardsDigital.Core.Snapshots
             ActiveEffectLifecycle timing,
             int roundIndex,
             int turnIndex,
+            EffectCapabilityCatalog capabilities,
             out CardActionResolutionAuthority cardActions)
         {
             var started = reader.ReadBoolean();
@@ -48,7 +50,7 @@ namespace GuardsDigital.Core.Snapshots
                 SnapshotEnumReader.Read<TeamSide>(reader, "turn tie-breaker revealed side"));
             var pendingChoice = ReadPendingInitiativeChoice(reader);
             var selectedActor = ReadSelectedActor(reader);
-            cardActions = ReadCardAction(reader, board, definitions, cards, participants);
+            cardActions = ReadCardAction(reader, board, definitions, cards, participants, capabilities);
             return TurnResolutionAuthority.Restore(
                 definitions,
                 cards,
@@ -73,22 +75,15 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(effect.Id.Value);
                 var definition = effect.Definition;
                 writer.Write(definition.DefinitionId);
-                writer.Write(definition.ControllerHeroId.Value);
-                writer.Write((int)definition.ControllerTeamSide);
-                writer.Write((int)definition.AffectedScope);
-                writer.Write(definition.AffectedHeroId.IsDefined);
-                if (definition.AffectedHeroId.IsDefined) writer.Write(definition.AffectedHeroId.Value);
-                writer.Write((int)definition.DurationKind);
-                writer.Write((int)definition.CreationCheckpoint);
-                writer.Write((int)definition.ActivationCheckpoint);
-                writer.Write((int)definition.ExpirationCheckpoint);
-                writer.Write(definition.CancellationConditions.Count);
-                foreach (var condition in definition.CancellationConditions) writer.Write((int)condition);
-                writer.Write(definition.CarriesAcrossRoundBoundary);
-                writer.Write(definition.EffectKind);
-                writer.Write(definition.UniquenessKey);
-                writer.Write(definition.TriggerCheckpoints.Count);
-                foreach (var trigger in definition.TriggerCheckpoints) writer.Write((int)trigger);
+                // Milestone 6.2a. Identity and runtime state only. Scope, duration, the three lifecycle
+                // checkpoints, cancellation conditions, the cross-round flag, effect kind, uniqueness
+                // key, and trigger checkpoints all left this payload: they are definition semantics, and
+                // a restore takes them from the trusted catalog by definition ID. A payload that could
+                // still state them could redefine what a saved effect means.
+                writer.Write(effect.ControllerHeroId.Value);
+                writer.Write((int)effect.ControllerTeamSide);
+                writer.Write(effect.AffectedHeroId.IsDefined);
+                if (effect.AffectedHeroId.IsDefined) writer.Write(effect.AffectedHeroId.Value);
                 writer.Write(effect.SourceCardInstanceId.Value);
                 writer.Write(effect.SourceActionDefinitionId.Value);
                 writer.Write(effect.CreatedRoundIndex);
@@ -116,7 +111,9 @@ namespace GuardsDigital.Core.Snapshots
             }
         }
 
-        private static ActiveEffectLifecycleRestoreState ReadTiming(BinaryReader reader)
+        private static ActiveEffectLifecycleRestoreState ReadTiming(
+            BinaryReader reader,
+            EffectCapabilityCatalog capabilities)
         {
             var effects = ReadMany(reader, "Active effects", () =>
             {
@@ -124,22 +121,16 @@ namespace GuardsDigital.Core.Snapshots
                 var definitionId = reader.ReadString();
                 var controller = new HeroId(reader.ReadString());
                 var side = SnapshotEnumReader.Read<TeamSide>(reader, "Active-effect controlling side");
-                var scope = SnapshotEnumReader.Read<ActiveEffectAffectedScopeKind>(reader, "Active-effect affected scope");
                 var affectedHero = reader.ReadBoolean() ? new HeroId(reader.ReadString()) : default;
-                var duration = SnapshotEnumReader.Read<ActiveEffectDurationKind>(reader, "Active-effect duration");
-                var creation = SnapshotEnumReader.Read<TimingCheckpoint>(reader, "Active-effect creation checkpoint");
-                var activation = SnapshotEnumReader.Read<TimingCheckpoint>(reader, "Active-effect activation checkpoint");
-                var expiration = SnapshotEnumReader.Read<TimingCheckpoint>(reader, "Active-effect expiration checkpoint");
-                var conditions = ReadMany(reader, "Active-effect cancellation conditions",
-                    () => SnapshotEnumReader.Read<ActiveEffectCancellationCondition>(reader, "Active-effect cancellation condition"));
-                var carries = reader.ReadBoolean();
-                var effectKind = reader.ReadString();
-                var uniquenessKey = reader.ReadString();
-                var triggers = ReadMany(reader, "Active-effect trigger checkpoints",
-                    () => SnapshotEnumReader.Read<TimingCheckpoint>(reader, "Active-effect trigger checkpoint"));
-                var definition = new ActiveEffectDefinition(definitionId, controller, side, scope, affectedHero,
-                    duration, creation, activation, expiration, conditions, carries, effectKind,
-                    uniquenessKey, triggers);
+
+                // The one line acceptance check 5 turns on: semantics are looked up, never rebuilt.
+                if (!capabilities.TryGetActiveEffectDefinition(definitionId, out var definition))
+                {
+                    throw new SnapshotLoadException(
+                        SnapshotLoadRejectionReason.EffectDefinitionMissing,
+                        $"Snapshot names Active-effect definition '{definitionId}', which no registered capability in this build declares.");
+                }
+
                 var sourceCard = new CardInstanceId(reader.ReadString());
                 var sourceAction = new ActionDefinitionId(reader.ReadString());
                 var createdRound = reader.ReadInt32();
@@ -149,7 +140,8 @@ namespace GuardsDigital.Core.Snapshots
                 var activatedRound = reader.ReadBoolean() ? (int?)reader.ReadInt32() : null;
                 var activatedTurn = reader.ReadBoolean() ? (int?)reader.ReadInt32() : null;
                 var endedAt = SnapshotEnumReader.ReadNullable<TimingCheckpoint>(reader, "Active-effect ended-at checkpoint");
-                return new ActiveEffectInstance(id, definition, sourceCard, sourceAction, createdRound,
+                return new ActiveEffectInstance(id, definition, controller, side, affectedHero,
+                    sourceCard, sourceAction, createdRound,
                     createdTurn, sequence, phase, activatedRound, activatedTurn, endedAt);
             });
             var continuous = ReadMany(reader, "continuous rule sources", () =>

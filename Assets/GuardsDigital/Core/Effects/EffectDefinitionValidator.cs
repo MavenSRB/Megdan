@@ -1,0 +1,375 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace GuardsDigital.Core.Effects
+{
+    /// <summary>Why an effect definition was refused at content load.</summary>
+    public enum EffectDefinitionRejectionReason
+    {
+        None = 0,
+        UnresolvedChildNode = 1,
+        UnreachableNode = 2,
+        CyclicNodeGraph = 3,
+        UnregisteredCapability = 4,
+        UndeclaredParameter = 5,
+        MissingRequiredParameter = 6,
+        IncompatibleBindingType = 7,
+        UnresolvedNodeOutput = 8,
+        NodeOutputNotGuaranteed = 9,
+        PredicateMustReturnBoolean = 10
+    }
+
+    public readonly struct EffectDefinitionRejection
+    {
+        public EffectDefinitionRejection(EffectDefinitionRejectionReason reason, string detail)
+        {
+            Reason = reason;
+            Detail = detail;
+        }
+
+        public EffectDefinitionRejectionReason Reason { get; }
+        public string Detail { get; }
+
+        public override string ToString() => $"{Reason}: {Detail}";
+    }
+
+    /// <summary>
+    /// Rejects an effect definition before a match starts rather than during one.
+    ///
+    /// Per-node shape is already enforced by <see cref="EffectNodeDefinition"/>'s own constructor. What
+    /// needs the whole table lives here: that children resolve, that the graph is acyclic and fully
+    /// reachable from the root, that every capability is registered at the exact revision named, that
+    /// every input matches its handler's declared parameter type, and - the one non-obvious rule - that
+    /// a node reading an earlier node's output is only reachable through paths where that node has
+    /// certainly already run.
+    ///
+    /// That last rule is what makes typed result binding safe without a general expression language: a
+    /// node cannot read "the target that was chosen" from a branch that may not have executed.
+    /// </summary>
+    public static class EffectDefinitionValidator
+    {
+        public static IReadOnlyList<EffectDefinitionRejection> Validate(
+            EffectDefinition definition,
+            EffectCapabilityCatalog catalog)
+        {
+            if (definition == null) throw new ArgumentNullException(nameof(definition));
+            if (catalog == null) throw new ArgumentNullException(nameof(catalog));
+
+            var rejections = new List<EffectDefinitionRejection>();
+
+            foreach (var node in definition.Nodes)
+            {
+                foreach (var childId in node.ChildNodeIds)
+                {
+                    if (!definition.TryGetNode(childId, out _))
+                    {
+                        rejections.Add(new EffectDefinitionRejection(
+                            EffectDefinitionRejectionReason.UnresolvedChildNode,
+                            $"Node '{node.Id}' names child '{childId}', which this definition does not declare."));
+                    }
+                }
+            }
+
+            if (rejections.Count > 0)
+            {
+                // Reachability and dominance both walk children; an unresolved child would make them lie.
+                return rejections;
+            }
+
+            var reachable = Reachable(definition);
+            foreach (var node in definition.Nodes.Where(candidate => !reachable.Contains(candidate.Id)))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.UnreachableNode,
+                    $"Node '{node.Id}' is not reachable from root '{definition.RootNodeId}'."));
+            }
+
+            if (HasCycle(definition))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.CyclicNodeGraph,
+                    $"Effect definition '{definition.Id}' contains a node cycle; repetition is milestone 6.7's Repeat, not a loop in the node table."));
+                return rejections;
+            }
+
+            var guaranteedBefore = GuaranteedPredecessors(definition);
+
+            foreach (var node in definition.Nodes)
+            {
+                ValidateCapability(definition, catalog, node, rejections);
+                ValidateBindings(definition, node, guaranteedBefore, rejections);
+            }
+
+            return rejections;
+        }
+
+        private static void ValidateCapability(
+            EffectDefinition definition,
+            EffectCapabilityCatalog catalog,
+            EffectNodeDefinition node,
+            ICollection<EffectDefinitionRejection> rejections)
+        {
+            if (!node.Capability.IsDefined)
+            {
+                return;
+            }
+
+            if (!catalog.TryLoad(node.Capability, out var handler))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.UnregisteredCapability,
+                    $"Node '{node.Id}' names capability '{node.Capability}', which is not registered in this build."));
+                return;
+            }
+
+            var declared = handler.Schema.Parameters.ToDictionary(
+                parameter => parameter.Name, StringComparer.Ordinal);
+
+            foreach (var input in node.Inputs)
+            {
+                if (!declared.TryGetValue(input.ParameterName, out var parameter))
+                {
+                    rejections.Add(new EffectDefinitionRejection(
+                        EffectDefinitionRejectionReason.UndeclaredParameter,
+                        $"Node '{node.Id}' binds '{input.ParameterName}', which capability '{node.Capability}' does not declare."));
+                    continue;
+                }
+
+                if (parameter.ValueKind != input.ValueKind)
+                {
+                    rejections.Add(new EffectDefinitionRejection(
+                        EffectDefinitionRejectionReason.IncompatibleBindingType,
+                        $"Node '{node.Id}' binds '{input.ParameterName}' as {input.ValueKind}, but capability '{node.Capability}' declares {parameter.ValueKind}."));
+                }
+            }
+
+            var bound = new HashSet<string>(
+                node.Inputs.Select(input => input.ParameterName), StringComparer.Ordinal);
+            foreach (var parameter in handler.Schema.Parameters.Where(candidate => candidate.IsRequired))
+            {
+                if (!bound.Contains(parameter.Name))
+                {
+                    rejections.Add(new EffectDefinitionRejection(
+                        EffectDefinitionRejectionReason.MissingRequiredParameter,
+                        $"Node '{node.Id}' does not bind required parameter '{parameter.Name}' of capability '{node.Capability}'."));
+                }
+            }
+
+            if (node.Kind == EffectNodeKind.Conditional &&
+                !handler.Schema.Outputs.Any(output => output.ValueKind == EffectValueKind.Boolean))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.PredicateMustReturnBoolean,
+                    $"Conditional node '{node.Id}' uses capability '{node.Capability}', which declares no Boolean output to branch on."));
+            }
+
+            foreach (var output in node.Outputs)
+            {
+                if (!handler.Schema.Outputs.Any(declaredOutput =>
+                        string.Equals(declaredOutput.OutputName, output.OutputName, StringComparison.Ordinal) &&
+                        declaredOutput.ValueKind == output.ValueKind))
+                {
+                    rejections.Add(new EffectDefinitionRejection(
+                        EffectDefinitionRejectionReason.UnresolvedNodeOutput,
+                        $"Node '{node.Id}' publishes '{output}', which capability '{node.Capability}' does not declare."));
+                }
+            }
+        }
+
+        private static void ValidateBindings(
+            EffectDefinition definition,
+            EffectNodeDefinition node,
+            IReadOnlyDictionary<EffectNodeId, HashSet<EffectNodeId>> guaranteedBefore,
+            ICollection<EffectDefinitionRejection> rejections)
+        {
+            foreach (var input in node.Inputs
+                .Where(candidate => candidate.SourceKind == EffectBindingSourceKind.NodeOutput))
+            {
+                if (!definition.TryGetNode(input.SourceNodeId, out var source))
+                {
+                    rejections.Add(new EffectDefinitionRejection(
+                        EffectDefinitionRejectionReason.UnresolvedNodeOutput,
+                        $"Node '{node.Id}' reads output '{input.SourceOutputName}' from '{input.SourceNodeId}', which this definition does not declare."));
+                    continue;
+                }
+
+                var declaredOutput = source.Outputs.FirstOrDefault(output =>
+                    string.Equals(output.OutputName, input.SourceOutputName, StringComparison.Ordinal));
+                if (string.IsNullOrEmpty(declaredOutput.OutputName))
+                {
+                    rejections.Add(new EffectDefinitionRejection(
+                        EffectDefinitionRejectionReason.UnresolvedNodeOutput,
+                        $"Node '{node.Id}' reads output '{input.SourceOutputName}' from '{input.SourceNodeId}', which does not publish it."));
+                    continue;
+                }
+
+                if (declaredOutput.ValueKind != input.ValueKind)
+                {
+                    rejections.Add(new EffectDefinitionRejection(
+                        EffectDefinitionRejectionReason.IncompatibleBindingType,
+                        $"Node '{node.Id}' reads '{input.SourceOutputName}' as {input.ValueKind}, but '{input.SourceNodeId}' publishes {declaredOutput.ValueKind}."));
+                    continue;
+                }
+
+                if (!guaranteedBefore.TryGetValue(node.Id, out var predecessors) ||
+                    !predecessors.Contains(input.SourceNodeId))
+                {
+                    rejections.Add(new EffectDefinitionRejection(
+                        EffectDefinitionRejectionReason.NodeOutputNotGuaranteed,
+                        $"Node '{node.Id}' reads output '{input.SourceOutputName}' from '{input.SourceNodeId}', which is not guaranteed to have executed first."));
+                }
+            }
+        }
+
+        private static HashSet<EffectNodeId> Reachable(EffectDefinition definition)
+        {
+            var reachable = new HashSet<EffectNodeId>();
+            var pending = new Stack<EffectNodeId>();
+            pending.Push(definition.RootNodeId);
+            while (pending.Count > 0)
+            {
+                var current = pending.Pop();
+                if (!reachable.Add(current))
+                {
+                    continue;
+                }
+
+                foreach (var child in definition.GetNode(current).ChildNodeIds)
+                {
+                    pending.Push(child);
+                }
+            }
+
+            return reachable;
+        }
+
+        private static bool HasCycle(EffectDefinition definition)
+        {
+            var visiting = new HashSet<EffectNodeId>();
+            var visited = new HashSet<EffectNodeId>();
+            return definition.Nodes.Any(node => Visit(definition, node.Id, visiting, visited));
+        }
+
+        private static bool Visit(
+            EffectDefinition definition,
+            EffectNodeId nodeId,
+            HashSet<EffectNodeId> visiting,
+            HashSet<EffectNodeId> visited)
+        {
+            if (visited.Contains(nodeId))
+            {
+                return false;
+            }
+
+            if (!visiting.Add(nodeId))
+            {
+                return true;
+            }
+
+            foreach (var child in definition.GetNode(nodeId).ChildNodeIds)
+            {
+                if (Visit(definition, child, visiting, visited))
+                {
+                    return true;
+                }
+            }
+
+            visiting.Remove(nodeId);
+            visited.Add(nodeId);
+            return false;
+        }
+
+        /// <summary>
+        /// For each node, the set of nodes that have certainly finished before it runs.
+        ///
+        /// Only a Sequence contributes: its earlier children, and everything guaranteed before those,
+        /// are guaranteed before each later child. A Choose branch, a Conditional branch, and an
+        /// Optional child are all skippable, so nothing inside one is guaranteed to any node outside it.
+        /// A node is never guaranteed before itself.
+        /// </summary>
+        private static IReadOnlyDictionary<EffectNodeId, HashSet<EffectNodeId>> GuaranteedPredecessors(
+            EffectDefinition definition)
+        {
+            var guaranteed = definition.Nodes.ToDictionary(
+                node => node.Id, _ => new HashSet<EffectNodeId>());
+
+            var order = TopologicalOrder(definition);
+            foreach (var nodeId in order)
+            {
+                var node = definition.GetNode(nodeId);
+                if (node.Kind != EffectNodeKind.Sequence)
+                {
+                    // A skippable child inherits only what its parent already guaranteed.
+                    foreach (var child in node.ChildNodeIds)
+                    {
+                        guaranteed[child].UnionWith(guaranteed[nodeId]);
+                    }
+
+                    continue;
+                }
+
+                var completed = new HashSet<EffectNodeId>(guaranteed[nodeId]);
+                foreach (var child in node.ChildNodeIds)
+                {
+                    guaranteed[child].UnionWith(completed);
+                    completed.UnionWith(GuaranteedSubtree(definition, child));
+                }
+            }
+
+            return guaranteed;
+        }
+
+        private static IReadOnlyList<EffectNodeId> TopologicalOrder(EffectDefinition definition)
+        {
+            var ordered = new List<EffectNodeId>();
+            var seen = new HashSet<EffectNodeId>();
+            void Walk(EffectNodeId nodeId)
+            {
+                if (!seen.Add(nodeId))
+                {
+                    return;
+                }
+
+                ordered.Add(nodeId);
+                foreach (var child in definition.GetNode(nodeId).ChildNodeIds)
+                {
+                    Walk(child);
+                }
+            }
+
+            Walk(definition.RootNodeId);
+            return ordered;
+        }
+
+        /// <summary>
+        /// The nodes that certainly run whenever <paramref name="nodeId"/> runs: itself, and - only
+        /// through a Sequence - its children's guaranteed subtrees.
+        ///
+        /// An Optional child may be declined, a Choose option may not be picked, and a Conditional
+        /// branch depends on a predicate, so nothing beneath those is guaranteed to anything outside
+        /// them. Treating a subtree as guaranteed merely because it is nested is the bug this replaced:
+        /// it let a node bind an output produced inside a `may` that the chooser can refuse.
+        /// </summary>
+        private static IEnumerable<EffectNodeId> GuaranteedSubtree(
+            EffectDefinition definition,
+            EffectNodeId nodeId)
+        {
+            yield return nodeId;
+
+            var node = definition.GetNode(nodeId);
+            if (node.Kind != EffectNodeKind.Sequence)
+            {
+                yield break;
+            }
+
+            foreach (var child in node.ChildNodeIds)
+            {
+                foreach (var guaranteed in GuaranteedSubtree(definition, child))
+                {
+                    yield return guaranteed;
+                }
+            }
+        }
+    }
+}

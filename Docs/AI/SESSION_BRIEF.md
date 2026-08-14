@@ -8,15 +8,15 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through **6.1ap**. The configured vertical slice uses a pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound snapshots, and passive Unity presentation; schema v7 persists both current continuations. It includes reload-safe Hero/minion combat and the end-of-round Minion Battle with serializable exact-count, one-at-a-time Heavy-last removal choices, now resolved by a configured player-facing prompt with board cues that forwards only the projected typed invocations; Lane-Push requests are recorded but not yet consumed. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps lives in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and is maintained by subject rather than milestone chronology.
+The project has completed roadmap milestones through **6.2a**. The configured vertical slice uses a pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound snapshots, and passive Unity presentation; schema v8 persists both current continuations and a paused effect frame. It includes reload-safe Hero/minion combat and the end-of-round Minion Battle with serializable exact-count, one-at-a-time Heavy-last removal choices, now resolved by a configured player-facing prompt with board cues that forwards only the projected typed invocations; Lane-Push requests are recorded but not yet consumed. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries, and remaining gaps lives in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and is maintained by subject rather than milestone chronology.
 
 ## Current authorization and next route
 
-- Current completed milestone: **6.1ap**.
+- Current completed milestone: **6.2a**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **6.2a**.
+- Next proposed milestone: **6.2**.
 
-Milestone **6.1ap** completed on 2026-08-14, closing `F-ER2-05`. Card actions now emit one ordered stream of facts and timing checkpoints and the turn authority materializes it without reading any fact's kind, so the deleted rewriter cannot grow effect-shaped arms at 6.2a. The emitted checkpoint order is unchanged for all four action paths; the one deliberate behavior change is that action end now reaches the Active-effect lifecycle before source-card cancellation, the order `Card-System/RESOLUTION_AND_EFFECTS.md` already specified. Schema stays at 7 with all fifteen pinned digests unmoved, which is the clean baseline 6.2a's schema bump needs. The remaining gameplay route is 6.2a, 6.2, 6.2b.
+Milestone **6.2a** completed on 2026-08-14, closing `F58C-02`. A bounded synthetic Skill now offers and executes through a stable-node serializable effect frame across `IMatchSession`, the round/turn authorities, snapshots, restore, replay and retained-prefix Undo. Snapshot schema is v8 and rejects v7: Active-effect semantics left the wire entirely and are rebound from the registered capability catalog, so a payload can say which effect and what happened to it but not what it means. The remaining gameplay route is 6.2, then 6.2b.
 
 Standing route exceptions: trigger-only milestone **6.1am** remains unordered until the rules ledger reaches its warning threshold, and **6.1y** remains unordered but required before 8.1. Exact sequencing lives in [Roadmap/PHASE_6_DOCUMENTATION.md](Roadmap/PHASE_6_DOCUMENTATION.md) and [Roadmap/PHASE_6.md](Roadmap/PHASE_6.md); scheduling is not authorization.
 

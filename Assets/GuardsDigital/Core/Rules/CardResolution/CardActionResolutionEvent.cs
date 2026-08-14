@@ -391,6 +391,97 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 default);
         }
 
+        /// <summary>
+        /// Milestone 6.2a. Skill facts name the effect node they concern through the ordinary step
+        /// identity, and say what happened through the event kind rather than by packing an outcome
+        /// into a field that means something else.
+        /// </summary>
+        public static CardActionResolutionEvent SkillActionStarted(
+            ActionResolutionId resolutionId,
+            ActionOffer offer) =>
+            Skill(
+                CardActionResolutionEventKind.SkillActionStarted,
+                resolutionId,
+                offer.SourceCardInstanceId,
+                offer.ActionDefinitionId,
+                offer.ActorId,
+                new ActionResolutionStepId("skill-start"));
+
+        public static CardActionResolutionEvent SkillEffectNode(
+            CardActionResolutionEventKind kind,
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            string nodeId)
+        {
+            if (kind != CardActionResolutionEventKind.SkillEffectNodeApplied &&
+                kind != CardActionResolutionEventKind.SkillEffectNodeDeclined &&
+                kind != CardActionResolutionEventKind.SkillEffectNodeStopped)
+            {
+                throw new ArgumentOutOfRangeException(nameof(kind), "Not a Skill effect-node fact kind.");
+            }
+
+            return Skill(
+                kind,
+                resolutionId,
+                sourceCardInstanceId,
+                actionDefinitionId,
+                actorId,
+                new ActionResolutionStepId(nodeId));
+        }
+
+        public static CardActionResolutionEvent SkillChoiceRequested(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            string choiceId) =>
+            Skill(
+                CardActionResolutionEventKind.SkillChoiceRequested,
+                resolutionId,
+                sourceCardInstanceId,
+                actionDefinitionId,
+                actorId,
+                new ActionResolutionStepId(choiceId));
+
+        public static CardActionResolutionEvent SkillActionCompleted(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId) =>
+            Skill(
+                CardActionResolutionEventKind.SkillActionCompleted,
+                resolutionId,
+                sourceCardInstanceId,
+                actionDefinitionId,
+                actorId,
+                new ActionResolutionStepId("skill-complete"));
+
+        private static CardActionResolutionEvent Skill(
+            CardActionResolutionEventKind kind,
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            ActionResolutionStepId stepId) =>
+            new CardActionResolutionEvent(
+                kind,
+                resolutionId,
+                sourceCardInstanceId,
+                actionDefinitionId,
+                default,
+                actorId,
+                default,
+                stepId,
+                0,
+                0,
+                default,
+                0,
+                AttackResolutionOutcome.None,
+                default,
+                default);
+
         private static CardActionResolutionEvent FromAttackResolution(
             CardActionResolutionEventKind kind,
             PendingAttackResolution resolution,

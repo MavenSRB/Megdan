@@ -31,7 +31,20 @@ namespace GuardsDigital.Core.Snapshots
         /// a build whose enum no longer agrees with this one are different failures, and a
         /// resynchronizing client needs to tell them apart. See <see cref="SnapshotEnumReader"/>.
         /// </summary>
-        UnrecognizedEnumValue = 6
+        UnrecognizedEnumValue = 6,
+
+        /// <summary>
+        /// Milestone 6.2a. The payload names an effect definition the configured match definitions do
+        /// not provide. Distinct from a malformed payload: the bytes parsed, but they describe content
+        /// this build does not have.
+        /// </summary>
+        EffectDefinitionMissing = 7,
+
+        /// <summary>The payload names a capability this build does not register at all.</summary>
+        EffectCapabilityMissing = 8,
+
+        /// <summary>The capability is registered, but not at the revision the payload names.</summary>
+        EffectCapabilityRevisionMismatch = 9
     }
 
     public sealed class SnapshotLoadException : Exception

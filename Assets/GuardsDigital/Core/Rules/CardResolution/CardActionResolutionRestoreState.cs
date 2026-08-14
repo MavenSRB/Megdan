@@ -1,5 +1,6 @@
 using System;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.EffectResolution;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -13,7 +14,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
     {
         None = 0,
         Movement = 1,
-        Attack = 2
+        Attack = 2,
+        Skill = 3
     }
 
     /// <summary>
@@ -35,9 +37,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardActionContinuationKind continuationKind,
             PendingCardActionResolution pendingMovementResolution,
             PendingAttackResolution pendingAttackResolution,
+            PendingResolution pendingSkillResolution,
             DefeatRewardRestoreStateHolder defeatRewards)
         {
             ContinuationKind = continuationKind;
+            PendingSkillResolution = pendingSkillResolution;
             PendingMovementResolution = pendingMovementResolution;
             PendingAttackResolution = pendingAttackResolution;
             DefeatRewards = defeatRewards;
@@ -50,6 +54,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Set only when <see cref="ContinuationKind"/> is Attack.</summary>
         public PendingAttackResolution PendingAttackResolution { get; }
+
+        /// <summary>Set only when <see cref="ContinuationKind"/> is Skill.</summary>
+        public PendingResolution PendingSkillResolution { get; }
 
         /// <summary>
         /// The Defeat-reward accounting to restore. Never omitted: an authority with no
@@ -64,6 +71,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CardActionContinuationKind.None,
                 null,
                 null,
+                null,
                 defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)));
 
         public static CardActionResolutionRestoreState WithPendingMovement(
@@ -72,6 +80,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.Movement,
                 pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
+                null,
                 null,
                 defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)));
 
@@ -82,18 +91,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CardActionContinuationKind.Attack,
                 null,
                 pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
+                null,
                 defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)));
 
         public void Deconstruct(
             out CardActionContinuationKind continuationKind,
             out PendingCardActionResolution pendingMovementResolution,
             out PendingAttackResolution pendingAttackResolution,
+            out PendingResolution pendingSkillResolution,
             out DefeatRewardRestoreStateHolder defeatRewards)
         {
             continuationKind = ContinuationKind;
             pendingMovementResolution = PendingMovementResolution;
             pendingAttackResolution = PendingAttackResolution;
+            pendingSkillResolution = PendingSkillResolution;
             defeatRewards = DefeatRewards;
         }
+
+        public static CardActionResolutionRestoreState WithPendingSkill(
+            PendingResolution pendingResolution,
+            DefeatRewardRestoreStateHolder defeatRewards) =>
+            new CardActionResolutionRestoreState(
+                CardActionContinuationKind.Skill,
+                null,
+                null,
+                pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
+                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)));
     }
 }

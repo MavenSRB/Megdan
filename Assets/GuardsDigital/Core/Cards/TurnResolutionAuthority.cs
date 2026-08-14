@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Timing;
@@ -342,6 +343,11 @@ namespace GuardsDigital.Core.Cards
 
         public PendingDefenseResponseChoice PendingDefenseChoice => cardActions?.PendingDefenseChoice;
 
+        public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
+            cardActions?.PendingSkillResolution;
+
+        public PendingEffectChoice PendingEffectChoice => cardActions?.PendingEffectChoice;
+
         internal CardActionResolutionAuthority CardActions => cardActions;
 
         public ActiveEffectLifecycle Timing => timing;
@@ -652,6 +658,93 @@ namespace GuardsDigital.Core.Cards
             {
                 throw new InvalidOperationException(
                     "A card resolved after Fast Travel could not be acknowledged by Initiative authority.");
+            }
+
+            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
+            return AdvanceInitiative(events);
+        }
+
+        public TurnResolutionResult TryStartSkill(
+            ActionResolutionId resolutionId,
+            ActionOffer offer)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.NoActorSelected);
+            }
+
+            if (!initiative.SelectedActor.CardInstanceId.Equals(offer.SourceCardInstanceId) ||
+                !initiative.SelectedActor.ActorId.Equals(offer.ActorId))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardNotSelectedForAction);
+            }
+
+            if (cardActions == null || cardActions.HasPendingResolution)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+            }
+
+            var skillResult = cardActions.StartTurnSkill(
+                resolutionId, offer, definitions, instances, participants, timing, roundIndex, turnIndex);
+            if (!skillResult.Accepted)
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+            return CompleteSkillStep(skillResult);
+        }
+
+        public TurnResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (cardActions?.PendingSkillResolution == null || !initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            }
+
+            var answered = cardActions.AnswerEffectChoice(
+                command, definitions, participants, timing, roundIndex, turnIndex);
+            if (!answered.Accepted)
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            return CompleteSkillStep(answered);
+        }
+
+        /// <summary>
+        /// A Skill that has finished resolves its source card and advances Initiative exactly as every
+        /// other completed action does; one that is still waiting simply publishes its facts.
+        /// </summary>
+        private TurnResolutionResult CompleteSkillStep(CardActionResolutionResult result)
+        {
+            var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromCardAction);
+            if (!result.IsComplete)
+            {
+                return TurnResolutionResult.Accept(events);
+            }
+
+            var card = instances.Single(candidate =>
+                candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            {
+                throw new InvalidOperationException(
+                    "A completed Skill could not resolve its prevalidated source card.");
+            }
+
+            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            if (!acknowledgement.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A card resolved after a Skill could not be acknowledged by Initiative authority.");
             }
 
             events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));

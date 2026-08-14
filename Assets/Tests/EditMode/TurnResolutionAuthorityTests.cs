@@ -550,10 +550,7 @@ namespace GuardsDigital.Tests.EditMode
                 var checkpoint = checkpoints[index];
                 var definition = new ActiveEffectDefinition(
                     $"attack-order-{index}",
-                    new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
-                    TeamSide.Red,
                     ActiveEffectAffectedScopeKind.Global,
-                    default,
                     ActiveEffectDurationKind.ThisTurn,
                     TimingCheckpoint.ActionStarted,
                     TimingCheckpoint.ActionStarted,
@@ -572,6 +569,9 @@ namespace GuardsDigital.Tests.EditMode
                 timing.Create(
                     new ActiveEffectId($"attack-order-effect-{index}"),
                     definition,
+                    new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                    TeamSide.Red,
+                    default,
                     new CardInstanceId($"attack-order-source-{index}"),
                     new ActionDefinitionId($"attack-order-action-{index}"),
                     1,

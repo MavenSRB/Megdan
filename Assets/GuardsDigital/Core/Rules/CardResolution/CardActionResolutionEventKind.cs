@@ -26,6 +26,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         MinionRemovalAttempted = 21,
         MinionRemovalCompleted = 22,
         AttackTargetValidated = 23,
-        HeroDefeatRecorded = 24
+        HeroDefeatRecorded = 24,
+        SkillActionStarted = 25,
+        SkillEffectNodeApplied = 26,
+        SkillEffectNodeDeclined = 27,
+        SkillEffectNodeStopped = 28,
+        SkillChoiceRequested = 29,
+        SkillActionCompleted = 30
     }
 }

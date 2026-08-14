@@ -448,3 +448,9 @@ A user-approved roadmap amendment on 2026-08-13 scheduled the open ER2 dispositi
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 6.1ap | Closes `F-ER2-05`. Card actions emit one ordered `ResolutionStep` stream of facts and timing checkpoints; `TurnResolutionAuthority.ApplyActionTiming` is deleted and `MaterializeSteps` branches only on whether a step is a fact or a checkpoint, so no action or effect family can require an arm there. The step carries no family discriminator because every call site already knows its family statically and supplies the adapter. Two failing-then-passing transitions against genuine pre-fix defects, both at `2e47c97`. The wire format is unchanged and asserted: schema stays at 7 and all fifteen pinned digests are unmoved. | `6426576` |
+
+## Milestone 6.2a Establish typed Skill and serializable effect execution completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.2a | Closes `F58C-02`. Skill is a first-class action offer resolved by a fourth concrete backend over a stable flat effect-node table with `Sequence`, `Optional`, `Conditional` and `Choose`, and `Mandatory`/`may`/`up to`/`if able` kept as four distinct behaviors. `PendingResolution` holds references and position, never an `EffectDefinition` or a handler, so the snapshot has nowhere to put semantics. Schema v8 rejects v7: Active-effect scope, duration, three lifecycle checkpoints, cancellation conditions, cross-round flag, effect kind, uniqueness key and trigger checkpoints all left the wire and are rebound from `EffectCapabilityCatalog`, and a restored effect is reference-equal to the catalog's own definition object. Pending-choice candidates are never written; they are re-derived from the trusted definition or by re-asking the registered handler. Every decision inside an effect rides one `AnswerEffectChoice` command member, so 6.2 adds none. | `pending` |

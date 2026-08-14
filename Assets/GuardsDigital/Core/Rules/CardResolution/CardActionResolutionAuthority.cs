@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Consequences;
@@ -16,6 +17,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly MovementCardActionStrategyBackend movementBackend;
         private readonly AttackDefenseCardActionStrategyBackend attackDefenseBackend;
         private readonly FastTravelCardActionStrategyBackend fastTravelBackend;
+        private readonly SkillCardActionStrategyBackend skillBackend;
 
         public CardActionResolutionAuthority(AdjacentMoveAuthority adjacentMoveAuthority)
             : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance)
@@ -31,18 +33,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     movementActionStartRestrictions ?? throw new ArgumentNullException(
                         nameof(movementActionStartRestrictions))),
                 new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority),
-                new FastTravelCardActionStrategyBackend(adjacentMoveAuthority))
+                new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()))
         {
         }
 
         private CardActionResolutionAuthority(
             MovementCardActionStrategyBackend movementBackend,
             AttackDefenseCardActionStrategyBackend attackDefenseBackend,
-            FastTravelCardActionStrategyBackend fastTravelBackend)
+            FastTravelCardActionStrategyBackend fastTravelBackend,
+            SkillCardActionStrategyBackend skillBackend)
         {
             this.movementBackend = movementBackend ?? throw new ArgumentNullException(nameof(movementBackend));
             this.attackDefenseBackend = attackDefenseBackend ?? throw new ArgumentNullException(nameof(attackDefenseBackend));
             this.fastTravelBackend = fastTravelBackend ?? throw new ArgumentNullException(nameof(fastTravelBackend));
+            this.skillBackend = skillBackend ?? throw new ArgumentNullException(nameof(skillBackend));
         }
 
         public PendingCardActionResolution PendingResolution => movementBackend.PendingResolution;
@@ -57,8 +62,37 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public DefeatRewardAccounting DefeatRewards => attackDefenseBackend.DefeatRewards;
 
+        public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
+            skillBackend.PendingResolution;
+
+        public GuardsDigital.Core.Rules.EffectResolution.PendingEffectChoice PendingEffectChoice =>
+            skillBackend.PendingChoice;
+
         public bool HasPendingResolution =>
-            movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution;
+            movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
+            skillBackend.HasPendingResolution;
+
+        public CardActionResolutionResult StartTurnSkill(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            int roundIndex,
+            int turnIndex) =>
+            skillBackend.StartTurnSkill(
+                resolutionId, offer, definitions, instances, participants, timing, roundIndex, turnIndex);
+
+        public CardActionResolutionResult AnswerEffectChoice(
+            GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command,
+            IEnumerable<CardDefinition> definitions,
+            MatchParticipants participants,
+            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            int roundIndex,
+            int turnIndex) =>
+            skillBackend.AnswerEffectChoice(
+                command, definitions, participants, timing, roundIndex, turnIndex);
 
         public CardActionResolutionRestoreState CaptureRestoreState()
         {
@@ -70,8 +104,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return CardActionResolutionRestoreState.WithPendingMovement(PendingResolution, rewards);
             }
 
-            return PendingAttackResolution != null
-                ? CardActionResolutionRestoreState.WithPendingAttack(PendingAttackResolution, rewards)
+            if (PendingAttackResolution != null)
+            {
+                return CardActionResolutionRestoreState.WithPendingAttack(PendingAttackResolution, rewards);
+            }
+
+            return PendingSkillResolution != null
+                ? CardActionResolutionRestoreState.WithPendingSkill(PendingSkillResolution, rewards)
                 : CardActionResolutionRestoreState.WithoutPendingAction(rewards);
         }
 
@@ -112,7 +151,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             new MovementBackendRestoreState(state.PendingMovementResolution),
                             verifiedMovementChoice),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
-                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
+                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()));
 
                 case CardActionContinuationKind.Attack:
                     return new CardActionResolutionAuthority(
@@ -126,13 +166,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             instances,
                             participants,
                             defeatRewards),
-                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
+                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()));
+
+                case CardActionContinuationKind.Skill:
+                    return new CardActionResolutionAuthority(
+                        new MovementCardActionStrategyBackend(adjacentMoveAuthority),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
+                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        SkillCardActionStrategyBackend.Restore(
+                            SyntheticEffectCapabilities.CreateCatalog(),
+                            new SkillBackendRestoreState(state.PendingSkillResolution)));
 
                 default:
                     return new CardActionResolutionAuthority(
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
-                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority));
+                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()));
             }
         }
 
