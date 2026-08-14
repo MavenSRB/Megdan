@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Minions;
@@ -28,7 +29,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            IEnumerable<MinionOccupancy> minions)
+            IEnumerable<MinionOccupancy> minions,
+            RuleModificationSet modifications = null)
         {
             if (!resolutionId.IsDefined)
             {
@@ -51,7 +53,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedInstances,
                 board,
                 participants,
-                materializedMinions);
+                materializedMinions,
+                modifications);
             if (rejection != CardActionResolutionRejectionReason.None)
             {
                 return Reject(rejection);

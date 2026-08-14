@@ -261,6 +261,12 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         internal bool IsOccupied(HexCoordinate coordinate) => occupancyIndex.IsOccupied(coordinate);
 
+        /// <summary>
+        /// Whether the coordinate is a playable space of the selected map. Anything else is terrain or
+        /// off the board, which rulebook p.19 classifies as an obstacle either way.
+        /// </summary>
+        internal bool IsPlayable(HexCoordinate coordinate) => boardCoordinates.Contains(coordinate);
+
         internal IReadOnlyCollection<HexCoordinate> OccupiedCoordinates => occupancyIndex.OccupiedCoordinates;
 
         internal IReadOnlyCollection<HexCoordinate> PlayableCoordinateSet => boardCoordinates;

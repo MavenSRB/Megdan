@@ -5,6 +5,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -47,7 +48,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications = null)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -62,7 +64,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 materializedInstances,
                 participants,
-                authoritativeOffers);
+                authoritativeOffers,
+                modifications);
         }
 
 
@@ -71,7 +74,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications = null)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -86,7 +90,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 materializedInstances,
                 participants,
-                authoritativeOffers);
+                authoritativeOffers,
+                modifications);
         }
 
         private AttackActionResolutionResult StartAttackResolution(
@@ -95,7 +100,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> materializedDefinitions,
             IReadOnlyList<CardInstance> materializedInstances,
             MatchParticipants participants,
-            IReadOnlyList<ActionOffer> authoritativeOffers)
+            IReadOnlyList<ActionOffer> authoritativeOffers,
+            RuleModificationSet modifications)
         {
             if (!resolutionId.IsDefined)
             {
@@ -164,7 +170,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution,
                 offer,
                 materializedDefinitions,
-                participants);
+                participants,
+                modifications);
             pendingDefenseChoice = null;
 
             if (pendingAttackTargetChoice.LegalTargets.Count == 0)
@@ -190,7 +197,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackTargetChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications = null)
         {
             if (participants == null)
             {
@@ -224,7 +232,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution,
                 offer.Value,
                 materializedDefinitions,
-                participants);
+                participants,
+                modifications);
             if (!AttackTargetChoicesMatch(authoritativeChoice, pendingAttackTargetChoice))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
@@ -360,7 +369,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefenseResponseChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications = null)
         {
             if (command == null)
             {
@@ -399,7 +409,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.ActorId,
                 attackOffer.Value,
                 materializedDefinitions,
-                participants);
+                participants,
+                modifications);
             var expectedAttackValue = PrintedValueQuery.CalculatePrintedValue(
                 attackOffer.Value,
                 materializedDefinitions,
@@ -484,7 +495,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 pendingAttackResolution.TargetHeroId,
                 participants,
-                adjacentMoveAuthority);
+                adjacentMoveAuthority,
+                modifications);
             var resumedWithDefense = CreateOutcomeComparisonResolution(defenseOffer, defenseValue);
 
             // Routed through the lifecycle authority rather than transitioning the card directly.
@@ -520,7 +532,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public AttackActionResolutionResult ResolveOutcome(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications = null)
         {
             if (participants == null)
             {
@@ -550,7 +563,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.ActorId,
                 attackOffer.Value,
                 materializedDefinitions,
-                participants);
+                participants,
+                modifications);
             var expectedAttackValue = PrintedValueQuery.CalculatePrintedValue(
                 attackOffer.Value,
                 materializedDefinitions,
@@ -564,7 +578,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions,
                     materializedInstances,
                     participants,
-                    adjacentMoveAuthority))
+                    adjacentMoveAuthority,
+                    modifications))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }
@@ -633,7 +648,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            DefeatRewardAccounting defeatRewards)
+            DefeatRewardAccounting defeatRewards,
+            RuleModificationSet modifications = null)
         {
             if (state == null)
             {
@@ -663,7 +679,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingResolution,
                     offer.Value,
                     materializedDefinitions,
-                    participants);
+                    participants,
+                    modifications);
                 if (verifiedDefenseChoice != null ||
                     (verifiedTargetChoice != null &&
                         !AttackTargetChoicesMatch(expectedChoice, verifiedTargetChoice)))
@@ -679,7 +696,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingResolution.ActorId,
                     offer.Value,
                     materializedDefinitions,
-                    participants);
+                    participants,
+                    modifications);
                 if (!legalTargets.Contains(AttackTarget.Hero(pendingResolution.TargetHeroId)))
                 {
                     throw new ArgumentException("Pending Attack target is no longer legal.", nameof(pendingResolution));
@@ -728,7 +746,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             materializedDefinitions,
                             materializedInstances,
                             participants,
-                            adjacentMoveAuthority))
+                            adjacentMoveAuthority,
+                            modifications))
                     {
                         throw new ArgumentException("Completed Defense response does not match authoritative Attack state.", nameof(state));
                     }
@@ -777,7 +796,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution resolution,
             ActionOffer offer,
             IReadOnlyList<CardDefinition> definitions,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications)
         {
             return new PendingAttackTargetChoice(
                 resolution.ResolutionId,
@@ -787,14 +807,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     resolution.ActorId,
                     offer,
                     definitions,
-                    participants));
+                    participants,
+                    modifications));
         }
 
         private IReadOnlyList<AttackTarget> FindLegalAttackTargets(
             HeroId attackerId,
             ActionOffer offer,
             IReadOnlyList<CardDefinition> definitions,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications)
         {
             var rangeTotal = offer.AttackRange == AttackRangeKind.Ranged
                 ? PrintedValueQuery.CalculatePrintedValue(
@@ -807,7 +829,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer.AttackRange,
                 rangeTotal,
                 participants,
-                adjacentMoveAuthority);
+                adjacentMoveAuthority,
+                modifications);
         }
 
         private static ActionOffer? FindPendingAttackOffer(
@@ -891,7 +914,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
             MatchParticipants participants,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board,
+            RuleModificationSet modifications)
         {
             if (!resolution.DefenseOffer.HasValue)
             {
@@ -926,7 +950,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 definitions,
                 resolution.TargetHeroId,
                 participants,
-                board);
+                board,
+                modifications);
             return PrintedValuesMatch(resolution.DefenseValue, expectedDefenseValue);
         }
     }

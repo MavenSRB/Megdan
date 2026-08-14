@@ -18,6 +18,7 @@ namespace GuardsDigital.Core.Cards
                 sourceActionDefinitionId,
                 default,
                 default,
+                null,
                 channel,
                 amount,
                 true)
@@ -35,6 +36,7 @@ namespace GuardsDigital.Core.Cards
                 default,
                 default,
                 default,
+                null,
                 channel,
                 amount,
                 false)
@@ -52,6 +54,7 @@ namespace GuardsDigital.Core.Cards
                 default,
                 sourceMinionId,
                 default,
+                null,
                 channel,
                 amount,
                 false)
@@ -69,11 +72,33 @@ namespace GuardsDigital.Core.Cards
                 default,
                 default,
                 sourceActiveEffectId,
+                null,
                 channel,
                 amount,
                 false)
         {
         }
+
+        /// <summary>
+        /// A contribution from a persistent non-Active-effect source, identified by that source's stable
+        /// ID. The identity is a string because <c>ContinuousRuleSource</c> identifies itself with one:
+        /// a token property, an Ultimate, and a marker are different objects with no shared typed ID, and
+        /// inventing one here would make this struct the authority on what a continuous source is.
+        /// </summary>
+        public static ValueContribution FromContinuousSource(
+            string sourceId,
+            PrintedValueChannel channel,
+            int amount) =>
+            new ValueContribution(
+                ValueContributionKind.ContinuousSourceModifier,
+                default,
+                default,
+                default,
+                default,
+                sourceId,
+                channel,
+                amount,
+                false);
 
         private ValueContribution(
             ValueContributionKind kind,
@@ -81,6 +106,7 @@ namespace GuardsDigital.Core.Cards
             ActionDefinitionId sourceActionDefinitionId,
             MinionId sourceMinionId,
             ActiveEffectId sourceActiveEffectId,
+            string sourceContinuousSourceId,
             PrintedValueChannel channel,
             int amount,
             bool requiresActionDefinition)
@@ -138,11 +164,28 @@ namespace GuardsDigital.Core.Cards
                     "A minion Defense contribution requires a minion source, the Defense channel, and an amount of -1 or +1.");
             }
 
+            if (kind == ValueContributionKind.ContinuousSourceModifier &&
+                (string.IsNullOrWhiteSpace(sourceContinuousSourceId) || sourceCardInstanceId.IsDefined ||
+                    sourceActionDefinitionId.IsDefined || sourceMinionId.IsDefined ||
+                    sourceActiveEffectId.IsDefined))
+            {
+                throw new ArgumentException(
+                    "A continuous-source contribution requires exactly one continuous-source identity.");
+            }
+
+            if (kind != ValueContributionKind.ContinuousSourceModifier &&
+                !string.IsNullOrEmpty(sourceContinuousSourceId))
+            {
+                throw new ArgumentException(
+                    "Only a continuous-source contribution carries a continuous-source identity.");
+            }
+
             if (kind != ValueContributionKind.PrintedIcon &&
                 kind != ValueContributionKind.MinionDefenseModifier &&
                 kind != ValueContributionKind.ItemModifier &&
                 kind != ValueContributionKind.CardTextModifier &&
-                kind != ValueContributionKind.ActiveEffectModifier)
+                kind != ValueContributionKind.ActiveEffectModifier &&
+                kind != ValueContributionKind.ContinuousSourceModifier)
             {
                 throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported value contribution kind.");
             }
@@ -157,6 +200,7 @@ namespace GuardsDigital.Core.Cards
             SourceActionDefinitionId = sourceActionDefinitionId;
             SourceMinionId = sourceMinionId;
             SourceActiveEffectId = sourceActiveEffectId;
+            SourceContinuousSourceId = sourceContinuousSourceId;
             Channel = channel;
             Amount = amount;
         }
@@ -177,6 +221,11 @@ namespace GuardsDigital.Core.Cards
 
         public bool HasSourceActiveEffectId => SourceActiveEffectId.IsDefined;
 
+        /// <summary>The stable ID of the continuous source, when one supplied this contribution.</summary>
+        public string SourceContinuousSourceId { get; }
+
+        public bool HasSourceContinuousSourceId => !string.IsNullOrEmpty(SourceContinuousSourceId);
+
         public PrintedValueChannel Channel { get; }
 
         public int Amount { get; }
@@ -188,6 +237,7 @@ namespace GuardsDigital.Core.Cards
                 SourceActionDefinitionId.Equals(other.SourceActionDefinitionId) &&
                 SourceMinionId.Equals(other.SourceMinionId) &&
                 SourceActiveEffectId.Equals(other.SourceActiveEffectId) &&
+                string.Equals(SourceContinuousSourceId, other.SourceContinuousSourceId, StringComparison.Ordinal) &&
                 Channel == other.Channel &&
                 Amount == other.Amount;
         }
@@ -206,6 +256,9 @@ namespace GuardsDigital.Core.Cards
                 hashCode = (hashCode * 397) ^ SourceActionDefinitionId.GetHashCode();
                 hashCode = (hashCode * 397) ^ SourceMinionId.GetHashCode();
                 hashCode = (hashCode * 397) ^ SourceActiveEffectId.GetHashCode();
+                hashCode = (hashCode * 397) ^ (SourceContinuousSourceId == null
+                    ? 0
+                    : StringComparer.Ordinal.GetHashCode(SourceContinuousSourceId));
                 hashCode = (hashCode * 397) ^ (int)Channel;
                 hashCode = (hashCode * 397) ^ Amount;
                 return hashCode;

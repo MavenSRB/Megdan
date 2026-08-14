@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Timing
@@ -48,7 +49,8 @@ namespace GuardsDigital.Core.Timing
             bool carriesAcrossRoundBoundary,
             string effectKind,
             string uniquenessKey,
-            IEnumerable<TimingCheckpoint> triggerCheckpoints)
+            IEnumerable<TimingCheckpoint> triggerCheckpoints,
+            IEnumerable<RuleModification> modifications = null)
         {
             if (string.IsNullOrWhiteSpace(definitionId))
                 throw new ArgumentException("An Active-effect definition requires a stable ID.", nameof(definitionId));
@@ -72,6 +74,9 @@ namespace GuardsDigital.Core.Timing
             var triggers = (triggerCheckpoints ?? throw new ArgumentNullException(nameof(triggerCheckpoints))).ToArray();
             if (triggers.Contains(TimingCheckpoint.None) || triggers.Distinct().Count() != triggers.Length)
                 throw new ArgumentException("Active-effect trigger checkpoints must be defined and unique.", nameof(triggerCheckpoints));
+            var declaredModifications = (modifications ?? Enumerable.Empty<RuleModification>()).ToArray();
+            if (declaredModifications.Any(modification => modification == null))
+                throw new ArgumentException("Declared modifications must be non-null.", nameof(modifications));
 
             ValidateDuration(durationKind, creationCheckpoint, activationCheckpoint, expirationCheckpoint, carriesAcrossRoundBoundary);
             DefinitionId = definitionId;
@@ -85,6 +90,7 @@ namespace GuardsDigital.Core.Timing
             EffectKind = effectKind;
             UniquenessKey = uniquenessKey;
             TriggerCheckpoints = new ReadOnlyCollection<TimingCheckpoint>(triggers);
+            Modifications = new ReadOnlyCollection<RuleModification>(declaredModifications);
         }
 
         public string DefinitionId { get; }
@@ -98,6 +104,17 @@ namespace GuardsDigital.Core.Timing
         public string EffectKind { get; }
         public string UniquenessKey { get; }
         public IReadOnlyList<TimingCheckpoint> TriggerCheckpoints { get; }
+
+        /// <summary>
+        /// The typed rules this effect supplies while it is active, as definition content.
+        ///
+        /// Milestone 6.8 put them here rather than on the instance for the reason milestone 6.2a moved
+        /// the rest of the semantics here: a snapshot names the definition and the trusted catalog
+        /// supplies its meaning, so a restored instance produces exactly these modifications again and no
+        /// payload can restate what a saved effect does. An effect that declares none is a timing marker,
+        /// not a modifier.
+        /// </summary>
+        public IReadOnlyList<RuleModification> Modifications { get; }
 
         private static void ValidateDuration(
             ActiveEffectDurationKind duration,

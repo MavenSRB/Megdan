@@ -13,6 +13,7 @@ using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -57,7 +58,8 @@ namespace GuardsDigital.Core.Snapshots
             IReadOnlyList<CardInstance> cards,
             MatchParticipants participants,
             EffectCapabilityCatalog capabilities,
-            MarkerAttachmentRegister markers)
+            MarkerAttachmentRegister markers,
+            RuleModificationSet modifications)
         {
             var kind = reader.ReadInt32();
             var defeatRewards = ReadDefeatRewards(reader);
@@ -91,7 +93,7 @@ namespace GuardsDigital.Core.Snapshots
             // The snapshot never stores the pending choices; they are derived during
             // restore, so no verified choice is supplied here.
             return CardActionResolutionAuthority.Restore(
-                board, state, null, null, null, definitions, cards, participants, markers);
+                board, state, null, null, null, definitions, cards, participants, markers, modifications);
         }
 
         /// <summary>

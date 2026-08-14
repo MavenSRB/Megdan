@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -20,7 +21,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            IEnumerable<MinionOccupancy> minions)
+            IEnumerable<MinionOccupancy> minions,
+            RuleModificationSet modifications = null)
         {
             if (board == null)
             {
@@ -39,7 +41,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     replacementOffer,
                     replacedMovementActionDefinitionId,
                     materializedDefinitions,
-                    materializedInstances))
+                    materializedInstances,
+                    modifications))
             {
                 return Array.Empty<HexCoordinate>();
             }
@@ -54,7 +57,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     board,
                     participants,
                     materializedMinions,
-                    true) == CardActionResolutionRejectionReason.None)
+                    true,
+                    modifications) == CardActionResolutionRejectionReason.None)
                 .OrderBy(destination => destination.Q)
                 .ThenBy(destination => destination.R)
                 .ToArray());
@@ -68,7 +72,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            IEnumerable<MinionOccupancy> minions)
+            IEnumerable<MinionOccupancy> minions,
+            RuleModificationSet modifications = null)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -92,7 +97,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 board,
                 participants,
                 materializedMinions,
-                false);
+                false,
+                modifications);
         }
 
         private static CardActionResolutionRejectionReason EvaluateDestinationCore(
@@ -104,13 +110,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AdjacentMoveAuthority board,
             MatchParticipants participants,
             IReadOnlyList<MinionOccupancy> minions,
-            bool offerAlreadyValidated)
+            bool offerAlreadyValidated,
+            RuleModificationSet modifications)
         {
             if (!offerAlreadyValidated && !IsCurrentReplacementOffer(
                     replacementOffer,
                     replacedMovementActionDefinitionId,
                     definitions,
-                    instances))
+                    instances,
+                    modifications))
             {
                 return CardActionResolutionRejectionReason.UnavailableOffer;
             }
@@ -169,14 +177,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer replacementOffer,
             ActionDefinitionId replacedMovementActionDefinitionId,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications)
         {
             var expectedOffer = GeneralRuleActionOfferQuery.GetAvailableFastTravelOffer(
                 replacedMovementActionDefinitionId,
                 replacementOffer.SourceCardInstanceId,
                 replacementOffer.ActorId,
                 definitions,
-                instances);
+                instances,
+                modifications);
             return expectedOffer.HasValue && expectedOffer.Value.Equals(replacementOffer);
         }
 

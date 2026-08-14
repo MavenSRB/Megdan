@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -12,12 +13,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
 {
     public static class DefenseValueQuery
     {
+        /// <summary>
+        /// The defender's Defense value: the printed icon, the p.14 minion contributions, and every typed
+        /// modifier currently supplied to that hero.
+        /// </summary>
+        /// <param name="modifications">
+        /// The modifications in effect, or <c>null</c> when none apply. Each contributes with its own
+        /// source discriminator, so an Active-effect bonus, a token-owned bonus, and a minion's -1 stay
+        /// separately attributable inside one total.
+        /// </param>
         public static ValueResult Calculate(
             ActionOffer defenseOffer,
             IEnumerable<CardDefinition> definitions,
             HeroId defenderId,
             MatchParticipants participants,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board,
+            RuleModificationSet modifications = null)
         {
             if (!defenderId.IsDefined)
             {
@@ -40,6 +51,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 PrintedValueChannel.Defense);
             var contributions = new List<ValueContribution>(printed.Contributions);
             contributions.AddRange(CalculateMinionContributions(defenderId, participants, board));
+            if (modifications != null)
+            {
+                contributions.AddRange(modifications.ValueContributions(
+                    RuleObject.ForHero(defenderId), PrintedValueChannel.Defense));
+            }
 
             return new ValueResult(PrintedValueChannel.Defense, contributions);
         }

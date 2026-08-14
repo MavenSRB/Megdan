@@ -73,7 +73,7 @@ namespace GuardsDigital.Tests.EditMode
         public void TokenSupply_IsFiniteAndDerivedFromWhatIsOnTheBoard()
         {
             var catalog = SyntheticComponentDefinitions.CreateCatalog();
-            var reference = SyntheticComponentDefinitions.HazardV2;
+            var reference = SyntheticComponentDefinitions.HazardV3;
             var board = CreateBoard(new HexCoordinate(0, 0));
             var supply = SyntheticComponentDefinitions.HazardDefinition.SupplyCount;
 
@@ -200,7 +200,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(board.IsEmptyPlayableSpace(spawnSpace.Coordinate), Is.True,
                 "The Spawn owner receives an empty destination after the mandatory token-removal step.");
             Assert.That(SyntheticComponentDefinitions.CreateCatalog().CountAvailableTokens(
-                SyntheticComponentDefinitions.HazardV2, board.PlacedTokens),
+                SyntheticComponentDefinitions.HazardV3, board.PlacedTokens),
                 Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount));
 
             Assert.That(board.CommitValidatedTokenRemovalBeforeUnitSpawn(

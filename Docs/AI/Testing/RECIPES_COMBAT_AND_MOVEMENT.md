@@ -343,3 +343,28 @@ Because `CardAggregateInvarianceTests` is the one Unity-only fixture excluded fr
 Expected result: all cases pass. Coverage proves properties are trusted token-owned continuous sources rather than Active effects; source-card or source-hero absence does not end them; token removal does; Spawn-point clearance removes a covering token before the owning Spawn commit; Clear is a value-free, source-text-suppressing replacement for one current replaceable Attack; any unique adjacent-token subset including none is legal; duplicate, non-adjacent, forged, and stale input rejects before mutation; Clear emits no Attack facts; accepted execution resolves the source card and advances Initiative; and snapshot restore, retained-prefix Undo, replay, diagnostics, compatibility fixtures, and architecture/checkpoint constraints remain deterministic.
 
 Schema remains v9. The synthetic Hazard definition advances from revision 1 to revision 2 so trusted content can own the property declaration. The compatibility-corpus and aggregate-invariance fixtures must first report the exact digest delta, then may be re-pinned only with the explicit content-revision reject decision and unchanged equality groups recorded in source and completion evidence.
+
+## Reusable modifier, restriction, permission, immunity, and effective-characteristic tests
+
+Milestone 6.8 is T2 because it crosses definition content, the Active-effect and continuous-source seams, value composition, targeting, action offers, snapshot registration identity, and replay. Its production changes remain pure Core/Application code and add no presentation, scene, asset, or Unity-facing adapter, so no Play Mode run is required.
+
+Run the focused fixture first through the cross-platform harness:
+
+```powershell
+dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj --no-restore --filter "FullyQualifiedName~RuleModificationTests"
+```
+
+The Windows run must include `CardAggregateInvarianceTests`, which is the one Unity-only fixture excluded from that harness, together with the value, targeting, offer, timing, component, snapshot, and conformance regressions the contracts reach. Write `tmp/unity-validation-request.json` as follows and invoke only the parameterless launcher from [POLICY.md](POLICY.md#required-agent-entry-point):
+
+```json
+{
+  "platform": "EditMode",
+  "filter": "GuardsDigital.Tests.EditMode.RuleModificationTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.ActiveEffectLifecycleTests;GuardsDigital.Tests.EditMode.MinionObstacleAndDefenseTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.FastTravelActionTests;GuardsDigital.Tests.EditMode.TokenAndMarkerComponentTests;GuardsDigital.Tests.EditMode.MatchSessionComponentDispatchTests;GuardsDigital.Tests.EditMode.EffectCapabilityCatalogTests;GuardsDigital.Tests.EditMode.EffectSeamConformanceTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests",
+  "results": "tmp/milestone-6-8-affected-results.xml",
+  "log": "tmp/milestone-6-8-affected.log"
+}
+```
+
+Expected result: all cases pass. Coverage proves each declaration family rejects incomplete data; an activity-scoped declaration covers itself or everything and nothing else; a narrow permission leaves unrelated restrictions standing; simultaneous modifications order by revealed Tie-Breaker side, then creation sequence, then identity, without a flip; an immune unit cannot be targeted, is still counted by presence, and is never immune to its own actions; `Counts As` replaces the effective type while intrinsic kind and miniature rules cannot see it; obstacles block transit unless the permission allows it and always block an endpoint; only active effects and placed tokens supply rules; team and global scopes expand to the heroes they name; a Defense total composes printed, minion, Active-effect, and continuous contributions with distinct source provenance; the Fast-Travel offer disappears under a restriction naming it while other offers remain; and a snapshot round-trip reproduces the identical set by rebinding definitions from the trusted catalog.
+
+Schema remains v9. The capability registration list gains the five synthetic modification capabilities and the synthetic Hazard definition advances from revision 2 to revision 3. The compatibility-corpus and aggregate-invariance fixtures must first report the exact digest delta, then may be re-pinned only with the explicit reject decision and unchanged equality groups recorded in source and completion evidence.

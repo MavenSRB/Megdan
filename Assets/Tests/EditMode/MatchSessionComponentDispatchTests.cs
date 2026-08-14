@@ -78,12 +78,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingSkillResolution, Is.Null, "The Skill completes.");
             Assert.That(token.Coordinate, Is.EqualTo(chosen));
             Assert.That(token.OwnerHeroId, Is.EqualTo(actorId));
-            Assert.That(token.Definition.Reference, Is.EqualTo(SyntheticComponentDefinitions.HazardV2));
+            Assert.That(token.Definition.Reference, Is.EqualTo(SyntheticComponentDefinitions.HazardV3));
             Assert.That(board.IsEmptyPlayableSpace(chosen), Is.False,
                 "A placed token occupies its space for every consumer of the shared occupancy index.");
             Assert.That(
                 SyntheticComponentDefinitions.CreateCatalog().CountAvailableTokens(
-                    SyntheticComponentDefinitions.HazardV2, board.PlacedTokens),
+                    SyntheticComponentDefinitions.HazardV3, board.PlacedTokens),
                 Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount - 1));
         }
 

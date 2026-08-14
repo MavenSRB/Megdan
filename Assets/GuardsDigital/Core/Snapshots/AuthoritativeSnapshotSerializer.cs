@@ -217,7 +217,9 @@ namespace GuardsDigital.Core.Snapshots
                     ? contribution.SourceMinionId.Value
                     : contribution.HasSourceActiveEffectId
                         ? contribution.SourceActiveEffectId.Value
-                        : contribution.SourceCardInstanceId.Value);
+                        : contribution.HasSourceContinuousSourceId
+                            ? contribution.SourceContinuousSourceId
+                            : contribution.SourceCardInstanceId.Value);
                 writer.Write(contribution.HasSourceActionDefinitionId);
                 if (contribution.HasSourceActionDefinitionId) writer.Write(contribution.SourceActionDefinitionId.Value);
                 writer.Write((int)contribution.Channel); writer.Write(contribution.Amount);
@@ -259,6 +261,18 @@ namespace GuardsDigital.Core.Snapshots
                     return new ValueContribution(
                         kind,
                         new ActiveEffectId(card.Value),
+                        contributionChannel,
+                        amount);
+                }
+                if (kind == ValueContributionKind.ContinuousSourceModifier)
+                {
+                    if (hasAction)
+                    {
+                        throw Malformed("A continuous-source contribution cannot reference a card action.");
+                    }
+
+                    return ValueContribution.FromContinuousSource(
+                        card.Value,
                         contributionChannel,
                         amount);
                 }

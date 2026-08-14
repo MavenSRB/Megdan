@@ -8,6 +8,7 @@ using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Minions;
@@ -22,6 +23,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly ClearCardActionStrategyBackend clearBackend;
         private readonly SkillCardActionStrategyBackend skillBackend;
         private readonly MatchComponents components;
+        private readonly AdjacentMoveAuthority board;
 
         public CardActionResolutionAuthority(AdjacentMoveAuthority adjacentMoveAuthority)
             : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, null)
@@ -60,7 +62,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                 new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                 new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
-                CreateComponents(adjacentMoveAuthority, markers))
+                CreateComponents(adjacentMoveAuthority, markers),
+                adjacentMoveAuthority)
         {
         }
 
@@ -70,7 +73,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             FastTravelCardActionStrategyBackend fastTravelBackend,
             ClearCardActionStrategyBackend clearBackend,
             SkillCardActionStrategyBackend skillBackend,
-            MatchComponents components)
+            MatchComponents components,
+            AdjacentMoveAuthority board)
         {
             this.movementBackend = movementBackend ?? throw new ArgumentNullException(nameof(movementBackend));
             this.attackDefenseBackend = attackDefenseBackend ?? throw new ArgumentNullException(nameof(attackDefenseBackend));
@@ -78,6 +82,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             this.clearBackend = clearBackend ?? throw new ArgumentNullException(nameof(clearBackend));
             this.skillBackend = skillBackend ?? throw new ArgumentNullException(nameof(skillBackend));
             this.components = components ?? throw new ArgumentNullException(nameof(components));
+            this.board = board ?? throw new ArgumentNullException(nameof(board));
         }
 
         /// <summary>
@@ -122,6 +127,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public GuardsDigital.Core.Rules.EffectResolution.PendingEffectChoice PendingEffectChoice =>
             skillBackend.PendingChoice;
+
+        /// <summary>
+        /// The modifications in effect right now, derived from the supplied timing state and this
+        /// authority's board. Built per command rather than cached: an Active effect can expire and a
+        /// token can be removed between two commands, and a cached set would answer for the wrong moment.
+        /// </summary>
+        public RuleModificationSet CurrentModifications(
+            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            MatchParticipants participants,
+            TieBreakerState tieBreaker) =>
+            RuleModificationQuery.Build(timing, board, participants, tieBreaker);
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
@@ -215,7 +231,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            MarkerAttachmentRegister markers)
+            MarkerAttachmentRegister markers,
+            RuleModificationSet modifications = null)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var defeatRewards = state.DefeatRewards.IsPresent
@@ -235,7 +252,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
-                        components);
+                        components,
+                        adjacentMoveAuthority);
 
                 case CardActionContinuationKind.Attack:
                     return new CardActionResolutionAuthority(
@@ -248,11 +266,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             definitions,
                             instances,
                             participants,
-                            defeatRewards),
+                            defeatRewards,
+                            modifications),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
-                        components);
+                        components,
+                        adjacentMoveAuthority);
 
                 case CardActionContinuationKind.Skill:
                     return new CardActionResolutionAuthority(
@@ -263,7 +283,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         SkillCardActionStrategyBackend.Restore(
                             SyntheticEffectCapabilities.CreateCatalog(),
                             new SkillBackendRestoreState(state.PendingSkillResolution)),
-                        components);
+                        components,
+                        adjacentMoveAuthority);
 
                 default:
                     return new CardActionResolutionAuthority(
@@ -272,7 +293,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
-                        components);
+                        components,
+                        adjacentMoveAuthority);
             }
         }
 
@@ -343,7 +365,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            IEnumerable<MinionOccupancy> minions)
+            IEnumerable<MinionOccupancy> minions,
+            RuleModificationSet modifications = null)
         {
             if (HasPendingResolution)
             {
@@ -361,7 +384,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 definitions,
                 instances,
                 participants,
-                minions);
+                minions,
+                modifications);
         }
 
         public CardActionResolutionResult PerformTurnClear(
@@ -394,7 +418,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications = null)
         {
             var prepared = PrepareStart(
                 resolutionId,
@@ -417,7 +442,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer,
                 prepared.Definitions,
                 prepared.Instances,
-                participants);
+                participants,
+                modifications);
         }
 
         public AttackActionResolutionResult StartTurnAttackResolution(
@@ -425,7 +451,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications = null)
         {
             var prepared = PrepareStart(
                 resolutionId,
@@ -448,28 +475,34 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer,
                 prepared.Definitions,
                 prepared.Instances,
-                participants);
+                participants,
+                modifications);
         }
 
         public AttackActionResolutionResult AnswerAttackTarget(
             AttackTargetChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants) =>
-            attackDefenseBackend.AnswerAttackTarget(command, definitions, instances, participants);
+            MatchParticipants participants,
+            RuleModificationSet modifications = null) =>
+            attackDefenseBackend.AnswerAttackTarget(
+                command, definitions, instances, participants, modifications);
 
         public AttackActionResolutionResult AnswerDefenseResponse(
             DefenseResponseChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants) =>
-            attackDefenseBackend.AnswerDefense(command, definitions, instances, participants);
+            MatchParticipants participants,
+            RuleModificationSet modifications = null) =>
+            attackDefenseBackend.AnswerDefense(
+                command, definitions, instances, participants, modifications);
 
         public AttackActionResolutionResult ResolveAttackOutcome(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants) =>
-            attackDefenseBackend.ResolveOutcome(definitions, instances, participants);
+            MatchParticipants participants,
+            RuleModificationSet modifications = null) =>
+            attackDefenseBackend.ResolveOutcome(definitions, instances, participants, modifications);
 
         private PreparedStart PrepareStart(
             ActionResolutionId resolutionId,

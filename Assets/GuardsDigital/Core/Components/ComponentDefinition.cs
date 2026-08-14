@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Components
 {
@@ -12,7 +13,11 @@ namespace GuardsDigital.Core.Components
     /// </summary>
     public sealed class TokenPropertyDefinition
     {
-        public TokenPropertyDefinition(string propertyId, string ruleKind, string applicabilityKind)
+        public TokenPropertyDefinition(
+            string propertyId,
+            string ruleKind,
+            string applicabilityKind,
+            RuleModification modification = null)
         {
             if (string.IsNullOrWhiteSpace(propertyId) || string.IsNullOrWhiteSpace(ruleKind) ||
                 string.IsNullOrWhiteSpace(applicabilityKind))
@@ -24,6 +29,7 @@ namespace GuardsDigital.Core.Components
             PropertyId = propertyId;
             RuleKind = ruleKind;
             ApplicabilityKind = applicabilityKind;
+            Modification = modification;
         }
 
         public string PropertyId { get; }
@@ -31,6 +37,18 @@ namespace GuardsDigital.Core.Components
         public string RuleKind { get; }
 
         public string ApplicabilityKind { get; }
+
+        /// <summary>
+        /// The typed rule this property supplies, or <c>null</c> for a property that only declares its
+        /// source and lifetime.
+        ///
+        /// Milestone 6.3 established the declaration without a concrete rule because none was verified
+        /// yet; milestone 6.8 supplies the general typed families it can now carry. The affected object is
+        /// the token's controller, which is the hero the derived
+        /// <c>ContinuousRuleSource</c> already names - a token property that modifies something else needs
+        /// the verified text that says so, not a member added ahead of it.
+        /// </summary>
+        public RuleModification Modification { get; }
     }
 
     /// <summary>

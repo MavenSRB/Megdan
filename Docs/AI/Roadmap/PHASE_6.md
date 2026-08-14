@@ -616,7 +616,7 @@ Acceptance checks:
 
 Non-goals: No new Skill, Sequence, Optional, Conditional, or Choose foundation; no new leaf effect merely to exercise Repeat; no Wasp definition or text interpretation, invented scripting language, card-name/hero-name branch, production presentation, or source-unverified special case.
 
-### [~] 6.8 Implement reusable modifiers, permissions, immunity, and effective characteristics
+### [x] 6.8 Implement reusable modifiers, permissions, immunity, and effective characteristics
 
 Observable outcome: Synthetic effects and continuous sources apply the general typed modifier, restriction, permission, immunity, and effective-characteristic contracts before verified hero content is introduced.
 
@@ -631,6 +631,8 @@ Acceptance checks:
 - Serializable Active/continuous sources, simultaneous ordering, snapshot compatibility, replay, Undo, and focused accepted/rejected interaction matrices are covered with synthetic definitions.
 
 Non-goals: No Wasp definition, source-unverified modifier, card-name/hero-name branch, production presentation, or claim that future verified cards cannot require a versioned extension.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68-implement-reusable-modifiers-permissions-immunity-and-effective-characteristics-completion-evidence).
 
 ### [ ] 6.9 Emit an immediate Lane-Push request during a turn
 

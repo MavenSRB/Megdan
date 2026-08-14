@@ -87,7 +87,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV2;
+                var reference = SyntheticComponentDefinitions.HazardV3;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) > 0)
                 {
                     return EffectExecutionResult.DeclinedOptional();
@@ -112,7 +112,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var coordinate = selected[0].Coordinate;
-                var token = SameTypeTokens(components, SyntheticComponentDefinitions.HazardV2)
+                var token = SameTypeTokens(components, SyntheticComponentDefinitions.HazardV3)
                     .FirstOrDefault(candidate => candidate.Coordinate.Equals(coordinate));
                 if (token == null)
                 {
@@ -161,7 +161,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV2;
+                var reference = SyntheticComponentDefinitions.HazardV3;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) < 1)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -185,7 +185,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV2;
+                var reference = SyntheticComponentDefinitions.HazardV3;
                 var coordinate = selected[0].Coordinate;
                 // Re-checked against current state rather than trusted from the paused choice: a space
                 // legal when the choice opened may have been taken before the answer arrived.

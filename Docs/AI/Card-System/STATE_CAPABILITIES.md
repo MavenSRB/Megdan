@@ -44,7 +44,7 @@ Milestone 6.2 implements the attachment, its finite supply, its explicit return 
 
 ### Obstacles and terrain
 
-`ObstacleQuery` uses effective characteristics. Units, terrain, tokens, and qualifying miniatures/objects are obstacles, with no more than one obstacle per space.
+`ObstacleQuery` uses effective characteristics. Units, terrain, tokens, and qualifying miniatures/objects are obstacles, with no more than one obstacle per space. Milestone 6.8 implements it over the board's shared occupancy index and the playable-space set rather than re-deriving obstacles per kind, and separates the transit question the Move-Through permission can answer from the endpoint question no unit may answer.
 
 Terrain is a space classification and obstacle, not a token or unit. Effects that add/remove terrain-like properties do so through explicit continuous characteristics without replacing the underlying space ID.
 
@@ -75,13 +75,19 @@ Milestone 3.7 uses the same `ResolveCard` transition only after the selected pla
 
 ## Characteristics, immunity, permissions, and restrictions
 
+Milestone 6.8 implements the general contracts these four subjects share. One immutable `RuleModification` declares a value modifier, restriction, permission, immunity, or `Counts As`; `AppliedRuleModification` binds it to the rules object it affects and the live source supplying it; and `RuleModificationSet` answers the questions below in one canonical order. Declarations are definition content on `ActiveEffectDefinition` and `TokenPropertyDefinition`, so a restored effect or token rebinds to the trusted catalog and produces the same modifications again; no snapshot field carries a rule. `RuleModificationQuery` derives the live set from Active-effect instances in their active phase plus the properties of currently placed tokens, and rebuilds it per command rather than caching it. Ordering follows p.17: the revealed Tie-Breaker side first, then the source's creation sequence, then its stable identity, with no flip.
+
 ### Counts As
 
 `CountsAsModifier` replaces all applicable rules and qualities of the object with the specified effective type(s) for its duration. Type-based targeting, occupancy, immunity, rewards, and other rules queries use those effective characteristics. A capability that cites intrinsic miniatures/representation explicitly declares `IntrinsicKindQuery`; for example, the p.18 Battle-Zone correction applies only to minion miniatures and excludes objects that merely count as minions.
 
+`EffectiveUnitKindQuery` implements the replacement and `IntrinsicKindQuery` the representation, and the second deliberately accepts no modification set at all, so a rule that cites miniatures cannot consult a `Counts As` declaration even by accident. A hero counting as a minion therefore stops satisfying a hero-typed query while remaining a hero for identity, ownership, occupancy kind, supply, and the p.18 correction.
+
 ### Immunity
 
 `ImmunityModifier` declares immune object, scope (action/effect/type/source), duration, and exceptions. Immunity prevents targeting and being affected but does not remove the object from presence checks. A hero is never immune to their own actions.
+
+Milestone 6.8 implements that split: the Attack target query refuses a declared-immune unit, while `UnitPresenceQuery` consults no immunity at all and still counts it, which is p.18's own distinction between targeting and presence. An immunity naming one activity leaves every other activity unaffected, and the self exception is answered before any declaration is read. The p.13 Heavy rule stays where it is, as a standing property of the board position rather than a modification a source supplies.
 
 ### Permissions and prohibitions
 
@@ -94,6 +100,8 @@ Typed permission/restriction capabilities include:
 - Prevent removal, a named outcome, card-state change, or another exact capability.
 
 These modify capability queries. They do not inject card-name branches into executors.
+
+A restriction names an activity and a permission names the exact grant it gives, so the two are separate queries and a narrow permission is structurally unable to disable an unrelated restriction. Milestone 6.8 implements the Fast-Travel restriction against the general-rule offer query, which removes the offer rather than rejecting the command later, and `ObstacleQuery` as the p.18 obstacle decision point that honours the Move-Through permission for transit while refusing every unit an obstacle endpoint. The Movement action does not consult that permission yet: crossing an occupied space requires a move to assert occupancy only at its endpoint, which is a change to route commitment owned by the movement and displacement milestones, and wiring it into today's one-space-at-a-time commit would offer destinations the commit path must then refuse.
 
 ## Values, resources, and ownership changes
 
@@ -117,6 +125,4 @@ See [CORE_MODEL.md](CORE_MODEL.md#contract-implementation-status) for what this 
 
 | Contract | State | Owning milestone |
 | --- | --- | --- |
-| `ObstacleQuery` | Specified, not implemented. Obstacle rules are enforced today by the board and movement authorities. | 6.8 |
-| `CardCharacteristicQuery` | Specified, not implemented | 6.8 |
-| `IntrinsicKindQuery` | Specified, not implemented | 6.8 |
+| `CardCharacteristicQuery` | Specified, not implemented. Milestone 6.8 implemented the characteristic, immunity, permission, and restriction contracts its acceptance names; card-characteristic predicates are a separate subject with no consumer yet. | Named trigger: the first verified card that selects, counts, or restricts by card characteristic |

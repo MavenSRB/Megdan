@@ -32,16 +32,24 @@ namespace GuardsDigital.Tests.EditMode
         /// property content. The content decision is reject: a v9 payload bound to Hazard v1 names a
         /// definition revision the trusted catalog no longer supplies, rather than silently gaining v2
         /// semantics. No persisted state outside this test corpus exists to migrate.
+        /// Milestone 6.8 keeps schema v9 for the same reason and re-pins every fixture again, for two
+        /// registration causes: the capability list gained the five synthetic modification capabilities,
+        /// and Hazard moved from revision 2 to revision 3 to carry the typed rule its property now
+        /// supplies. Both decisions are reject rather than migrate: a payload naming a capability set
+        /// this build does not register, or a token revision the catalog no longer supplies, states
+        /// semantics that no longer exist, and there is still no persisted state outside this corpus.
+        /// The general modification contracts themselves added no wire field - they are definition
+        /// content that a restored effect or token rebinds to from the trusted catalog.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v9", "b5a25c313d1c0b3f7411a011d053b80a8f3714a84f608591ff56750f75762c47"),
-            new CompatibilityFixture("active-turn-v9", "13b7724ef6b2f1a2e8e8065d1506c37e675f35b8e2f463420373143d113a26f6"),
-            new CompatibilityFixture("pending-choice-v9", "0667ba5327ac3027d5f2f700ffdd83f918fd7567ac42a9a2a2c01af66dbd951e"),
-            new CompatibilityFixture("end-of-round-v9", "c587cc0b375da8788f244b4c884f8099053c76b642bcaff83a0e2376df050dc0"),
-            new CompatibilityFixture("pending-minion-battle-v9", "1f87d0218b11fc2502c1f947bcd2cb7a92d26f8a82953bc95d96ea8586520522"),
-            new CompatibilityFixture("placed-token-v9", "fd6ab84b2cb0f9b8744ce1e0e8474c3a9b5c6cb266e4320a6940671d7a620487"),
-            new CompatibilityFixture("attached-marker-v9", "04fce9eece732a849929824f6625656e55c396626980613f1adbd59e02bdd8f5")
+            new CompatibilityFixture("setup-v9", "290921b5481a74a6aea04595516ece0e38b723e412fc287cee9661090efd700f"),
+            new CompatibilityFixture("active-turn-v9", "34a960c57998b785f7781f875502cb88acb7d3a2c86712ebec64460306498803"),
+            new CompatibilityFixture("pending-choice-v9", "936850def5493c1200db86d897327fb56edaacd8d01f3073230db8412765413e"),
+            new CompatibilityFixture("end-of-round-v9", "e011950033df0ce01df0539c06993e839ed1703cd96ad81fbffb7d71871f89ea"),
+            new CompatibilityFixture("pending-minion-battle-v9", "03051d98d1b39b21577e60102d40b14751e934054ee2b86f754cd16edc4e8b05"),
+            new CompatibilityFixture("placed-token-v9", "3f2baa94da773abfd2f9eef39dbe7ac74ef6d602a092e662ea531ab0b0233248"),
+            new CompatibilityFixture("attached-marker-v9", "d57586189998ef95ed02e902dc0b955f90c587456bf4a6f5c3003bb4a4cfa1ec")
         };
 
         [Test]

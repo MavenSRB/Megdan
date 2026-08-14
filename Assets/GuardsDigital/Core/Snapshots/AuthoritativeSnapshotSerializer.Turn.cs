@@ -11,6 +11,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -52,8 +53,12 @@ namespace GuardsDigital.Core.Snapshots
                 SnapshotEnumReader.Read<TeamSide>(reader, "turn tie-breaker revealed side"));
             var pendingChoice = ReadPendingInitiativeChoice(reader);
             var selectedActor = ReadSelectedActor(reader);
+            // Milestone 6.8: the restored continuation is cross-checked against the modifications the
+            // restored effects and tokens supply, so a Defense total or a target list that a modifier
+            // produced live is reproduced here rather than looking like tampering.
             cardActions = ReadCardAction(
-                reader, board, definitions, cards, participants, capabilities, markers);
+                reader, board, definitions, cards, participants, capabilities, markers,
+                RuleModificationQuery.Build(timing, board, participants, tieBreaker));
             return TurnResolutionAuthority.Restore(
                 definitions,
                 cards,

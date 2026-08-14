@@ -5,6 +5,7 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Timing;
@@ -370,6 +371,16 @@ namespace GuardsDigital.Core.Cards
 
         public ActiveEffectLifecycle Timing => timing;
 
+        /// <summary>
+        /// The modifications in effect for this turn's authoritative state, or an empty set when no
+        /// card-action authority is composed. Rebuilt at every command so an effect that expired or a
+        /// token that was removed since the last one cannot still supply a rule.
+        /// </summary>
+        public RuleModificationSet CurrentModifications() =>
+            cardActions == null
+                ? RuleModificationSet.Empty
+                : cardActions.CurrentModifications(timing, participants, TieBreakerState);
+
         internal TurnResolutionRestoreState CaptureRestoreState() =>
             new TurnResolutionRestoreState(
                 IsStarted,
@@ -653,7 +664,8 @@ namespace GuardsDigital.Core.Cards
                 definitions,
                 instances,
                 participants,
-                minions);
+                minions,
+                CurrentModifications());
             if (!result.Accepted || !result.IsComplete)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.FastTravelActionRejected);
@@ -894,7 +906,8 @@ namespace GuardsDigital.Core.Cards
                 offer,
                 definitions,
                 instances,
-                participants);
+                participants,
+                CurrentModifications());
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackActionRejected);
             return TurnResolutionResult.Accept(
@@ -918,7 +931,8 @@ namespace GuardsDigital.Core.Cards
                 command,
                 definitions,
                 instances,
-                participants);
+                participants,
+                CurrentModifications());
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
             var targetEvents = MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction);
@@ -944,7 +958,8 @@ namespace GuardsDigital.Core.Cards
                 command,
                 definitions,
                 instances,
-                participants);
+                participants,
+                CurrentModifications());
             if (!response.Accepted)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
@@ -953,7 +968,8 @@ namespace GuardsDigital.Core.Cards
             // The result-comparison checkpoint is emitted by the Defense resolver itself, as the last
             // step of its own stream, rather than raised here between two backend calls.
             var events = MaterializeSteps(response.Steps, TurnResolutionEvent.FromAttackAction);
-            var outcome = cardActions.ResolveAttackOutcome(definitions, instances, participants);
+            var outcome = cardActions.ResolveAttackOutcome(
+                definitions, instances, participants, CurrentModifications());
             if (!outcome.Accepted)
             {
                 throw new InvalidOperationException(

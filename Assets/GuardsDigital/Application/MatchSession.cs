@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 
@@ -318,7 +319,8 @@ namespace GuardsDigital.Application
                 turn.SelectedActor.CardInstanceId,
                 turn.SelectedActor.ActorId,
                 configuration.CardDefinitions,
-                configuration.CardInstances);
+                configuration.CardInstances,
+                turn.CurrentModifications());
             if (!replacementOffer.HasValue)
             {
                 return DispatchResult.Unavailable(
@@ -520,6 +522,9 @@ namespace GuardsDigital.Application
                     turn.SelectedActor.ActorId,
                     turn.SelectedActor.CardInstanceId)
                 : Array.Empty<ActionOffer>();
+            // The same modifications the turn authority resolves commands against, so an offer the
+            // rules would refuse never appears in a projection as available.
+            var turnModifications = turn?.CurrentModifications() ?? RuleModificationSet.Empty;
             var hasPendingAction = turn?.PendingChoice != null ||
                 turn?.PendingMovementChoice != null || turn?.PendingMovementResolution != null ||
                 turn?.PendingAttackTargetChoice != null || turn?.PendingDefenseChoice != null ||
@@ -543,7 +548,8 @@ namespace GuardsDigital.Application
                             offer.SourceCardInstanceId,
                             offer.ActorId,
                             configuration.CardDefinitions,
-                            configuration.CardInstances);
+                            configuration.CardInstances,
+                            turnModifications);
                         if (!replacementOffer.HasValue)
                         {
                             return null;
@@ -556,7 +562,8 @@ namespace GuardsDigital.Application
                             configuration.CardInstances,
                             board,
                             configuration.Participants,
-                            board.Minions);
+                            board.Minions,
+                            turnModifications);
                         return destinations.Count == 0
                             ? null
                             : new FastTravelOptionProjection(
@@ -567,7 +574,7 @@ namespace GuardsDigital.Application
                     .Where(option => option != null)
                     .ToArray()
                 : Array.Empty<FastTravelOptionProjection>();
-            var defensePreview = CreateDefensePreview(turn);
+            var defensePreview = CreateDefensePreview(turn, turnModifications);
             // Reads the aggregate's memo rather than re-serializing state the previous command
             // already encoded. The diagnostic envelope is not built here at all: the projection
             // computes it on demand from these same immutable inputs, so a reader pays for it and a
@@ -614,7 +621,8 @@ namespace GuardsDigital.Application
                 turn?.PendingEffectChoice);
         }
 
-        private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn)
+        private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn,
+            RuleModificationSet modifications)
         {
             var choice = turn?.PendingDefenseChoice;
             var attack = turn?.PendingAttackResolution;
@@ -636,7 +644,8 @@ namespace GuardsDigital.Application
                     configuration.CardDefinitions,
                     choice.ChooserId,
                     configuration.Participants,
-                    board);
+                    board,
+                    modifications);
                 var comparison = AttackOutcomeComparison.Create(
                     attack.AttackTotal,
                     defense.Total,

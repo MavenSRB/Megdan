@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Cards
@@ -37,13 +38,24 @@ namespace GuardsDigital.Core.Cards
                 false,
                 false));
 
+        /// <param name="modifications">
+        /// The modifications in effect, or <c>null</c> when none apply. A restriction naming Fast Travel
+        /// removes the offer rather than rejecting the command later: an action the actor cannot perform
+        /// is not an action they are offered.
+        /// </param>
         public static ActionOffer? GetAvailableFastTravelOffer(
             ActionDefinitionId replacedMovementActionDefinitionId,
             CardInstanceId sourceCardInstanceId,
             HeroId actorId,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications = null)
         {
+            if (IsRestricted(actorId, ActionKind.FastTravel, modifications))
+            {
+                return null;
+            }
+
             return GetAvailableReplacementOffer(
                 replacedMovementActionDefinitionId,
                 sourceCardInstanceId,
@@ -53,6 +65,17 @@ namespace GuardsDigital.Core.Cards
                 ActionKind.Movement,
                 FastTravelDefinition);
         }
+
+        /// <summary>
+        /// Whether a restriction currently bars this actor from an action kind. Restrictions are consulted
+        /// per named activity, so a restriction on one general-rule action leaves the others offered.
+        /// </summary>
+        private static bool IsRestricted(
+            HeroId actorId,
+            ActionKind actionKind,
+            RuleModificationSet modifications) =>
+            modifications != null && actorId.IsDefined && modifications.IsRestricted(
+                RuleObject.ForHero(actorId), RuleActivityQuery.ForAction(actionKind));
 
         public static ActionOffer? GetAvailableClearOffer(
             ActionDefinitionId replacedAttackActionDefinitionId,

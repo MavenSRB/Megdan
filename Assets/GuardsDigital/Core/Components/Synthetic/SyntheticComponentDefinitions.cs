@@ -1,3 +1,6 @@
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Rules.Modifications;
+
 namespace GuardsDigital.Core.Components.Synthetic
 {
     /// <summary>
@@ -19,15 +22,22 @@ namespace GuardsDigital.Core.Components.Synthetic
 
         public static MarkerDefinitionId Focus { get; } = new MarkerDefinitionId("synthetic-focus-marker");
 
-        public static TokenDefinitionReference HazardV2 => new TokenDefinitionReference(Hazard, 2);
+        public static TokenDefinitionReference HazardV3 => new TokenDefinitionReference(Hazard, 3);
 
         public static MarkerDefinitionReference FocusV1 => new MarkerDefinitionReference(Focus, 1);
 
-        /// <summary>A two-token supply, so a third placement must reclaim before it can place.</summary>
+        /// <summary>
+        /// A two-token supply, so a third placement must reclaim before it can place.
+        ///
+        /// Revision 3 is milestone 6.8: the property declared at 6.3 gains the typed rule it supplies.
+        /// Rulebook p.19 keeps a token's properties outside the Active-effect rules ("this does not
+        /// include Active effects"), so the modifier below lives and dies with the placed instance and
+        /// reaches the token's controller for exactly as long as the token is on the board.
+        /// </summary>
         public static TokenDefinition HazardDefinition { get; } =
             new TokenDefinition(
                 Hazard,
-                2,
+                3,
                 "TEST - Hazard",
                 2,
                 new[]
@@ -35,7 +45,8 @@ namespace GuardsDigital.Core.Components.Synthetic
                     new TokenPropertyDefinition(
                         "persistent-hazard",
                         "synthetic-hazard",
-                        "while-token-remains-placed")
+                        "while-token-remains-placed",
+                        RuleModification.ForValue(PrintedValueChannel.Defense, 1))
                 });
 
         /// <summary>A one-marker supply, so a second give has nothing left to take.</summary>

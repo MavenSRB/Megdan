@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -13,17 +14,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
 {
     public static class AttackTargetQuery
     {
+        /// <summary>
+        /// The enemy units this attacker may target.
+        /// </summary>
+        /// <param name="modifications">
+        /// The modifications in effect, or <c>null</c> when none apply. Rulebook p.18: an immune unit
+        /// cannot be targeted, while an effect that merely checks presence still counts it - which is why
+        /// this query filters and <see cref="Modifications.UnitPresenceQuery"/> does not.
+        /// </param>
         public static IReadOnlyList<AttackTarget> FindLegalEnemyTargets(
             HeroId attackerId,
             AttackRangeKind attackRange,
             int rangeTotal,
             MatchParticipants participants,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board,
+            RuleModificationSet modifications = null)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
 
             var heroes = FindLegalEnemyHeroes(
-                attackerId, attackRange, rangeTotal, participants, board.Occupancies)
+                attackerId, attackRange, rangeTotal, participants, board.Occupancies, modifications)
                 .Select(AttackTarget.Hero);
             var attackerOccupancy = board.Occupancies.SingleOrDefault(value => value.HeroId.Equals(attackerId));
             if (!attackerOccupancy.HeroId.IsDefined)
@@ -33,11 +43,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var attackerTeam = participants.GetTeamForHero(attackerId).Id;
             var maximumDistance = attackRange == AttackRangeKind.NonRanged ? 1 : rangeTotal;
+            var attacker = RuleObject.ForHero(attackerId);
             var minions = board.Minions
                 .Where(minion =>
                     !minion.TeamId.Equals(attackerTeam) &&
                     HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, minion.Coordinate) <= maximumDistance &&
-                    !IsImmuneHeavy(minion, board))
+                    !IsImmuneHeavy(minion, board) &&
+                    !IsDeclaredImmune(RuleObject.ForMinion(minion.MinionId), attacker, modifications))
                 .Select(minion => AttackTarget.Minion(minion.MinionId));
 
             return Array.AsReadOnly(heroes.Concat(minions)
@@ -53,7 +65,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackRangeKind attackRange,
             int rangeTotal,
             MatchParticipants participants,
-            IEnumerable<HeroOccupancy> occupancies)
+            IEnumerable<HeroOccupancy> occupancies,
+            RuleModificationSet modifications = null)
         {
             if (!attackerId.IsDefined)
             {
@@ -94,16 +107,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var maximumDistance = attackRange == AttackRangeKind.NonRanged ? 1 : rangeTotal;
             var attackerCoordinate = attackerOccupancies[0].Coordinate;
 
+            var attacker = RuleObject.ForHero(attackerId);
             return Array.AsReadOnly(occupancyArray
                 .Where(occupancy =>
                     !occupancy.HeroId.Equals(attackerId) &&
                     participantHeroIds.Contains(occupancy.HeroId) &&
                     HexDistanceQuery.Calculate(attackerCoordinate, occupancy.Coordinate) <= maximumDistance &&
-                    !participants.GetTeamForHero(occupancy.HeroId).Id.Equals(attackerTeamId))
+                    !participants.GetTeamForHero(occupancy.HeroId).Id.Equals(attackerTeamId) &&
+                    !IsDeclaredImmune(RuleObject.ForHero(occupancy.HeroId), attacker, modifications))
                 .Select(occupancy => occupancy.HeroId)
                 .OrderBy(heroId => heroId.Value, StringComparer.Ordinal)
                 .ToArray());
         }
+
+        /// <summary>
+        /// Whether a declared immunity refuses this Attack. The verified Heavy rule below stays separate:
+        /// it is a standing p.13 property of the board position rather than a modification any source
+        /// supplies, and folding it into the declaration set would make it look cancellable.
+        /// </summary>
+        private static bool IsDeclaredImmune(
+            RuleObject target,
+            RuleObject attacker,
+            RuleModificationSet modifications) =>
+            modifications != null && modifications.IsImmuneTo(target, RuleActivity.Attack, attacker);
 
         private static bool IsImmuneHeavy(
             MinionOccupancy candidate,
