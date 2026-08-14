@@ -68,8 +68,9 @@ namespace GuardsDigital.Core.Snapshots
         {
             var roundIndex = reader.ReadInt32();
             var turnIndex = reader.ReadInt32();
-            var phase = (RoundResolutionPhase)reader.ReadInt32();
-            var tieBreaker = new TieBreakerState((TeamSide)reader.ReadInt32());
+            var phase = SnapshotEnumReader.Read<RoundResolutionPhase>(reader, "round resolution phase");
+            var tieBreaker = new TieBreakerState(
+                SnapshotEnumReader.Read<TeamSide>(reader, "round tie-breaker revealed side"));
             var slots = ReadSlots(reader, cards, participants);
             var completed = ReadMany(reader, "completed rounds", () =>
             {
@@ -79,8 +80,7 @@ namespace GuardsDigital.Core.Snapshots
                     ReadSlots(reader, cards, participants),
                     ReadOutcomes(reader));
             });
-            var hasStage = reader.ReadBoolean();
-            var stage = hasStage ? (EndOfRoundStage?)(EndOfRoundStage)reader.ReadInt32() : null;
+            var stage = SnapshotEnumReader.ReadNullable<EndOfRoundStage>(reader, "current end-of-round stage");
             var outcomes = ReadOutcomes(reader);
             var pendingMinionBattleChoice = ReadPendingMinionBattleChoice(reader);
             var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
@@ -170,13 +170,13 @@ namespace GuardsDigital.Core.Snapshots
             var resolutionId = new EndOfRoundResolutionId(reader.ReadString());
             var choiceId = new EndOfRoundChoiceId(reader.ReadString());
             var losingTeamId = new TeamId(reader.ReadString());
-            var choosingSide = (TeamSide)reader.ReadInt32();
+            var choosingSide = SnapshotEnumReader.Read<TeamSide>(reader, "Minion Battle choosing side");
             var battleZoneId = new ZoneId(reader.ReadString());
             var requiredRemovalCount = reader.ReadInt32();
             var candidates = ReadMany(reader, "Minion Battle candidates", () =>
                 new MinionBattleCandidate(
                     new MinionId(reader.ReadString()),
-                    (StandardMinionType)reader.ReadInt32()));
+                    SnapshotEnumReader.Read<StandardMinionType>(reader, "Minion Battle candidate type")));
             var selected = ReadStrings(reader, "selected Minion Battle minions")
                 .Select(value => new MinionId(value));
             return new PendingMinionBattleChoice(
@@ -222,9 +222,9 @@ namespace GuardsDigital.Core.Snapshots
                 reader.ReadInt32(),
                 new ZoneId(reader.ReadString()),
                 new TeamId(reader.ReadString()),
-                (TeamSide)reader.ReadInt32(),
+                SnapshotEnumReader.Read<TeamSide>(reader, "Lane Push winning side"),
                 new TeamId(reader.ReadString()),
-                (TeamSide)reader.ReadInt32(),
+                SnapshotEnumReader.Read<TeamSide>(reader, "Lane Push losing side"),
                 new EndOfRoundResolutionId(reader.ReadString()));
         }
 

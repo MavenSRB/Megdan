@@ -572,6 +572,31 @@ Closing check: the check run at `dd535ae`, observed reporting five completion st
 
 Non-goals: No loss of any recorded fact. No change to the route markers themselves, whose exactly-one rule is already enforced. No archive rewriting.
 
+## Snapshot decode-boundary milestone from the 2026-08-14 enum-decoding finding
+
+### [x] 6.1ad Reject undefined enum values at the snapshot decode boundary
+
+Scheduled and executed on 2026-08-14 from an engineering-review finding against snapshot enum decoding - **not** ER2, **not** review 5.8c, and **not** the documentation-truth finding behind 6.1z through 6.1ac. Unordered against all of them; it adds a check to the same validator script, so whichever lands second takes the next unused number.
+
+Observable outcome: A snapshot field holding an integer that is not a declared member of its enum is refused where it is read, under its own rejection reason, and no reader in the decoder can accept one.
+
+Context: the decoder cast every payload enum straight out of the stream at 37 sites across 21 enums. Whether an undefined value was caught depended on which constructor consumed it: about half reached an `Enum.IsDefined` guard and surfaced late as `MalformedPayload`, indistinguishable from a garbled byte stream, and the rest built invalid state and carried on. `MatchAggregate.Rollback` runs this decoder on every refused command, and [PHASE_8.md](PHASE_8.md) requires reconnect to converge or enter one explicit failure state, which a decoder that cannot say why it refused cannot support.
+
+Acceptance checks:
+
+- `SnapshotEnumReader.Read<T>` rejects any value that is not a declared member under the new `SnapshotLoadRejectionReason.UnrecognizedEnumValue`, naming the field, the type, and the offending value; `ReadNullable<T>` does the same behind a presence flag.
+- All 37 raw casts are converted, and the `AttackTargetKind` ternary becomes a switch mirroring its writer - that ternary's `default` both produced an empty target and skipped the `ReadString` a Hero or Minion target consumes, misaligning every field after it.
+- The boundary guarantees membership only. Rejecting `None`, or a member illegal in a given position, stays with the domain constructors that own those rules rather than moving rule meaning into the wire layer.
+- Declared members are cached per enum type rather than routed through `Enum.IsDefined`, which is reflection-backed and boxes its argument, because this decoder runs on every refused command.
+- Code-truth check 6 fails on any `(<DeclaredEnum>)reader.Read…` under `Core/Snapshots/` in the single-line, multi-line, and nullable forms, with vacuity guards for an empty decoder, an empty enum set, and a decoder containing no typed read.
+- The wire format is unchanged, asserted rather than assumed: `CurrentSchemaVersion` stays at 7 and all fifteen pinned digests pass unmoved. A moved digest would mean something was written differently and the milestone was wrong.
+
+Closing check: two observed failing-then-passing transitions against genuine pre-fix defects. Check 6 at `7c65dfa` reported all 37 casts and reports none after. `AuthoritativeSnapshotSerializerTests.Deserialize_RejectsAnUndefinedEnumValueInsteadOfRestoringIt` was observed at `7c65dfa` failing `Expected: UnrecognizedEnumValue, But was: MalformedPayload`, and passing after; it demonstrates the wrong-reason half specifically, since `TeamSide` is one of the sites a constructor did catch.
+
+Historical evidence: [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md).
+
+Non-goals: No schema version change, wire-format change, or migration path, and no reopening of the v7 migrate-or-reject decision. No semantic validation moved into the serializer. No terminal `else` added to `ActiveEffectDefinition.ValidateDuration` and no repair of the unvalidated `SelectedInitiativeActor` constructor: this closes the path a snapshot uses to reach them, and hardening them against in-memory callers is separate work. No change to how `MatchSession.RestoreSnapshot` flattens the typed reason, which is Phase 8 work. No change to the harness exclude list, and no documentation-truth validator work, which 6.1z through 6.1ac own.
+
 ## Phase 6 gameplay milestones (continued)
 
 **Sequencing amendment (2026-08-14, user approved).** Milestone 6.2a completes before 6.2, and 6.2 completes before 6.2b. The source is this sequencing finding, **not** the ER2 external review and **not** review 5.8c; do not attribute it to either record. The existing 6.1r-before-6.2 and 6.1q-before-6.2a constraints are unchanged, and 6.3 stays gated on 6.2b. Scheduling is not authorization: each milestone still requires exact user approval before execution.

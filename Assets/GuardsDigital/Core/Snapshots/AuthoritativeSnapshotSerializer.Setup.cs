@@ -86,7 +86,7 @@ namespace GuardsDigital.Core.Snapshots
         {
             var teams = ReadMany(reader, "teams", () => new Team(
                 new TeamId(reader.ReadString()),
-                (TeamSide)reader.ReadInt32()));
+                SnapshotEnumReader.Read<TeamSide>(reader, "team side")));
             var players = ReadMany(reader, "players", () => new Player(
                 new PlayerId(reader.ReadString()),
                 new TeamId(reader.ReadString())));
@@ -201,10 +201,10 @@ namespace GuardsDigital.Core.Snapshots
                     reference,
                     owner,
                     new CardStateFacts(
-                        (CardLocation)reader.ReadInt32(),
+                        SnapshotEnumReader.Read<CardLocation>(reader, "card location"),
                         reader.ReadBoolean(),
-                        (CardResolutionStatus)reader.ReadInt32(),
-                        (CardFaceOrientation)reader.ReadInt32()));
+                        SnapshotEnumReader.Read<CardResolutionStatus>(reader, "card resolution status"),
+                        SnapshotEnumReader.Read<CardFaceOrientation>(reader, "card face orientation")));
             });
         }
 

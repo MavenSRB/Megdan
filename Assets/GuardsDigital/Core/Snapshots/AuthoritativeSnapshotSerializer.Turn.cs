@@ -44,7 +44,8 @@ namespace GuardsDigital.Core.Snapshots
         {
             var started = reader.ReadBoolean();
             var ended = reader.ReadBoolean();
-            var tieBreaker = new TieBreakerState((TeamSide)reader.ReadInt32());
+            var tieBreaker = new TieBreakerState(
+                SnapshotEnumReader.Read<TeamSide>(reader, "turn tie-breaker revealed side"));
             var pendingChoice = ReadPendingInitiativeChoice(reader);
             var selectedActor = ReadSelectedActor(reader);
             cardActions = ReadCardAction(reader, board, definitions, cards, participants);
@@ -122,20 +123,20 @@ namespace GuardsDigital.Core.Snapshots
                 var id = new ActiveEffectId(reader.ReadString());
                 var definitionId = reader.ReadString();
                 var controller = new HeroId(reader.ReadString());
-                var side = (TeamSide)reader.ReadInt32();
-                var scope = (ActiveEffectAffectedScopeKind)reader.ReadInt32();
+                var side = SnapshotEnumReader.Read<TeamSide>(reader, "Active-effect controlling side");
+                var scope = SnapshotEnumReader.Read<ActiveEffectAffectedScopeKind>(reader, "Active-effect affected scope");
                 var affectedHero = reader.ReadBoolean() ? new HeroId(reader.ReadString()) : default;
-                var duration = (ActiveEffectDurationKind)reader.ReadInt32();
-                var creation = (TimingCheckpoint)reader.ReadInt32();
-                var activation = (TimingCheckpoint)reader.ReadInt32();
-                var expiration = (TimingCheckpoint)reader.ReadInt32();
+                var duration = SnapshotEnumReader.Read<ActiveEffectDurationKind>(reader, "Active-effect duration");
+                var creation = SnapshotEnumReader.Read<TimingCheckpoint>(reader, "Active-effect creation checkpoint");
+                var activation = SnapshotEnumReader.Read<TimingCheckpoint>(reader, "Active-effect activation checkpoint");
+                var expiration = SnapshotEnumReader.Read<TimingCheckpoint>(reader, "Active-effect expiration checkpoint");
                 var conditions = ReadMany(reader, "Active-effect cancellation conditions",
-                    () => (ActiveEffectCancellationCondition)reader.ReadInt32());
+                    () => SnapshotEnumReader.Read<ActiveEffectCancellationCondition>(reader, "Active-effect cancellation condition"));
                 var carries = reader.ReadBoolean();
                 var effectKind = reader.ReadString();
                 var uniquenessKey = reader.ReadString();
                 var triggers = ReadMany(reader, "Active-effect trigger checkpoints",
-                    () => (TimingCheckpoint)reader.ReadInt32());
+                    () => SnapshotEnumReader.Read<TimingCheckpoint>(reader, "Active-effect trigger checkpoint"));
                 var definition = new ActiveEffectDefinition(definitionId, controller, side, scope, affectedHero,
                     duration, creation, activation, expiration, conditions, carries, effectKind,
                     uniquenessKey, triggers);
@@ -144,17 +145,17 @@ namespace GuardsDigital.Core.Snapshots
                 var createdRound = reader.ReadInt32();
                 var createdTurn = reader.ReadInt32();
                 var sequence = reader.ReadInt64();
-                var phase = (ActiveEffectPhase)reader.ReadInt32();
+                var phase = SnapshotEnumReader.Read<ActiveEffectPhase>(reader, "Active-effect phase");
                 var activatedRound = reader.ReadBoolean() ? (int?)reader.ReadInt32() : null;
                 var activatedTurn = reader.ReadBoolean() ? (int?)reader.ReadInt32() : null;
-                var endedAt = reader.ReadBoolean() ? (TimingCheckpoint?)reader.ReadInt32() : null;
+                var endedAt = SnapshotEnumReader.ReadNullable<TimingCheckpoint>(reader, "Active-effect ended-at checkpoint");
                 return new ActiveEffectInstance(id, definition, sourceCard, sourceAction, createdRound,
                     createdTurn, sequence, phase, activatedRound, activatedTurn, endedAt);
             });
             var continuous = ReadMany(reader, "continuous rule sources", () =>
             {
                 var sourceId = reader.ReadString();
-                var kind = (ContinuousRuleSourceKind)reader.ReadInt32();
+                var kind = SnapshotEnumReader.Read<ContinuousRuleSourceKind>(reader, "continuous rule source kind");
                 var controller = new HeroId(reader.ReadString());
                 var ruleKind = reader.ReadString();
                 var applicability = reader.ReadString();
@@ -177,7 +178,7 @@ namespace GuardsDigital.Core.Snapshots
         private static PendingInitiativeChoice ReadPendingInitiativeChoice(BinaryReader reader)
         {
             if (!reader.ReadBoolean()) return null;
-            var side = (TeamSide)reader.ReadInt32();
+            var side = SnapshotEnumReader.Read<TeamSide>(reader, "Initiative choice owning side");
             var total = reader.ReadInt32();
             var flip = reader.ReadBoolean();
             var cards = ReadStrings(reader, "Initiative candidates").Select(value => new CardInstanceId(value));
@@ -201,7 +202,7 @@ namespace GuardsDigital.Core.Snapshots
             return new SelectedInitiativeActor(
                 new CardInstanceId(reader.ReadString()),
                 new HeroId(reader.ReadString()),
-                (TeamSide)reader.ReadInt32(),
+                SnapshotEnumReader.Read<TeamSide>(reader, "selected Initiative actor side"),
                 reader.ReadInt32(),
                 reader.ReadBoolean());
         }

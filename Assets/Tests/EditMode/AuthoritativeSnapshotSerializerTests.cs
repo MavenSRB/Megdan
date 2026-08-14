@@ -178,6 +178,26 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(SnapshotLoadRejectionReason.MapDefinitionContentRevisionMismatch));
         }
 
+        [Test]
+        public void Deserialize_RejectsAnUndefinedEnumValueInsteadOfRestoringIt()
+        {
+            // Proves the typed reader is wired into the decoder, not merely present. Before this
+            // milestone the cast at ReadParticipants accepted any int, so a team restored with a
+            // side of 9999 and the failure, if it came at all, came later and wearing the wrong
+            // reason.
+            var fixture = CreateFixture();
+            var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
+            var corrupted = RewriteFirstTeamSide(payload, 9999);
+
+            var exception = Assert.Throws<SnapshotLoadException>(() =>
+                AuthoritativeSnapshotSerializer.Deserialize(corrupted, fixture.Configuration.CardDefinitions,
+                    new[] { fixture.Board.MapDefinition }));
+
+            Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.UnrecognizedEnumValue),
+                "An undefined enum is a distinct failure from a garbled byte stream; a resynchronizing client needs to tell them apart.");
+            Assert.That(exception.Message, Does.Contain("TeamSide").And.Contains("9999"));
+        }
+
         private static SnapshotFixture CreateFixture()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
@@ -239,6 +259,41 @@ namespace GuardsDigital.Tests.EditMode
             return slots.Select(slot => $"{slot.RoundIndex}:{slot.TurnIndex}:" + string.Join(",",
                 slot.Assignments.Select(assignment => $"{assignment.HeroId.Value}=" +
                     (assignment.CardInstanceId?.Value ?? "PASS")))).ToArray();
+        }
+
+        /// <summary>
+        /// Overwrites the first serialized <c>TeamSide</c>, located by walking the payload prefix
+        /// exactly as <c>Serialize</c> laid it down - magic, schema version, the definition table,
+        /// the team count, the first team's id - rather than by a hard-coded offset that a later
+        /// section change would silently invalidate. Same idea as
+        /// <see cref="RewriteSchemaVersion"/>, one section further in.
+        /// </summary>
+        private static string RewriteFirstTeamSide(string payload, int side)
+        {
+            var bytes = Convert.FromBase64String(payload);
+            using (var stream = new MemoryStream(bytes, true))
+            {
+                using (var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, true))
+                {
+                    reader.ReadString();
+                    reader.ReadInt32();
+                    var definitionCount = reader.ReadInt32();
+                    for (var index = 0; index < definitionCount; index++)
+                    {
+                        reader.ReadString();
+                        reader.ReadString();
+                    }
+
+                    var teamCount = reader.ReadInt32();
+                    Assert.That(teamCount, Is.GreaterThan(0), "The fixture must serialize at least one team.");
+                    reader.ReadString();
+                }
+
+                using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true))
+                    writer.Write(side);
+            }
+
+            return Convert.ToBase64String(bytes);
         }
 
         private static string RewriteSchemaVersion(string payload, int schemaVersion)

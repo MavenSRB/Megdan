@@ -316,6 +316,45 @@ function Get-UnresolvedReflectedMembers($Sites, [hashtable] $TypeSources, [hasht
     return $unresolved.ToArray()
 }
 
+# Code-truth check 6: the snapshot decoder must not cast a raw integer into an enum.
+#
+# `(SomeEnum)reader.ReadInt32()` accepts every int the payload can hold. Whether that is caught
+# depends entirely on which constructor happens to consume the value, and that coverage was
+# inconsistent by accident rather than by design: about half the sites reached an `Enum.IsDefined`
+# guard and failed late as `MalformedPayload` - indistinguishable from a garbled byte stream - and
+# the rest built semantically invalid state and carried on. `AttackTargetKind` was the worst of them:
+# an undefined value fell through a ternary to `default` *and* skipped its `ReadString`, desyncing
+# the stream for everything after it.
+#
+# The runtime half is `SnapshotEnumReader.Read<T>`, which rejects an undefined value where it is read
+# and names the field. This is the half no compiler can enforce: a reader added later can always
+# reintroduce a cast, and nothing but a scan would notice.
+#
+# A text scan for the same reason check 5 is one - it runs on the non-Windows host, ahead of any
+# Unity tier. It answers exactly one question: does a cast to a declared enum sit directly in front
+# of a `reader.Read` call.
+function Get-RawEnumCastSites($SnapshotFiles, [hashtable] $DeclaredEnums) {
+    $sites = New-Object System.Collections.Generic.List[object]
+    foreach ($file in $SnapshotFiles) {
+        if ([string]::IsNullOrEmpty($file.Text)) { continue }
+        # `\s` spans newlines, so a break between the cast and the call is matched too. `\??` covers
+        # the nullable form `(TimingCheckpoint?)reader.ReadInt32()`. The double-cast form
+        # `(EndOfRoundStage?)(EndOfRoundStage)reader.ReadInt32()` matches once, on the inner cast:
+        # the outer one is followed by `(`, not `reader`.
+        foreach ($match in [regex]::Matches($file.Text, '\(\s*([A-Za-z_]\w*)\s*\??\s*\)\s*reader\s*\.\s*Read')) {
+            $name = $match.Groups[1].Value
+            # A cast to `int`, `byte`, or any non-enum type is not this check's finding.
+            if (-not $DeclaredEnums.ContainsKey($name)) { continue }
+            $sites.Add([pscustomobject]@{
+                File = $file.Name
+                Line = ($file.Text.Substring(0, $match.Index) -split "`n").Count
+                Type = $name
+            })
+        }
+    }
+    return $sites.ToArray()
+}
+
 function Test-DuplicateBodies([string[]] $Bodies, [string] $ActiveCorpus) {
     foreach ($body in $Bodies) {
         if ($body.Length -ge 80 -and $ActiveCorpus.Contains($body)) { return $false }
@@ -416,6 +455,24 @@ function Invoke-SelfTests {
     Expect 'helper form is scanned too' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites 'ReflectedMember.RequiredInstanceField(typeof(ViewType), "setupState")') $reflectSources $reflectTypes) -contains 'ViewType.setupState')
     Expect 'helper form resolving member passes' ((Get-UnresolvedReflectedMembers (Get-ReflectionSites "ReflectedMember.RequiredInstanceField(`n    typeof(ViewType),`n    `"occupancy`")") $reflectSources $reflectTypes).Count -eq 0)
 
+    # Code-truth check 6. `@()` around every call: the function returns object records rather than
+    # strings, and Windows PowerShell unwraps a one-element array to a bare PSCustomObject whose
+    # `.Count` is null - so an unwrapped single finding would read as no finding at all.
+    $enumNames = @{ 'TeamSide' = $true; 'TimingCheckpoint' = $true; 'EndOfRoundStage' = $true }
+    function SnapshotFile([string] $Text) { return @([pscustomobject]@{ Name = 'Probe.cs'; Text = $Text }) }
+    Expect 'raw enum cast is reported' (@(Get-RawEnumCastSites (SnapshotFile 'var side = (TeamSide)reader.ReadInt32();') $enumNames).Count -eq 1)
+    Expect 'raw enum cast names its type' (@(Get-RawEnumCastSites (SnapshotFile 'var side = (TeamSide)reader.ReadInt32();') $enumNames)[0].Type -eq 'TeamSide')
+    Expect 'nullable raw enum cast is reported' (@(Get-RawEnumCastSites (SnapshotFile 'var at = (TimingCheckpoint?)reader.ReadInt32();') $enumNames).Count -eq 1)
+    Expect 'double cast is reported once' (@(Get-RawEnumCastSites (SnapshotFile 'var s = has ? (EndOfRoundStage?)(EndOfRoundStage)reader.ReadInt32() : null;') $enumNames).Count -eq 1)
+    Expect 'multi-line raw enum cast is matched' (@(Get-RawEnumCastSites (SnapshotFile "var side = (TeamSide)`n    reader.ReadInt32();") $enumNames).Count -eq 1)
+    Expect 'typed reader call is not a finding' (@(Get-RawEnumCastSites (SnapshotFile 'var side = SnapshotEnumReader.Read<TeamSide>(reader, "team side");') $enumNames).Count -eq 0)
+    Expect 'primitive cast is not a finding' (@(Get-RawEnumCastSites (SnapshotFile 'var n = (int)reader.ReadInt32();') $enumNames).Count -eq 0)
+    Expect 'cast to an undeclared type is not a finding' (@(Get-RawEnumCastSites (SnapshotFile 'var x = (SomeUnityEnum)reader.ReadInt32();') $enumNames).Count -eq 0)
+    Expect 'enum cast not in front of a read is not a finding' (@(Get-RawEnumCastSites (SnapshotFile 'var side = (TeamSide)stored.Value;') $enumNames).Count -eq 0)
+    Expect 'cast reports the line it sits on' (@(Get-RawEnumCastSites (SnapshotFile "using System;`nvar side = (TeamSide)reader.ReadInt32();") $enumNames)[0].Line -eq 2)
+    Expect 'source with no cast yields none' (@(Get-RawEnumCastSites (SnapshotFile 'var n = reader.ReadInt32();') $enumNames).Count -eq 0)
+    Expect 'two casts in one file are both reported' (@(Get-RawEnumCastSites (SnapshotFile "var a = (TeamSide)reader.ReadInt32();`nvar b = (EndOfRoundStage)reader.ReadInt32();") $enumNames).Count -eq 2)
+
     if ($failed.Count -gt 0) { throw "Living-document validator self-test failure: $($failed -join ', ')" }
     Write-Host "Self-tests: $script:selfTestCount/$script:selfTestCount checks passed."
 }
@@ -510,10 +567,14 @@ if (-not (Test-Path -LiteralPath $assetsRoot)) {
 }
 else {
     $declaredTypes = @{}
+    $declaredEnums = @{}
     $sourceTypeNames = New-Object System.Collections.Generic.List[string]
     $behaviourTypes = New-Object System.Collections.Generic.List[object]
     $productionSource = New-Object System.Text.StringBuilder
     $testSource = New-Object System.Text.StringBuilder
+    # The snapshot decoder, kept separate so the raw-enum-cast check scans exactly the files that
+    # decode a payload and reports a real file and line rather than an offset into a concatenation.
+    $snapshotFiles = New-Object System.Collections.Generic.List[object]
     # Every file declaring a type, concatenated, so a member added by a second partial file resolves.
     $typeSources = @{}
     foreach ($sourceFile in (Get-ChildItem -LiteralPath $assetsRoot -Recurse -File -Filter '*.cs')) {
@@ -525,6 +586,12 @@ else {
         $sourceText = Read-Utf8 $sourceFile.FullName
         if (-not $isTest) { [void]$productionSource.AppendLine($sourceText) }
         else { [void]$testSource.AppendLine($sourceText) }
+        if ($sourceFile.FullName.Replace('\', '/') -like '*/Assets/GuardsDigital/Core/Snapshots/*') {
+            $snapshotFiles.Add([pscustomobject]@{ Name = $sourceFile.Name; Text = $sourceText })
+        }
+        foreach ($enumDeclaration in [regex]::Matches($sourceText, '(?m)^\s*(?:public|internal|private|protected|static|\s)*\benum\s+([A-Za-z_][A-Za-z0-9_]*)')) {
+            $declaredEnums[$enumDeclaration.Groups[1].Value] = $true
+        }
         foreach ($declaration in [regex]::Matches($sourceText, '(?m)^\s*(?:public|internal|private|protected|sealed|abstract|static|partial|readonly|record|\s)*\b(?:class|struct|interface|enum|record)\s+([A-Za-z_][A-Za-z0-9_]*)')) {
             $name = $declaration.Groups[1].Value
             if ($typeSources.ContainsKey($name)) { $typeSources[$name] += "`n" + $sourceText }
@@ -606,6 +673,23 @@ else {
     }
     foreach ($unresolved in (Get-UnresolvedReflectedMembers $reflectionSites $typeSources $declaredTypes)) {
         Add-Issue 'ERROR' 'unresolved-reflected-member' "A test reflects on ``$unresolved``, but the declaring type's source does not declare that name. The compiler cannot check a string, so a rename leaves the test resolving to null and failing on a dereference. Update the name, or mark a deliberate absence assertion with an ``absence-intended`` comment on the site."
+    }
+
+    # Code-truth check 6.
+    if ($snapshotFiles.Count -eq 0) {
+        Add-Issue 'ERROR' 'no-snapshot-decoder' 'No source files were found under Assets/GuardsDigital/Core/Snapshots/; the raw-enum-cast check would pass vacuously.'
+    }
+    elseif ($declaredEnums.Count -eq 0) {
+        Add-Issue 'ERROR' 'no-declared-enums' 'No C# enum declarations were found under Assets/; the raw-enum-cast check would pass vacuously.'
+    }
+    else {
+        $snapshotCorpus = ($snapshotFiles | ForEach-Object { $_.Text }) -join "`n"
+        if ($snapshotCorpus -notmatch 'SnapshotEnumReader\s*\.\s*Read') {
+            Add-Issue 'ERROR' 'no-typed-enum-reads' 'The snapshot decoder contains no SnapshotEnumReader read; either the typed reader was removed or the check is scanning the wrong files. A check that cannot observe the thing it enforces is not evidence.'
+        }
+        foreach ($site in (Get-RawEnumCastSites $snapshotFiles.ToArray() $declaredEnums)) {
+            Add-Issue 'ERROR' 'raw-enum-cast' "$($site.File):$($site.Line) casts a raw integer into ``$($site.Type)``. A snapshot enum must be read through ``SnapshotEnumReader.Read<$($site.Type)>(reader, ""<field>"")``, which rejects an undefined value where it is read instead of leaving it to whichever constructor happens to consume it."
+        }
     }
 }
 

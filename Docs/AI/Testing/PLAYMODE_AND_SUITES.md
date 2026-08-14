@@ -66,8 +66,10 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 371 | 0 | 0 | 0 | `6.1x` |
+| Complete Edit Mode | 378 | 0 | 0 | 0 | `6.1ad` |
 | Complete Play Mode | 19 | 0 | 0 | 0 | `6.1x` |
+
+Milestone 6.1ad moved Edit Mode from `371` to `378`. All `+7` are its own new cases: `+6` for `SnapshotEnumReaderTests` and `+1` for `AuthoritativeSnapshotSerializerTests`, which gained the end-to-end undefined-enum rejection case. No fixture was deleted, renamed, or merged, and no existing case changed what it asserts. Play Mode is unchanged at `19` and was intentionally not run: 6.1ad changed no Unity-facing type, scene, asset, or presentation path, and its one presentation consumer passes the payload straight through unmodified.
 
 Milestone 6.1x moved Edit Mode from `357` to `371`, and every one of the `+14` is a fixture added between `6.1k` and here: `+6` at 6.1o (`AppendOnlyEventLogTests` `+3`, `MatchAggregateAtomicityTests` `+2`, `MatchSessionDiagnosticCostTests` `+1`), `+3` at 6.1p (`MatchAggregateAtomicityTests` from `2` to `5`), `+3` at 6.1q (`ActiveEffectLifecycleTests` from `12` to `15`), and `+2` at 6.1s (`MinionAttackResolutionTests` from `6` to `8`). Milestones 6.1l, 6.1r, and 6.1t added no Unity fixture: 6.1l changed validator scripts, 6.1r was behaviour-invariant, and 6.1t's harness lives outside `Assets/`. Play Mode is unchanged at `19`; 6.1s edited `MinimalHexGridPlayModeTests` without adding a method.
 

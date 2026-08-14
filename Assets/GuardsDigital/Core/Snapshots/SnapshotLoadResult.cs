@@ -23,7 +23,15 @@ namespace GuardsDigital.Core.Snapshots
         UnsupportedSchemaVersion = 2,
         CardDefinitionContentRevisionMismatch = 3,
         MapDefinitionMissing = 4,
-        MapDefinitionContentRevisionMismatch = 5
+        MapDefinitionContentRevisionMismatch = 5,
+
+        /// <summary>
+        /// A field decoded to an integer that is not a declared member of its enum. Distinct from
+        /// <see cref="MalformedPayload"/> on purpose: a garbled byte stream and a payload written by
+        /// a build whose enum no longer agrees with this one are different failures, and a
+        /// resynchronizing client needs to tell them apart. See <see cref="SnapshotEnumReader"/>.
+        /// </summary>
+        UnrecognizedEnumValue = 6
     }
 
     public sealed class SnapshotLoadException : Exception

@@ -168,7 +168,8 @@ namespace GuardsDigital.Core.Snapshots
             return new CommonResolution(
                 new ActionResolutionId(reader.ReadString()), new CardInstanceId(reader.ReadString()),
                 ReadDefinitionReference(reader), new ActionDefinitionId(reader.ReadString()),
-                new HeroId(reader.ReadString()), (ActionInvocationContext)reader.ReadInt32(),
+                new HeroId(reader.ReadString()),
+                SnapshotEnumReader.Read<ActionInvocationContext>(reader, "resolution invocation context"),
                 new ActionResolutionStepId(reader.ReadString()));
         }
 
@@ -195,14 +196,14 @@ namespace GuardsDigital.Core.Snapshots
         private static ValueResult ReadPrintedValue(BinaryReader reader)
         {
             if (!reader.ReadBoolean()) return null;
-            var channel = (PrintedValueChannel)reader.ReadInt32();
+            var channel = SnapshotEnumReader.Read<PrintedValueChannel>(reader, "printed value channel");
             var contributions = ReadMany(reader, "printed contributions", () =>
             {
-                var kind = (ValueContributionKind)reader.ReadInt32();
+                var kind = SnapshotEnumReader.Read<ValueContributionKind>(reader, "value contribution kind");
                 var card = new CardInstanceId(reader.ReadString());
                 var hasAction = reader.ReadBoolean();
                 var action = hasAction ? new ActionDefinitionId(reader.ReadString()) : default;
-                var contributionChannel = (PrintedValueChannel)reader.ReadInt32();
+                var contributionChannel = SnapshotEnumReader.Read<PrintedValueChannel>(reader, "value contribution channel");
                 var amount = reader.ReadInt32();
                 if (kind == ValueContributionKind.MinionDefenseModifier)
                 {
@@ -254,10 +255,14 @@ namespace GuardsDigital.Core.Snapshots
         {
             var card = new CardInstanceId(reader.ReadString()); var reference = ReadDefinitionReference(reader);
             var action = new ActionDefinitionId(reader.ReadString()); var actor = new HeroId(reader.ReadString());
-            var context = (ActionInvocationContext)reader.ReadInt32(); var available = reader.ReadBoolean();
-            var range = (AttackRangeKind)reader.ReadInt32(); var hasTransition = reader.ReadBoolean();
+            var context = SnapshotEnumReader.Read<ActionInvocationContext>(reader, "action offer invocation context");
+            var available = reader.ReadBoolean();
+            var range = SnapshotEnumReader.Read<AttackRangeKind>(reader, "action offer attack range");
+            var hasTransition = reader.ReadBoolean();
             var transition = hasTransition
-                ? new ActionCardStateTransition((CardLocation)reader.ReadInt32(), (CardLocation)reader.ReadInt32())
+                ? new ActionCardStateTransition(
+                    SnapshotEnumReader.Read<CardLocation>(reader, "transition required location"),
+                    SnapshotEnumReader.Read<CardLocation>(reader, "transition destination location"))
                 : default;
             return new ActionOffer(card, reference, action, actor, context, available, range, transition);
         }
@@ -301,7 +306,8 @@ namespace GuardsDigital.Core.Snapshots
         private static EndOfRoundStageOutcome[] ReadOutcomes(BinaryReader reader)
         {
             return ReadMany(reader, "end-of-round outcomes", () => new EndOfRoundStageOutcome(
-                (EndOfRoundStage)reader.ReadInt32(), (EndOfRoundStageOutcomeKind)reader.ReadInt32()));
+                SnapshotEnumReader.Read<EndOfRoundStage>(reader, "end-of-round outcome stage"),
+                SnapshotEnumReader.Read<EndOfRoundStageOutcomeKind>(reader, "end-of-round outcome kind")));
         }
 
         private static void WriteDefinitionReference(BinaryWriter writer, CardDefinitionReference reference)

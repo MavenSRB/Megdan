@@ -412,6 +412,15 @@ When a digest moves, explain the delta before re-pinning. `CardAggregateInvarian
 account for its own bytes is indistinguishable from pinning over a regression. Decode the payloads
 either side of the change and attribute every differing byte.
 
+`SnapshotEnumReaderTests` pins no digest but belongs in the same route, because it owns the decode
+boundary the whole payload passes through: it drives every enum the payload carries against its
+declared members and against out-of-domain values. Run it whenever the serializer, an enum it reads,
+or `SnapshotEnumReader` itself changes. Adding a member to a payload enum is exactly the case it
+covers - the new member must read back, and the next value up must still be refused. The
+complementary half is not a test at all: code-truth check 6 in the living-document validator fails
+on any raw `(SomeEnum)reader.Read…` cast left under `Core/Snapshots/`, and it runs on a host where
+no Unity fixture can.
+
 ## Deterministic command-replay Director Undo corrective tests
 
 For milestone 3.10a, run `MatchFeaturePresenterTests` plus the new pure command-history/replay fixture and `AuthoritativeSnapshotSerializerTests` together; write outputs to `tmp/milestone-3-10a-focused-edit-results.xml` and `tmp/milestone-3-10a-focused-edit.log`. For directly affected Edit Mode coverage, use the milestone 3.9 filter above plus every new command-envelope, initial-scenario, replay, and event-log fixture; write outputs to `tmp/milestone-3-10a-affected-edit-results.xml` and `tmp/milestone-3-10a-affected-edit.log`. Run `MinimalHexGridPlayModeTests` and write outputs to `tmp/milestone-3-10a-focused-play-results.xml` and `tmp/milestone-3-10a-focused-play.log`.

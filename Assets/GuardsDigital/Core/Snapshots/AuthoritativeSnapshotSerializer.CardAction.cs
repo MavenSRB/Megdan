@@ -122,13 +122,29 @@ namespace GuardsDigital.Core.Snapshots
         private static PendingAttackResolution ReadAttackResolution(BinaryReader reader)
         {
             var common = ReadCommonResolution(reader);
-            var phase = (AttackResolutionPhase)reader.ReadInt32();
-            var targetKind = (AttackTargetKind)reader.ReadInt32();
-            var target = targetKind == AttackTargetKind.Hero
-                ? AttackTarget.Hero(new HeroId(reader.ReadString()))
-                : targetKind == AttackTargetKind.Minion
-                    ? AttackTarget.Minion(new MinionId(reader.ReadString()))
-                    : default;
+            var phase = SnapshotEnumReader.Read<AttackResolutionPhase>(reader, "attack resolution phase");
+            var targetKind = SnapshotEnumReader.Read<AttackTargetKind>(reader, "attack target kind");
+            // A switch mirroring WriteAttackResolution rather than a ternary chain. The chain's final
+            // `default` silently produced an empty target and, because it also skipped the ReadString
+            // that a Hero or Minion target consumes, left every field after it misaligned - surfacing,
+            // if at all, as the unrelated trailing-data error. Read<T> already rejects an undefined
+            // value; this makes a future member added to AttackTargetKind fail loudly here too,
+            // matching the pending card-action kind switch above.
+            AttackTarget target;
+            switch (targetKind)
+            {
+                case AttackTargetKind.Hero:
+                    target = AttackTarget.Hero(new HeroId(reader.ReadString()));
+                    break;
+                case AttackTargetKind.Minion:
+                    target = AttackTarget.Minion(new MinionId(reader.ReadString()));
+                    break;
+                case AttackTargetKind.None:
+                    target = default;
+                    break;
+                default:
+                    throw Malformed($"Unhandled attack target kind '{targetKind}'.");
+            }
             var attackValue = ReadPrintedValue(reader);
             var defenseOffer = reader.ReadBoolean() ? (ActionOffer?)ReadActionOffer(reader) : null;
             var defenseValue = ReadPrintedValue(reader);
