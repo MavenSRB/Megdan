@@ -1,9 +1,9 @@
 # Retired-structure ledger, read by the retired-structure-language check in
 # Tools/Validate-LivingDocumentation.ps1 (milestone 6.1ab).
 # Each entry line: signature phrase | retiring milestone | what was retired.
-# An active document may carry a signature phrase only on a line that also carries a
-# milestone id (a milestone-qualified historical construction); any other occurrence is
-# a stale current claim describing a structure that no longer exists.
+# An active document may carry a signature phrase only in a completed milestone block or on a
+# line qualified by historical provenance: any milestone ID for code structures, or the exact
+# retiring date for governance-process entries. Any other occurrence is a stale current claim.
 strategy registry | 6.1h | The card-action strategy registry, its marker interface, its pass-through handlers, and its backend interfaces; the dispatcher calls the concrete backends directly
 handler registry | 6.1h | The same registry as the capability documents name it
 once in the indexed phase-handoff archive | 2026-08-13 governance amendment | The per-handoff narrative append; evidence lives once in the commit message body with one archive row
@@ -12,3 +12,5 @@ milestone evidence in the phase handoff archives | 2026-08-13 governance amendme
 RISK-PERF-001 | 6.1o | Retired performance risk; a current claim citing it as a live blocker misstates a platform gate as a surviving prototype risk
 RISK-BUILD-001 | 6.1d | Retired build risk; same rule as RISK-PERF-001
 typed action strategies | 6.1h | The strategy-registry-era name for the action handler decomposition; current claims say direct backend composition
+recursive review-correction closure rule | 2026-08-13 governance amendment | The automatic verification-after-every-correction rule; current policy requires fresh verification only for findings that cannot close mechanically
+next milestone profile | 2026-08-13 governance amendment | The retired per-milestone model/reasoning profile assignment; current routing authorizes a milestone without governed model labels

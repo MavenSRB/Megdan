@@ -2,82 +2,61 @@
 
 ## Startup and targeted context loading
 
-At the start of each new agent task or run, read `Docs/AI/SESSION_BRIEF.md` once before the first plan or workspace change. Treat it as loaded for the rest of that task; do not reread it merely because the user sends a follow-up. Use `Docs/AI/DOCUMENTATION_GOVERNANCE.md` when ownership, archive, threshold, or risk routing is implicated.
+At the start of each new agent task or run, read `Docs/AI/SESSION_BRIEF.md` once before the first plan or workspace change. Treat it as loaded for the rest of that task; reread it only after a context reset that lost its exact contents or when the file changed. Use `Docs/AI/DOCUMENTATION_GOVERNANCE.md` when ownership, archive, threshold, or risk routing is implicated.
 
-Do not automatically read the full continuity documents. Use `rg` to find the required headings or terms, then read only the relevant section and enough surrounding context to preserve its dependencies:
+Load only the authority needed for the task:
 
-1. For roadmap work, read `Docs/AI/ROADMAP.md`'s `Execution rule`, follow its phase-shard index, and read the exact current or proposed milestone section. Read adjacent milestone sections only when the selected milestone names them as prerequisites.
-2. Follow `Docs/AI/PROJECT_CONTEXT.md` to the relevant subject shard when the task changes or depends on the detailed current implementation, product scope, architecture, platform, presentation direction, terminology, or development workflow beyond the session brief.
-3. For game-rule work, read `Docs/AI/RULES_LEDGER.md`'s `Authority hierarchy`, the matching rule-system or capability entries, and any linked open question or deviation. Read the relevant pages of `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` when the task depends on a game rule.
-4. For card, action, effect, combat, turn, progression, snapshot, or rules-authority work, follow `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` to the relevant contract shard. For effect, keyword, target/query, modifier, token, marker, board-object, timing, or system-transition work, also follow `Docs/AI/CARD_EFFECT_CAPABILITIES.md` to the relevant capability section or indexed shard.
+1. For roadmap work, read `Docs/AI/ROADMAP.md`'s `Execution rule`, follow its phase-shard index, and read the exact current or proposed milestone. Read an adjacent milestone only when the selected definition names it as a prerequisite.
+2. Follow `Docs/AI/PROJECT_CONTEXT.md` to the relevant subject shard when the task depends on implementation, product scope, architecture, platforms, presentation, terminology, or workflow beyond the brief.
+3. For game-rule work, read `Docs/AI/RULES_LEDGER.md`'s `Authority hierarchy`, the matching rule-system or capability entries, and linked open questions or deviations. Read the relevant pages of `Docs/Guards of Atlantis II - 2nd Printing_web.pdf` when the rule itself is implicated.
+4. For card, action, effect, combat, turn, progression, snapshot, or rules-authority work, follow `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md` to the relevant contract shard. For effects, keywords, targets/queries, modifiers, tokens/markers, board objects, timing, or transitions, also follow `Docs/AI/CARD_EFFECT_CAPABILITIES.md`.
 5. Before running or changing automated tests, follow `Docs/AI/TESTING.md` to the applicable policy and exact recipe shard.
 
-Expand to a full-document read only when the task is genuinely cross-cutting, targeted sections reveal an unresolved dependency, or the living documents may conflict. Reread a loaded section only when it changed, the task expands into a new area, its exact contents are unavailable after a context reset, or conflict verification requires it. A delegated agent may rely on applicable inherited context; otherwise it reads only the missing relevant sections once.
+Expand to a full-document read only for genuinely cross-cutting work, a named dependency, or a suspected conflict. A delegated agent may rely on applicable inherited context; otherwise it loads only the missing targeted sections.
 
-## Living-document governance
+## Governing authority and milestone workflow
 
-`Docs/AI/DOCUMENTATION_GOVERNANCE.md` is the permanent ownership, routing-threshold, archive, migration, preservation, and active-risk contract. Its thresholds limit one active leaf, never the total corpus, and never permit deletion, lossy compression, weakened precision, or reliance on Git history alone.
+`Docs/AI/DOCUMENTATION_GOVERNANCE.md` owns the canonical-home matrix, leaf thresholds, archive workflow, and active-risk lifecycle. Preserve precise current rules, contracts, acceptance/non-goal checks, source citations, deviations, open questions, active recipes, validation evidence, and rights/privacy boundaries. Route duplicated or completed history losslessly; do not weaken it to satisfy a threshold.
 
-- Write each current fact in its one canonical home. Noncanonical active documents use a short routing summary and stable link instead of copying a narrative.
-- Write detailed completed-milestone outcome and validation evidence once, in that milestone's commit message body. The applicable `Docs/AI/Archive/Phase-Handoffs/` file receives one row - ID, one-line outcome, commit SHA. The active milestone definition keeps only its exact definition/status and a historical backlink.
-- Keep `SESSION_BRIEF.md` limited to a compact current-status summary, authorization, exact next milestone, boundaries, and routing. Maintain detailed current implementation by subject in `Docs/AI/Project/CURRENT_IMPLEMENTATION.md`, replacing affected statements rather than appending milestone chronology; keep product, rules, card/effect, testing, and risk material in the canonical homes named by the ownership matrix.
-- When an active leaf reaches the 85% warning threshold, review ownership in the same handoff. Move duplicated/completed history losslessly or split irreducible current material into an indexed authoritative shard. A hard-threshold failure blocks handoff unless routing is corrected or the user explicitly approves a governance amendment.
-- Never shorten a current rule, contract, acceptance/non-goal check, source citation, deviation, open question, exact active test recipe, or historical pass/failure record merely to meet a threshold.
-- At every milestone handoff and phase gate, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1`, then `git diff --check`; update the affected indexes and risk disposition when implicated. The frozen migration manifest and preservation inventory are not updated.
+`Docs/AI/ROADMAP.md` owns milestone execution and review closure. `Docs/AI/SESSION_BRIEF.md` alone owns the current/active/next route. Once the user explicitly approves an exact milestone ID:
 
-## Milestone start
+1. Implement only its observable outcome and respect its non-goals.
+2. Run the validation selected by `Docs/AI/TESTING.md`.
+3. Perform the required review-only pass from the player-experience, rules-authority, maintainability, and project-risk perspectives. Separate demonstrated defects from measured or plausible risks and optional improvements; correct only in-scope acceptance defects, and report the review at handoff even when it finds none.
+4. Update only the continuity documents whose subject changed.
+5. Mark the milestone complete and create its local commit. The commit body records the validation tier, final revision, exact checks/results, material limitations, and bounded reason for any intentionally omitted unaffected suite; one phase-archive row indexes that evidence.
+6. Report the result and next proposal, then stop.
 
-Once the exact milestone is approved, begin work. Status moves from `[ ]` to `[x]` in the completion commit, together with the continuity updates.
-
-The former pre-work transition - editing the roadmap to `[~]`, editing the session brief, and running the validator before any analysis - was retired on 2026-08-13. It cost a full document round trip and a commit before the work started, and the state it recorded is already visible: an uncommitted working tree on a known branch says what is in flight, and the approval itself is in the task. The `[~]` marker and the `Active authorized milestone` field remain available and remain validator-enforced when used; mark a milestone `[~]` when work will span sessions or be handed off mid-flight, and set the brief's active field to the same ID. At most one milestone may be `[~]`.
-
-For a normal new milestone task, the user only needs to open a new task in this trusted project and explicitly approve the milestone by ID, for example: `I explicitly approve milestone 2.2. Implement it and stop after its required handoff.` The agent then performs the normal targeted loading, implementation, validation, continuity updates, and local commit without asking the user to repeat the stored workflow.
-
-If the roadmap and session brief disagree, do not implement the milestone. Reconcile the stored route first.
-
-Model and reasoning-effort selection is not a governed per-milestone artifact. The previous `Required Codex profile` contract, its `.codex/config.toml` mirroring requirement, and the corresponding validator checks were retired on 2026-08-13; see the provenance record in `Docs/AI/Archive/MIGRATION_MANIFEST.md`. Do not reintroduce per-milestone model labels into the roadmap.
-
-## Current authorization
-
-The detailed current implementation lives in `Docs/AI/Project/CURRENT_IMPLEMENTATION.md`; authorization and the next milestone live in `Docs/AI/SESSION_BRIEF.md`. Do not begin a proposed gameplay, presentation, card, or build milestone until the user explicitly approves that exact micro-milestone.
+Use `[~]` and the brief's matching active field only when work spans tasks or is handed off mid-flight; at most one milestone may be in progress. If the roadmap and brief disagree, reconcile the route before implementation. Model or reasoning-effort labels are not governed milestone data; do not reintroduce them.
 
 ## Non-negotiable working rules
 
-- Treat the second-printing rulebook, verified card data, and published official rulings as authoritative according to the hierarchy in `Docs/AI/RULES_LEDGER.md`.
-- Do not invent, simplify, rebalance, or silently reinterpret a rule. Record every approved deviation in `Docs/AI/RULES_LEDGER.md`.
-- Work on exactly one user-approved micro-milestone at a time. Satisfy its acceptance checks, update the living documents, report the result, and stop for approval.
-- Do not begin substantive work on a milestone the user has not approved by exact ID. Record the completed status in the milestone's commit; mark `[~]` mid-flight only when work will span sessions or be handed off.
-- Before declaring any approved milestone complete, perform a review-only pass from the player-experience, rules-authority, maintainability, and project-risk perspectives. Distinguish demonstrated defects from measured or plausible risks and from optional improvements. Report the review in the milestone handoff even when it finds no issues. Correct only demonstrated defects that fall within the approved milestone and are required for its acceptance; do not implement optional improvements or expand scope without separate user approval.
-- Apply the recursive review-correction closure rule in `Docs/AI/ROADMAP.md`: when a separately numbered independent engineering review requires one or more corrective micro-milestones before the affected downstream gate, its proposed corrective sequence must also include a separately numbered fresh-task independent verification review after the final correction. Corrective handoff self-reviews do not satisfy that verification. If the verification requires further pre-gate corrections, repeat the correction-plus-verification cycle; keep downstream work blocked through the latest required verification. Roadmap scheduling and each milestone's execution still require their applicable explicit user approvals.
-- After every completed user-approved roadmap milestone, create a local Git commit containing that milestone and its continuity updates. Do not configure a remote or push without explicit user authorization.
-- Do not continue into adjacent features merely because they appear easy or logically related.
-- Use the smallest implementation that proves the current behavior, while preserving the architectural constraints in `Docs/AI/PROJECT_CONTEXT.md`.
-- Keep authoritative rules and state independent from Unity scene objects, presentation, animation, and audio.
-- Preserve the definition/instance, action-offer, command/event, pending-choice, timing, and versioning contracts in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`, plus the typed effect/query contracts in `Docs/AI/CARD_EFFECT_CAPABILITIES.md`. Do not add card-name/hero-name rule branches, runtime printed-text parsing, or UI-owned card resolution.
-- Follow the risk-tiered policy in `Docs/AI/TESTING.md`. Every executable behavior change gets the narrowest focused automated tests and directly affected regressions; every bug fix gets a regression test.
-- Affectedness determines which tests must be run; it never permits ignoring a failure after a test has run. Every observed failure in an active automated test blocks the current handoff until it is corrected and rerun green, or the user explicitly approves a documented quarantine or separately numbered corrective sequence with replacement coverage and a verification owner. If correction is outside the approved milestone, stop and obtain that disposition rather than calling the failure unrelated, legacy, or pre-existing and proceeding. Skipped, inconclusive, missing, or stale required results are not passes.
-- For Unity batch-mode validation, use a command allowance of at least 15 minutes or a yielded execution that can be polled without terminating the process. Never impose a two-minute wrapper timeout. A wrapper yield or timeout is not a test failure: if the launched Unity PID is still active, keep monitoring that same process and its designated log/XML outputs, and never start a replacement against the same project. Treat repeated 60-second licensing-channel retries as an environment startup problem; retry at most once and only after the original Unity process has exited.
-- Keep all project files, requests, logs, and test results inside the workspace. Launch Unity validation only through the fixed project-local `Tools/Invoke-UnityValidation.ps1` entry point described in `Docs/AI/TESTING.md`; do not compose or request approval for ad-hoc Unity, Hub, licensing-client, or elevated PowerShell commands. The launcher owns the required outside-sandbox process context, licensing preflight, and safe Hub recovery. Agents must use its exact parameterless invocation so one narrow reusable system approval can cover future validation runs. Do not make the user keep Hub open, restart Hub, or repair licensing manually unless that automated recovery has failed.
-- Documentation-only changes use documentation/source validation and do not launch Unity. Pure rules/data changes do not require Play Mode unless a Unity-facing path changed.
-- Reserve complete unfiltered Edit Mode and Play Mode suites for implementation-phase endpoints, explicit hard gates, the pre-build regression gate, shared test/package/assembly changes, or risk whose consumers cannot be confidently enumerated. Do not repeatedly retest the whole game for a narrow change.
-- Apply `Docs/AI/Testing/POLICY.md`'s token-efficient execution and reporting rules: run final-revision filters once unless invalidated, prove each non-obvious directly affected dependency route, avoid duplicating an owned invariant across layers, and keep the one canonical archive evidence record concise. This reduces reruns and repeated narration, never required coverage or failure accountability.
-- Record the validation tier, final revision, exact tests/checks, results, material limitations, and one bounded reason for any intentionally omitted unaffected suite in the milestone handoff; keep the user-facing summary shorter unless a failure, risk decision, requested audit, or hard gate needs detail.
-- Preserve user-created and reference files. Do not bulk-process or reorganize the card corpus unless the current milestone requires it.
-- The rulebook is tracked through Git LFS under the user's 2026-08-13 confirmation of relevant distribution permission. The extracted card corpus and map references remain excluded from Git; preserve them at their documented paths and never add or distribute them without separate explicit authorization and appropriate rights.
-- The public source repository and tracked rulebook are the only currently authorized publication. Do not publish, upload, market, monetize, or distribute excluded references, builds, or other untracked material without explicit authorization from the user and the relevant rights holder.
+- Treat the second-printing rulebook, verified card data, and published official rulings as authoritative under `Docs/AI/RULES_LEDGER.md`. Never invent, simplify, rebalance, or silently reinterpret a rule; record every approved deviation there.
+- Work on exactly one user-approved micro-milestone at a time. Do not continue into adjacent features merely because they are easy or related.
+- Each actionable independent-review finding names a closing check and closes only on its recorded failing-then-passing transition. Schedule a separately numbered fresh-task verification only when a finding cannot be closed mechanically because it concerns rule interpretation, architectural direction, or player experience; follow `Docs/AI/ROADMAP.md`.
+- After every completed approved roadmap milestone, create the local Git commit containing the milestone and continuity updates. Do not configure a remote, push, publish, or distribute anything without the user's applicable explicit authorization.
+- Use the smallest implementation that proves the behavior while preserving `Docs/AI/PROJECT_CONTEXT.md`'s architecture. Authoritative rules and state remain independent of Unity scene objects, presentation, animation, and audio.
+- Preserve the definition/instance, action-offer, command/event, pending-choice, timing, versioning, snapshot, and replay contracts in `Docs/AI/CARD_SYSTEM_ARCHITECTURE.md`, plus the typed effect/query contracts in `Docs/AI/CARD_EFFECT_CAPABILITIES.md`. Do not add card-name/hero-name rule branches, runtime printed-text parsing, or UI-owned card resolution.
+- Follow `Docs/AI/Testing/POLICY.md` for risk tiers, affectedness, pass criteria, evidence, and suite breadth. Every executable behavior change receives the narrowest focused automated tests and directly affected regressions; every bug fix receives a regression test.
+- Every failure observed in an active automated test blocks handoff until corrected and rerun green, or the user explicitly approves the policy's documented quarantine or corrective-sequence disposition. Correct only within authorized scope; otherwise stop for that disposition. Skipped, inconclusive, missing, or stale required results are not passes.
+- Launch Unity validation only through the exact parameterless project-local `Tools/Invoke-UnityValidation.ps1` route in `Docs/AI/Testing/POLICY.md`. Keep requests, logs, and results inside the workspace; allow at least 15 minutes or yield and monitor the same live PID. Never start a replacement against the project while that PID runs, and use only the launcher's bounded recovery path for licensing failures.
+- Documentation-only changes use documentation/source validation and do not launch Unity. Pure rules/data changes do not require Play Mode unless a Unity-facing path changed. Complete unfiltered suites remain reserved for the gates and risk triggers defined in testing policy.
+- Preserve user-created and reference files. Do not bulk-process or reorganize the card corpus unless the approved milestone requires it.
+- The tracked source and rulebook are the only currently authorized publication. The extracted card corpus, map references, builds, and other excluded or untracked material remain private and must not be added, uploaded, published, marketed, monetized, or distributed without separate explicit authorization and applicable rights.
 
 ## Continuity updates
 
-Two documents change at essentially every milestone. Update these:
+At essentially every milestone, update:
 
-- `Docs/AI/SESSION_BRIEF.md` - authorization, completed/next milestone, and startup routing.
-- The `Docs/AI/Roadmap/PHASE_<N>.md` shard - milestone status, plus one archive row (ID, one-line outcome, commit SHA) in the matching `Docs/AI/Archive/Phase-Handoffs/` file. Detailed evidence goes in the commit message body, not the archive.
+- `Docs/AI/SESSION_BRIEF.md` for the current/active/next route and compact startup status.
+- The exact `Docs/AI/Roadmap/PHASE_<N>.md` shard for status, plus one ID/outcome/commit row in `Docs/AI/Archive/Phase-Handoffs/PHASE_<N>.md`. Detailed evidence lives in the referenced commit body.
 
-Update the rest **only when that milestone actually changed their subject**, not as a routine checklist:
+Update other authorities only when their subject changed:
 
-- `Docs/AI/Project/CURRENT_IMPLEMENTATION.md` when implemented behavior changed. `Docs/AI/Project/*.md` when product scope, constraints, architecture, presentation, or terminology changed.
-- `Docs/AI/RULES_LEDGER.md` when a rule was verified, implemented, tested, clarified, or intentionally deviated from.
-- `Docs/AI/Card-System/*.md` when a card-engine contract or extension boundary changed; `Docs/AI/CARD_EFFECT_CAPABILITIES.md` when an effect, keyword, query, modifier, timing, or system-transition contract changed.
-- `Docs/AI/TECHNICAL_RISKS.md` when a risk was raised, reassessed, retired, or a temporary structure gained or lost its retirement owner.
+- `Docs/AI/Project/CURRENT_IMPLEMENTATION.md` for implemented behavior; the matching `Docs/AI/Project/*.md` shard for product scope, constraints, architecture, platforms, presentation, terminology, or workflow changes.
+- `Docs/AI/RULES_LEDGER.md` for rule verification, implementation, testing, clarification, deviation, or open-question changes.
+- `Docs/AI/Card-System/*.md` and `Docs/AI/CARD_EFFECT_CAPABILITIES.md` for changed card/effect contracts or capabilities.
+- `Docs/AI/TESTING.md` or its shards for changed policy, recipes, gates, or test ownership.
+- `Docs/AI/TECHNICAL_RISKS.md` for raised, reassessed, or retired risks and for temporary structures that gain or lose a retirement owner.
 
-A milestone that touched none of a document's subject writes nothing to it; an unchanged document is the correct outcome, not a missed step. If any of these disagree with each other, stop and resolve the conflict with the user before implementation.
+An unchanged subject document is the correct outcome. Frozen migration and preservation records are never routine handoff updates. At every handoff and phase gate, run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1`, then `git diff --check`; resolve any cross-authority conflict before implementation or handoff.

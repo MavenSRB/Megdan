@@ -38,6 +38,7 @@ function Get-RelativePath([string] $BasePath, [string] $TargetPath) {
 
 function Get-Limit([string] $RelativePath) {
     $p = $RelativePath.Replace('\', '/')
+    if ($p -eq 'AGENTS.md') { return @(2500, 20KB) }
     if ($p -eq 'Docs/AI/SESSION_BRIEF.md') { return @(2000, 20KB) }
     if ($p -eq 'Docs/AI/PROJECT_CONTEXT.md' -or $p -like 'Docs/AI/Project/*.md') { return @(4500, 40KB) }
     if ($p -eq 'Docs/AI/ROADMAP.md' -or $p -like 'Docs/AI/Roadmap/*.md') { return @(15000, 128KB) }
@@ -410,11 +411,12 @@ function Get-MilestonesMissingEvidenceBacklink($Blocks) {
 # Retired-structure and stale-retirement-owner checks (milestone 6.1ab): documentation must not
 # describe a deleted structure in the present tense, and must not assign a retirement to a milestone
 # that already completed. The retired structures are declared in Tools/RetiredStructures.txt rather
-# than inferred from prose; a signature phrase is legal only on a line that also carries a milestone
-# id, which is how the corpus already writes legitimate history ("Milestone 6.1h removed the
-# registry"). Get-UndeclaredContractTypes structurally cannot reach these sites: ordinary English
-# prose carries no backticked identifier with a known suffix, and a check that catches a documented
-# type which never existed is blind to one that existed and was deleted.
+# than inferred from prose. Completed milestone blocks are historical; code-structure phrases are
+# also legal on milestone-qualified lines, while governance-process phrases require their exact
+# retiring date so an unrelated milestone mention cannot hide a stale current rule.
+# Get-UndeclaredContractTypes structurally cannot reach these sites: ordinary English prose carries
+# no backticked identifier with a known suffix, and a check that catches a documented type which
+# never existed is blind to one that existed and was deleted.
 function Read-RetiredStructureLedger([string[]] $Lines) {
     $entries = New-Object System.Collections.Generic.List[object]
     foreach ($line in $Lines) {
@@ -440,7 +442,11 @@ function Get-RetiredStructureLanguageSites($Entries, [hashtable] $DocTexts) {
             if ($inCompleteBlock) { continue }
             foreach ($entry in $Entries) {
                 if ($lines[$i].IndexOf($entry.Phrase, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
-                if ([regex]::IsMatch($lines[$i], '\b\d+\.\d+[a-z]*\b')) { continue }
+                $dateQualifier = [regex]::Match($entry.RetiredBy, '\b\d{4}-\d{2}-\d{2}\b')
+                if ($dateQualifier.Success) {
+                    if ($lines[$i].IndexOf($dateQualifier.Value, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { continue }
+                }
+                elseif ([regex]::IsMatch($lines[$i], '\b\d+\.\d+[a-z]*\d*\b')) { continue }
                 $sites.Add([pscustomobject]@{ Doc = $doc; Line = $i + 1; Phrase = $entry.Phrase })
             }
         }
@@ -532,12 +538,10 @@ function Get-StalePinnedConstantSites($Entries, [hashtable] $SourceValues, [hash
     return $sites.ToArray()
 }
 
-# Completion-history containment (milestone 6.1ac): governance routes a completed milestone's
-# narrative to its commit body and archive row, leaving the brief its compact route. duplicate-history
-# cannot reach a narrative that never left the active document - since archive rows became one-liners
-# there is no >=200-character archived paragraph to match against - so this check states the
-# governance rule as a countable one: the brief carries exactly one completion statement, and it
-# names the current completed milestone.
+# Completion-history containment (milestone 6.1ac, corrected at 6.1an): governance routes a
+# completed milestone's narrative to its commit body and archive row, leaving the brief's exact
+# current marker as its sole active completion status. Any narrative completion bullet is therefore
+# misplaced history; the route/status and archive checks independently prove the positive invariants.
 # Code-truth check 7 (milestone 6.1af): every fixture name a live testing document tells a reader to
 # run must resolve to a declared test type. An unmatched Unity test filter discovers no tests and
 # raises no error, so a recipe naming a deleted or never-existing fixture silently drops the
@@ -616,11 +620,7 @@ function Get-TestingHistorySites([hashtable] $TestingTexts, [string[]] $Patterns
 }
 
 function Test-CompletionHistory([string] $Session) {
-    $ids = @([regex]::Matches($Session, '(?m)^- Milestone \*\*(\S+)\*\* completed') | ForEach-Object { $_.Groups[1].Value })
-    $current = [regex]::Match($Session, 'Current completed milestone:\s*\*\*([^*]+)\*\*')
-    if ($ids.Count -eq 0) { return @('no-completion-statement') }
-    if ($ids.Count -gt 1) { return @('completion-history-in-active-doc') }
-    if ($current.Success -and $ids[0] -ne $current.Groups[1].Value.Trim()) { return @('completion-history-in-active-doc') }
+    if ([regex]::IsMatch($Session, '(?m)^- Milestone \*\*\S+\*\* completed')) { return @('completion-history-in-active-doc') }
     return @()
 }
 
@@ -661,6 +661,10 @@ function Invoke-SelfTests {
     Expect 'valid structure' ((Test-ThresholdValues 10 100 100 1000) -eq 'ok')
     Expect 'warning threshold' ((Test-ThresholdValues 85 100 100 1000) -eq 'warning')
     Expect 'hard-threshold failure' ((Test-ThresholdValues 101 100 100 1000) -eq 'hard')
+    Expect 'byte warning threshold' ((Test-ThresholdValues 10 17408 2500 20KB) -eq 'warning')
+    Expect 'byte hard-threshold failure' ((Test-ThresholdValues 10 20481 2500 20KB) -eq 'hard')
+    $agentsLimit = Get-Limit 'AGENTS.md'
+    Expect 'the root agent entry point is governed' ($agentsLimit[0] -eq 2500 -and $agentsLimit[1] -eq 20KB)
 
     $validSession = "- Current completed milestone: **1.0**.`n- Active authorized milestone: **none**.`n- Next proposed milestone: **1.1**."
     $validRoadmap = "### [x] 1.0 Done`n`n### [ ] 1.1 Next`n`nObservable outcome: something.`n"
@@ -790,6 +794,9 @@ function Invoke-SelfTests {
     Expect 'ledger parses entries and skips comments' ($retiredEntries.Count -eq 1 -and $retiredEntries[0].Phrase -eq 'strategy registry' -and $retiredEntries[0].RetiredBy -eq '6.1h')
     Expect 'a retired phrase in a current claim is reported' (@(Get-RetiredStructureLanguageSites $retiredEntries @{ 'DOC.md' = "The dispatcher sits behind a typed strategy registry." }).Count -eq 1)
     Expect 'the same phrase in milestone-qualified history passes' (@(Get-RetiredStructureLanguageSites $retiredEntries @{ 'DOC.md' = "Milestone 6.1h removed the strategy registry." }).Count -eq 0)
+    $retiredProcessEntries = @(Read-RetiredStructureLedger @('automatic review cycle | 2026-08-13 governance amendment | The retired process'))
+    Expect 'an unrelated milestone id does not qualify a stale post-amendment process claim' (@(Get-RetiredStructureLanguageSites $retiredProcessEntries @{ 'DOC.md' = "Milestone 5.1 shipped; the automatic review cycle still applies." }).Count -eq 1)
+    Expect 'the retiring amendment date qualifies process history' (@(Get-RetiredStructureLanguageSites $retiredProcessEntries @{ 'DOC.md' = "The 2026-08-13 governance amendment retired the automatic review cycle." }).Count -eq 0)
     Expect 'empty ledger yields no sites for the vacuity guard' (@(Get-RetiredStructureLanguageSites @() @{ 'DOC.md' = 'strategy registry everywhere' }).Count -eq 0)
     Expect 'a retired phrase inside a completed milestone definition block passes' (@(Get-RetiredStructureLanguageSites $retiredEntries @{ 'DOC.md' = "### [x] 9.9 Done`n`nThe strategy registry is removed.`n" }).Count -eq 0)
     Expect 'a retired phrase inside an open milestone definition block is reported' (@(Get-RetiredStructureLanguageSites $retiredEntries @{ 'DOC.md' = "### [ ] 9.8 Open`n`nExtend the strategy registry.`n" }).Count -eq 1)
@@ -816,12 +823,12 @@ function Invoke-SelfTests {
     Expect 'a milestone-qualified historical mention stays legal' (@(Get-StalePinnedConstantSites $pinnedTestEntries $pinnedValues @{ 'DOC.md' = "Milestone 5.4 pinned schema v4 digests. Today schema v7 persists both continuations." }).Count -eq 0)
     Expect 'a document without its designated claim is reported' (@(Get-StalePinnedConstantSites $pinnedTestEntries $pinnedValues @{ 'DOC.md' = 'No claim here at all.' })[0].Kind -eq 'missing-claim')
 
-    # Completion-history containment (milestone 6.1ac).
-    $historySession = "- Current completed milestone: **2.5**.`n- Milestone **2.5** completed on 2026-08-14. One sentence.`n"
-    Expect 'one matching completion statement passes' (@(Test-CompletionHistory $historySession).Count -eq 0)
-    Expect 'a mismatched completion statement is reported' (@(Test-CompletionHistory ($historySession -replace 'Milestone \*\*2\.5\*\* completed', 'Milestone **2.4** completed')) -contains 'completion-history-in-active-doc')
-    Expect 'several completion statements are reported' (@(Test-CompletionHistory ($historySession + "- Milestone **2.4** completed on 2026-08-13. Older narrative.`n")) -contains 'completion-history-in-active-doc')
-    Expect 'no completion statement at all trips the vacuity guard' (@(Test-CompletionHistory '- Current completed milestone: **2.5**.') -contains 'no-completion-statement')
+    # Completion-history containment (milestone 6.1ac, corrected at 6.1an).
+    $historyRoute = '- Current completed milestone: **2.5**.'
+    Expect 'the exact current route marker needs no narrative duplicate' (@(Test-CompletionHistory $historyRoute).Count -eq 0)
+    Expect 'a current completion narrative is reported' (@(Test-CompletionHistory ($historyRoute + "`n- Milestone **2.5** completed on 2026-08-14. One sentence.")) -contains 'completion-history-in-active-doc')
+    Expect 'an older completion narrative is reported' (@(Test-CompletionHistory ($historyRoute + "`n- Milestone **2.4** completed on 2026-08-13. Older narrative.")) -contains 'completion-history-in-active-doc')
+    Expect 'several completion narratives are reported' (@(Test-CompletionHistory ($historyRoute + "`n- Milestone **2.5** completed now.`n- Milestone **2.4** completed before.")) -contains 'completion-history-in-active-doc')
     # Code-truth check 7 (milestone 6.1af).
     $fixtureTypes = @{ 'FastTravelActionTests' = $true; 'MatchSessionTests' = $true }
     $script:testFixtureReferenceCount = 0
@@ -854,8 +861,12 @@ function Invoke-SelfTests {
 
 if (-not $SkipSelfTests) { Invoke-SelfTests }
 
-# Active leaf thresholds.
-$activeFiles = Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/*' }
+# Active leaf thresholds. AGENTS.md is the mandatory project-root process leaf, so include it in
+# every active-corpus check rather than merely declaring an unreachable Get-Limit case.
+$activeFiles = @(Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/*' })
+$agentsPath = Join-Path $projectRoot 'AGENTS.md'
+if (Test-Path -LiteralPath $agentsPath) { $activeFiles += Get-Item -LiteralPath $agentsPath }
+else { Add-Issue 'ERROR' 'missing-file' 'Missing project-root AGENTS.md.' }
 foreach ($file in $activeFiles) {
     $relative = Get-RelativePath $projectRoot $file.FullName
     $limit = Get-Limit $relative
@@ -909,8 +920,9 @@ foreach ($file in $activeFiles) {
 }
 foreach ($marker in $routeMarkerCounts.Keys) { if ($routeMarkerCounts[$marker] -ne 1) { Add-Issue 'ERROR' 'duplicate-route' "Expected exactly one '$marker' route, found $($routeMarkerCounts[$marker])." } }
 
-# Markdown paths and anchors for active indexes and archives.
-$linkFiles = Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/Pre-Governance/*' }
+# Markdown paths and anchors for the root process leaf, active indexes, and archives.
+$linkFiles = @(Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/Pre-Governance/*' })
+if (Test-Path -LiteralPath $agentsPath) { $linkFiles += Get-Item -LiteralPath $agentsPath }
 foreach ($file in $linkFiles) {
     $text = Read-Utf8 $file.FullName
     foreach ($match in [regex]::Matches($text, '(?<!\!)\[[^\]]+\]\(([^)]+)\)')) {
@@ -933,7 +945,7 @@ if ($retiredStructures.Count -eq 0) { Add-Issue 'ERROR' 'no-retired-structures' 
 $activeDocTexts = @{}
 foreach ($file in $activeFiles) { $activeDocTexts[(Get-RelativePath $projectRoot $file.FullName)] = Read-Utf8 $file.FullName }
 foreach ($site in (Get-RetiredStructureLanguageSites $retiredStructures $activeDocTexts)) {
-    Add-Issue 'ERROR' 'retired-structure-language' "$($site.Doc):$($site.Line) states '$($site.Phrase)' as a current claim, but that structure was retired. Correct it to a milestone-qualified historical statement, or remove it."
+    Add-Issue 'ERROR' 'retired-structure-language' "$($site.Doc):$($site.Line) states '$($site.Phrase)' as a current claim, but that structure was retired. Correct it to a retiring-milestone/date-qualified historical statement, or remove it."
 }
 $riskRegisterText = if (Test-Path -LiteralPath (Join-Path $docsRoot 'TECHNICAL_RISKS.md')) { Read-Utf8 (Join-Path $docsRoot 'TECHNICAL_RISKS.md') } else { '' }
 $temporaryStructureRows = @(Get-SectionTableRows $riskRegisterText 'Temporary-structure register')
@@ -975,10 +987,9 @@ foreach ($pinnedSite in (Get-StalePinnedConstantSites $pinnedConstantEntries $pi
     else { Add-Issue 'ERROR' 'stale-pinned-constant' "$($pinnedSite.Doc) states $($pinnedSite.Stated) where $($pinnedSite.Symbol) is $($pinnedSite.Expected). A designated current-claim section cannot disagree with the source constant it pins." }
 }
 
-# Completion-history containment (milestone 6.1ac; generalized to the testing shards at 6.1ag).
+# Completion-history containment (milestone 6.1ac, corrected at 6.1an; generalized to the testing shards at 6.1ag).
 foreach ($code in (Test-CompletionHistory $session)) {
-    if ($code -eq 'no-completion-statement') { Add-Issue 'ERROR' $code 'SESSION_BRIEF.md carries no milestone completion statement at all; a phrasing change may have silently retired the completion-history check.' }
-    else { Add-Issue 'ERROR' $code "SESSION_BRIEF.md must carry exactly one milestone completion statement and it must name the current completed milestone; a completed milestone's narrative lives in its commit body and archive row." }
+    Add-Issue 'ERROR' $code "SESSION_BRIEF.md carries a narrative milestone-completion bullet. Its exact current marker is the sole active completion status; completed outcome and evidence live in the indexed commit body."
 }
 $testingShardTexts = @{}
 foreach ($file in $activeFiles) {

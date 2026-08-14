@@ -10,6 +10,8 @@ Historical files are version-controlled evidence excluded from routine startup l
 
 ## Completed milestone handoffs
 
+Under the current workflow, each phase-handoff row is the durable index to that milestone's detailed evidence in the referenced Git commit body. The row carries only the milestone ID, one-line outcome, and commit SHA; active definitions link back to the row.
+
 - [Phase 0](Phase-Handoffs/PHASE_0.md)
 - [Phase 1](Phase-Handoffs/PHASE_1.md)
 - [Phase 2](Phase-Handoffs/PHASE_2.md)

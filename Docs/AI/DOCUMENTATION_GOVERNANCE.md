@@ -4,12 +4,13 @@
 
 This contract keeps routine context bounded without limiting the complete authoritative corpus. Current authority may be split across indexed subject shards, and completed history may move to indexed archives, but neither operation may delete, weaken, paraphrase, or silently change rules, sources, deviations, open questions, milestone acceptance/non-goal checks, exact active test recipes, validation evidence, rights/privacy boundaries, or Git history.
 
-Every fact has exactly one canonical active home. Other active documents use a short routing summary and a stable link. Historical evidence has exactly one lossless archive destination. The pre-governance baseline is preservation evidence, not current authority.
+Every fact has exactly one canonical active home. Other active documents use a short routing summary and a stable link. Historical evidence has exactly one lossless destination: for new milestone evidence, the commit body indexed by its phase-archive row; for other history, an indexed append-only archive file. The pre-governance baseline is preservation evidence, not current authority.
 
 ## Ownership matrix
 
 | Information category | One canonical home | Permitted noncanonical content |
 | --- | --- | --- |
+| Agent startup, authorization guardrails, safety boundaries, and mandatory handoff procedure | Project-root [`AGENTS.md`](../../AGENTS.md), with detailed milestone/review policy in [`ROADMAP.md`](ROADMAP.md) and validation procedure in [`Testing/POLICY.md`](Testing/POLICY.md) | Short routing summaries and links; no copied detailed policy |
 | Current implementation inventory | [`Project/CURRENT_IMPLEMENTATION.md`](Project/CURRENT_IMPLEMENTATION.md) plus its indexed [`Project/`](Project/) subject shards, currently [`Project/FOUNDATION_CORRECTIONS.md`](Project/FOUNDATION_CORRECTIONS.md), which [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) also indexes as a peer subject shard | Compact startup status and one stable link from [`SESSION_BRIEF.md`](SESSION_BRIEF.md); no duplicated chronology or test totals |
 | Current authorization and exact next milestone | [`SESSION_BRIEF.md`](SESSION_BRIEF.md) | One stable link; no duplicated route markers |
 | Roadmap sequencing, milestone status, exact acceptance checks, and non-goals | [`ROADMAP.md`](ROADMAP.md) plus its indexed [`Roadmap/`](Roadmap/) phase shards | Status/routing summaries that link to the exact milestone |
@@ -20,7 +21,8 @@ Every fact has exactly one canonical active home. Other active documents use a s
 | Validation policy, launcher resilience, active/future exact recipes, gate definitions, and test ownership | [`TESTING.md`](TESTING.md) plus its indexed [`Testing/`](Testing/) shards | Exact command link or short gate route |
 | Active technical risks | [`TECHNICAL_RISKS.md`](TECHNICAL_RISKS.md) | Milestone links to owning risk IDs |
 | Official map data contract, reviewed inventory, and generated-resource rule | [`Maps/README.md`](Maps/README.md) | Links from the rules ledger's official-map row and the session brief's routing table |
-| Completed milestone narratives, historical run/failure evidence, superseded recipes, and resolved risks | [`Archive/README.md`](Archive/README.md) and its indexed lossless destinations | Short backlink only; never a copied body |
+| Completed milestone outcome and validation evidence | The milestone commit body, indexed by the one-row entry under [`Archive/Phase-Handoffs/`](Archive/Phase-Handoffs/) and routed from [`Archive/README.md`](Archive/README.md) | ID, one-line outcome, commit SHA, and short backlinks only; never a copied evidence body |
+| Superseded recipes, resolved risks, and other non-milestone history | [`Archive/README.md`](Archive/README.md) and its indexed append-only destinations | Short backlink only; never a copied body |
 | Consolidation provenance (frozen; not maintained) | [`Archive/MIGRATION_MANIFEST.md`](Archive/MIGRATION_MANIFEST.md), [`Archive/PRESERVATION_INVENTORY.md`](Archive/PRESERVATION_INVENTORY.md), and [`Archive/Pre-Governance/SHA256SUMS.md`](Archive/Pre-Governance/SHA256SUMS.md) | Stable links only |
 
 ## Active leaf thresholds
@@ -29,6 +31,7 @@ Thresholds apply per active leaf, never to the aggregate corpus. Word count uses
 
 | Active leaf family | Hard words | Hard bytes |
 | --- | ---: | ---: |
+| Project-root `AGENTS.md` | 2,500 | 20 KiB |
 | `SESSION_BRIEF.md` | 2,000 | 20 KiB |
 | `PROJECT_CONTEXT.md` and each `Project/*.md` shard | 4,500 | 40 KiB |
 | `ROADMAP.md` and each `Roadmap/*.md` shard | 15,000 | 128 KiB |
@@ -49,13 +52,13 @@ At the owning milestone or phase gate, reassess the entry. A resolved risk moves
 
 ## History and archive workflow
 
-New milestone outcome and validation evidence is written **once, in the milestone's commit message body**: the validation tier, final revision, exact filters and results, each finding's named closing check and its observed failing-then-passing transition, and any material limitation. `Archive/Phase-Handoffs/PHASE_<N>.md` receives one row per milestone - ID, one-line outcome, commit SHA - and the active milestone definition keeps only its stable `Historical evidence` backlink.
+New milestone outcome and validation evidence is written **once, in the milestone's commit message body**: the validation tier, final revision, exact filters and results, each finding's named closing check and its observed failing-then-passing transition, and any material limitation. `Archive/Phase-Handoffs/PHASE_<N>.md` receives one row per milestone - ID, one-line outcome, commit SHA - which is the durable archive index to that commit-body evidence. The active milestone definition keeps only its stable `Historical evidence` backlink.
 
 This replaced the per-handoff narrative append on 2026-08-13. Evidence stays recoverable and immutable in Git, addressed by SHA, instead of growing a 100 KB file that every handoff had to edit and every threshold check had to measure. Existing archive narratives are not rewritten; they remain valid history under the append-only rule.
 
 Superseded command recipes, resolved-risk records, and other historical evidence still move verbatim to their indexed archive.
 
-Archive files are version-controlled, append-only historical evidence. Corrections are explicit addenda; prior text is not rewritten. `Archive/Pre-Governance/` is immutable. Archive indexes link back to the active canonical definition or policy, and active definitions link to their historical evidence when it exists.
+Archive files and referenced milestone commit bodies are version-controlled historical evidence. Archive files are append-only: corrections are explicit addenda and prior text is not rewritten. `Archive/Pre-Governance/` is immutable. Archive indexes link back to the active canonical definition or policy, and active definitions link to their historical evidence when it exists.
 
 ## Retired migration bookkeeping
 
