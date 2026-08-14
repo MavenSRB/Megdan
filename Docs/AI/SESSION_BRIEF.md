@@ -13,10 +13,10 @@ The project has completed roadmap milestones through **6.2a**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.2a**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.2**, in progress.
 - Next proposed milestone: **6.2**.
 
-Milestone **6.2a** completed on 2026-08-14, closing `F58C-02`. A bounded synthetic Skill now offers and executes through a stable-node serializable effect frame across `IMatchSession`, the round/turn authorities, snapshots, restore, replay and retained-prefix Undo. Snapshot schema is v8 and rejects v7: Active-effect semantics left the wire entirely and are rebound from the registered capability catalog, so a payload can say which effect and what happened to it but not what it means. The remaining gameplay route is 6.2, then 6.2b.
+Milestone **6.2a** completed on 2026-08-14, closing `F58C-02`. A bounded synthetic Skill now offers and executes through a stable-node serializable effect frame across `IMatchSession`, the round/turn authorities, snapshots, restore, replay and retained-prefix Undo. Snapshot schema is v8 and rejects v7: Active-effect semantics left the wire entirely and are rebound from the registered capability catalog, so a payload can say which effect and what happened to it but not what it means. Milestone **6.2** is authorized and in progress; 6.2b follows it and closes the route.
 
 Standing route exceptions: trigger-only milestone **6.1am** remains unordered until the rules ledger reaches its warning threshold, and **6.1y** remains unordered but required before 8.1. Exact sequencing lives in [Roadmap/PHASE_6_DOCUMENTATION.md](Roadmap/PHASE_6_DOCUMENTATION.md) and [Roadmap/PHASE_6.md](Roadmap/PHASE_6.md); scheduling is not authorization.
 
