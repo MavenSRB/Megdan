@@ -374,6 +374,28 @@ Historical evidence: [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md).
 
 Non-goals: No schema version change, wire-format change, or migration path, and no reopening of the v7 migrate-or-reject decision. No semantic validation moved into the serializer. No terminal `else` added to `ActiveEffectDefinition.ValidateDuration` and no repair of the unvalidated `SelectedInitiativeActor` constructor: this closes the path a snapshot uses to reach them, and hardening them against in-memory callers is separate work. No change to how `MatchSession.RestoreSnapshot` flattens the typed reason, which is Phase 8 work. No change to the harness exclude list, and no documentation-truth validator work, which 6.1z through 6.1ac own.
 
+## Resolver-timing milestone from the 2026-08-14 milestone 6.2a planning finding
+
+**Sequencing amendment (2026-08-14, user approved).** New milestone 6.1ap completes before 6.2a. The source is the milestone 6.2a planning pass recorded here, **not** the ER2 external review and **not** review 5.8c; ER2 contributed the underlying finding `F-ER2-05`, but the decision to give it its own milestone is this pass's. Ownership of `F-ER2-05` moves from 6.2a to 6.1ap, and the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2)'s disposition row carries the new owner. Every other 6.2a prerequisite is unchanged. Scheduling is not authorization: each milestone still requires exact user approval before execution.
+
+The ground for splitting is that the correction is behavior-preserving and 6.2a is not. `F-ER2-05` closes on its own named conformance check and its own evidence - that every pinned digest stays byte-identical and the schema version does not move. Milestone 6.2a's fifth acceptance check bumps the snapshot schema and re-pins fourteen digests. Landed together, a moved digest has two candidate causes and neither observation proves anything about the other. Landed apart, the timing correction proves the digests unmoved first, and 6.2a's re-pinning then has exactly one cause to explain. This is the `Execution rule` split test in [ROADMAP.md](../ROADMAP.md): genuinely independent risk and separate acceptance evidence, above the handoff-cost floor.
+
+### [ ] 6.1ap Emit timing checkpoints from resolver steps
+
+Observable outcome: Timing checkpoints originate from the resolution step that raises them rather than from a post-hoc rescan of the produced event list.
+
+Context: `TurnResolutionAuthority.ApplyActionTiming` takes the event list a card action already produced, reads each entry's `CardActionResolutionEventKind`, and splices `ActionStarted`, `BeforeAttack`, `DefenseResponse`, `AfterAttack`, and `ActionEnded` around it. Timing is therefore inferred by the turn dispatcher from what a resolver happened to emit, rather than declared by the resolver at the moment it acts. An ordered-step effect engine cannot work that way: an effect node's checkpoints are declared by its capability contract and are not recoverable from an event kind, so 6.2a would either extend the rewriter with effect-shaped arms or grow a second parallel mechanism. Both are barred by the `Execution rule`'s prohibition on a shortcut the next card milestone is expected to replace.
+
+Acceptance checks:
+
+- Each card-action backend emits one ordered stream of facts and checkpoints, and the turn authority materializes that stream without inspecting any fact's kind. `ApplyActionTiming` is deleted rather than extended, and no replacement branches on `CardActionResolutionEventKind`.
+- A compiled-member conformance test in the 6.1k style proves checkpoint events originate from resolver step members rather than a post-hoc rescan, paired with a positive rule proving each backend actually references the checkpoint emitter so the negative rule cannot pass vacuously, and with the deliberate-violator and compliant-twin samples the existing conformance fixture requires of every rule.
+- The emitted checkpoint order for Movement, Attack with a Defense response, Attack against a minion, and Fast Travel is pinned by a fixture running on a session that actually carries Active effects, and is unchanged across the correction. A fixture on the placeholder configuration alone would be vacuous, because that configuration creates no Active effect and the checkpoint call returns nothing either way.
+- The Active-effect lifecycle mutation order changes deliberately and is asserted: action end now runs before source-card cancellation, which is the order [RESOLUTION_AND_EFFECTS.md](../Card-System/RESOLUTION_AND_EFFECTS.md) already specifies and the rewriter's late placement inverted.
+- The wire format is unchanged, asserted rather than assumed: `CurrentSchemaVersion` stays at 7 and all fifteen pinned digests pass unmoved.
+
+Non-goals: No Skill action, effect node, capability catalog, or execution frame, which 6.2a owns. No schema version, wire-format, or migration change. No new `TimingCheckpoint` member and no change to which checkpoints exist or what they mean. No change to Movement, Attack/Defense, or Fast-Travel rules behavior beyond where a checkpoint is raised, and no change to the harness exclude list.
+
 ## Phase 6 gameplay milestones (continued)
 
 **Sequencing amendment (2026-08-14, user approved).** Milestone 6.2a completes before 6.2, and 6.2 completes before 6.2b. The source is this sequencing finding, **not** the ER2 external review and **not** review 5.8c; do not attribute it to either record. The existing 6.1r-before-6.2 and 6.1q-before-6.2a constraints are unchanged, and 6.3 stays gated on 6.2b. Scheduling is not authorization: each milestone still requires exact user approval before execution.
@@ -417,7 +439,7 @@ Acceptance checks:
 
 Non-goals: No Repeat, Clear, direct Move, Object Push, Place, Spawn, Swap, Replace, Remove, Wasp definition, production presentation, printed-text parser, universal scripting language, or source-unverified special case.
 
-ER2 note: corrective milestone 6.1q must land first so this engine does not build on mis-scoped checkpoints, and per `F-ER2-05` this milestone's design owns resolver-emitted timing checkpoints - replacing `TurnResolutionAuthority.ApplyActionTiming`'s post-hoc event-list rewriting rather than extending it. See the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2).
+ER2 note: corrective milestones 6.1q and 6.1ap must both land first, so this engine builds on neither mis-scoped checkpoints nor an inferred timing seam. `F-ER2-05` moved to 6.1ap in the 2026-08-14 sequencing amendment above; this milestone consumes the resolver-emitted checkpoint stream that milestone establishes rather than owning the correction itself. See the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2).
 
 ### [ ] 6.2b Independently verify the Phase 6 action/effect foundation
 

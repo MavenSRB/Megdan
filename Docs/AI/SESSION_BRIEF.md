@@ -14,7 +14,9 @@ The project has completed roadmap milestones through **6.1u**. The configured ve
 
 - Current completed milestone: **6.1u**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **6.2a**.
+- Next proposed milestone: **6.1ap**.
+
+On 2026-08-14 the user approved a roadmap amendment defining **6.1ap** and ordering it before **6.2a**, moving `F-ER2-05` to it: the resolver-emitted timing correction is behavior-preserving and closes on all fifteen digests unmoved, so landing it before 6.2a's schema bump leaves that milestone's re-pinning one cause to explain. The gameplay route is 6.1ap, then 6.2a, 6.2, 6.2b.
 
 Standing route exceptions: trigger-only milestone **6.1am** remains unordered until the rules ledger reaches its warning threshold, and **6.1y** remains unordered but required before 8.1. Exact sequencing lives in [Roadmap/PHASE_6_DOCUMENTATION.md](Roadmap/PHASE_6_DOCUMENTATION.md) and [Roadmap/PHASE_6.md](Roadmap/PHASE_6.md); scheduling is not authorization.
 
