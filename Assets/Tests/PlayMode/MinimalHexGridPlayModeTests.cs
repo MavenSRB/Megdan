@@ -629,8 +629,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.MinionChoiceView.Model, Is.Null,
                 "With no pending choice the configured prompt exposes no controls.");
 
+            // Non-Heavy candidates only. The authority withholds a control from a Heavy while any
+            // non-Heavy is unselected, so a hand-built model offering one would render a prompt the
+            // real projection can never produce.
             var blue = runtime.BoardView.Model.Minions
-                .Where(value => value.TeamSide == TeamSide.Blue)
+                .Where(value => value.TeamSide == TeamSide.Blue &&
+                    value.MinionType != StandardMinionType.Heavy)
                 .OrderBy(value => value.MinionId.Value, System.StringComparer.Ordinal)
                 .Take(2)
                 .ToArray();
@@ -739,6 +743,20 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(camera.WorldToViewportPoint(selectedCue.transform.position).y,
                 Is.GreaterThan(camera.WorldToViewportPoint(firstView.transform.position).y),
                 "The cue reads above its minion under the configured top-down camera.");
+
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                var promptScreenshotPath = Path.GetFullPath("tmp/milestone-6-1a-minion-removal-prompt.png");
+                if (File.Exists(promptScreenshotPath))
+                {
+                    File.Delete(promptScreenshotPath);
+                }
+                ScreenCapture.CaptureScreenshot(promptScreenshotPath);
+                yield return new WaitForEndOfFrame();
+                yield return null;
+                Assert.That(File.Exists(promptScreenshotPath), Is.True,
+                    "The targeted Game View visual evidence must be captured under tmp/.");
+            }
 
             MinionChoiceCandidateViewModel submitted = null;
             var confirmed = 0;
