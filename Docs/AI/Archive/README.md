@@ -4,9 +4,9 @@ Historical files are version-controlled evidence excluded from routine startup l
 
 ## Preservation and migration
 
-- [Immutable pre-governance source copies and SHA-256 inventory](Pre-Governance/SHA256SUMS.md)
+- [SHA-256 sums of the immutable pre-governance source copies (titled "Pre-Governance Preservation Inventory" inside)](Pre-Governance/SHA256SUMS.md)
 - [Migration manifest](MIGRATION_MANIFEST.md)
-- [Before/after preservation inventory](PRESERVATION_INVENTORY.md)
+- [Frozen before/after consolidation preservation inventory](PRESERVATION_INVENTORY.md)
 
 ## Completed milestone handoffs
 

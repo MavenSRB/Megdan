@@ -38,7 +38,7 @@ Thresholds apply per active leaf, never to the aggregate corpus. Word count uses
 
 If irreducible precise current material cannot fit, create an indexed authoritative shard with the same family threshold or obtain an explicit governance amendment. Never abbreviate exact material or silently relax the validator. A validator cannot become passable merely by deleting content: the code-truth checks compare documentation against the source, `duplicate-history` reads the archives, and both fail on content that was removed rather than routed.
 
-The current-implementation inventory is maintained by subject, not chronology: replace or consolidate affected statements when behavior changes, and route detailed completed outcome/validation evidence to the phase-handoff archive. Top-level startup and capability indexes remain compact routers; moving precise active authority to an indexed shard is the normal response to sustained growth, not compression.
+The current-implementation inventory is maintained by subject, not chronology: replace or consolidate affected statements when behavior changes; detailed completed outcome and validation evidence is written once in the milestone's commit message body with one archive row, per the history workflow below. Top-level startup and capability indexes remain compact routers; moving precise active authority to an indexed shard is the normal response to sustained growth, not compression.
 
 ## Active risk lifecycle
 

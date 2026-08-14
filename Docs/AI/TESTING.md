@@ -1,6 +1,6 @@
 # Guards Digital - Testing Index
 
-This compact index routes to the exact active validation policy, reusable launcher instructions, focused recipes, gate definitions, and test ownership. Historical run totals remain with milestone evidence in the phase handoff archives.
+This compact index routes to the exact active validation policy, reusable launcher instructions, focused recipes, gate definitions, and test ownership. Historical run totals live in milestone commit bodies and the indexed archives, never in active shards.
 
 ## Canonical active shards
 

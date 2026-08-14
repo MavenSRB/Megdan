@@ -6,3 +6,6 @@
 # a stale current claim describing a structure that no longer exists.
 strategy registry | 6.1h | The card-action strategy registry, its marker interface, its pass-through handlers, and its backend interfaces; the dispatcher calls the concrete backends directly
 handler registry | 6.1h | The same registry as the capability documents name it
+once in the indexed phase-handoff archive | 2026-08-13 governance amendment | The per-handoff narrative append; evidence lives once in the commit message body with one archive row
+evidence to the phase-handoff archive | 2026-08-13 governance amendment | The same superseded routing as the governance threshold section phrased it
+milestone evidence in the phase handoff archives | 2026-08-13 governance amendment | The same superseded routing as the testing index phrased it

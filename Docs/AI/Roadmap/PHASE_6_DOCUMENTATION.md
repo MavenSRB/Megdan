@@ -16,7 +16,7 @@ The order's rationale: 6.1z stays first as already scheduled. 6.1ac moves ahead 
 
 User decisions recorded 2026-08-14 and executed by the named milestones: the platform order in `Project/PRODUCT.md` - Windows, then macOS, then iOS, with Linux and closed platforms unscheduled - is canonical, and `Roadmap/POST_PITCH.md` is corrected to it (6.1al). Rules-ledger open question 3 is retired with a dated marker, answered by the user-supplied axial-coordinate diagram already recorded as the verified source (6.1aj).
 
-### [ ] 6.1ae Make the evidence and governance policy statements current
+### [x] 6.1ae Make the evidence and governance policy statements current
 
 Observable outcome: Every active statement of where milestone evidence lives, what the validator enforces, and which milestones are review gates says the same thing, and it is the current thing.
 
@@ -33,6 +33,8 @@ Acceptance checks:
 Closing check: `retired-structure-language`, with the new ledger entry, run at the pre-fix revision and observed reporting the archive-routing phrasing in the retained documents; run at the post-fix revision, observed passing. The count and gate-list corrections close on inspection recorded in the commit body: no honest check owns a prose count without a declared ledger heavier than the defect it guards.
 
 Non-goals: No change to what evidence is required. No archive rewriting. No validator code change beyond the ledger data. No review-gate addition or removal beyond recording the already-scheduled set.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ae-make-the-evidence-and-governance-policy-statements-current-completion-evidence).
 
 ### [ ] 6.1af Make live test recipes name real fixtures
 
