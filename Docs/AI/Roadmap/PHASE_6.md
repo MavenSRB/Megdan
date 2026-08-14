@@ -634,7 +634,7 @@ Non-goals: No Wasp definition, source-unverified modifier, card-name/hero-name b
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68-implement-reusable-modifiers-permissions-immunity-and-effective-characteristics-completion-evidence).
 
-### [ ] 6.8c Give the Move-Through permission its Movement consumer
+### [~] 6.8c Give the Move-Through permission its Movement consumer
 
 **Corrective amendment (2026-08-14, user approved).** Milestone 6.8 implemented the Move-Through permission and `ObstacleQuery`'s p.18 transit/endpoint split, then deferred the Movement consumer to "the milestone that owns route commitment" without naming one. Milestone 6.8a then printed that permission onto Red Bulwark as one of three configured modes. The result is a mode a player can select and observe nothing from: `ObstacleQuery` has no production caller, `MovementReachabilityQuery` accepts no modification set and drops every occupied neighbour before enqueuing it, and `MovementCardActionStrategyBackend` never passes the live set. This milestone closes that gap rather than leaving inert configured content in the hand.
 
