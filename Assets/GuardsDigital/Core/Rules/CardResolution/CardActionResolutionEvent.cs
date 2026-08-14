@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
@@ -28,7 +30,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             FastTravelEvent fastTravelEvent,
             MinionDefeatFactKind minionDefeatFactKind = MinionDefeatFactKind.None,
             MinionId targetMinionId = default,
-            DefeatOutcomeId defeatOutcomeId = default)
+            DefeatOutcomeId defeatOutcomeId = default,
+            TokenInstanceId targetTokenInstanceId = default,
+            TokenDefinitionReference targetTokenDefinitionReference = default,
+            HexCoordinate targetTokenCoordinate = default)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -78,6 +83,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MinionDefeatFactKind = minionDefeatFactKind;
             TargetMinionId = targetMinionId;
             DefeatOutcomeId = defeatOutcomeId;
+            TargetTokenInstanceId = targetTokenInstanceId;
+            TargetTokenDefinitionReference = targetTokenDefinitionReference;
+            TargetTokenCoordinate = targetTokenCoordinate;
         }
 
         public CardActionResolutionEventKind Kind { get; }
@@ -112,6 +120,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public MinionDefeatFactKind MinionDefeatFactKind { get; }
         public MinionId TargetMinionId { get; }
         public DefeatOutcomeId DefeatOutcomeId { get; }
+        public TokenInstanceId TargetTokenInstanceId { get; }
+        public TokenDefinitionReference TargetTokenDefinitionReference { get; }
+        public HexCoordinate TargetTokenCoordinate { get; }
 
         public static CardActionResolutionEvent MovementActionStarted(
             PendingCardActionResolution resolution)
@@ -176,6 +187,50 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 replacedActionDefinitionId,
                 fastTravelEvent,
                 "fast-travel-complete");
+
+        public static CardActionResolutionEvent ClearActionStarted(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            ActionDefinitionId replacedActionDefinitionId) =>
+            FromClear(
+                CardActionResolutionEventKind.ClearActionStarted,
+                resolutionId,
+                offer,
+                replacedActionDefinitionId,
+                null,
+                "clear-start");
+
+        public static CardActionResolutionEvent TokenCleared(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            ActionDefinitionId replacedActionDefinitionId,
+            PlacedToken token)
+        {
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            return FromClear(
+                CardActionResolutionEventKind.TokenCleared,
+                resolutionId,
+                offer,
+                replacedActionDefinitionId,
+                token,
+                $"clear-token-{token.Id.Value}");
+        }
+
+        public static CardActionResolutionEvent ClearActionCompleted(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            ActionDefinitionId replacedActionDefinitionId) =>
+            FromClear(
+                CardActionResolutionEventKind.ClearActionCompleted,
+                resolutionId,
+                offer,
+                replacedActionDefinitionId,
+                null,
+                "clear-complete");
 
         public static CardActionResolutionEvent AttackTargetChoiceRequested(PendingAttackResolution resolution)
         {
@@ -330,7 +385,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 FastTravelEvent.Equals(other.FastTravelEvent) &&
                 MinionDefeatFactKind == other.MinionDefeatFactKind &&
                 TargetMinionId.Equals(other.TargetMinionId) &&
-                DefeatOutcomeId.Equals(other.DefeatOutcomeId);
+                DefeatOutcomeId.Equals(other.DefeatOutcomeId) &&
+                TargetTokenInstanceId.Equals(other.TargetTokenInstanceId) &&
+                TargetTokenDefinitionReference.Equals(other.TargetTokenDefinitionReference) &&
+                TargetTokenCoordinate.Equals(other.TargetTokenCoordinate);
         }
 
         public override bool Equals(object obj)
@@ -359,7 +417,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ FastTravelEvent.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)MinionDefeatFactKind;
                 hashCode = (hashCode * 397) ^ TargetMinionId.GetHashCode();
-                return (hashCode * 397) ^ DefeatOutcomeId.GetHashCode();
+                hashCode = (hashCode * 397) ^ DefeatOutcomeId.GetHashCode();
+                hashCode = (hashCode * 397) ^ TargetTokenInstanceId.GetHashCode();
+                hashCode = (hashCode * 397) ^ TargetTokenDefinitionReference.GetHashCode();
+                return (hashCode * 397) ^ TargetTokenCoordinate.GetHashCode();
             }
         }
 
@@ -543,6 +604,45 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AttackResolutionOutcome.None,
                 default,
                 fastTravelEvent);
+        }
+
+        private static CardActionResolutionEvent FromClear(
+            CardActionResolutionEventKind kind,
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            ActionDefinitionId replacedActionDefinitionId,
+            PlacedToken token,
+            string stepId)
+        {
+            if (offer.InvocationContext != ActionInvocationContext.Replacement ||
+                !offer.ActionDefinitionId.Equals(GeneralRuleActionOfferQuery.ClearDefinition.Id) ||
+                !replacedActionDefinitionId.IsDefined)
+            {
+                throw new ArgumentException("A Clear event requires its replacement offer and replaced Attack action.");
+            }
+
+            return new CardActionResolutionEvent(
+                kind,
+                resolutionId,
+                offer.SourceCardInstanceId,
+                offer.ActionDefinitionId,
+                replacedActionDefinitionId,
+                offer.ActorId,
+                default,
+                new ActionResolutionStepId(stepId),
+                0,
+                0,
+                default,
+                0,
+                AttackResolutionOutcome.None,
+                default,
+                default,
+                MinionDefeatFactKind.None,
+                default,
+                default,
+                token?.Id ?? default,
+                token?.Definition.Reference ?? default,
+                token?.Coordinate ?? default);
         }
     }
 }

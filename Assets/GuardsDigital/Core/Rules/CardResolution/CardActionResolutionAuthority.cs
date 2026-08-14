@@ -19,6 +19,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly MovementCardActionStrategyBackend movementBackend;
         private readonly AttackDefenseCardActionStrategyBackend attackDefenseBackend;
         private readonly FastTravelCardActionStrategyBackend fastTravelBackend;
+        private readonly ClearCardActionStrategyBackend clearBackend;
         private readonly SkillCardActionStrategyBackend skillBackend;
         private readonly MatchComponents components;
 
@@ -57,6 +58,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         nameof(movementActionStartRestrictions))),
                 new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority),
                 new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                 new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
                 CreateComponents(adjacentMoveAuthority, markers))
         {
@@ -66,12 +68,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MovementCardActionStrategyBackend movementBackend,
             AttackDefenseCardActionStrategyBackend attackDefenseBackend,
             FastTravelCardActionStrategyBackend fastTravelBackend,
+            ClearCardActionStrategyBackend clearBackend,
             SkillCardActionStrategyBackend skillBackend,
             MatchComponents components)
         {
             this.movementBackend = movementBackend ?? throw new ArgumentNullException(nameof(movementBackend));
             this.attackDefenseBackend = attackDefenseBackend ?? throw new ArgumentNullException(nameof(attackDefenseBackend));
             this.fastTravelBackend = fastTravelBackend ?? throw new ArgumentNullException(nameof(fastTravelBackend));
+            this.clearBackend = clearBackend ?? throw new ArgumentNullException(nameof(clearBackend));
             this.skillBackend = skillBackend ?? throw new ArgumentNullException(nameof(skillBackend));
             this.components = components ?? throw new ArgumentNullException(nameof(components));
         }
@@ -229,6 +233,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             verifiedMovementChoice),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
                         components);
 
@@ -245,6 +250,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             participants,
                             defeatRewards),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
                         components);
 
@@ -253,6 +259,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         SkillCardActionStrategyBackend.Restore(
                             SyntheticEffectCapabilities.CreateCatalog(),
                             new SkillBackendRestoreState(state.PendingSkillResolution)),
@@ -263,6 +270,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
                         components);
             }
@@ -354,6 +362,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 instances,
                 participants,
                 minions);
+        }
+
+        public CardActionResolutionResult PerformTurnClear(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<TokenInstanceId> selectedTokenIds,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances)
+        {
+            if (HasPendingResolution)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.ResolutionAlreadyPending,
+                    PendingResolution,
+                    PendingChoice);
+            }
+
+            return clearBackend.PerformTurnClear(
+                resolutionId,
+                replacementOffer,
+                replacedAttackActionDefinitionId,
+                selectedTokenIds,
+                definitions,
+                instances);
         }
 
         public AttackActionResolutionResult StartAttackResolution(

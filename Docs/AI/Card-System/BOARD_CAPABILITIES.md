@@ -85,6 +85,8 @@ Placing tokens additionally uses the limited-supply rules in the token section. 
 
 `SpawnEffect` takes an object from supply and puts it into a legal empty board space. Unlike Place, it cannot take the object from another board space. It validates supply and the source-defined destination query. Spawn-point type/color constraints apply only when the invoking rule/card requires them. Whenever a unit Spawns on a token-covered Spawn point, the token is removed first.
 
+Milestone 6.3 implements only that mandatory token-clearance pre-commit: given an already validated configured Spawn point on the selected map, the board removes and returns its covering token before the owning Spawn capability creates an occupant. Supply eligibility, destination validation, occupant creation, events, choices, and the atomic enclosing transaction remain milestone 6.5.
+
 Respawn is a specialized capability family, not one generic spatial handler:
 
 - `HeroRespawnTransition` uses the optional before-action timing, an empty Spawn point in the hero's Throne Zone, or the rulebook's nearest empty fallback adjacent to a Throne-Zone Spawn point when none are available.
@@ -135,6 +137,8 @@ Milestone 5.8 implements the Hero subset only through a staged Defeat outcome. A
 ### Clear
 
 `ClearAction` is a rule-provided optional replacement for an entire Attack action. Once selected, its controller may choose any subset of tokens adjacent to the acting hero, including none, and removes the chosen tokens through token removal capabilities. It suppresses the replaced Primary Attack text and is not an Attack that happens to target tokens.
+
+Milestone 6.3 implements Clear through the same direct replacement seam as Fast Travel rather than the still-deferred generic `ReplaceAction` node. One immediate typed command carries a canonical unique token-ID subset; Core revalidates the current replaceable Attack offer, actor presence, adjacency, and entire selection before mutation, then emits Clear-specific start/removal/completion facts between resolver-owned action checkpoints and resolves the source card. Clear creates no Attack target, Defense, value, outcome, or pending continuation.
 
 ## Contract implementation status
 

@@ -216,6 +216,7 @@ namespace GuardsDigital.Core.Diagnostics
             if (ruleEvent.Kind == TurnResolutionEventKind.MovementActionProgressed ||
                 ruleEvent.Kind == TurnResolutionEventKind.AttackActionProgressed ||
                 ruleEvent.Kind == TurnResolutionEventKind.FastTravelActionProgressed ||
+                ruleEvent.Kind == TurnResolutionEventKind.ClearActionProgressed ||
                 ruleEvent.Kind == TurnResolutionEventKind.SkillActionProgressed)
             {
                 AppendCardAction(roundReference, ruleEvent.CardActionEvent);
@@ -252,6 +253,7 @@ namespace GuardsDigital.Core.Diagnostics
                     : null,
                 ruleEvent.TargetHeroId.IsDefined ? $"target={ruleEvent.TargetHeroId.Value}" : null,
                 ruleEvent.TargetMinionId.IsDefined ? $"minion={ruleEvent.TargetMinionId.Value}" : null,
+                ruleEvent.TargetTokenInstanceId.IsDefined ? $"token={ruleEvent.TargetTokenInstanceId.Value}" : null,
                 ruleEvent.DefeatOutcomeId.IsDefined ? $"defeat={ruleEvent.DefeatOutcomeId.Value}" : null,
                 ruleEvent.DefenseCardInstanceId.IsDefined ? $"defenseCard={ruleEvent.DefenseCardInstanceId.Value}" : null);
 
@@ -296,6 +298,12 @@ namespace GuardsDigital.Core.Diagnostics
             if (ruleEvent.MinionDefeatFactKind != MinionDefeatFactKind.None)
             {
                 detailParts.Add($"minionFact={ruleEvent.MinionDefeatFactKind}");
+            }
+
+            if (ruleEvent.Kind == CardActionResolutionEventKind.TokenCleared)
+            {
+                detailParts.Add($"tokenDefinition={ruleEvent.TargetTokenDefinitionReference}");
+                detailParts.Add($"space={ruleEvent.TargetTokenCoordinate}");
             }
 
             Add($"Action.{ruleEvent.Kind}", references, string.Join(";", detailParts));

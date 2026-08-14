@@ -95,7 +95,7 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>
         /// The effect this action executes, for kinds that resolve through the typed effect frame.
-        /// Null for Movement, Attack, Defense, Hold, and Fast Travel, which have their own algorithms.
+        /// Null for Movement, Attack, Defense, Hold, Fast Travel, and Clear, which have their own algorithms.
         /// </summary>
         public EffectDefinition EffectRoot { get; }
 
@@ -150,12 +150,12 @@ namespace GuardsDigital.Core.Cards
                         nameof(SourceCardStateTransition));
                 }
             }
-            else if (Kind == ActionKind.FastTravel)
+            else if (Kind == ActionKind.FastTravel || Kind == ActionKind.Clear)
             {
                 if (Origin != ActionDefinitionOrigin.Replacement || BaseValues.Count != 0)
                 {
                     throw new ArgumentException(
-                        "Fast Travel must be a value-free replacement action definition.",
+                        $"{Kind} must be a value-free replacement action definition.",
                         nameof(baseValues));
                 }
             }

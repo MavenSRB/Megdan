@@ -20,9 +20,13 @@ When a card requests more tokens than remain in supply, its typed token-placemen
 
 Milestone 6.2 implements the instance, supply, occupancy, placement, and reclamation subset. A placed token holds its `TokenDefinition` object rather than a copy of its content, so a restore rebinds it to the trusted catalog and a payload can name which token this is but never what it means. Supply is derived - the catalog total minus what is on the board - so no stored count can disagree with the board. Reclamation and placement are separate nodes on the milestone 6.2a effect frame, because a stateless handler cannot distinguish a second resumption from a first, so a second decision belongs to a second node. Nothing outside `Core` can begin or end a token's lifetime; a mechanical rule enforces that against the presentation assembly.
 
+Milestone 6.3 implements the persistent-property and first general-interaction subset. `TokenDefinition` owns immutable property declarations, and each `PlacedToken` derives stable `ContinuousRuleSourceKind.TokenProperty` sources from that trusted object. The board exposes the flattened sources only for currently placed instances: neither source-card resolution nor loss of the placing hero's occupancy cancels them, while token removal drops them without entering `ActiveEffectLifecycle`. The same stable token instance is removed by Clear or by the mandatory pre-Spawn clearance step; later movement/displacement will relocate rather than reconstruct it.
+
 ### Token property capabilities
 
 A token definition composes explicit continuous/query/trigger capabilities such as obstacle classification, terrain-like restriction, entry/exit effect, modifier source, immunity interaction, or removal condition. Token art does not define behavior.
+
+The implemented milestone 6.3 declaration carries stable property identity, rule kind, and applicability kind. It establishes the source/lifetime contract without inventing a concrete verified modifier, trigger, or Wasp rule; those consumers arrive with the milestone and source that require them.
 
 Entry/exit effects run from authoritative movement/displacement checkpoints. A unit that ignores obstacles still applies token effects while transiting where the rules require it.
 

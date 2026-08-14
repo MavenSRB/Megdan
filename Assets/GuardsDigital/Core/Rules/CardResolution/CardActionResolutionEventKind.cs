@@ -32,6 +32,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         SkillEffectNodeDeclined = 27,
         SkillEffectNodeStopped = 28,
         SkillChoiceRequested = 29,
-        SkillActionCompleted = 30
+        SkillActionCompleted = 30,
+        ClearActionStarted = 31,
+        TokenCleared = 32,
+        ClearActionCompleted = 33
     }
 }

@@ -96,7 +96,8 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     "GuardsDigital.Core.Rules.CardResolution.MovementCardActionStrategyBackend",
                     "GuardsDigital.Core.Rules.CardResolution.AttackDefenseCardActionStrategyBackend",
-                    "GuardsDigital.Core.Rules.CardResolution.FastTravelCardActionStrategyBackend"
+                    "GuardsDigital.Core.Rules.CardResolution.FastTravelCardActionStrategyBackend",
+                    "GuardsDigital.Core.Rules.CardResolution.ClearCardActionStrategyBackend"
                 }
                 .Select(name => assembly.GetType(name))
                 .ToArray();

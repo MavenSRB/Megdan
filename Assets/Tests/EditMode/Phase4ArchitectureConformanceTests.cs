@@ -110,7 +110,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(FindServiceLocatorTypes(new[] { typeof(ServiceLocator) }), Is.Not.Empty);
             Assert.That(FindServiceLocatorTypes(new[] { typeof(ForwardingDispatcherSample) }), Is.Empty);
 
-            // The three production backends are resolved as types rather than as `.cs` files on disk.
+            // The four production algorithm backends are resolved as types rather than as `.cs` files on disk.
             // They are `internal` to Core, so this rule names them by full type name - the one place a
             // name survives, and it survives as an assertion that the type exists, not as a scan of
             // source text. Deleting or renaming a backend fails here, exactly as the file check did.
@@ -119,11 +119,12 @@ namespace GuardsDigital.Tests.EditMode
             {
                 "GuardsDigital.Core.Rules.CardResolution.MovementCardActionStrategyBackend",
                 "GuardsDigital.Core.Rules.CardResolution.AttackDefenseCardActionStrategyBackend",
-                "GuardsDigital.Core.Rules.CardResolution.FastTravelCardActionStrategyBackend"
+                "GuardsDigital.Core.Rules.CardResolution.FastTravelCardActionStrategyBackend",
+                "GuardsDigital.Core.Rules.CardResolution.ClearCardActionStrategyBackend"
             }.Select(name => coreAssembly.GetType(name, false)).ToArray();
 
             Assert.That(backends, Has.None.Null, "A production strategy backend is missing.");
-            Assert.That(backends.Distinct().Count(), Is.EqualTo(3));
+            Assert.That(backends.Distinct().Count(), Is.EqualTo(4));
             Assert.That(backends, Has.All.Matches<Type>(type => type.IsClass && !type.IsAbstract));
         }
 

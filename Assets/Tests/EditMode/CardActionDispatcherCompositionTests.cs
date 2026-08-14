@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using GuardsDigital.Core.Rules.CardResolution;
 using NUnit.Framework;
@@ -35,15 +36,23 @@ namespace GuardsDigital.Tests.EditMode
             var fastTravelBackendType = coreAssembly.GetType(
                 "GuardsDigital.Core.Rules.CardResolution.FastTravelCardActionStrategyBackend",
                 true);
+            var clearBackendType = coreAssembly.GetType(
+                "GuardsDigital.Core.Rules.CardResolution.ClearCardActionStrategyBackend",
+                true);
             var authorityFields = authorityType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
 
-            Assert.That(movementBackendType, Is.Not.EqualTo(attackBackendType));
+            Assert.That(new[]
+            {
+                movementBackendType, attackBackendType, fastTravelBackendType, clearBackendType
+            }.Distinct().Count(), Is.EqualTo(4));
             Assert.That(movementBackendType.IsSealed, Is.True);
             Assert.That(attackBackendType.IsSealed, Is.True);
             Assert.That(fastTravelBackendType.IsSealed, Is.True);
+            Assert.That(clearBackendType.IsSealed, Is.True);
             Assert.That(Array.Exists(authorityFields, field => field.FieldType == movementBackendType), Is.True);
             Assert.That(Array.Exists(authorityFields, field => field.FieldType == attackBackendType), Is.True);
             Assert.That(Array.Exists(authorityFields, field => field.FieldType == fastTravelBackendType), Is.True);
+            Assert.That(Array.Exists(authorityFields, field => field.FieldType == clearBackendType), Is.True);
         }
 
         /// <summary>
@@ -61,7 +70,8 @@ namespace GuardsDigital.Tests.EditMode
                      {
                          "MovementCardActionStrategyBackend",
                          "AttackDefenseCardActionStrategyBackend",
-                         "FastTravelCardActionStrategyBackend"
+                         "FastTravelCardActionStrategyBackend",
+                         "ClearCardActionStrategyBackend"
                      })
             {
                 var backendType = coreAssembly.GetType(

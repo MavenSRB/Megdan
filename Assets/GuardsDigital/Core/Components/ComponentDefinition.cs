@@ -1,7 +1,38 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace GuardsDigital.Core.Components
 {
+    /// <summary>
+    /// One immutable rule supplied by a placed token for exactly as long as that token remains on the
+    /// board. This is definition content: a snapshot names the token definition revision, and the
+    /// trusted component catalog supplies these semantics again on restore.
+    /// </summary>
+    public sealed class TokenPropertyDefinition
+    {
+        public TokenPropertyDefinition(string propertyId, string ruleKind, string applicabilityKind)
+        {
+            if (string.IsNullOrWhiteSpace(propertyId) || string.IsNullOrWhiteSpace(ruleKind) ||
+                string.IsNullOrWhiteSpace(applicabilityKind))
+            {
+                throw new ArgumentException(
+                    "A token property requires stable identity, rule, and applicability.");
+            }
+
+            PropertyId = propertyId;
+            RuleKind = ruleKind;
+            ApplicabilityKind = applicabilityKind;
+        }
+
+        public string PropertyId { get; }
+
+        public string RuleKind { get; }
+
+        public string ApplicabilityKind { get; }
+    }
+
     /// <summary>
     /// When a marker leaves its holder and goes back to the supply.
     ///
@@ -31,13 +62,18 @@ namespace GuardsDigital.Core.Components
     /// choice rather than a silent failure. Holding the total here and deriving what remains from the
     /// board means the two can never disagree: there is no second number to keep in step.
     ///
-    /// Milestone 6.2 owns identity, supply, and occupancy only. The continuous property sources p.19
-    /// grants a placed token ("retains all its properties until that token is removed") belong to
-    /// milestone 6.3, so this definition declares none.
+    /// Milestone 6.3 adds the explicit property collection. A property is not an Active effect and has
+    /// no card/hero cancellation condition; a placed instance exposes it as a token-owned continuous
+    /// source until that instance is removed.
     /// </summary>
     public sealed class TokenDefinition
     {
-        public TokenDefinition(TokenDefinitionId definitionId, int revision, string displayName, int supplyCount)
+        public TokenDefinition(
+            TokenDefinitionId definitionId,
+            int revision,
+            string displayName,
+            int supplyCount,
+            IEnumerable<TokenPropertyDefinition> properties)
         {
             Reference = new TokenDefinitionReference(definitionId, revision);
 
@@ -53,8 +89,20 @@ namespace GuardsDigital.Core.Components
                     "A token definition's supply is finite and non-empty; a token type nobody can place is not content.");
             }
 
+            var materializedProperties = (properties ?? throw new ArgumentNullException(nameof(properties)))
+                .ToArray();
+            if (materializedProperties.Any(property => property == null) ||
+                materializedProperties.Select(property => property.PropertyId)
+                    .Distinct(StringComparer.Ordinal).Count() != materializedProperties.Length)
+            {
+                throw new ArgumentException(
+                    "Token properties must be non-null and have unique IDs inside their definition.",
+                    nameof(properties));
+            }
+
             DisplayName = displayName;
             SupplyCount = supplyCount;
+            Properties = new ReadOnlyCollection<TokenPropertyDefinition>(materializedProperties);
         }
 
         public TokenDefinitionReference Reference { get; }
@@ -67,6 +115,9 @@ namespace GuardsDigital.Core.Components
 
         /// <summary>How many of this token exist in the match, in total, placed or not.</summary>
         public int SupplyCount { get; }
+
+        /// <summary>Persistent token-owned rules, queried as continuous sources while placed.</summary>
+        public IReadOnlyList<TokenPropertyDefinition> Properties { get; }
 
         public override string ToString() => $"{Reference} x{SupplyCount}";
     }

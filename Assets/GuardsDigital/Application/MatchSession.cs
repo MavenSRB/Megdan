@@ -205,6 +205,8 @@ namespace GuardsDigital.Application
                     return DispatchResult.From(round.TryAdvanceEndOfRound());
                 case DirectorCommandKind.PerformFastTravel:
                     return PerformFastTravel(command.ActionDefinitionId, command.Coordinate);
+                case DirectorCommandKind.PerformClear:
+                    return PerformClear(command);
                 case DirectorCommandKind.SelectMinionBattleRemoval:
                     return AnswerMinionBattle(command, MinionBattleChoiceCommandKind.Select);
                 case DirectorCommandKind.DeselectMinionBattleRemoval:
@@ -331,6 +333,35 @@ namespace GuardsDigital.Application
                 replacedMovementActionDefinitionId,
                 destination,
                 board.Minions));
+        }
+
+        private DispatchResult PerformClear(DirectorCommand command)
+        {
+            var turn = round.CurrentTurnAuthority;
+            if (turn == null || !turn.SelectedActor.IsDefined)
+            {
+                return DispatchResult.Unavailable("No current turn actor can perform Clear.");
+            }
+
+            var replacementOffer = GeneralRuleActionOfferQuery.GetAvailableClearOffer(
+                command.ActionDefinitionId,
+                turn.SelectedActor.CardInstanceId,
+                turn.SelectedActor.ActorId,
+                configuration.CardDefinitions,
+                configuration.CardInstances);
+            if (!replacementOffer.HasValue)
+            {
+                return DispatchResult.Unavailable(
+                    "The requested Attack action is not currently eligible for Clear replacement.");
+            }
+
+            var resolutionId = new ActionResolutionId(
+                $"session-r{round.RoundIndex}-t{round.TurnIndex}-{turn.SelectedActor.CardInstanceId.Value}-clear-{command.ActionDefinitionId.Value}");
+            return DispatchResult.From(round.TryPerformClear(
+                resolutionId,
+                replacementOffer.Value,
+                command.ActionDefinitionId,
+                command.TokenInstanceIds));
         }
 
         private DispatchResult AnswerAttackTarget(DirectorCommand command)

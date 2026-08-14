@@ -18,6 +18,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         FastTravelDestinationUnavailable = 13,
         FastTravelZoneNotEligible = 14,
         FastTravelBlockedByEnemyInOriginZone = 15,
-        FastTravelBlockedByEnemyInDestinationZone = 16
+        FastTravelBlockedByEnemyInDestinationZone = 16,
+        ClearTokenSelectionUnavailable = 17
     }
 }

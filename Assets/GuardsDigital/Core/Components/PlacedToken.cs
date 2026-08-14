@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Components
@@ -38,6 +42,15 @@ namespace GuardsDigital.Core.Components
             ControllerHeroId = controllerHeroId;
             SourceCardInstanceId = sourceCardInstanceId;
             Coordinate = coordinate;
+            PropertySources = new ReadOnlyCollection<ContinuousRuleSource>(definition.Properties
+                .Select(property => new ContinuousRuleSource(
+                    $"token:{id.Value}:property:{property.PropertyId}",
+                    ContinuousRuleSourceKind.TokenProperty,
+                    controllerHeroId,
+                    property.RuleKind,
+                    property.ApplicabilityKind,
+                    sourceCardInstanceId))
+                .ToArray());
         }
 
         public TokenInstanceId Id { get; }
@@ -53,6 +66,12 @@ namespace GuardsDigital.Core.Components
         public CardInstanceId SourceCardInstanceId { get; }
 
         public HexCoordinate Coordinate { get; }
+
+        /// <summary>
+        /// Continuous rules whose lifetime is this token instance's board lifetime. They are derived
+        /// from trusted definition content and deliberately do not enter the Active-effect lifecycle.
+        /// </summary>
+        public IReadOnlyList<ContinuousRuleSource> PropertySources { get; }
 
         /// <summary>
         /// The same token at a different space. Displacement arrives with milestones 6.4 and 6.6; this

@@ -6,13 +6,17 @@ using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 6.2 acceptance checks 1 and 2 at the layer that owns them.
+    /// Milestone 6.2 component identity/supply/occupancy checks and milestone 6.3's persistent
+    /// property, source-hero-independent lifetime, and Spawn-point-clearance checks at the layer that
+    /// owns them.
     ///
     /// Check 1 - tokens use the authoritative finite supply and occupy board spaces as obstacles - is
     /// asserted behaviourally rather than by reading a collection: a space holding a token refuses a
@@ -69,7 +73,7 @@ namespace GuardsDigital.Tests.EditMode
         public void TokenSupply_IsFiniteAndDerivedFromWhatIsOnTheBoard()
         {
             var catalog = SyntheticComponentDefinitions.CreateCatalog();
-            var reference = SyntheticComponentDefinitions.HazardV1;
+            var reference = SyntheticComponentDefinitions.HazardV2;
             var board = CreateBoard(new HexCoordinate(0, 0));
             var supply = SyntheticComponentDefinitions.HazardDefinition.SupplyCount;
 
@@ -108,6 +112,100 @@ namespace GuardsDigital.Tests.EditMode
                 "A placed token's meaning is the catalog's object, never a copy it carries. Rulebook " +
                 "p.19 ties a token's properties to the token, and p.19 also states it is not removed " +
                 "when the hero who placed it is defeated, so nothing here may act as a lifetime link.");
+
+            var captured = board.CaptureRestoreState();
+            var withoutSourceHero = AdjacentMoveAuthority.Restore(
+                new BoardRestoreState(
+                    Array.Empty<HeroOccupancy>(),
+                    captured.ObstacleOccupancies,
+                    captured.RemainingMinions,
+                    captured.PlacedTokens),
+                board.MapDefinition,
+                Array.Empty<QuickGameMinionSetupState>());
+
+            Assert.That(withoutSourceHero.TryGetHeroCoordinate(ActorId, out _), Is.False,
+                "The placing hero is no longer on the board, as after Defeat.");
+            Assert.That(withoutSourceHero.PlacedTokens.Single().Id, Is.EqualTo(token.Id));
+            Assert.That(withoutSourceHero.TokenPropertySources, Has.Count.EqualTo(1),
+                "Rulebook p.19: neither the token nor its property ends when its source hero leaves the board.");
+        }
+
+        [Test]
+        public void TokenProperties_AreContinuousSourcesOnlyWhileTheirTokenIsPlaced()
+        {
+            var board = CreateBoard(new HexCoordinate(0, 0));
+            var token = CreateToken("token-property", new HexCoordinate(1, 0));
+            var activeEffects = new ActiveEffectLifecycle();
+
+            board.CommitValidatedTokenPlacement(token);
+
+            var source = board.TokenPropertySources.Single();
+            Assert.That(source.Kind, Is.EqualTo(ContinuousRuleSourceKind.TokenProperty));
+            Assert.That(source.RuleKind, Is.EqualTo("synthetic-hazard"));
+            Assert.That(source.ApplicabilityKind, Is.EqualTo("while-token-remains-placed"));
+            Assert.That(activeEffects.Effects, Is.Empty,
+                "Rulebook p.19: token properties are not Active effects.");
+
+            board.CommitValidatedTokenReclamation(token.Id);
+
+            Assert.That(board.TokenPropertySources, Is.Empty,
+                "The placed token, rather than a source card or hero, owns the property's lifetime.");
+            Assert.That(activeEffects.Effects, Is.Empty);
+        }
+
+        [Test]
+        public void UnitSpawnOnTokenCoveredSpawnPoint_RemovesTheTokenFirst()
+        {
+            var zone = new BoardMapZone(
+                new ZoneId("spawn-zone"), "Spawn Zone", "synthetic", "red", false, false);
+            var actorSpace = new BoardMapSpace(
+                new SpaceId("actor"), new HexCoordinate(0, 0), BoardMapSpaceKind.Playable, zone.Id);
+            var spawnSpace = new BoardMapSpace(
+                new SpaceId("spawn"), new HexCoordinate(1, 0), BoardMapSpaceKind.Playable, zone.Id);
+            var spawnPoint = new BoardMapSpawnPoint(
+                new SpawnPointId("red-spawn"), spawnSpace.Id, "red", "hero");
+            var map = new BoardMapDefinition(
+                new MapId("token-spawn-test"),
+                1,
+                "Token Spawn Test",
+                new[] { actorSpace, spawnSpace },
+                new[] { zone },
+                new[] { spawnPoint },
+                Array.Empty<ZoneId>());
+            var board = new AdjacentMoveAuthority(
+                map,
+                new[] { new HeroOccupancy(ActorId, actorSpace.Coordinate) },
+                Array.Empty<ObstacleOccupancy>());
+            var token = CreateToken("spawn-cover", spawnSpace.Coordinate);
+            board.CommitValidatedTokenPlacement(token);
+
+            Assert.That(
+                () => board.CommitValidatedTokenRemovalBeforeUnitSpawn(
+                    new ConfiguredSpawnPointReference(
+                        new MapId("other-map"), spawnPoint.Id)),
+                Throws.InvalidOperationException);
+            Assert.That(
+                () => board.CommitValidatedTokenRemovalBeforeUnitSpawn(
+                    new ConfiguredSpawnPointReference(
+                        map.Id, new SpawnPointId("missing-spawn"))),
+                Throws.InvalidOperationException);
+            Assert.That(board.PlacedTokens.Single(), Is.SameAs(token),
+                "An invalid Spawn reference must not consume the covering token.");
+
+            var removed = board.CommitValidatedTokenRemovalBeforeUnitSpawn(
+                new ConfiguredSpawnPointReference(map.Id, spawnPoint.Id));
+
+            Assert.That(removed, Is.SameAs(token));
+            Assert.That(board.PlacedTokens, Is.Empty);
+            Assert.That(board.IsEmptyPlayableSpace(spawnSpace.Coordinate), Is.True,
+                "The Spawn owner receives an empty destination after the mandatory token-removal step.");
+            Assert.That(SyntheticComponentDefinitions.CreateCatalog().CountAvailableTokens(
+                SyntheticComponentDefinitions.HazardV2, board.PlacedTokens),
+                Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount));
+
+            Assert.That(board.CommitValidatedTokenRemovalBeforeUnitSpawn(
+                new ConfiguredSpawnPointReference(map.Id, spawnPoint.Id)), Is.Null,
+                "An uncovered Spawn point needs no token mutation.");
         }
 
         [Test]

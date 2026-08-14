@@ -312,3 +312,34 @@ if ($visibleCardMovementProcess.ExitCode -ne 0) {
 ```
 
 Expected result: all discovered cases pass, covering two visibly test-only hand cards; separate card/action selection; typed Primary Movement 3 and Secondary Movement 1 allowances; explicit Primary/Secondary text policy; exact pending destination/route/cost projection; partial waypoint continuation with refreshed highlights; zero and explicit early Stop; stale UI-choice rejection; blocked destinations and legal obstacle detours; pointer-submitted destination commands; retained selection while pending; cleared selection after completion; and saved-scene card-driven wiring.
+
+## Core token properties, Spawn clearance, and Clear replacement tests
+
+Milestone 6.3 is T2 because it crosses token definition/instance, board mutation, action replacement, command/event, turn/card lifecycle, snapshot, replay, and diagnostic boundaries. Its production changes remain pure Core/Application code and add no presentation, scene, asset, or Unity-facing adapter, so no Play Mode run is required.
+
+Run the focused cases first through the cross-platform harness:
+
+```powershell
+dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj --no-restore --filter "FullyQualifiedName~ClearActionTests|FullyQualifiedName~TokenAndMarkerComponentTests|FullyQualifiedName~MatchSessionComponentDispatchTests|FullyQualifiedName~DirectorCommandReplayTests"
+```
+
+Then run the complete dotnet harness, which must include `SnapshotCompatibilityCorpusTests` and report zero failed, skipped, or inconclusive cases:
+
+```powershell
+dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj --no-restore
+```
+
+Because `CardAggregateInvarianceTests` is the one Unity-only fixture excluded from that harness, the Windows affected run must include it and the directly affected replacement, session, timing, lifecycle, snapshot, and conformance regressions. Write `tmp/unity-validation-request.json` as follows and invoke only the parameterless launcher from [POLICY.md](POLICY.md#required-agent-entry-point):
+
+```json
+{
+  "platform": "EditMode",
+  "filter": "GuardsDigital.Tests.EditMode.ClearActionTests;GuardsDigital.Tests.EditMode.TokenAndMarkerComponentTests;GuardsDigital.Tests.EditMode.MatchSessionComponentDispatchTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests;GuardsDigital.Tests.EditMode.CardActionDispatcherCompositionTests;GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests;GuardsDigital.Tests.EditMode.ResolverEmittedCheckpointConformanceTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.AppendOnlyEventLogTests;GuardsDigital.Tests.EditMode.ActiveEffectLifecycleTests;GuardsDigital.Tests.EditMode.ComponentLifetimeOwnershipConformanceTests;GuardsDigital.Tests.EditMode.EffectSeamConformanceTests;GuardsDigital.Tests.EditMode.MatchSessionSkillDispatchTests;GuardsDigital.Tests.EditMode.FastTravelActionTests;GuardsDigital.Tests.EditMode.TurnTimingCheckpointOrderTests",
+  "results": "tmp/milestone-6-3-affected-results.xml",
+  "log": "tmp/milestone-6-3-affected.log"
+}
+```
+
+Expected result: all cases pass. Coverage proves properties are trusted token-owned continuous sources rather than Active effects; source-card or source-hero absence does not end them; token removal does; Spawn-point clearance removes a covering token before the owning Spawn commit; Clear is a value-free, source-text-suppressing replacement for one current replaceable Attack; any unique adjacent-token subset including none is legal; duplicate, non-adjacent, forged, and stale input rejects before mutation; Clear emits no Attack facts; accepted execution resolves the source card and advances Initiative; and snapshot restore, retained-prefix Undo, replay, diagnostics, compatibility fixtures, and architecture/checkpoint constraints remain deterministic.
+
+Schema remains v9. The synthetic Hazard definition advances from revision 1 to revision 2 so trusted content can own the property declaration. The compatibility-corpus and aggregate-invariance fixtures must first report the exact digest delta, then may be re-pinned only with the explicit content-revision reject decision and unchanged equality groups recorded in source and completion evidence.

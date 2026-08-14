@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
@@ -32,7 +35,8 @@ namespace GuardsDigital.Core.Replay
         /// projected typed invocation the pending choice built. A new player-decision family is not a
         /// reason to add a command kind; a new authority-level operation is.
         /// </summary>
-        AnswerEffectChoice = 15
+        AnswerEffectChoice = 15,
+        PerformClear = 16
     }
 
     public sealed class DirectorCommand : IEquatable<DirectorCommand>
@@ -49,8 +53,17 @@ namespace GuardsDigital.Core.Replay
             MinionId minionId = default,
             EndOfRoundResolutionId endOfRoundResolutionId = default,
             EndOfRoundChoiceId endOfRoundChoiceId = default,
-            EffectChoiceCommand effectChoice = null)
+            EffectChoiceCommand effectChoice = null,
+            IEnumerable<TokenInstanceId> tokenInstanceIds = null)
         {
+            var materializedTokenIds = tokenInstanceIds?.ToArray() ?? Array.Empty<TokenInstanceId>();
+            if (materializedTokenIds.Any(id => !id.IsDefined) ||
+                materializedTokenIds.Distinct().Count() != materializedTokenIds.Length)
+            {
+                throw new ArgumentException(
+                    "Director command token IDs must be defined and unique.", nameof(tokenInstanceIds));
+            }
+
             Kind = kind;
             HeroId = heroId;
             CardInstanceId = cardInstanceId;
@@ -63,6 +76,9 @@ namespace GuardsDigital.Core.Replay
             EndOfRoundResolutionId = endOfRoundResolutionId;
             EndOfRoundChoiceId = endOfRoundChoiceId;
             EffectChoice = effectChoice;
+            TokenInstanceIds = Array.AsReadOnly(materializedTokenIds
+                .OrderBy(id => id.Value, StringComparer.Ordinal)
+                .ToArray());
         }
 
         public DirectorCommandKind Kind { get; }
@@ -76,6 +92,7 @@ namespace GuardsDigital.Core.Replay
         public MinionId MinionId { get; }
         public EndOfRoundResolutionId EndOfRoundResolutionId { get; }
         public EndOfRoundChoiceId EndOfRoundChoiceId { get; }
+        public IReadOnlyList<TokenInstanceId> TokenInstanceIds { get; }
 
         /// <summary>The projected typed invocation an effect choice is answered with.</summary>
         public EffectChoiceCommand EffectChoice { get; }
@@ -123,6 +140,23 @@ namespace GuardsDigital.Core.Replay
                 DirectorCommandKind.PerformFastTravel,
                 actionDefinitionId: replacedMovementActionDefinitionId,
                 coordinate: destination);
+
+        public static DirectorCommand PerformClear(
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<TokenInstanceId> selectedTokenIds)
+        {
+            if (!replacedAttackActionDefinitionId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "Clear requires the replaced Attack action ID.",
+                    nameof(replacedAttackActionDefinitionId));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.PerformClear,
+                actionDefinitionId: replacedAttackActionDefinitionId,
+                tokenInstanceIds: selectedTokenIds ?? throw new ArgumentNullException(nameof(selectedTokenIds)));
+        }
 
         public static DirectorCommand ChooseMovementDestination(HexCoordinate destination) =>
             new DirectorCommand(DirectorCommandKind.ChooseMovementDestination, coordinate: destination);
@@ -254,7 +288,8 @@ namespace GuardsDigital.Core.Replay
                 MinionId.Equals(other.MinionId) &&
                 EndOfRoundResolutionId.Equals(other.EndOfRoundResolutionId) &&
                 EndOfRoundChoiceId.Equals(other.EndOfRoundChoiceId) &&
-                Equals(EffectChoice, other.EffectChoice);
+                Equals(EffectChoice, other.EffectChoice) &&
+                TokenInstanceIds.SequenceEqual(other.TokenInstanceIds);
         }
 
         public override bool Equals(object obj) => Equals(obj as DirectorCommand);
@@ -274,7 +309,10 @@ namespace GuardsDigital.Core.Replay
                 hash = (hash * 397) ^ MinionId.GetHashCode();
                 hash = (hash * 397) ^ EndOfRoundResolutionId.GetHashCode();
                 hash = (hash * 397) ^ EndOfRoundChoiceId.GetHashCode();
-                return (hash * 397) ^ (EffectChoice?.GetHashCode() ?? 0);
+                hash = (hash * 397) ^ (EffectChoice?.GetHashCode() ?? 0);
+                foreach (var tokenId in TokenInstanceIds)
+                    hash = (hash * 397) ^ tokenId.GetHashCode();
+                return hash;
             }
         }
 

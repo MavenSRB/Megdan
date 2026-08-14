@@ -30,6 +30,9 @@ namespace GuardsDigital.Tests.EditMode
     /// Tokens are read back by deserializing the authoritative snapshot rather than from a projection
     /// field, because 6.2's non-goals bar a token-specific projection property. That is not a
     /// workaround: what the wire carries is exactly what a later presentation milestone will project.
+    /// Milestone 6.3 reuses that same readback to prove Clear's authority-level command, diagnostic
+    /// facts, source-card completion, retained-prefix Undo, and deterministic replay without adding a
+    /// token projection ahead of its presentation owner.
     /// </summary>
     public sealed class MatchSessionComponentDispatchTests
     {
@@ -75,12 +78,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingSkillResolution, Is.Null, "The Skill completes.");
             Assert.That(token.Coordinate, Is.EqualTo(chosen));
             Assert.That(token.OwnerHeroId, Is.EqualTo(actorId));
-            Assert.That(token.Definition.Reference, Is.EqualTo(SyntheticComponentDefinitions.HazardV1));
+            Assert.That(token.Definition.Reference, Is.EqualTo(SyntheticComponentDefinitions.HazardV2));
             Assert.That(board.IsEmptyPlayableSpace(chosen), Is.False,
                 "A placed token occupies its space for every consumer of the shared occupancy index.");
             Assert.That(
                 SyntheticComponentDefinitions.CreateCatalog().CountAvailableTokens(
-                    SyntheticComponentDefinitions.HazardV1, board.PlacedTokens),
+                    SyntheticComponentDefinitions.HazardV2, board.PlacedTokens),
                 Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount - 1));
         }
 
@@ -235,6 +238,63 @@ namespace GuardsDigital.Tests.EditMode
                 "Replaying the same answers reproduces the same token identity and ordered facts.");
         }
 
+        [Test]
+        public void ClearCommand_RemovesAnAdjacentTokenAndReplaysDeterministicallyAcrossUndo()
+        {
+            var session = StartComponentSkill(out var actorId);
+            ChooseOption(session, PlaceBranch);
+            var actorCoordinate = RestoreBoard(session).Occupancies
+                .Single(hero => hero.HeroId.Equals(actorId)).Coordinate;
+            var adjacentPlacement = session.Projection.PendingEffectChoice.SelectInvocations
+                .First(invocation => actorCoordinate.GetNeighbors()
+                    .Contains(invocation.Candidate.Value.Coordinate));
+            Accept(session, DirectorCommand.AnswerEffectChoice(adjacentPlacement));
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            var token = RestoreBoard(session).PlacedTokens.Single();
+
+            AdvanceToNextRound(session);
+            CommitAttackTurnForActor(session, actorId);
+            var attackOffer = session.Projection.AvailableTurnActions.Single(offer =>
+                session.Projection.Definitions
+                    .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
+                    .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId))
+                    .Kind == ActionKind.Attack);
+            var command = DirectorCommand.PerformClear(
+                attackOffer.ActionDefinitionId,
+                new[] { token.Id });
+
+            var first = session.Execute(command);
+
+            Assert.That(first.Accepted, Is.True, first.Detail);
+            Assert.That(first.Events.Any(ruleEvent =>
+                ruleEvent.TurnEvent.Kind == TurnResolutionEventKind.ClearActionProgressed), Is.True);
+            var clearedLog = first.Projection.DiagnosticEvents.Single(entry =>
+                entry.EventType == "Action.TokenCleared");
+            Assert.That(clearedLog.StableReferences, Does.Contain($"token={token.Id.Value}"));
+            Assert.That(clearedLog.Detail, Does.Contain("tokenDefinition="));
+            Assert.That(clearedLog.Detail, Does.Contain($"space={token.Coordinate}"));
+            Assert.That(RestoreBoard(session).PlacedTokens, Is.Empty);
+            Assert.That(session.Projection.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.PerformClear));
+            Assert.That(session.Projection.Cards.Single(card => card.Id.Equals(
+                attackOffer.SourceCardInstanceId)).State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved),
+                "Clear replaces the entire Attack and resolves the source card as the turn action.");
+            var expectedSnapshot = first.Projection.AuthoritativeSnapshot;
+            var expectedDiagnostic = first.Projection.DiagnosticSnapshot;
+
+            Assert.That(session.Undo().Accepted, Is.True);
+
+            Assert.That(RestoreBoard(session).PlacedTokens.Single().Id, Is.EqualTo(token.Id));
+            Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(actorId));
+
+            var replayed = session.Execute(command);
+            Assert.That(replayed.Accepted, Is.True, replayed.Detail);
+            Assert.That(replayed.Projection.AuthoritativeSnapshot, Is.EqualTo(expectedSnapshot));
+            Assert.That(replayed.Projection.DiagnosticSnapshot, Is.EqualTo(expectedDiagnostic));
+        }
+
         /// <summary>
         /// Plays the component Skill once per round until the two-token supply is empty, then leaves the
         /// session with the Skill available again so the caller can drive the short-supply path.
@@ -316,6 +376,30 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             ResolveInitiativeTie(session);
+        }
+
+        private static void CommitAttackTurnForActor(MatchSession session, HeroId actorId)
+        {
+            Assert.That(session.Projection.Phase,
+                Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
+            var actorSide = session.Projection.Participants.GetTeamForHero(actorId).Side;
+            var opposingSide = actorSide == TeamSide.Red ? TeamSide.Blue : TeamSide.Red;
+            Func<CardInstance, CardDefinition> definitionFor = card =>
+                session.Projection.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference));
+            var actorCard = HandCards(session, actorSide)
+                .Where(card => definitionFor(card).ActionDefinitions.Any(action => action.Kind == ActionKind.Attack))
+                .OrderByDescending(card => definitionFor(card).Initiative.Value)
+                .First();
+            var opposingCard = HandCards(session, opposingSide)
+                .Where(card => definitionFor(card).ActionDefinitions.Any(action => action.Kind == ActionKind.Attack))
+                .OrderBy(card => definitionFor(card).Initiative.Value)
+                .First();
+
+            Accept(session, DirectorCommand.CommitCard(actorCard.OwnerId, actorCard.Id));
+            Accept(session, DirectorCommand.CommitCard(opposingCard.OwnerId, opposingCard.Id));
+            ResolveInitiativeTie(session);
+            Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(actorId));
         }
 
         private static void StartComponentSkillOnCurrentTurn(MatchSession session)

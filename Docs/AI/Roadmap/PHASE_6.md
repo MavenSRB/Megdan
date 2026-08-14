@@ -496,7 +496,7 @@ Non-goals: No new `DirectorCommandKind` member, pending-choice class, `MatchSess
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-62c-close-the-skill-seam-parity-and-vocabulary-gaps-completion-evidence).
 
-### [ ] 6.3 Add core token interactions, persistent properties, and Clear
+### [x] 6.3 Add core token interactions, persistent properties, and Clear
 
 Observable outcome: Synthetic tokens preserve their properties while supporting the general board interactions needed by the core loop.
 
@@ -508,6 +508,14 @@ Acceptance checks:
 - Clear replaces an entire Attack and may remove any chosen subset of adjacent tokens.
 - A unit spawning on a token-covered Spawn point removes that token first.
 - Token lifetime is defined independently from the source hero's on-board or defeated state.
+
+Closing check: acceptance evidence rather than a failing-then-passing defect pair. `TokenAndMarkerComponentTests` proves catalog-owned token properties project as `TokenProperty` continuous sources only while the stable token instance remains placed, never enter `ActiveEffectLifecycle`, survive restoration without the source hero on the board, and are removed before a validated unit Spawn uses their covered Spawn point. `ClearActionTests` proves the value-free, text-suppressing replacement revalidates one current replaceable Attack, accepts any adjacent-token subset including none, rejects duplicate/non-adjacent/stale selections atomically, removes exactly the chosen stable identities, and emits Clear rather than Attack facts between resolver-owned action checkpoints. `MatchSessionComponentDispatchTests` carries the typed `PerformClear` command through turn/card resolution, snapshot restore, retained-prefix Undo, and byte-identical replay.
+
+Compatibility decision: schema remains v9. The synthetic Hazard definition moves from revision 1 to revision 2 because its trusted catalog content now owns the persistent property declaration. Existing v9 payloads naming the unavailable revision 1 are rejected rather than silently acquiring revision 2 semantics; no persisted state exists outside the test corpus. The seven compatibility-corpus hashes and nine aggregate-invariance pairs are explicitly re-pinned to that one content-registration delta, with their mutation/restore/replay equality groups unchanged.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-63-add-core-token-interactions-persistent-properties-and-clear-completion-evidence).
+
+Non-goals: No generic `ReplaceAction` effect node, pending Clear continuation, token projection or player-facing Clear UI, Wasp definition, printed-text parsing, displacement, general Place/Spawn, Swap/Replace/Remove, end-of-round cleanup, presentation, art, animation, or audio. The Spawn work is only the mandatory token-removal pre-commit seam; milestone 6.5 still owns the complete reusable Spawn capability.
 
 ### [ ] 6.4 Implement reusable direct Move and Object Push effects
 

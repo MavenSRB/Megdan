@@ -19,13 +19,24 @@ namespace GuardsDigital.Core.Components.Synthetic
 
         public static MarkerDefinitionId Focus { get; } = new MarkerDefinitionId("synthetic-focus-marker");
 
-        public static TokenDefinitionReference HazardV1 => new TokenDefinitionReference(Hazard, 1);
+        public static TokenDefinitionReference HazardV2 => new TokenDefinitionReference(Hazard, 2);
 
         public static MarkerDefinitionReference FocusV1 => new MarkerDefinitionReference(Focus, 1);
 
         /// <summary>A two-token supply, so a third placement must reclaim before it can place.</summary>
         public static TokenDefinition HazardDefinition { get; } =
-            new TokenDefinition(Hazard, 1, "TEST - Hazard", 2);
+            new TokenDefinition(
+                Hazard,
+                2,
+                "TEST - Hazard",
+                2,
+                new[]
+                {
+                    new TokenPropertyDefinition(
+                        "persistent-hazard",
+                        "synthetic-hazard",
+                        "while-token-remains-placed")
+                });
 
         /// <summary>A one-marker supply, so a second give has nothing left to take.</summary>
         public static MarkerDefinition FocusDefinition { get; } =

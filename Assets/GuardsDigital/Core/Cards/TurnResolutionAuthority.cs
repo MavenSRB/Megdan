@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
@@ -33,7 +34,9 @@ namespace GuardsDigital.Core.Cards
         FastTravelActionRejected = 17,
         SkillAuthorityUnavailable = 18,
         SkillActionRejected = 19,
-        SkillCommandRejected = 20
+        SkillCommandRejected = 20,
+        ClearAuthorityUnavailable = 21,
+        ClearActionRejected = 22
     }
 
     public enum TurnResolutionEventKind
@@ -48,7 +51,8 @@ namespace GuardsDigital.Core.Cards
         AttackActionProgressed = 7,
         FastTravelActionProgressed = 8,
         TimingProgressed = 9,
-        SkillActionProgressed = 10
+        SkillActionProgressed = 10,
+        ClearActionProgressed = 11
     }
 
     public readonly struct TurnResolutionEvent
@@ -159,6 +163,11 @@ namespace GuardsDigital.Core.Cards
         public static TurnResolutionEvent FromFastTravelAction(CardActionResolutionEvent cardActionEvent)
         {
             return FromCardAction(cardActionEvent, TurnResolutionEventKind.FastTravelActionProgressed);
+        }
+
+        public static TurnResolutionEvent FromClearAction(CardActionResolutionEvent cardActionEvent)
+        {
+            return FromCardAction(cardActionEvent, TurnResolutionEventKind.ClearActionProgressed);
         }
 
         public static TurnResolutionEvent FromSkillAction(CardActionResolutionEvent cardActionEvent)
@@ -667,6 +676,74 @@ namespace GuardsDigital.Core.Cards
             {
                 throw new InvalidOperationException(
                     "A card resolved after Fast Travel could not be acknowledged by Initiative authority.");
+            }
+
+            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
+            return AdvanceInitiative(events);
+        }
+
+        public TurnResolutionResult TryPerformClear(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<TokenInstanceId> selectedTokenIds)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.NoActorSelected);
+            }
+
+            if (!initiative.SelectedActor.CardInstanceId.Equals(replacementOffer.SourceCardInstanceId) ||
+                !initiative.SelectedActor.ActorId.Equals(replacementOffer.ActorId))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardNotSelectedForAction);
+            }
+
+            if (cardActions == null)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ClearAuthorityUnavailable);
+            }
+
+            if (cardActions.HasPendingResolution)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+            }
+
+            var result = cardActions.PerformTurnClear(
+                resolutionId,
+                replacementOffer,
+                replacedAttackActionDefinitionId,
+                selectedTokenIds,
+                definitions,
+                instances);
+            if (!result.Accepted || !result.IsComplete)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ClearActionRejected);
+            }
+
+            var card = instances.Single(candidate =>
+                candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            {
+                throw new InvalidOperationException(
+                    "A completed Clear could not resolve its prevalidated source card.");
+            }
+
+            var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromClearAction);
+            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            if (!acknowledgement.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A card resolved after Clear could not be acknowledged by Initiative authority.");
             }
 
             events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));

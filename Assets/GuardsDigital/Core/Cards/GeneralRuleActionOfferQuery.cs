@@ -27,6 +27,16 @@ namespace GuardsDigital.Core.Cards
                 false,
                 false));
 
+        public static readonly ActionDefinition ClearDefinition = new ActionDefinition(
+            new ActionDefinitionId("general-clear"),
+            ActionKind.Clear,
+            ActionDefinitionOrigin.Replacement,
+            Array.Empty<PrintedValueDefinition>(),
+            new ActionDefinitionPolicy(
+                CardTextApplicationPolicy.Suppressed,
+                false,
+                false));
+
         public static ActionOffer? GetAvailableFastTravelOffer(
             ActionDefinitionId replacedMovementActionDefinitionId,
             CardInstanceId sourceCardInstanceId,
@@ -34,36 +44,72 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances)
         {
+            return GetAvailableReplacementOffer(
+                replacedMovementActionDefinitionId,
+                sourceCardInstanceId,
+                actorId,
+                definitions,
+                instances,
+                ActionKind.Movement,
+                FastTravelDefinition);
+        }
+
+        public static ActionOffer? GetAvailableClearOffer(
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            CardInstanceId sourceCardInstanceId,
+            HeroId actorId,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances)
+        {
+            return GetAvailableReplacementOffer(
+                replacedAttackActionDefinitionId,
+                sourceCardInstanceId,
+                actorId,
+                definitions,
+                instances,
+                ActionKind.Attack,
+                ClearDefinition);
+        }
+
+        private static ActionOffer? GetAvailableReplacementOffer(
+            ActionDefinitionId replacedActionDefinitionId,
+            CardInstanceId sourceCardInstanceId,
+            HeroId actorId,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            ActionKind replacedKind,
+            ActionDefinition replacementDefinition)
+        {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var movementOffers = ActionOfferQuery.GetAvailableTurnActionOffers(
+            var turnOffers = ActionOfferQuery.GetAvailableTurnActionOffers(
                 materializedDefinitions,
                 materializedInstances,
                 actorId,
                 sourceCardInstanceId);
-            var matchingOffers = movementOffers
-                .Where(offer => offer.ActionDefinitionId.Equals(replacedMovementActionDefinitionId))
+            var matchingOffers = turnOffers
+                .Where(offer => offer.ActionDefinitionId.Equals(replacedActionDefinitionId))
                 .ToArray();
             if (matchingOffers.Length != 1)
             {
                 return null;
             }
 
-            var movementOffer = matchingOffers[0];
+            var replacedOffer = matchingOffers[0];
             var sourceDefinition = materializedDefinitions.Single(definition =>
-                definition.Reference.Equals(movementOffer.SourceDefinitionReference));
+                definition.Reference.Equals(replacedOffer.SourceDefinitionReference));
             var replacedAction = sourceDefinition.ActionDefinitions.Single(action =>
-                action.Id.Equals(replacedMovementActionDefinitionId));
-            if (replacedAction.Kind != ActionKind.Movement || !replacedAction.DefaultPolicy.CanBeReplaced)
+                action.Id.Equals(replacedActionDefinitionId));
+            if (replacedAction.Kind != replacedKind || !replacedAction.DefaultPolicy.CanBeReplaced)
             {
                 return null;
             }
 
             return new ActionOffer(
-                movementOffer.SourceCardInstanceId,
-                movementOffer.SourceDefinitionReference,
-                FastTravelDefinition.Id,
-                movementOffer.ActorId,
+                replacedOffer.SourceCardInstanceId,
+                replacedOffer.SourceDefinitionReference,
+                replacementDefinition.Id,
+                replacedOffer.ActorId,
                 ActionInvocationContext.Replacement,
                 true);
         }

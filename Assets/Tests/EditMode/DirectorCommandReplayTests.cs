@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -78,6 +79,25 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(firstBoard, Is.Not.SameAs(secondBoard));
             Assert.That(firstBoard.SelectedMap, Is.EqualTo(new MapDefinitionReference(new MapId("replay-map"), 3)));
             Assert.That(firstBoard.Occupancies, Is.EqualTo(secondBoard.Occupancies));
+        }
+
+        [Test]
+        public void ClearCommand_CanonicalizesItsChosenTokenSetForReplayIdentity()
+        {
+            var attack = new ActionDefinitionId("clear-replay-attack");
+            var first = new TokenInstanceId("token-a");
+            var second = new TokenInstanceId("token-b");
+
+            var forward = DirectorCommand.PerformClear(attack, new[] { first, second });
+            var reverse = DirectorCommand.PerformClear(attack, new[] { second, first });
+
+            Assert.That(reverse, Is.EqualTo(forward));
+            Assert.That(reverse.GetHashCode(), Is.EqualTo(forward.GetHashCode()));
+            Assert.That(reverse.TokenInstanceIds, Is.EqualTo(new[] { first, second }));
+            Assert.That(
+                () => DirectorCommand.PerformClear(attack, new[] { first, first }),
+                Throws.ArgumentException,
+                "Clear carries a chosen subset, so a duplicate is invalid rather than two removals.");
         }
     }
 }

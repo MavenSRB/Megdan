@@ -379,6 +379,19 @@ namespace GuardsDigital.Core.Cards
                 minions));
         }
 
+        public RoundResolutionResult TryPerformClear(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<TokenInstanceId> selectedTokenIds)
+        {
+            return ExecuteTurnCommand(() => CurrentTurnAuthority.TryPerformClear(
+                resolutionId,
+                replacementOffer,
+                replacedAttackActionDefinitionId,
+                selectedTokenIds));
+        }
+
         public RoundResolutionResult TryStartAttack(
             ActionResolutionId resolutionId,
             ActionOffer offer)

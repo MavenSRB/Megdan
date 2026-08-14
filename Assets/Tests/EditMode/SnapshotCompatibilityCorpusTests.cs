@@ -27,16 +27,21 @@ namespace GuardsDigital.Tests.EditMode
         /// token or a marker, so reading one as a component-free match would have been faithful, and it
         /// is refused anyway - the engine has one read path per version, and no persisted state outside
         /// this corpus exists to strand. See <c>AuthoritativeSnapshotSerializer.CurrentSchemaVersion</c>.
+        /// Milestone 6.3 keeps schema v9 and deliberately re-pins every fixture because the registered
+        /// synthetic token definition moved from revision 1 to revision 2 to acquire its immutable
+        /// property content. The content decision is reject: a v9 payload bound to Hazard v1 names a
+        /// definition revision the trusted catalog no longer supplies, rather than silently gaining v2
+        /// semantics. No persisted state outside this test corpus exists to migrate.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v9", "f7ef2e562745cfa3d689462bfeba2b26b5c46ac66746694f4caedca13c96a579"),
-            new CompatibilityFixture("active-turn-v9", "fddb1d5675f56a63ce1331660dcb7b4468eee8fac917b934f0ff0235af1fbd1b"),
-            new CompatibilityFixture("pending-choice-v9", "275627f81d4c868668dcd6dbc5d9eb80a6f2d2b5404ad006592b12a26f84691a"),
-            new CompatibilityFixture("end-of-round-v9", "e1db245b7f65e918fe1bf2cac3363f7a844b5433136b5857e64a1fc59f4617e2"),
-            new CompatibilityFixture("pending-minion-battle-v9", "8491313b1c888820735ac1b35ff2ffad59998d859334a5be68d56cc5e297402f"),
-            new CompatibilityFixture("placed-token-v9", "ee10beaaa2df27327c5b58f54a829e305e8b7281a245ae4034e75dc3460022dc"),
-            new CompatibilityFixture("attached-marker-v9", "22cb8c547e6d84c905ba73c21aee277d5f0f699bbbed0a7d4ccb2378332e4cd7")
+            new CompatibilityFixture("setup-v9", "b5a25c313d1c0b3f7411a011d053b80a8f3714a84f608591ff56750f75762c47"),
+            new CompatibilityFixture("active-turn-v9", "13b7724ef6b2f1a2e8e8065d1506c37e675f35b8e2f463420373143d113a26f6"),
+            new CompatibilityFixture("pending-choice-v9", "0667ba5327ac3027d5f2f700ffdd83f918fd7567ac42a9a2a2c01af66dbd951e"),
+            new CompatibilityFixture("end-of-round-v9", "c587cc0b375da8788f244b4c884f8099053c76b642bcaff83a0e2376df050dc0"),
+            new CompatibilityFixture("pending-minion-battle-v9", "1f87d0218b11fc2502c1f947bcd2cb7a92d26f8a82953bc95d96ea8586520522"),
+            new CompatibilityFixture("placed-token-v9", "fd6ab84b2cb0f9b8744ce1e0e8474c3a9b5c6cb266e4320a6940671d7a620487"),
+            new CompatibilityFixture("attached-marker-v9", "04fce9eece732a849929824f6625656e55c396626980613f1adbd59e02bdd8f5")
         };
 
         [Test]

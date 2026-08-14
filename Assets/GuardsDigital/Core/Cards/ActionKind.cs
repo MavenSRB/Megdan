@@ -8,6 +8,7 @@ namespace GuardsDigital.Core.Cards
         Skill = 3,
         Defense = 4,
         Hold = 5,
-        FastTravel = 6
+        FastTravel = 6,
+        Clear = 7
     }
 }

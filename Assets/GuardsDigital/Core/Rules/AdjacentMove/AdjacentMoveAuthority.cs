@@ -7,6 +7,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
 
@@ -247,6 +248,15 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         public IReadOnlyList<PlacedToken> PlacedTokens => tokensView;
 
+        /// <summary>
+        /// Every persistent property currently supplied by a token on the board. This is derived from
+        /// placed instances rather than copied into timing state, so removing a token removes its
+        /// sources and card/hero Active-effect cancellation cannot touch them.
+        /// </summary>
+        public IReadOnlyList<ContinuousRuleSource> TokenPropertySources => Array.AsReadOnly(tokens
+            .SelectMany(token => token.PropertySources)
+            .ToArray());
+
         public IReadOnlyList<HexCoordinate> BoardCoordinates => boardCoordinatesView;
 
         internal bool IsOccupied(HexCoordinate coordinate) => occupancyIndex.IsOccupied(coordinate);
@@ -471,6 +481,35 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             tokens.RemoveAt(index);
             occupancyIndex.Remove(removed.Coordinate);
             return removed;
+        }
+
+        /// <summary>
+        /// The token-specific first step of an already validated unit Spawn. General Spawn supply,
+        /// eligibility, destination, and occupant creation remain the owning Spawn capability's job;
+        /// this board operation only enforces rulebook pp.8/19 before that later commit occurs.
+        /// </summary>
+        /// <returns>The removed token, or <c>null</c> when the Spawn point is not token-covered.</returns>
+        public PlacedToken CommitValidatedTokenRemovalBeforeUnitSpawn(
+            ConfiguredSpawnPointReference spawnPoint)
+        {
+            if (!spawnPoint.MapId.Equals(MapDefinition.Id))
+            {
+                throw new InvalidOperationException(
+                    "A validated unit Spawn must name a Spawn point on the selected map.");
+            }
+
+            var definition = MapDefinition.SpawnPoints.SingleOrDefault(candidate =>
+                candidate.Id.Equals(spawnPoint.SpawnPointId));
+            if (definition == null)
+            {
+                throw new InvalidOperationException(
+                    "A validated unit Spawn must name a current Spawn point.");
+            }
+
+            var coordinate = MapDefinition.Spaces.Single(space =>
+                space.Id.Equals(definition.SpaceId) && space.Kind == BoardMapSpaceKind.Playable).Coordinate;
+            var token = tokens.SingleOrDefault(candidate => candidate.Coordinate.Equals(coordinate));
+            return token == null ? null : CommitValidatedTokenReclamation(token.Id);
         }
     }
 }
