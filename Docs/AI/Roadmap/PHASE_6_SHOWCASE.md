@@ -12,7 +12,7 @@ These integration followers do not move first implementation out of 6.4-6.8 or c
 
 ## Milestone definitions in execution order
 
-### [~] 6.8a Convert Red Bulwark into the modifier/restriction/permission showcase Skill
+### [x] 6.8a Convert Red Bulwark into the modifier/restriction/permission showcase Skill
 
 Observable outcome: The configured Red hand's existing Red Bulwark card replaces its printed Primary Attack with one three-mode synthetic Skill whose source is the card and whose affected object is always the acting hero: that hero gets `+1 Defense This Turn`, cannot Fast Travel `This Round`, or may Move Through obstacles during `Next Turn`.
 
@@ -29,6 +29,8 @@ Acceptance checks:
 - Focused definition, lifecycle, modifier/query, Core/application, presentation, and saved-scene scenarios prove every mode and duration without claiming the synthetic values or text are official content.
 
 Non-goals: No immunity, `Counts As`, `Next Turn after Playing Cards`, Object Push implementation before 6.4, Wasp definition, source-unverified official rule claim, runtime printed-text parsing, card-name/hero-name rule branch, production art, animation, or audio. Milestone 6.8b owns the separated immunity/effective-type card, and 6.13 owns final retrieval/cancellation integration for both cards' delayed sources.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68a-convert-red-bulwark-into-the-modifierrestrictionpermission-showcase-skill-completion-evidence).
 
 ### [ ] 6.8b Convert Blue Feint into the immunity/effective-type timing showcase Skill
 

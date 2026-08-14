@@ -6,9 +6,11 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -77,6 +79,33 @@ namespace GuardsDigital.Presentation.Match
 
             return $"{TeamLabel(side)} {minionType.ToString().ToUpperInvariant()} #{ordinal}";
         }
+    }
+
+    /// <summary>
+    /// The one place the effect-choice prompt names a candidate. Milestone 6.8a added it when the first
+    /// configured card carried a Skill: a mode is identified by its ordinal in the projection's own
+    /// candidate order and by the effect node's stable ID, both definition data. Printed card text is
+    /// never read here, and no label may become the thing a rule branches on.
+    /// </summary>
+    public static class EffectChoiceLabels
+    {
+        public static string CandidateLabel(EffectNodeId optionNodeId, int ordinal)
+        {
+            if (ordinal < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(ordinal));
+            }
+
+            return optionNodeId.IsDefined
+                ? $"MODE #{ordinal} {optionNodeId.Value.ToUpperInvariant()}"
+                : $"OPTION #{ordinal}";
+        }
+
+        public static string DeselectLabel(EffectNodeId optionNodeId, int ordinal) =>
+            $"UNDO {CandidateLabel(optionNodeId, ordinal)}";
+
+        public const string ConfirmLabel = "CONFIRM CHOICE";
+        public const string DeclineLabel = "DECLINE";
     }
 
     public sealed class BoardInteractionViewModel
@@ -643,7 +672,8 @@ namespace GuardsDigital.Presentation.Match
             TypedInvocationViewModel continueEndOfRoundInvocation,
             IEnumerable<TypedInvocationViewModel> initiativeChoices,
             IEnumerable<TypedInvocationViewModel> defenseChoices,
-            IEnumerable<FastTravelOfferViewModel> fastTravelOffers = null)
+            IEnumerable<FastTravelOfferViewModel> fastTravelOffers = null,
+            IEnumerable<TypedInvocationViewModel> effectChoices = null)
         {
             Version = version;
             RoundIndex = roundIndex;
@@ -659,6 +689,8 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentNullException(nameof(defenseChoices))).ToArray());
             FastTravelOffers = Array.AsReadOnly((fastTravelOffers ??
                 Enumerable.Empty<FastTravelOfferViewModel>()).ToArray());
+            EffectChoices = Array.AsReadOnly((effectChoices ??
+                Enumerable.Empty<TypedInvocationViewModel>()).ToArray());
             HudHeader = $"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
                 $"TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound} - {phase.ToString().ToUpperInvariant()}";
         }
@@ -674,6 +706,13 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<TypedInvocationViewModel> InitiativeChoices { get; }
         public IReadOnlyList<TypedInvocationViewModel> DefenseChoices { get; }
         public IReadOnlyList<FastTravelOfferViewModel> FastTravelOffers { get; }
+
+        /// <summary>
+        /// The decision a paused effect frame is waiting on, as the exact invocations the projection
+        /// already built. Empty whenever no effect choice is pending.
+        /// </summary>
+        public IReadOnlyList<TypedInvocationViewModel> EffectChoices { get; }
+
         public string HudHeader { get; }
     }
 
@@ -714,6 +753,7 @@ namespace GuardsDigital.Presentation.Match
             var legal = current.Actions
                 .Concat(current.InitiativeChoices)
                 .Concat(current.DefenseChoices)
+                .Concat(current.EffectChoices)
                 .Concat(current.EndTurnInvocation != null
                     ? new[] { current.EndTurnInvocation }
                     : Array.Empty<TypedInvocationViewModel>())
@@ -763,10 +803,14 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentNullException(nameof(projection));
             }
 
+            // A paused Skill frame counts here for the same reason paused Movement and Attack do:
+            // Core refuses a second action while one is in progress, so an offer shown during the
+            // pause is a control that can only produce a rejection.
             var hasPendingResolution = projection.PendingInitiativeChoice != null ||
                 projection.PendingMovementChoice != null || projection.PendingMovementResolution != null ||
                 projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
-                projection.PendingAttackResolution != null;
+                projection.PendingAttackResolution != null ||
+                projection.PendingSkillResolution != null || projection.PendingEffectChoice != null;
             var actions = (projection.IsTurnActive && !hasPendingResolution
                     ? projection.AvailableTurnActions
                     : Array.Empty<ActionOffer>())
@@ -810,7 +854,62 @@ namespace GuardsDigital.Presentation.Match
                     : null,
                 initiativeChoices,
                 defenseChoices,
-                fastTravelOffers);
+                fastTravelOffers,
+                CreateEffectChoices(projection.PendingEffectChoice));
+        }
+
+        /// <summary>
+        /// Forwards a paused effect frame's decision without deciding anything. Every invocation here
+        /// is one the projection already constructed and bounded - which candidates may still be
+        /// selected, whether the selection satisfies the minimum, whether declining is allowed - so
+        /// this method chooses only the order they are shown in, which is the projection's own.
+        /// </summary>
+        private static IReadOnlyList<TypedInvocationViewModel> CreateEffectChoices(
+            PendingEffectChoice choice)
+        {
+            if (choice == null)
+            {
+                return Array.Empty<TypedInvocationViewModel>();
+            }
+
+            var ordinals = new Dictionary<EffectChoiceCandidate, int>();
+            for (var index = 0; index < choice.Candidates.Count; index++)
+            {
+                ordinals[choice.Candidates[index]] = index + 1;
+            }
+
+            var invocations = new List<TypedInvocationViewModel>();
+            foreach (var invocation in choice.SelectInvocations)
+            {
+                invocations.Add(new TypedInvocationViewModel(
+                    EffectChoiceLabels.CandidateLabel(
+                        invocation.Candidate.OptionNodeId, ordinals[invocation.Candidate]),
+                    DirectorCommand.AnswerEffectChoice(invocation)));
+            }
+
+            foreach (var invocation in choice.DeselectInvocations)
+            {
+                invocations.Add(new TypedInvocationViewModel(
+                    EffectChoiceLabels.DeselectLabel(
+                        invocation.Candidate.OptionNodeId, ordinals[invocation.Candidate]),
+                    DirectorCommand.AnswerEffectChoice(invocation)));
+            }
+
+            if (choice.ConfirmInvocation != null)
+            {
+                invocations.Add(new TypedInvocationViewModel(
+                    EffectChoiceLabels.ConfirmLabel,
+                    DirectorCommand.AnswerEffectChoice(choice.ConfirmInvocation)));
+            }
+
+            if (choice.DeclineInvocation != null)
+            {
+                invocations.Add(new TypedInvocationViewModel(
+                    EffectChoiceLabels.DeclineLabel,
+                    DirectorCommand.AnswerEffectChoice(choice.DeclineInvocation)));
+            }
+
+            return invocations;
         }
 
         private RoundActionViewModel GetOrCreateViewModel(MatchSessionProjection projection)
@@ -837,7 +936,8 @@ namespace GuardsDigital.Presentation.Match
             var hasMandatoryChoice = projection.PendingInitiativeChoice != null ||
                 projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
                 projection.PendingAttackResolution != null || projection.PendingMovementChoice != null ||
-                projection.PendingMovementResolution != null;
+                projection.PendingMovementResolution != null ||
+                projection.PendingSkillResolution != null || projection.PendingEffectChoice != null;
             if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined || hasMandatoryChoice)
             {
                 return null;

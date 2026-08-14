@@ -10,6 +10,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
@@ -435,6 +436,68 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(decline.Label, Is.EqualTo("DECLINE DEFENSE"));
             Assert.That(decline.Command.ResolutionId, Is.EqualTo(choice.ResolutionId));
             Assert.That(decline.Command.ChoiceId, Is.EqualTo(choice.ChoiceId));
+        }
+
+        /// <summary>
+        /// Milestone 6.8a put the first Skill into the configured hand, so a paused effect frame became
+        /// reachable in the real scene. The presenter forwards the decision the projection already
+        /// bounded and withholds every control the authority would refuse while it stands.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_ForwardsAPausedEffectFramesModesAndWithholdsEveryOtherControl()
+        {
+            var session = CreateSession();
+            StartSkillTurn(session);
+            var skill = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Skill);
+            var beforeStart = RoundActionPresenter.CreateViewModel(session.Projection);
+            Assert.That(beforeStart.EffectChoices, Is.Empty, "No frame is paused yet.");
+            Assert.That(beforeStart.Actions, Is.Not.Empty);
+            Assert.That(session.Execute(DirectorCommand.StartAction(skill.ActionDefinitionId)).Accepted,
+                Is.True);
+
+            var choice = session.Projection.PendingEffectChoice;
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+            var selections = model.EffectChoices
+                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+                .ToArray();
+
+            Assert.That(model.Actions, Is.Empty,
+                "A paused Skill frame withholds the offers Core would refuse, as paused Movement does.");
+            Assert.That(model.FastTravelOffers, Is.Empty);
+            Assert.That(model.EndTurnInvocation, Is.Null,
+                "The mode choice is mandatory, so End Turn is not offered against it.");
+            Assert.That(selections.Select(value => value.Command.EffectChoice.Candidate.OptionNodeId),
+                Is.EqualTo(choice.Candidates.Select(candidate => candidate.OptionNodeId)),
+                "Modes are forwarded in the projection's own order.");
+            Assert.That(selections.All(value =>
+                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                value.Command.EffectChoice.ResolutionId.Equals(choice.ResolutionId) &&
+                value.Command.EffectChoice.ChoiceId.Equals(choice.ChoiceId)), Is.True,
+                "Every forwarded invocation is one the projection built, identities included.");
+            for (var index = 0; index < selections.Length; index++)
+            {
+                Assert.That(selections[index].Label, Is.EqualTo(EffectChoiceLabels.CandidateLabel(
+                    choice.Candidates[index].OptionNodeId, index + 1)));
+            }
+
+            // Driven through the presenter rather than the session, because the presenter accepts only
+            // invocations it currently projects: a forwarded decision missing from that legality list
+            // is refused, and nothing else in this fixture would notice.
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            Assert.That(presenter.Submit(selections[0]), Is.True);
+            var afterSelect = RoundActionPresenter.CreateViewModel(session.Projection);
+            var confirm = afterSelect.EffectChoices.Single(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            Assert.That(confirm.Label, Is.EqualTo(EffectChoiceLabels.ConfirmLabel));
+            Assert.That(afterSelect.EffectChoices.Any(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Deselect), Is.True,
+                "A selected mode can be taken back before it is confirmed.");
+
+            Assert.That(presenter.Submit(confirm), Is.True);
+            var afterConfirm = RoundActionPresenter.CreateViewModel(session.Projection);
+            Assert.That(afterConfirm.EffectChoices, Is.Empty,
+                "The completed frame leaves no decision behind.");
         }
 
         [Test]
@@ -887,6 +950,23 @@ namespace GuardsDigital.Tests.EditMode
                 new ConfiguredSpawnPointReference(mapId, new SpawnPointId($"{id}-spawn")),
                 new ConfiguredSpaceReference(mapId, new SpaceId($"q{coordinate.Q}_r{coordinate.R}")),
                 coordinate);
+        }
+
+        /// <summary>
+        /// Commits Red Bulwark's Skill against a Blue card below its Initiative 11, so the Red hero acts
+        /// first. <see cref="StartTiedTurn"/> cannot reach it: it commits Blue's highest card, and Blue
+        /// Feint at 12 outranks the Skill.
+        /// </summary>
+        private static void StartSkillTurn(MatchSession session)
+        {
+            var red = GetHandCards(session, TeamSide.Red)
+                .Single(card => card.Id.Value == "red-bulwark-card");
+            var blue = GetHandCards(session, TeamSide.Blue)
+                .Single(card => card.Id.Value == "blue-hammer-card");
+            Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
+            Assert.That(session.Projection.PendingInitiativeChoice, Is.Null);
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id));
         }
 
         private static void StartTiedTurn(MatchSession session, ActionKind requiredAction)

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.IO;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -399,6 +400,50 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(destination));
             Assert.That(runtime.Cards.Single(card => card.Id.Equals(sourceCardId)).State.ResolutionStatus,
                 Is.EqualTo(CardResolutionStatus.Resolved));
+        }
+
+        /// <summary>
+        /// Milestone 6.8a. Red Bulwark's converted Skill is the first Skill in the configured hand, so
+        /// this is the scene actually reaching a paused effect frame and finishing it through the
+        /// passive round view. The view forwards the projected invocations and nothing else.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_ResolvesTheConvertedSkillThroughThePassiveEffectChoicePrompt()
+        {
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+            var red = Hand(runtime, TeamSide.Red).Cards
+                .Single(card => card.Id.Value == "red-bulwark-card");
+            var blue = Hand(runtime, TeamSide.Blue).Cards
+                .Single(card => card.Id.Value == "blue-hammer-card");
+            Assert.That(runtime.SelectCommitmentCard(red.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            Assert.That(runtime.SelectCommitmentCard(blue.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            ResolveInitiativeChoice(runtime);
+            Assert.That(runtime.SelectedActor.CardInstanceId, Is.EqualTo(red.Id));
+
+            var skill = runtime.RoundView.Model.Actions.Single(value =>
+                ActionKind(runtime, value.Command.ActionDefinitionId) ==
+                GuardsDigital.Core.Cards.ActionKind.Skill);
+            Assert.That(runtime.RoundPresenter.Submit(skill), Is.True);
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null);
+            Assert.That(runtime.RoundView.Model.Actions, Is.Empty,
+                "The paused frame withholds the offers the authority would refuse.");
+            Assert.That(runtime.RoundView.Model.EffectChoices, Has.Count.EqualTo(3),
+                "Every mode of the converted Skill reaches the passive view.");
+
+            var mode = new EffectNodeId("bulwark-defense-bonus");
+            Assert.That(runtime.SubmitEffectChoiceOption(mode), Is.True);
+            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
+
+            Assert.That(runtime.PendingEffectChoice, Is.Null);
+            Assert.That(runtime.RoundView.Model.EffectChoices, Is.Empty);
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(red.Id)).State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(runtime.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.AnswerEffectChoice));
         }
 
         [UnityTest]

@@ -71,10 +71,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 answer.PendingResolution.AttackValue.Contributions.Single().Kind,
                 Is.EqualTo(ValueContributionKind.PrintedIcon));
-            Assert.That(answer.PendingResolution.AttackTotal, Is.EqualTo(3));
+            Assert.That(answer.PendingResolution.AttackTotal, Is.EqualTo(4));
             Assert.That(answer.PendingDefenseChoice.ChooserId, Is.EqualTo(fixture.DefenderId));
             Assert.That(answer.PendingDefenseChoice.AttackerId, Is.EqualTo(fixture.AttackerId));
-            Assert.That(answer.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
+            Assert.That(answer.PendingDefenseChoice.AttackTotal, Is.EqualTo(4));
             Assert.That(answer.PendingDefenseChoice.CanDecline, Is.True);
             Assert.That(answer.PendingDefenseChoice.LegalDefenseOffers, Has.Count.EqualTo(5));
             Assert.That(
@@ -90,7 +90,7 @@ namespace GuardsDigital.Tests.EditMode
                 CardActionResolutionEventKind.DefenseResponseChoiceRequested
             }));
             Assert.That(answer.Events.All(ruleEvent => ruleEvent.TargetHeroId.Equals(fixture.DefenderId)), Is.True);
-            Assert.That(answer.Events.All(ruleEvent => ruleEvent.AttackTotal == 3), Is.True);
+            Assert.That(answer.Events.All(ruleEvent => ruleEvent.AttackTotal == 4), Is.True);
             Assert.That(fixture.Authority.PendingAttackTargetChoice, Is.Null);
             Assert.That(fixture.Authority.PendingDefenseChoice, Is.SameAs(answer.PendingDefenseChoice));
             Assert.That(
@@ -923,7 +923,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(outcome.HeroDefeat.Defeat.HasRewardAmounts, Is.False,
                 "Hero Level/Tier reward derivation remains deferred to Phase 7.");
             Assert.That(outcome.Events.All(ruleEvent =>
-                ruleEvent.AttackTotal == 3 &&
+                ruleEvent.AttackTotal == 4 &&
                 ruleEvent.DefenseTotal == 2 &&
                 ruleEvent.AttackOutcome == AttackResolutionOutcome.AttackSuccessful), Is.True);
         }
@@ -1228,7 +1228,11 @@ namespace GuardsDigital.Tests.EditMode
                 candidate.Id.Equals(offer.ActionDefinitionId)).Kind;
         }
 
-        private static AttackFixture CreateFixture(string attackCardInstanceId = "red-bulwark-card")
+        // Red Pursuit is the Red hand's durable non-Ranged printed Attack. The default fixture named
+        // Red Bulwark until milestone 6.8a replaced that card's printed Primary Attack with its
+        // showcase Skill; the approved showcase schedule keeps Red Pursuit printed, so this fixture
+        // does not have to move again. Its printed Attack is 4, where Red Bulwark's was 3.
+        private static AttackFixture CreateFixture(string attackCardInstanceId = "red-pursuit-card")
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
@@ -1257,7 +1261,7 @@ namespace GuardsDigital.Tests.EditMode
         private static ActionOffer GetAttackOffer(
             PlaceholderOneVsOneTestConfiguration configuration,
             HeroId attackerId,
-            string attackCardInstanceId = "red-bulwark-card")
+            string attackCardInstanceId = "red-pursuit-card")
         {
             return ActionOfferQuery.GetAvailableOffers(
                     configuration.CardDefinitions,

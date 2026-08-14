@@ -12,7 +12,7 @@ namespace GuardsDigital.Core.Cards
         private static readonly SyntheticCardProfile[] RedProfiles =
         {
             new SyntheticCardProfile("red-needle", "Red Needle", 13, AttackRangeKind.NonRanged, 2, 0, 2, 1),
-            new SyntheticCardProfile("red-bulwark", "Red Bulwark", 11, AttackRangeKind.NonRanged, 3, 0, 2, 3),
+            SyntheticCardProfile.WithModificationSkill("red-bulwark", "Red Bulwark", 11, 2, 3),
             new SyntheticCardProfile("red-lancer", "Red Lancer", 9, AttackRangeKind.Ranged, 2, 3, 3, 1),
             new SyntheticCardProfile("red-pursuit", "Red Pursuit", 7, AttackRangeKind.NonRanged, 4, 0, 3, 2),
             new SyntheticCardProfile("red-bombard", "Red Bombard", 5, AttackRangeKind.Ranged, 3, 2, 2, 2)
@@ -329,18 +329,40 @@ namespace GuardsDigital.Core.Cards
         {
             var actions = new[]
             {
-                CreateAttackAction(profile.AttackRange, profile.AttackValue, profile.RangeValue),
+                CreatePrintedPrimaryAction(profile),
                 CreateMovementAction(profile.MovementValue),
                 CreateDefenseAction(profile.DefenseValue)
             };
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
-                "phase-5-1a-rev-3",
+                profile.ContentRevision,
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
                 actions);
+        }
+
+        /// <summary>
+        /// The card's one printed Primary action, selected by the profile's declared discriminator
+        /// rather than by its id or display name. A branch on the card's name would be exactly the
+        /// card-name rule branch the showcase milestones forbid, and it would also make every future
+        /// conversion edit this method; a discriminator leaves the unconverted profiles alone.
+        /// </summary>
+        private static ActionDefinition CreatePrintedPrimaryAction(SyntheticCardProfile profile)
+        {
+            switch (profile.PrintedPrimary)
+            {
+                case SyntheticPrintedPrimaryKind.Attack:
+                    return CreateAttackAction(profile.AttackRange, profile.AttackValue, profile.RangeValue);
+                case SyntheticPrintedPrimaryKind.ModificationSkill:
+                    return CreateModificationSkillAction(profile);
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(profile),
+                        profile.PrintedPrimary,
+                        "This synthetic profile declares no printed Primary action.");
+            }
         }
 
         private static ActionDefinition CreateMovementAction(int value)
@@ -378,6 +400,63 @@ namespace GuardsDigital.Core.Cards
                 default);
         }
 
+        /// <summary>
+        /// Milestone 6.8a's conversion: one three-mode Skill replacing this card's printed Primary
+        /// Attack. Each mode is a direct child of a `Choose` and names one capability milestone 6.8
+        /// already registered, so the card supplies no rule of its own - it is the stable source, and
+        /// the affected object is whichever hero the action's authority reports as the actor.
+        ///
+        /// The three modes are deliberately one family each: a value modifier, an action restriction,
+        /// and a narrow permission, under `This Turn`, `This Round` and `Next Turn` respectively. What
+        /// each mode does, when it activates, when it expires, and what cancels it is definition data
+        /// on the Active-effect definitions this table only points at, never anything this card states.
+        ///
+        /// Board-neutral: it names no hero, no card and no space, and it carries no printed value,
+        /// because a Skill has no printed icon channel of its own. None of it is official content.
+        /// </summary>
+        private static ActionDefinition CreateModificationSkillAction(SyntheticCardProfile profile)
+        {
+            var root = new EffectNodeId("bulwark-root");
+            var defenseBonus = new EffectNodeId("bulwark-defense-bonus");
+            var fastTravelRestriction = new EffectNodeId("bulwark-fast-travel-restriction");
+            var moveThroughPermission = new EffectNodeId("bulwark-move-through-permission");
+
+            // Every mode publishes the affected hero under the exact name and kind
+            // ModificationEffectHandler declares, which the definition validator checks by both.
+            EffectNodeDefinition Mode(EffectNodeId id, EffectCapabilityReference capability) =>
+                new EffectNodeDefinition(
+                    id, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    capability,
+                    outputs: new[] { new EffectOutputBinding("affected", EffectValueKind.Hero) });
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                profile.ContentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { defenseBonus, fastTravelRestriction, moveThroughPermission },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    Mode(defenseBonus, SyntheticModificationCapabilities.GrantDefenseBonusV1),
+                    Mode(fastTravelRestriction, SyntheticModificationCapabilities.RestrictFastTravelV1),
+                    Mode(moveThroughPermission, SyntheticModificationCapabilities.PermitMoveThroughObstaclesV1)
+                });
+
+            return new ActionDefinition(
+                new ActionDefinitionId("primary-modification-skill"),
+                ActionKind.Skill,
+                ActionDefinitionOrigin.PrintedPrimary,
+                Array.Empty<PrintedValueDefinition>(),
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                AttackRangeKind.None,
+                default,
+                effect);
+        }
+
         private static ActionDefinition CreateDefenseAction(int value)
         {
             return new ActionDefinition(
@@ -390,8 +469,25 @@ namespace GuardsDigital.Core.Cards
                 new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
         }
 
+        /// <summary>
+        /// Which printed Primary action a synthetic profile carries. The showcase milestones convert
+        /// six of the ten cards one at a time, so this is the seam each conversion moves through.
+        /// </summary>
+        private enum SyntheticPrintedPrimaryKind
+        {
+            Attack = 0,
+            ModificationSkill = 1
+        }
+
         private sealed class SyntheticCardProfile
         {
+            /// <summary>
+            /// The revision the five cards were printed at since milestone 5.1a. A converted card
+            /// advances past it alone, so the unconverted profiles stay byte-identical and only the
+            /// converted card's definition moves a pinned digest.
+            /// </summary>
+            private const string PrintedAttackRevision = "phase-5-1a-rev-3";
+
             public SyntheticCardProfile(
                 string id,
                 string displayName,
@@ -401,10 +497,29 @@ namespace GuardsDigital.Core.Cards
                 int rangeValue,
                 int movementValue,
                 int defenseValue)
+                : this(
+                    id, displayName, initiative, SyntheticPrintedPrimaryKind.Attack, PrintedAttackRevision,
+                    attackRange, attackValue, rangeValue, movementValue, defenseValue)
+            {
+            }
+
+            private SyntheticCardProfile(
+                string id,
+                string displayName,
+                int initiative,
+                SyntheticPrintedPrimaryKind printedPrimary,
+                string contentRevision,
+                AttackRangeKind attackRange,
+                int attackValue,
+                int rangeValue,
+                int movementValue,
+                int defenseValue)
             {
                 Id = id;
                 DisplayName = displayName;
                 Initiative = initiative;
+                PrintedPrimary = printedPrimary;
+                ContentRevision = contentRevision;
                 AttackRange = attackRange;
                 AttackValue = attackValue;
                 RangeValue = rangeValue;
@@ -412,9 +527,26 @@ namespace GuardsDigital.Core.Cards
                 DefenseValue = defenseValue;
             }
 
+            /// <summary>
+            /// Milestone 6.8a's converted card: it keeps its identity, Initiative, printed Secondary
+            /// Movement and Defense reaction, and states no Attack values at all, because its printed
+            /// Primary Attack is replaced rather than suppressed.
+            /// </summary>
+            public static SyntheticCardProfile WithModificationSkill(
+                string id,
+                string displayName,
+                int initiative,
+                int movementValue,
+                int defenseValue) =>
+                new SyntheticCardProfile(
+                    id, displayName, initiative, SyntheticPrintedPrimaryKind.ModificationSkill,
+                    "phase-6-8a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+
             public string Id { get; }
             public string DisplayName { get; }
             public int Initiative { get; }
+            public SyntheticPrintedPrimaryKind PrintedPrimary { get; }
+            public string ContentRevision { get; }
             public AttackRangeKind AttackRange { get; }
             public int AttackValue { get; }
             public int RangeValue { get; }

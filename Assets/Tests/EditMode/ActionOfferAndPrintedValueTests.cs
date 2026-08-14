@@ -218,10 +218,11 @@ namespace GuardsDigital.Tests.EditMode
         // one test in that fixture that never touched the legacy HeroSelectionController drill, so
         // deleting the file wholesale would have dropped live Core coverage.
         [Test]
-        public void PlaceholderHand_ContainsFiveVisibleTestCardsWithPrimaryAttackAndSecondaryMovement()
+        public void PlaceholderHand_ContainsFiveVisibleTestCardsWithOnePrintedPrimaryAndSecondaryMovement()
         {
             var ownerId = new HeroId("hero");
             var hand = PlaceholderMovementHand.Create(ownerId);
+            var primaryKinds = new List<ActionKind>();
 
             Assert.That(hand.Definitions, Has.Count.EqualTo(5));
             Assert.That(hand.Instances, Has.Count.EqualTo(5));
@@ -249,9 +250,8 @@ namespace GuardsDigital.Tests.EditMode
                 var definition = hand.Definitions.Single(candidate =>
                     candidate.Reference.Equals(instance.DefinitionReference));
 
-                Assert.That(definition.ActionDefinitions.Single(action =>
-                        action.Id.Equals(primary.ActionDefinitionId)).Kind,
-                    Is.EqualTo(ActionKind.Attack));
+                primaryKinds.Add(definition.ActionDefinitions.Single(action =>
+                    action.Id.Equals(primary.ActionDefinitionId)).Kind);
                 Assert.That(PrintedValueQuery.CalculatePrintedValue(
                     secondary,
                     hand.Definitions,
@@ -263,6 +263,12 @@ namespace GuardsDigital.Tests.EditMode
                         action.Id.Equals(secondary.ActionDefinitionId)).DefaultPolicy.CardTextApplication,
                     Is.EqualTo(CardTextApplicationPolicy.Suppressed));
             }
+
+            // Milestone 6.8a converted Red Bulwark's printed Primary Attack into its showcase Skill,
+            // so the hand no longer offers five Attacks. Every card still offers exactly one printed
+            // Primary, which is what this fixture pins.
+            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Skill), Is.EqualTo(1));
+            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Attack), Is.EqualTo(4));
         }
 
         [Test]
@@ -278,7 +284,7 @@ namespace GuardsDigital.Tests.EditMode
                 redHeroId,
                 ActionOfferWindow.NormalPlay);
             var redAttack = redNormalOffers.Single(offer =>
-                offer.SourceCardInstanceId.Value == "red-bulwark-card" &&
+                offer.SourceCardInstanceId.Value == "red-pursuit-card" &&
                 offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
 
             Assert.That(redAttack.ActorId, Is.EqualTo(redHeroId));
@@ -291,7 +297,7 @@ namespace GuardsDigital.Tests.EditMode
                     redAttack,
                     configuration.CardDefinitions,
                     PrintedValueChannel.Attack).Total,
-                Is.EqualTo(3));
+                Is.EqualTo(4));
 
             var redRangedAttack = redNormalOffers.Single(offer =>
                 offer.SourceCardInstanceId.Value == "red-lancer-card" &&

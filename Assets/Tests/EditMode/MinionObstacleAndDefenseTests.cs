@@ -125,7 +125,7 @@ namespace GuardsDigital.Tests.EditMode
                     attackerId,
                     ActionOfferWindow.NormalPlay)
                 .Single(offer =>
-                    offer.SourceCardInstanceId.Value == "red-bulwark-card" &&
+                    offer.SourceCardInstanceId.Value == "red-pursuit-card" &&
                     offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
             var started = authority.StartAttackResolution(
                 new ActionResolutionId("minion-defense"),

@@ -368,3 +368,30 @@ The Windows run must include `CardAggregateInvarianceTests`, which is the one Un
 Expected result: all cases pass. Coverage proves each declaration family rejects incomplete data; an activity-scoped declaration covers itself or everything and nothing else; a narrow permission leaves unrelated restrictions standing; simultaneous modifications order by revealed Tie-Breaker side, then creation sequence, then identity, without a flip; an immune unit cannot be targeted, is still counted by presence, and is never immune to its own actions; `Counts As` replaces the effective type while intrinsic kind and miniature rules cannot see it; obstacles block transit unless the permission allows it and always block an endpoint; only active effects and placed tokens supply rules; team and global scopes expand to the heroes they name; a Defense total composes printed, minion, Active-effect, and continuous contributions with distinct source provenance; the Fast-Travel offer disappears under a restriction naming it while other offers remain; and a snapshot round-trip reproduces the identical set by rebinding definitions from the trusted catalog.
 
 Schema remains v9. The capability registration list gains the five synthetic modification capabilities and the synthetic Hazard definition advances from revision 2 to revision 3. The compatibility-corpus and aggregate-invariance fixtures must first report the exact digest delta, then may be re-pinned only with the explicit reject decision and unchanged equality groups recorded in source and completion evidence.
+
+## Converted Red Bulwark modifier/restriction/permission Skill tests
+
+Milestone 6.8a is T2 because it changes configured card content every pinned digest measures, and because it adds the first passive presentation surface for a paused effect frame. That presentation change is Unity-facing, so a focused Play Mode run is required alongside Edit Mode.
+
+Run the focused fixtures first through the cross-platform harness:
+
+```powershell
+dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj --no-restore --filter "FullyQualifiedName~ConfiguredModificationSkillTests"
+```
+
+The Windows run must add the Unity-only fixtures that harness excludes - `CardAggregateInvarianceTests` and `MatchFeaturePresenterTests` - together with the offer, value, targeting, timing, and round regressions the converted card reaches. Write `tmp/unity-validation-request.json` as follows and invoke only the parameterless launcher from [POLICY.md](POLICY.md#required-agent-entry-point):
+
+```json
+{
+  "platform": "EditMode",
+  "filter": "GuardsDigital.Tests.EditMode.ConfiguredModificationSkillTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.RuleModificationTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.MinionAttackResolutionTests;GuardsDigital.Tests.EditMode.MinionObstacleAndDefenseTests;GuardsDigital.Tests.EditMode.FastTravelActionTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests",
+  "results": "tmp/milestone-6-8a-affected-results.xml",
+  "log": "tmp/milestone-6-8a-affected.log"
+}
+```
+
+Then run Play Mode filtered to `GuardsDigital.Tests.PlayMode.MinimalHexGridPlayModeTests`, which drives the converted Skill through the configured scene's passive round view.
+
+Expected result: all cases pass. Coverage proves the card keeps its definition/instance identity, Initiative, printed Secondary Movement, Defense reaction and hand slot while only its printed Primary Attack is replaced; the Skill offers exactly three modes in definition order under an actor-owned `Choose`; each mode instantiates one registered capability of one rule family on the action's authoritative actor with the card as source; `This Turn` `+1 Defense` composes into a later enemy Attack's Defense Total in the same turn with its Active-effect provenance intact; the `This Round` restriction withdraws only that hero's Fast-Travel offer and ends at Round End; the `Next Turn` permission stays dormant during the creating turn, permits transit through an occupied space on the next turn, never permits an obstacle endpoint, and then expires; stale and forged mode answers reject without creating an effect or resolving the card; and snapshot restore, replay, and retained-prefix Undo reproduce the identical payload across the delayed boundary. The presenter forwards only the projected invocations of a paused frame and withholds actions, Fast-Travel offers, and End Turn while it stands.
+
+Schema remains v9. Red Bulwark's definition advances from `phase-5-1a-rev-3` to `phase-6-8a-rev-1`. The compatibility-corpus and aggregate-invariance fixtures must first report the exact digest delta, then may be re-pinned only with the explicit content-revision reject decision and unchanged equality groups recorded in source and completion evidence.

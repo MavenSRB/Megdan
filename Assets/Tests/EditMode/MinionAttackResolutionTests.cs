@@ -241,7 +241,7 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     attacker,
                     ActionOfferWindow.NormalPlay)
-                .Single(value => value.SourceCardInstanceId.Value == "red-bulwark-card" &&
+                .Single(value => value.SourceCardInstanceId.Value == "red-pursuit-card" &&
                     value.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
             return new Fixture(configuration, attacker, map, board,
                 new CardActionResolutionAuthority(board), offer);

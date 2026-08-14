@@ -40,16 +40,29 @@ namespace GuardsDigital.Tests.EditMode
         /// semantics that no longer exist, and there is still no persisted state outside this corpus.
         /// The general modification contracts themselves added no wire field - they are definition
         /// content that a restored effect or token rebinds to from the trusted catalog.
+        /// Milestone 6.8a keeps schema v9 and re-pins every fixture for one content cause: Red Bulwark's
+        /// printed Primary Attack became its showcase Skill, so that card definition advanced from
+        /// revision <c>phase-5-1a-rev-3</c> to <c>phase-6-8a-rev-1</c>. The decision is reject rather
+        /// than migrate: a v9 payload naming Red Bulwark at the 5.1a revision states a printed action
+        /// set the trusted catalog no longer supplies, and reading it as the converted card would
+        /// silently give a saved match a Skill where it recorded an Attack.
+        /// The delta was read at the byte level either side of the change rather than assumed. Every
+        /// payload keeps its exact decoded length, and each differs in six to eight bytes across
+        /// exactly two regions: the definition table's Red Bulwark entry and the <c>red-bulwark-card</c>
+        /// instance's definition reference. Both are the same sixteen-character revision string, so
+        /// nothing shifted. The capability registration list and the Hazard token revision are
+        /// byte-identical, and the replaced action set never appears at all, because the payload names
+        /// definitions and the catalog supplies what they contain.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v9", "290921b5481a74a6aea04595516ece0e38b723e412fc287cee9661090efd700f"),
-            new CompatibilityFixture("active-turn-v9", "34a960c57998b785f7781f875502cb88acb7d3a2c86712ebec64460306498803"),
-            new CompatibilityFixture("pending-choice-v9", "936850def5493c1200db86d897327fb56edaacd8d01f3073230db8412765413e"),
-            new CompatibilityFixture("end-of-round-v9", "e011950033df0ce01df0539c06993e839ed1703cd96ad81fbffb7d71871f89ea"),
-            new CompatibilityFixture("pending-minion-battle-v9", "03051d98d1b39b21577e60102d40b14751e934054ee2b86f754cd16edc4e8b05"),
-            new CompatibilityFixture("placed-token-v9", "3f2baa94da773abfd2f9eef39dbe7ac74ef6d602a092e662ea531ab0b0233248"),
-            new CompatibilityFixture("attached-marker-v9", "d57586189998ef95ed02e902dc0b955f90c587456bf4a6f5c3003bb4a4cfa1ec")
+            new CompatibilityFixture("setup-v9", "1b3a1800ad0acaf2fbb7dcdd49747fb5a63023b6c923e06cd5ced121c86c596f"),
+            new CompatibilityFixture("active-turn-v9", "505b7ee6d3485563492610cee08546622997ac395c65fe579a0b6acf9979129e"),
+            new CompatibilityFixture("pending-choice-v9", "1e5cf43896472066b5673f27618afcbe5424eca558278e4eb86bc3ac7296f8d9"),
+            new CompatibilityFixture("end-of-round-v9", "ca5385c7b6fcaca3f68761f8e9dbde1c556df02f8c2a7191c3cc664f58d9ff2f"),
+            new CompatibilityFixture("pending-minion-battle-v9", "c5a0f8aee447d403418f8f3033f8c2507e08ed5fed675c1e9014a1785ed367f1"),
+            new CompatibilityFixture("placed-token-v9", "3080ef46fc0a141400f2db3b8925226806a60e87be155f293a4775ca582ec083"),
+            new CompatibilityFixture("attached-marker-v9", "31dc8156dad1a9c53d556e5eec6969fd8e11821bd966c978c7f3f10c99f76ebc")
         };
 
         [Test]

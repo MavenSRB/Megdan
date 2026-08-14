@@ -5,10 +5,12 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -220,6 +222,30 @@ namespace GuardsDigital.Presentation.Match
         {
             var invocation = RoundView.Model?.DefenseChoices.SingleOrDefault(value =>
                 value.Command.Kind == DirectorCommandKind.DeclineDefense);
+            return RoundPresenter.Submit(invocation);
+        }
+
+        public PendingEffectChoice PendingEffectChoice => session.Projection.PendingEffectChoice;
+
+        /// <summary>
+        /// Forwards the projected invocation for one option of a paused effect frame, addressed by the
+        /// option's node. The runtime looks the invocation up in the rendered model rather than building
+        /// one, so a caller cannot reach a decision presentation is not currently showing.
+        /// </summary>
+        public bool SubmitEffectChoiceOption(EffectNodeId optionNodeId)
+        {
+            var invocation = RoundView.Model?.EffectChoices.SingleOrDefault(value =>
+                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                value.Command.EffectChoice.Candidate.OptionNodeId.Equals(optionNodeId));
+            return RoundPresenter.Submit(invocation);
+        }
+
+        public bool ConfirmEffectChoice()
+        {
+            var invocation = RoundView.Model?.EffectChoices.SingleOrDefault(value =>
+                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
             return RoundPresenter.Submit(invocation);
         }
 

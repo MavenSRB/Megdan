@@ -342,6 +342,13 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
+            // The decision a paused effect frame waits on. It sits in the same row as the actions it
+            // replaces, because the two are never offered at once.
+            foreach (var effectChoice in Model.EffectChoices)
+            {
+                DrawInvocation(effectChoice, 170f);
+            }
+
             GUILayout.FlexibleSpace();
             DrawInvocation(Model.EndTurnInvocation, 130f);
             GUILayout.EndHorizontal();

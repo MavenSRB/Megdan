@@ -87,8 +87,18 @@ namespace GuardsDigital.Tests.EditMode
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(blueHand.Definitions, Has.All.Property("ContentAuthority")
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
-            Assert.That(redHand.Definitions, Has.All.Property("ContentRevision")
-                .EqualTo("phase-5-1a-rev-3"));
+            // Milestone 6.8a advances exactly one card. Its conversion is what moves a pinned digest,
+            // and the other nine staying at the 5.1a revision is what proves nothing else moved.
+            Assert.That(
+                redHand.Definitions.Select(definition => definition.ContentRevision),
+                Is.EqualTo(new[]
+                {
+                    "phase-5-1a-rev-3",
+                    "phase-6-8a-rev-1",
+                    "phase-5-1a-rev-3",
+                    "phase-5-1a-rev-3",
+                    "phase-5-1a-rev-3"
+                }));
             Assert.That(blueHand.Definitions, Has.All.Property("ContentRevision")
                 .EqualTo("phase-5-1a-rev-3"));
             Assert.That(redHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
@@ -104,7 +114,14 @@ namespace GuardsDigital.Tests.EditMode
                 redHand,
                 new[] { "Red Needle", "Red Bulwark", "Red Lancer", "Red Pursuit", "Red Bombard" },
                 new[] { 13, 11, 9, 7, 5 },
-                new[] { 2, 3, 2, 4, 3 },
+                // Red Bulwark's printed Primary Attack became milestone 6.8a's showcase Skill; the
+                // attack and range columns say nothing for a Skill, which prints no value channel.
+                new[]
+                {
+                    ActionKind.Attack, ActionKind.Skill, ActionKind.Attack,
+                    ActionKind.Attack, ActionKind.Attack
+                },
+                new[] { 2, 0, 2, 4, 3 },
                 new[] { 0, 0, 3, 0, 2 },
                 new[] { 2, 2, 3, 3, 2 },
                 new[] { 1, 3, 1, 2, 2 });
@@ -112,6 +129,11 @@ namespace GuardsDigital.Tests.EditMode
                 blueHand,
                 new[] { "Blue Feint", "Blue Sentinel", "Blue Scout Shot", "Blue Hammer", "Blue Longbow" },
                 new[] { 12, 11, 8, 6, 4 },
+                new[]
+                {
+                    ActionKind.Attack, ActionKind.Attack, ActionKind.Attack,
+                    ActionKind.Attack, ActionKind.Attack
+                },
                 new[] { 2, 3, 2, 5, 3 },
                 new[] { 0, 0, 2, 0, 3 },
                 new[] { 3, 2, 4, 2, 3 },
@@ -310,6 +332,7 @@ namespace GuardsDigital.Tests.EditMode
             PlaceholderMovementHand hand,
             string[] names,
             int[] initiatives,
+            ActionKind[] primaryKinds,
             int[] attacks,
             int[] ranges,
             int[] movements,
@@ -325,7 +348,8 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(definition.ContentAuthority, Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
                 Assert.That(definition.ActionDefinitions, Has.Count.EqualTo(3));
                 Assert.That(definition.ActionDefinitions.Count(action =>
-                    action.Origin == ActionDefinitionOrigin.PrintedPrimary && action.Kind == ActionKind.Attack), Is.EqualTo(1));
+                    action.Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                    action.Kind == primaryKinds[index]), Is.EqualTo(1));
                 Assert.That(definition.ActionDefinitions.Count(action =>
                     action.Origin == ActionDefinitionOrigin.PrintedSecondary && action.Kind == ActionKind.Movement), Is.EqualTo(1));
                 Assert.That(definition.ActionDefinitions.Count(action =>
@@ -333,15 +357,29 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(definition.ActionDefinitions.Any(action =>
                     action.Origin == ActionDefinitionOrigin.PrintedPrimary && action.Kind == ActionKind.Movement), Is.False);
 
-                var attack = definition.ActionDefinitions.Single(action => action.Kind == ActionKind.Attack);
                 var movement = definition.ActionDefinitions.Single(action => action.Kind == ActionKind.Movement);
                 var defense = definition.ActionDefinitions.Single(action => action.Kind == ActionKind.Defense);
-                Assert.That(attack.BaseValues.Single(value => value.Channel == PrintedValueChannel.Attack).Amount,
-                    Is.EqualTo(attacks[index]));
-                Assert.That(attack.AttackRange,
-                    Is.EqualTo(ranges[index] > 0 ? AttackRangeKind.Ranged : AttackRangeKind.NonRanged));
-                Assert.That(attack.BaseValues.Where(value => value.Channel == PrintedValueChannel.Range)
-                    .Select(value => value.Amount).SingleOrDefault(), Is.EqualTo(ranges[index]));
+                if (primaryKinds[index] == ActionKind.Attack)
+                {
+                    var attack = definition.ActionDefinitions.Single(action => action.Kind == ActionKind.Attack);
+                    Assert.That(attack.BaseValues.Single(value => value.Channel == PrintedValueChannel.Attack).Amount,
+                        Is.EqualTo(attacks[index]));
+                    Assert.That(attack.AttackRange,
+                        Is.EqualTo(ranges[index] > 0 ? AttackRangeKind.Ranged : AttackRangeKind.NonRanged));
+                    Assert.That(attack.BaseValues.Where(value => value.Channel == PrintedValueChannel.Range)
+                        .Select(value => value.Amount).SingleOrDefault(), Is.EqualTo(ranges[index]));
+                }
+                else
+                {
+                    var converted = definition.ActionDefinitions.Single(action =>
+                        action.Origin == ActionDefinitionOrigin.PrintedPrimary);
+                    Assert.That(definition.ActionDefinitions.Any(action => action.Kind == ActionKind.Attack), Is.False,
+                        "A converted card's printed Primary Attack is replaced, not kept alongside its Skill.");
+                    Assert.That(converted.BaseValues, Is.Empty,
+                        "A Skill prints no value channel of its own.");
+                    Assert.That(converted.AttackRange, Is.EqualTo(AttackRangeKind.None));
+                }
+
                 Assert.That(movement.BaseValues.Single().Amount, Is.EqualTo(movements[index]));
                 Assert.That(defense.BaseValues.Single().Amount, Is.EqualTo(defenses[index]));
             }
