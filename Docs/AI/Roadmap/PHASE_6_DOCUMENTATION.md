@@ -55,7 +55,7 @@ Closing check: check 7 run at the pre-fix revision, observed reporting the `Fast
 
 Non-goals: No test-behavior change, no fixture rename or addition, no harness exclude-list change, no launcher-contract change, no recipe execution.
 
-### [ ] 6.1ag Route completed-run history out of the active testing shards
+### [x] 6.1ag Route completed-run history out of the active testing shards
 
 Observable outcome: Active testing shards contain commands, filters, applicability, and expected behavior; completed-run narratives and superseded per-milestone totals live in the testing archive.
 
@@ -72,6 +72,8 @@ Acceptance checks:
 Closing check: the generalized check run at the pre-fix revision, observed reporting the narratives in all four shards; run at the post-fix revision, observed passing.
 
 Non-goals: No recipe meaning change, no archive rewriting, no baseline-table removal, no change to `SESSION_BRIEF.md`'s own statement rule, which 6.1ac owns.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ag-route-completed-run-history-out-of-the-active-testing-shards-completion-evidence).
 
 ### [ ] 6.1ah Reduce retired risk rows to archive links
 

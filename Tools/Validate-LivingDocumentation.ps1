@@ -532,6 +532,32 @@ function Get-StalePinnedConstantSites($Entries, [hashtable] $SourceValues, [hash
 # there is no >=200-character archived paragraph to match against - so this check states the
 # governance rule as a countable one: the brief carries exactly one completion statement, and it
 # names the current completed milestone.
+# Generalization (milestone 6.1ag): the same containment rule for the testing shards, under declared
+# historical-total patterns covering the corpus's real evidence forms. A recipe's applicability or
+# tier note ("Milestone 4.4 is T2; complete suites remain deferred") states no totals and stays
+# legal; a completed run's totals belong in the milestone's commit body and the testing archive.
+$script:testingHistoryPatterns = @(
+    'Milestone \d+\.\d+\w* (?:T\d+ )?evidence passed',
+    'Evidence passed focused',
+    'filter passed \d+/\d+',
+    'capture measured',
+    'moved (?:the )?(?:Edit|Play) Mode(?: total| figure)? from',
+    '(?:Edit|Play) Mode figure was recorded',
+    'starting figure was'
+)
+
+function Get-TestingHistorySites([hashtable] $TestingTexts, [string[]] $Patterns) {
+    $sites = New-Object System.Collections.Generic.List[object]
+    foreach ($doc in ($TestingTexts.Keys | Sort-Object)) {
+        foreach ($pattern in $Patterns) {
+            foreach ($m in [regex]::Matches($TestingTexts[$doc], $pattern)) {
+                $sites.Add([pscustomobject]@{ Doc = $doc; Pattern = $pattern; Excerpt = $m.Value })
+            }
+        }
+    }
+    return $sites.ToArray()
+}
+
 function Test-CompletionHistory([string] $Session) {
     $ids = @([regex]::Matches($Session, '(?m)^- Milestone \*\*(\S+)\*\* completed') | ForEach-Object { $_.Groups[1].Value })
     $current = [regex]::Match($Session, 'Current completed milestone:\s*\*\*([^*]+)\*\*')
@@ -735,6 +761,13 @@ function Invoke-SelfTests {
     Expect 'a mismatched completion statement is reported' (@(Test-CompletionHistory ($historySession -replace 'Milestone \*\*2\.5\*\* completed', 'Milestone **2.4** completed')) -contains 'completion-history-in-active-doc')
     Expect 'several completion statements are reported' (@(Test-CompletionHistory ($historySession + "- Milestone **2.4** completed on 2026-08-13. Older narrative.`n")) -contains 'completion-history-in-active-doc')
     Expect 'no completion statement at all trips the vacuity guard' (@(Test-CompletionHistory '- Current completed milestone: **2.5**.') -contains 'no-completion-statement')
+    Expect 'a clean testing shard passes' (@(Get-TestingHistorySites @{ 'Testing/R.md' = 'Run the fixture and expect all discovered cases to pass.' } $script:testingHistoryPatterns).Count -eq 0)
+    Expect 'an evidence-passed narrative is reported' (@(Get-TestingHistorySites @{ 'Testing/R.md' = 'Milestone 3.8b evidence passed focused Edit Mode 7/7.' } $script:testingHistoryPatterns).Count -eq 1)
+    Expect 'a tiered evidence narrative is reported' (@(Get-TestingHistorySites @{ 'Testing/R.md' = 'Milestone 3.9 T2 evidence passed focused Edit Mode 21/21.' } $script:testingHistoryPatterns).Count -ge 1)
+    Expect 'a filter-passed total is reported' (@(Get-TestingHistorySites @{ 'Testing/R.md' = 'its regression filter passed 43/43 that day' } $script:testingHistoryPatterns).Count -eq 1)
+    Expect 'a capture-measured figure is reported' (@(Get-TestingHistorySites @{ 'Testing/R.md' = 'The milestone 4.4d focused capture measured 1,418 B/frame.' } $script:testingHistoryPatterns).Count -eq 1)
+    Expect 'an applicability note stays legal' (@(Get-TestingHistorySites @{ 'Testing/R.md' = 'Milestone 4.4 is T2; complete unfiltered suites remain deferred to the gate.' } $script:testingHistoryPatterns).Count -eq 0)
+    Expect 'an empty testing scope parses to zero for the vacuity guard' (@(Get-TestingHistorySites @{} $script:testingHistoryPatterns).Count -eq 0)
 
     if ($failed.Count -gt 0) { throw "Living-document validator self-test failure: $($failed -join ', ')" }
     Write-Host "Self-tests: $script:selfTestCount/$script:selfTestCount checks passed."
@@ -859,10 +892,19 @@ foreach ($pinnedSite in (Get-StalePinnedConstantSites $pinnedConstantEntries $pi
     else { Add-Issue 'ERROR' 'stale-pinned-constant' "$($pinnedSite.Doc) states $($pinnedSite.Stated) where $($pinnedSite.Symbol) is $($pinnedSite.Expected). A designated current-claim section cannot disagree with the source constant it pins." }
 }
 
-# Completion-history containment (milestone 6.1ac).
+# Completion-history containment (milestone 6.1ac; generalized to the testing shards at 6.1ag).
 foreach ($code in (Test-CompletionHistory $session)) {
     if ($code -eq 'no-completion-statement') { Add-Issue 'ERROR' $code 'SESSION_BRIEF.md carries no milestone completion statement at all; a phrasing change may have silently retired the completion-history check.' }
     else { Add-Issue 'ERROR' $code "SESSION_BRIEF.md must carry exactly one milestone completion statement and it must name the current completed milestone; a completed milestone's narrative lives in its commit body and archive row." }
+}
+$testingShardTexts = @{}
+foreach ($file in $activeFiles) {
+    $testingRelative = Get-RelativePath $projectRoot $file.FullName
+    if ($testingRelative -like 'Docs/AI/Testing/*.md' -or $testingRelative -eq 'Docs/AI/TESTING.md') { $testingShardTexts[$testingRelative] = Read-Utf8 $file.FullName }
+}
+if ($testingShardTexts.Count -eq 0) { Add-Issue 'ERROR' 'no-testing-shards' 'No active testing shards were found; the testing completion-history check would pass vacuously.' }
+foreach ($historySite in (Get-TestingHistorySites $testingShardTexts $script:testingHistoryPatterns)) {
+    Add-Issue 'ERROR' 'completion-history-in-active-doc' "$($historySite.Doc) carries a completed-run narrative ('$($historySite.Excerpt)...'). Historical run totals live in the milestone's commit body and the testing archive, never in an active shard."
 }
 
 # Documentation-graph checks (milestone 6.1z): every governed shard is reachable from its family

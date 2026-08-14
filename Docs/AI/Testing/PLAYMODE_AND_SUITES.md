@@ -69,41 +69,9 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 | Complete Edit Mode | 378 | 0 | 0 | 0 | `6.1ad` |
 | Complete Play Mode | 19 | 0 | 0 | 0 | `6.1x` |
 
-Milestone 6.1ad moved Edit Mode from `371` to `378`. All `+7` are its own new cases: `+6` for `SnapshotEnumReaderTests` and `+1` for `AuthoritativeSnapshotSerializerTests`, which gained the end-to-end undefined-enum rejection case. No fixture was deleted, renamed, or merged, and no existing case changed what it asserts. Play Mode is unchanged at `19` and was intentionally not run: 6.1ad changed no Unity-facing type, scene, asset, or presentation path, and its one presentation consumer passes the payload straight through unmodified.
-
-Milestone 6.1x moved Edit Mode from `357` to `371`, and every one of the `+14` is a fixture added between `6.1k` and here: `+6` at 6.1o (`AppendOnlyEventLogTests` `+3`, `MatchAggregateAtomicityTests` `+2`, `MatchSessionDiagnosticCostTests` `+1`), `+3` at 6.1p (`MatchAggregateAtomicityTests` from `2` to `5`), `+3` at 6.1q (`ActiveEffectLifecycleTests` from `12` to `15`), and `+2` at 6.1s (`MinionAttackResolutionTests` from `6` to `8`). Milestones 6.1l, 6.1r, and 6.1t added no Unity fixture: 6.1l changed validator scripts, 6.1r was behaviour-invariant, and 6.1t's harness lives outside `Assets/`. Play Mode is unchanged at `19`; 6.1s edited `MinimalHexGridPlayModeTests` without adding a method.
-
 The run that produced this row is also the one that caught the stale `CardAggregateInvarianceTests` digests, which no focused filter had selected since 6.1f. Any milestone that changes `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` must run both digest-pinning fixtures - `CardAggregateInvarianceTests` and `SnapshotCompatibilityCorpusTests` - because a schema change invalidates every pinned digest by construction, and both fixtures sit in the dotnet harness exclude list where the Linux harness cannot reach them.
 
 A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
-
-Milestone 6.1k moved Edit Mode from `335` to `357`: `+15` for the new `MinionBattleResolutionTests` cases and `+7` for the new `ILConformanceScannerTests`. The four rewritten architecture fixtures kept their method counts. Play Mode moved `17` to `19`: `+2` for the new `DestinationHighlightMaterialPlayModeTests`, which exercises the `Object.Destroy` teardown branch no Edit Mode fixture can reach.
-
-The starting figure was `335`, not the `331` this table recorded at `6.1d`. Milestone 6.1k ran the complete Edit Mode suite once **before** touching anything, precisely so the delta it claims would be measured rather than inferred; that run reported `335/335` green. The `+4` accumulated across 6.1e through 6.1i, whose handoffs added fixtures without refreshing this table. Refresh it whenever a milestone legitimately moves a total - a stale baseline sends the next task hunting a regression that never existed, which is the same failure the Play Mode figure had at 6.1g.
-
-Milestone 6.1d's first commit moved the Edit Mode total from 328 to 331: `+2` for the new
-`RuntimeShaderResolutionTests`, and `+1` for the Editor-assembly case added to
-`ApplicationArchitectureBoundaryTests`. Play Mode is unchanged at 17; that commit added no Play Mode
-fixture.
-
-6.1d's second commit moved neither total. It added production and Editor code - the player-build
-entry point, the smoke driver, and the gate script - and no fixture. That is deliberate rather than
-an omission: the driver only does anything inside a built player, so the
-[player-build smoke gate](FUTURE_GATES.md) exercises it end to end and is stronger evidence than an
-Edit Mode fixture could be. A total that does not move when a commit adds no test is the correct
-outcome; what would be wrong is a commit that adds testable behavior and moves nothing.
-
-Milestone 6.1c moved the Edit Mode total from 354 to 328, and the drop is fully accounted for:
-`-11` for the deleted `HeroSelectionControllerTests`, `-20` for the deleted
-`CardDrivenMovementPresentationTests` (20 methods / 21 executed cases, less the one case relocated
-verbatim into `ActionOfferAndPrintedValueTests` because it never touched the drill), `-1` for the
-retired legacy-drill highlight teardown case, `+4` for the new `ConfiguredPointerSelectionTests`,
-`+1` for the fourth `DirectorHandPresentationTests` case added when that fixture was rewritten
-against `DirectorHandsPresenter`, and `+1` for the new pointer-adapter conformance case in
-`ConfiguredMatchCutoverArchitectureTests`. Play Mode is unchanged at 17: 6.1c removed and added
-assertions inside existing Play Mode tests but added or deleted no test method.
-
-The Play Mode figure was recorded as `15` when this table was created and was corrected at 6.1g to `17`. Milestone 6.1g added no Play Mode fixture, and `Assets/Tests/PlayMode` declares exactly seventeen `[Test]`/`[UnityTest]` methods, all seventeen of which the 6.1g run discovered and passed - so seventeen was already the true total at `df965cd`. The original entry understated it. An understated baseline is worse than none: the next task to run both suites would have seen two fixtures apparently appear from nowhere and gone looking for a regression that never existed. The Edit Mode figure was recorded correctly and is unchanged.
 
 ```powershell
 $completeEditArguments = @(
