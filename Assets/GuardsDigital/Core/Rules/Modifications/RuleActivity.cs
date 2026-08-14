@@ -30,9 +30,9 @@ namespace GuardsDigital.Core.Rules.Modifications
         Clear = 8,
 
         /// <summary>
-        /// Official straight-line forced displacement (p.18). Declared here because milestone 6.8b's
-        /// immunity mode names it as its originating effect family and must serialize before its
-        /// consumer exists; milestone 6.4 implements the effect itself.
+        /// Official straight-line forced displacement (p.18). Milestone 6.4 implements the effect and is
+        /// the consumer that reads this member; milestone 6.8b's immunity mode then names it as its
+        /// originating effect family, which is why 6.8b is scheduled after 6.4 rather than before it.
         /// </summary>
         ObjectPush = 9
     }

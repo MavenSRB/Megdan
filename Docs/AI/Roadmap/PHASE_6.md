@@ -634,7 +634,9 @@ Non-goals: No Wasp definition, source-unverified modifier, card-name/hero-name b
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68-implement-reusable-modifiers-permissions-immunity-and-effective-characteristics-completion-evidence).
 
-**Corrective amendment (2026-08-15, user approved).** Proving milestones 6.8a and 6.8c against a card a player can hold exposed defects in the mechanisms those cards consume rather than in the cards. Milestone 6.8c and the corrections it surfaced - 6.8d, 6.8e, and 6.8f - live in the indexed [corrections subshard](PHASE_6_CORRECTIONS.md), which was created during the warning-threshold ownership review this amendment's additions triggered here. Their execution order, acceptance checks, and non-goals are authoritative there; scheduling still authorizes nothing.
+**Corrective amendment (2026-08-15, user approved).** Proving milestones 6.8a and 6.8c against a card a player can hold exposed defects in the mechanisms those cards consume rather than in the cards. Milestone 6.8c and the corrections it surfaced - 6.8d, 6.8e, 6.8f, and 6.8g - live in the indexed [corrections subshard](PHASE_6_CORRECTIONS.md), which was created during the warning-threshold ownership review this amendment's additions triggered here. Their execution order, acceptance checks, and non-goals are authoritative there; scheduling still authorizes nothing.
+
+**Reordering amendment (2026-08-15, user approved).** Milestone 6.8b moves behind 6.4 to the slot immediately before 6.5a, and corrective milestone 6.8g is added ahead of it, because neither of Blue Feint's modes had a consumer where the card was scheduled: this milestone's `Counts As` contract reaches no production caller, and its immunity contract is consumed only for Attack while Object Push arrives at 6.4. The reordering and its reasoning are authoritative in the [mechanics-showcase subshard](PHASE_6_SHOWCASE.md); 6.8g's block is authoritative in the [corrections subshard](PHASE_6_CORRECTIONS.md). Scheduling still authorizes nothing.
 
 ### [ ] 6.9 Emit an immediate Lane-Push request during a turn
 
