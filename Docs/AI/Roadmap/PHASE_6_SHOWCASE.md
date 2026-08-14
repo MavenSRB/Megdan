@@ -12,7 +12,7 @@ These integration followers do not move first implementation out of 6.4-6.8 or c
 
 ## Milestone definitions in execution order
 
-### [ ] 6.8a Convert Red Bulwark into the modifier/restriction/permission showcase Skill
+### [~] 6.8a Convert Red Bulwark into the modifier/restriction/permission showcase Skill
 
 Observable outcome: The configured Red hand's existing Red Bulwark card replaces its printed Primary Attack with one three-mode synthetic Skill whose source is the card and whose affected object is always the acting hero: that hero gets `+1 Defense This Turn`, cannot Fast Travel `This Round`, or may Move Through obstacles during `Next Turn`.
 
