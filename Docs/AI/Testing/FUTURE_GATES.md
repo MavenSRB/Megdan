@@ -29,6 +29,23 @@ Current reference figures, recorded at runtime baseline revision `7ad51a7` (mile
 A threshold crossing requires investigation and an approved fix, a rationale-preserving re-baseline, or explicit user acceptance; it never authorizes speculative optimization. The Undo-replay metric is re-examined at the 7.9 complete-loop baseline per `F-ER2-08`.
 
 Completed milestones' gate recipes and their recorded run evidence moved verbatim to the [testing archive](../Archive/TESTING_HISTORY.md#completed-gate-recipes-and-run-evidence-routed-2026-08-14-milestone-61ag) on 2026-08-14.
+
+## Post-polish multiplayer regression gate
+
+Milestone `9.16` owns the final-revision multiplayer regression after presentation polish. It reuses the exact six-client local process/build topology selected at milestone `8.29` and proven at milestone `8.35c`; milestone `8.29` must add the executable command and bounded fault recipe here once those details exist.
+
+At the exact `9.16` source and executable-content revision, build the disposable private Win64 validation player, start six local clients in six distinct seats, and complete a full match through the polished player UI. Exercise the approved disconnect/reconnect and resynchronization cases. Evidence records the source, build, content/schema, provider/SDK/configuration, topology, and recipe revisions and proves all of the following:
+
+- every client converges on the host's authoritative public outcome;
+- no client receives another seat's hidden hand or pre-reveal commitment identity;
+- cross-seat hero commands and team choices are rejected without partial mutation;
+- reconnect and resynchronization restore the same seat and control ownership without transfer, duplicated input handlers, stale selection, or stale actionable prompts; and
+- privacy-reviewed host/client diagnostics disclose no owner-private state.
+
+Repeat the milestone `8.36` real-internet playtest only when affectedness or observed failure makes its earlier evidence stale. A repeat is required when a change since the accepted `8.36` revision touches the provider or SDK version/configuration, relay/NAT/lobby/invite or connection establishment, transport delivery, network serialization/version compatibility, timeout/latency/disconnect/reconnect/host-loss behavior, or another path whose correctness depends on separate networks or real internet conditions. It is also required when the local six-client gate or its diagnostics exposes a connectivity, synchronization, privacy, or ownership failure that cannot be closed confidently without multi-network evidence. Presentation-only changes with unchanged online/session/projection behavior, and failures reproduced and closed wholly within the local topology, do not by themselves require another invited playtest.
+
+The local gate does not establish relay/NAT traversal, external-latency, multi-network, or internet-reliability claims. Any required internet repeat uses a separately identified disposable private build and the milestone `8.36` privacy/distribution boundaries; it is validation evidence, not the retained pitch deliverable.
+
 ## Player-build smoke gate
 
 Added at milestone 6.1d. An Editor suite cannot observe a player that ships with an unresolved shader, a missing resource, or a type the build stripped: every Edit Mode and Play Mode test runs inside the Editor, where those assets are always present. This gate builds the real artifact, runs it, and requires the running player to say what it reached.

@@ -62,7 +62,11 @@ Acceptance checks:
 - A targeted visual sweep covers the board, all six team/hero-grouped hands, played/revealed cards, prompts, event log, six-hero and team differentiation, camera bounds, 3D/2D switching, animations, and affected audio cues.
 - Skipping or accelerating presentation produces the same authoritative state and ordered rules events.
 - Common reference desktop resolutions preserve readable cards, values, prompts, and team identity.
+- At the exact final revision, six local client processes use the milestone 8.35c playtest-build topology to occupy six distinct seats and complete a full match through the polished player UI. The run includes disconnect/reconnect and resynchronization and proves host/client convergence, owner-private hand and pre-reveal privacy, rejection of cross-seat control, correct control ownership after reconnect, and removal of stale actionable prompts.
+- The recorded gate evidence identifies the source, build, content/schema, provider/SDK/configuration, topology, and test-recipe revisions. The milestone repeats the real-internet playtest only when the affectedness or failure triggers in [the post-polish multiplayer regression gate](../Testing/FUTURE_GATES.md#post-polish-multiplayer-regression-gate) require it.
 - T3 pre-build gate: both complete unfiltered Edit Mode and Play Mode suites pass.
+
+Non-goals: No new networking feature, provider migration, public matchmaking, account system, public distribution, production-service reliability claim, or unconditional repeat of the invited real-internet playtest.
 
 ### [!] 9.16a Independently review pre-build engineering readiness
 
