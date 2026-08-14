@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -11,12 +12,21 @@ namespace GuardsDigital.Core.Rules.Movement
 {
     public static class MovementReachabilityQuery
     {
-        // Authority-backed entry: the board's occupancy index supplies the blocked set directly,
-        // so every occupant kind blocks transit without this query enumerating per-kind lists.
+        /// <summary>
+        /// Authority-backed entry: the board's occupancy index supplies the blocked set directly, so
+        /// every occupant kind blocks without this query enumerating per-kind lists.
+        ///
+        /// It asks <see cref="ObstacleQuery"/> rulebook p.18's two separate questions rather than one.
+        /// Whether the mover may pass through an occupied space depends on the Move-Through permission
+        /// in <paramref name="modifications"/>; whether a space may be a movement endpoint never does,
+        /// because p.18 lets no unit end its movement on an obstacle. Milestone 6.8c added this: the
+        /// permission and the query existed from 6.8, and this was the caller neither had.
+        /// </summary>
         public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
             HeroOccupancy selectedHero,
             GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
-            int movementAllowance)
+            int movementAllowance,
+            RuleModificationSet modifications = null)
         {
             if (board == null)
             {
@@ -36,9 +46,14 @@ namespace GuardsDigital.Core.Rules.Movement
                 return Array.Empty<ReachableMovementDestination>();
             }
 
+            var mover = RuleObject.ForHero(selectedHero.HeroId);
             var playable = new HashSet<HexCoordinate>(board.PlayableCoordinateSet);
-            var blocked = new HashSet<HexCoordinate>(board.OccupiedCoordinates);
-            return FindReachableCore(selectedHero, playable, blocked, movementAllowance);
+            return FindReachableCore(
+                selectedHero,
+                playable,
+                coordinate => ObstacleQuery.BlocksTransit(board, coordinate, mover, modifications),
+                coordinate => ObstacleQuery.BlocksEndOfMovement(board, coordinate),
+                movementAllowance);
         }
 
         public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
@@ -124,21 +139,28 @@ namespace GuardsDigital.Core.Rules.Movement
                 blocked.Add(minion.Coordinate);
             }
 
-            return FindReachableCore(selectedHero, board, blocked, movementAllowance);
+            // These overloads take raw collections rather than the board authority, so no permission
+            // can reach them; an occupied space blocks both transit and endpoint, as it always has.
+            blocked.Remove(selectedHero.Coordinate);
+            return FindReachableCore(
+                selectedHero,
+                board,
+                blocked.Contains,
+                coordinate => !board.Contains(coordinate) || blocked.Contains(coordinate),
+                movementAllowance);
         }
 
         private static IReadOnlyList<ReachableMovementDestination> FindReachableCore(
             HeroOccupancy selectedHero,
             HashSet<HexCoordinate> board,
-            HashSet<HexCoordinate> blocked,
+            Func<HexCoordinate, bool> blocksTransit,
+            Func<HexCoordinate, bool> blocksEndpoint,
             int movementAllowance)
         {
             if (!board.Contains(selectedHero.Coordinate))
             {
                 return Array.Empty<ReachableMovementDestination>();
             }
-
-            blocked.Remove(selectedHero.Coordinate);
 
             var costs = new Dictionary<HexCoordinate, int>
             {
@@ -161,16 +183,27 @@ namespace GuardsDigital.Core.Rules.Movement
                 foreach (var neighbor in current.GetNeighbors())
                 {
                     if (!board.Contains(neighbor) ||
-                        blocked.Contains(neighbor) ||
+                        blocksTransit(neighbor) ||
                         costs.ContainsKey(neighbor))
                     {
                         continue;
                     }
 
+                    // Entering a space costs the same whether or not something occupies it, so a
+                    // permitted pass-through changes which routes exist rather than what they cost.
                     var cost = currentCost + 1;
                     costs[neighbor] = cost;
                     parents[neighbor] = current;
                     queue.Enqueue(neighbor);
+
+                    // Traversable and legal-to-stop-on are different questions. A space the mover may
+                    // only pass through is walked but never offered, which is p.18's rule that no unit
+                    // may end its movement on an obstacle.
+                    if (blocksEndpoint(neighbor))
+                    {
+                        continue;
+                    }
+
                     destinations.Add(new ReachableMovementDestination(
                         neighbor,
                         BuildRoute(selectedHero.Coordinate, neighbor, parents),

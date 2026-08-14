@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Timing;
 
@@ -42,7 +43,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal static MovementCardActionStrategyBackend Restore(
             AdjacentMoveAuthority adjacentMoveAuthority,
             MovementBackendRestoreState state,
-            PendingMovementChoice verifiedChoice)
+            PendingMovementChoice verifiedChoice,
+            RuleModificationSet modifications = null)
         {
             if (state == null)
             {
@@ -58,7 +60,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentException("Pending resolution step ID does not match its movement continuation.", nameof(state));
             }
 
-            var expectedChoice = backend.CreatePendingChoice(pendingResolution, movementSession);
+            var expectedChoice = backend.CreatePendingChoice(pendingResolution, movementSession, modifications);
             if (verifiedChoice != null && !ChoicesMatch(expectedChoice, verifiedChoice))
             {
                 throw new ArgumentException("Pending movement choice does not match the authoritative continuation state.", nameof(verifiedChoice));
@@ -73,7 +75,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications = null)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -87,14 +90,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer,
                 materializedDefinitions,
                 materializedInstances,
-                authoritativeOffers);
+                authoritativeOffers,
+                modifications);
         }
 
         public CardActionResolutionResult StartTurnMovement(
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications = null)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -108,7 +113,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer,
                 materializedDefinitions,
                 materializedInstances,
-                authoritativeOffers);
+                authoritativeOffers,
+                modifications);
         }
 
         private CardActionResolutionResult StartMovementResolution(
@@ -116,7 +122,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IReadOnlyList<CardDefinition> materializedDefinitions,
             IReadOnlyList<CardInstance> materializedInstances,
-            IReadOnlyList<ActionOffer> authoritativeOffers)
+            IReadOnlyList<ActionOffer> authoritativeOffers,
+            RuleModificationSet modifications)
         {
             if (!resolutionId.IsDefined)
             {
@@ -188,7 +195,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer.ActorId,
                 restriction.ApplyTo(movementValue.Total));
             pendingResolution = CreatePendingResolution(resolutionId, offer, movementSession.CaptureState());
-            pendingChoice = CreatePendingChoice(pendingResolution, movementSession);
+            pendingChoice = CreatePendingChoice(pendingResolution, movementSession, modifications);
 
             return CardActionResolutionResult.Accept(
                 false,
@@ -202,7 +209,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 });
         }
 
-        public CardActionResolutionResult AnswerMovement(MovementChoiceCommand command)
+        public CardActionResolutionResult AnswerMovement(
+            MovementChoiceCommand command, RuleModificationSet modifications = null)
         {
             if (pendingResolution == null || pendingChoice == null)
             {
@@ -222,7 +230,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var movementSession = new MovementSession(adjacentMoveAuthority, pendingResolution.MovementSessionState);
-            var authoritativeChoice = CreatePendingChoice(pendingResolution, movementSession);
+            var authoritativeChoice = CreatePendingChoice(pendingResolution, movementSession, modifications);
             if (!ChoicesMatch(authoritativeChoice, pendingChoice))
             {
                 return CardActionResolutionResult.Reject(
@@ -267,6 +275,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (!TryValidateDestinationRoute(
                     pendingResolution.MovementSessionState,
                     selectedDestination,
+                    modifications,
                     out var rejectedStep))
             {
                 return CardActionResolutionResult.RejectMovementStep(
@@ -277,19 +286,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var resolutionEvents = new List<ResolutionStep>();
             var stepResolution = pendingResolution;
-            for (var routeIndex = 1; routeIndex < selectedDestination.Route.Count; routeIndex++)
-            {
-                var stepResult = movementSession.TryCommitStep(selectedDestination.Route[routeIndex]);
-                if (!stepResult.Accepted)
-                {
-                    throw new InvalidOperationException(
-                        "An backend-projected movement route failed after side-effect-free validation.");
-                }
 
+            // One transaction for the whole route, because a space the mover only passes through is
+            // never occupied and so cannot be committed on its own. The facts stay per space: the unit
+            // really does enter and leave each one (p.18), and a route crossing nothing occupied emits
+            // exactly what the former per-space walk emitted.
+            var routeSpaces = selectedDestination.Route.Skip(1).ToArray();
+            var routeResult = movementSession.TryCommitRoute(
+                routeSpaces, modifications, out var committedStepStates);
+            if (!routeResult.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A backend-projected movement route failed after side-effect-free validation.");
+            }
+
+            for (var routeIndex = 0; routeIndex < routeResult.NewEvents.Count; routeIndex++)
+            {
                 resolutionEvents.Add(ResolutionStep.FromFact(CardActionResolutionEvent.MovementStepCommitted(
                     stepResolution,
-                    stepResult.NewEvents.Single())));
-                stepResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
+                    routeResult.NewEvents[routeIndex])));
+                stepResolution = CreatePendingResolution(stepResolution, committedStepStates[routeIndex]);
             }
 
             if (movementSession.IsComplete)
@@ -310,7 +326,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var nextResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
-            var nextChoice = CreatePendingChoice(nextResolution, movementSession);
+            var nextChoice = CreatePendingChoice(nextResolution, movementSession, modifications);
             if (nextChoice.LegalDestinations.Count == 0)
             {
                 movementSession.Complete();
@@ -361,13 +377,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         private PendingMovementChoice CreatePendingChoice(
             PendingCardActionResolution resolution,
-            MovementSession movementSession)
+            MovementSession movementSession,
+            RuleModificationSet modifications)
         {
             var currentOccupancy = movementSession.CurrentOccupancy;
             var legalDestinations = MovementReachabilityQuery.FindReachableDestinations(
                 currentOccupancy,
                 adjacentMoveAuthority,
-                movementSession.RemainingAllowance);
+                movementSession.RemainingAllowance,
+                modifications);
 
             return new PendingMovementChoice(
                 resolution.ResolutionId,
@@ -383,20 +401,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private bool TryValidateDestinationRoute(
             MovementSessionState movementState,
             ReachableMovementDestination destination,
+            RuleModificationSet modifications,
             out MovementSessionStepResult rejectedStep)
         {
             // The fork clones already-validated board state without re-running the constructor's
-            // full occupancy validation on every accepted movement step.
+            // full occupancy validation on every accepted movement step. It validates the same whole
+            // route the real commit will take, under the same modifications, so a route the fork
+            // accepts cannot be one the commit refuses.
             var validationAuthority = adjacentMoveAuthority.CreateValidationFork();
             var validationSession = new MovementSession(validationAuthority, movementState);
-            for (var routeIndex = 1; routeIndex < destination.Route.Count; routeIndex++)
+            var stepResult = validationSession.TryCommitRoute(
+                destination.Route.Skip(1).ToArray(), modifications);
+            if (!stepResult.Accepted)
             {
-                var stepResult = validationSession.TryCommitStep(destination.Route[routeIndex]);
-                if (!stepResult.Accepted)
-                {
-                    rejectedStep = stepResult;
-                    return false;
-                }
+                rejectedStep = stepResult;
+                return false;
             }
 
             rejectedStep = default;

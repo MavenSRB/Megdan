@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.Movement
@@ -97,11 +98,47 @@ namespace GuardsDigital.Core.Rules.Movement
         public HeroOccupancy CurrentOccupancy =>
             adjacentMoveAuthority.Occupancies.Single(occupancy => occupancy.HeroId.Equals(heroId));
 
-        public MovementSessionStepResult TryCommitStep(HexCoordinate destination)
+        /// <summary>One space, which is the one-element case of <see cref="TryCommitRoute"/>.</summary>
+        public MovementSessionStepResult TryCommitStep(HexCoordinate destination) =>
+            TryCommitRoute(new[] { destination }, null, out _);
+
+        public MovementSessionStepResult TryCommitRoute(
+            IReadOnlyList<HexCoordinate> routeSpaces,
+            RuleModificationSet modifications) =>
+            TryCommitRoute(routeSpaces, modifications, out _);
+
+        /// <summary>
+        /// Commits every space of a chosen route in one transaction.
+        ///
+        /// Milestone 6.8c replaced the per-space walk this method used to be. A unit holding rulebook
+        /// p.18's Move-Through permission passes through an occupied space without ever occupying it,
+        /// and a walk that commits each space separately has to occupy each one in turn, so the route
+        /// had to become the unit of commitment for the permission to be expressible at all. The
+        /// allowance is spent per space entered either way, and a route that crosses nothing occupied
+        /// produces exactly the events and state the walk did.
+        /// </summary>
+        /// <param name="committedStepStates">
+        /// The session state after each space, in order, so a caller that narrates one fact per space
+        /// keeps the exact per-space identities the walk produced. Empty on refusal.
+        /// </param>
+        public MovementSessionStepResult TryCommitRoute(
+            IReadOnlyList<HexCoordinate> routeSpaces,
+            RuleModificationSet modifications,
+            out IReadOnlyList<MovementSessionState> committedStepStates)
         {
-            if (IsComplete || RemainingAllowance == 0)
+            committedStepStates = Array.Empty<MovementSessionState>();
+            if (routeSpaces == null)
             {
-                IsComplete = true;
+                throw new ArgumentNullException(nameof(routeSpaces));
+            }
+
+            if (IsComplete || RemainingAllowance < routeSpaces.Count || routeSpaces.Count == 0)
+            {
+                if (IsComplete || RemainingAllowance == 0)
+                {
+                    IsComplete = true;
+                }
+
                 return MovementSessionStepResult.Reject(
                     MovementSessionStepRejectionReason.NoRemainingAllowance,
                     AdjacentMoveRejectionReason.None,
@@ -109,33 +146,34 @@ namespace GuardsDigital.Core.Rules.Movement
                     stepEvents);
             }
 
-            var currentOccupancy = CurrentOccupancy;
-            var adjacentResult = adjacentMoveAuthority.TryCommit(new AdjacentMoveCommand(
-                currentOccupancy.HeroId,
-                currentOccupancy.Coordinate,
-                destination));
-
-            if (!adjacentResult.Accepted)
+            var routeResult = adjacentMoveAuthority.TryCommitRoute(
+                CurrentOccupancy.HeroId, routeSpaces, modifications);
+            if (!routeResult.Accepted)
             {
                 return MovementSessionStepResult.Reject(
                     MovementSessionStepRejectionReason.AdjacentMoveRejected,
-                    adjacentResult.RejectionReason,
+                    routeResult.RejectionReason,
                     RemainingAllowance,
                     stepEvents);
             }
 
-            RemainingAllowance--;
-            var movementEvent = adjacentResult.Events.Single();
-            stepEvents.Add(movementEvent);
-            route.Add(movementEvent.Destination);
+            var stepStates = new List<MovementSessionState>(routeResult.Events.Count);
+            foreach (var movementEvent in routeResult.Events)
+            {
+                RemainingAllowance--;
+                stepEvents.Add(movementEvent);
+                route.Add(movementEvent.Destination);
+                stepStates.Add(CaptureState());
+            }
 
+            committedStepStates = stepStates;
             if (RemainingAllowance == 0)
             {
                 IsComplete = true;
             }
 
             return MovementSessionStepResult.Accept(
-                movementEvent,
+                routeResult.Events,
                 RemainingAllowance,
                 IsComplete,
                 stepEvents);

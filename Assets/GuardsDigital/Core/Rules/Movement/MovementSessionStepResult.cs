@@ -45,13 +45,39 @@ namespace GuardsDigital.Core.Rules.Movement
             bool sessionComplete,
             IEnumerable<AdjacentMoveEvent> committedEvents)
         {
+            return Accept(
+                new[] { movementEvent }, remainingAllowance, sessionComplete, committedEvents);
+        }
+
+        /// <summary>
+        /// A whole route's spaces, added by milestone 6.8c. <see cref="NewEvents"/> carries one event
+        /// per space entered rather than one per accepted call, so a caller that narrates per space
+        /// reads them all from a single commit.
+        /// </summary>
+        public static MovementSessionStepResult Accept(
+            IReadOnlyList<AdjacentMoveEvent> movementEvents,
+            int remainingAllowance,
+            bool sessionComplete,
+            IEnumerable<AdjacentMoveEvent> committedEvents)
+        {
+            if (movementEvents == null)
+            {
+                throw new ArgumentNullException(nameof(movementEvents));
+            }
+
+            if (movementEvents.Count == 0)
+            {
+                throw new ArgumentException(
+                    "An accepted movement entered at least one space.", nameof(movementEvents));
+            }
+
             return new MovementSessionStepResult(
                 true,
                 sessionComplete,
                 remainingAllowance,
                 MovementSessionStepRejectionReason.None,
                 AdjacentMoveRejectionReason.None,
-                new[] { movementEvent },
+                movementEvents,
                 committedEvents.ToArray());
         }
 

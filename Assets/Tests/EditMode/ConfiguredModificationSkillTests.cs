@@ -337,6 +337,65 @@ namespace GuardsDigital.Tests.EditMode
                 "It expires with that one turn rather than persisting.");
         }
 
+        /// <summary>
+        /// Milestone 6.8c's acceptance: the configured card's `Next Turn` mode is what a player can
+        /// actually observe. Until 6.8c the permission had no Movement consumer at all, so selecting
+        /// this mode changed nothing anyone could see.
+        /// </summary>
+        [Test]
+        public void PermissionMode_LetsTheHeroMoveThroughAnOccupiedSpaceOnItsNextTurn()
+        {
+            var session = CreateBlockedLineSession();
+            var actorId = CommitBulwarkTurn(session, "blue-hammer-card");
+            StartBulwarkSkillOnCurrentTurn(session);
+            ChooseMode(session, PermissionMode);
+            CompleteCurrentTurn(session);
+            CommitOrdinaryTurn(session, actorId);
+
+            var movement = session.Projection.AvailableTurnActions.Single(offer =>
+                ActionKindOf(session.Projection, offer) == ActionKind.Movement);
+            Accept(session, DirectorCommand.StartAction(movement.ActionDefinitionId));
+
+            var choice = session.Projection.PendingMovementChoice;
+            var beyond = new HexCoordinate(2, 0);
+            var occupied = new HexCoordinate(1, 0);
+            Assert.That(choice.LegalDestinations.Select(value => value.Destination),
+                Has.Member(beyond),
+                "The space beyond the enemy is offered only because the Skill granted the permission.");
+            Assert.That(choice.LegalDestinations.Select(value => value.Destination),
+                Has.No.Member(occupied),
+                "The occupied space itself is never offered as somewhere to stop.");
+
+            Accept(session, DirectorCommand.ChooseMovementDestination(
+                choice.ResolutionId, choice.ChoiceId, beyond));
+
+            var board = RestoreBoard(session);
+            Assert.That(board.Occupancies.Single(value => value.HeroId.Equals(actorId)).Coordinate,
+                Is.EqualTo(beyond), "The hero really passed through and stopped beyond.");
+            Assert.That(board.IsEmptyPlayableSpace(occupied), Is.False,
+                "The unit it passed through is still standing there.");
+        }
+
+        [Test]
+        public void WithoutTheSkill_TheSameHeroCannotReachBeyondTheOccupiedSpace()
+        {
+            // The same board and the same turn shape, with the mode never chosen. It is the control
+            // that shows the previous case measures the permission rather than the fixture.
+            var session = CreateBlockedLineSession();
+            var actorId = CommitBulwarkTurn(session, "blue-hammer-card");
+            CompleteCurrentTurn(session);
+            CommitOrdinaryTurn(session, actorId);
+
+            var movement = session.Projection.AvailableTurnActions.Single(offer =>
+                ActionKindOf(session.Projection, offer) == ActionKind.Movement);
+            Accept(session, DirectorCommand.StartAction(movement.ActionDefinitionId));
+
+            Assert.That(
+                session.Projection.PendingMovementChoice.LegalDestinations
+                    .Select(value => value.Destination),
+                Has.No.Member(new HexCoordinate(2, 0)));
+        }
+
         // ---------------------------------------------------------------------------------------
         // Determinism across the delayed boundary
         // ---------------------------------------------------------------------------------------
@@ -624,16 +683,33 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// A straight line with the Blue hero standing between the Red hero and open space, so
+        /// "can this hero reach beyond that unit" has different answers with and without the
+        /// permission. Red starts at (0,0), Blue occupies (1,0), and (2,0) is the space only a
+        /// pass-through reaches.
+        /// </summary>
+        private static MatchSession CreateBlockedLineSession() =>
+            CreateLineSession(new[]
+            {
+                new HexCoordinate(0, 0),
+                new HexCoordinate(1, 0),
+                new HexCoordinate(2, 0)
+            });
+
+        /// <summary>
         /// Two adjacent heroes on a two-space synthetic map, so an enemy Attack has a legal target and
         /// the Defense reaction is reachable inside one turn.
         /// </summary>
-        private static MatchSession CreateAdjacentSession()
+        private static MatchSession CreateAdjacentSession() =>
+            CreateLineSession(new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0) });
+
+        private static MatchSession CreateLineSession(IReadOnlyList<HexCoordinate> coordinates)
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = BoardMapDefinition.CreateSynthetic(
-                new MapId("modification-skill-adjacent"),
+                new MapId($"modification-skill-line-{coordinates.Count}"),
                 1,
-                new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0) });
+                coordinates);
             var redHeroId = configuration.RedHand.Instances[0].OwnerId;
             var blueHeroId = configuration.BlueHand.Instances[0].OwnerId;
             var redTeam = configuration.Participants.GetTeamForHero(redHeroId);

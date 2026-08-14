@@ -6,6 +6,7 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -359,6 +360,84 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 command.HeroId,
                 command.Origin,
                 command.Destination));
+        }
+
+        /// <summary>
+        /// Commits a whole adjacent route in one transaction, asserting occupancy only at its endpoint.
+        ///
+        /// Milestone 6.8c added this because rulebook p.18's Move-Through permission cannot be expressed
+        /// one space at a time: a unit that "is allowed to enter a space with an obstacle and leave that
+        /// space in any direction, while moving" never occupies that space, and the one-obstacle-per-space
+        /// index would refuse it if it tried. So the route is validated whole - every space it enters for
+        /// transit, its last space for an endpoint - and the occupant then moves from origin to endpoint
+        /// with no intermediate index state existing at all.
+        ///
+        /// One event per space entered, exactly as the per-step commit produced, because the events
+        /// narrate the movement and p.18 says the unit really does enter and leave those spaces. A route
+        /// crossing nothing occupied therefore produces the identical event stream it always did.
+        /// </summary>
+        public AdjacentMoveRouteResult TryCommitRoute(
+            HeroId heroId,
+            IReadOnlyList<HexCoordinate> route,
+            RuleModificationSet modifications = null)
+        {
+            if (route == null)
+            {
+                throw new ArgumentNullException(nameof(route));
+            }
+
+            var heroIndex = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(heroId));
+            if (heroIndex < 0)
+            {
+                return AdjacentMoveRouteResult.Reject(AdjacentMoveRejectionReason.UnknownHero, 0);
+            }
+
+            if (route.Count == 0)
+            {
+                return AdjacentMoveRouteResult.Reject(AdjacentMoveRejectionReason.DestinationNotAdjacent, 0);
+            }
+
+            var origin = occupancies[heroIndex].Coordinate;
+            var mover = RuleObject.ForHero(heroId);
+            var previous = origin;
+            for (var index = 0; index < route.Count; index++)
+            {
+                var space = route[index];
+                if (!boardCoordinates.Contains(space))
+                {
+                    return AdjacentMoveRouteResult.Reject(AdjacentMoveRejectionReason.DestinationOffBoard, index);
+                }
+
+                if (!previous.GetNeighbors().Contains(space))
+                {
+                    return AdjacentMoveRouteResult.Reject(AdjacentMoveRejectionReason.DestinationNotAdjacent, index);
+                }
+
+                var isEndpoint = index == route.Count - 1;
+                var refused = isEndpoint
+                    ? ObstacleQuery.BlocksEndOfMovement(this, space)
+                    : ObstacleQuery.BlocksTransit(this, space, mover, modifications);
+                if (refused)
+                {
+                    return AdjacentMoveRouteResult.Reject(AdjacentMoveRejectionReason.DestinationOccupied, index);
+                }
+
+                previous = space;
+            }
+
+            // Validated whole, so nothing below can refuse and leave a half-walked route behind.
+            var destination = route[route.Count - 1];
+            var events = new List<AdjacentMoveEvent>(route.Count);
+            var from = origin;
+            foreach (var space in route)
+            {
+                events.Add(new AdjacentMoveEvent(heroId, from, space));
+                from = space;
+            }
+
+            occupancyIndex.Move(origin, destination);
+            occupancies[heroIndex] = new HeroOccupancy(heroId, destination);
+            return AdjacentMoveRouteResult.Accept(events);
         }
 
         internal FastTravelEvent CommitValidatedFastTravel(HeroId heroId, HexCoordinate destination)

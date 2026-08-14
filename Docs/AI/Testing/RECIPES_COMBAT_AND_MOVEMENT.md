@@ -395,3 +395,28 @@ Then run Play Mode filtered to `GuardsDigital.Tests.PlayMode.MinimalHexGridPlayM
 Expected result: all cases pass. Coverage proves the card keeps its definition/instance identity, Initiative, printed Secondary Movement, Defense reaction and hand slot while only its printed Primary Attack is replaced; the Skill offers exactly three modes in definition order under an actor-owned `Choose`; each mode instantiates one registered capability of one rule family on the action's authoritative actor with the card as source; `This Turn` `+1 Defense` composes into a later enemy Attack's Defense Total in the same turn with its Active-effect provenance intact; the `This Round` restriction withdraws only that hero's Fast-Travel offer and ends at Round End; the `Next Turn` permission stays dormant during the creating turn, permits transit through an occupied space on the next turn, never permits an obstacle endpoint, and then expires; stale and forged mode answers reject without creating an effect or resolving the card; and snapshot restore, replay, and retained-prefix Undo reproduce the identical payload across the delayed boundary. The presenter forwards only the projected invocations of a paused frame and withholds actions, Fast-Travel offers, and End Turn while it stands.
 
 Schema remains v9. Red Bulwark's definition advances from `phase-5-1a-rev-3` to `phase-6-8a-rev-1`. The compatibility-corpus and aggregate-invariance fixtures must first report the exact digest delta, then may be re-pinned only with the explicit content-revision reject decision and unchanged equality groups recorded in source and completion evidence.
+
+## Move-Through permission Movement consumer tests
+
+Milestone 6.8c is T2 because it changes route commitment and the reachability query every Movement uses, which the whole card-resolution, snapshot, and replay surface sits on. It adds no Presentation, scene, asset, or assembly path, so Play Mode is run to confirm the configured scene still drives Movement and the 6.8a Skill rather than because a Unity-facing file changed.
+
+Run the focused fixtures first through the cross-platform harness:
+
+```powershell
+dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj --no-restore --filter "FullyQualifiedName~MoveThroughPermissionTests|FullyQualifiedName~ConfiguredModificationSkillTests"
+```
+
+The Windows run must add the Unity-only fixtures the harness excludes, together with the movement, reachability, resolution, and round regressions route commitment reaches:
+
+```json
+{
+  "platform": "EditMode",
+  "filter": "GuardsDigital.Tests.EditMode.MoveThroughPermissionTests;GuardsDigital.Tests.EditMode.ConfiguredModificationSkillTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests",
+  "results": "tmp/milestone-6-8c-affected-results.xml",
+  "log": "tmp/milestone-6-8c-affected.log"
+}
+```
+
+Expected result: all cases pass. Coverage proves an ordinary mover is still stopped by an obstacle and everything beyond it stays unreachable; a mover holding the permission reaches past an occupied space but is never offered that space as a destination; passing through costs one movement like any space entered; nothing passes outside the playable board; a permission on another unit does nothing for this mover; a committed through-route leaves the passed-through unit in place, vacates the origin once, and narrates every space entered; a route ending on an obstacle, a through-route without the permission, a route leaving the board partway, and a route beyond the remaining allowance each reject whole without moving anything; and the configured Red Bulwark `Next Turn` mode makes the space beyond an adjacent enemy reachable on that hero's next turn, against a control run that never chooses the mode.
+
+Schema is unchanged and no pinned digest moves: route commitment produces the same events and the same end state as the per-space walk it replaced whenever nothing occupied is crossed.

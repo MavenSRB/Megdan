@@ -247,7 +247,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         MovementCardActionStrategyBackend.Restore(
                             adjacentMoveAuthority,
                             new MovementBackendRestoreState(state.PendingMovementResolution),
-                            verifiedMovementChoice),
+                            verifiedMovementChoice,
+                            modifications),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
@@ -302,7 +303,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications = null)
         {
             var prepared = PrepareStart(
                 resolutionId,
@@ -323,14 +325,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     resolutionId,
                     offer,
                     prepared.Definitions,
-                    prepared.Instances);
+                    prepared.Instances,
+                    modifications);
         }
 
         public CardActionResolutionResult StartTurnMovementResolution(
             ActionResolutionId resolutionId,
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications = null)
         {
             var prepared = PrepareStart(
                 resolutionId,
@@ -351,11 +355,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     resolutionId,
                     offer,
                     prepared.Definitions,
-                    prepared.Instances);
+                    prepared.Instances,
+                    modifications);
         }
 
-        public CardActionResolutionResult AnswerMovementChoice(MovementChoiceCommand command) =>
-            movementBackend.AnswerMovement(command);
+        public CardActionResolutionResult AnswerMovementChoice(
+            MovementChoiceCommand command, RuleModificationSet modifications = null) =>
+            movementBackend.AnswerMovement(command, modifications);
 
         public CardActionResolutionResult PerformTurnFastTravel(
             ActionResolutionId resolutionId,

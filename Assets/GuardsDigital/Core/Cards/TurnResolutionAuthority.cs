@@ -554,7 +554,8 @@ namespace GuardsDigital.Core.Cards
                 resolutionId,
                 offer,
                 definitions,
-                instances);
+                instances,
+                CurrentModifications());
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementActionRejected);
             return TurnResolutionResult.Accept(
@@ -590,7 +591,7 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardResolutionFailed);
             }
 
-            var result = cardActions.AnswerMovementChoice(command);
+            var result = cardActions.AnswerMovementChoice(command, CurrentModifications());
             if (!result.Accepted)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementCommandRejected);
