@@ -239,9 +239,6 @@ namespace GuardsDigital.Tests.EditMode
             var highlighted = boardView.Model.MinionChoiceCues.Single();
             Assert.That(highlighted.MinionId, Is.EqualTo(pointedAt));
             Assert.That(highlighted.Kind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
-            Assert.That(highlighted.Label, Is.EqualTo(
-                $"#{MinionChoiceLabels.Ordinal(choice.Candidates, pointedAt)}"),
-                "The cue carries the same ordinal as the control that points at it.");
 
             var heavy = choice.Candidates.Single(value => value.MinionType == StandardMinionType.Heavy);
             Assert.That(board.HighlightMinionChoiceCandidate(heavy.MinionId), Is.True);
@@ -257,7 +254,6 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(selectedCue.MinionId, Is.EqualTo(pointedAt),
                 "The accepted command replaced the projection, which drops the pointed-at cue with it.");
             Assert.That(selectedCue.Kind, Is.EqualTo(MinionChoiceCueKind.Selected));
-            Assert.That(selectedCue.Label, Is.EqualTo(MinionChoiceLabels.SelectedCueText));
 
             Assert.That(board.HighlightMinionChoiceCandidate(heavy.MinionId), Is.True);
             board.Refresh();

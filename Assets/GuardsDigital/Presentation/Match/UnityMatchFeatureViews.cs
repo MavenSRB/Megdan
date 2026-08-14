@@ -127,21 +127,16 @@ namespace GuardsDigital.Presentation.Match
 
                     minion.SetDefenseContributionCue(
                         defenseCues.TryGetValue(boundId, out var amount) ? amount : 0);
-                    if (choiceCues.TryGetValue(boundId, out var choiceCue))
-                    {
-                        minion.SetChoiceCue(choiceCue.Kind, choiceCue.Label);
-                    }
-                    else
-                    {
-                        minion.SetChoiceCue(MinionChoiceCueKind.None, null);
-                    }
+                    minion.SetChoiceCue(choiceCues.TryGetValue(boundId, out var choiceCue)
+                        ? choiceCue.Kind
+                        : MinionChoiceCueKind.None);
 
                     projectedMinions.Remove(state.MinionId);
                 }
                 else
                 {
                     minion.SetDefenseContributionCue(0);
-                    minion.SetChoiceCue(MinionChoiceCueKind.None, null);
+                    minion.SetChoiceCue(MinionChoiceCueKind.None);
                     minion.gameObject.SetActive(false);
                 }
             }

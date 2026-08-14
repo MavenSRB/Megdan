@@ -430,3 +430,9 @@ A user-approved roadmap amendment on 2026-08-13 scheduled the open ER2 dispositi
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 6.1a | The configured HUD resolves a paused Minion Battle through a sixth passive view/presenter pair built entirely from the immutable pending choice: it offers a control only where the authority currently offers a select or deselect invocation, so a withheld Heavy carries none, exposes confirmation only at the exact required count, withholds the end-of-round advance while the choice stands, and forwards only the projected typed invocation. Pointing at or focusing a control marks that minion on the board with the reviewed 6.1b cue treatment carrying the control's ordinal; a selected minion keeps an `X` cue, and the highlight is anchored to the projection it was read from. | `6d3f2a2` |
+
+## Milestone 6.1ao Unify the Minion Battle choice cue on one downward marker completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1ao | Both visible minion-choice cue kinds draw the same downward marker at a declared choice character size and differ only by color, because both say "this minion" and only the control state behind them differs. The cue view model no longer carries per-cue text and the ordinal/cue-text helpers, whose only remaining caller was a fixture, are gone; candidate identity stays in the control labels, which still carry team, intrinsic type, and ordinal as text. Backing proportions, orientation correction, board anchor, and cue lifetime are unchanged. | pending |

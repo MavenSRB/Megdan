@@ -35,64 +35,38 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// What a board cue says about one minion in a pending minion choice, and the exact text it
-    /// shows. A selected minion keeps its cue while the pointer moves across the other controls, so
-    /// the board answers "which minions have I already chosen" without the player re-reading the
-    /// prompt; a highlighted one answers "which minion is this control".
+    /// What a board cue says about one minion in a pending minion choice. Both visible kinds point
+    /// at the same thing - this minion - so the board draws one marker for both and distinguishes
+    /// them by color: a selected minion keeps its marker while the pointer moves across the other
+    /// controls, and a highlighted one answers "which minion is this control".
     /// </summary>
     public readonly struct MinionChoiceCueViewModel
     {
-        public MinionChoiceCueViewModel(MinionId minionId, MinionChoiceCueKind kind, string label)
+        public MinionChoiceCueViewModel(MinionId minionId, MinionChoiceCueKind kind)
         {
-            if (!minionId.IsDefined || kind == MinionChoiceCueKind.None ||
-                string.IsNullOrWhiteSpace(label))
+            if (!minionId.IsDefined || kind == MinionChoiceCueKind.None)
             {
                 throw new ArgumentException(
-                    "A minion choice cue requires a stable identity, a visible kind, and readable text.");
+                    "A minion choice cue requires a stable identity and a visible kind.");
             }
 
             MinionId = minionId;
             Kind = kind;
-            Label = label;
         }
 
         public MinionId MinionId { get; }
         public MinionChoiceCueKind Kind { get; }
-        public string Label { get; }
     }
 
     /// <summary>
-    /// The one place the minion-choice prompt and the board cues agree on how a candidate is named.
-    /// The ordinal is the candidate's position in the projection's own ordinal candidate order, so a
-    /// control and the cue above its minion carry the same `#n`, and two candidates of the same team
+    /// The one place the minion-choice prompt names a candidate. The ordinal is the candidate's
+    /// position in the projection's own ordinal candidate order, so two candidates of the same team
     /// and type stay distinguishable by text rather than by color.
     /// </summary>
     public static class MinionChoiceLabels
     {
-        public const string SelectedCueText = "X";
-
         public static string TeamLabel(TeamSide side) =>
             side == TeamSide.Red ? "[R] RED" : "[B] BLUE";
-
-        public static int Ordinal(IReadOnlyList<MinionBattleCandidate> candidates, MinionId minionId)
-        {
-            if (candidates == null)
-            {
-                throw new ArgumentNullException(nameof(candidates));
-            }
-
-            for (var index = 0; index < candidates.Count; index++)
-            {
-                if (candidates[index].MinionId.Equals(minionId))
-                {
-                    return index + 1;
-                }
-            }
-
-            throw new ArgumentException(
-                "The minion is not one of the projected candidates.",
-                nameof(minionId));
-        }
 
         public static string CandidateLabel(TeamSide side, StandardMinionType minionType, int ordinal)
         {
@@ -102,16 +76,6 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return $"{TeamLabel(side)} {minionType.ToString().ToUpperInvariant()} #{ordinal}";
-        }
-
-        public static string CueText(MinionChoiceCueKind kind, int ordinal)
-        {
-            if (ordinal < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(ordinal));
-            }
-
-            return kind == MinionChoiceCueKind.Selected ? SelectedCueText : $"#{ordinal}";
         }
     }
 
@@ -268,9 +232,8 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var cues = new List<MinionChoiceCueViewModel>();
-            for (var index = 0; index < choice.Candidates.Count; index++)
+            foreach (var candidate in choice.Candidates)
             {
-                var candidate = choice.Candidates[index];
                 var kind = choice.SelectedMinionIds.Contains(candidate.MinionId)
                     ? MinionChoiceCueKind.Selected
                     : candidate.MinionId.Equals(highlightedMinionId)
@@ -281,10 +244,7 @@ namespace GuardsDigital.Presentation.Match
                     continue;
                 }
 
-                cues.Add(new MinionChoiceCueViewModel(
-                    candidate.MinionId,
-                    kind,
-                    MinionChoiceLabels.CueText(kind, index + 1)));
+                cues.Add(new MinionChoiceCueViewModel(candidate.MinionId, kind));
             }
 
             return cues;

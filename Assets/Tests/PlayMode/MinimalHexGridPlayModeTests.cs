@@ -668,7 +668,7 @@ namespace GuardsDigital.Tests.PlayMode
                 null));
             RenderChoiceCues(runtime, baseBoard, baseBoard.Version + 1, new[]
             {
-                new MinionChoiceCueViewModel(blue[1].MinionId, MinionChoiceCueKind.Highlighted, "#2")
+                new MinionChoiceCueViewModel(blue[1].MinionId, MinionChoiceCueKind.Highlighted)
             });
             yield return null;
 
@@ -685,8 +685,10 @@ namespace GuardsDigital.Tests.PlayMode
                 value.BoundMinionId.Equals(blue[1].MinionId));
             Assert.That(firstView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
             Assert.That(secondView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
-            Assert.That(secondView.ChoiceCueText, Is.EqualTo("#2"),
-                "The cue above the minion carries the same ordinal as the control that points at it.");
+            Assert.That(secondView.GetComponentsInChildren<TextMesh>(true)
+                    .Single(value => value.gameObject.name == "Minion Choice Cue").text,
+                Is.EqualTo(StandardMinionView.ChoiceCueMarker),
+                "The cue above the minion is the one marker every visible kind uses.");
 
             // One selected at the required count: the chosen minion keeps its board cue, its control
             // becomes the projected deselect, and the confirmation appears.
@@ -714,9 +716,8 @@ namespace GuardsDigital.Tests.PlayMode
                 confirm));
             RenderChoiceCues(runtime, baseBoard, baseBoard.Version + 2, new[]
             {
-                new MinionChoiceCueViewModel(blue[0].MinionId, MinionChoiceCueKind.Selected,
-                    MinionChoiceLabels.SelectedCueText),
-                new MinionChoiceCueViewModel(blue[1].MinionId, MinionChoiceCueKind.Highlighted, "#2")
+                new MinionChoiceCueViewModel(blue[0].MinionId, MinionChoiceCueKind.Selected),
+                new MinionChoiceCueViewModel(blue[1].MinionId, MinionChoiceCueKind.Highlighted)
             });
             yield return null;
 
@@ -725,7 +726,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.MinionChoiceView.Model.ConfirmInvocation.Command.Kind,
                 Is.EqualTo(DirectorCommandKind.ConfirmMinionBattleRemovals));
             Assert.That(firstView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected));
-            Assert.That(firstView.ChoiceCueText, Is.EqualTo("X"));
             Assert.That(secondView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted),
                 "A selected minion keeps its cue while the player points at another.");
 
@@ -733,8 +733,14 @@ namespace GuardsDigital.Tests.PlayMode
                 value.gameObject.name == "Minion Choice Cue");
             var selectedBacking = firstView.GetComponentsInChildren<TextMesh>(true).Single(value =>
                 value.gameObject.name == "Minion Choice Cue Background");
-            Assert.That(selectedCue.text, Is.EqualTo("X"));
-            Assert.That(selectedCue.characterSize, Is.EqualTo(StandardMinionView.DefenseCueCharacterSize));
+            var highlightedCue = secondView.GetComponentsInChildren<TextMesh>(true).Single(value =>
+                value.gameObject.name == "Minion Choice Cue");
+            Assert.That(selectedCue.text, Is.EqualTo(StandardMinionView.ChoiceCueMarker));
+            Assert.That(highlightedCue.text, Is.EqualTo(selectedCue.text),
+                "Both kinds mean the same thing about the minion, so both draw the same marker.");
+            Assert.That(highlightedCue.color, Is.Not.EqualTo(selectedCue.color),
+                "Selection and the pointed-at control stay apart by color.");
+            Assert.That(selectedCue.characterSize, Is.EqualTo(StandardMinionView.ChoiceCueCharacterSize));
             Assert.That(selectedCue.transform.localScale, Is.EqualTo(new Vector3(-1f, 1f, 1f)),
                 "The cue reuses the token-orientation correction of the Defense contribution cue.");
             Assert.That(selectedBacking.transform.localScale.y,

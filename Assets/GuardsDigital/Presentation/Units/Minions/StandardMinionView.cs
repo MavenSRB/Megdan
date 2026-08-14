@@ -27,6 +27,14 @@ namespace GuardsDigital.Presentation.Units.Minions
         public const float DefenseCueBackgroundVerticalScale = 1.35f;
         public const float DefenseCueOpticalVerticalOffset = -0.025f;
 
+        /// <summary>
+        /// One marker for every visible minion-choice cue kind. Both kinds say "this minion", so the
+        /// shape is the same and only the color separates a selection from the control being pointed
+        /// at; a downward triangle reads as pointing at the token it sits above.
+        /// </summary>
+        public const string ChoiceCueMarker = "▼";
+        public const float ChoiceCueCharacterSize = 0.09f;
+
         private static readonly Vector3 DefenseCueLocalPosition = new Vector3(0f, 0.85f, -0.15f);
 
         [SerializeField, HideInInspector]
@@ -50,7 +58,6 @@ namespace GuardsDigital.Presentation.Units.Minions
         public float OuterRadius => outerRadius;
         public int DefenseCueAmount { get; private set; }
         public MinionChoiceCueKind ChoiceCueKind { get; private set; }
-        public string ChoiceCueText { get; private set; } = string.Empty;
 
         public void Configure(MinionOccupancy state, float outerRadius)
         {
@@ -107,7 +114,7 @@ namespace GuardsDigital.Presentation.Units.Minions
         /// position and proportions as the Defense contribution cue. The two cannot appear together:
         /// a Defense response resolves inside a turn and a minion choice only at end of round.
         /// </summary>
-        public void SetChoiceCue(MinionChoiceCueKind kind, string label)
+        public void SetChoiceCue(MinionChoiceCueKind kind)
         {
             if (kind != MinionChoiceCueKind.None && kind != MinionChoiceCueKind.Highlighted &&
                 kind != MinionChoiceCueKind.Selected)
@@ -115,13 +122,7 @@ namespace GuardsDigital.Presentation.Units.Minions
                 throw new System.ArgumentOutOfRangeException(nameof(kind));
             }
 
-            if (kind != MinionChoiceCueKind.None && string.IsNullOrWhiteSpace(label))
-            {
-                throw new System.ArgumentException("A visible minion choice cue requires text.", nameof(label));
-            }
-
             ChoiceCueKind = kind;
-            ChoiceCueText = kind == MinionChoiceCueKind.None ? string.Empty : label;
             if (kind == MinionChoiceCueKind.None)
             {
                 if (choiceCue != null)
@@ -136,11 +137,12 @@ namespace GuardsDigital.Presentation.Units.Minions
             if (choiceCue == null)
             {
                 CreateCuePair("Minion Choice Cue", out choiceCue, out choiceCueBackground);
+                choiceCue.characterSize = ChoiceCueCharacterSize;
             }
 
             choiceCue.gameObject.SetActive(true);
             choiceCueBackground.gameObject.SetActive(true);
-            choiceCue.text = ChoiceCueText;
+            choiceCue.text = ChoiceCueMarker;
             choiceCue.color = kind == MinionChoiceCueKind.Selected
                 ? new Color(0.72f, 0.12f, 0.08f)
                 : new Color(0.86f, 0.55f, 0.06f);
@@ -148,9 +150,10 @@ namespace GuardsDigital.Presentation.Units.Minions
         }
 
         /// <summary>
-        /// Builds one board-facing cue: mirrored signed text over a vertically oval dark-grey backing.
-        /// The constants keep their `DefenseCue` names because milestone 6.1b's reviewed proportions
-        /// are pinned by documentation and fixtures; every cue reuses those exact values.
+        /// Builds one board-facing cue: mirrored text over a vertically oval dark-grey backing. The
+        /// constants keep their `DefenseCue` names because milestone 6.1b's reviewed proportions are
+        /// pinned by documentation and fixtures; every cue reuses those, and a caller needing a
+        /// different glyph size overrides only that after construction.
         /// </summary>
         private void CreateCuePair(string cueName, out TextMesh cue, out TextMesh backing)
         {

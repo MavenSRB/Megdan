@@ -46,6 +46,21 @@ Non-goals: No Minion Battle rule changes, optional decline of a mandatory remova
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61a-add-player-facing-minion-battle-removal-choice-ui-completion-evidence).
 
+### [x] 6.1ao Unify the Minion Battle choice cue on one downward marker
+
+Observable outcome: Both visible minion-choice cue kinds draw the same downward-pointing marker inside the existing oval backing and differ only by color, so the board says "this minion" the same way whether the player is pointing at its control or has already selected it.
+
+Acceptance checks:
+
+- The selected and pointed-at cues render one identical marker glyph at a declared character size, inside milestone 6.1b's unchanged backing proportions, orientation correction, and board anchor.
+- Candidate identity still never depends on color: the prompt's controls keep carrying team, intrinsic minion type, and ordinal as text, and the two cue kinds stay separable by color plus the control state that produced them.
+- The cue view model stops carrying per-cue text, and no ordinal-formatting helper survives without a production caller.
+- Focused presenter coverage plus the configured-scene Play Mode check, including its non-batch Game View capture, prove the shared marker, the retained color separation, and the unchanged cue lifetime.
+
+Non-goals: No Minion Battle rule, pending-choice, projection, or prompt-control change; no new cue kind; no Defense contribution cue change; no production art, animation, or audio.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ao-unify-the-minion-battle-choice-cue-on-one-downward-marker-completion-evidence).
+
 ### [x] 6.1b Correct Defense contribution cue proportions and orientation
 
 Observable outcome: The configured board-facing `+1` and `-1` minion Defense contribution cues use smaller readable numbers, vertically oval dark-grey backings that fit the signed values, and text mirrored around its local vertical axis to correct the inherited token orientation.
