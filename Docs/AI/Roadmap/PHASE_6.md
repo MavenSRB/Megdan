@@ -367,6 +367,8 @@ This supersedes the accepted dependency order recorded in the [post-5.8c amendme
 
 Milestone IDs are unchanged and 6.2 keeps its position in numeric order below, so the ER2 disposition table, the risk register, and existing cross-references stay valid. Execution order is carried by this paragraph, as it is for the 6.1c-6.1k corrective sequence above.
 
+**Sequencing amendment (2026-08-14, user approved).** After milestone 6.2b closes its gate, the dependency-safe gameplay order begins **6.3 -> 6.8 -> 6.4**. Milestone 6.4 consumes the targeting, presence, immunity, permission, and obstacle contracts owned by 6.8, so 6.8 is an explicit prerequisite of 6.4 rather than later work. Numeric placement below is unchanged; execution follows these prerequisite declarations. Scheduling is not authorization: each milestone still requires exact user approval before execution.
+
 ### [ ] 6.2 Add token and marker instances, supplies, placement, and attachment
 
 Observable outcome: Synthetic tokens and markers have stable authoritative identity without requiring Wasp content.
@@ -392,7 +394,7 @@ Acceptance checks:
 - Stable-node `Sequence`, `Optional`, `Conditional`, and `Choose` structures preserve typed node identity, chooser ownership, inputs, outcomes, and the exact continuation required to resume. Mandatory failure, `may`, `up to`, and `if able` policies remain explicit rather than collapsing into one failure behavior.
 - One bounded synthetic capability fixture executes end to end through `IMatchSession`, the round/turn authorities, the registered action/effect dispatch seam, snapshots, restore, replay, and retained-prefix Undo. Rejected input is atomic and accepted execution emits deterministic ordered facts.
 - Adding the Skill/effect handler does not require editing Movement, Attack/Defense, or Fast-Travel backend algorithms. Architecture tests mechanically prevent action-specific algorithms or effect-node switches from accumulating in the outer session/round/turn dispatcher seams.
-- Pending effect state and stable node/choice identities cross the versioned snapshot boundary with an explicit migrate-or-reject decision and reconstruct equivalently after restore, replay, and Undo.
+- Pending effect state and stable node/choice identities cross the versioned snapshot boundary with an explicit migrate-or-reject decision. Restore rebinds every pending or Active effect's definition ID/revision and capability ID/revision to the trusted immutable match-definition catalog and registered capability revision; snapshot payloads supply runtime state, not definition semantics, and cannot redefine effect kind, checkpoints, duration, triggers, uniqueness, or other capability behavior. Missing or incompatible trusted revisions and payloads carrying conflicting semantic data are rejected atomically, with focused tampering tests; accepted snapshots reconstruct equivalently after restore, replay, and Undo.
 
 Non-goals: No Repeat, Clear, direct Move, Object Push, Place, Spawn, Swap, Replace, Remove, Wasp definition, production presentation, printed-text parser, universal scripting language, or source-unverified special case.
 
@@ -407,6 +409,7 @@ Acceptance checks:
 - Inspect the actual final source, tests, snapshots/compatibility fixtures, replay/Undo paths, and raw validation evidence rather than relying on implementation handoff summaries.
 - Trace accepted, rejected, stale, paused, restored, replayed, and Undo-truncated Minion-Battle and synthetic Skill/effect paths through the application, round/turn, action/effect, and serialization boundaries.
 - Confirm mechanically that the first real end-of-round choice has no handler-local or presentation-owned continuation, and that adding the production Skill/effect handler did not deepen unrelated action-family branching.
+- Determine whether Lane Push's typed resumable intra-stage continuation can remain inside milestone 6.11 or carries enough independent persistence/architecture risk to warrant a separately approved milestone 6.10a between durable Battle-Zone state and the completed respawn transition; if split, preserve 6.11's observable outcome and name the closing validation rather than pre-authorizing implementation.
 - Classify every observation as a demonstrated defect, measured or plausible risk, or optional improvement; assign the smallest corrective owner and required validation for each actionable finding.
 - Reassess the dependency-safe sequence and scope of milestones 6.3 through 6.13. Milestone 6.3 remains blocked until this review closes both findings, or the user approves a documented corrective disposition. Any corrective sequence this review schedules closes on named checks per [ROADMAP.md](../ROADMAP.md); it schedules a further verification milestone only for a finding whose closure cannot be expressed as a check.
 
@@ -431,6 +434,8 @@ Acceptance checks:
 
 Observable outcome: Synthetic effects execute the general direct Move and Object Push contracts on the full authoritative map without depending on Wasp definitions or card-name branches.
 
+Prerequisite: milestone 6.8 has established the reusable targeting, presence, immunity, permission, and obstacle contracts consumed by this milestone's typed movement and push queries. Milestone 6.1s remains the separate mutable, snapshot-serialized minion-occupancy prerequisite.
+
 Acceptance checks:
 
 - Direct Move remains distinct from a Movement action, cannot become Fast Travel, and applies its exact, optional, or `up to` distance and source-relative destination policy through typed queries.
@@ -442,7 +447,7 @@ Acceptance checks:
 
 Non-goals: No Wasp definition, printed-text parsing, invented Pull keyword, card-name/hero-name branch, configured live action exposure before milestone 6.4a, production presentation, or specialized hero/minion Respawn transition.
 
-ER2 note: requires 6.1s (`F-ER2-02`) first - a pushed minion needs mutable, snapshot-serialized occupancy for the displacement to commit and survive restore.
+ER2 note: 6.1s closes `F-ER2-02` - a pushed minion needs mutable, snapshot-serialized occupancy for the displacement to commit and survive restore.
 
 ### [ ] 6.4a Integrate after-action displaced-minion correction with core Push
 
@@ -451,6 +456,7 @@ Observable outcome: A completed synthetic direct Move or Object Push action invo
 Acceptance checks:
 
 - Correction applies only to intrinsic minion miniatures outside the Battle Zone after the whole action.
+- Battle-Zone membership is resolved through one authority-owned query shared with Minion Battle, Heavy immunity, and Lane Push; correction does not derive or cache its own zone boundary.
 - A minion follows a shortest empty path; its team chooses among equally short valid paths.
 - With no path or legal move, the minion is Placed into a nearest empty Battle-Zone space.
 - The fallback implements the minimum general Place capability through typed policy/outcome data and emits Place rather than Movement facts.
@@ -525,6 +531,8 @@ Non-goals: No new Skill, Sequence, Optional, Conditional, or Choose foundation; 
 
 Observable outcome: Synthetic effects and continuous sources apply the general typed modifier, restriction, permission, immunity, and effective-characteristic contracts before verified hero content is introduced.
 
+Prerequisite: milestone 6.3 has established the core token interactions and continuous token-property sources that these general contracts must compose with.
+
 Acceptance checks:
 
 - Typed value modifiers retain source and channel provenance and compose deterministically with printed, minion, item-ready, and Active/continuous contributions.
@@ -552,6 +560,8 @@ Builds the non-executable ordered prefix: flip exactly one Wave counter and stop
 Acceptance checks:
 
 - The incomplete prefix remains internal and cannot consume a live request.
+- Authoritative `CurrentBattleZoneId` identifies the active verified Zone independently of presentation or inferred minion positions, advances exactly once at the Zone stage, and is the input to the shared Battle-Zone query used by Minion Battle, Heavy immunity, displaced-minion correction, and Lane Push.
+- `CurrentBattleZoneId` crosses snapshots, restore, replay, retained-prefix Undo, restart, and compatibility handling with stable map-scoped identity; malformed, missing, or map-incompatible zone identities are rejected atomically rather than reconstructed from setup or occupancy.
 - Wave and Zone stages emit deterministic typed outcomes/events.
 - An early game-ending result prevents later stages.
 
@@ -565,6 +575,8 @@ Acceptance checks:
 - A token-covered Spawn point removes its token before respawn.
 - A non-token obstacle makes the owning team Place that minion in a chosen nearest empty Battle-Zone space.
 - When cross-team order matters, the Tie-Breaker-side team starts without flipping the coin.
+- Respawn progress uses a typed, serializable intra-stage continuation that records the owning Lane-Push transition, stable current step/minion identity, chooser, legal choice context, and exact resume location; accepted, rejected, stale, restored, replayed, and Undo-truncated choices cannot skip, repeat, or restart Wave, Zone, removal, token removal, or prior respawns.
+- The continuation is a reusable system-transition contract rather than a Lane-Push handler-local callback or presentation state, so milestone 7.5 can use the same continuation shape for multi-hero and multi-level progression.
 - An immediate transition completes before later Initiative resolution continues.
 - Repeat-boundary integration is deferred until the first verified Repeat implementation.
 

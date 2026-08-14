@@ -4,6 +4,16 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 ## Phase 7 - Progression, victory, and the complete synthetic core loop
 
+### Phase-wide durability rule
+
+Every Phase 7 milestone, including milestones 7.1-7.7, that adds authoritative state or changes the durable meaning, identity, lifecycle, or continuation of existing state must close that persistence boundary in the same milestone; a later integration gate is not substitute evidence. Its focused acceptance evidence must reach the new state and every new pending continuation, then prove:
+
+- deterministic snapshot round-trip plus restore-and-continue through the same public command path, with equivalent authoritative state, ordered events, accepted history, and reconstructed projections;
+- fresh deterministic replay and retained-prefix Undo/restart reconstruction, including truncation before and after the new state transition, without duplicated, lost, or projection-only state;
+- explicit classification of every added aggregate field under the existing rollback contract, plus refused/faulted-command coverage proving rollback preserves the new state and both event streams atomically;
+- projection reconstruction from restored and replayed authority rather than serialized or presentation-owned projection state; and
+- explicit compatibility handling in that milestone: every incompatible snapshot schema, stable identity, or content-revision change receives a typed migrate-or-reject decision and corresponding compatibility-corpus update, while a compatible change proves the maintained corpus still restores and round-trips with unchanged meaning.
+
 ### [ ] 7.1 Add synthetic card colors, tiers, and upgrade relationships
 
 Observable outcome: Synthetic cards expose authoritative typed `CardColor` and Tier data for rules queries, while synthetic non-Basic cards model Tier I-III same-color upgrade choices without mutating definitions or using Wasp data.
@@ -72,7 +82,8 @@ Acceptance checks:
 - Each ordinary purchase upgrades one chosen lowest-Tier non-Basic card; tied choices and the two same-color next-Tier candidates use authoritative pending choices.
 - The chosen upgrade enters the hand, the replaced card returns to the deck, and the unchosen candidate becomes the matching item using milestone 7.2.
 - After all non-Basic cards reach Tier III, the next eligible level unlocks the milestone 7.3 Ultimate and no further levels are available.
-- Multi-level and multi-hero ordering is deterministic and resumable without Wasp-specific branches.
+- Multi-level and multi-hero ordering uses milestone 6.11's typed, serializable intra-stage system-transition continuation shape, with stable hero/level/choice identity and exact resume location; restore, replay, Undo, rejection, and stale input cannot repeat purchases, costs, upgrades, items, or Ultimate unlocks.
+- Leveling adds no progression-specific callback, presentation-owned continuation, or Wasp-specific branch.
 
 Non-goals: No Wasp costs, card identities, item art, or Ultimate text.
 
