@@ -118,6 +118,7 @@ Acceptance checks:
 - A game-ending result stops later processing immediately.
 - Focused scenarios cover no Lane Push, one Lane Push, level/no-level players, retrieved effects, Pity Coin eligibility, and a game-ending Push.
 - The same state and choices produce the same state and ordered events.
+- A focused two-round regression proves that completing a round removes that round's events from the current-round projection while retaining them in the whole-match event log and completed-round history; events accepted in the new round then append to a fresh current-round sequence. Restore, replay, and retained-prefix Undo reproduce the same boundary.
 - Integration preserves the established resumable cursor, completed-round history, round-local reset, snapshot, Undo, and event-log contracts rather than introducing a second round-transition path.
 
 ### [ ] 7.9 Complete a deterministic test-card core match
@@ -132,13 +133,14 @@ Acceptance checks:
 - Synthetic Skill, ordered/optional/modal/Repeat control flow, modifiers, restrictions, permissions, immunity, and effective-characteristic scenarios prove that no source-reviewed general keyword or reusable core capability is deferred for first implementation to a verified hero milestone.
 - Snapshots, Undo, restart, and the event log remain deterministic across the complete loop.
 - The deterministic replay oracle covers representative complete matches and bounded multi-round generated/soak scenarios with fixed reported seeds; live, replayed, restored-and-continued, and Undo-truncated paths produce matching command/event/projection/snapshot/history evidence.
+- The complete-match runtime capture samples accepted-command projection refresh time and managed allocation at fixed reported command-history lengths, including an empty/short history and the complete-match history. It records the samples and growth against history length, and compares the complete-match result with the standing 25 ms refresh-time and 64 KiB managed-allocation investigation thresholds in `Testing/FUTURE_GATES.md`.
 - The maintained snapshot compatibility corpus covers the complete synthetic-loop state, and every schema/content incompatibility remains an explicit typed migration or rejection decision.
 - A disposable Win64 development build of the exact gate revision launches outside the Editor, starts and completes a deterministic synthetic-match smoke path, writes usable diagnostics, and exits cleanly. The artifact is validation-only and is neither retained as the pitch build nor distributed publicly.
 - Synthetic definitions are visibly test-only and contain no claim about Wasp values or effects.
 - A broader deterministic core-loop suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-ER2 note (`F-ER2-08`): `Undo`/`Restart` reconstruct by full-prefix replay, so their cost grows with match length; this gate's runtime baseline must measure Undo at complete-match length and record a bound, reopening a performance disposition if it is exceeded.
+ER2 note (`F-ER2-08`): `Undo`/`Restart` reconstruct by full-prefix replay, so their cost grows with match length; this gate's runtime baseline must measure Undo at complete-match length and record a bound. `RISK-PERF-001` is also open because projection construction copies growing command/current-round histories. Neither mechanism schedules optimization by inspection: milestone 7.9 records the pitch-scale measurements, and a separately approved corrective milestone is proposed only for a measured threshold crossing.
 
 ### [!] 7.9a Independently review the complete synthetic core
 

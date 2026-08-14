@@ -12,7 +12,7 @@ Expected result: the validator exits with code `0` and reports that reusable inv
 
 ## Runtime performance baseline
 
-Regression evidence, not a production performance target. Capture in a development Editor with the Unity Profiler or `ProfilerRecorder` over the complete 292-cell map and a representative two-round director flow: steady-state frames, complete map rebuilds, snapshot-only captures, retained-prefix Undo replay, and the accepted-command refresh metric timing the configured presenter submission through accepted `MatchSession.Execute`. `Phase4RuntimeHygieneTests` owns the repeatable resource-lifecycle, unchanged-HUD projection/allocation, supported-object-discovery, and malformed rule-event-log envelope assertions that accompany a capture.
+Regression evidence, not a production performance target. Capture in a development Editor with the Unity Profiler or `ProfilerRecorder` over the complete 292-cell map and a representative two-round director flow: steady-state frames, complete map rebuilds, snapshot-only captures, retained-prefix Undo replay, and the accepted-command refresh metric timing the configured presenter submission through accepted `MatchSession.Execute`. At milestone 7.9, extend that accepted-command capture across fixed reported command-history lengths from empty/short through the representative complete synthetic match; record refresh time, managed allocation per sample, and their growth against history length. `Phase4RuntimeHygieneTests` owns the repeatable resource-lifecycle, unchanged-HUD projection/allocation, supported-object-discovery, and malformed rule-event-log envelope assertions that accompany a capture.
 
 Current reference figures, recorded at runtime baseline revision `7ad51a7` (milestones 4.4d and 4.4h; the full captures and their environment are archived), with noise-tolerant investigation thresholds:
 
@@ -25,8 +25,9 @@ Current reference figures, recorded at runtime baseline revision `7ad51a7` (mile
 | Average snapshot-only capture | 0.183 ms | 5 ms |
 | Undo replay | 28.203 ms | 250 ms |
 | Accepted-command refresh, 44 samples | 1.254 ms focused, 0.401 ms complete-suite | 25 ms |
+| Accepted-command refresh managed allocation | Unmeasured at complete-match history length | 64 KiB/sample |
 
-A threshold crossing requires investigation and an approved fix, a rationale-preserving re-baseline, or explicit user acceptance; it never authorizes speculative optimization. The Undo-replay metric is re-examined at the 7.9 complete-loop baseline per `F-ER2-08`.
+A threshold crossing requires investigation and an approved fix, a rationale-preserving re-baseline, or explicit user acceptance; it never authorizes speculative optimization. Milestone 7.9 re-examines Undo replay and measures accepted-command projection refresh time/allocation at complete-match history length per `F-ER2-08` and `RISK-PERF-001`. No projection-history corrective milestone is scheduled unless that measurement crosses a standing threshold.
 
 Completed milestones' gate recipes and their recorded run evidence moved verbatim to the [testing archive](../Archive/TESTING_HISTORY.md#completed-gate-recipes-and-run-evidence-routed-2026-08-14-milestone-61ag) on 2026-08-14.
 
