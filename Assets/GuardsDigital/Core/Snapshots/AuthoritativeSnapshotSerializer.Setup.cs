@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
@@ -79,6 +80,76 @@ namespace GuardsDigital.Core.Snapshots
                 string.Join(", ", stored) + "], current [" + string.Join(", ", current) + "].");
         }
 
+        /// <summary>
+        /// Milestone 6.2. The component counterpart of <see cref="WriteCapabilityRegistrations"/>:
+        /// records exactly which token and marker content set this payload was written against, so a
+        /// restore refuses a build whose components differ rather than discovering the mismatch later,
+        /// when a supply count no longer explains the tokens already on the board.
+        /// </summary>
+        private static void WriteComponentRegistrations(
+            BinaryWriter writer,
+            ComponentDefinitionCatalog components)
+        {
+            writer.Write(components.RegisteredTokens.Count);
+            foreach (var reference in components.RegisteredTokens)
+            {
+                writer.Write(reference.DefinitionId.Value);
+                writer.Write(reference.Revision);
+            }
+
+            writer.Write(components.RegisteredMarkers.Count);
+            foreach (var reference in components.RegisteredMarkers)
+            {
+                writer.Write(reference.DefinitionId.Value);
+                writer.Write(reference.Revision);
+            }
+        }
+
+        private static void ValidateComponentRegistrations(
+            BinaryReader reader,
+            ComponentDefinitionCatalog components)
+        {
+            var storedTokens = ReadRegistrationKeys(reader, "token registrations");
+            var storedMarkers = ReadRegistrationKeys(reader, "marker registrations");
+            var currentTokens = components.RegisteredTokens.Select(reference => reference.ToString()).ToArray();
+            var currentMarkers = components.RegisteredMarkers.Select(reference => reference.ToString()).ToArray();
+
+            RequireRegistrationsMatch(storedTokens, currentTokens, "token");
+            RequireRegistrationsMatch(storedMarkers, currentMarkers, "marker");
+        }
+
+        private static string[] ReadRegistrationKeys(BinaryReader reader, string name) =>
+            ReadMany(reader, name, () =>
+            {
+                var id = reader.ReadString();
+                var revision = reader.ReadInt32();
+                return id + "@" + revision.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            });
+
+        private static void RequireRegistrationsMatch(
+            string[] stored,
+            string[] current,
+            string componentKind)
+        {
+            if (stored.SequenceEqual(current, StringComparer.Ordinal))
+            {
+                return;
+            }
+
+            var missing = stored.Except(current, StringComparer.Ordinal).ToArray();
+            var knownIds = new HashSet<string>(
+                current.Select(entry => entry.Substring(0, entry.LastIndexOf('@'))),
+                StringComparer.Ordinal);
+            var unknownComponent = missing.Any(entry =>
+                !knownIds.Contains(entry.Substring(0, entry.LastIndexOf('@'))));
+            throw new SnapshotLoadException(
+                unknownComponent
+                    ? SnapshotLoadRejectionReason.ComponentDefinitionMissing
+                    : SnapshotLoadRejectionReason.ComponentDefinitionRevisionMismatch,
+                $"Snapshot {componentKind} registrations do not match this build: stored [" +
+                string.Join(", ", stored) + "], current [" + string.Join(", ", current) + "].");
+        }
+
         private static CardDefinition[] ValidateDefinitions(
             BinaryReader reader,
             IEnumerable<CardDefinition> currentDefinitions)
@@ -148,7 +219,8 @@ namespace GuardsDigital.Core.Snapshots
 
         private static void WriteBoard(BinaryWriter writer, AdjacentMoveAuthority board)
         {
-            var (heroOccupancies, obstacleOccupancies, remainingMinions) = board.CaptureRestoreState();
+            var (heroOccupancies, obstacleOccupancies, remainingMinions, placedTokens) =
+                board.CaptureRestoreState();
             writer.Write(board.SelectedMap.MapId.Value);
             writer.Write(board.SelectedMap.ContentRevision);
             writer.Write(heroOccupancies.Count);
@@ -171,12 +243,29 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(minion.MinionId.Value);
                 WriteCoordinate(writer, minion.Coordinate);
             }
+
+            // Milestone 6.2. A placed token writes identity, provenance, and where it is - never its
+            // supply size, display name, or any other definition content. Those come from the component
+            // catalog on the way back in, for the reason the Active-effect section states at v8: a
+            // payload may say which component this is and what has happened to it, not what it means.
+            writer.Write(placedTokens.Count);
+            foreach (var token in placedTokens.OrderBy(value => value.Id.Value, StringComparer.Ordinal))
+            {
+                writer.Write(token.Id.Value);
+                writer.Write(token.Definition.Id.Value);
+                writer.Write(token.Definition.Revision);
+                writer.Write(token.OwnerHeroId.Value ?? string.Empty);
+                writer.Write(token.ControllerHeroId.Value ?? string.Empty);
+                writer.Write(token.SourceCardInstanceId.Value ?? string.Empty);
+                WriteCoordinate(writer, token.Coordinate);
+            }
         }
 
         private static AdjacentMoveAuthority ReadBoard(
             BinaryReader reader,
             BoardMapCatalog mapCatalog,
-            IEnumerable<QuickGameMinionSetupState> minions)
+            IEnumerable<QuickGameMinionSetupState> minions,
+            ComponentDefinitionCatalog components)
         {
             var reference = new MapDefinitionReference(new MapId(reader.ReadString()), reader.ReadInt32());
             BoardMapDefinition mapDefinition;
@@ -206,10 +295,63 @@ namespace GuardsDigital.Core.Snapshots
             {
                 throw Malformed("Snapshot remaining-minion identities do not match configured minion content.");
             }
+            var placedTokens = ReadMany(reader, "placed tokens", () =>
+            {
+                var id = new TokenInstanceId(reader.ReadString());
+                var reference = new TokenDefinitionReference(
+                    new TokenDefinitionId(reader.ReadString()), reader.ReadInt32());
+                var owner = ReadOptionalHeroId(reader);
+                var controller = ReadOptionalHeroId(reader);
+                var sourceCard = ReadOptionalCardInstanceId(reader);
+                return new PlacedToken(
+                    id,
+                    LoadTrustedTokenDefinition(components, reference),
+                    owner,
+                    controller,
+                    sourceCard,
+                    ReadCoordinate(reader));
+            });
             return AdjacentMoveAuthority.Restore(
-                new BoardRestoreState(heroes, obstacles, remainingMinions),
+                new BoardRestoreState(heroes, obstacles, remainingMinions, placedTokens),
                 mapDefinition,
                 availableMinions);
+        }
+
+        /// <summary>
+        /// Binds a restored token to the catalog's own definition object, so the reconstructed instance
+        /// is reference-equal to the trusted content rather than an equivalent rebuilt from the payload.
+        /// The two load rejections stay distinct on the wire boundary as well, matching how the
+        /// capability registrations and the map catalog each separate "absent" from "different".
+        /// </summary>
+        private static TokenDefinition LoadTrustedTokenDefinition(
+            ComponentDefinitionCatalog components,
+            TokenDefinitionReference reference)
+        {
+            try
+            {
+                return components.LoadToken(reference);
+            }
+            catch (ComponentDefinitionLoadException exception)
+            {
+                throw new SnapshotLoadException(
+                    exception.Reason == ComponentDefinitionLoadRejectionReason.MissingDefinition
+                        ? SnapshotLoadRejectionReason.ComponentDefinitionMissing
+                        : SnapshotLoadRejectionReason.ComponentDefinitionRevisionMismatch,
+                    exception.Message,
+                    exception);
+            }
+        }
+
+        private static HeroId ReadOptionalHeroId(BinaryReader reader)
+        {
+            var value = reader.ReadString();
+            return string.IsNullOrEmpty(value) ? default : new HeroId(value);
+        }
+
+        private static CardInstanceId ReadOptionalCardInstanceId(BinaryReader reader)
+        {
+            var value = reader.ReadString();
+            return string.IsNullOrEmpty(value) ? default : new CardInstanceId(value);
         }
 
         private static void WriteCards(BinaryWriter writer, IReadOnlyList<CardInstance> cards)

@@ -295,6 +295,18 @@ namespace GuardsDigital.Tests.EditMode
                         reader.ReadInt32();
                     }
 
+                    // Milestone 6.2 inserted the component registrations - tokens then markers - in the
+                    // same place and for the same reason, so they are walked the same way.
+                    for (var section = 0; section < 2; section++)
+                    {
+                        var componentCount = reader.ReadInt32();
+                        for (var index = 0; index < componentCount; index++)
+                        {
+                            reader.ReadString();
+                            reader.ReadInt32();
+                        }
+                    }
+
                     var teamCount = reader.ReadInt32();
                     Assert.That(teamCount, Is.GreaterThan(0), "The fixture must serialize at least one team.");
                     reader.ReadString();

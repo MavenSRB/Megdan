@@ -44,7 +44,18 @@ namespace GuardsDigital.Core.Snapshots
         EffectCapabilityMissing = 8,
 
         /// <summary>The capability is registered, but not at the revision the payload names.</summary>
-        EffectCapabilityRevisionMismatch = 9
+        EffectCapabilityRevisionMismatch = 9,
+
+        /// <summary>
+        /// Milestone 6.2. The payload names a token or marker definition this build does not register.
+        /// Kept separate from the effect-capability pair rather than folded into it: a component's
+        /// supply size and return condition are content, and a client resynchronizing after a content
+        /// update needs to know which kind of content it is missing.
+        /// </summary>
+        ComponentDefinitionMissing = 10,
+
+        /// <summary>The component is registered, but not at the revision the payload names.</summary>
+        ComponentDefinitionRevisionMismatch = 11
     }
 
     public sealed class SnapshotLoadException : Exception

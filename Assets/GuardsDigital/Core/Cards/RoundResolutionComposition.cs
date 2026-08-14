@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Timing;
@@ -24,12 +25,14 @@ namespace GuardsDigital.Core.Cards
             CardActionResolutionAuthority cardActions,
             AdjacentMoveAuthority board,
             ActiveEffectLifecycle timing,
+            MarkerAttachmentRegister markers,
             EndOfRoundFixtureCapabilities endOfRoundCapabilities,
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers)
         {
             CardActions = cardActions;
             Board = board;
             Timing = timing;
+            Markers = markers;
             EndOfRoundCapabilities = endOfRoundCapabilities;
             EndOfRoundHandlers = endOfRoundHandlers;
         }
@@ -37,16 +40,29 @@ namespace GuardsDigital.Core.Cards
         public CardActionResolutionAuthority CardActions { get; }
         public AdjacentMoveAuthority Board { get; }
         public ActiveEffectLifecycle Timing { get; }
+
+        /// <summary>
+        /// Milestone 6.2's marker attachments. It travels beside <see cref="Timing"/> because it is the
+        /// same kind of collaborator: match-scoped state the round authority holds and the snapshot's
+        /// round section persists, rather than anything the round itself owns rules for. Markers are not
+        /// board state, so the board authority is deliberately not where this lives.
+        /// </summary>
+        public MarkerAttachmentRegister Markers { get; }
+
         public EndOfRoundFixtureCapabilities EndOfRoundCapabilities { get; }
         public IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> EndOfRoundHandlers { get; }
 
-        /// <summary>A configured match: card actions, a real board, and a shared timing lifecycle.</summary>
+        /// <summary>
+        /// A configured match: card actions, a real board, a shared timing lifecycle, and the shared
+        /// marker register.
+        /// </summary>
         public static RoundResolutionComposition ForMatch(
             CardActionResolutionAuthority cardActions,
             AdjacentMoveAuthority board,
-            ActiveEffectLifecycle timing)
+            ActiveEffectLifecycle timing,
+            MarkerAttachmentRegister markers)
         {
-            return new RoundResolutionComposition(cardActions, board, timing, null, null);
+            return new RoundResolutionComposition(cardActions, board, timing, markers, null, null);
         }
 
         /// <summary>
@@ -57,7 +73,7 @@ namespace GuardsDigital.Core.Cards
         public static RoundResolutionComposition ForCardActionsOnly(
             CardActionResolutionAuthority cardActions)
         {
-            return new RoundResolutionComposition(cardActions, null, null, null, null);
+            return new RoundResolutionComposition(cardActions, null, null, null, null, null);
         }
     }
 }

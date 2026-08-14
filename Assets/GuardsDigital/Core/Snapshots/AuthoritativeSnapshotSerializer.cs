@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
@@ -23,15 +25,19 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
-        // v8: the Active-effect section carries identity and runtime state only - scope, duration, the
-        // three lifecycle checkpoints, cancellation conditions, the cross-round flag, effect kind,
-        // uniqueness key, and trigger checkpoints are gone from the wire and come from the registered
-        // capability catalog instead; a pending Skill continuation is representable. v7 is explicitly
-        // rejected rather than migrated (milestone 6.2a migrate-or-reject decision): it states those
-        // semantics inline and carries no capability identity, so there is no field to migrate the
-        // trusted binding from, and accepting it would mean trusting a payload to say what an effect
-        // means. v7 itself rejected v6 for the analogous reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 8;
+        // v9: placed tokens join the board section and attached markers join the round section, each
+        // carrying identity, provenance and position only; supply size, display name and marker return
+        // condition come from the registered component catalog, which the payload also records so a
+        // restore can refuse a build whose component content differs. v8 is explicitly rejected rather
+        // than migrated (milestone 6.2 migrate-or-reject decision). Reading a v8 payload as a match with
+        // no components would in fact be faithful - v8 could not represent one - so this is the first
+        // bump where migration was defensible; it is refused anyway, because the engine has never had a
+        // second read path, no persisted state exists outside the version-controlled corpus to strand,
+        // and one rule for every version is worth more than one payload's convenience.
+        //
+        // v8 rejected v7 because the Active-effect section left semantics on the wire, and v7 rejected
+        // v6 for the analogous reason at milestone 6.1s.
+        public const int CurrentSchemaVersion = 9;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full
@@ -53,7 +59,8 @@ namespace GuardsDigital.Core.Snapshots
         public static string Serialize(
             RoundResolutionAuthority round,
             AdjacentMoveAuthority board,
-            EffectCapabilityCatalog capabilities = null)
+            EffectCapabilityCatalog capabilities = null,
+            ComponentDefinitionCatalog components = null)
         {
             if (round == null) throw new ArgumentNullException(nameof(round));
             if (board == null) throw new ArgumentNullException(nameof(board));
@@ -67,6 +74,8 @@ namespace GuardsDigital.Core.Snapshots
                 WriteDefinitions(writer, round.Definitions);
                 WriteCapabilityRegistrations(
                     writer, capabilities ?? SyntheticEffectCapabilities.CreateCatalog());
+                WriteComponentRegistrations(
+                    writer, components ?? SyntheticComponentDefinitions.CreateCatalog());
                 WriteParticipants(writer, round.Participants);
                 WriteBoard(writer, board);
                 WriteCards(writer, round.Instances);
@@ -95,11 +104,14 @@ namespace GuardsDigital.Core.Snapshots
             IEnumerable<CardDefinition> currentDefinitions,
             IEnumerable<BoardMapDefinition> currentMapDefinitions,
             IEnumerable<QuickGameMinionSetupState> minions,
-            EffectCapabilityCatalog capabilities = null)
+            EffectCapabilityCatalog capabilities = null,
+            ComponentDefinitionCatalog components = null)
         {
-            // The trusted capability set a restore rebinds against. Defaulted rather than required so
-            // existing callers keep compiling; the configured session always supplies the real one.
+            // The trusted capability and component sets a restore rebinds against. Defaulted rather
+            // than required so existing callers keep compiling; the configured session always supplies
+            // the real ones.
             capabilities = capabilities ?? SyntheticEffectCapabilities.CreateCatalog();
+            components = components ?? SyntheticComponentDefinitions.CreateCatalog();
             if (string.IsNullOrWhiteSpace(payload))
             {
                 throw new SnapshotLoadException(
@@ -143,10 +155,12 @@ namespace GuardsDigital.Core.Snapshots
                         currentMapDefinitions ?? throw new ArgumentNullException(nameof(currentMapDefinitions)));
                     var definitions = ValidateDefinitions(reader, currentDefinitions);
                     ValidateCapabilityRegistrations(reader, capabilities);
+                    ValidateComponentRegistrations(reader, components);
                     var participants = ReadParticipants(reader);
-                    var board = ReadBoard(reader, mapCatalog, minions);
+                    var board = ReadBoard(reader, mapCatalog, minions, components);
                     var cards = ReadCards(reader, definitions, participants);
-                    var round = ReadRound(reader, definitions, cards, participants, board, capabilities);
+                    var round = ReadRound(
+                        reader, definitions, cards, participants, board, capabilities, components);
                     if (stream.Position != stream.Length)
                     {
                         throw Malformed("Snapshot contains unexpected trailing data.");

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -11,16 +12,18 @@ using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.AdjacentMove
 {
-    public sealed class AdjacentMoveAuthority
+    public sealed class AdjacentMoveAuthority : ITokenPlacementAuthority
     {
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly List<HeroOccupancy> occupancies;
         private readonly List<ObstacleOccupancy> obstacleOccupancies;
         private readonly List<MinionOccupancy> minions;
+        private readonly List<PlacedToken> tokens;
         private readonly BoardOccupancyIndex occupancyIndex;
         private readonly IReadOnlyList<HeroOccupancy> occupanciesView;
         private readonly IReadOnlyList<ObstacleOccupancy> obstacleOccupanciesView;
         private readonly IReadOnlyList<MinionOccupancy> minionsView;
+        private readonly IReadOnlyList<PlacedToken> tokensView;
         private readonly IReadOnlyList<HexCoordinate> boardCoordinatesView;
 
         public AdjacentMoveAuthority(
@@ -78,6 +81,20 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<HeroOccupancy> initialOccupancies,
             IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
             IEnumerable<MinionOccupancy> initialMinions)
+            : this(mapDefinition, initialOccupancies, initialObstacleOccupancies, initialMinions,
+                Enumerable.Empty<PlacedToken>())
+        {
+        }
+
+        // Tokens enter only through a restore. No configured setup places one: a token reaches the
+        // board when an effect places it, which is why this arm is not part of the public setup
+        // surface the other constructors form.
+        private AdjacentMoveAuthority(
+            BoardMapDefinition mapDefinition,
+            IEnumerable<HeroOccupancy> initialOccupancies,
+            IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
+            IEnumerable<MinionOccupancy> initialMinions,
+            IEnumerable<PlacedToken> initialTokens)
         {
             MapDefinition = mapDefinition ?? throw new ArgumentNullException(nameof(mapDefinition));
 
@@ -96,11 +113,17 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new ArgumentNullException(nameof(initialMinions));
             }
 
+            if (initialTokens == null)
+            {
+                throw new ArgumentNullException(nameof(initialTokens));
+            }
+
             this.boardCoordinates = new HashSet<HexCoordinate>(mapDefinition.PlayableCoordinates);
             occupancies = new List<HeroOccupancy>();
             obstacleOccupancies = new List<ObstacleOccupancy>();
             occupancyIndex = new BoardOccupancyIndex();
             var materializedMinions = initialMinions.ToArray();
+            var materializedTokens = initialTokens.ToArray();
 
             // Per-kind identity validation stays with each kind; the shared occupancy index owns
             // the one-obstacle-per-space rule for every kind through its single Add.
@@ -156,10 +179,40 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 occupancyIndex.Add(minion.Coordinate, BoardOccupant.ForMinion(minion.MinionId), nameof(initialMinions));
             }
 
+            // Per-kind identity and supply validation stays with the kind; the shared index still owns
+            // the one-occupant-per-space rule through the same single Add every other kind uses.
+            if (materializedTokens.Any(token => token == null) ||
+                materializedTokens.Select(token => token.Id).Distinct().Count() != materializedTokens.Length)
+            {
+                throw new ArgumentException("Initial tokens must be non-null and have unique IDs.", nameof(initialTokens));
+            }
+
+            foreach (var group in materializedTokens.GroupBy(token => token.Definition.Reference))
+            {
+                if (group.Count() > group.First().Definition.SupplyCount)
+                {
+                    throw new ArgumentException(
+                        $"More '{group.Key}' tokens are on the board than the trusted supply contains.",
+                        nameof(initialTokens));
+                }
+            }
+
+            foreach (var token in materializedTokens)
+            {
+                if (!this.boardCoordinates.Contains(token.Coordinate))
+                {
+                    throw new ArgumentException("Initial token placement must be on the board.", nameof(initialTokens));
+                }
+
+                occupancyIndex.Add(token.Coordinate, BoardOccupant.ForToken(token.Id), nameof(initialTokens));
+            }
+
             minions = new List<MinionOccupancy>(materializedMinions);
+            tokens = new List<PlacedToken>(materializedTokens);
             occupanciesView = occupancies.AsReadOnly();
             obstacleOccupanciesView = obstacleOccupancies.AsReadOnly();
             minionsView = minions.AsReadOnly();
+            tokensView = tokens.AsReadOnly();
             boardCoordinatesView = this.boardCoordinates.ToArray();
         }
 
@@ -173,10 +226,12 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             occupancies = new List<HeroOccupancy>(source.occupancies);
             obstacleOccupancies = new List<ObstacleOccupancy>(source.obstacleOccupancies);
             minions = new List<MinionOccupancy>(source.minions);
+            tokens = new List<PlacedToken>(source.tokens);
             occupancyIndex = source.occupancyIndex.Clone();
             occupanciesView = occupancies.AsReadOnly();
             obstacleOccupanciesView = obstacleOccupancies.AsReadOnly();
             minionsView = minions.AsReadOnly();
+            tokensView = tokens.AsReadOnly();
             boardCoordinatesView = source.boardCoordinatesView;
         }
 
@@ -189,6 +244,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupanciesView;
 
         public IReadOnlyList<MinionOccupancy> Minions => minionsView;
+
+        public IReadOnlyList<PlacedToken> PlacedTokens => tokensView;
 
         public IReadOnlyList<HexCoordinate> BoardCoordinates => boardCoordinatesView;
 
@@ -204,7 +261,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             new BoardRestoreState(
                 occupancies,
                 obstacleOccupancies,
-                minions.Select(minion => new RestoredMinionPosition(minion.MinionId, minion.Coordinate)));
+                minions.Select(minion => new RestoredMinionPosition(minion.MinionId, minion.Coordinate)),
+                tokens);
 
         public static AdjacentMoveAuthority Restore(
             BoardRestoreState state,
@@ -242,7 +300,12 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     new ConfiguredSpaceReference(mapDefinition.Id, space.Id),
                     position.Coordinate);
             });
-            return new AdjacentMoveAuthority(mapDefinition, state.HeroOccupancies, state.ObstacleOccupancies, remaining);
+            return new AdjacentMoveAuthority(
+                mapDefinition,
+                state.HeroOccupancies,
+                state.ObstacleOccupancies,
+                remaining,
+                state.PlacedTokens);
         }
 
         public AdjacentMoveResult TryCommit(AdjacentMoveCommand command)
@@ -356,6 +419,58 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             occupancyIndex.Move(current.Coordinate, destination);
             minions[index] = moved;
             return MinionMoveResult.Accept(moved, current.Coordinate);
+        }
+
+        public bool TryGetHeroCoordinate(HeroId heroId, out HexCoordinate coordinate)
+        {
+            var index = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(heroId));
+            coordinate = index < 0 ? default : occupancies[index].Coordinate;
+            return index >= 0;
+        }
+
+        public bool IsEmptyPlayableSpace(HexCoordinate coordinate) =>
+            boardCoordinates.Contains(coordinate) && !occupancyIndex.IsOccupied(coordinate);
+
+        public void CommitValidatedTokenPlacement(PlacedToken token)
+        {
+            if (token == null) throw new ArgumentNullException(nameof(token));
+
+            if (tokens.Any(existing => existing.Id.Equals(token.Id)))
+            {
+                throw new InvalidOperationException("Token instance IDs must be unique on the board.");
+            }
+
+            if (!IsEmptyPlayableSpace(token.Coordinate))
+            {
+                throw new InvalidOperationException(
+                    "A validated token placement destination is no longer empty and playable.");
+            }
+
+            // The supply is the definition's total minus what is already out; there is no separate
+            // counter, so this cannot disagree with the board it is guarding.
+            var placed = tokens.Count(existing => existing.Definition.Reference.Equals(token.Definition.Reference));
+            if (placed >= token.Definition.SupplyCount)
+            {
+                throw new InvalidOperationException(
+                    $"Token '{token.Definition.Reference}' has no copy left in the supply to place.");
+            }
+
+            occupancyIndex.Add(token.Coordinate, BoardOccupant.ForToken(token.Id), nameof(token));
+            tokens.Add(token);
+        }
+
+        public PlacedToken CommitValidatedTokenReclamation(TokenInstanceId tokenInstanceId)
+        {
+            var index = tokens.FindIndex(token => token.Id.Equals(tokenInstanceId));
+            if (index < 0)
+            {
+                throw new InvalidOperationException("A validated token is no longer on the board.");
+            }
+
+            var removed = tokens[index];
+            tokens.RemoveAt(index);
+            occupancyIndex.Remove(removed.Coordinate);
+            return removed;
         }
     }
 }

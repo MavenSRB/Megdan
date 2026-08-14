@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
@@ -45,6 +46,7 @@ namespace GuardsDigital.Core.Snapshots
             WritePendingMinionBattleChoice(writer, pendingMinionBattleChoice);
             WritePendingLanePushRequest(writer, pendingLanePushRequest);
             WriteTiming(writer, round.Timing.CaptureRestoreState());
+            WriteMarkers(writer, round.Markers.CaptureRestoreState());
 
             var (hasCardActions, roundDefeatRewards) = roundCardActions;
             writer.Write(hasCardActions);
@@ -66,7 +68,8 @@ namespace GuardsDigital.Core.Snapshots
             IReadOnlyList<CardInstance> cards,
             MatchParticipants participants,
             AdjacentMoveAuthority board,
-            EffectCapabilityCatalog capabilities)
+            EffectCapabilityCatalog capabilities,
+            ComponentDefinitionCatalog components)
         {
             var roundIndex = reader.ReadInt32();
             var turnIndex = reader.ReadInt32();
@@ -87,6 +90,7 @@ namespace GuardsDigital.Core.Snapshots
             var pendingMinionBattleChoice = ReadPendingMinionBattleChoice(reader);
             var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
             var timing = ActiveEffectLifecycle.Restore(ReadTiming(reader, capabilities));
+            var markers = MarkerAttachmentRegister.Restore(ReadMarkers(reader, components, participants));
             var hasRoundCardActions = reader.ReadBoolean();
             var roundDefeatRewards = ReadDefeatRewards(reader);
 
@@ -100,7 +104,7 @@ namespace GuardsDigital.Core.Snapshots
             TurnResolutionAuthority turn = null;
             if (reader.ReadBoolean())
             {
-                turn = ReadTurn(reader, definitions, cards, participants, board, timing,
+                turn = ReadTurn(reader, definitions, cards, participants, board, timing, markers,
                     roundIndex, turnIndex, capabilities, out cardActions);
             }
             else if (hasRoundCardActions)
@@ -113,7 +117,8 @@ namespace GuardsDigital.Core.Snapshots
                     null,
                     definitions,
                     cards,
-                    participants);
+                    participants,
+                    markers);
             }
 
             return RoundResolutionAuthority.Restore(
@@ -133,7 +138,78 @@ namespace GuardsDigital.Core.Snapshots
                 turn,
                 cardActions,
                 timing,
+                markers,
                 board);
+        }
+
+        /// <summary>
+        /// Milestone 6.2. An attached marker writes identity, provenance, and who holds it. Its supply
+        /// size and return condition are absent from the wire and rebound from the component catalog,
+        /// for the reason the Active-effect section states at v8: a payload may not say what a piece of
+        /// content means. That is what makes the marker's return state trusted rather than asserted.
+        /// </summary>
+        private static void WriteMarkers(BinaryWriter writer, MarkerAttachmentRestoreState state)
+        {
+            // Explicit Deconstruct rather than tuple syntax: C# has no one-element deconstruction, and
+            // the point of destructuring here is the arity break when a persisted field is added.
+            state.Deconstruct(out var attachments);
+            writer.Write(attachments.Count);
+            foreach (var attachment in attachments.OrderBy(value => value.Id.Value, StringComparer.Ordinal))
+            {
+                writer.Write(attachment.Id.Value);
+                writer.Write(attachment.Definition.Id.Value);
+                writer.Write(attachment.Definition.Revision);
+                writer.Write(attachment.OwnerHeroId.Value ?? string.Empty);
+                writer.Write(attachment.HolderHeroId.Value);
+                writer.Write(attachment.SourceCardInstanceId.Value ?? string.Empty);
+                writer.Write(attachment.SourceActionDefinitionId.Value ?? string.Empty);
+            }
+        }
+
+        private static MarkerAttachmentRestoreState ReadMarkers(
+            BinaryReader reader,
+            ComponentDefinitionCatalog components,
+            MatchParticipants participants)
+        {
+            return new MarkerAttachmentRestoreState(ReadMany(reader, "marker attachments", () =>
+            {
+                var id = new MarkerInstanceId(reader.ReadString());
+                var reference = new MarkerDefinitionReference(
+                    new MarkerDefinitionId(reader.ReadString()), reader.ReadInt32());
+                var owner = ReadOptionalHeroId(reader);
+                var holder = new HeroId(reader.ReadString());
+                // A marker is held by a hero, so a payload naming one this match does not have is
+                // refused here rather than producing an attachment nothing can ever return.
+                participants.GetHero(holder);
+                var sourceCard = ReadOptionalCardInstanceId(reader);
+                var sourceActionValue = reader.ReadString();
+                return new MarkerAttachment(
+                    id,
+                    LoadTrustedMarkerDefinition(components, reference),
+                    owner,
+                    holder,
+                    sourceCard,
+                    string.IsNullOrEmpty(sourceActionValue) ? default : new ActionDefinitionId(sourceActionValue));
+            }));
+        }
+
+        private static MarkerDefinition LoadTrustedMarkerDefinition(
+            ComponentDefinitionCatalog components,
+            MarkerDefinitionReference reference)
+        {
+            try
+            {
+                return components.LoadMarker(reference);
+            }
+            catch (ComponentDefinitionLoadException exception)
+            {
+                throw new SnapshotLoadException(
+                    exception.Reason == ComponentDefinitionLoadRejectionReason.MissingDefinition
+                        ? SnapshotLoadRejectionReason.ComponentDefinitionMissing
+                        : SnapshotLoadRejectionReason.ComponentDefinitionRevisionMismatch,
+                    exception.Message,
+                    exception);
+            }
         }
 
         private static void WritePendingMinionBattleChoice(

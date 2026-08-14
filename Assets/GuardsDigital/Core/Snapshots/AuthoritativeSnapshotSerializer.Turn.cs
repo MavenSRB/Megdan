@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
@@ -39,6 +40,7 @@ namespace GuardsDigital.Core.Snapshots
             MatchParticipants participants,
             AdjacentMoveAuthority board,
             ActiveEffectLifecycle timing,
+            MarkerAttachmentRegister markers,
             int roundIndex,
             int turnIndex,
             EffectCapabilityCatalog capabilities,
@@ -50,7 +52,8 @@ namespace GuardsDigital.Core.Snapshots
                 SnapshotEnumReader.Read<TeamSide>(reader, "turn tie-breaker revealed side"));
             var pendingChoice = ReadPendingInitiativeChoice(reader);
             var selectedActor = ReadSelectedActor(reader);
-            cardActions = ReadCardAction(reader, board, definitions, cards, participants, capabilities);
+            cardActions = ReadCardAction(
+                reader, board, definitions, cards, participants, capabilities, markers);
             return TurnResolutionAuthority.Restore(
                 definitions,
                 cards,

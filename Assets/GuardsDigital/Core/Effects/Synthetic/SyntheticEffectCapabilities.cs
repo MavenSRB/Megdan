@@ -72,17 +72,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference AcceptHeroV1 => new EffectCapabilityReference(AcceptHero, 1);
         public static EffectCapabilityReference MarkActorV1 => new EffectCapabilityReference(MarkActor, 1);
 
+        /// <summary>
+        /// The build's one capability contract set. Milestone 6.2's component handlers join here rather
+        /// than forming a second catalog: a match has one registered set, and the snapshot records it as
+        /// one list to compare a restore against.
+        /// </summary>
         public static EffectCapabilityCatalog CreateCatalog() =>
             new EffectCapabilityCatalog(new IEffectCapabilityHandler[]
-            {
-                new NoteActorHandler(),
-                new ChooseHeroHandler(),
-                new IsFlaggedHandler(),
-                new ImpossibleHandler(),
-                new DeclinedHandler(),
-                new AcceptHeroHandler(),
-                new MarkActorHandler()
-            });
+                {
+                    new NoteActorHandler(),
+                    new ChooseHeroHandler(),
+                    new IsFlaggedHandler(),
+                    new ImpossibleHandler(),
+                    new DeclinedHandler(),
+                    new AcceptHeroHandler(),
+                    new MarkActorHandler()
+                }
+                .Concat(SyntheticComponentCapabilities.Handlers()));
 
         /// <summary>
         /// Creates one Active effect on the actor. This is the capability that gives acceptance check 5

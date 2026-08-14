@@ -414,7 +414,7 @@ Milestone IDs are unchanged and 6.2 keeps its position in numeric order below, s
 
 **Sequencing amendment (2026-08-14, user approved).** After milestone 6.2b closes its gate, the dependency-safe gameplay order begins **6.3 -> 6.8 -> 6.4**. Milestone 6.4 consumes the targeting, presence, immunity, permission, and obstacle contracts owned by 6.8, so 6.8 is an explicit prerequisite of 6.4 rather than later work. Numeric placement below is unchanged; execution follows these prerequisite declarations. Scheduling is not authorization: each milestone still requires exact user approval before execution.
 
-### [~] 6.2 Add token and marker instances, supplies, placement, and attachment
+### [x] 6.2 Add token and marker instances, supplies, placement, and attachment
 
 Observable outcome: Synthetic tokens and markers have stable authoritative identity without requiring Wasp content.
 
@@ -426,6 +426,12 @@ Acceptance checks:
 - Markers are attachments rather than board occupants and have explicit return state.
 - Token placement/reclamation and marker attachment are authoritative choices/transitions.
 - Token and marker lifetime is not inferred from art or UI objects.
+
+Closing check: acceptance evidence rather than a failing-then-passing pair, for the reason 6.2a recorded - this milestone adds components that did not exist rather than correcting a defect. `TokenAndMarkerComponentTests` proves a placed token blocks movement and adjacent moves through the shared occupancy index, that the supply is the catalog total minus what is on the board, and that a marker record has no coordinate to occupy a space with. `MatchSessionComponentDispatchTests` drives placement, the short-supply reclamation choice, and marker attachment end to end through `IMatchSession` with restore, replay, and retained-prefix Undo. `ComponentLifetimeOwnershipConformanceTests` is proved against a deliberate violator and a compliant twin, and pairs its negative rule with a positive one naming where component lifetime does happen.
+
+Historical evidence: [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md).
+
+Scope note: the user approved the three dispositions this milestone's non-goals left open. Tokens surface nowhere in the projection, so 6.2b decides how a token occupant joins presentation rather than inheriting a decision. Schema v8 is rejected rather than migrated, which was defensible to migrate for the first time and refused anyway to keep one read path per version. The marker return transition exists but neither general cleanup checkpoint is wired: end-of-round cleanup is 6.12's, and the p.13 defeat return stays with it rather than shipping alone.
 
 Non-goals: No token-specific `DirectorCommandKind` member, pending-choice class, `MatchSessionProjection` property, or `CardActionContinuationKind` arm - the supply-exhaustion reclamation choice and the marker give/return operations ride 6.2a's frame, and a token-shaped copy of the existing per-action pending state is the exact shortcut this ordering exists to prevent. No token property behavior or Clear (6.3), displacement (6.4), Place or Spawn (6.5), Swap/Replace/Remove (6.6), or end-of-round cleanup (6.12). No Wasp content, printed-text parsing, card-name/hero-name branch, production presentation, art, animation, or audio.
 

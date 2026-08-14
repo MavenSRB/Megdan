@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -107,7 +108,8 @@ namespace GuardsDigital.Core.Effects
             int roundIndex,
             int turnIndex,
             MatchParticipants participants,
-            ActiveEffectLifecycle timing)
+            ActiveEffectLifecycle timing,
+            MatchComponents components = null)
         {
             if (!nodeId.IsDefined)
             {
@@ -130,6 +132,7 @@ namespace GuardsDigital.Core.Effects
             TurnIndex = turnIndex;
             Participants = participants;
             Timing = timing;
+            Components = components;
         }
 
         public EffectNodeId NodeId { get; }
@@ -143,6 +146,14 @@ namespace GuardsDigital.Core.Effects
         public int TurnIndex { get; }
         public MatchParticipants Participants { get; }
         public ActiveEffectLifecycle Timing { get; }
+
+        /// <summary>
+        /// Milestone 6.2's token and marker collaborators, or <c>null</c> outside a live match. Like
+        /// <see cref="Timing"/>, this is authoritative state the handler may mutate through a named
+        /// operation; unlike a Unity object or a delegate, none of it is a continuation, so the frame
+        /// still owns where execution is.
+        /// </summary>
+        public MatchComponents Components { get; }
 
         public EffectValue Input(string parameterName) =>
             Inputs.TryGetValue(parameterName, out var value) ? value : default;

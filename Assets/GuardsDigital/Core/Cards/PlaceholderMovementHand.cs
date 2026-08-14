@@ -38,6 +38,21 @@ namespace GuardsDigital.Core.Cards
         private static readonly SyntheticSkillProfile BlueSkillProfile =
             new SyntheticSkillProfile("blue-focus", "Blue Focus", 3);
 
+        /// <summary>
+        /// Milestone 6.2's Skill cards. They sit outside their team's ordinary Initiative band for the
+        /// same reason the 6.2a pair does, so a fixture can reach the Skill without steering Initiative.
+        ///
+        /// They are separate cards rather than a second action on the 6.2a Skill card. A secondary Skill
+        /// action does not exist in the rulebook - p.7 lists Skill only among the primary icons, and
+        /// names Hold, Fast Travel and Clear as the secondary ones - so adding one would have invented
+        /// content to save a card.
+        /// </summary>
+        private static readonly SyntheticSkillProfile RedComponentSkillProfile =
+            new SyntheticSkillProfile("red-cache", "Red Cache", 15);
+
+        private static readonly SyntheticSkillProfile BlueComponentSkillProfile =
+            new SyntheticSkillProfile("blue-cache", "Blue Cache", 2);
+
         private PlaceholderMovementHand(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances)
@@ -77,12 +92,12 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public static PlaceholderMovementHand CreateRedWithSkill(HeroId ownerId)
         {
-            return Create(ownerId, RedProfiles, null, RedSkillProfile);
+            return Create(ownerId, RedProfiles, null, RedSkillProfile, RedComponentSkillProfile);
         }
 
         public static PlaceholderMovementHand CreateBlueWithSkill(HeroId ownerId)
         {
-            return Create(ownerId, BlueProfiles, null, BlueSkillProfile);
+            return Create(ownerId, BlueProfiles, null, BlueSkillProfile, BlueComponentSkillProfile);
         }
 
         internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
@@ -108,46 +123,56 @@ namespace GuardsDigital.Core.Cards
             HeroId ownerId,
             IReadOnlyList<SyntheticCardProfile> profiles,
             string instancePrefix,
-            SyntheticSkillProfile skillProfile = null)
+            SyntheticSkillProfile skillProfile = null,
+            SyntheticSkillProfile componentSkillProfile = null)
         {
             if (!ownerId.IsDefined)
             {
                 throw new ArgumentException("A placeholder hand requires a defined owner.", nameof(ownerId));
             }
 
-            var extra = skillProfile == null ? 0 : 1;
-            var definitions = new CardDefinition[profiles.Count + extra];
-            var instances = new CardInstance[profiles.Count + extra];
-            for (var index = 0; index < profiles.Count; index++)
+            var definitions = new List<CardDefinition>();
+            var instances = new List<CardInstance>();
+            foreach (var profile in profiles)
             {
-                var profile = profiles[index];
-                var definition = CreateDefinition(profile);
-                definitions[index] = definition;
-                instances[index] = CardInstance.CreateInHand(
-                    new CardInstanceId(
-                        string.IsNullOrWhiteSpace(instancePrefix)
-                            ? $"{profile.Id}-card"
-                            : $"{instancePrefix}-{profile.Id}-card"),
-                    definition.Reference,
-                    ownerId);
+                AddCard(definitions, instances, CreateDefinition(profile), profile.Id, instancePrefix, ownerId);
             }
 
             if (skillProfile != null)
             {
-                var definition = CreateSkillDefinition(skillProfile);
-                definitions[profiles.Count] = definition;
-                instances[profiles.Count] = CardInstance.CreateInHand(
-                    new CardInstanceId(
-                        string.IsNullOrWhiteSpace(instancePrefix)
-                            ? $"{skillProfile.Id}-card"
-                            : $"{instancePrefix}-{skillProfile.Id}-card"),
-                    definition.Reference,
-                    ownerId);
+                AddCard(
+                    definitions, instances, CreateSkillDefinition(skillProfile),
+                    skillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (componentSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances, CreateComponentSkillDefinition(componentSkillProfile),
+                    componentSkillProfile.Id, instancePrefix, ownerId);
             }
 
             return new PlaceholderMovementHand(
-                Array.AsReadOnly(definitions),
-                Array.AsReadOnly(instances));
+                definitions.AsReadOnly(),
+                instances.AsReadOnly());
+        }
+
+        private static void AddCard(
+            ICollection<CardDefinition> definitions,
+            ICollection<CardInstance> instances,
+            CardDefinition definition,
+            string profileId,
+            string instancePrefix,
+            HeroId ownerId)
+        {
+            definitions.Add(definition);
+            instances.Add(CardInstance.CreateInHand(
+                new CardInstanceId(
+                    string.IsNullOrWhiteSpace(instancePrefix)
+                        ? $"{profileId}-card"
+                        : $"{instancePrefix}-{profileId}-card"),
+                definition.Reference,
+                ownerId));
         }
 
         /// <summary>
@@ -200,6 +225,82 @@ namespace GuardsDigital.Core.Cards
                 {
                     new ActionDefinition(
                         new ActionDefinitionId("primary-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 6.2's Skill: one chooser-owned selection among the three component operations this
+        /// milestone implements - place a token, give a marker, or return one this card gave.
+        ///
+        /// A <c>Choose</c> root rather than three cards, because the milestone needs all three paths
+        /// reachable and a `Choose` is the frame structure that offers alternatives. The place branch is
+        /// the rulebook's p.18 order made explicit: an `if able` reclamation step, then the placement,
+        /// as two nodes so each carries at most one decision.
+        ///
+        /// Board-neutral in the sense that matters: it names no hero, no card, and no space. Which
+        /// spaces are offered comes from the capability, not from this table.
+        /// </summary>
+        private static CardDefinition CreateComponentSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("component-root");
+            var placeBranch = new EffectNodeId("component-place-branch");
+            var reclaim = new EffectNodeId("component-reclaim-token");
+            var place = new EffectNodeId("component-place-token");
+            var give = new EffectNodeId("component-give-marker");
+            var returnMarker = new EffectNodeId("component-return-marker");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-6-2-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { placeBranch, give, returnMarker },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    new EffectNodeDefinition(
+                        placeBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { reclaim, place }),
+                    // `if able` is the rulebook's own word for the short-supply step, and it is the
+                    // policy that lets an empty board skip the step instead of stopping the action.
+                    new EffectNodeDefinition(
+                        reclaim, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticComponentCapabilities.ReclaimTokenV1,
+                        outputs: new[] { new EffectOutputBinding("reclaimed", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        place, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticComponentCapabilities.PlaceTokenV1,
+                        outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        give, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticComponentCapabilities.GiveMarkerV1,
+                        outputs: new[] { new EffectOutputBinding("holder", EffectValueKind.Hero) }),
+                    new EffectNodeDefinition(
+                        returnMarker, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticComponentCapabilities.ReturnMarkerV1,
+                        outputs: new[] { new EffectOutputBinding("returned", EffectValueKind.Hero) })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-6-2-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-component-skill"),
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
                         Array.Empty<PrintedValueDefinition>(),

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -55,7 +56,8 @@ namespace GuardsDigital.Core.Snapshots
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> cards,
             MatchParticipants participants,
-            EffectCapabilityCatalog capabilities)
+            EffectCapabilityCatalog capabilities,
+            MarkerAttachmentRegister markers)
         {
             var kind = reader.ReadInt32();
             var defeatRewards = ReadDefeatRewards(reader);
@@ -77,7 +79,10 @@ namespace GuardsDigital.Core.Snapshots
                     break;
                 case CardActionContinuationKind.Skill:
                     state = CardActionResolutionRestoreState.WithPendingSkill(
-                        ReadSkillResolution(reader, definitions, capabilities), defeatRewards);
+                        ReadSkillResolution(
+                            reader, definitions, capabilities, participants,
+                            CardActionResolutionAuthority.CreateRestoredComponents(board, markers)),
+                        defeatRewards);
                     break;
                 default:
                     throw Malformed("Unknown pending card-action kind.");
@@ -86,7 +91,7 @@ namespace GuardsDigital.Core.Snapshots
             // The snapshot never stores the pending choices; they are derived during
             // restore, so no verified choice is supplied here.
             return CardActionResolutionAuthority.Restore(
-                board, state, null, null, null, definitions, cards, participants);
+                board, state, null, null, null, definitions, cards, participants, markers);
         }
 
         /// <summary>
@@ -162,7 +167,9 @@ namespace GuardsDigital.Core.Snapshots
         private static PendingResolution ReadSkillResolution(
             BinaryReader reader,
             IReadOnlyList<CardDefinition> definitions,
-            EffectCapabilityCatalog capabilities)
+            EffectCapabilityCatalog capabilities,
+            MatchParticipants participants,
+            MatchComponents components)
         {
             var common = ReadCommonResolution(reader);
             var controllerId = new HeroId(reader.ReadString());
@@ -253,7 +260,8 @@ namespace GuardsDigital.Core.Snapshots
                         ? Array.Empty<EffectChoiceCandidate>()
                         : choiceKind == EffectChoiceKind.SelectOption
                             ? node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray()
-                            : DeriveCapabilityCandidates(node, common, controllerId, capabilities);
+                            : DeriveCapabilityCandidates(
+                                node, common, controllerId, capabilities, participants, components);
                 if (selected.Any(candidate => !candidates.Contains(candidate)))
                 {
                     throw Malformed(
@@ -284,11 +292,21 @@ namespace GuardsDigital.Core.Snapshots
         /// Re-asks the registered handler what it offered. Handlers are pure and stateless, so replaying
         /// the request reproduces the authoritative candidate set without the payload describing it.
         /// </summary>
+        /// <remarks>
+        /// Milestone 6.2 made the state this request runs against load-bearing. A capability whose
+        /// candidates come from the board - which empty spaces may take a token, which same-type tokens
+        /// may be taken back - must be re-asked against the state this same payload just restored, not
+        /// against an empty context. The board and the marker register are both already read by the time
+        /// a pending Skill is decoded, which is what makes that possible; before this milestone every
+        /// capability derived its candidates from identities alone and the difference could not show.
+        /// </remarks>
         private static EffectChoiceCandidate[] DeriveCapabilityCandidates(
             EffectNodeDefinition node,
             CommonResolution common,
             HeroId controllerId,
-            EffectCapabilityCatalog capabilities)
+            EffectCapabilityCatalog capabilities,
+            MatchParticipants participants,
+            MatchComponents components)
         {
             var handler = capabilities.Load(node.Capability);
             var offered = handler.Execute(new EffectCapabilityContext(
@@ -301,8 +319,9 @@ namespace GuardsDigital.Core.Snapshots
                 null,
                 1,
                 1,
+                participants,
                 null,
-                null));
+                components));
             if (offered.Choice == null)
             {
                 throw Malformed(

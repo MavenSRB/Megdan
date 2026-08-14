@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -18,15 +20,36 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly AttackDefenseCardActionStrategyBackend attackDefenseBackend;
         private readonly FastTravelCardActionStrategyBackend fastTravelBackend;
         private readonly SkillCardActionStrategyBackend skillBackend;
+        private readonly MatchComponents components;
 
         public CardActionResolutionAuthority(AdjacentMoveAuthority adjacentMoveAuthority)
-            : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance)
+            : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, null)
         {
         }
 
         public CardActionResolutionAuthority(
             AdjacentMoveAuthority adjacentMoveAuthority,
             IMovementActionStartRestrictionEvaluator movementActionStartRestrictions)
+            : this(adjacentMoveAuthority, movementActionStartRestrictions, null)
+        {
+        }
+
+        /// <summary>
+        /// The configured match's shape: default movement restrictions, plus the marker register the
+        /// round authority also holds. The default evaluator is internal to this assembly, so the
+        /// application layer composes a match through this overload rather than naming it.
+        /// </summary>
+        public CardActionResolutionAuthority(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            MarkerAttachmentRegister markers)
+            : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, markers)
+        {
+        }
+
+        public CardActionResolutionAuthority(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            IMovementActionStartRestrictionEvaluator movementActionStartRestrictions,
+            MarkerAttachmentRegister markers)
             : this(
                 new MovementCardActionStrategyBackend(
                     adjacentMoveAuthority,
@@ -34,7 +57,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         nameof(movementActionStartRestrictions))),
                 new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority),
                 new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()))
+                new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
+                CreateComponents(adjacentMoveAuthority, markers))
         {
         }
 
@@ -42,13 +66,40 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MovementCardActionStrategyBackend movementBackend,
             AttackDefenseCardActionStrategyBackend attackDefenseBackend,
             FastTravelCardActionStrategyBackend fastTravelBackend,
-            SkillCardActionStrategyBackend skillBackend)
+            SkillCardActionStrategyBackend skillBackend,
+            MatchComponents components)
         {
             this.movementBackend = movementBackend ?? throw new ArgumentNullException(nameof(movementBackend));
             this.attackDefenseBackend = attackDefenseBackend ?? throw new ArgumentNullException(nameof(attackDefenseBackend));
             this.fastTravelBackend = fastTravelBackend ?? throw new ArgumentNullException(nameof(fastTravelBackend));
             this.skillBackend = skillBackend ?? throw new ArgumentNullException(nameof(skillBackend));
+            this.components = components ?? throw new ArgumentNullException(nameof(components));
         }
+
+        /// <summary>
+        /// The component collaborators a Skill's capabilities may reach. The board doubles as the token
+        /// placement port, because tokens are board occupants and the board owns the one occupancy index
+        /// milestone 6.1r established. The marker register arrives from the caller rather than being
+        /// created here whenever a live match is composing, so that the register this dispatcher hands to
+        /// capabilities and the register the round authority persists are the same object.
+        /// </summary>
+        private static MatchComponents CreateComponents(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            MarkerAttachmentRegister markers) =>
+            new MatchComponents(
+                SyntheticComponentDefinitions.CreateCatalog(),
+                adjacentMoveAuthority,
+                markers ?? new MarkerAttachmentRegister());
+
+        /// <summary>
+        /// The same collaborators, for the snapshot reader that has to re-ask a paused capability what
+        /// it offered. Exposed rather than duplicated so a restored choice is derived against exactly
+        /// the composition a live one was.
+        /// </summary>
+        internal static MatchComponents CreateRestoredComponents(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            MarkerAttachmentRegister markers) =>
+            CreateComponents(adjacentMoveAuthority, markers);
 
         public PendingCardActionResolution PendingResolution => movementBackend.PendingResolution;
 
@@ -82,7 +133,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int roundIndex,
             int turnIndex) =>
             skillBackend.StartTurnSkill(
-                resolutionId, offer, definitions, instances, participants, timing, roundIndex, turnIndex);
+                resolutionId, offer, definitions, instances, participants, timing, components,
+                roundIndex, turnIndex);
 
         public CardActionResolutionResult AnswerEffectChoice(
             GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command,
@@ -92,7 +144,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int roundIndex,
             int turnIndex) =>
             skillBackend.AnswerEffectChoice(
-                command, definitions, participants, timing, roundIndex, turnIndex);
+                command, definitions, participants, timing, components, roundIndex, turnIndex);
 
         public CardActionResolutionRestoreState CaptureRestoreState()
         {
@@ -127,6 +179,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <param name="verifiedDefenseChoice">
         /// An independently supplied Defense response choice to cross-check, or <c>null</c>.
         /// </param>
+        /// <param name="markers">
+        /// The marker register the round is restoring, so the dispatcher's capabilities and the round's
+        /// persisted state share one object. Required rather than optional: a caller that supplied its
+        /// own fresh register here would restore a match whose markers exist for the snapshot and not
+        /// for the effects that can return them.
+        /// </param>
         public static CardActionResolutionAuthority Restore(
             AdjacentMoveAuthority adjacentMoveAuthority,
             CardActionResolutionRestoreState state,
@@ -135,12 +193,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingDefenseResponseChoice verifiedDefenseChoice,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            MarkerAttachmentRegister markers)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var defeatRewards = state.DefeatRewards.IsPresent
                 ? DefeatRewardAccounting.Restore(participants, state.DefeatRewards.State)
                 : null;
+            var components = CreateComponents(adjacentMoveAuthority, markers);
 
             switch (state.ContinuationKind)
             {
@@ -152,7 +212,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             verifiedMovementChoice),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()));
+                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
+                        components);
 
                 case CardActionContinuationKind.Attack:
                     return new CardActionResolutionAuthority(
@@ -167,7 +228,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             participants,
                             defeatRewards),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()));
+                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
+                        components);
 
                 case CardActionContinuationKind.Skill:
                     return new CardActionResolutionAuthority(
@@ -176,14 +238,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         SkillCardActionStrategyBackend.Restore(
                             SyntheticEffectCapabilities.CreateCatalog(),
-                            new SkillBackendRestoreState(state.PendingSkillResolution)));
+                            new SkillBackendRestoreState(state.PendingSkillResolution)),
+                        components);
 
                 default:
                     return new CardActionResolutionAuthority(
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()));
+                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
+                        components);
             }
         }
 

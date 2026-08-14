@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Timing;
@@ -110,7 +111,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             ActiveEffectLifecycle timing,
             int roundIndex,
             int turnIndex,
-            HeroId opposingHeroId = default)
+            HeroId opposingHeroId = default,
+            MatchComponents components = null)
         {
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
             Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
@@ -119,6 +121,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
             OpposingHeroId = opposingHeroId;
+            Components = components;
         }
 
         public EffectDefinition Definition { get; }
@@ -128,6 +131,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public int RoundIndex { get; }
         public int TurnIndex { get; }
         public HeroId OpposingHeroId { get; }
+
+        /// <summary>Milestone 6.2's token and marker collaborators, or <c>null</c> outside a match.</summary>
+        public MatchComponents Components { get; }
     }
 
     /// <summary>
@@ -570,7 +576,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.RoundIndex,
                 context.TurnIndex,
                 context.Participants,
-                context.Timing);
+                context.Timing,
+                context.Components);
         }
 
         private static EffectValue ResolveInput(

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -186,7 +187,8 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants,
+                new MarkerAttachmentRegister());
             var outcome = restored.ResolveAttackOutcome(
                 configuration.CardDefinitions,
                 configuration.CardInstances,

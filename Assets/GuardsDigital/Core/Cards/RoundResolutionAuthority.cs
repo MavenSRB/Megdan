@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -38,6 +39,7 @@ namespace GuardsDigital.Core.Cards
         private readonly AdjacentMoveAuthority board;
         private TieBreakerState tieBreakerState;
         private readonly ActiveEffectLifecycle timing;
+        private readonly MarkerAttachmentRegister markers;
 
         public RoundResolutionAuthority(
             IEnumerable<CardDefinition> definitions,
@@ -51,6 +53,7 @@ namespace GuardsDigital.Core.Cards
             var cardActions = composition.CardActions;
             var board = composition.Board;
             var timing = composition.Timing;
+            var markers = composition.Markers;
             var endOfRoundCapabilities = composition.EndOfRoundCapabilities;
             var endOfRoundHandlers = composition.EndOfRoundHandlers;
 
@@ -98,6 +101,7 @@ namespace GuardsDigital.Core.Cards
             this.cardActions = cardActions;
             this.board = board;
             this.timing = timing ?? new ActiveEffectLifecycle();
+            this.markers = markers ?? new MarkerAttachmentRegister();
             this.endOfRoundCapabilities = endOfRoundCapabilities ??
                 (board != null && board.MapDefinition.Zones.Count(value => value.IsStartingBattleZone) == 1
                     ? EndOfRoundFixtureCapabilities.ConfiguredMatch()
@@ -165,6 +169,9 @@ namespace GuardsDigital.Core.Cards
 
         public ActiveEffectLifecycle Timing => timing;
 
+        /// <summary>Milestone 6.2's marker attachments, held beside <see cref="Timing"/>.</summary>
+        public MarkerAttachmentRegister Markers => markers;
+
         internal RoundResolutionRestoreState CaptureRestoreState()
         {
             var rewards = CardActions?.DefeatRewards == null
@@ -190,6 +197,7 @@ namespace GuardsDigital.Core.Cards
             TurnResolutionAuthority turnAuthority,
             CardActionResolutionAuthority cardActions,
             ActiveEffectLifecycle timing,
+            MarkerAttachmentRegister markers,
             AdjacentMoveAuthority board)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
@@ -206,7 +214,7 @@ namespace GuardsDigital.Core.Cards
                 participants,
                 tieBreakerState,
                 roundIndex,
-                RoundResolutionComposition.ForMatch(cardActions, board, timing));
+                RoundResolutionComposition.ForMatch(cardActions, board, timing, markers));
             if (turnIndex < 1 || turnIndex > TurnsPerRound || !Enum.IsDefined(typeof(RoundResolutionPhase), phase))
             {
                 throw new ArgumentException("Restored round cursor is invalid.");

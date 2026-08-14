@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -19,9 +20,11 @@ namespace GuardsDigital.Tests.EditMode
         {
             var actorId = new HeroId("primitive-hero");
 
+            // Cast because the authority now also overloads on a marker register: the null under test
+            // is specifically an absent movement-restriction evaluator.
             Assert.Throws<System.ArgumentNullException>(() => new CardActionResolutionAuthority(
                 CreateMovementAuthority(actorId, new HexCoordinate(0, 0)),
-                null));
+                (IMovementActionStartRestrictionEvaluator)null));
         }
 
         [Test]
@@ -761,7 +764,8 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 new[] { definition },
                 new[] { instance },
-                null));
+                null,
+                new MarkerAttachmentRegister()));
 
             var restoredAuthority = CardActionResolutionAuthority.Restore(
                 restoredMovementAuthority,
@@ -773,7 +777,8 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 new[] { definition },
                 new[] { instance },
-                null);
+                null,
+                new MarkerAttachmentRegister());
             var completed = restoredAuthority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
                 restoredAuthority.PendingChoice.ResolutionId,
                 restoredAuthority.PendingChoice.ChoiceId,
@@ -821,7 +826,8 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 new[] { definition },
                 new[] { instance },
-                null);
+                null,
+                new MarkerAttachmentRegister());
             var destination = firstDestination.GetNeighbor(HexDirection.NorthEast);
             Assert.That(restored.PendingResolution, Is.SameAs(partial.PendingResolution));
 

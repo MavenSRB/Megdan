@@ -18,6 +18,8 @@ Every placed token has a stable instance ID, token definition ID/revision, owner
 
 When a card requests more tokens than remain in supply, its typed token-placement capability follows the rulebook's removal/reuse choice before placement. The pending choice identifies which same-type tokens may be removed and never lets UI create extra copies.
 
+Milestone 6.2 implements the instance, supply, occupancy, placement, and reclamation subset. A placed token holds its `TokenDefinition` object rather than a copy of its content, so a restore rebinds it to the trusted catalog and a payload can name which token this is but never what it means. Supply is derived - the catalog total minus what is on the board - so no stored count can disagree with the board. Reclamation and placement are separate nodes on the milestone 6.2a effect frame, because a stateless handler cannot distinguish a second resumption from a first, so a second decision belongs to a second node. Nothing outside `Core` can begin or end a token's lifetime; a mechanical rule enforces that against the presentation assembly.
+
 ### Token property capabilities
 
 A token definition composes explicit continuous/query/trigger capabilities such as obstacle classification, terrain-like restriction, entry/exit effect, modifier source, immunity interaction, or removal condition. Token art does not define behavior.
@@ -33,6 +35,8 @@ Markers are stable reminder/effect attachments, usually assigned to heroes rathe
 A marker may provide an attached continuous modifier when verified text requires it. That modifier follows the marker attachment lifetime rather than token or card Active-effect rules.
 
 Markers are not tokens, do not occupy spaces, and do not inherit token removal or obstacle rules. All markers return to supply at end of round, and every marker held by a defeated hero is returned. Exact effects may add an earlier return condition, but cannot weaken those general cleanup checkpoints without verified overriding text.
+
+Milestone 6.2 implements the attachment, its finite supply, its explicit return condition, and the return transition. The attachment record has no coordinate field at all and the board occupancy index has no marker arm, so "markers are not board occupants" is structural rather than asserted. `MarkerReturnCondition` currently declares only the general cleanup both checkpoints share; an exact effect's earlier condition is a member added with the verified text that requires it, never ahead of it. Neither cleanup checkpoint is wired yet - milestone 6.12 owns end-of-round cleanup, and the defeat return stays with it rather than being wired alone.
 
 ### Obstacles and terrain
 

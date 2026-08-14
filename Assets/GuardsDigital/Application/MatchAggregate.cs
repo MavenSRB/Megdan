@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -280,7 +281,10 @@ namespace GuardsDigital.Application
             var rebuiltBoard = initialState.Scenario.CreateBoard(
                 initialState.AvailableMaps,
                 initialState.Setup.Minions);
-            var rebuiltCardActions = new CardActionResolutionAuthority(rebuiltBoard);
+            // One register, shared by the dispatcher that gives and returns markers and the round
+            // authority whose snapshot section persists them.
+            var rebuiltMarkers = new MarkerAttachmentRegister();
+            var rebuiltCardActions = new CardActionResolutionAuthority(rebuiltBoard, rebuiltMarkers);
             var rebuiltRound = new RoundResolutionAuthority(
                 rebuiltConfiguration.CardDefinitions,
                 rebuiltConfiguration.CardInstances,
@@ -290,7 +294,8 @@ namespace GuardsDigital.Application
                 RoundResolutionComposition.ForMatch(
                     rebuiltCardActions,
                     rebuiltBoard,
-                    initialState.CreateTiming()));
+                    initialState.CreateTiming(),
+                    rebuiltMarkers));
 
             ReplaceGraphs(MatchGraphSet.ForSetup(
                 rebuiltConfiguration,

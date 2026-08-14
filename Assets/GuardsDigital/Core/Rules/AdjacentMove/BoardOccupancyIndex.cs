@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -11,32 +12,50 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
     {
         Hero = 1,
         GenericObstacle = 2,
-        StandardMinion = 3
+        StandardMinion = 3,
+
+        /// <summary>
+        /// Milestone 6.2. Rulebook p.19 classes tokens as obstacles and p.18 admits no second obstacle
+        /// in a space "ever, no exceptions", so a token is an occupant like any other. It joined by
+        /// declaring this member and a factory below; no per-kind collision block or commit scan was
+        /// added anywhere, which is the prediction milestone 6.1r's index was built to satisfy.
+        /// </summary>
+        Token = 4
     }
 
     internal readonly struct BoardOccupant
     {
-        private BoardOccupant(BoardOccupantKind kind, HeroId heroId, ObstacleId obstacleId, MinionId minionId)
+        private BoardOccupant(
+            BoardOccupantKind kind,
+            HeroId heroId,
+            ObstacleId obstacleId,
+            MinionId minionId,
+            TokenInstanceId tokenInstanceId)
         {
             Kind = kind;
             HeroId = heroId;
             ObstacleId = obstacleId;
             MinionId = minionId;
+            TokenInstanceId = tokenInstanceId;
         }
 
         internal BoardOccupantKind Kind { get; }
         internal HeroId HeroId { get; }
         internal ObstacleId ObstacleId { get; }
         internal MinionId MinionId { get; }
+        internal TokenInstanceId TokenInstanceId { get; }
 
         internal static BoardOccupant ForHero(HeroId heroId) =>
-            new BoardOccupant(BoardOccupantKind.Hero, heroId, default, default);
+            new BoardOccupant(BoardOccupantKind.Hero, heroId, default, default, default);
 
         internal static BoardOccupant ForObstacle(ObstacleId obstacleId) =>
-            new BoardOccupant(BoardOccupantKind.GenericObstacle, default, obstacleId, default);
+            new BoardOccupant(BoardOccupantKind.GenericObstacle, default, obstacleId, default, default);
 
         internal static BoardOccupant ForMinion(MinionId minionId) =>
-            new BoardOccupant(BoardOccupantKind.StandardMinion, default, default, minionId);
+            new BoardOccupant(BoardOccupantKind.StandardMinion, default, default, minionId, default);
+
+        internal static BoardOccupant ForToken(TokenInstanceId tokenInstanceId) =>
+            new BoardOccupant(BoardOccupantKind.Token, default, default, default, tokenInstanceId);
     }
 
     // One authoritative per-space occupancy record for every occupant kind. The single Add owns

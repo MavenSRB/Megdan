@@ -1,0 +1,239 @@
+using System;
+using System.Linq;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Components.Synthetic;
+using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Units.Heroes;
+using NUnit.Framework;
+
+namespace GuardsDigital.Tests.EditMode
+{
+    /// <summary>
+    /// Milestone 6.2 acceptance checks 1 and 2 at the layer that owns them.
+    ///
+    /// Check 1 - tokens use the authoritative finite supply and occupy board spaces as obstacles - is
+    /// asserted behaviourally rather than by reading a collection: a space holding a token refuses a
+    /// move onto it and drops out of movement reachability, which is what "is an obstacle" means to
+    /// every existing consumer. Check 2's structural half is asserted the same way in reverse, by
+    /// showing a marker changes no board state at all.
+    /// </summary>
+    public sealed class TokenAndMarkerComponentTests
+    {
+        private static readonly HeroId ActorId = new HeroId("component-hero");
+
+        [Test]
+        public void APlacedToken_IsAnObstacleForMovementAndOccupancy()
+        {
+            var origin = new HexCoordinate(0, 0);
+            var tokenSpace = new HexCoordinate(1, 0);
+            var board = CreateBoard(origin);
+
+            var reachableBefore = Reachable(board, origin);
+            board.CommitValidatedTokenPlacement(CreateToken("token-1", tokenSpace));
+            var reachableAfter = Reachable(board, origin);
+            var move = board.TryCommit(new AdjacentMoveCommand(ActorId, origin, tokenSpace));
+
+            Assert.That(reachableBefore.Contains(tokenSpace), Is.True,
+                "The space must be reachable before the token, or the test proves nothing.");
+            Assert.That(reachableAfter.Contains(tokenSpace), Is.False,
+                "Rulebook p.19: all tokens are obstacles.");
+            Assert.That(move.Accepted, Is.False);
+            Assert.That(move.RejectionReason, Is.EqualTo(AdjacentMoveRejectionReason.DestinationOccupied));
+            Assert.That(board.IsEmptyPlayableSpace(tokenSpace), Is.False);
+        }
+
+        [Test]
+        public void ATokenSpace_RefusesEveryOtherOccupantKind()
+        {
+            var tokenSpace = new HexCoordinate(1, 0);
+            var board = CreateBoard(new HexCoordinate(0, 0));
+            board.CommitValidatedTokenPlacement(CreateToken("token-1", tokenSpace));
+
+            Assert.That(
+                () => board.CommitValidatedTokenPlacement(CreateToken("token-2", tokenSpace)),
+                Throws.InvalidOperationException,
+                "One obstacle per space, ever, no exceptions (rulebook p.19).");
+            Assert.That(
+                () => new AdjacentMoveAuthority(
+                    Coordinates(),
+                    new[] { new HeroOccupancy(ActorId, tokenSpace) },
+                    new[] { new ObstacleOccupancy(new ObstacleId("rock"), tokenSpace) }),
+                Throws.ArgumentException,
+                "The shared occupancy index owns the rule for every kind, not per kind.");
+        }
+
+        [Test]
+        public void TokenSupply_IsFiniteAndDerivedFromWhatIsOnTheBoard()
+        {
+            var catalog = SyntheticComponentDefinitions.CreateCatalog();
+            var reference = SyntheticComponentDefinitions.HazardV1;
+            var board = CreateBoard(new HexCoordinate(0, 0));
+            var supply = SyntheticComponentDefinitions.HazardDefinition.SupplyCount;
+
+            Assert.That(catalog.CountAvailableTokens(reference, board.PlacedTokens), Is.EqualTo(supply));
+
+            board.CommitValidatedTokenPlacement(CreateToken("token-1", new HexCoordinate(1, 0)));
+            board.CommitValidatedTokenPlacement(CreateToken("token-2", new HexCoordinate(0, 1)));
+
+            Assert.That(catalog.CountAvailableTokens(reference, board.PlacedTokens), Is.Zero);
+            Assert.That(
+                () => board.CommitValidatedTokenPlacement(CreateToken("token-3", new HexCoordinate(-1, 1))),
+                Throws.InvalidOperationException,
+                "Rulebook p.19: tokens are intentionally limited.");
+
+            var reclaimed = board.CommitValidatedTokenReclamation(new TokenInstanceId("token-1"));
+
+            Assert.That(reclaimed.Coordinate, Is.EqualTo(new HexCoordinate(1, 0)));
+            Assert.That(catalog.CountAvailableTokens(reference, board.PlacedTokens), Is.EqualTo(1),
+                "Reclaiming returns the token to the supply, because the supply is the total minus " +
+                "what is on the board rather than a counter that could disagree with it.");
+            Assert.That(board.IsEmptyPlayableSpace(new HexCoordinate(1, 0)), Is.True,
+                "A reclaimed token releases its space.");
+        }
+
+        [Test]
+        public void AToken_OutlivesTheHeroWhoPlacedIt()
+        {
+            var board = CreateBoard(new HexCoordinate(0, 0));
+            var token = CreateToken("token-1", new HexCoordinate(1, 0));
+            board.CommitValidatedTokenPlacement(token);
+
+            Assert.That(token.OwnerHeroId, Is.EqualTo(ActorId),
+                "The placing hero is recorded as provenance.");
+            Assert.That(board.PlacedTokens.Single().Definition,
+                Is.SameAs(SyntheticComponentDefinitions.HazardDefinition),
+                "A placed token's meaning is the catalog's object, never a copy it carries. Rulebook " +
+                "p.19 ties a token's properties to the token, and p.19 also states it is not removed " +
+                "when the hero who placed it is defeated, so nothing here may act as a lifetime link.");
+        }
+
+        [Test]
+        public void AMarker_IsAnAttachmentWithNoBoardPresence()
+        {
+            var board = CreateBoard(new HexCoordinate(0, 0));
+            var markers = new MarkerAttachmentRegister();
+            var occupiedBefore = board.PlacedTokens.Count;
+
+            markers.Give(CreateMarker("marker-1", new HeroId("holder-hero")));
+
+            Assert.That(markers.Attachments.Single().HolderHeroId, Is.EqualTo(new HeroId("holder-hero")));
+            Assert.That(board.PlacedTokens.Count, Is.EqualTo(occupiedBefore),
+                "Rulebook p.18: unlike tokens, markers are not placed on the board.");
+            Assert.That(
+                typeof(MarkerAttachment).GetProperties()
+                    .Any(property => property.PropertyType == typeof(HexCoordinate)),
+                Is.False,
+                "A marker has no space to occupy, so the record of one must have nowhere to put a " +
+                "coordinate. This is the structural half of acceptance check 2.");
+        }
+
+        [Test]
+        public void AMarker_CarriesExplicitReturnStateAndReturnsToItsSupply()
+        {
+            var markers = new MarkerAttachmentRegister();
+            var holder = new HeroId("holder-hero");
+            var definition = SyntheticComponentDefinitions.FocusDefinition;
+
+            Assert.That(markers.CountAvailable(definition), Is.EqualTo(definition.SupplyCount));
+
+            markers.Give(CreateMarker("marker-1", holder));
+            var attachment = markers.Attachments.Single();
+
+            Assert.That(attachment.ReturnCondition, Is.EqualTo(MarkerReturnCondition.GeneralCleanup),
+                "Rulebook p.8 returns every marker at end of round and p.13 returns every marker a " +
+                "defeated hero holds; the attachment states that rather than leaving it implied.");
+            Assert.That(attachment.OwnerHeroId, Is.EqualTo(ActorId));
+            Assert.That(attachment.OwnerHeroId, Is.Not.EqualTo(attachment.HolderHeroId),
+                "Owner and holder are separate links, because a marker is normally given to another " +
+                "hero and must return to the correct supply.");
+            Assert.That(markers.CountAvailable(definition), Is.Zero);
+            Assert.That(
+                () => markers.Give(CreateMarker("marker-2", holder)),
+                Throws.InvalidOperationException,
+                "The marker supply is finite in the same way the token supply is.");
+
+            var returned = markers.Return(attachment.Id);
+
+            Assert.That(returned.HolderHeroId, Is.EqualTo(holder));
+            Assert.That(markers.Attachments, Is.Empty);
+            Assert.That(markers.CountAvailable(definition), Is.EqualTo(definition.SupplyCount));
+        }
+
+        [Test]
+        public void RestoredComponentState_RefusesMoreCopiesThanTheTrustedSupplyContains()
+        {
+            var overdrawn = new[]
+            {
+                CreateMarker("marker-1", new HeroId("holder-one")),
+                CreateMarker("marker-2", new HeroId("holder-two"))
+            };
+
+            Assert.That(
+                () => MarkerAttachmentRegister.Restore(new MarkerAttachmentRestoreState(overdrawn)),
+                Throws.ArgumentException,
+                "A payload cannot restore more markers than the catalog says exist; the supply is " +
+                "content, so the trusted total wins over what the bytes claim.");
+            Assert.That(
+                () => new MarkerAttachmentRestoreState(new[]
+                {
+                    CreateMarker("marker-1", new HeroId("holder-one")),
+                    CreateMarker("marker-1", new HeroId("holder-two"))
+                }),
+                Throws.ArgumentException,
+                "Marker instance identity must stay unique across a restore.");
+        }
+
+        private static AdjacentMoveAuthority CreateBoard(HexCoordinate actorOrigin) =>
+            new AdjacentMoveAuthority(
+                Coordinates(),
+                new[] { new HeroOccupancy(ActorId, actorOrigin) });
+
+        private static HexCoordinate[] Coordinates()
+        {
+            var coordinates = new System.Collections.Generic.List<HexCoordinate>();
+            for (var q = -3; q <= 3; q++)
+            {
+                for (var r = Math.Max(-3, -q - 3); r <= Math.Min(3, -q + 3); r++)
+                {
+                    coordinates.Add(new HexCoordinate(q, r));
+                }
+            }
+
+            return coordinates.ToArray();
+        }
+
+        /// <summary>
+        /// The authority-backed reachability entry, which is the one the Movement backend itself calls.
+        /// It reads the shared occupancy index rather than per-kind lists, so a token blocks transit
+        /// without this query - or the backend, or the presentation - learning that tokens exist. That
+        /// is the property milestone 6.1r's index was built to deliver and this milestone is the first
+        /// to collect on.
+        /// </summary>
+        private static HexCoordinate[] Reachable(AdjacentMoveAuthority board, HexCoordinate origin) =>
+            MovementReachabilityQuery
+                .FindReachableDestinations(new HeroOccupancy(ActorId, origin), board, 1)
+                .Select(destination => destination.Destination)
+                .ToArray();
+
+        private static PlacedToken CreateToken(string id, HexCoordinate coordinate) =>
+            new PlacedToken(
+                new TokenInstanceId(id),
+                SyntheticComponentDefinitions.HazardDefinition,
+                ActorId,
+                ActorId,
+                default,
+                coordinate);
+
+        private static MarkerAttachment CreateMarker(string id, HeroId holder) =>
+            new MarkerAttachment(
+                new MarkerInstanceId(id),
+                SyntheticComponentDefinitions.FocusDefinition,
+                ActorId,
+                holder,
+                default,
+                default);
+    }
+}

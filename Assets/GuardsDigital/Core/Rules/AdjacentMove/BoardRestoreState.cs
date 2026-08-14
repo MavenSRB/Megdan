@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -37,15 +38,18 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         public BoardRestoreState(
             IEnumerable<HeroOccupancy> heroOccupancies,
             IEnumerable<ObstacleOccupancy> obstacleOccupancies,
-            IEnumerable<RestoredMinionPosition> remainingMinions)
+            IEnumerable<RestoredMinionPosition> remainingMinions,
+            IEnumerable<PlacedToken> placedTokens)
         {
             if (heroOccupancies == null) throw new ArgumentNullException(nameof(heroOccupancies));
             if (obstacleOccupancies == null) throw new ArgumentNullException(nameof(obstacleOccupancies));
             if (remainingMinions == null) throw new ArgumentNullException(nameof(remainingMinions));
+            if (placedTokens == null) throw new ArgumentNullException(nameof(placedTokens));
 
             HeroOccupancies = heroOccupancies.ToArray();
             ObstacleOccupancies = obstacleOccupancies.ToArray();
             RemainingMinions = remainingMinions.ToArray();
+            PlacedTokens = placedTokens.ToArray();
 
             if (HeroOccupancies.Select(value => value.HeroId).Distinct().Count() != HeroOccupancies.Count)
                 throw new ArgumentException("Restored hero occupancies must have unique hero IDs.", nameof(heroOccupancies));
@@ -53,20 +57,32 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new ArgumentException("Restored obstacle occupancies must have unique obstacle IDs.", nameof(obstacleOccupancies));
             if (RemainingMinions.Select(value => value.MinionId).Distinct().Count() != RemainingMinions.Count)
                 throw new ArgumentException("Restored remaining-minion IDs must be unique.", nameof(remainingMinions));
+            if (PlacedTokens.Any(value => value == null))
+                throw new ArgumentException("Restored placed tokens must be non-null.", nameof(placedTokens));
+            if (PlacedTokens.Select(value => value.Id).Distinct().Count() != PlacedTokens.Count)
+                throw new ArgumentException("Restored placed-token IDs must be unique.", nameof(placedTokens));
         }
 
         public IReadOnlyList<HeroOccupancy> HeroOccupancies { get; }
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies { get; }
         public IReadOnlyList<RestoredMinionPosition> RemainingMinions { get; }
 
+        // Milestone 6.2. A placed token carries its own trusted definition object rather than a
+        // reference the way a restored minion carries only an ID: a minion's identity-bound content is
+        // supplied to Restore separately, whereas a token's definition is rebound from the component
+        // catalog before this state is built, so what arrives here is already trusted.
+        public IReadOnlyList<PlacedToken> PlacedTokens { get; }
+
         public void Deconstruct(
             out IReadOnlyList<HeroOccupancy> heroOccupancies,
             out IReadOnlyList<ObstacleOccupancy> obstacleOccupancies,
-            out IReadOnlyList<RestoredMinionPosition> remainingMinions)
+            out IReadOnlyList<RestoredMinionPosition> remainingMinions,
+            out IReadOnlyList<PlacedToken> placedTokens)
         {
             heroOccupancies = HeroOccupancies;
             obstacleOccupancies = ObstacleOccupancies;
             remainingMinions = RemainingMinions;
+            placedTokens = PlacedTokens;
         }
     }
 }

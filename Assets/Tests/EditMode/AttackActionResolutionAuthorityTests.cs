@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -344,7 +345,8 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants,
+                new MarkerAttachmentRegister());
             var restoredTargetChoice = restoredTarget.PendingAttackTargetChoice;
             var answer = restoredTarget.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
@@ -370,7 +372,8 @@ namespace GuardsDigital.Tests.EditMode
                 answer.PendingDefenseChoice,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants,
+                new MarkerAttachmentRegister());
 
             Assert.That(restoredTargetChoice.LegalTargetHeroIds,
                 Is.EqualTo(new[] { defenderId }));
@@ -478,7 +481,8 @@ namespace GuardsDigital.Tests.EditMode
                 answer.PendingDefenseChoice,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants,
+                new MarkerAttachmentRegister());
 
             Assert.That(restored.PendingAttackResolution, Is.SameAs(answer.PendingResolution));
             Assert.That(restored.PendingDefenseChoice, Is.SameAs(answer.PendingDefenseChoice));
@@ -501,7 +505,8 @@ namespace GuardsDigital.Tests.EditMode
                 tamperedChoice,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants));
+                fixture.Configuration.Participants,
+                new MarkerAttachmentRegister()));
         }
 
         [Test]
@@ -771,7 +776,8 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 fixture.Configuration.CardDefinitions,
                 instancesWithFacedownDefense,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants,
+                new MarkerAttachmentRegister());
 
             Assert.That(restored.PendingAttackResolution, Is.SameAs(answered.PendingResolution));
             Assert.That(restored.PendingAttackResolution.Phase, Is.EqualTo(AttackResolutionPhase.CompareOutcome));

@@ -10,6 +10,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
@@ -20,13 +21,22 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class SnapshotCompatibilityCorpusTests
     {
+        /// <summary>
+        /// Milestone 6.2 moved every fixture from v8 to v9 and added the two component cases. The
+        /// migrate-or-reject decision this rename records is reject: a v8 payload could not represent a
+        /// token or a marker, so reading one as a component-free match would have been faithful, and it
+        /// is refused anyway - the engine has one read path per version, and no persisted state outside
+        /// this corpus exists to strand. See <c>AuthoritativeSnapshotSerializer.CurrentSchemaVersion</c>.
+        /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v8", "c4c399ad8d98f73d7d7031683be55b636688b2a8f8bbe3efbac07682cb74e4a0"),
-            new CompatibilityFixture("active-turn-v8", "95f7b2c96cce614f601638237defcef76cf87a3872f4032de5582e4ea9bb3eb4"),
-            new CompatibilityFixture("pending-choice-v8", "e8e09f7aab159651bb152d9e1b19265d7fe5d007bd97209cce8dfe232e13a3f6"),
-            new CompatibilityFixture("end-of-round-v8", "372aab1952c3c967abff9d93e2a26e5b8a2b65118e143d6e63206d9bc573baec"),
-            new CompatibilityFixture("pending-minion-battle-v8", "41690c8ad6ce830ab0114c06b1d3ef7b93adf9d419a5acc5096e57e8aecf6eca")
+            new CompatibilityFixture("setup-v9", "f7ef2e562745cfa3d689462bfeba2b26b5c46ac66746694f4caedca13c96a579"),
+            new CompatibilityFixture("active-turn-v9", "fddb1d5675f56a63ce1331660dcb7b4468eee8fac917b934f0ff0235af1fbd1b"),
+            new CompatibilityFixture("pending-choice-v9", "275627f81d4c868668dcd6dbc5d9eb80a6f2d2b5404ad006592b12a26f84691a"),
+            new CompatibilityFixture("end-of-round-v9", "e1db245b7f65e918fe1bf2cac3363f7a844b5433136b5857e64a1fc59f4617e2"),
+            new CompatibilityFixture("pending-minion-battle-v9", "8491313b1c888820735ac1b35ff2ffad59998d859334a5be68d56cc5e297402f"),
+            new CompatibilityFixture("placed-token-v9", "ee10beaaa2df27327c5b58f54a829e305e8b7281a245ae4034e75dc3460022dc"),
+            new CompatibilityFixture("attached-marker-v9", "22cb8c547e6d84c905ba73c21aee277d5f0f699bbbed0a7d4ccb2378332e4cd7")
         };
 
         [Test]
@@ -47,7 +57,7 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var fixture in SupportedFixtures)
             {
                 var snapshot = snapshots[fixture.Name];
-                var restored = CreateSession();
+                var restored = CreateRestoreTarget(fixture.Name);
                 var result = restored.RestoreSnapshot(snapshot);
                 Assert.That(result.Accepted, Is.True, $"{fixture.Name}: {result.Detail}");
                 Assert.That(restored.CaptureSnapshot(), Is.EqualTo(snapshot), fixture.Name);
@@ -82,7 +92,10 @@ namespace GuardsDigital.Tests.EditMode
                     new[] { session.Projection.SelectedMap }));
             Assert.That(priorSchemaException.Reason,
                 Is.EqualTo(SnapshotLoadRejectionReason.UnsupportedSchemaVersion),
-                "Schema v6 reconstructs minion positions from setup placements and cannot express a moved minion; milestone 6.1s serializes per-minion coordinates and explicitly rejects v6.");
+                "The immediately prior schema is rejected rather than migrated, which every bump so far " +
+                "has decided the same way: v7 could not express an Active effect without stating its " +
+                "semantics inline (6.2a), and v8 has no section a placed token or attached marker could " +
+                "occupy (6.2).");
 
             var changedDefinitions = session.Projection.Definitions.ToArray();
             var original = changedDefinitions[0];
@@ -106,16 +119,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v8", session.CaptureSnapshot());
+            values.Add("setup-v9", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v8", session.CaptureSnapshot());
+            values.Add("active-turn-v9", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v8", session.CaptureSnapshot());
+            values.Add("pending-choice-v9", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -131,7 +144,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v8", session.CaptureSnapshot());
+            values.Add("end-of-round-v9", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -140,8 +153,86 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v8", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v9", session.CaptureSnapshot());
+
+            // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
+            // carry zero components would leave the sections it exists to protect untested, so one
+            // payload holds a token on the board and one holds a marker on a hero.
+            values.Add("placed-token-v9", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v9", CaptureComponentSnapshot("component-give-marker"));
             return values;
+        }
+
+        /// <summary>
+        /// Runs the synthetic component Skill once, taking the named branch, and captures the result.
+        /// Both branches pause on exactly one capability choice, so the driving is the same either way.
+        /// </summary>
+        private static string CaptureComponentSnapshot(string optionNodeId)
+        {
+            var session = CreateComponentSession();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.Single(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.Id.Value.Contains("cache") &&
+                    candidate.State.Location == CardLocation.Hand);
+                Assert.That(session.Execute(
+                    DirectorCommand.CommitCard(card.OwnerId, card.Id)).Accepted, Is.True);
+            }
+
+            var offer = session.Projection.AvailableTurnActions.Single(candidate =>
+                candidate.ActionDefinitionId.Equals(new ActionDefinitionId("primary-component-skill")));
+            Assert.That(session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId)).Accepted, Is.True);
+
+            var option = session.Projection.PendingEffectChoice.SelectInvocations.Single(candidate =>
+                candidate.Candidate.OptionNodeId.Value == optionNodeId);
+            AnswerEffect(session, option);
+            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+
+            AnswerEffect(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
+            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+
+            Assert.That(session.Projection.PendingSkillResolution, Is.Null,
+                $"The {optionNodeId} branch must complete, so the captured payload holds committed " +
+                "component state rather than a paused frame.");
+            return session.CaptureSnapshot();
+        }
+
+        private static void AnswerEffect(MatchSession session, EffectChoiceCommand invocation)
+        {
+            var result = session.Execute(DirectorCommand.AnswerEffectChoice(invocation));
+            Assert.That(result.Accepted, Is.True, result.Detail);
+        }
+
+        /// <summary>
+        /// A session whose configured content matches the fixture's. A restore validates the payload's
+        /// card definitions against the ones the session was configured with, so a component payload -
+        /// which was produced by the Skill-bearing configuration - has to come back into that same one.
+        /// </summary>
+        private static MatchSession CreateRestoreTarget(string fixtureName) =>
+            fixtureName.StartsWith("placed-token", StringComparison.Ordinal) ||
+            fixtureName.StartsWith("attached-marker", StringComparison.Ordinal)
+                ? CreateComponentSession()
+                : CreateSession();
+
+        private static MatchSession CreateComponentSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
         }
 
         private static MatchSession CreateSessionWithMinionImbalance()
