@@ -30,4 +30,6 @@ Acceptance checks:
 
 ### [ ] 10.4 Publisher demonstration checklist
 
-Non-goals: Public distribution, installer, launcher, login, telemetry, store page, or other-platform release.
+Definition owner (2026-08-14, user approved): milestones 10.3 and 10.4 are titles, not yet authorizable definitions. The Phase 9 to Phase 10 transition's designated roadmap audit writes their observable outcomes, acceptance checks, and non-goals from the retained 9.16 pitch build - mirroring how milestone 8.19's audit owns the Phase 9 definitions - and the resulting definitions require explicit user approval before either milestone is proposed for execution.
+
+Shared non-goals for 10.3 and 10.4 until then: public distribution, installer, launcher, login, telemetry, store page, or other-platform release.

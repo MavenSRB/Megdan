@@ -1,6 +1,6 @@
 # Guards Digital - Roadmap
 
-Last updated: 2026-08-13
+Last updated: 2026-08-14
 
 ## Status legend
 
@@ -70,6 +70,8 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 4 - Full official multi-zone board](Roadmap/PHASE_4.md)
 - [Phase 5 - Core full-map actions and combat](Roadmap/PHASE_5.md)
 - [Phase 6 - Tokens, minions, Lane Push, and end-of-round components](Roadmap/PHASE_6.md)
+- [Phase 6 - Documentation-truth completion block](Roadmap/PHASE_6_DOCUMENTATION.md)
+- [Phase 6 - Completed milestone definitions](Roadmap/PHASE_6_COMPLETED.md)
 - [Phase 7 - Progression, victory, and the complete synthetic core loop](Roadmap/PHASE_7.md)
 - [Phase 8 - Verified hero content, deterministic 3v3, and private online validation](Roadmap/PHASE_8.md)
 - [Phase 9 - Presentation and pitch polish](Roadmap/PHASE_9.md)
