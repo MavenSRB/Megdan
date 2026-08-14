@@ -13,10 +13,10 @@ The project has completed roadmap milestones through **6.2**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **6.2**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.2b**, in progress.
 - Next proposed milestone: **6.2b**.
 
-Milestone **6.2** completed on 2026-08-14. Tokens and markers are authoritative components with stable identity, a derived finite supply, and trusted catalog-owned definitions. A placed token joins the board through milestone 6.1r's single occupancy seam by declaring an occupant kind, so it blocks movement without any consumer learning that tokens exist; a marker attachment has no coordinate at all. Placement, the rulebook's short-supply reclamation, marker give and marker return are registered capabilities on 6.2a's frame, so every decision rides the existing `AnswerEffectChoice` and no command kind, pending-choice class, projection property or continuation arm was added. Snapshot schema is v9 and rejects v8. Milestone **6.2b**, the fresh-task independent review, is the remaining gameplay-route item and gates 6.3.
+Milestone **6.2** completed on 2026-08-14. Tokens and markers are authoritative components with stable identity, a derived finite supply, and trusted catalog-owned definitions. A placed token joins the board through milestone 6.1r's single occupancy seam by declaring an occupant kind, so it blocks movement without any consumer learning that tokens exist; a marker attachment has no coordinate at all. Placement, the rulebook's short-supply reclamation, marker give and marker return are registered capabilities on 6.2a's frame, so every decision rides the existing `AnswerEffectChoice` and no command kind, pending-choice class, projection property or continuation arm was added. Snapshot schema is v9 and rejects v8. Milestone **6.2b**, the fresh-task independent review, is authorized and in progress; it is the remaining gameplay-route item and gates 6.3.
 
 Standing route exceptions: trigger-only milestone **6.1am** remains unordered until the rules ledger reaches its warning threshold, and **6.1y** remains unordered but required before 8.1. Exact sequencing lives in [Roadmap/PHASE_6_DOCUMENTATION.md](Roadmap/PHASE_6_DOCUMENTATION.md) and [Roadmap/PHASE_6.md](Roadmap/PHASE_6.md); scheduling is not authorization.
 

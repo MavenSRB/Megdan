@@ -457,7 +457,7 @@ Scope note: this milestone built the four control-node kinds its second acceptan
 
 ER2 note: corrective milestones 6.1q and 6.1ap must both land first, so this engine builds on neither mis-scoped checkpoints nor an inferred timing seam. `F-ER2-05` moved to 6.1ap in the 2026-08-14 sequencing amendment above; this milestone consumes the resolver-emitted checkpoint stream that milestone establishes rather than owning the correction itself. See the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2).
 
-### [ ] 6.2b Independently verify the Phase 6 action/effect foundation
+### [~] 6.2b Independently verify the Phase 6 action/effect foundation
 
 Observable outcome: A fresh-task independent review determines whether milestones 6.1 and 6.2a actually close `F58C-01` and `F58C-02` before milestone 6.3 can begin.
 
