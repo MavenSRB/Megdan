@@ -401,6 +401,21 @@ function Get-MilestonesMissingEvidenceBacklink($Blocks) {
     return @($Blocks | Where-Object { $_.Body -notmatch '(?m)^Historical evidence:' } | ForEach-Object { $_.Id })
 }
 
+# Completion-history containment (milestone 6.1ac): governance routes a completed milestone's
+# narrative to its commit body and archive row, leaving the brief its compact route. duplicate-history
+# cannot reach a narrative that never left the active document - since archive rows became one-liners
+# there is no >=200-character archived paragraph to match against - so this check states the
+# governance rule as a countable one: the brief carries exactly one completion statement, and it
+# names the current completed milestone.
+function Test-CompletionHistory([string] $Session) {
+    $ids = @([regex]::Matches($Session, '(?m)^- Milestone \*\*(\S+)\*\* completed') | ForEach-Object { $_.Groups[1].Value })
+    $current = [regex]::Match($Session, 'Current completed milestone:\s*\*\*([^*]+)\*\*')
+    if ($ids.Count -eq 0) { return @('no-completion-statement') }
+    if ($ids.Count -gt 1) { return @('completion-history-in-active-doc') }
+    if ($current.Success -and $ids[0] -ne $current.Groups[1].Value.Trim()) { return @('completion-history-in-active-doc') }
+    return @()
+}
+
 # Both destination forms are legitimate: the one-row entry is the post-2026-08-13 policy and the
 # "## Milestone <id> ..." section is the baselined earlier history; a check accepting only one form
 # would report dozens of valid historical records. An exemption is declared in the block itself
@@ -558,6 +573,13 @@ function Invoke-SelfTests {
     Expect 'a longer id does not satisfy a shorter one' (@(Get-MilestonesMissingArchiveDestination (Get-CompleteMilestoneBlocks "### [x] 2.1 Done`nHistorical evidence: [x](y.md).`n") @{ '2' = "## Milestone 2.1c Other completion evidence`n| 2.1c | outcome | ``abc`` |`n" }) -contains '2.1')
     Expect 'a declared exemption skips the destination check' (@(Get-MilestonesMissingArchiveDestination (Get-CompleteMilestoneBlocks "### [x] 0.1 Bootstrap`nHistorical evidence: exempt - predates the phase-handoff archive.`n") @{}).Count -eq 0)
 
+    # Completion-history containment (milestone 6.1ac).
+    $historySession = "- Current completed milestone: **2.5**.`n- Milestone **2.5** completed on 2026-08-14. One sentence.`n"
+    Expect 'one matching completion statement passes' (@(Test-CompletionHistory $historySession).Count -eq 0)
+    Expect 'a mismatched completion statement is reported' (@(Test-CompletionHistory ($historySession -replace 'Milestone \*\*2\.5\*\* completed', 'Milestone **2.4** completed')) -contains 'completion-history-in-active-doc')
+    Expect 'several completion statements are reported' (@(Test-CompletionHistory ($historySession + "- Milestone **2.4** completed on 2026-08-13. Older narrative.`n")) -contains 'completion-history-in-active-doc')
+    Expect 'no completion statement at all trips the vacuity guard' (@(Test-CompletionHistory '- Current completed milestone: **2.5**.') -contains 'no-completion-statement')
+
     if ($failed.Count -gt 0) { throw "Living-document validator self-test failure: $($failed -join ', ')" }
     Write-Host "Self-tests: $script:selfTestCount/$script:selfTestCount checks passed."
 }
@@ -634,6 +656,12 @@ foreach ($file in $linkFiles) {
             if (-not $headings.ContainsKey($parts[1])) { Add-Issue 'ERROR' 'broken-anchor' "$(Get-RelativePath $projectRoot $file.FullName) -> $target" }
         }
     }
+}
+
+# Completion-history containment (milestone 6.1ac).
+foreach ($code in (Test-CompletionHistory $session)) {
+    if ($code -eq 'no-completion-statement') { Add-Issue 'ERROR' $code 'SESSION_BRIEF.md carries no milestone completion statement at all; a phrasing change may have silently retired the completion-history check.' }
+    else { Add-Issue 'ERROR' $code "SESSION_BRIEF.md must carry exactly one milestone completion statement and it must name the current completed milestone; a completed milestone's narrative lives in its commit body and archive row." }
 }
 
 # Documentation-graph checks (milestone 6.1z): every governed shard is reachable from its family

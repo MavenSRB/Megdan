@@ -352,3 +352,9 @@ A user-approved roadmap amendment on 2026-08-13 scheduled the open ER2 dispositi
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 6.1z | Three documentation-graph checks land: `orphan-shard` proves every governed shard is linked from an index in its family (two-index families take the union), `missing-evidence-backlink` requires every complete milestone block to keep its `Historical evidence` line, and `missing-archive-destination` requires a one-row entry or a `Milestone <id>` archive section, with exemptions declared in the block itself. Observed at `dd535ae` reporting fifteen missing backlinks - the fourteen the scheduling context listed plus `6.1v`, an undercount the check itself exposed - and the `0.1`/`6.1e` destination gaps. Fourteen backlinks written, `0.1` carries its stated exemption, and `6.1e`'s row is reconstructed from completion commit `df965cd`. Post-fix validator green, zero warnings. Self-tests 76/76, from 63. | `65a62b0` |
+
+## Milestone 6.1ac Keep completion history out of active documents completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1ac | `completion-history-in-active-doc` fails when `SESSION_BRIEF.md` carries more than one milestone completion statement or when its one statement does not name the current completed milestone, with `no-completion-statement` as the vacuity guard. Observed at `dd535ae` reporting the five accumulated statements (6.1w, 6.1v, 6.1x, 6.1s, 6.1l); by this handoff six had accumulated (6.1z and 6.1ad replacing 6.1w), and all are routed: every fact verified present in its archive row or completion commit body before removal, with the standing Windows-pending rule confirmed canonical at `Testing/POLICY.md`. Post-fix the brief carries exactly one statement naming the current milestone. Self-tests 80/80, from 76. | `pending` |

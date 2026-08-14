@@ -307,7 +307,7 @@ Closing check: the two checks run at `dd535ae`, observed reporting the `Project/
 
 Non-goals: No deletion of the placeholder materials, which retire at Phase 9. No risk-register lifecycle change beyond correcting the stale owner. No production code change.
 
-### [ ] 6.1ac Keep completion history out of active documents
+### [x] 6.1ac Keep completion history out of active documents
 
 Observable outcome: A completed milestone's narrative lives in its commit body and its archive row, not in the session brief.
 
@@ -323,6 +323,8 @@ Acceptance checks:
 Closing check: the check run at `dd535ae`, observed reporting five completion statements; run at the post-fix revision, observed reporting one.
 
 Non-goals: No loss of any recorded fact. No change to the route markers themselves, whose exactly-one rule is already enforced. No archive rewriting.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ac-keep-completion-history-out-of-active-documents-completion-evidence).
 
 ## Snapshot decode-boundary milestone from the 2026-08-14 enum-decoding finding
 
