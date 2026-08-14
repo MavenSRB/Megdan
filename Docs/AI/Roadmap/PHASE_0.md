@@ -17,6 +17,8 @@ Artifacts:
 
 Non-goals: No Unity project, code, assets, or builds.
 
+Historical evidence: exempt - milestone 0.1 created the documentation system itself and predates the phase-handoff archive; an invented record would be a worse failure than this admitted gap (stated at 6.1z).
+
 ### [x] 0.2 Create the empty Unity project
 
 Observable outcome: An empty 3D Unity project opens in installed editor `6000.5.7f1` and contains no gameplay.

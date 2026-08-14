@@ -340,3 +340,15 @@ Inspected areas that should be preserved as-is: the effect-capability catalog an
 ### 2026-08-13 addendum: ER2 proposals scheduled
 
 A user-approved roadmap amendment on 2026-08-13 scheduled the open ER2 dispositions as proposed milestones; scheduling does not authorize execution. `F-ER2-02` is owned by new milestone 6.1s, `F-ER2-03` by 6.1q, `F-ER2-04` by new Phase 8 milestone 8.28b, `F-ER2-06` by 6.1r with fresh-task verification at the already-scheduled 6.2b, `F-ER2-10` by 6.1u, and `F-ER2-12` by 6.1t. `F-ER2-05`, `F-ER2-07`, `F-ER2-08`, and `F-ER2-09` are recorded as ER2 notes inside their existing owners 6.2a, 8.30a, 7.9, and 7.4 respectively. `F-ER2-11` closed with this session's documentation-truth commit, and the 6.1l portion of `F-ER2-12` closed when milestone 6.1l completed earlier this session.
+
+## Milestone 6.1e Correct editor-time composition hazards completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1e | The composition root consumes the rebuild's published `CurrentTiles`/`CurrentMinionViews`/`CurrentObstacles` collections instead of a same-frame `GetComponentsInChildren` search, so a view awaiting deferred destruction can no longer enter authoritative board state; the obstacle path shares the fix. Closes `F613-05` and `F613-04`; Presentation and tests only. Row reconstructed 2026-08-14 by milestone 6.1z from the completion commit. | `df965cd` |
+
+## Milestone 6.1z Prove the documentation graph is connected completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.1z | Three documentation-graph checks land: `orphan-shard` proves every governed shard is linked from an index in its family (two-index families take the union), `missing-evidence-backlink` requires every complete milestone block to keep its `Historical evidence` line, and `missing-archive-destination` requires a one-row entry or a `Milestone <id>` archive section, with exemptions declared in the block itself. Observed at `dd535ae` reporting fifteen missing backlinks - the fourteen the scheduling context listed plus `6.1v`, an undercount the check itself exposed - and the `0.1`/`6.1e` destination gaps. Fourteen backlinks written, `0.1` carries its stated exemption, and `6.1e`'s row is reconstructed from completion commit `df965cd`. Post-fix validator green, zero warnings. Self-tests 76/76, from 63. | `pending` |

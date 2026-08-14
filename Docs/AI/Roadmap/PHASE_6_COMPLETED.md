@@ -46,6 +46,8 @@ Closing check for `F613-01`: the validator's `unreachable-component` check. It h
 
 Non-goals: No configured-stack behavior change, no new presentation feature, no Minion Battle UI, no refactor of the surviving presenters beyond what deletion requires.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61c-retire-the-legacy-heroselectioncontroller-drill-completion-evidence).
+
 ### [x] 6.1d Make the build path explicit, single-sourced, and portable
 
 Merged on 2026-08-13 from former milestones 6.1d, 6.1j, 6.1l, and 6.1m. All four concern one question - does this project build, resolve its resources, and run its toolchain on the platforms it declares - and each was too small to carry its own handoff. Every original acceptance check is preserved verbatim below.
@@ -97,6 +99,8 @@ Once the player-build smoke gate passes, the **buildability** review dimension i
 
 Non-goals: No render-pipeline migration, no production shader or material authoring, no visual change, no map content change, no revision bump, no change to the map schema, loader, or catalog contracts, no continuous-integration service selection or configuration, no change to validation tiers, recipes, or gate definitions, no store packaging, signing, provisioning, distribution, mobile player support, or performance target, and no publication of any build.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61d-make-the-build-path-explicit-single-sourced-and-portable-completion-evidence).
+
 ### [x] 6.1e Correct editor-time composition hazards
 
 Observable outcome: Edit-mode composition no longer dirties the saved scene with generated objects, and pending-destroy objects cannot enter authoritative board state.
@@ -115,6 +119,8 @@ Closing checks:
 - `F613-04`: a check that the saved scene contains no generated object the composition root intends to own, observed failing against the seven stale authored tiles before removal.
 
 Non-goals: No presentation redesign, no board view-model contract change, no change to authoritative map content or setup.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61e-correct-editor-time-composition-hazards-completion-evidence).
 
 ### [x] 6.1f Establish a single card mutation path and an aggregate root
 
@@ -207,6 +213,8 @@ Closing check for `F613-13`: each replacement assertion run twice - once against
 
 Non-goals: No production behavior change, no new subsystem, no reduction in existing coverage, no change to the test assembly split.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61k-replace-brittle-structural-assertions-and-deepen-the-newest-coverage-completion-evidence).
+
 ### [x] 6.1o Honour the atomicity guarantee in every build, and measure what actually grows
 
 Approved on 2026-08-13 from an independent review of the work completed through 6.1h. The review produced five findings; all five were re-verified against `d093847` before this milestone was written. Two are defects in milestone 6.1i's work, and both share one cause: 6.1i read the rejected-command mutation comparison as debug-grade self-verification, when it is the mechanism that delivers the aggregate's atomicity guarantee rather than a report about it.
@@ -233,6 +241,8 @@ Closing checks:
 
 Non-goals: No conversion of the in-place authorities beneath the aggregate to a plan-only shape - that is `RISK-STATE-002`'s deeper subject and stays open. No rewrite of existing archive narratives, which the append-only rule protects; the new check is forward-looking and grandfathers what is already written. No change to the snapshot format, schema version, or the pinned compatibility digests.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61o-honour-the-atomicity-guarantee-in-every-build-and-measure-what-actually-grows-completion-evidence).
+
 ### [x] 6.1p Close the three limitations milestone 6.1o declared
 
 Approved on 2026-08-13. Milestone 6.1o closed five review findings and recorded three limitations in its commit body rather than fixing them. None is a defect in what 6.1o delivered; each is a place where the honest record was "this is as far as this milestone goes". This one takes each the rest of the way.
@@ -255,6 +265,8 @@ Closing checks:
 
 Non-goals: No plan-only conversion of the authorities beneath the aggregate, so `RISK-STATE-002` is not retired. No `InternalsVisibleTo` for `GuardsDigital.Core`. No rewrite of the moved section's content - it is relocated, not restated.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61p-close-the-three-limitations-milestone-61o-declared-completion-evidence).
+
 ### [x] 6.1l Confirm the validation toolchain on a non-Windows platform
 
 Reinstated on 2026-08-13 with explicit user approval, having previously been merged into 6.1d. It owns the one part of `F613-14` that is evidence rather than code: 6.1d makes the toolchain portable, and this milestone proves it.
@@ -272,4 +284,6 @@ Closing check for `F613-14`: recorded successful runs of each validator script o
 Once it passes, the **toolchain portability** review dimension is deleted from the prose list in [ROADMAP.md](../ROADMAP.md).
 
 Non-goals: No new validator, no change to what any validator checks, no CI service selection or configuration, no change to the fixed parameterless launcher contract, and no Unity execution on the non-Windows host - the Editor itself is out of scope, only the PowerShell toolchain is confirmed.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61l-confirm-the-validation-toolchain-on-a-non-windows-platform-completion-evidence).
 

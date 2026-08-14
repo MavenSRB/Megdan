@@ -28,6 +28,7 @@ Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#mile
 ## Corrective sequence 6.1c-6.1k
 
 The completed corrective sequence's definitions - the audit preamble, execution-order table, and milestones 6.1c through 6.1p plus 6.1l - moved verbatim to [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) on 2026-08-14 during the required warning-threshold ownership review. The sequence completed on 2026-08-13; its account is maintained in [Project/FOUNDATION_CORRECTIONS.md](../Project/FOUNDATION_CORRECTIONS.md), and per-milestone evidence is addressed by SHA in the [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md).
+
 ### [ ] 6.1a Add player-facing Minion Battle removal-choice UI
 
 Observable outcome: When milestone 6.1's authority pauses for a Minion Battle removal choice, the configured passive presentation lets the authorized chooser select which eligible minions are removed and resumes the same authoritative end-of-round continuation.
@@ -76,6 +77,8 @@ Closing check for `F-ER2-03`: the two focused lifecycle tests named in the ER2 r
 
 Non-goals: No concrete card text, no modifier application, no new checkpoint kinds, no 6.2a effect execution.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61q-scope-active-effect-checkpoints-and-uniqueness-correctly-completion-evidence).
+
 ### [x] 6.1r Design one board-occupancy seam for every occupant kind
 
 Observable outcome: Heroes, minions, and generic obstacles occupy the board through one authoritative occupancy/collision seam that tokens (6.2) join by declaration, rather than each occupant kind owning a parallel collection, constructor collision block, transit scan, serializer section, and projection field.
@@ -89,6 +92,8 @@ Acceptance checks:
 Closure for `F-ER2-06`: architectural direction; verified by the already-scheduled fresh-task review 6.2b, whose scope names this seam.
 
 Non-goals: No token or marker behavior, no minion movement (6.1s), no rule change, no board-authority rename beyond what the seam itself requires.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61r-design-one-board-occupancy-seam-for-every-occupant-kind-completion-evidence).
 
 ### [x] 6.1s Make minion occupancy mutable and fully serialized
 
@@ -105,6 +110,8 @@ Closing check for `F-ER2-02`: a snapshot round-trip fixture asserting a restored
 
 Non-goals: No Object Push, Lane Push, Spawn, or Respawn rules; no balance change; no presentation change beyond reading the authoritative coordinate.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61s-make-minion-occupancy-mutable-and-fully-serialized-completion-evidence).
+
 ### [x] 6.1t Port the cross-platform dotnet test harness
 
 Observable outcome: The Unity-free Core/Application test majority runs on any OS through the dotnet + NUnit harness preserved on branch `er2-external-review-line`, adapted to this line's assemblies and test files.
@@ -119,6 +126,8 @@ Acceptance checks:
 Closing check for `F-ER2-12`: the harness's own build tripwire plus `dotnet test` green on Linux from a fresh checkout.
 
 Non-goals: No CI service selection or configuration, no test-behavior changes, no Unity batch-mode launcher port.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61t-port-the-cross-platform-dotnet-test-harness-completion-evidence).
 
 ### [ ] 6.1u Delete dead code and single-source duplicated resolution lookups
 
@@ -159,6 +168,8 @@ Recorded outcome: the diff found two causes, both intended by 6.1s and neither a
 
 Non-goals: No schema change, no serializer change, no new fixture, no reopening of the v7 migrate-or-reject decision, no change to what the invariance fixture asserts.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61x-re-pin-the-invariance-digests-to-schema-v7-completion-evidence).
+
 ### [x] 6.1v Make reflected member names and digest fixtures checkable
 
 Observable outcome: A test that names a production member by string, or pins a snapshot digest, cannot silently drift out of agreement with the source it describes.
@@ -178,6 +189,8 @@ Closing check: the new check run against commit `5676c64`, where the three `setu
 
 Non-goals: No change to what any test asserts, no new test assembly (a shared test-utility assembly would escalate this to T3 under the testing policy), no shrinking of the harness exclude list, no removal of reflection from tests that legitimately need it.
 
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61v-make-reflected-member-names-and-digest-fixtures-checkable-completion-evidence).
+
 ### [x] 6.1w Route the rules-ledger coverage sections to a shard
 
 Observable outcome: `RULES_LEDGER.md` returns below its warning threshold with no content deleted, abbreviated, or weakened.
@@ -193,6 +206,8 @@ Acceptance checks:
 Closing check: the validator reports the `warning-threshold` warning for `RULES_LEDGER.md` at the pre-fix revision and reports no such warning at the post-fix revision, with the moved text byte-identical in its new home.
 
 Non-goals: No rule content change, no re-verification of rule status, no sharding of the `Rule-system ledger` section itself, which is 5,695 words and belongs to its own later milestone.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61w-route-the-rules-ledger-coverage-sections-to-a-shard-completion-evidence).
 
 ## Documentation-structure milestone from the 6.1w handoff
 
@@ -235,7 +250,7 @@ Semantic checks state their claims in explicitly declared ledgers that the valid
 
 Every new check carries a vacuity guard that fails when its input set is empty, matching the existing `no-declared-types`, `no-authored-scripts`, `no-reflection-sites`, and `no-archived-bodies` guards. A check that has never been observed failing is not evidence.
 
-### [ ] 6.1z Prove the documentation graph is connected
+### [x] 6.1z Prove the documentation graph is connected
 
 Observable outcome: Every active shard is reachable from its family index, and every completed milestone has a stated evidence destination and a link to it.
 
@@ -252,6 +267,8 @@ Acceptance checks:
 Closing check: the three checks run at `dd535ae`, observed reporting the 14 backlink gaps and the `6.1e` destination gap; run at the post-fix revision, observed passing.
 
 Non-goals: No rewriting of archive sections, which are append-only. No change to any milestone's status, acceptance checks, or non-goals. No new shard and no relocation of content.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61z-prove-the-documentation-graph-is-connected-completion-evidence).
 
 ### [ ] 6.1aa Pin documented constants to their source
 

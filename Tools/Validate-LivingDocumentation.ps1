@@ -355,6 +355,71 @@ function Get-RawEnumCastSites($SnapshotFiles, [hashtable] $DeclaredEnums) {
     return $sites.ToArray()
 }
 
+# Documentation-graph checks (milestone 6.1z): the ownership matrix assigns every subject a canonical
+# home "plus its indexed shards", and the history workflow requires every completed milestone
+# definition to keep a stable Historical evidence backlink. Neither was enforced: the link pass
+# resolves every link that is written, and nothing required a link to exist, so a shard added without
+# an index entry - or a completed milestone whose evidence was never linked - passed. The family table
+# deliberately reuses the path shapes of Get-Limit so threshold ownership and index ownership cannot
+# drift apart. A family with more than one index takes their union, because Card-System/ is
+# legitimately owned by two indexes and Project/ names two owners in the matrix.
+function Get-ShardFamilies {
+    return @(
+        [pscustomobject]@{ Pattern = 'Project/*.md';     Indexes = @('PROJECT_CONTEXT.md', 'Project/CURRENT_IMPLEMENTATION.md') }
+        [pscustomobject]@{ Pattern = 'Roadmap/*.md';     Indexes = @('ROADMAP.md') }
+        [pscustomobject]@{ Pattern = 'Testing/*.md';     Indexes = @('TESTING.md') }
+        [pscustomobject]@{ Pattern = 'Card-System/*.md'; Indexes = @('CARD_SYSTEM_ARCHITECTURE.md', 'CARD_EFFECT_CAPABILITIES.md') }
+        [pscustomobject]@{ Pattern = 'Rules/*.md';       Indexes = @('RULES_LEDGER.md') }
+    )
+}
+
+function Get-OrphanShards($Families, [string[]] $ShardPaths, [hashtable] $IndexTexts) {
+    $orphans = New-Object System.Collections.Generic.List[string]
+    foreach ($family in $Families) {
+        foreach ($shard in ($ShardPaths | Where-Object { $_ -like $family.Pattern })) {
+            $fileName = [regex]::Escape(($shard -split '/')[-1])
+            $isLinked = $false
+            foreach ($index in $family.Indexes) {
+                if (-not $IndexTexts.ContainsKey($index)) { continue }
+                if ([regex]::IsMatch($IndexTexts[$index], "\]\([^)]*$fileName(#[^)]*)?\)")) { $isLinked = $true; break }
+            }
+            if (-not $isLinked) { $orphans.Add($shard) }
+        }
+    }
+    return $orphans.ToArray()
+}
+
+function Get-CompleteMilestoneBlocks([string] $RoadmapCorpus) {
+    $blocks = New-Object System.Collections.Generic.List[object]
+    foreach ($match in [regex]::Matches($RoadmapCorpus, '(?ms)^### \[x\] (\S+)[^\r\n]*\r?\n(.*?)(?=^#{2,3} |\z)')) {
+        $blocks.Add([pscustomobject]@{ Id = $match.Groups[1].Value; Body = $match.Groups[2].Value })
+    }
+    return $blocks.ToArray()
+}
+
+function Get-MilestonesMissingEvidenceBacklink($Blocks) {
+    return @($Blocks | Where-Object { $_.Body -notmatch '(?m)^Historical evidence:' } | ForEach-Object { $_.Id })
+}
+
+# Both destination forms are legitimate: the one-row entry is the post-2026-08-13 policy and the
+# "## Milestone <id> ..." section is the baselined earlier history; a check accepting only one form
+# would report dozens of valid historical records. An exemption is declared in the block itself
+# ("Historical evidence: exempt - ..."), never inferred: milestone 0.1 created the documentation
+# system and predates the archive, and an invented record is a worse failure than an admitted gap.
+function Get-MilestonesMissingArchiveDestination($Blocks, [hashtable] $ArchiveTexts) {
+    $missing = New-Object System.Collections.Generic.List[string]
+    foreach ($block in $Blocks) {
+        if ($block.Body -match '(?m)^Historical evidence:\s*exempt\b') { continue }
+        $phase = ($block.Id -split '\.')[0]
+        $archive = if ($ArchiveTexts.ContainsKey($phase)) { $ArchiveTexts[$phase] } else { '' }
+        $escaped = [regex]::Escape($block.Id)
+        $hasSection = [regex]::IsMatch($archive, "(?m)^##+ Milestone $escaped\b")
+        $hasRow = [regex]::IsMatch($archive, "(?m)^\|\s*$escaped\s*\|")
+        if (-not ($hasSection -or $hasRow)) { $missing.Add($block.Id) }
+    }
+    return $missing.ToArray()
+}
+
 function Test-DuplicateBodies([string[]] $Bodies, [string] $ActiveCorpus) {
     foreach ($body in $Bodies) {
         if ($body.Length -ge 80 -and $ActiveCorpus.Contains($body)) { return $false }
@@ -473,6 +538,26 @@ function Invoke-SelfTests {
     Expect 'source with no cast yields none' (@(Get-RawEnumCastSites (SnapshotFile 'var n = reader.ReadInt32();') $enumNames).Count -eq 0)
     Expect 'two casts in one file are both reported' (@(Get-RawEnumCastSites (SnapshotFile "var a = (TeamSide)reader.ReadInt32();`nvar b = (EndOfRoundStage)reader.ReadInt32();") $enumNames).Count -eq 2)
 
+    # Documentation-graph checks (milestone 6.1z).
+    $graphFamilies = @([pscustomobject]@{ Pattern = 'Sub/*.md'; Indexes = @('INDEX_A.md', 'INDEX_B.md') })
+    $graphIndexes = @{ 'INDEX_A.md' = 'See [the shard](Sub/LINKED.md) here.'; 'INDEX_B.md' = 'Also [other](Sub/OTHER.md#anchor).' }
+    Expect 'linked shard passes' (@(Get-OrphanShards $graphFamilies @('Sub/LINKED.md') $graphIndexes).Count -eq 0)
+    Expect 'orphaned shard is reported' (@(Get-OrphanShards $graphFamilies @('Sub/ORPHAN.md') $graphIndexes) -contains 'Sub/ORPHAN.md')
+    Expect 'second index of a two-index family links it' (@(Get-OrphanShards $graphFamilies @('Sub/OTHER.md') $graphIndexes).Count -eq 0)
+    Expect 'empty shard set yields no orphans for the vacuity guard to catch' (@(Get-OrphanShards $graphFamilies @() $graphIndexes).Count -eq 0)
+    $graphBlocks = Get-CompleteMilestoneBlocks "### [x] 2.1 Done`nBody.`nHistorical evidence: [row](x.md).`n### [x] 2.2 Also done`nBody only.`n### [ ] 2.3 Open`nNot complete.`n"
+    Expect 'complete blocks are parsed and open ones skipped' ($graphBlocks.Count -eq 2)
+    Expect 'backlink present passes' (@(Get-MilestonesMissingEvidenceBacklink $graphBlocks) -notcontains '2.1')
+    Expect 'missing backlink is reported' (@(Get-MilestonesMissingEvidenceBacklink $graphBlocks) -contains '2.2')
+    Expect 'corpus with no complete blocks parses to zero for the vacuity guard' (@(Get-CompleteMilestoneBlocks 'no blocks here').Count -eq 0)
+    $sectionArchive = @{ '2' = "## Milestone 2.1 Done completion evidence`n| 2.1 | outcome | ``abc`` |`n" }
+    $rowArchive = @{ '2' = "| ID | Outcome | Commit |`n| --- | --- | --- |`n| 2.2 | outcome | ``def`` |`n" }
+    Expect 'section form is a destination' (@(Get-MilestonesMissingArchiveDestination (Get-CompleteMilestoneBlocks "### [x] 2.1 Done`nHistorical evidence: [x](y.md).`n") $sectionArchive).Count -eq 0)
+    Expect 'row form is a destination' (@(Get-MilestonesMissingArchiveDestination (Get-CompleteMilestoneBlocks "### [x] 2.2 Done`nHistorical evidence: [x](y.md).`n") $rowArchive).Count -eq 0)
+    Expect 'missing destination is reported' (@(Get-MilestonesMissingArchiveDestination (Get-CompleteMilestoneBlocks "### [x] 2.9 Done`nHistorical evidence: [x](y.md).`n") $sectionArchive) -contains '2.9')
+    Expect 'a longer id does not satisfy a shorter one' (@(Get-MilestonesMissingArchiveDestination (Get-CompleteMilestoneBlocks "### [x] 2.1 Done`nHistorical evidence: [x](y.md).`n") @{ '2' = "## Milestone 2.1c Other completion evidence`n| 2.1c | outcome | ``abc`` |`n" }) -contains '2.1')
+    Expect 'a declared exemption skips the destination check' (@(Get-MilestonesMissingArchiveDestination (Get-CompleteMilestoneBlocks "### [x] 0.1 Bootstrap`nHistorical evidence: exempt - predates the phase-handoff archive.`n") @{}).Count -eq 0)
+
     if ($failed.Count -gt 0) { throw "Living-document validator self-test failure: $($failed -join ', ')" }
     Write-Host "Self-tests: $script:selfTestCount/$script:selfTestCount checks passed."
 }
@@ -549,6 +634,31 @@ foreach ($file in $linkFiles) {
             if (-not $headings.ContainsKey($parts[1])) { Add-Issue 'ERROR' 'broken-anchor' "$(Get-RelativePath $projectRoot $file.FullName) -> $target" }
         }
     }
+}
+
+# Documentation-graph checks (milestone 6.1z): every governed shard is reachable from its family
+# index, and every completed milestone states its evidence destination and links to it.
+$docRelativeTexts = @{}
+foreach ($file in $activeFiles) {
+    $docRelativeTexts[(Get-RelativePath $projectRoot $file.FullName).Replace('Docs/AI/', '')] = Read-Utf8 $file.FullName
+}
+$shardFamilies = Get-ShardFamilies
+$governedShardPaths = @($docRelativeTexts.Keys | Where-Object { $rel = $_; @($shardFamilies | Where-Object { $rel -like $_.Pattern }).Count -gt 0 })
+if ($governedShardPaths.Count -eq 0) { Add-Issue 'ERROR' 'no-indexed-shards' 'No governed shards were found under any family directory; the orphan-shard check would pass vacuously.' }
+foreach ($orphan in (Get-OrphanShards $shardFamilies $governedShardPaths $docRelativeTexts)) {
+    Add-Issue 'ERROR' 'orphan-shard' "Docs/AI/$orphan is linked from no index in its family. Add the index link, or the shard is unreachable authority."
+}
+$completeMilestoneBlocks = Get-CompleteMilestoneBlocks $roadmapCorpus
+if ($completeMilestoneBlocks.Count -eq 0) { Add-Issue 'ERROR' 'no-complete-milestones' 'No complete milestone blocks were found in the roadmap corpus; the backlink and archive-destination checks would pass vacuously.' }
+foreach ($id in (Get-MilestonesMissingEvidenceBacklink $completeMilestoneBlocks)) {
+    Add-Issue 'ERROR' 'missing-evidence-backlink' "Complete milestone $id carries no 'Historical evidence' line. The active definition must keep its stable backlink, or state its exemption."
+}
+$phaseArchiveTexts = @{}
+foreach ($handoff in (Get-ChildItem -LiteralPath ([System.IO.Path]::Combine($docsRoot, 'Archive', 'Phase-Handoffs')) -File -Filter 'PHASE_*.md' -ErrorAction SilentlyContinue)) {
+    if ($handoff.BaseName -match '^PHASE_(\d+)$') { $phaseArchiveTexts[$Matches[1]] = Read-Utf8 $handoff.FullName }
+}
+foreach ($id in (Get-MilestonesMissingArchiveDestination $completeMilestoneBlocks $phaseArchiveTexts)) {
+    Add-Issue 'ERROR' 'missing-archive-destination' "Complete milestone $id has neither a one-row entry nor a 'Milestone $id' section in its phase handoff archive."
 }
 
 # The 2026 consolidation's baseline-hash, migration-manifest, and preservation-inventory checks were
