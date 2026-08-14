@@ -218,7 +218,7 @@ Non-goals: No gameplay, rules, product scope, platform, card/effect, snapshot, r
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61an-reconcile-and-compact-governing-process-authority-completion-evidence).
 
-### [~] 6.1aq Shard the current-implementation inventory
+### [x] 6.1aq Shard the current-implementation inventory
 
 **Corrective amendment (2026-08-15, user approved).** `Project/CURRENT_IMPLEMENTATION.md` has been over its warning threshold for three consecutive milestones. Milestone 6.8's review recorded that the next milestone touching it should expect to shard; 6.8a condensed its own additions instead and recorded the same conclusion; 6.8c did likewise and left the file at 4,270 of its 4,500-word limit. The warning is meant to force a same-handoff ownership review, and deferring it again converts a governed threshold into background noise.
 
@@ -235,3 +235,5 @@ Acceptance checks:
 Closing check: the `warning-threshold` issue for `Project/CURRENT_IMPLEMENTATION.md` is present before and absent after, with every other threshold unchanged.
 
 Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No rewrite of completed definitions or archive evidence, and no new implementation claim; this milestone moves existing text and registers its home.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61aq-shard-the-current-implementation-inventory-completion-evidence).

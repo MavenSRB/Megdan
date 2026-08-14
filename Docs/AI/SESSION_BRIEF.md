@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-08-14
+Last updated: 2026-08-15
 
 ## Purpose and authority
 
@@ -12,13 +12,11 @@ The project has completed roadmap milestones through **6.8c**. The configured ve
 
 ## Current authorization and next route
 
-- Current completed milestone: **6.8c**.
-- Active authorized milestone: **6.1aq**, in progress.
-- Next proposed milestone: **6.1aq**.
+- Current completed milestone: **6.1aq**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **6.1am**.
 
-Milestone **6.8c** completed on 2026-08-15. The Move-Through permission has its Movement consumer, so the mode Red Bulwark prints is now something a player can observe. Reachability asks the existing obstacle query rulebook p.18's two separate questions - an occupied space is traversable only for a mover holding the permission, and is a legal endpoint for nobody - and a chosen route commits as one transaction that asserts occupancy only at its endpoint, so a passed-through space is entered and left without ever being occupied. Entering costs one movement either way, facts stay one per space, and a route crossing nothing occupied produces the identical event stream and end state, so no pinned digest moved and the schema is unchanged. Red Bulwark's `Next Turn` mode is the configured consumer, proved end to end against a control that never selects it. Proving it also surfaced the defects the corrective amendment below schedules, so **6.1aq** is authorized and in progress rather than 6.8b; **6.10a** remains scheduled before 6.11, not authorized. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
-
-Milestone **6.8a** completed on 2026-08-14. The configured Red hand's Red Bulwark now replaces its printed Primary Attack with one three-mode Skill under content revision `phase-6-8a-rev-1`, keeping its identity, Initiative 11, printed Secondary Movement 2, Defense 3 reaction, ownership, and hand slot. Its modes are a `Choose` over three capabilities milestone 6.8 already registered, so the card declares no rule itself: it is the stable source and the acting hero is always the affected object. The three delayed lifetimes now happen in an ordinary match - `This Turn` `+1 Defense` reaches a later enemy Attack in the same turn, `This Round` withholds that hero's Fast-Travel offer until Round End and no longer, and `Next Turn` Move Through lies dormant, then permits transit through an occupied space but never an obstacle endpoint, then expires. Presentation gained its first passive effect-choice surface, forwarding only projected invocations and withholding what the authority would refuse. Schema stays v9; the pinned corpus and aggregate-invariance fixtures were re-pinned as a reject decision after the delta was read at the byte level. **6.8c** is authorized and in progress under the corrective amendment below, ahead of 6.8b; **6.10a** remains scheduled before 6.11, not authorized. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
+Milestone **6.1aq** completed on 2026-08-15. The implementation inventory is under its threshold for the first time in four milestones - 3,327 of 4,500 words - with nothing compressed to get there. Seven whole paragraphs of configured presentation surfaces moved verbatim into the new [Project/CONFIGURED_PRESENTATION.md](Project/CONFIGURED_PRESENTATION.md): HUD card panel and Defense controls, the Defense-preview popup, signed minion Defense cues, Attack-target highlighting, reload-safe minion views, and the Minion Battle removal-choice pair. The boundary is the one the inventory already drew - the passive-presentation contract stays, the surfaces built on it move - so no fact is stated twice, and two paragraphs filed under match state by chronology moved to their actual subject. `Get-Limit` already governs `Project/*.md`, so the leaf count rose from 47 to 48 with no validator change. The closing check was observed both ways: the `warning-threshold` issue was present at 4,270 words before and the run reports zero warnings after. **6.1am** is proposed next, executing on its explicit-instruction trigger rather than its ledger-warning one. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
 
 The user-approved mechanics-showcase amendment retains the next proposal and continues the dependency-safe route **6.4 -> 6.4a -> 6.4b -> 6.5 -> 6.8b -> 6.5a -> 6.5b -> 6.6 -> 6.6a -> 6.7 -> 6.7a -> 6.9 onward**. Six existing configured cards are converted only after their reusable dependencies: Red Bulwark, converted at 6.8a, sources a `+1 Defense This Turn`, self Fast-Travel restriction `This Round`, or self Move-Through permission `Next Turn`; Blue Feint separately sources self Push immunity under `Next Turn after Playing Cards` or self `Counts As` minion for `This Round`; Red Needle covers Push/Place; Red Bombard covers direct Move/Spawn; Blue Sentinel covers Swap/Replace/token-only Remove; and Blue Longbow covers bounded Repeat. In every delayed mode the hero whose Skill is resolving is the affected rules object and the card is only the stable source. Red Lancer, Red Pursuit, Blue Scout Shot, and Blue Hammer retain exactly one printed non-Ranged and one Ranged Attack per team. Every conversion preserves its card's Initiative/Secondary Movement/Defense and stable identity under a new content revision, 6.13 closes delayed-effect retrieval/cancellation, and 7.9 gates the complete ten-card matrix. Scheduling is not authorization; each new milestone still requires exact approval.
 
@@ -47,6 +45,7 @@ Go straight to the shard that owns the subject when this table names it. When th
 | Milestone approval/implementation | [ROADMAP.md](ROADMAP.md) `Execution rule`, then the exact phase shard in [Roadmap/](Roadmap/) |
 | Current implementation inventory | [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) |
 | Foundation audit findings, their corrective milestones, governance state | [Project/FOUNDATION_CORRECTIONS.md](Project/FOUNDATION_CORRECTIONS.md) |
+| Configured passive views, presenters, HUD/board surfaces, and board cues | [Project/CONFIGURED_PRESENTATION.md](Project/CONFIGURED_PRESENTATION.md) |
 | Product scope and durable constraints | [Project/PRODUCT.md](Project/PRODUCT.md) |
 | Core architecture constraints | [Project/ARCHITECTURE.md](Project/ARCHITECTURE.md) |
 | Presentation and accessibility direction | [Project/PRESENTATION.md](Project/PRESENTATION.md) |
