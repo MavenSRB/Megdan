@@ -1,0 +1,8 @@
+# Retired-structure ledger, read by the retired-structure-language check in
+# Tools/Validate-LivingDocumentation.ps1 (milestone 6.1ab).
+# Each entry line: signature phrase | retiring milestone | what was retired.
+# An active document may carry a signature phrase only on a line that also carries a
+# milestone id (a milestone-qualified historical construction); any other occurrence is
+# a stale current claim describing a structure that no longer exists.
+strategy registry | 6.1h | The card-action strategy registry, its marker interface, its pass-through handlers, and its backend interfaces; the dispatcher calls the concrete backends directly
+handler registry | 6.1h | The same registry as the capability documents name it

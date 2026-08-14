@@ -193,4 +193,10 @@ The catalog is intentionally broader than the current code, but it is not author
 
 The foundation is considered successful when Object Push, source-relative direct Move, Place, tokens, or another future effect can be introduced by registering/mapping the exact capability and tests, rather than adding branches across unrelated systems.
 
-The handler registry is explicit and typed. Registration uses stable action/capability identity and the capability's declared input/output contract; it does not use reflection discovery, display-name branches, a service locator, an untyped dictionary payload, or a universal expression language. Handlers remain pure rules collaborators and never reference match-session presenters, Unity views, transport callbacks, or animation state.
+Handler composition is explicit and typed. Milestone 6.1h removed the interim strategy registry, so the concrete backends are composed directly today; when milestone 6.2a lands the registered action/effect dispatch seam, registration uses stable action/capability identity and the capability's declared input/output contract. Neither form may use reflection discovery, display-name branches, a service locator, an untyped dictionary payload, or a universal expression language. Handlers remain pure rules collaborators and never reference match-session presenters, Unity views, transport callbacks, or animation state.
+
+## Contract implementation status
+
+| Contract | Status | Owner |
+| --- | --- | --- |
+| Registered action/effect dispatch seam with typed handler registration | Planned, not implemented; the concrete backends are composed directly since milestone 6.1h removed the interim registry | 6.2a |

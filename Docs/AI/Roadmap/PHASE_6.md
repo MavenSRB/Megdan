@@ -288,7 +288,7 @@ Closing check: the check run at `dd535ae`, observed reporting the three v6 sites
 
 Non-goals: No serializer change, no schema change, no reopening of the v7 migrate-or-reject decision, and no rewriting of correctly milestone-qualified history.
 
-### [ ] 6.1ab Fail on retired structures and shipped retirement owners
+### [x] 6.1ab Fail on retired structures and shipped retirement owners
 
 Observable outcome: Documentation cannot describe a deleted structure in the present tense, and cannot assign a retirement to a milestone that already completed.
 
@@ -306,6 +306,8 @@ Acceptance checks:
 Closing check: the two checks run at `dd535ae`, observed reporting the `Project/ARCHITECTURE.md` registry prose and the 6.1d retirement owner; run at the post-fix revision, observed passing.
 
 Non-goals: No deletion of the placeholder materials, which retire at Phase 9. No risk-register lifecycle change beyond correcting the stale owner. No production code change.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ab-fail-on-retired-structures-and-shipped-retirement-owners-completion-evidence).
 
 ### [x] 6.1ac Keep completion history out of active documents
 

@@ -401,6 +401,87 @@ function Get-MilestonesMissingEvidenceBacklink($Blocks) {
     return @($Blocks | Where-Object { $_.Body -notmatch '(?m)^Historical evidence:' } | ForEach-Object { $_.Id })
 }
 
+# Retired-structure and stale-retirement-owner checks (milestone 6.1ab): documentation must not
+# describe a deleted structure in the present tense, and must not assign a retirement to a milestone
+# that already completed. The retired structures are declared in Tools/RetiredStructures.txt rather
+# than inferred from prose; a signature phrase is legal only on a line that also carries a milestone
+# id, which is how the corpus already writes legitimate history ("Milestone 6.1h removed the
+# registry"). Get-UndeclaredContractTypes structurally cannot reach these sites: ordinary English
+# prose carries no backticked identifier with a known suffix, and a check that catches a documented
+# type which never existed is blind to one that existed and was deleted.
+function Read-RetiredStructureLedger([string[]] $Lines) {
+    $entries = New-Object System.Collections.Generic.List[object]
+    foreach ($line in $Lines) {
+        $trimmed = $line.Trim()
+        if ($trimmed.Length -eq 0 -or $trimmed.StartsWith('#')) { continue }
+        $parts = $trimmed.Split('|')
+        if ($parts.Count -lt 3) { continue }
+        $entries.Add([pscustomobject]@{ Phrase = $parts[0].Trim(); RetiredBy = $parts[1].Trim(); Description = $parts[2].Trim() })
+    }
+    return $entries.ToArray()
+}
+
+function Get-RetiredStructureLanguageSites($Entries, [hashtable] $DocTexts) {
+    $sites = New-Object System.Collections.Generic.List[object]
+    foreach ($doc in ($DocTexts.Keys | Sort-Object)) {
+        $lines = $DocTexts[$doc] -split "\r?\n"
+        # A completed milestone's definition block is a milestone-qualified historical construction
+        # by virtue of its "### [x] <id>" heading - 6.1h's own acceptance checks legitimately name
+        # the structure they retired - so its lines are exempt. An open "[ ]" block is not.
+        $inCompleteBlock = $false
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^#{2,3} ') { $inCompleteBlock = $lines[$i] -match '^### \[x\] ' }
+            if ($inCompleteBlock) { continue }
+            foreach ($entry in $Entries) {
+                if ($lines[$i].IndexOf($entry.Phrase, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
+                if ([regex]::IsMatch($lines[$i], '\b\d+\.\d+[a-z]*\b')) { continue }
+                $sites.Add([pscustomobject]@{ Doc = $doc; Line = $i + 1; Phrase = $entry.Phrase })
+            }
+        }
+    }
+    return $sites.ToArray()
+}
+
+function Get-SectionTableRows([string] $Text, [string] $SectionHeading) {
+    $section = [regex]::Match($Text, "(?ms)^## $([regex]::Escape($SectionHeading))[^\r\n]*\r?\n(.*?)(?=^## |\z)")
+    if (-not $section.Success) { return @() }
+    $rows = New-Object System.Collections.Generic.List[object]
+    foreach ($line in ($section.Groups[1].Value -split "\r?\n")) {
+        if ($line -notmatch '^\|') { continue }
+        if ($line -match '^\|(\s*:?-+:?\s*\|)+\s*$') { continue }
+        $rows.Add(@($line.Trim('|').Split('|') | ForEach-Object { $_.Trim() }))
+    }
+    if ($rows.Count -gt 0) { $rows.RemoveAt(0) }
+    return $rows.ToArray()
+}
+
+# A "Retirement owner" cell names its owner directly, so any completed milestone id in it is stale.
+# A risk row's "Retirement or reassessment" cell legitimately records history in the past tense
+# ("Retired at 6.1o", "Reassessed at 6.1s"), so only forward-looking clauses are scanned: the
+# imperative "reassess ... at <target>" and "retire ... at <target>" forms. Phase-scale owners
+# ("Phase 9 presentation") carry no milestone id and stay legal.
+function Get-StaleRetirementOwners($TempOwnerCells, $RiskCells, [string] $RoadmapCorpus) {
+    $stale = New-Object System.Collections.Generic.List[string]
+    function Test-CompleteId([string] $Id, [string] $Corpus) {
+        return [regex]::IsMatch($Corpus, "(?m)^### \[x\] $([regex]::Escape($Id))(?:\s|$)")
+    }
+    foreach ($cell in $TempOwnerCells) {
+        foreach ($id in ([regex]::Matches($cell, '\b\d+\.\d+[a-z]*\d*\b') | ForEach-Object { $_.Value })) {
+            if (Test-CompleteId $id $RoadmapCorpus) { $stale.Add("temporary-structure register cell '$cell' names completed milestone $id") }
+        }
+    }
+    foreach ($cell in $RiskCells) {
+        # The clause capture permits a period only as a decimal point inside a milestone id
+        # ("6.2a"); a sentence-ending period, semicolon, or colon terminates the clause.
+        foreach ($clauseMatch in [regex]::Matches($cell, '(?i)\b(?:reassess(?:\s+\w+)?|retire\b[^.;:]*?)\s+at\s+((?:[^.;:]|\.(?=\d))*)')) {
+            foreach ($id in ([regex]::Matches($clauseMatch.Groups[1].Value, '\b\d+\.\d+[a-z]*\d*\b') | ForEach-Object { $_.Value })) {
+                if (Test-CompleteId $id $RoadmapCorpus) { $stale.Add("risk register forward-looking owner $id is already complete") }
+            }
+        }
+    }
+    return $stale.ToArray()
+}
+
 # Completion-history containment (milestone 6.1ac): governance routes a completed milestone's
 # narrative to its commit body and archive row, leaving the brief its compact route. duplicate-history
 # cannot reach a narrative that never left the active document - since archive rows became one-liners
@@ -573,6 +654,26 @@ function Invoke-SelfTests {
     Expect 'a longer id does not satisfy a shorter one' (@(Get-MilestonesMissingArchiveDestination (Get-CompleteMilestoneBlocks "### [x] 2.1 Done`nHistorical evidence: [x](y.md).`n") @{ '2' = "## Milestone 2.1c Other completion evidence`n| 2.1c | outcome | ``abc`` |`n" }) -contains '2.1')
     Expect 'a declared exemption skips the destination check' (@(Get-MilestonesMissingArchiveDestination (Get-CompleteMilestoneBlocks "### [x] 0.1 Bootstrap`nHistorical evidence: exempt - predates the phase-handoff archive.`n") @{}).Count -eq 0)
 
+    # Retired-structure and stale-retirement-owner checks (milestone 6.1ab).
+    $retiredEntries = @(Read-RetiredStructureLedger @('# comment', '', 'strategy registry | 6.1h | The deleted registry'))
+    Expect 'ledger parses entries and skips comments' ($retiredEntries.Count -eq 1 -and $retiredEntries[0].Phrase -eq 'strategy registry' -and $retiredEntries[0].RetiredBy -eq '6.1h')
+    Expect 'a retired phrase in a current claim is reported' (@(Get-RetiredStructureLanguageSites $retiredEntries @{ 'DOC.md' = "The dispatcher sits behind a typed strategy registry." }).Count -eq 1)
+    Expect 'the same phrase in milestone-qualified history passes' (@(Get-RetiredStructureLanguageSites $retiredEntries @{ 'DOC.md' = "Milestone 6.1h removed the strategy registry." }).Count -eq 0)
+    Expect 'empty ledger yields no sites for the vacuity guard' (@(Get-RetiredStructureLanguageSites @() @{ 'DOC.md' = 'strategy registry everywhere' }).Count -eq 0)
+    Expect 'a retired phrase inside a completed milestone definition block passes' (@(Get-RetiredStructureLanguageSites $retiredEntries @{ 'DOC.md' = "### [x] 9.9 Done`n`nThe strategy registry is removed.`n" }).Count -eq 0)
+    Expect 'a retired phrase inside an open milestone definition block is reported' (@(Get-RetiredStructureLanguageSites $retiredEntries @{ 'DOC.md' = "### [ ] 9.8 Open`n`nExtend the strategy registry.`n" }).Count -eq 1)
+    $ownerCorpus = "### [x] 2.5 Done`n`n### [ ] 2.6 Open`n"
+    Expect 'a completed retirement owner is reported' (@(Get-StaleRetirementOwners @('2.5 for the shader; Phase 9 for the materials') @() $ownerCorpus).Count -eq 1)
+    Expect 'an incomplete retirement owner passes' (@(Get-StaleRetirementOwners @('2.6 cleanup') @() $ownerCorpus).Count -eq 0)
+    Expect 'a phase-scale owner passes' (@(Get-StaleRetirementOwners @('Phase 9 presentation') @() $ownerCorpus).Count -eq 0)
+    Expect 'a completed forward-looking reassessment is reported' (@(Get-StaleRetirementOwners @() @('Reassess at 2.5 and record the outcome.') $ownerCorpus).Count -eq 1)
+    Expect 'a past-tense reassessment record passes' (@(Get-StaleRetirementOwners @() @('Reassessed at 2.5; reassess at every durable change.') $ownerCorpus).Count -eq 0)
+    Expect 'an open forward-looking reassessment passes' (@(Get-StaleRetirementOwners @() @('Reassess again at 2.6, and again at 2.7.') $ownerCorpus).Count -eq 0)
+    $tableText = "## Register`n`n| A | B |`n| --- | --- |`n| one | two |`n| three | four |`n`n## Next`n"
+    $tableRows = Get-SectionTableRows $tableText 'Register'
+    Expect 'section table rows parse without header or separator' ($tableRows.Count -eq 2 -and $tableRows[0][1] -eq 'two')
+    Expect 'a missing section parses to zero rows for the vacuity guard' (@(Get-SectionTableRows $tableText 'Absent').Count -eq 0)
+
     # Completion-history containment (milestone 6.1ac).
     $historySession = "- Current completed milestone: **2.5**.`n- Milestone **2.5** completed on 2026-08-14. One sentence.`n"
     Expect 'one matching completion statement passes' (@(Test-CompletionHistory $historySession).Count -eq 0)
@@ -656,6 +757,26 @@ foreach ($file in $linkFiles) {
             if (-not $headings.ContainsKey($parts[1])) { Add-Issue 'ERROR' 'broken-anchor' "$(Get-RelativePath $projectRoot $file.FullName) -> $target" }
         }
     }
+}
+
+# Retired-structure and stale-retirement-owner checks (milestone 6.1ab).
+$retiredLedgerPath = Join-Path $PSScriptRoot 'RetiredStructures.txt'
+$retiredStructures = if (Test-Path -LiteralPath $retiredLedgerPath) { Read-RetiredStructureLedger ([IO.File]::ReadAllLines($retiredLedgerPath)) } else { @() }
+if ($retiredStructures.Count -eq 0) { Add-Issue 'ERROR' 'no-retired-structures' 'Tools/RetiredStructures.txt is missing or holds no entries; the retired-structure-language check would pass vacuously.' }
+$activeDocTexts = @{}
+foreach ($file in $activeFiles) { $activeDocTexts[(Get-RelativePath $projectRoot $file.FullName)] = Read-Utf8 $file.FullName }
+foreach ($site in (Get-RetiredStructureLanguageSites $retiredStructures $activeDocTexts)) {
+    Add-Issue 'ERROR' 'retired-structure-language' "$($site.Doc):$($site.Line) states '$($site.Phrase)' as a current claim, but that structure was retired. Correct it to a milestone-qualified historical statement, or remove it."
+}
+$riskRegisterText = if (Test-Path -LiteralPath (Join-Path $docsRoot 'TECHNICAL_RISKS.md')) { Read-Utf8 (Join-Path $docsRoot 'TECHNICAL_RISKS.md') } else { '' }
+$temporaryStructureRows = @(Get-SectionTableRows $riskRegisterText 'Temporary-structure register')
+$activeRiskRows = @(Get-SectionTableRows $riskRegisterText 'Active risks')
+if ($temporaryStructureRows.Count -eq 0) { Add-Issue 'ERROR' 'no-temporary-structures' 'The temporary-structure register parsed to zero rows; the stale-retirement-owner check would pass vacuously over it.' }
+if ($activeRiskRows.Count -eq 0) { Add-Issue 'ERROR' 'no-active-risks' 'The active risk register parsed to zero rows; the stale-retirement-owner check would pass vacuously over it.' }
+$temporaryOwnerCells = @($temporaryStructureRows | Where-Object { $_.Count -ge 3 } | ForEach-Object { $_[2] })
+$riskReassessmentCells = @($activeRiskRows | Where-Object { $_.Count -ge 6 } | ForEach-Object { $_[5] })
+foreach ($staleOwner in (Get-StaleRetirementOwners $temporaryOwnerCells $riskReassessmentCells $roadmapCorpus)) {
+    Add-Issue 'ERROR' 'stale-retirement-owner' "$staleOwner. A retirement or reassessment assigned to a milestone that already shipped never happens; move it to a live owner."
 }
 
 # Completion-history containment (milestone 6.1ac).
