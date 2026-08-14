@@ -64,6 +64,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 5 - Core full-map actions and combat](Roadmap/PHASE_5.md)
 - [Phase 6 - Tokens, minions, Lane Push, and end-of-round components](Roadmap/PHASE_6.md)
 - [Phase 6 - Mechanics-showcase card integrations](Roadmap/PHASE_6_SHOWCASE.md)
+- [Phase 6 - Corrective milestones from proving the showcase cards](Roadmap/PHASE_6_CORRECTIONS.md)
 - [Phase 6 - Documentation-truth completion block](Roadmap/PHASE_6_DOCUMENTATION.md)
 - [Phase 6 - Completed milestone definitions](Roadmap/PHASE_6_COMPLETED.md)
 - [Phase 7 - Progression, victory, and the complete synthetic core loop](Roadmap/PHASE_7.md)

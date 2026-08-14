@@ -634,28 +634,7 @@ Non-goals: No Wasp definition, source-unverified modifier, card-name/hero-name b
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68-implement-reusable-modifiers-permissions-immunity-and-effective-characteristics-completion-evidence).
 
-### [x] 6.8c Give the Move-Through permission its Movement consumer
-
-**Corrective amendment (2026-08-14, user approved).** Milestone 6.8 implemented the Move-Through permission and `ObstacleQuery`'s p.18 transit/endpoint split, then deferred the Movement consumer to "the milestone that owns route commitment" without naming one. Milestone 6.8a then printed that permission onto Red Bulwark as one of three configured modes. The result is a mode a player can select and observe nothing from: `ObstacleQuery` has no production caller, `MovementReachabilityQuery` accepts no modification set and drops every occupied neighbour before enqueuing it, and `MovementCardActionStrategyBackend` never passes the live set. This milestone closes that gap rather than leaving inert configured content in the hand.
-
-Observable outcome: A hero holding the Move-Through permission can select and complete an ordinary Movement whose route passes through an occupied space, while no unit of either kind may end a Movement on one.
-
-Prerequisites: Milestones 6.8 and 6.8a are complete. This milestone consumes their existing contracts and adds no new modification family.
-
-Acceptance checks:
-
-- `MovementReachabilityQuery` takes the authoritative modification set and the moving unit, and consults `ObstacleQuery` for both questions it already separates: an occupied space is traversable only for a mover holding `MoveThroughObstacles`, and is never emitted as a destination for any mover. A space outside the playable board keeps blocking both, permission or not.
-- Passing through an occupied space costs the same movement as any other space entered, so the permission changes which routes exist rather than what they cost.
-- Route commitment asserts occupancy only at the endpoint: a validated route moves its unit from origin to destination without any intermediate space being occupied, and the one-obstacle-per-space index is never transiently violated.
-- The existing fork-based whole-route validation still refuses a route before any mutation, and a rejected route leaves board, session, card, continuation, and event state untouched.
-- Without the permission every current Movement result is unchanged, proved against the same fixtures rather than asserted.
-- Red Bulwark's `Next Turn` mode is the configured consumer: after that mode resolves, the hero's next turn offers a destination beyond an occupied space, completes it, and the offer disappears again once the effect expires.
-- Projections and passive presentation forward the changed destination set without presentation deriving obstacle rules; destination highlights follow the projected legal endpoints.
-- Snapshot restore, replay, retained-prefix Undo, and rejection rollback stay deterministic across a through-route commit.
-
-Non-goals: No Object Push, direct Move, Place, or Swap displacement (6.4-6.6 own those), no new permission kind, no Fast-Travel change, no pathfinding cost model beyond one space per space entered, no Wasp definition, and no production art, animation, or audio.
-
-Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68c-give-the-move-through-permission-its-movement-consumer-completion-evidence).
+**Corrective amendment (2026-08-15, user approved).** Proving milestones 6.8a and 6.8c against a card a player can hold exposed defects in the mechanisms those cards consume rather than in the cards. Milestone 6.8c and the corrections it surfaced - 6.8d, 6.8e, and 6.8f - live in the indexed [corrections subshard](PHASE_6_CORRECTIONS.md), which was created during the warning-threshold ownership review this amendment's additions triggered here. Their execution order, acceptance checks, and non-goals are authoritative there; scheduling still authorizes nothing.
 
 ### [ ] 6.9 Emit an immediate Lane-Push request during a turn
 

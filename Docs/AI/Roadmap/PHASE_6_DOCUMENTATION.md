@@ -217,3 +217,21 @@ Closing checks: `retired-structure-language` is observed failing after the new d
 Non-goals: No gameplay, rules, product scope, platform, card/effect, snapshot, runtime, Unity/gameplay test fixture or suite-breadth, scene, asset, package, build, risk-disposition, publication-rights, or semantic future-milestone acceptance change. No rewrite of completed 6.1ac definitions or archive evidence, frozen migration records, preservation inventory, or pre-governance archive. No execution of 6.1am, 6.1y, 6.1u, or later work.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61an-reconcile-and-compact-governing-process-authority-completion-evidence).
+
+### [ ] 6.1aq Shard the current-implementation inventory
+
+**Corrective amendment (2026-08-15, user approved).** `Project/CURRENT_IMPLEMENTATION.md` has been over its warning threshold for three consecutive milestones. Milestone 6.8's review recorded that the next milestone touching it should expect to shard; 6.8a condensed its own additions instead and recorded the same conclusion; 6.8c did likewise and left the file at 4,270 of its 4,500-word limit. The warning is meant to force a same-handoff ownership review, and deferring it again converts a governed threshold into background noise.
+
+Observable outcome: The implementation inventory is below its warning threshold, with every fact still owned by exactly one canonical home.
+
+Acceptance checks:
+
+- `Project/CURRENT_IMPLEMENTATION.md` is below its warning threshold and no content is deleted to achieve it; what moves, moves to a named shard.
+- The split shard is registered as a canonical home in the ownership matrix, the shard index, and the routing table, exactly as the earlier implementation-inventory split was.
+- Subject ownership is preserved rather than chronology: each shard owns whole subjects, and no fact is stated in two places.
+- The route/status coherence statement stays in `Project/CURRENT_IMPLEMENTATION.md`, so the four status sites keep agreeing without a new indirection.
+- Every existing inbound link to the moved content resolves, and the validator's link, anchor, orphan-shard, and archive-destination checks pass.
+
+Closing check: the `warning-threshold` issue for `Project/CURRENT_IMPLEMENTATION.md` is present before and absent after, with every other threshold unchanged.
+
+Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No rewrite of completed definitions or archive evidence, and no new implementation claim; this milestone moves existing text and registers its home.
