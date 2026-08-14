@@ -423,4 +423,4 @@ A user-approved roadmap amendment on 2026-08-13 scheduled the open ER2 dispositi
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 6.1an | Governing authority is reconciled and compacted: the conditional review-closure rule is canonical, the brief contains only current status/routing, root `AGENTS.md` is threshold-governed and scanned, commit-body evidence versus append-only archive ownership is explicit, retired process language is declared, and the validator rejects narrative completion bullets while preserving route/archive checks. | `PENDING` |
+| 6.1an | Governing authority is reconciled and compacted: the conditional review-closure rule is canonical, the brief contains only current status/routing, root `AGENTS.md` is threshold-governed and scanned, commit-body evidence versus append-only archive ownership is explicit, retired process language is declared, and the validator rejects narrative completion bullets while preserving route/archive checks. | `5c12c82` |
