@@ -42,7 +42,7 @@ Before invoking it, write `tmp/unity-validation-request.json` with this shape:
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.ExampleTests",
+  "filter": "GuardsDigital.Tests.EditMode.MatchSessionTests",
   "results": "tmp/example-results.xml",
   "log": "tmp/example.log"
 }
@@ -56,7 +56,7 @@ Before invoking it, write `tmp/unity-validation-request.json` with this shape:
 
 The optional request field `"batchMode": false` omits Unity's `-batchmode` argument only when an exact milestone acceptance check requires a targeted non-batch Editor transition. Omit the field, or set it to `true`, for every ordinary focused, affected, and complete automated run. The same fixed launcher, serial-process rule, filter, project-local outputs, licensing preflight, and log/XML pass criteria still apply; this flag is not a route for ad-hoc interactive validation.
 
-The older command blocks below remain test-filter and historical-output references only. Agents translate the applicable values into the request file and must not execute those direct `Start-Process` examples.
+The older direct `Start-Process` command blocks - both below and those retained in the recipe shards - remain test-filter and historical-output references only. Agents translate the applicable values into the request file and must not execute them; every recipe shard holding such blocks carries the same reference-only note.
 
 The PowerShell examples below intentionally use `Start-Process -Wait -PassThru`; the calling command runner must allow at least 15 minutes for Unity, or yield the still-running command and poll it without terminating the process. Do not wrap a Unity run in a two-minute timeout. Unity licensing reconnects wait in 60-second increments, so a healthy test invocation can outlive a short command wrapper before test discovery begins.
 
@@ -158,7 +158,7 @@ The validator fails when an active leaf exceeds its hard word/byte threshold and
 
 Beyond thresholds it verifies required headings; exactly one current/active/next route with `ROADMAP.md`/`SESSION_BRIEF.md` agreement and exact `[~]` matching; mechanically checkable internal paths and anchors; documentation-graph connectivity (`orphan-shard`, `missing-evidence-backlink`, `missing-archive-destination`, added at 6.1z); completion-history containment (`completion-history-in-active-doc`, added at 6.1ac); the declared-ledger semantic checks (`retired-structure-language` and `stale-retirement-owner` reading `Tools/RetiredStructures.txt`, added at 6.1ab); the one-row archive rule (`archive-narrative`); and the absence of archived bodies duplicated verbatim into active documents (`duplicate-history`). Every check uses stable text/heading rules with declared ledgers rather than heuristic semantic rewriting, cannot become passable merely by deleting content, and carries self-test fixtures plus a vacuity guard that fails loudly on an empty input set.
 
-The code-truth checks compare documentation and tests against the source itself, because document-to-document consistency cannot detect drift from code. Maintained by name, and a milestone adding one adds it to this list in the same handoff: `undeclared-contract-type` (documented-type reality against `Assets/` declarations or an explicit planned marking), `incoherent-status` (the brief, the implementation inventory, the README, and the roadmap name the same completed milestone), `unregistered-temporary-structure`, `unreachable-component` (a component Unity cannot construct cannot run, whatever references it), `unresolved-reflected-member` (added at 6.1v), `raw-enum-cast` (added at 6.1ad), and `stale-pinned-constant` (added at 6.1aa, comparing documented values against the source constants they pin via `Tools/PinnedConstants.txt`).
+The code-truth checks compare documentation and tests against the source itself, because document-to-document consistency cannot detect drift from code. Maintained by name, and a milestone adding one adds it to this list in the same handoff: `undeclared-contract-type` (documented-type reality against `Assets/` declarations or an explicit planned marking), `incoherent-status` (the brief, the implementation inventory, the README, and the roadmap name the same completed milestone), `unregistered-temporary-structure`, `unreachable-component` (a component Unity cannot construct cannot run, whatever references it), `unresolved-reflected-member` (added at 6.1v), `raw-enum-cast` (added at 6.1ad), `stale-pinned-constant` (added at 6.1aa, comparing documented values against the source constants they pin via `Tools/PinnedConstants.txt`), and `unresolved-test-fixture` (added at 6.1af: every fixture name in an active testing shard's qualified tokens and filter values resolves to a declared test type, because an unmatched Unity filter discovers no tests and raises no error).
 
 Milestone 3.11a created the validator and its original check set as documentation/tooling-only T0 work; its exact acceptance text and the one-time manual migration review live in its roadmap definition and completion record, not here. The migration-manifest, baseline-hash, and preservation-inventory checks were retired on 2026-08-13; see [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md#retired-migration-bookkeeping).
 

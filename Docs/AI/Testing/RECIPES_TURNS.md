@@ -1,6 +1,6 @@
 # Turn, Round, Snapshot, and Replay Test Recipes
 
-Canonical active shard. Return to [../TESTING.md](../TESTING.md).
+Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md).
 
 ## Card definition/instance focused Edit Mode tests
 
@@ -395,9 +395,10 @@ because the version is a serialized field:
   restored, replayed, undo-truncated, and the three defense-discard cases.
 
 Any milestone changing the schema version must run both. Neither is optional and neither can be
-inferred from a filter built by naming the types a change touches: both sit in the dotnet harness
-exclude list, so the cross-platform harness cannot reach them, and `CardAggregateInvarianceTests`
-names none of the types a schema change edits, so an enumerated focused filter will not select it.
+inferred from a filter built by naming the types a change touches: `CardAggregateInvarianceTests`
+sits in the dotnet harness exclude list, so the cross-platform harness cannot reach it, and it
+names none of the types a schema change edits, so an enumerated focused filter will not select it;
+`SnapshotCompatibilityCorpusTests` runs in the harness but must still be selected deliberately.
 Milestone 6.1s hit exactly that gap - it re-pinned the corpus fixtures, closed as complete, and left
 the invariance fixture failing on `main` until 6.1x found it with the complete Edit Mode suite.
 

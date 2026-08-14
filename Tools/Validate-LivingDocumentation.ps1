@@ -532,6 +532,42 @@ function Get-StalePinnedConstantSites($Entries, [hashtable] $SourceValues, [hash
 # there is no >=200-character archived paragraph to match against - so this check states the
 # governance rule as a countable one: the brief carries exactly one completion statement, and it
 # names the current completed milestone.
+# Code-truth check 7 (milestone 6.1af): every fixture name a live testing document tells a reader to
+# run must resolve to a declared test type. An unmatched Unity test filter discovers no tests and
+# raises no error, so a recipe naming a deleted or never-existing fixture silently drops the
+# regression out of the run - which no document-to-document check can see. Namespace-qualified
+# tokens and each semicolon-separated "filter" segment are both scanned; a line carrying an
+# absence-intended marker stays legal.
+function Get-UnresolvedTestFixtures([hashtable] $TestingTexts, [hashtable] $DeclaredTypes) {
+    $sites = New-Object System.Collections.Generic.List[object]
+    $seen = @{}
+    foreach ($doc in ($TestingTexts.Keys | Sort-Object)) {
+        $text = $TestingTexts[$doc]
+        $found = New-Object System.Collections.Generic.List[object]
+        foreach ($m in [regex]::Matches($text, 'GuardsDigital\.Tests\.(?:EditMode|PlayMode)\.([A-Za-z_]\w*)')) {
+            $found.Add([pscustomobject]@{ Name = $m.Groups[1].Value; Index = $m.Index })
+        }
+        foreach ($m in [regex]::Matches($text, '(?m)^\s*"filter":\s*"([^"]*)"')) {
+            foreach ($segment in $m.Groups[1].Value.Split(';')) {
+                $final = ($segment.Trim() -split '\.')[-1]
+                if ($final.Length -gt 0) { $found.Add([pscustomobject]@{ Name = $final; Index = $m.Index }) }
+            }
+        }
+        $script:testFixtureReferenceCount += $found.Count
+        $lines = $text -split "`r?`n"
+        foreach ($entry in $found) {
+            if ($DeclaredTypes.ContainsKey($entry.Name)) { continue }
+            $line = ($text.Substring(0, $entry.Index) -split "`n").Count
+            if ($lines[$line - 1] -match 'absence-intended') { continue }
+            $key = "$doc|$line|$($entry.Name)"
+            if ($seen.ContainsKey($key)) { continue }
+            $seen[$key] = $true
+            $sites.Add([pscustomobject]@{ Doc = $doc; Line = $line; Name = $entry.Name })
+        }
+    }
+    return $sites.ToArray()
+}
+
 # Retired-risk rows (milestone 6.1ah): governance moves a resolved risk losslessly to the archive and
 # leaves the active row "a short archive link". A row whose status records retirement or resolution
 # must therefore carry no more than the link-length remainder: its non-ID cells concatenate to at
@@ -776,6 +812,18 @@ function Invoke-SelfTests {
     Expect 'a mismatched completion statement is reported' (@(Test-CompletionHistory ($historySession -replace 'Milestone \*\*2\.5\*\* completed', 'Milestone **2.4** completed')) -contains 'completion-history-in-active-doc')
     Expect 'several completion statements are reported' (@(Test-CompletionHistory ($historySession + "- Milestone **2.4** completed on 2026-08-13. Older narrative.`n")) -contains 'completion-history-in-active-doc')
     Expect 'no completion statement at all trips the vacuity guard' (@(Test-CompletionHistory '- Current completed milestone: **2.5**.') -contains 'no-completion-statement')
+    # Code-truth check 7 (milestone 6.1af).
+    $fixtureTypes = @{ 'FastTravelActionTests' = $true; 'MatchSessionTests' = $true }
+    $script:testFixtureReferenceCount = 0
+    Expect 'a resolving qualified fixture token passes' (@(Get-UnresolvedTestFixtures @{ 'Testing/R.md' = 'Run GuardsDigital.Tests.EditMode.FastTravelActionTests now.' } $fixtureTypes).Count -eq 0)
+    Expect 'a missing qualified fixture token is reported' (@(Get-UnresolvedTestFixtures @{ 'Testing/R.md' = 'Run GuardsDigital.Tests.EditMode.FastTravelActionResolutionTests now.' } $fixtureTypes)[0].Name -eq 'FastTravelActionResolutionTests')
+    Expect 'a PlayMode token is scanned' (@(Get-UnresolvedTestFixtures @{ 'Testing/R.md' = 'Run GuardsDigital.Tests.PlayMode.GhostPlayModeTests now.' } $fixtureTypes)[0].Name -eq 'GhostPlayModeTests')
+    Expect 'a filter segment is scanned' (@(Get-UnresolvedTestFixtures @{ 'Testing/R.md' = "  ""filter"": ""GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.DeletedTests""," } $fixtureTypes)[0].Name -eq 'DeletedTests')
+    Expect 'an absence-marked site stays legal' (@(Get-UnresolvedTestFixtures @{ 'Testing/R.md' = 'GuardsDigital.Tests.EditMode.DeletedTests was removed at 6.1h (absence-intended).' } $fixtureTypes).Count -eq 0)
+    $script:testFixtureReferenceCount = 0
+    [void](Get-UnresolvedTestFixtures @{ 'Testing/R.md' = 'no fixture names here' } $fixtureTypes)
+    Expect 'a corpus without fixture references is detectable for the vacuity guard' ($script:testFixtureReferenceCount -eq 0)
+
     # Retired-risk rows (milestone 6.1ah).
     $riskLink = 'Retired at milestone 2.5; see the [archived record](A.md#x).'
     Expect 'a compliant retired row passes' (@(Get-OverweightRetiredRiskRows @(,@('`R-1`', $riskLink, '-', '-', '-', 'Retired at 2.5.', '-'))).Count -eq 0)
@@ -1079,6 +1127,16 @@ else {
     }
     foreach ($unresolved in (Get-UnresolvedReflectedMembers $reflectionSites $typeSources $declaredTypes)) {
         Add-Issue 'ERROR' 'unresolved-reflected-member' "A test reflects on ``$unresolved``, but the declaring type's source does not declare that name. The compiler cannot check a string, so a rename leaves the test resolving to null and failing on a dereference. Update the name, or mark a deliberate absence assertion with an ``absence-intended`` comment on the site."
+    }
+
+    # Code-truth check 7 (milestone 6.1af).
+    $script:testFixtureReferenceCount = 0
+    $unresolvedFixtures = Get-UnresolvedTestFixtures $testingShardTexts $declaredTypes
+    if ($script:testFixtureReferenceCount -eq 0) {
+        Add-Issue 'ERROR' 'no-fixture-references' 'No fixture names were found in the active testing shards; the unresolved-test-fixture check would pass vacuously.'
+    }
+    foreach ($fixtureSite in $unresolvedFixtures) {
+        Add-Issue 'ERROR' 'unresolved-test-fixture' "$($fixtureSite.Doc):$($fixtureSite.Line) names ``$($fixtureSite.Name)``, but no such test type exists. An unmatched Unity filter discovers no tests and raises no error, so this recipe silently drops a regression; correct the name or mark a deliberate absence with absence-intended."
     }
 
     # Code-truth check 6.

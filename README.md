@@ -8,7 +8,7 @@ The project owner states that the public repository and included rulebook are sh
 
 A rules-accurate implementation of the board game, built as a pure C# rules engine with Unity acting only as passive presentation. The current build plays a synthetic vertical slice: a 1v1 match on the official single-lane map with placeholder cards, movement, attack/defense, minions, and an end-of-round minion battle. No real hero card content is implemented yet.
 
-Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1ah**.
+Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **6.1af**.
 
 ## Requirements
 
@@ -83,7 +83,7 @@ The documentation is written primarily for AI coding agents doing targeted looku
 | Known risks and temporary structures | [`Docs/AI/TECHNICAL_RISKS.md`](Docs/AI/TECHNICAL_RISKS.md) |
 | How agents are expected to work here | [`AGENTS.md`](AGENTS.md) |
 
-`Docs/AI/DOCUMENTATION_GOVERNANCE.md` explains why the documentation is structured the way it is: every fact has exactly one canonical home, and history moves to `Docs/AI/Archive/` rather than being deleted. `Tools/Validate-LivingDocumentation.ps1` enforces that mechanically, including three checks that the documentation matches the actual source.
+`Docs/AI/DOCUMENTATION_GOVERNANCE.md` explains why the documentation is structured the way it is: every fact has exactly one canonical home, and history moves to `Docs/AI/Archive/` rather than being deleted. `Tools/Validate-LivingDocumentation.ps1` enforces that mechanically, including a family of code-truth checks that the documentation matches the actual source; the named list is in `Docs/AI/Testing/POLICY.md`.
 
 ## Working agreements
 

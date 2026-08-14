@@ -1,6 +1,6 @@
 # Foundation Focused Test Recipes
 
-Canonical active shard. Return to [../TESTING.md](../TESTING.md).
+Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md).
 
 ## Edit Mode shell test
 

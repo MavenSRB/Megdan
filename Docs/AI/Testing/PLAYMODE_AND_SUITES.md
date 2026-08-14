@@ -1,6 +1,6 @@
 # Play Mode, Complete Suites, and Test Ownership
 
-Canonical active shard. Return to [../TESTING.md](../TESTING.md).
+Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md).
 
 ## Placeholder-grid focused Play Mode test
 
@@ -69,7 +69,7 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 | Complete Edit Mode | 378 | 0 | 0 | 0 | `6.1ad` |
 | Complete Play Mode | 19 | 0 | 0 | 0 | `6.1x` |
 
-The run that produced this row is also the one that caught the stale `CardAggregateInvarianceTests` digests, which no focused filter had selected since 6.1f. Any milestone that changes `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` must run both digest-pinning fixtures - `CardAggregateInvarianceTests` and `SnapshotCompatibilityCorpusTests` - because a schema change invalidates every pinned digest by construction, and both fixtures sit in the dotnet harness exclude list where the Linux harness cannot reach them.
+The run that produced this row is also the one that caught the stale `CardAggregateInvarianceTests` digests, which no focused filter had selected since 6.1f. Any milestone that changes `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` must run both digest-pinning fixtures - `CardAggregateInvarianceTests` and `SnapshotCompatibilityCorpusTests` - because a schema change invalidates every pinned digest by construction. `CardAggregateInvarianceTests` sits in the dotnet harness exclude list where the Linux harness cannot reach it; `SnapshotCompatibilityCorpusTests` runs in the harness but must still be selected deliberately on the Windows tier, since neither is picked up by a filter built from the types a schema change touches.
 
 A total that drops without a milestone deleting or merging fixtures means coverage was lost, not that the suite got faster. A total that rises is expected whenever a milestone adds fixtures.
 

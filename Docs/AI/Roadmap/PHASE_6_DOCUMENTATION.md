@@ -36,7 +36,7 @@ Non-goals: No change to what evidence is required. No archive rewriting. No vali
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ae-make-the-evidence-and-governance-policy-statements-current-completion-evidence).
 
-### [ ] 6.1af Make live test recipes name real fixtures
+### [x] 6.1af Make live test recipes name real fixtures
 
 Observable outcome: Every fixture name in an active testing document's live filters resolves to a declared test type, and the two documented-nowhere fixtures gain their one-line home.
 
@@ -54,6 +54,8 @@ Acceptance checks:
 Closing check: check 7 run at the pre-fix revision, observed reporting the `FastTravelActionResolutionTests` site and every surviving deleted-fixture filter site, with the exact set recorded in the commit body; run at the post-fix revision, observed passing.
 
 Non-goals: No test-behavior change, no fixture rename or addition, no harness exclude-list change, no launcher-contract change, no recipe execution.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61af-make-live-test-recipes-name-real-fixtures-completion-evidence).
 
 ### [x] 6.1ag Route completed-run history out of the active testing shards
 
