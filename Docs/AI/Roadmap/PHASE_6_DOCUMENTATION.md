@@ -178,7 +178,7 @@ Non-goals: No scope change - the exclusion-list correction records implemented r
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61al-consolidate-project-context-and-workflow-truth-completion-evidence).
 
-### [ ] 6.1am Shard the Rule-system ledger section
+### [~] 6.1am Shard the Rule-system ledger section
 
 Observable outcome: The `Rule-system ledger` section lives in its own indexed `Rules/` shard with `RULES_LEDGER.md` keeping a routing summary, executed at its named trigger rather than on the block's clock.
 

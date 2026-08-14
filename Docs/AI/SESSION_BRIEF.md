@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.8c**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.1aq**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.1am**, in progress.
 - Next proposed milestone: **6.1am**.
 
 Milestone **6.1aq** completed on 2026-08-15. The implementation inventory is under its threshold for the first time in four milestones - 3,327 of 4,500 words - with nothing compressed to get there. Seven whole paragraphs of configured presentation surfaces moved verbatim into the new [Project/CONFIGURED_PRESENTATION.md](Project/CONFIGURED_PRESENTATION.md): HUD card panel and Defense controls, the Defense-preview popup, signed minion Defense cues, Attack-target highlighting, reload-safe minion views, and the Minion Battle removal-choice pair. The boundary is the one the inventory already drew - the passive-presentation contract stays, the surfaces built on it move - so no fact is stated twice, and two paragraphs filed under match state by chronology moved to their actual subject. `Get-Limit` already governs `Project/*.md`, so the leaf count rose from 47 to 48 with no validator change. The closing check was observed both ways: the `warning-threshold` issue was present at 4,270 words before and the run reports zero warnings after. **6.1am** is proposed next, executing on its explicit-instruction trigger rather than its ledger-warning one. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
