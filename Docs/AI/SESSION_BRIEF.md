@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.8d**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.8d**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.8e**, in progress.
 - Next proposed milestone: **6.8e**.
 
 Milestone **6.8d** completed on 2026-08-15. Every Active-effect creator now mints its instance identity through the one shared contract `ActiveEffectInstanceIdentity.Mint`, which composes source card, action, node, round, and turn with the definition, so identity distinguishes activations rather than definitions: playing the same mode again in a later round creates a fresh instance where it previously created nothing, because the old per-capability composition repeated exactly and the lifecycle refuses a duplicate ID including a spent one. Re-executing one activation inside its own resolution stays a legal no-op, and the lifecycle's scope-identity duplicate suppression is untouched. The failing observation was recorded at the pre-fix tree for all three configured Red Bulwark modes and for every creator - two activations produced one instance - and the closing conformance rule forbids composing an `ActiveEffectId` outside the contract across every capability handler's scope, shown against a violator and a compliant twin. Instance IDs stay opaque wire strings: no schema bump, the seven pinned corpus payloads round-trip unmodified, and all nine aggregate-invariance digests were observed unchanged. **6.8e** is proposed next under the corrective amendment below. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).

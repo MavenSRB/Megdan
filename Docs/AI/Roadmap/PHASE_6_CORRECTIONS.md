@@ -50,7 +50,7 @@ Non-goals: No new capability, effect family, duration, or rules content; no chan
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68d-give-every-active-effect-a-per-activation-instance-identity-completion-evidence).
 
-### [ ] 6.8e Classify terrain as a passable obstacle rather than as off-board
+### [~] 6.8e Classify terrain as a passable obstacle rather than as off-board
 
 **Corrective amendment (2026-08-15, user approved).** Rulebook p.18 makes terrain an obstacle like a unit or token, and a unit ignoring obstacles may enter and leave any obstacle's space while moving. The board models terrain as a space kind and the official map declares 82, but `AdjacentMoveAuthority` builds its board from playable coordinates alone, so `ObstacleQuery` cannot tell terrain from a coordinate off the map and refuses both unconditionally. The same conflation reaches Object Push at 6.4.
 
