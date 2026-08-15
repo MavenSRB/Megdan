@@ -519,26 +519,7 @@ Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#mile
 
 Non-goals: No generic `ReplaceAction` effect node, pending Clear continuation, token projection or player-facing Clear UI, Wasp definition, printed-text parsing, displacement, general Place/Spawn, Swap/Replace/Remove, end-of-round cleanup, presentation, art, animation, or audio. The Spawn work is only the mandatory token-removal pre-commit seam; milestone 6.5 still owns the complete reusable Spawn capability.
 
-### [x] 6.4 Implement reusable direct Move and Object Push effects
-
-Observable outcome: Synthetic effects execute the general direct Move and Object Push contracts on the full authoritative map without depending on Wasp definitions or card-name branches.
-
-Prerequisite: milestone 6.8 has established the reusable targeting, presence, immunity, permission, and obstacle contracts consumed by this milestone's typed movement and push queries. Milestone 6.1s remains the separate mutable, snapshot-serialized minion-occupancy prerequisite.
-
-Acceptance checks:
-
-- Direct Move remains distinct from a Movement action, cannot become Fast Travel, and applies its exact, optional, or `up to` distance and source-relative destination policy through typed queries.
-- Object Push moves each legal unit or token in a straight line directly away from its explicit pushing unit, moves as far as possible including zero when blocked, and remains distinct from Lane Push, Movement, and Place.
-- An `up to X` multi-target Push records one chosen distance, validates all targets against the same pre-effect state, and commits one simultaneous batch.
-- Ordinary-obstacle, Ignore Obstacles, Move Through, legal-endpoint, immunity, and target-versus-presence behavior use reusable query/modifier contracts rather than effect-local geometry.
-- Moving or pushing a minion never requests a Lane Push. The effect records the displacement and exposes the after-action checkpoint needed by milestone 6.4a; no configured live action exposes an uncorrected displaced-minion endpoint.
-- Focused accepted, rejected, partial, zero-distance, simultaneous, restore, replay, and Undo scenarios preserve deterministic typed outcomes and occupancy.
-
-Non-goals: No Wasp definition, printed-text parsing, invented Pull keyword, card-name/hero-name branch, configured live action exposure before milestone 6.4a, production presentation, or specialized hero/minion Respawn transition.
-
-ER2 note: 6.1s closes `F-ER2-02` - a pushed minion needs mutable, snapshot-serialized occupancy for the displacement to commit and survive restore.
-
-Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64-implement-reusable-direct-move-and-object-push-effects-completion-evidence).
+The completed milestone **6.4** definition - reusable direct Move and Object Push - moved verbatim to [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) on 2026-08-16 during the required warning-threshold ownership review; its evidence stays addressed from the [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64-implement-reusable-direct-move-and-object-push-effects-completion-evidence).
 
 ### [ ] 6.4a Integrate after-action displaced-minion correction with core Push
 
@@ -547,6 +528,8 @@ Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#mile
 The subject widening moves to **6.8k**. Direct Move must be able to displace a minion before it can exercise the correction authority at all - a hero moved out of a space displaces nothing, and heroes are never corrected - so this milestone genuinely depends on it. But the capability's subject cannot widen until a definition has a legal way to name a non-hero one, and it has none: role bindings resolve from the execution frame, which holds no board reference, so there is no actor's-space role to bind; and naming a minion or token needs the coordinate identity Object Push uses for its targets, which needs a target-selection node. That node is reusable targeting machinery, which is milestone 6.8's declared subject rather than this milestone's, so the user directed it there. The port and the reachability query were widened under this milestone at `44c256e` and are already general; only the capability parameter waits.
 
 The record correction becomes a **deletion**. 6.4's `DisplacementRecord` and `DisplacementKind` shipped with no producer and no consumer, appearing only in their own file, and the first version of this amendment promised to wire them to the correction authority. That was wrong: p.18 corrects "any minion miniature [that] **ends up** outside the Battle Zone after you perform an action", which is a positional predicate evaluated at the action boundary, not a query over what moved. The correction reads the board, so giving the record a consumer here would be inventing one to justify a type. The types are removed instead, and 6.4's acceptance that "the effect records the displacement" is satisfied where it always was - in the node-output facts the two capabilities publish. 6.4's evidence row is corrected in this milestone's commit. The dead contract was not mechanically detectable: `unreachable-component` scans only MonoBehaviour and ScriptableObject types, never a plain Core record.
+
+**Correction-order amendment (2026-08-16, user approved).** The rulebook orders corrections across teams - the Tie-Breaker side resolves first, per the check below - but says nothing about the order within one team, and order matters: correcting one minion can free or block a space that changes another's shortest path. The user decided the owning team chooses. When one team has several displaced minions, the correction pauses on a subject-selection choice owned by that team before each route or fallback-Place choice; a team with exactly one displaced minion gets no such prompt, per the no-unnecessary-prompt doctrine 6.4b states. The within-team order is thereby a player decision rather than an authority-fixed ordinal, recorded as open rules question 9 in [RULES_LEDGER.md](../RULES_LEDGER.md#open-source-and-rules-questions) pending an official ruling.
 
 Prerequisite: milestone **6.8k** must be complete, so direct Move can name a minion subject and satisfy the correction-exercising check below.
 
@@ -558,6 +541,7 @@ Acceptance checks:
 - A displaced token and a hero counting as a minion are both left where they are, because p.18 corrects minion miniatures only.
 - Battle-Zone membership is resolved through one authority-owned query shared with Minion Battle, Heavy immunity, and Lane Push; correction does not derive or cache its own zone boundary.
 - A minion follows a shortest empty path; its team chooses among equally short valid paths.
+- When one team has several displaced minions, that team chooses which of its minions corrects next; a team with exactly one displaced minion sees no subject prompt.
 - With no path or legal move, the minion is Placed into a nearest empty Battle-Zone space.
 - The fallback implements the minimum general Place capability through typed policy/outcome data and emits Place rather than Movement facts.
 - When cross-team order matters, the Tie-Breaker-side team resolves first without flipping the coin.

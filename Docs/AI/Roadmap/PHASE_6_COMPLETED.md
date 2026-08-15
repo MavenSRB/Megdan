@@ -286,3 +286,28 @@ Once it passes, the **toolchain portability** review dimension is deleted from t
 Non-goals: No new validator, no change to what any validator checks, no CI service selection or configuration, no change to the fixed parameterless launcher contract, and no Unity execution on the non-Windows host - the Editor itself is out of scope, only the PowerShell toolchain is confirmed.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61l-confirm-the-validation-toolchain-on-a-non-windows-platform-completion-evidence).
+
+## Phase 6 gameplay milestones (continued)
+
+The completed milestone 6.4 definition moved here verbatim from [PHASE_6.md](PHASE_6.md) on 2026-08-16 during the required warning-threshold ownership review triggered by the 6.4a correction-order amendment.
+
+### [x] 6.4 Implement reusable direct Move and Object Push effects
+
+Observable outcome: Synthetic effects execute the general direct Move and Object Push contracts on the full authoritative map without depending on Wasp definitions or card-name branches.
+
+Prerequisite: milestone 6.8 has established the reusable targeting, presence, immunity, permission, and obstacle contracts consumed by this milestone's typed movement and push queries. Milestone 6.1s remains the separate mutable, snapshot-serialized minion-occupancy prerequisite.
+
+Acceptance checks:
+
+- Direct Move remains distinct from a Movement action, cannot become Fast Travel, and applies its exact, optional, or `up to` distance and source-relative destination policy through typed queries.
+- Object Push moves each legal unit or token in a straight line directly away from its explicit pushing unit, moves as far as possible including zero when blocked, and remains distinct from Lane Push, Movement, and Place.
+- An `up to X` multi-target Push records one chosen distance, validates all targets against the same pre-effect state, and commits one simultaneous batch.
+- Ordinary-obstacle, Ignore Obstacles, Move Through, legal-endpoint, immunity, and target-versus-presence behavior use reusable query/modifier contracts rather than effect-local geometry.
+- Moving or pushing a minion never requests a Lane Push. The effect records the displacement and exposes the after-action checkpoint needed by milestone 6.4a; no configured live action exposes an uncorrected displaced-minion endpoint.
+- Focused accepted, rejected, partial, zero-distance, simultaneous, restore, replay, and Undo scenarios preserve deterministic typed outcomes and occupancy.
+
+Non-goals: No Wasp definition, printed-text parsing, invented Pull keyword, card-name/hero-name branch, configured live action exposure before milestone 6.4a, production presentation, or specialized hero/minion Respawn transition.
+
+ER2 note: 6.1s closes `F-ER2-02` - a pushed minion needs mutable, snapshot-serialized occupancy for the displacement to commit and survive restore.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64-implement-reusable-direct-move-and-object-push-effects-completion-evidence).
