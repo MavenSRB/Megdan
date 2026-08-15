@@ -207,8 +207,8 @@ namespace GuardsDigital.Tests.EditMode
             // This is the production consumer of CloserQuery.
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV1).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, mover: Other, distance: 2, towardActor: true));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, moverAt: new HexCoordinate(3, 0), distance: 2, towardActor: true));
 
             Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
             var spaces = offered.Choice.Candidates.Select(candidate => candidate.Coordinate).ToArray();
@@ -224,8 +224,8 @@ namespace GuardsDigital.Tests.EditMode
             // The negative twin: without it the case above cannot tell filtering from a short board.
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV1).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, mover: Other, distance: 2, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, moverAt: new HexCoordinate(3, 0), distance: 2, towardActor: false));
 
             Assert.That(
                 offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
@@ -238,8 +238,8 @@ namespace GuardsDigital.Tests.EditMode
             // p.11: "unless the distance is optional ... you must move the exact number of spaces".
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV1).Execute(
-                MoveContext(board, EffectFailurePolicy.Mandatory, Other, distance: 2, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(board, EffectFailurePolicy.Mandatory, new HexCoordinate(3, 0), distance: 2, towardActor: false));
 
             var spaces = offered.Choice.Candidates.Select(candidate => candidate.Coordinate).ToArray();
             Assert.That(spaces, Has.Member(new HexCoordinate(1, 0)));
@@ -253,8 +253,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV1).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, Other, distance: 2, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), distance: 2, towardActor: false));
 
             Assert.That(
                 offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
@@ -268,8 +268,8 @@ namespace GuardsDigital.Tests.EditMode
             // p.11 keeps the ordinary movement restrictions, and the actor's own space is occupied.
             var board = CreateLineBoard(otherAt: new HexCoordinate(2, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV1).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, Other, distance: 3, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(2, 0), distance: 3, towardActor: false));
 
             var spaces = offered.Choice.Candidates.Select(candidate => candidate.Coordinate).ToArray();
             Assert.That(spaces, Has.No.Member(ActorAt), "The actor occupies its own space.");
@@ -278,9 +278,123 @@ namespace GuardsDigital.Tests.EditMode
                 "obstacle rule a Movement action would apply.");
         }
 
+        [Test]
+        public void AMinionSubject_IsMovedByItsSpaceThroughTheSameCapability()
+        {
+            // 6.8k: the subject parameter is a coordinate, so a minion is nameable. The reachability
+            // consulted is unchanged - the port has served every kind since 6.4a widened it.
+            var board = CreateStarBoard();
+            var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
+            var destination = StraightLineQuery.Step(minionAt, HexDirection.NorthEast, 1);
+
+            var applied = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Resume(
+                MoveContext(board, EffectFailurePolicy.UpTo, minionAt, distance: 1, towardActor: false),
+                new[] { EffectValue.Space(destination) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(board.Minions.Single().Coordinate, Is.EqualTo(destination),
+                "The minion standing on the named space is the subject that moved.");
+            Assert.That(board.IsEmptyPlayableSpace(minionAt), Is.True);
+        }
+
+        [Test]
+        public void ATokenSubject_IsMovedByItsSpaceThroughTheSameCapability()
+        {
+            var board = CreateStarBoard();
+            var tokenAt = ActorAt.GetNeighbor(HexDirection.West);
+            var token = PlaceToken(board, tokenAt);
+            var destination = StraightLineQuery.Step(tokenAt, HexDirection.West, 1);
+
+            var applied = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Resume(
+                MoveContext(board, EffectFailurePolicy.UpTo, tokenAt, distance: 1, towardActor: false),
+                new[] { EffectValue.Space(destination) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(
+                board.PlacedTokens.Single(placed => placed.Id.Equals(token.Id)).Coordinate,
+                Is.EqualTo(destination),
+                "p.11 names a token as a direct-Move subject; naming its space reaches it.");
+        }
+
+        [Test]
+        public void AnEmptySubjectSpace_NamesNothingAndTheNodeIsImpossible()
+        {
+            var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
+
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(1, 0), distance: 2, towardActor: false));
+
+            Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                "A coordinate no object stands on names no subject; the space is re-read, not remembered.");
+        }
+
+        [Test]
+        public void AMoveThroughPermission_LetsAHeroSubjectCrossWhatATokenSubjectCannot()
+        {
+            // Check 4 of 6.8k: a token subject holds no Move-Through permission of its own and reaches
+            // the transit predicate as the named absence, because p.19 states tokens are not units. The
+            // same modification set is supplied to both subjects; a permission is declared for a rules
+            // object, and a token has none to declare it for.
+            var withPermission = MoveThroughFor(Other);
+
+            var heroBoard = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
+            PlaceToken(heroBoard, new HexCoordinate(4, 0));
+            var heroOffered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(heroBoard, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, false, withPermission));
+            Assert.That(
+                heroOffered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Has.Member(new HexCoordinate(5, 0)),
+                "The hero holds the permission, so it crosses the token and lands on the empty space beyond.");
+
+            var tokenBoard = CreateLineBoard(otherAt: new HexCoordinate(-2, 0));
+            PlaceToken(tokenBoard, new HexCoordinate(3, 0));
+            PlaceToken(tokenBoard, new HexCoordinate(4, 0));
+            var tokenOffered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(tokenBoard, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, false, withPermission));
+            Assert.That(tokenOffered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
+            Assert.That(
+                tokenOffered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Has.No.Member(new HexCoordinate(5, 0)),
+                "The token reaches the predicate as the named absence, which no declared permission matches.");
+            Assert.That(
+                tokenOffered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Has.Member(new HexCoordinate(2, 0)),
+                "Away from the wall the same token subject moves freely, so the refusal above is the permission, not the token.");
+        }
+
         // ---------------------------------------------------------------------------------------
         // Helpers
         // ---------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// A live set carrying only the Move-Through permission, built the way the match builds it:
+        /// from an Active effect in its active phase, not hand-assembled.
+        /// </summary>
+        private static RuleModificationSet MoveThroughFor(HeroId heroId)
+        {
+            var timing = new ActiveEffectLifecycle();
+            timing.Create(
+                new ActiveEffectId($"displacement-move-through-{heroId.Value}"),
+                SyntheticModificationCapabilities.MoveThroughPermissionDefinition,
+                heroId,
+                TeamSide.Blue,
+                default,
+                new CardInstanceId("displacement-move-through-source"),
+                new ActionDefinitionId("displacement-move-through-action"),
+                1,
+                1);
+            timing.ApplyCheckpoint(
+                new ActiveEffectCheckpointContext(TimingCheckpoint.TurnStarted, 1, 2),
+                new TieBreakerState(TeamSide.Red));
+
+            var set = RuleModificationQuery.Build(
+                timing, null, PlaceholderOneVsOneParticipants.Create(), new TieBreakerState(TeamSide.Red));
+            Assert.That(
+                set.HasPermission(RuleObject.ForHero(heroId), RulePermissionKind.MoveThroughObstacles),
+                Is.True,
+                "The fixture must actually hold the permission, or the pair above proves nothing.");
+            return set;
+        }
 
         private static IEffectCapabilityHandler Handler(EffectCapabilityReference reference) =>
             SyntheticEffectCapabilities.CreateCatalog().Load(reference);
@@ -308,12 +422,26 @@ namespace GuardsDigital.Tests.EditMode
         private static EffectCapabilityContext MoveContext(
             AdjacentMoveAuthority board,
             EffectFailurePolicy policy,
-            HeroId mover,
+            HexCoordinate moverAt,
             int distance,
             bool towardActor) =>
-            BuildContext(board, policy, RuleModificationSet.Empty, new Dictionary<string, EffectValue>
+            MoveContext(board, policy, moverAt, distance, towardActor, RuleModificationSet.Empty);
+
+        /// <summary>
+        /// Since milestone 6.8k the subject is the space the mover stands on, the same coordinate
+        /// identity Object Push uses for its targets, so these contexts name a coordinate rather than
+        /// a hero.
+        /// </summary>
+        private static EffectCapabilityContext MoveContext(
+            AdjacentMoveAuthority board,
+            EffectFailurePolicy policy,
+            HexCoordinate moverAt,
+            int distance,
+            bool towardActor,
+            RuleModificationSet modifications) =>
+            BuildContext(board, policy, modifications, new Dictionary<string, EffectValue>
             {
-                ["mover"] = EffectValue.Hero(mover),
+                ["mover"] = EffectValue.Space(moverAt),
                 ["distance"] = EffectValue.Integer(distance),
                 ["towardActor"] = EffectValue.Boolean(towardActor)
             });

@@ -38,8 +38,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityId ObjectPush { get; } =
             new EffectCapabilityId("synthetic-object-push");
 
-        public static EffectCapabilityReference DirectMoveV1 =>
-            new EffectCapabilityReference(DirectMove, 1);
+        /// <summary>
+        /// Revision 2, minted at milestone 6.8k: the subject parameter widened from a typed hero to a
+        /// typed coordinate. A revision rather than a second capability because the rule did not change
+        /// - the same direct Move now merely names any displaceable subject - and the registration list
+        /// records contracts, so the widened schema must be visible there for a restore to compare.
+        /// </summary>
+        public static EffectCapabilityReference DirectMoveV2 =>
+            new EffectCapabilityReference(DirectMove, 2);
 
         public static EffectCapabilityReference ObjectPushV1 =>
             new EffectCapabilityReference(ObjectPush, 1);
@@ -56,24 +62,28 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// restrictions as a Movement action, except: it cannot be used to Fast Travel; effects which
         /// stop you from performing a Movement action do not prevent movement in the card text."
         ///
-        /// It moves a hero. p.11 says card text may move "another unit or a token", and Object Push below
-        /// carries that whole breadth because p.18 names both; a direct Move of a minion or a token would
-        /// additionally need reachability for a non-hero mover, which the Movement action's own query does
-        /// not express, and inventing one here would be a second traversal for the two to disagree
-        /// through. Milestone 6.4's acceptance names units and tokens for Push and does not for Move.
+        /// It moves any displaceable subject. p.11 says card text may move "another unit or a token",
+        /// and since milestone 6.8k the subject parameter is a typed coordinate naming whatever stands
+        /// there - a hero, a minion, or a token - the same space-as-identity Object Push below already
+        /// uses for its targets, which one-obstacle-per-space makes unambiguous and which keeps a token
+        /// expressible without widening the typed value union. The reachability beneath is unchanged:
+        /// the port has served every kind since milestone 6.4a widened it.
         ///
         /// The mover is a bound parameter rather than always the actor, so the source-relative policy has
         /// a real subject: `move a unit towards you` is this capability with `towardActor` set, not a
-        /// separate Pull keyword, exactly as `BOARD_CAPABILITIES.md` requires.
+        /// separate Pull keyword, exactly as `BOARD_CAPABILITIES.md` requires. A definition fills the
+        /// parameter from a prior target-selection node's published space, never from a role - the frame
+        /// resolves roles without board access, so no role can supply a coordinate, and the definition
+        /// validator refuses one that tries at content load.
         /// </summary>
         private sealed class DirectMoveHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => DirectMoveV1;
+            public EffectCapabilityReference Reference => DirectMoveV2;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
                 new[]
                 {
-                    new EffectCapabilityParameter("mover", EffectValueKind.Hero),
+                    new EffectCapabilityParameter("mover", EffectValueKind.Coordinate),
                     new EffectCapabilityParameter("distance", EffectValueKind.Integer),
                     new EffectCapabilityParameter("towardActor", EffectValueKind.Boolean)
                 },
@@ -186,14 +196,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// <summary>
             /// The object this node moves, and where it stands.
             ///
-            /// Still a typed hero. Milestone 6.4a widened the layers beneath this one - the board port
-            /// and the reachability query both take any displaceable object now - but the capability's
-            /// own subject cannot widen until a node can name a non-hero one. The frame resolves a role
-            /// binding from the frame alone and has no board access, so there is no `actor's space`
-            /// role to bind, and naming a minion or token needs the coordinate identity Object Push
-            /// uses for its targets, which in turn needs a target-selection node this fixture has not
-            /// got. Widening the parameter without that would give the definition no legal way to fill
-            /// it, so it waits for the selection node rather than being half-done here.
+            /// The subject is the object standing at the bound coordinate, resolved through the board
+            /// port the way Object Push resolves its targets. An empty space names nothing and the node
+            /// reports itself impossible, which is what a stale selection becomes by the time it is
+            /// consumed here: the space is re-read, not remembered.
             /// </summary>
             private static bool TryResolveMover(
                 EffectCapabilityContext context,
@@ -209,14 +215,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return false;
                 }
 
-                var heroId = context.Input("mover").HeroId;
-                if (!heroId.IsDefined)
+                var subject = context.Input("mover");
+                if (subject.Kind != EffectValueKind.Coordinate)
                 {
                     return false;
                 }
 
-                mover = BoardObjectReference.ForHero(heroId);
-                return components.Board.TryGetObjectCoordinate(mover, out moverAt);
+                moverAt = subject.Coordinate;
+                return components.Board.TryGetObjectAt(moverAt, out mover);
             }
         }
 

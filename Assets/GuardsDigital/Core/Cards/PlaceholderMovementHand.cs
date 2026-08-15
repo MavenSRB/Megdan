@@ -348,9 +348,15 @@ namespace GuardsDigital.Core.Cards
         /// p.18 put the difference. The Move branch is `up to`, so its distance is optional and every
         /// shorter destination is legal. The Push branch is mandatory at a fixed distance of 2, so it
         /// opens no distance decision at all and every adjacent object moves as far as it can - which is
-        /// the shape that shows a blocked target still resolving to a legal short or zero-space push. The
-        /// Move branch names the actor as its own mover and sets no `towardActor` policy; a `towards`
-        /// move needs a second unit to move, which no synthetic bound here supplies.
+        /// the shape that shows a blocked target still resolving to a legal short or zero-space push.
+        ///
+        /// Since milestone 6.8k the Move branch is a sequence: a target-selection node offers the actor
+        /// itself and every adjacent object, and the direct Move binds the published space as its
+        /// subject. That is the only legal way to fill the widened coordinate parameter - a role cannot
+        /// supply a coordinate - and it must be a Sequence, because node-output guarantees propagate
+        /// through nothing else. Selecting the actor's own space is the original self-move; selecting an
+        /// adjacent minion or token is the subject breadth 6.4a's correction needs. No `towards` policy
+        /// is set; a `towards` bound needs verified card text to read it from.
         ///
         /// Board-neutral in the same sense as the others: it names no hero, no card, and no space.
         /// </summary>
@@ -358,12 +364,14 @@ namespace GuardsDigital.Core.Cards
         {
             var root = new EffectNodeId("displacement-root");
             var moveBranch = new EffectNodeId("displacement-move-branch");
+            var moveSequence = new EffectNodeId("displacement-move-sequence");
+            var selectSubject = new EffectNodeId("displacement-select-subject");
             var move = new EffectNodeId("displacement-direct-move");
             var push = new EffectNodeId("displacement-object-push");
 
             var effect = new EffectDefinition(
                 new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
-                "phase-6-4-rev-1",
+                "phase-6-8k-rev-1",
                 root,
                 new[]
                 {
@@ -378,14 +386,27 @@ namespace GuardsDigital.Core.Cards
                     // the exact one.
                     new EffectNodeDefinition(
                         moveBranch, EffectNodeKind.Optional, EffectFailurePolicy.UpTo,
-                        childNodeIds: new[] { move },
+                        childNodeIds: new[] { moveSequence },
                         chooser: EffectChooserRole.Actor),
                     new EffectNodeDefinition(
-                        move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
-                        SyntheticDisplacementCapabilities.DirectMoveV1,
+                        moveSequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { selectSubject, move }),
+                    new EffectNodeDefinition(
+                        selectSubject, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.ChooseTargetV1,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromRole("mover", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(true))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                        SyntheticDisplacementCapabilities.DirectMoveV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "mover", selectSubject, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
                             EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
                         },
@@ -407,7 +428,7 @@ namespace GuardsDigital.Core.Cards
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
-                "phase-6-4-rev-1",
+                "phase-6-8k-rev-1",
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,

@@ -92,16 +92,33 @@ namespace GuardsDigital.Tests.EditMode
         /// fixtures are untouched by this cause because only the component snapshots use the Skill
         /// fixture, which is that hand's own proof that adding a card to it leaves the ordinary
         /// five-card matrix alone, exactly as 6.2a's separate-profile decision intended.
+        /// Milestone 6.8k keeps schema v9 and re-pins all seven fixtures for one registration cause
+        /// with two parts: the capability list gains <c>synthetic-choose-target</c>, and
+        /// <c>synthetic-direct-move</c> moves from revision 1 to revision 2 because its subject
+        /// parameter widened from a typed hero to a typed coordinate. The decision is reject rather
+        /// than migrate, by the same existing check as 6.4's cause: a payload recording the
+        /// eighteen-capability set with direct-move at revision 1 states a contract set this build no
+        /// longer supplies, and restoring one would ask the build to resolve a Hero input into a
+        /// Coordinate parameter. Measured rather than assumed, at the same authoritative-payload layer
+        /// as the 6.4 record: the five ordinary fixtures each grow exactly 28 bytes - the one new
+        /// registration entry as a 7-bit length-prefixed 23-character id plus an int32 revision - in
+        /// one contiguous region with a 452-byte common prefix and every later section byte-identical.
+        /// A second and separable cause moves <c>placed-token-v9</c> and <c>attached-marker-v9</c> by
+        /// 4 more bytes each: the two Skill-fixture shove cards advance from <c>phase-6-4-rev-1</c> to
+        /// <c>phase-6-8k-rev-1</c> - one byte longer, twice per card across the card and effect
+        /// revision strings - because their move branch now runs a target-selection node whose
+        /// published space is the direct move's subject. The reject decision for that cause is the
+        /// content-revision check, exactly as at 6.8a.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v9", "635b1ef433a0b4bba39d904bdfaa36fb3b299909bb7d0f425ea769a7c06a0c54"),
-            new CompatibilityFixture("active-turn-v9", "beb5d54ba46310f3c3781a803ecf39fceef171330c25468c199fef9c5072313e"),
-            new CompatibilityFixture("pending-choice-v9", "9666905cd013952cbc7bc11a048d9d5599a764d9299966a38774e4cb0375f7a6"),
-            new CompatibilityFixture("end-of-round-v9", "11b275eae1736436aafb8f929843a4e34947a9e323b3ec8ace839992b8eb7fb0"),
-            new CompatibilityFixture("pending-minion-battle-v9", "149449ce02650ad5bbc7d3b69e827f8fb5cc10f1bf6e7ac84e8bc2c294c9fdb5"),
-            new CompatibilityFixture("placed-token-v9", "113497a297dae49484c186fb82602b943acd13e3ebaf21d05f8f9acee8fd026b"),
-            new CompatibilityFixture("attached-marker-v9", "2b8078992c5e3a5fb1375e09ef0580808e04e50bf1233a0e4e063453b7342c10")
+            new CompatibilityFixture("setup-v9", "b4e4208d0530f93208ae5ba4ab8638c6493833dbddd7c4b6e2a97873e4c4e671"),
+            new CompatibilityFixture("active-turn-v9", "f7c81e3dd66997eec74f2af4f1a7f52268be2f833ac8214eaaed6867a8e25e4f"),
+            new CompatibilityFixture("pending-choice-v9", "b285b7479d646ae6856056bf3276f657a83bbf827b75aea1d1b635dc4b88582f"),
+            new CompatibilityFixture("end-of-round-v9", "762214af76c570428c3b06e936e02a1d6373334f7a8bca20c5dc46516d49a982"),
+            new CompatibilityFixture("pending-minion-battle-v9", "0a85911d9bcd070e8b47f17763a1802ef58ab4fe4d78cc7c0281fe0e570d3eb5"),
+            new CompatibilityFixture("placed-token-v9", "2e02d50991b3d87f7b8cbb8d2faf9f4225b83478795e4993b946fd8b7d1c9717"),
+            new CompatibilityFixture("attached-marker-v9", "53a68b0bc7e640e7829d7ee6160312e2939fa70dba435b58242ea768af28a6fc")
         };
 
         [Test]

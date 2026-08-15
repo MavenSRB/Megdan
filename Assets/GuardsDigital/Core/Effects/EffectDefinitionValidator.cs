@@ -17,7 +17,8 @@ namespace GuardsDigital.Core.Effects
         IncompatibleBindingType = 7,
         UnresolvedNodeOutput = 8,
         NodeOutputNotGuaranteed = 9,
-        PredicateMustReturnBoolean = 10
+        PredicateMustReturnBoolean = 10,
+        RoleCannotSupplyValueKind = 11
     }
 
     public readonly struct EffectDefinitionRejection
@@ -184,6 +185,26 @@ namespace GuardsDigital.Core.Effects
             ICollection<EffectDefinitionRejection> rejections)
         {
             foreach (var input in node.Inputs
+                .Where(candidate => candidate.SourceKind == EffectBindingSourceKind.Role))
+            {
+                // Milestone 6.8k. The resolver reads roles from the execution frame alone, with no
+                // board access, so what a role can supply is fixed: a hero identity or the source
+                // card. A binding declaring any other kind - a coordinate above all - would pass the
+                // parameter type-match and then fault mid-resolution, which is exactly the failure
+                // this validator exists to move to content load.
+                var supplied = RoleSuppliedKind(input.Role);
+                if (supplied != input.ValueKind)
+                {
+                    rejections.Add(new EffectDefinitionRejection(
+                        EffectDefinitionRejectionReason.RoleCannotSupplyValueKind,
+                        $"Node '{node.Id}' binds '{input.ParameterName}' as {input.ValueKind} from role {input.Role}, " +
+                        (supplied == EffectValueKind.None
+                            ? "which the execution frame cannot supply at all."
+                            : $"but the execution frame supplies {supplied} for that role.")));
+                }
+            }
+
+            foreach (var input in node.Inputs
                 .Where(candidate => candidate.SourceKind == EffectBindingSourceKind.NodeOutput))
             {
                 if (!definition.TryGetNode(input.SourceNodeId, out var source))
@@ -219,6 +240,28 @@ namespace GuardsDigital.Core.Effects
                         EffectDefinitionRejectionReason.NodeOutputNotGuaranteed,
                         $"Node '{node.Id}' reads output '{input.SourceOutputName}' from '{input.SourceNodeId}', which is not guaranteed to have executed first."));
                 }
+            }
+        }
+
+        /// <summary>
+        /// What the execution frame supplies for a role - the mirror of the resolver's own role switch,
+        /// stated here so an impossible binding is refused before a match instead of faulting inside
+        /// one. <see cref="EffectRoleKind.ChosenTarget"/> and <see cref="EffectRoleKind.ChosenSpace"/>
+        /// are declared vocabulary no frame resolves; a selection reaches a node through a prior
+        /// target-selection node's published output, never through a role.
+        /// </summary>
+        private static EffectValueKind RoleSuppliedKind(EffectRoleKind role)
+        {
+            switch (role)
+            {
+                case EffectRoleKind.Actor:
+                case EffectRoleKind.Chooser:
+                case EffectRoleKind.Controller:
+                    return EffectValueKind.Hero;
+                case EffectRoleKind.SourceCard:
+                    return EffectValueKind.CardInstance;
+                default:
+                    return EffectValueKind.None;
             }
         }
 

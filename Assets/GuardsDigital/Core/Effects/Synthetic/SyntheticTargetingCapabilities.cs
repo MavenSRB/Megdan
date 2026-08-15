@@ -1,0 +1,157 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Timing;
+
+namespace GuardsDigital.Core.Effects.Synthetic
+{
+    /// <summary>
+    /// Milestone 6.8k's target-selection capability: an effect definition's typed way to name another
+    /// board object.
+    ///
+    /// It is an ordinary registered capability rather than a new node kind because the acceptance text
+    /// requires the chosen space to reach a later node through the existing node-output binding - the
+    /// selection pauses through the same capability-choice seam every other chooser-owned decision uses,
+    /// and publishes one <see cref="EffectValueKind.Coordinate"/> output. The coordinate is the subject
+    /// identity milestone 6.4 chose for displacement: one obstacle per space makes the object standing
+    /// there nameable without widening the typed value union, which is how a token - unrepresentable as
+    /// a rules object by p.19 - stays expressible.
+    ///
+    /// Its candidate set comes from <see cref="TargetQuery"/>, the reusable targeting contract, rather
+    /// than effect-local geometry. Immunity therefore filters selection - p.18 makes it a targeting
+    /// rule - while a presence question over the same spaces still counts the immune unit. The activity
+    /// consulted is <see cref="RuleActivity.Skill"/>: effect frames execute only under Skill actions
+    /// (the Skill backend is the one effect executor), so the enclosing Skill is the activity doing the
+    /// targeting; a capability whose consuming operation carries its own activity - Object Push - keeps
+    /// filtering by that activity itself, as its handler already does.
+    ///
+    /// This is the seam 6.5b and 6.6a reuse: Red Needle's Push, Red Bombard's direct Move of another
+    /// adjacent unit, and Blue Sentinel's Swap all name their object through this one selection rather
+    /// than each inventing a binding.
+    /// </summary>
+    public static class SyntheticTargetingCapabilities
+    {
+        public static EffectCapabilityId ChooseTarget { get; } =
+            new EffectCapabilityId("synthetic-choose-target");
+
+        public static EffectCapabilityReference ChooseTargetV1 =>
+            new EffectCapabilityReference(ChooseTarget, 1);
+
+        public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
+            new IEffectCapabilityHandler[] { new ChooseTargetHandler() };
+
+        /// <summary>
+        /// Offers every targetable object within range of the acting hero as an authoritative
+        /// chooser-owned selection and publishes the chosen object's space.
+        ///
+        /// It always pauses, even on a single candidate: that is the codebase's uniform capability
+        /// precedent - direct Move pauses on one destination and an `up to 0` push pauses on one
+        /// distance - and it keeps "chooser-owned" honest. Restore re-derives the candidates by
+        /// re-asking this handler, exactly as every other capability choice restores. Selecting mutates
+        /// nothing; the consuming node does whatever the effect does.
+        /// </summary>
+        private sealed class ChooseTargetHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => ChooseTargetV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[]
+                {
+                    new EffectCapabilityParameter("range", EffectValueKind.Integer),
+                    new EffectCapabilityParameter("includeSelf", EffectValueKind.Boolean)
+                },
+                new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var candidates = Candidates(context);
+                if (candidates.Count == 0)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.Actor,
+                    candidates.Select(candidate => EffectValue.Space(candidate)).ToArray(),
+                    1,
+                    1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Coordinate)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Re-derived against current state rather than trusted from the paused choice: an
+                // object targetable when the choice opened may have moved or become immune before the
+                // answer arrived.
+                var chosen = selected[0].Coordinate;
+                if (!Candidates(context).Contains(chosen))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("chosen", EffectValue.Space(chosen))
+                });
+            }
+
+            /// <summary>
+            /// The spaces of every object the acting hero may target, in canonical axial order. Nothing
+            /// here walks the board or invents geometry: the reusable targeting contract owns both.
+            /// </summary>
+            private static IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components == null || !components.CanDisplace)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var range = context.Input("range").IntegerValue;
+                if (range < 0)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var board = components.Board;
+                var selector = BoardObjectReference.ForHero(context.ActorId);
+                if (!board.TryGetObjectCoordinate(selector, out var origin))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var targets = TargetQuery.FindTargetsWithin(
+                    origin,
+                    range,
+                    context.Input("includeSelf").BooleanValue,
+                    selector.AsRuleObject(),
+                    RuleActivity.Skill,
+                    board,
+                    context.Modifications);
+
+                var spaces = new List<HexCoordinate>(targets.Count);
+                foreach (var target in targets)
+                {
+                    if (board.TryGetObjectCoordinate(target, out var at))
+                    {
+                        spaces.Add(at);
+                    }
+                }
+
+                return spaces;
+            }
+        }
+    }
+}

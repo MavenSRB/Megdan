@@ -124,11 +124,22 @@ namespace GuardsDigital.Tests.EditMode
 
             ChooseOption(session, MoveBranch);
 
-            // The `up to` Optional node asks whether to move at all before the capability offers spaces.
+            // The `up to` Optional node asks whether to move at all before anything else runs.
             var confirm = session.Projection.PendingEffectChoice;
             Assert.That(confirm, Is.Not.Null);
             Assert.That(confirm.Kind, Is.EqualTo(EffectChoiceKind.ConfirmOrDecline));
             Accept(session, DirectorCommand.AnswerEffectChoice(confirm.ConfirmInvocation));
+
+            // 6.8k: the sequence's first step names the subject. The actor's own space is the original
+            // self-move; the adjacent Blue hero is the widened breadth.
+            var subject = session.Projection.PendingEffectChoice;
+            Assert.That(subject, Is.Not.Null, "Which object moves is the selection's decision.");
+            Assert.That(subject.Kind, Is.EqualTo(EffectChoiceKind.SelectTarget));
+            Assert.That(
+                subject.Candidates.Select(candidate => candidate.Value.Coordinate),
+                Is.EqualTo(new[] { RedAt, BlueAt }),
+                "The selection offers the actor itself and every adjacent object, in axial order.");
+            SelectValue(session, RedAt);
 
             var spaces = session.Projection.PendingEffectChoice;
             Assert.That(spaces, Is.Not.Null, "Which destination is the move's one decision.");
@@ -147,6 +158,131 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Coordinate(board, actorId), Is.EqualTo(chosen));
             Assert.That(board.IsEmptyPlayableSpace(RedAt), Is.True);
             Assert.That(session.Projection.PendingSkillResolution, Is.Null, "The Skill completes.");
+        }
+
+        [Test]
+        public void TheDirectMoveBranch_NamesTheAdjacentHeroAndMovesItInstead()
+        {
+            // 6.8k's observable outcome end to end: the definition names another board object as a
+            // typed selection and the displacement capability accepts it as its subject.
+            var session = StartDisplacementSkill();
+            var actorId = session.Projection.SelectedActor.ActorId;
+            var blueId = BlueHero(session);
+
+            ChooseOption(session, MoveBranch);
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            SelectValue(session, BlueAt);
+
+            var spaces = session.Projection.PendingEffectChoice;
+            Assert.That(spaces.Kind, Is.EqualTo(EffectChoiceKind.SelectTarget));
+            Assert.That(
+                spaces.Candidates.Select(candidate => candidate.Value.Coordinate),
+                Has.Member(BeyondBlue),
+                "The destinations are the named subject's reachability, not the actor's.");
+            SelectValue(session, BeyondBlue);
+
+            var board = RestoreBoard(session);
+            Assert.That(Coordinate(board, blueId), Is.EqualTo(BeyondBlue),
+                "The named subject moved.");
+            Assert.That(Coordinate(board, actorId), Is.EqualTo(RedAt),
+                "The actor stays where it stands: it chose, it did not move.");
+            Assert.That(session.Projection.PendingSkillResolution, Is.Null, "The Skill completes.");
+        }
+
+        [Test]
+        public void AnIllegalSubjectSelection_IsRejectedAtomicallyAndThePendingChoiceSurvives()
+        {
+            var session = StartDisplacementSkill();
+            ChooseOption(session, MoveBranch);
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+
+            var before = session.Projection;
+            var illegal = session.Execute(DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
+                before.PendingEffectChoice.ResolutionId,
+                before.PendingEffectChoice.ChoiceId,
+                EffectChoiceCommandKind.Select,
+                EffectChoiceCandidate.Value_(EffectValue.Space(TerrainBeyond)))));
+
+            Assert.That(illegal.Accepted, Is.False,
+                "A coordinate the selection never offered is refused outright.");
+            Assert.That(session.Projection.Version, Is.EqualTo(before.Version));
+            Assert.That(session.Projection.AuthoritativeSnapshot, Is.EqualTo(before.AuthoritativeSnapshot),
+                "The refusal is atomic: the pending selection is exactly what it was.");
+
+            var stale = session.Execute(DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
+                before.PendingEffectChoice.ResolutionId,
+                new EffectChoiceId("stale-subject-selection"),
+                EffectChoiceCommandKind.Confirm)));
+            Assert.That(stale.Accepted, Is.False,
+                "An answer naming a choice that is not the live one is stale and refused.");
+            Assert.That(session.Projection.AuthoritativeSnapshot, Is.EqualTo(before.AuthoritativeSnapshot));
+        }
+
+        [Test]
+        public void APausedSubjectSelection_SurvivesSnapshotRestoreWithRederivedCandidates()
+        {
+            var session = StartDisplacementSkill();
+            ChooseOption(session, MoveBranch);
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            var paused = session.Projection.PendingEffectChoice;
+            Assert.That(paused.Kind, Is.EqualTo(EffectChoiceKind.SelectTarget));
+
+            var byteIdentical = Restore(session);
+            Assert.That(
+                AuthoritativeSnapshotSerializer.Serialize(byteIdentical.Round, byteIdentical.Board),
+                Is.EqualTo(session.Projection.AuthoritativeSnapshot),
+                "A paused subject selection round-trips byte-identically.");
+
+            var payload = session.CaptureSnapshot();
+            var restored = StartDisplacementSkill();
+            Assert.That(restored.RestoreSnapshot(payload).Accepted, Is.True);
+
+            var revived = restored.Projection.PendingEffectChoice;
+            Assert.That(
+                revived.Candidates.Select(candidate => candidate.Value.Coordinate),
+                Is.EqualTo(paused.Candidates.Select(candidate => candidate.Value.Coordinate)),
+                "Candidates are never written; the restored handler re-derives the same offer.");
+
+            SelectValue(restored, BlueAt);
+            SelectValue(restored, BeyondBlue);
+            Assert.That(restored.Projection.PendingSkillResolution, Is.Null,
+                "The restored selection continues to the same completion the live one would.");
+        }
+
+        [Test]
+        public void ADirectMoveOfTheAdjacentHero_ReplaysAndUndoesDeterministically()
+        {
+            var session = StartDisplacementSkill();
+            var blueId = BlueHero(session);
+
+            ChooseOption(session, MoveBranch);
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            SelectValue(session, BlueAt);
+            var destination = session.Projection.PendingEffectChoice.SelectInvocations
+                .Single(candidate => candidate.Candidate.Value.Coordinate.Equals(BeyondBlue));
+            Accept(session, DirectorCommand.AnswerEffectChoice(destination));
+            var beforeConfirm = session.Projection.DiagnosticSnapshot;
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            var afterCommit = session.Projection.DiagnosticSnapshot;
+
+            Assert.That(Coordinate(RestoreBoard(session), blueId), Is.EqualTo(BeyondBlue));
+
+            Assert.That(session.Undo().Accepted, Is.True);
+            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeConfirm),
+                "Retained-prefix Undo returns to the selected-but-unconfirmed destination.");
+            Assert.That(Coordinate(RestoreBoard(session), blueId), Is.EqualTo(BlueAt),
+                "The named subject is back where it stood, because the displacement is authoritative " +
+                "board state the replay reaches.");
+
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(afterCommit),
+                "Replaying the same answer reproduces the same occupancy and the same ordered facts.");
         }
 
         [Test]
@@ -234,14 +370,16 @@ namespace GuardsDigital.Tests.EditMode
                 .SelectMany(action => action.EffectRoot.Nodes)
                 .Where(node =>
                     node.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV1) ||
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV2) ||
                     node.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.ObjectPushV1))
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.ObjectPushV1) ||
+                    node.Capability.Equals(
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV1))
                 .ToArray();
 
             Assert.That(displacementNodes, Is.Empty,
-                "Direct Move and Object Push reach a player only through the Skill fixture until " +
-                "milestone 6.4a's after-action correction exists.");
+                "Direct Move, Object Push, and the target selection reach a player only through the " +
+                "Skill fixture until milestone 6.4a's after-action correction exists.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -273,6 +411,17 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Equals(option));
+            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+        }
+
+        /// <summary>Selects one coordinate-valued candidate of the live choice and confirms it.</summary>
+        private static void SelectValue(MatchSession session, HexCoordinate coordinate)
+        {
+            var choice = session.Projection.PendingEffectChoice;
+            var invocation = choice.SelectInvocations.Single(candidate =>
+                candidate.Candidate.Value.Coordinate.Equals(coordinate));
             Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
             Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));

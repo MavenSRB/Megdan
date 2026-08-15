@@ -174,7 +174,7 @@ Non-goals: No new capability, effect family, or rules content; no Repeat semanti
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68j-let-a-skill-complete-at-its-own-start-step-completion-evidence).
 
-### [~] 6.8k Give effect definitions a typed target-selection node
+### [x] 6.8k Give effect definitions a typed target-selection node
 
 **Corrective amendment (2026-08-15, user approved).** Milestone 6.4a's subject widening cannot land inside 6.4a. Direct Move must be able to name a minion or a token to displace one, and a definition has no legal way to express that today: role bindings resolve from the execution frame, which holds no board reference, so there is no actor's-space role to bind, and the coordinate identity Object Push already uses for its targets can only reach a node through a prior node's output. The missing piece is a target-selection node, which is reusable targeting machinery - milestone 6.8's declared subject - rather than displacement machinery, so the user directed it here rather than into 6.4a. 6.4a's port and reachability were already widened at `44c256e`; only the capability parameter waits on this.
 
@@ -192,3 +192,5 @@ Acceptance checks:
 - Focused capability and end-to-end session scenarios cover selection, rejection of a stale or illegal selection, snapshot restore, replay, and retained-prefix Undo.
 
 Non-goals: No displaced-minion correction (6.4a owns it), no new displacement operation, no Place/Spawn/Swap/Replace, no Wasp definition, no card-name/hero-name branch, no configured live exposure, and no production presentation.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68k-give-effect-definitions-a-typed-target-selection-node-completion-evidence).

@@ -120,6 +120,102 @@ namespace GuardsDigital.Tests.EditMode
                 "the case typed result binding exists for.");
         }
 
+        /// <summary>
+        /// Milestone 6.8k. The resolver reads roles from the execution frame alone, with no board
+        /// access, so a role can supply a hero or the source card and nothing else. A binding that
+        /// declares anything else would pass the parameter type-match and fault mid-resolution; the
+        /// acceptance check requires the refusal at content load instead.
+        /// </summary>
+        [Test]
+        public void ARoleBindingDeclaringACoordinate_IsRejectedAtContentLoad()
+        {
+            var rejections = Validate(
+                Sequence("root", "a"),
+                new EffectNodeDefinition(
+                    new EffectNodeId("a"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticDisplacementCapabilities.DirectMoveV2,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromRole(
+                            "mover", EffectRoleKind.Actor, EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                    }));
+
+            Assert.That(rejections.Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.RoleCannotSupplyValueKind),
+                "No role can supply a coordinate: the frame holds no board reference.");
+        }
+
+        [Test]
+        public void AChosenSpaceRoleBinding_IsRejectedBecauseNoFrameResolvesIt()
+        {
+            var rejections = Validate(
+                Sequence("root", "a"),
+                new EffectNodeDefinition(
+                    new EffectNodeId("a"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticDisplacementCapabilities.DirectMoveV2,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromRole(
+                            "mover", EffectRoleKind.ChosenSpace, EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                    }));
+
+            Assert.That(rejections.Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.RoleCannotSupplyValueKind),
+                "ChosenSpace is declared vocabulary no frame resolves; a selection reaches a node " +
+                "through a prior target-selection node's published output.");
+        }
+
+        [Test]
+        public void ARoleBindingDeclaringWhatTheRoleSupplies_StaysAccepted()
+        {
+            var rejections = Validate(
+                Sequence("root", "a"),
+                new EffectNodeDefinition(
+                    new EffectNodeId("a"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticEffectCapabilities.AcceptHeroV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromRole("hero", EffectRoleKind.Actor, EffectValueKind.Hero)
+                    }));
+
+            Assert.That(rejections, Is.Empty,
+                "The vacuity guard: the rule refuses impossible bindings, not role bindings.");
+        }
+
+        [Test]
+        public void ASubjectBoundFromASelectionNodesOutput_IsAcceptedExactlyWhenGuaranteed()
+        {
+            // 6.8k's positive shape: the selection publishes a coordinate and a later step in the same
+            // Sequence binds it. The negative twin behind a `may` is NodeOutputReadFromASkippableBranch.
+            var rejections = Validate(
+                Sequence("root", "select", "move"),
+                new EffectNodeDefinition(
+                    new EffectNodeId("select"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticTargetingCapabilities.ChooseTargetV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(true))
+                    },
+                    outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                new EffectNodeDefinition(
+                    new EffectNodeId("move"), EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                    SyntheticDisplacementCapabilities.DirectMoveV2,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "mover", new EffectNodeId("select"), "chosen", EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                    }));
+
+            Assert.That(rejections, Is.Empty);
+        }
+
         [Test]
         public void ConditionalWithoutABooleanPredicateOutput_IsRejected()
         {

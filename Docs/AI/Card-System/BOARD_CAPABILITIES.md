@@ -14,6 +14,8 @@ Relationship filters include self, another, friendly, enemy, owner, controller, 
 
 `TargetQuery` evaluates target eligibility for both player-chosen and automatically affected objects and applies immunity in either case. A separate `ChooseTarget` node creates a pending choice among eligible candidates when the action requires a player decision. `PresenceQuery` checks whether an object exists or is adjacent/in range without targeting it; immune units still count for presence checks where the rules say so. Executors must declare which query they use.
 
+Milestone 6.8k implements the disk-shaped `TargetQuery` slice - every board object within a rulebook distance, immunity filtered per activity, tokens exempt because p.19 leaves them outside the unit rules - and realizes `ChooseTarget` as the registered `synthetic-choose-target` capability rather than a new node kind: the selection pauses through the existing capability-choice seam and publishes the chosen object's space as a typed coordinate output, which a later node binds through the ordinary node-output binding. The wider relationship vocabulary (friendly, enemy, owner, controller, source) stays specified here until a verified card needs it.
+
 ### Geometry
 
 Reusable geometry queries include:
@@ -56,7 +58,7 @@ Primary/Secondary context controls card-text application. Milestone 5.2 implemen
 
 Card wording such as `move a unit towards you` remains `MoveEffect`; `towards` is not promoted into a standalone keyword. Its target/destination contract composes `CloserQuery` so every legal destination is closer to the source than the target's starting space under obstacle-inclusive geometric distance, plus the source's exact/up-to distance policy and any required chooser/tie rules. There is no separate Pull capability or invented Pull keyword.
 
-Milestone 6.4 implements this as the registered `synthetic-direct-move` capability. It moves a hero, takes the mover, distance, and `towardActor` policy as typed inputs, and derives its destinations from the same reachability the Movement action uses rather than a second traversal, which is p.11's "same rules and restrictions" made structural. The exact-versus-`up to` distinction is read from the node's own `EffectFailurePolicy` instead of a parameter of its own, because p.11 ties it to the wording that the four policies already carry: an `up to` node admits every destination at or below the bound, and any other policy admits only the exact number of spaces. `CloserQuery` is composed from that capability rather than existing unread. A direct Move of a minion or a token additionally requires reachability for a non-hero mover, which the Movement action's query does not express; that remains open, and Object Push carries the whole unit-and-token breadth in the meantime because p.18 names both.
+Milestone 6.4 implements this as the registered `synthetic-direct-move` capability. It takes the mover, distance, and `towardActor` policy as typed inputs, and derives its destinations from the same reachability the Movement action uses rather than a second traversal, which is p.11's "same rules and restrictions" made structural. The exact-versus-`up to` distinction is read from the node's own `EffectFailurePolicy` instead of a parameter of its own, because p.11 ties it to the wording that the four policies already carry: an `up to` node admits every destination at or below the bound, and any other policy admits only the exact number of spaces. `CloserQuery` is composed from that capability rather than existing unread. Milestone 6.8k widened the subject: the mover parameter is a typed coordinate naming whatever stands there - a hero, a minion, or a token - resolved through the displacement port the way Object Push resolves its targets, so p.11's "another unit or a token" is expressible. A definition fills that parameter from a prior target-selection node's published space, never from a role, because roles resolve from the execution frame alone and no role can supply a coordinate; the definition validator refuses one that tries at content load.
 
 ### Ignore obstacles and Move Through
 
@@ -152,16 +154,13 @@ Every query contract below is specified but not yet implemented as a named type.
 
 | Contract | State | Owning milestone |
 | --- | --- | --- |
-| `TargetQuery` | Specified, not implemented | 6.8 |
 | `PresenceQuery` | Specified, not implemented | 6.8 |
 | `AdjacentSpaceQuery` | Specified, not implemented | 6.4 |
 | `AdjacentObjectQuery` | Specified, not implemented | 6.4 |
 | `RangeQuery` | Specified, not implemented | 6.8 |
 | `RadiusQuery` | Specified, not implemented | 6.8 |
 | `DirectionQuery` | Specified, not implemented | 6.4 |
-| `StraightLineQuery` | Specified, not implemented | 6.4 |
 | `DistanceQuery` | Specified, not implemented | 6.4 |
-| `CloserQuery` | Specified, not implemented | 6.4 |
 | `FartherQuery` | Specified, not implemented | 6.4 |
 | `FarthestQuery` | Specified, not implemented | 6.4 |
 | `NearestQuery` | Specified, not implemented | 6.4a |
