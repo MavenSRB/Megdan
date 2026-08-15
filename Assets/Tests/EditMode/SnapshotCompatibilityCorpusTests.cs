@@ -53,6 +53,20 @@ namespace GuardsDigital.Tests.EditMode
         /// nothing shifted. The capability registration list and the Hazard token revision are
         /// byte-identical, and the replaced action set never appears at all, because the payload names
         /// definitions and the catalog supplies what they contain.
+        /// Milestone 6.8h keeps schema v9 and re-pins exactly one fixture, <c>attached-marker-v9</c>,
+        /// for one cause: the marker capability now composes its attachment's instance ID through
+        /// <c>MarkerInstanceIdentity</c>, so the persisted ID gains the action and the round/turn
+        /// anchors. The decision here is accept without migration, unlike the revision causes above: a
+        /// marker instance ID is an opaque wire string that nothing parses, re-derives, or compares
+        /// against content, so a v9 payload written before this milestone still restores and still
+        /// names the same attachment. Only newly captured payloads differ, which is why the fixture is
+        /// re-pinned rather than the reader changed. The delta was read at the byte level: the decoded
+        /// payload grows from 3232 to 3261 bytes in exactly one region - common prefix 2957 bytes,
+        /// common suffix 238 bytes - where the ID's single-byte length prefix moves from 51 to 80 and
+        /// the string gains <c>:primary-component-skill</c> and <c>:r1t1</c>. Both lengths stay inside
+        /// one 7-bit-encoded prefix byte, so nothing else shifted, and the other six payloads including
+        /// <c>placed-token-v9</c> are byte-identical, which is the token family's independent proof
+        /// that this milestone left it alone.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
@@ -62,7 +76,7 @@ namespace GuardsDigital.Tests.EditMode
             new CompatibilityFixture("end-of-round-v9", "ca5385c7b6fcaca3f68761f8e9dbde1c556df02f8c2a7191c3cc664f58d9ff2f"),
             new CompatibilityFixture("pending-minion-battle-v9", "c5a0f8aee447d403418f8f3033f8c2507e08ed5fed675c1e9014a1785ed367f1"),
             new CompatibilityFixture("placed-token-v9", "3080ef46fc0a141400f2db3b8925226806a60e87be155f293a4775ca582ec083"),
-            new CompatibilityFixture("attached-marker-v9", "31dc8156dad1a9c53d556e5eec6969fd8e11821bd966c978c7f3f10c99f76ebc")
+            new CompatibilityFixture("attached-marker-v9", "a1474d9a2bc9f2eb3fb7ed4a94394b7ba270c8e7f87b4069dc3d114f03f07684")
         };
 
         [Test]

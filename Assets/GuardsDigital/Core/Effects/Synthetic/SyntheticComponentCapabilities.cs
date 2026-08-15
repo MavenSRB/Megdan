@@ -238,6 +238,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// Who holds it is the decision, so this is the milestone's marker-attachment choice. Every hero
         /// in the match is a candidate, including the actor: "usually" describes what cards tend to say,
         /// not a restriction the engine may impose on text it has not read.
+        ///
+        /// The attachment's identity comes from <see cref="MarkerInstanceIdentity"/> since milestone
+        /// 6.8h, so two activations of one card give two attachments that can be told apart.
         /// </summary>
         private sealed class GiveMarkerHandler : IEffectCapabilityHandler
         {
@@ -284,28 +287,40 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.FocusV1;
                 var holder = selected[0].HeroId;
-                if (!holder.IsDefined ||
-                    components.Catalog.CountAvailableMarkers(
+                if (!holder.IsDefined)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var given = new[] { new EffectOutcomeFact("holder", EffectValue.Hero(holder)) };
+                var instanceId = MarkerInstanceIdentity.Mint(context, holder);
+                if (components.Markers.Attachments.Any(
+                        attachment => attachment.Id.Equals(instanceId)))
+                {
+                    // This activation's marker is already attached, so re-executing the node inside
+                    // its own resolution is a legal no-op rather than a second give - the same shape
+                    // the Active-effect creators use. It must precede the supply test, because what
+                    // the supply is short of at this point is this activation's own copy.
+                    return EffectExecutionResult.Applied(given);
+                }
+
+                var reference = SyntheticComponentDefinitions.FocusV1;
+                if (components.Catalog.CountAvailableMarkers(
                         reference, components.Markers.Attachments) < 1)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
                 components.Markers.Give(new MarkerAttachment(
-                    new MarkerInstanceId(
-                        $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}:{holder.Value}"),
+                    instanceId,
                     components.Catalog.LoadMarker(reference),
                     context.ActorId,
                     holder,
                     context.SourceCardInstanceId,
                     context.ActionDefinitionId));
 
-                return EffectExecutionResult.Applied(new[]
-                {
-                    new EffectOutcomeFact("holder", EffectValue.Hero(holder))
-                });
+                return EffectExecutionResult.Applied(given);
             }
         }
 

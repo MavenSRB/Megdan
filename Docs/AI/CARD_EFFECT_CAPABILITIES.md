@@ -101,7 +101,7 @@ If a later mandatory node returns `ImpossibleMandatory`, earlier `Applied` nodes
 | Defeat | Enemy outcome with rewards and a potentially preventable removal stage |
 | Clear | Replacement for an entire Attack that removes adjacent tokens |
 | Discard/Retrieve/Swap card state | Card lifecycle operations, not board-object operations |
-| Give/Return marker | Attachment and supply operations, not token placement |
+| Give/Return marker | Attachment and supply operations, not token placement; the attachment's identity is minted per activation since 6.8h |
 | Gain/Spend resource | Typed economy/Life/Wave/level state change |
 | Create/Cancel Active effect | Serializable timed source with ordinary cancellation semantics |
 | Add/Remove continuous rule source | Persistent permission, restriction, modifier, token, marker, or Ultimate source with its own lifetime |
