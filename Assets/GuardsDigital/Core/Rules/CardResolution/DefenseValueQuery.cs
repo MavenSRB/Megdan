@@ -61,6 +61,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return new ValueResult(PrintedValueChannel.Defense, contributions);
         }
 
+        /// <summary>
+        /// Unit-type question (6.8g ledger): intrinsic subtype. p.14 assigns every modifier by
+        /// subtype - adjacent friendly/enemy melee or heavy, enemy ranged within radius 2 - and a
+        /// generic `Counts As` minion declaration carries no subtype, so no p.14 branch can apply to
+        /// it; the effective vocabulary deliberately has no subtypes.
+        /// </summary>
         public static IReadOnlyList<ValueContribution> CalculateMinionContributions(
             HeroId defenderId,
             MatchParticipants participants,

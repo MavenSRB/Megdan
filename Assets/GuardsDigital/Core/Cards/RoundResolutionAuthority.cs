@@ -544,6 +544,11 @@ namespace GuardsDigital.Core.Cards
                 plan.AutomaticRemovalIds);
         }
 
+        /// <summary>
+        /// Unit-type question (6.8g ledger): intrinsic, per open rules question 7 in RULES_LEDGER.md
+        /// - the battle removes minion miniatures from the intrinsic register; see
+        /// <c>MinionBattleRules.Plan</c> for the recorded reasoning.
+        /// </summary>
         private RoundResolutionResult CompleteMinionBattle(
             EndOfRoundResolutionId resolutionId,
             GuardsDigital.Core.Board.ZoneId battleZoneId,

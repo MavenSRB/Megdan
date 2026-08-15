@@ -190,6 +190,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return expectedOffer.HasValue && expectedOffer.Value.Equals(replacementOffer);
         }
 
+        /// <summary>
+        /// Unit-type question (6.8g ledger): none. p.11 requires "no enemy heroes or minions" in the
+        /// origin and destination Zones - the type-insensitive union of all units - so a `Counts As`
+        /// declaration cannot move an object into or out of this check and register enumeration is
+        /// the declared read.
+        /// </summary>
         private static bool ContainsEnemy(
             ZoneId zoneId,
             HeroId actorId,

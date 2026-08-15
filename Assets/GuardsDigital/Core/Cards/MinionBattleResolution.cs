@@ -419,6 +419,13 @@ namespace GuardsDigital.Core.Cards
 
     internal static class MinionBattleRules
     {
+        /// <summary>
+        /// Unit-type question (6.8g ledger): intrinsic, recorded as open rules question 7 in
+        /// RULES_LEDGER.md. p.8 counts minions, has the losing team remove theirs, and respawns
+        /// pushed-zone minions; none of those clauses defines removal, respawn, or Life semantics
+        /// for a non-minion object counting as a minion, so the battle keeps counting intrinsic
+        /// miniatures until the question is settled by source or official ruling.
+        /// </summary>
         public static MinionBattlePlan Plan(
             int roundIndex,
             AdjacentMoveAuthority board,

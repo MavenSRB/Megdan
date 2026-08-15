@@ -132,6 +132,8 @@ These do not block documentation. They become prerequisites only when their road
 4. Retired for the final pitch on 2026-08-10: mirrored-Wasp interactions remain relevant only to the intermediate DEV-002 test gate and cannot become final-pitch authority.
 5. Retired on 2026-08-10: the final pitch no longer uses the four-player 1v1 economy; it uses the official six-player Quick Game baseline without rebalancing.
 6. Which five additional heroes will join Wasp in the six-hero pitch roster? Selection requires explicit user approval and implementation-grade source availability before inventory begins.
+7. Recorded at 6.8g: does an object that counts as a minion join the p.8 Minion Battle - counted for the difference, removable by its team, respawned on a Lane Push - and with what defeat/Life consequences? p.17's replacement doctrine reaches the count, but no clause defines removal, respawn, or Life semantics for a non-minion object, so the implementation keeps intrinsic counting until settled by source or official ruling. The unit-type question ledger in [Rules/RULE_SYSTEMS.md](Rules/RULE_SYSTEMS.md#unit-type-question-ledger) carries the per-rule record.
+8. Recorded at 6.8g: what is a defeated object that counts as a minion worth? p.13 prices melee/ranged at 2 coins, heavy at 4, and heroes by level; no clause prices a counts-as defeat, so defeat rewards keep reading intrinsic identity until settled.
 
 ## Change policy
 

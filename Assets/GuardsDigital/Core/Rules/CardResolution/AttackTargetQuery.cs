@@ -16,6 +16,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
     {
         /// <summary>
         /// The enemy units this attacker may target.
+        ///
+        /// Unit-type question (6.8g ledger): none for the assembly itself. p.13 "You may attack
+        /// enemy heroes and minions" names the union of both unit types, so enumerating the hero and
+        /// minion registers is unit enumeration and a `Counts As` declaration cannot move an object
+        /// into or out of the union. The Heavy-immunity filter below asks its own two declared
+        /// questions.
         /// </summary>
         /// <param name="modifications">
         /// The modifications in effect; <see cref="RuleModificationSet.Empty"/> is the named
@@ -49,7 +55,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .Where(minion =>
                     !minion.TeamId.Equals(attackerTeam) &&
                     HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, minion.Coordinate) <= maximumDistance &&
-                    !IsImmuneHeavy(minion, board) &&
+                    !IsImmuneHeavy(minion, board, participants, modifications) &&
                     !IsDeclaredImmune(RuleObject.ForMinion(minion.MinionId), attacker, modifications))
                 .Select(minion => AttackTarget.Minion(minion.MinionId));
 
@@ -132,9 +138,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications) =>
             modifications != null && modifications.IsImmuneTo(target, RuleActivity.Attack, attacker);
 
+        /// <summary>
+        /// The p.13 Heavy rule asks two different unit-type questions, declared per the unit-type
+        /// question ledger in Docs/AI/Rules/RULE_SYSTEMS.md. The immune subject - "the heavy minion
+        /// is Immune" - is the Heavy miniature itself: an intrinsic subtype identity. The
+        /// accompaniment - "any friendly non-heavy minions in the Battle Zone" - is a bare membership
+        /// question, so p.17's replacement doctrine applies and it asks the effective question
+        /// through the zone-scoped presence query: a hero counting as a minion accompanies. Since
+        /// milestone 6.8g this is the effective type's first production consumer.
+        /// </summary>
         private static bool IsImmuneHeavy(
             MinionOccupancy candidate,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
         {
             if (candidate.MinionType != StandardMinionType.Heavy)
             {
@@ -142,10 +159,41 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var candidateZone = board.MapDefinition.GetZoneForSpace(candidate.OccupiedSpace.SpaceId);
-            return candidateZone.IsStartingBattleZone && board.Minions.Any(other =>
-                other.TeamId.Equals(candidate.TeamId) &&
-                other.MinionType != StandardMinionType.Heavy &&
-                board.MapDefinition.GetZoneForSpace(other.OccupiedSpace.SpaceId).Id.Equals(candidateZone.Id));
+            if (!candidateZone.IsStartingBattleZone)
+            {
+                return false;
+            }
+
+            return UnitPresenceQuery
+                .FindUnitsInZone(candidateZone.Id, EffectiveUnitKind.Minion, board, modifications)
+                .Any(unit => AccompaniesHeavy(unit, candidate, board, participants));
+        }
+
+        /// <summary>
+        /// Whether one effectively-minion unit in the candidate's zone is a friendly non-heavy
+        /// accompaniment. A minion miniature answers by its intrinsic subtype; a hero counting as a
+        /// minion has no Heavy subtype - p.17 replaces its type with the generic minion type - so it
+        /// accompanies whenever it shares the candidate's team.
+        /// </summary>
+        private static bool AccompaniesHeavy(
+            RuleObject unit,
+            MinionOccupancy candidate,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants)
+        {
+            if (IntrinsicKindQuery.IsMinionMiniature(unit))
+            {
+                if (unit.MinionId.Equals(candidate.MinionId))
+                {
+                    return false;
+                }
+
+                var occupancy = board.Minions.Single(minion => minion.MinionId.Equals(unit.MinionId));
+                return occupancy.TeamId.Equals(candidate.TeamId) &&
+                    occupancy.MinionType != StandardMinionType.Heavy;
+            }
+
+            return participants.GetTeamForHero(unit.HeroId).Id.Equals(candidate.TeamId);
         }
     }
 }

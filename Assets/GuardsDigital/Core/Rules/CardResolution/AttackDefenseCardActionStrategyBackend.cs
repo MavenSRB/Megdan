@@ -305,6 +305,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 });
         }
 
+        /// <summary>
+        /// Unit-type question (6.8g ledger): intrinsic, recorded as open rules question 8 in
+        /// RULES_LEDGER.md. p.13 prices defeats by intrinsic identity - melee/ranged 2 coins, heavy
+        /// 4, heroes by level - and no clause prices a defeated object that merely counts as a
+        /// minion, so the reward keeps reading the defeated miniature until settled.
+        /// </summary>
         private AttackActionResolutionResult ResolveMinionTarget(
             MinionId targetMinionId,
             MatchParticipants participants)
