@@ -240,7 +240,7 @@ Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No rewri
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61aq-shard-the-current-implementation-inventory-completion-evidence).
 
-### [~] 6.1ar Shard the rule-modification inventory
+### [x] 6.1ar Shard the rule-modification inventory
 
 **Preventive amendment (2026-08-15, user approved).** 6.1aq bought `Project/CURRENT_IMPLEMENTATION.md` headroom by routing configured presentation out, and the file now sits at 3,755 of its 4,500-word limit - 70 words below the 3,825 warning line. Milestone 6.4 adds two reusable board operations, their queries, and their immunity consumer, which crosses that line on contact. This milestone is therefore deliberately preventive rather than corrective: 6.1aq recorded that repeatedly deferring the split converts a governed threshold into background noise, and waiting for the warning to fire again would repeat exactly the pattern that milestone existed to end.
 
@@ -261,3 +261,5 @@ Acceptance checks:
 Closing check: acceptance evidence rather than a failing-then-passing defect pair. The `warning-threshold` issue this milestone prevents is not present at the pre-split revision - the file is 70 words under the line - so claiming that transition would be claiming an observation that cannot be made, which the 6.1y preventive carve-out above requires be stated rather than manufactured. The evidence is instead the measured word count and headroom before and after, every other threshold unchanged, and the byte-identity comparison on the moved body.
 
 Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No validator-script edit, since `Get-Limit` already governs `Docs/AI/Project/*.md` by pattern. No rewrite of completed definitions or archive evidence, and no new implementation claim; this milestone moves existing text and registers its home.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ar-shard-the-rule-modification-inventory-completion-evidence).
