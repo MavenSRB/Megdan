@@ -245,12 +245,26 @@ namespace GuardsDigital.Core.Board
             return GetZoneRelationship(GetZoneForSpace(first).Id, GetZoneForSpace(second).Id);
         }
 
-        public static BoardMapDefinition CreateSynthetic(MapId id, int revision, IEnumerable<HexCoordinate> playableCoordinates)
+        public static BoardMapDefinition CreateSynthetic(MapId id, int revision, IEnumerable<HexCoordinate> playableCoordinates) =>
+            CreateSynthetic(id, revision, playableCoordinates, Array.Empty<HexCoordinate>());
+
+        /// <summary>
+        /// Synthetic board with declared terrain cells, added at milestone 6.8e so a fixture can
+        /// express the terrain/off-board distinction the official map carries. Terrain spaces have no
+        /// zone, exactly as the map specification requires.
+        /// </summary>
+        public static BoardMapDefinition CreateSynthetic(
+            MapId id,
+            int revision,
+            IEnumerable<HexCoordinate> playableCoordinates,
+            IEnumerable<HexCoordinate> terrainCoordinates)
         {
             var zone = new BoardMapZone(new ZoneId("synthetic-zone"), "Synthetic Zone", "synthetic", null, false, false);
-            var spaces = (playableCoordinates ?? throw new ArgumentNullException(nameof(playableCoordinates))).Select(value =>
+            var playable = (playableCoordinates ?? throw new ArgumentNullException(nameof(playableCoordinates))).Select(value =>
                 new BoardMapSpace(new SpaceId($"q{value.Q}_r{value.R}"), value, BoardMapSpaceKind.Playable, zone.Id));
-            return new BoardMapDefinition(id, revision, id.Value, spaces, new[] { zone },
+            var terrain = (terrainCoordinates ?? throw new ArgumentNullException(nameof(terrainCoordinates))).Select(value =>
+                new BoardMapSpace(new SpaceId($"q{value.Q}_r{value.R}"), value, BoardMapSpaceKind.Terrain, null));
+            return new BoardMapDefinition(id, revision, id.Value, playable.Concat(terrain), new[] { zone },
                 Array.Empty<BoardMapSpawnPoint>(), Array.Empty<ZoneId>());
         }
 

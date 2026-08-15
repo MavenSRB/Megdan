@@ -47,10 +47,16 @@ namespace GuardsDigital.Core.Rules.Movement
             }
 
             var mover = RuleObject.ForHero(selectedHero.HeroId);
-            var playable = new HashSet<HexCoordinate>(board.PlayableCoordinateSet);
+
+            // The walkable universe is every space that exists on the map - playable and terrain
+            // alike - because milestone 6.8e classifies terrain as an obstacle a permitted mover may
+            // cross, not as off-board. The transit and endpoint predicates then decide per mover:
+            // terrain blocks transit without the permission and is never an endpoint for anyone.
+            var onMap = new HashSet<HexCoordinate>(board.PlayableCoordinateSet);
+            onMap.UnionWith(board.TerrainCoordinateSet);
             return FindReachableCore(
                 selectedHero,
-                playable,
+                onMap,
                 coordinate => ObstacleQuery.BlocksTransit(board, coordinate, mover, modifications),
                 coordinate => ObstacleQuery.BlocksEndOfMovement(board, coordinate),
                 movementAllowance);

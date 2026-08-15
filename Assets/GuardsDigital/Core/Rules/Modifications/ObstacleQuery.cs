@@ -10,20 +10,16 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// "Units, terrain (including printed on the board), tokens, as well as any objects represented by
     /// miniatures, are obstacles. There can never be more than one obstacle in any one space." The board's
     /// occupancy index already enforces the second sentence for every occupant kind, so this query reads
-    /// it rather than re-deriving obstacles from per-kind lists; a space off the playable set is terrain
-    /// or off-board and is an obstacle either way.
+    /// it rather than re-deriving obstacles from per-kind lists. Since milestone 6.8e the classification
+    /// is three-way: a playable space may hold an occupant, a declared terrain space exists and is
+    /// permanently an obstacle, and a coordinate off the map is not an obstacle at all - it is nothing,
+    /// and no permission answers it.
     ///
     /// The permission it honours is the other half of p.18: a unit that ignores obstacles "is allowed to
     /// enter a space with an obstacle and leave that space in any direction, while moving. However, a unit
     /// can never end its movement on the same space as an obstacle." Transit and endpoint are therefore
-    /// separate questions, and only the first one the permission can answer.
-    ///
-    /// Milestone 6.8 owns this decision point and the permission it reads; the Movement action does not
-    /// consult it yet. Committing a route that crosses an occupied space needs the move to assert
-    /// occupancy only at its endpoint, which is a change to route commitment rather than to obstacle
-    /// classification, and it belongs with the milestones that own movement and displacement. Wiring the
-    /// permission into today's one-space-at-a-time commit would offer destinations the commit path must
-    /// then refuse, which is exactly the shortcut a later milestone would have to replace.
+    /// separate questions, and only the first one the permission can answer - for an occupied space and
+    /// for terrain alike, because p.18 lists both as obstacles.
     /// </summary>
     public static class ObstacleQuery
     {
@@ -40,7 +36,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// <summary>
         /// Whether <paramref name="mover"/> may pass through <paramref name="coordinate"/> while moving.
         /// A granted <see cref="RulePermissionKind.MoveThroughObstacles"/> lets it pass through an
-        /// occupied space; nothing lets it pass outside the playable board.
+        /// occupied space or a declared terrain space; nothing lets it pass outside the map.
         /// </summary>
         public static bool BlocksTransit(
             AdjacentMoveAuthority board,
@@ -55,7 +51,13 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             if (!board.IsPlayable(coordinate))
             {
-                return true;
+                if (!board.IsTerrain(coordinate))
+                {
+                    // Off the map: not an obstacle to ignore, and no permission answers it.
+                    return true;
+                }
+
+                return !HasMoveThroughPermission(mover, modifications);
             }
 
             if (!board.IsOccupied(coordinate))
@@ -63,9 +65,12 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            return !(mover.IsDefined && modifications != null &&
-                modifications.HasPermission(mover, RulePermissionKind.MoveThroughObstacles));
+            return !HasMoveThroughPermission(mover, modifications);
         }
+
+        private static bool HasMoveThroughPermission(RuleObject mover, RuleModificationSet modifications) =>
+            mover.IsDefined && modifications != null &&
+            modifications.HasPermission(mover, RulePermissionKind.MoveThroughObstacles);
 
         /// <summary>
         /// Whether <paramref name="coordinate"/> may be a movement endpoint. Deliberately identical to

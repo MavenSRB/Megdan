@@ -17,6 +17,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
     public sealed class AdjacentMoveAuthority : ITokenPlacementAuthority
     {
         private readonly HashSet<HexCoordinate> boardCoordinates;
+        private readonly HashSet<HexCoordinate> terrainCoordinates;
         private readonly List<HeroOccupancy> occupancies;
         private readonly List<ObstacleOccupancy> obstacleOccupancies;
         private readonly List<MinionOccupancy> minions;
@@ -121,6 +122,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             }
 
             this.boardCoordinates = new HashSet<HexCoordinate>(mapDefinition.PlayableCoordinates);
+            terrainCoordinates = new HashSet<HexCoordinate>(mapDefinition.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Terrain)
+                .Select(space => space.Coordinate));
             occupancies = new List<HeroOccupancy>();
             obstacleOccupancies = new List<ObstacleOccupancy>();
             occupancyIndex = new BoardOccupancyIndex();
@@ -225,6 +229,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         {
             MapDefinition = source.MapDefinition;
             boardCoordinates = source.boardCoordinates;
+            terrainCoordinates = source.terrainCoordinates;
             occupancies = new List<HeroOccupancy>(source.occupancies);
             obstacleOccupancies = new List<ObstacleOccupancy>(source.obstacleOccupancies);
             minions = new List<MinionOccupancy>(source.minions);
@@ -263,14 +268,26 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         internal bool IsOccupied(HexCoordinate coordinate) => occupancyIndex.IsOccupied(coordinate);
 
         /// <summary>
-        /// Whether the coordinate is a playable space of the selected map. Anything else is terrain or
-        /// off the board, which rulebook p.19 classifies as an obstacle either way.
+        /// Whether the coordinate is a playable space of the selected map. Anything else is terrain -
+        /// a modelled space that exists and permanently blocks, see <see cref="IsTerrain"/> - or a
+        /// coordinate that is not on the map at all. Since milestone 6.8e those are distinct answers:
+        /// terrain is an obstacle the Move-Through permission can cross, off-board blocks everything.
         /// </summary>
         internal bool IsPlayable(HexCoordinate coordinate) => boardCoordinates.Contains(coordinate);
+
+        /// <summary>
+        /// Whether the coordinate is a declared terrain space of the selected map. Terrain is not an
+        /// occupant and never enters the occupancy index; it exists on the board and always blocks
+        /// endpoints, placement, and every occupancy consumer, while blocking transit only for a
+        /// mover without the Move-Through permission (rulebook p.18). Milestone 6.8e.
+        /// </summary>
+        internal bool IsTerrain(HexCoordinate coordinate) => terrainCoordinates.Contains(coordinate);
 
         internal IReadOnlyCollection<HexCoordinate> OccupiedCoordinates => occupancyIndex.OccupiedCoordinates;
 
         internal IReadOnlyCollection<HexCoordinate> PlayableCoordinateSet => boardCoordinates;
+
+        internal IReadOnlyCollection<HexCoordinate> TerrainCoordinateSet => terrainCoordinates;
 
         internal AdjacentMoveAuthority CreateValidationFork() => new AdjacentMoveAuthority(this);
 
@@ -341,7 +358,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
             if (!boardCoordinates.Contains(command.Destination))
             {
-                return AdjacentMoveResult.Reject(AdjacentMoveRejectionReason.DestinationOffBoard);
+                return AdjacentMoveResult.Reject(terrainCoordinates.Contains(command.Destination)
+                    ? AdjacentMoveRejectionReason.DestinationTerrain
+                    : AdjacentMoveRejectionReason.DestinationOffBoard);
             }
 
             if (!currentOccupancy.Coordinate.GetNeighbors().Contains(command.Destination))
@@ -403,7 +422,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             for (var index = 0; index < route.Count; index++)
             {
                 var space = route[index];
-                if (!boardCoordinates.Contains(space))
+                if (!boardCoordinates.Contains(space) && !terrainCoordinates.Contains(space))
                 {
                     return AdjacentMoveRouteResult.Reject(AdjacentMoveRejectionReason.DestinationOffBoard, index);
                 }
@@ -419,7 +438,11 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     : ObstacleQuery.BlocksTransit(this, space, mover, modifications);
                 if (refused)
                 {
-                    return AdjacentMoveRouteResult.Reject(AdjacentMoveRejectionReason.DestinationOccupied, index);
+                    return AdjacentMoveRouteResult.Reject(
+                        terrainCoordinates.Contains(space)
+                            ? AdjacentMoveRejectionReason.DestinationTerrain
+                            : AdjacentMoveRejectionReason.DestinationOccupied,
+                        index);
                 }
 
                 previous = space;
