@@ -173,3 +173,22 @@ Acceptance checks:
 Non-goals: No new capability, effect family, or rules content; no Repeat semantics (6.5's family owns bounded Repeat); no change to choice-opening Skills or to the 6.8g fixture's card; no Wasp definition; no production art, animation, or audio.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68j-let-a-skill-complete-at-its-own-start-step-completion-evidence).
+
+### [ ] 6.8k Give effect definitions a typed target-selection node
+
+**Corrective amendment (2026-08-15, user approved).** Milestone 6.4a's subject widening cannot land inside 6.4a. Direct Move must be able to name a minion or a token to displace one, and a definition has no legal way to express that today: role bindings resolve from the execution frame, which holds no board reference, so there is no actor's-space role to bind, and the coordinate identity Object Push already uses for its targets can only reach a node through a prior node's output. The missing piece is a target-selection node, which is reusable targeting machinery - milestone 6.8's declared subject - rather than displacement machinery, so the user directed it here rather than into 6.4a. 6.4a's port and reachability were already widened at `44c256e`; only the capability parameter waits on this.
+
+This is also the seam 6.5b and 6.6a need. Every conversion whose text targets another object - Red Needle's Push, Red Bombard's direct Move of another adjacent unit, Blue Sentinel's Swap - has to name that object somehow, and each inventing its own binding is the divergence this milestone prevents.
+
+Observable outcome: An effect definition can name another board object as a typed selection, and the displacement capabilities accept any displaceable subject through it.
+
+Acceptance checks:
+
+- One registered capability offers board objects as an authoritative chooser-owned selection and publishes the chosen space as a typed coordinate output, so a later node binds it through the existing node-output binding rather than a new binding kind.
+- Its candidate set is declared through the reusable targeting contracts rather than effect-local geometry, and an immune object is excluded from selection while a presence question over the same spaces still counts it.
+- The direct Move capability's subject parameter accepts that coordinate, so a hero, a minion, and a token are all nameable; the reachability it consults is unchanged, since the port already serves every kind.
+- A token subject holds no Move-Through permission of its own and reaches the transit predicate as the named absence, because p.19 states tokens are not units.
+- The definition validator refuses a subject binding whose type or source node cannot supply a coordinate, at content load rather than mid-resolution.
+- Focused capability and end-to-end session scenarios cover selection, rejection of a stale or illegal selection, snapshot restore, replay, and retained-prefix Undo.
+
+Non-goals: No displaced-minion correction (6.4a owns it), no new displacement operation, no Place/Spawn/Swap/Replace, no Wasp definition, no card-name/hero-name branch, no configured live exposure, and no production presentation.
