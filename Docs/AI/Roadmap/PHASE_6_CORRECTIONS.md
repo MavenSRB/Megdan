@@ -113,7 +113,7 @@ Non-goals: No new modification family, effective type, or unit kind; no new rule
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68g-give-the-counts-as-effective-type-its-first-rules-consumer-completion-evidence).
 
-### [ ] 6.8h Give marker attachments a per-activation instance identity
+### [~] 6.8h Give marker attachments a per-activation instance identity
 
 **Corrective amendment (2026-08-15, user approved).** Milestone 6.8d fixed the Active-effect family's replay collision and recorded that the marker family carries the same latent compositional shape: the marker capability composes its instance ID as `{card}:{node}:{holder}`, with no activation anchor, so a marker given, returned to the supply, and given again to the same holder by replaying the same card composes an identical instance ID. The token family already carries round and turn in its composition (the 6.2 precedent the effect fix followed); markers are the one component family left behind.
 
