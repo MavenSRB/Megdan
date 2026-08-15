@@ -173,15 +173,33 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer startedOffer,
             bool isStart)
         {
-            // Read the identity before overwriting the field: on the final step the frame is gone,
-            // so the completing facts would otherwise have nothing to name.
-            var source = step.Frame ?? pendingResolution;
-            var resolutionId = startedResolutionId.IsDefined
-                ? startedResolutionId
-                : new ActionResolutionId(source.ResolutionId.Value);
-            var card = source.SourceCardInstanceId;
-            var action = source.ActionDefinitionId;
-            var actor = source.ActorId;
+            // Read the identity before overwriting the field: on the final step the frame is gone, so
+            // the completing facts would otherwise have nothing to name.
+            //
+            // At a start the identity is the offer's, not the frame's. The frame is built from that
+            // offer, so the two agree whenever a frame exists - but a Skill whose root resolves to
+            // completion during the start itself leaves no frame, and there is no earlier pending
+            // resolution either, because a start is refused while one is live. Reading the frame there
+            // read null and faulted, which made choice-free Skills unwritable.
+            ActionResolutionId resolutionId;
+            CardInstanceId card;
+            ActionDefinitionId action;
+            HeroId actor;
+            if (isStart)
+            {
+                resolutionId = startedResolutionId;
+                card = startedOffer.SourceCardInstanceId;
+                action = startedOffer.ActionDefinitionId;
+                actor = startedOffer.ActorId;
+            }
+            else
+            {
+                var source = step.Frame ?? pendingResolution;
+                resolutionId = new ActionResolutionId(source.ResolutionId.Value);
+                card = source.SourceCardInstanceId;
+                action = source.ActionDefinitionId;
+                actor = source.ActorId;
+            }
 
             pendingResolution = step.Frame;
 

@@ -231,10 +231,12 @@ namespace GuardsDigital.Tests.EditMode
         private static CardDefinition CreateCountsAsDefinition()
         {
             // The 6.2a skill card's proven shape: the declaration executes on the first step, and a
-            // trailing `may` step opens the choice that keeps a pending frame alive. A skill whose
-            // root completes at its own start step has no frame and no pending resolution to read
-            // its identity from - a latent backend seam no configured content reaches, surfaced for
-            // a future amendment - so this fixture stays on the shape every configured Skill uses.
+            // trailing `may` step opens the choice that keeps a pending frame alive. The shape was
+            // originally forced - a Skill whose root completed at its own start step read its
+            // identity from a null frame and faulted - and milestone 6.8j closed that seam, proving
+            // it with its own start-completing fixture. This fixture deliberately keeps the shape
+            // anyway: it is the one every configured Skill uses, and changing it would move this
+            // milestone's evidence for a reason unrelated to `Counts As`.
             var root = new EffectNodeId("counts-as-root");
             var declare = new EffectNodeId("counts-as-declare");
             var optional = new EffectNodeId("counts-as-may-note");
