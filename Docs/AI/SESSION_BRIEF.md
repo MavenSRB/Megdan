@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.8c**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.1am**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.8d**, in progress.
 - Next proposed milestone: **6.8d**.
 
 Milestone **6.1am** completed on 2026-08-15. The `Rule-system ledger` table moved into [Rules/RULE_SYSTEMS.md](Rules/RULE_SYSTEMS.md), leaving `RULES_LEDGER.md` its heading, a one-line routing summary, and a stable anchored link rather than a copy; the ledger fell from 7,442 to 1,387 words and governed leaves rose to 49. Byte-identity was verified mechanically against the pre-move revision - 45,429 characters equal on every line but one, where the map-data link was rebased to `../Maps/README.md` for the new directory depth. The move surfaced two real consequences rather than cosmetic ones: that link, which `broken-link` correctly rejected un-rebased, and `missing-pinned-claim`, because the pinned snapshot-schema claim lived inside the moved table; its `Tools/PinnedConstants.txt` entry now names the shard that carries it, with symbol, source, and pattern unchanged. This ran on the trigger's explicit-instruction clause, not its warning clause - the ledger stood below its warning line - so the closing check is preventive and claims no failing observation. It followed 6.1aq, which sharded the implementation inventory the same day and is recorded in the archive. **6.8d** is proposed next under the corrective amendment below. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
