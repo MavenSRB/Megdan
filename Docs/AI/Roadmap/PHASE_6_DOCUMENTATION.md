@@ -239,3 +239,25 @@ Closing check: the `warning-threshold` issue for `Project/CURRENT_IMPLEMENTATION
 Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No rewrite of completed definitions or archive evidence, and no new implementation claim; this milestone moves existing text and registers its home.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61aq-shard-the-current-implementation-inventory-completion-evidence).
+
+### [ ] 6.1ar Shard the rule-modification inventory
+
+**Preventive amendment (2026-08-15, user approved).** 6.1aq bought `Project/CURRENT_IMPLEMENTATION.md` headroom by routing configured presentation out, and the file now sits at 3,755 of its 4,500-word limit - 70 words below the 3,825 warning line. Milestone 6.4 adds two reusable board operations, their queries, and their immunity consumer, which crosses that line on contact. This milestone is therefore deliberately preventive rather than corrective: 6.1aq recorded that repeatedly deferring the split converts a governed threshold into background noise, and waiting for the warning to fire again would repeat exactly the pattern that milestone existed to end.
+
+The subject that moves is the rule-modification regime. It is the file's largest single subject, and the one that has grown at 6.8, 6.8c, 6.8e, 6.8f, 6.8g, and 6.8i, so its growth is structural rather than incidental; 6.4 and the milestones behind it add to that same subject. It also carries no pinned constant, unlike the snapshot subject beside it, so the split cannot repeat the `missing-pinned-claim` failure 6.1am hit by carrying a pinned claim out of its governed doc.
+
+Observable outcome: The implementation inventory has room for the milestones scheduled against it, with every fact still owned by exactly one canonical home.
+
+Acceptance checks:
+
+- `Project/CURRENT_IMPLEMENTATION.md` is below its warning threshold with recorded headroom for the next scheduled milestone, and no content is deleted to achieve it; what moves, moves to a named shard.
+- The moved body is byte-identical to the text it replaces, proven by a case-sensitive comparison, so the only deltas are the pointer paragraph and the shard header.
+- The split shard is registered as a canonical home in the ownership matrix, the shard index, and the routing table, exactly as the two earlier implementation-inventory splits were.
+- The new shard's subject boundary is stated against `Rules/RULE_SYSTEMS.md`, which owns per-rule source status, so the implemented-contract inventory and the rule-status ledger cannot drift into each other.
+- Subject ownership is preserved rather than chronology: each shard owns whole subjects, and no fact is stated in two places.
+- The route/status coherence statement and the pinned snapshot-schema claim both stay in `Project/CURRENT_IMPLEMENTATION.md`, so the four status sites and `Tools/PinnedConstants.txt` need no new indirection.
+- Every existing inbound link to the moved content resolves, and the validator's link, anchor, orphan-shard, archive-destination, and pinned-constant checks pass.
+
+Closing check: acceptance evidence rather than a failing-then-passing defect pair. The `warning-threshold` issue this milestone prevents is not present at the pre-split revision - the file is 70 words under the line - so claiming that transition would be claiming an observation that cannot be made, which the 6.1y preventive carve-out above requires be stated rather than manufactured. The evidence is instead the measured word count and headroom before and after, every other threshold unchanged, and the byte-identity comparison on the moved body.
+
+Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No validator-script edit, since `Get-Limit` already governs `Docs/AI/Project/*.md` by pattern. No rewrite of completed definitions or archive evidence, and no new implementation claim; this milestone moves existing text and registers its home.
