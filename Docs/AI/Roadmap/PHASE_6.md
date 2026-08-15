@@ -521,7 +521,7 @@ Non-goals: No generic `ReplaceAction` effect node, pending Clear continuation, t
 
 The completed milestone **6.4** definition - reusable direct Move and Object Push - moved verbatim to [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) on 2026-08-16 during the required warning-threshold ownership review; its evidence stays addressed from the [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64-implement-reusable-direct-move-and-object-push-effects-completion-evidence).
 
-### [ ] 6.4a Integrate after-action displaced-minion correction with core Push
+### [~] 6.4a Integrate after-action displaced-minion correction with core Push
 
 **Corrective amendment (2026-08-15, user approved, revised the same day).** The amendment's first version promised two additions here. Implementation refuted both in their original form, and the revision records what was actually found rather than leaving the checks unsatisfiable.
 
