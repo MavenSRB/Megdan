@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.8g**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.8i**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.8j**, in progress.
 - Next proposed milestone: **6.8j**.
 
 Milestone **6.8i** completed on 2026-08-15. The four optional rules parameters 6.8f flagged are required: the Tie Breaker on set derivation and construction, `IsImmuneTo`'s actor, and presence's self-exclusion. `TieBreakerState.Unrevealed` and `RuleObject.None` join `RuleModificationSet.Empty` as named absent values, so an absent ordering state, actor, or object is written at the call site rather than inherited - which matters most at immunity, where an omitted actor silently withdrew p.18's never-immune-to-your-own-actions from every caller that had an actor to name, and 6.4's Push consumer is the caller that would have read it. The failing observation is the widened closing rule itself, red-first with all four violations enumerated by name; it declares its rule-affecting type set and scopes it to the modification query surface, with both subject-count guards holding. No production behavior moved: every production immunity site already stated its actor and every derivation already passed its Tie Breaker, and the two call sites the compiler named were test sites that now state what they meant. Identity proved against the pinned corpus and all nine aggregate-invariance digests, observed unchanged. **6.8j** is proposed next under the corrective amendment below. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).

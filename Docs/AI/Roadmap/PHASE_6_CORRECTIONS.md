@@ -154,7 +154,7 @@ Non-goals: No new modification family or query; no immunity-consumer wiring (6.4
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68i-retire-the-remaining-optional-rules-parameters-completion-evidence).
 
-### [ ] 6.8j Let a Skill complete at its own start step
+### [~] 6.8j Let a Skill complete at its own start step
 
 **Corrective amendment (2026-08-15, user approved).** Milestone 6.8g's fixture found a latent skill-backend fault: a Skill whose effect root resolves to completion during the start itself - no choice ever opens - reads its completing identity from `step.Frame ?? pendingResolution` in `SkillCardActionStrategyBackend.Complete`, and at start-completion both are null, so the session reports an engine fault. Every configured and synthetic Skill today opens a choice, so no player can reach it, but the fault makes choice-free Skills unwritable: any future card whose Skill simply applies its text would fault at start, and the 6.8g fixture had to adopt a trailing `may` step it did not otherwise need.
 
