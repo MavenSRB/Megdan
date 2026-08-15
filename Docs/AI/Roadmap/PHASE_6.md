@@ -540,7 +540,7 @@ ER2 note: 6.1s closes `F-ER2-02` - a pushed minion needs mutable, snapshot-seria
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64-implement-reusable-direct-move-and-object-push-effects-completion-evidence).
 
-### [ ] 6.4a Integrate after-action displaced-minion correction with core Push
+### [~] 6.4a Integrate after-action displaced-minion correction with core Push
 
 **Corrective amendment (2026-08-15, user approved).** Two additions, both arising from what milestone 6.4 actually shipped.
 
