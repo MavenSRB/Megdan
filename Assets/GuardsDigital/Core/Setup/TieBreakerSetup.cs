@@ -19,6 +19,17 @@ namespace GuardsDigital.Core.Setup
             RevealedSide = revealedSide;
         }
 
+        /// <summary>
+        /// The named absence of revealed Tie-Breaker state: no side is revealed, so p.17's
+        /// tie-breaking clause orders nothing ahead of anything else.
+        ///
+        /// Milestone 6.8i made the parameter required wherever it decides a rules answer, and this is
+        /// what a genuinely order-free call site writes instead of inheriting a parameter default.
+        /// The value is the same one the default produced; what changed is that the call site now
+        /// says it.
+        /// </summary>
+        public static TieBreakerState Unrevealed => default;
+
         public TeamSide RevealedSide { get; }
 
         public bool IsDefined => RevealedSide == TeamSide.Red || RevealedSide == TeamSide.Blue;

@@ -21,12 +21,21 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// </summary>
     public sealed class RuleModificationSet
     {
+        /// <summary>
+        /// The named no-modification value. Nothing is in effect, so nothing needs ordering and the
+        /// Tie Breaker is genuinely unrevealed rather than merely unsupplied.
+        /// </summary>
         public static RuleModificationSet Empty { get; } =
-            new RuleModificationSet(Array.Empty<AppliedRuleModification>());
+            new RuleModificationSet(Array.Empty<AppliedRuleModification>(), TieBreakerState.Unrevealed);
 
+        /// <summary>
+        /// The Tie Breaker is required since milestone 6.8i, because it decides the order this set
+        /// resolves in; a caller with genuinely no ordering state passes
+        /// <see cref="TieBreakerState.Unrevealed"/>.
+        /// </summary>
         public RuleModificationSet(
             IEnumerable<AppliedRuleModification> modifications,
-            TieBreakerState tieBreaker = default)
+            TieBreakerState tieBreaker)
         {
             var materialized = (modifications ?? throw new ArgumentNullException(nameof(modifications)))
                 .ToArray();
@@ -109,8 +118,13 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// is the target itself is answered before any declaration is consulted. An undefined actor asks
         /// the question in the abstract - no actor is performing anything - and that exception does not
         /// apply.
+        ///
+        /// The actor is required since milestone 6.8i. Which of those two questions is being asked is
+        /// exactly what an omitted actor decided in silence, and it decided it the wrong way for every
+        /// caller that had one to name: the p.18 exception simply stopped applying. A caller genuinely
+        /// asking in the abstract writes <see cref="RuleObject.None"/>.
         /// </summary>
-        public bool IsImmuneTo(RuleObject target, RuleActivity activity, RuleObject actor = default) =>
+        public bool IsImmuneTo(RuleObject target, RuleActivity activity, RuleObject actor) =>
             TryGetImmunity(target, activity, actor, out _);
 
         public bool TryGetImmunity(

@@ -20,11 +20,17 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// </summary>
     public static class RuleModificationQuery
     {
+        /// <summary>
+        /// The live set at one authoritative moment. The Tie Breaker is required since milestone
+        /// 6.8i: it orders p.17's simultaneous modifications, so a caller that omitted it silently
+        /// derived a differently ordered set. A genuinely order-free caller passes
+        /// <see cref="TieBreakerState.Unrevealed"/>.
+        /// </summary>
         public static RuleModificationSet Build(
             ActiveEffectLifecycle timing,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            TieBreakerState tieBreaker = default)
+            TieBreakerState tieBreaker)
         {
             if (board != null && participants == null)
             {

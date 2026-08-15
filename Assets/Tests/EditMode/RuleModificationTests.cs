@@ -178,7 +178,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(narrow.IsImmuneTo(red, RuleActivity.ObjectPush, red), Is.False);
 
             // Asked in the abstract, with no actor performing anything, the declaration still holds.
-            Assert.That(narrow.IsImmuneTo(red, RuleActivity.ObjectPush), Is.True);
+            // The absent actor is written rather than defaulted since milestone 6.8i, so this case
+            // states that it means the abstract question instead of looking like a forgotten argument.
+            Assert.That(narrow.IsImmuneTo(red, RuleActivity.ObjectPush, RuleObject.None), Is.True);
             Assert.That(narrow.TryGetImmunity(red, RuleActivity.ObjectPush, blue, out var deciding), Is.True);
             Assert.That(deciding.SourceId, Is.EqualTo("push-immunity"));
         }
@@ -237,7 +239,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(presentMinions, Contains.Item(RuleObject.ForMinion(new MinionId("blue-melee"))));
             Assert.That(
                 UnitPresenceQuery.IsPresentWithin(
-                    new HexCoordinate(0, 0), 1, EffectiveUnitKind.Minion, board, modifications),
+                    new HexCoordinate(0, 0), 1, EffectiveUnitKind.Minion, board, modifications,
+                    RuleObject.None),
                 Is.True);
 
             // The same hero is no longer effectively a hero, so a hero-typed presence check misses them.
@@ -344,7 +347,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(tokenContribution.Amount, Is.EqualTo(1));
             Assert.That(tokenContribution.HasSourceActiveEffectId, Is.False);
             Assert.That(
-                RuleModificationQuery.Build(timing, board, participants, default)
+                RuleModificationQuery.Build(timing, board, participants, TieBreakerState.Unrevealed)
                     .ValueContributions(hero, PrintedValueChannel.Defense)
                     .Any(value => value.Kind == ValueContributionKind.ContinuousSourceModifier),
                 Is.False);

@@ -36,6 +36,19 @@ namespace GuardsDigital.Core.Rules.Modifications
             MinionId = minionId;
         }
 
+        /// <summary>
+        /// The named absence of an object: nothing is named, which is a different question from
+        /// naming something.
+        ///
+        /// Milestone 6.8i made the actor and the self-exclusion required wherever they decide a rules
+        /// answer, and this is what a genuinely actorless or self-less call site writes. It matters
+        /// most at <see cref="RuleModificationSet.IsImmuneTo"/>: p.18's "You are never immune to your
+        /// own actions" can only apply when an actor is named, so asking with this value asks the
+        /// question in the abstract - no actor is performing anything - rather than asking about an
+        /// actor who happens to be nobody.
+        /// </summary>
+        public static RuleObject None => default;
+
         public static RuleObject ForHero(HeroId heroId)
         {
             if (!heroId.IsDefined)
