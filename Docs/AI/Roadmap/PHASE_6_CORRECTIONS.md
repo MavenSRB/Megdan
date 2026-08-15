@@ -134,7 +134,7 @@ Non-goals: No new marker rule, return condition, or holder semantics; no end-of-
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68h-give-marker-attachments-a-per-activation-instance-identity-completion-evidence).
 
-### [ ] 6.8i Retire the remaining optional rules parameters
+### [~] 6.8i Retire the remaining optional rules parameters
 
 **Corrective amendment (2026-08-15, user approved).** Milestone 6.8f made the modification set a required parameter everywhere and flagged four survivors of the same hazard class, optional parameters whose omission silently changes a rules answer: `RuleModificationQuery.Build` and the `RuleModificationSet` constructor default their Tie Breaker state, which orders p.17's simultaneous modifications; `RuleModificationSet.IsImmuneTo` defaults its actor, and an omitted actor silently disables p.18's "you are never immune to your own actions" - exactly the clause 6.4's Object Push immunity consumer will depend on; and `UnitPresenceQuery.IsPresentWithin` defaults its self-exclusion.
 

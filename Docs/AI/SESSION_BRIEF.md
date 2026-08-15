@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.8g**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.8h**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.8i**, in progress.
 - Next proposed milestone: **6.8i**.
 
 Milestone **6.8h** completed on 2026-08-15. Marker attachments now mint their instance identity through `MarkerInstanceIdentity.Mint`, a marker-shaped sibling of the 6.8d effect contract that composes source card, action, node, round, and turn with the holder; the two are separate contracts because their last term differs, and the marker anchors are deliberately unclamped since a give reaches the composition only inside a live round. The failing observation settled what the repeated composition actually did, which was neither of the two outcomes the amendment guessed: the register drops a returned attachment, so no uniqueness guard fired and the later give silently reused the earlier attachment's identity. The handler also gained the 6.8d already-created pre-check, ahead of the supply test because the supply is short of that activation's own copy, so re-execution inside one resolution is a legal no-op instead of an impossible step. Migrate-or-reject decision: accept without migration and no schema bump - the ID is an opaque wire string nothing parses - with `attached-marker-v9` the one of seven pinned payloads re-pinned, its delta read at the byte level, and the aggregate-invariance digests observed unchanged. **6.8i** is proposed next under the corrective amendment below. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
