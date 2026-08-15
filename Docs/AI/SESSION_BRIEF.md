@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.8g**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.8j**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.1ar**, in progress.
 - Next proposed milestone: **6.1ar**.
 
 Milestone **6.8j** completed on 2026-08-15, closing the three-milestone corrective block. A Skill whose effect root resolves to completion during its own start now resolves instead of faulting: the backend reads a start's identity from the started resolution and the offer that built the frame, rather than from `step.Frame ?? pendingResolution`, which at start-completion was null on both arms and reported an engine fault. The ternary became an explicit start/non-start split, so the start arm never touches the frame at all; the non-start arm is unchanged, and the two agree whenever a frame exists because the frame is built from that same offer. The failing observation ran through the configured `MatchSession` path and reported the session's `EngineFault` arm by name. Choice-free Skills are now writable, proved by a start-completing regression fixture whose ordered facts are exactly started, one applied node, and completed, all naming one resolution; choice-opening Skills are proved unchanged against the existing skill fixtures rather than asserted. Nothing on the wire moved, so the pinned corpus and aggregate-invariance digests were observed unchanged. **6.1ar** is proposed next, clearing threshold room before 6.4 resumes the mechanics-showcase route below. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
