@@ -203,8 +203,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.Applied(affected);
                 }
 
-                var effectId = new ActiveEffectId(
-                    $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}:{definition.DefinitionId}");
+                var effectId = ActiveEffectInstanceIdentity.Mint(context, definition);
                 if (context.Timing.Effects.All(effect => !effect.Id.Equals(effectId)))
                 {
                     context.Timing.Create(

@@ -116,8 +116,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new[] { new EffectOutcomeFact("marked", EffectValue.Hero(context.ActorId)) });
                 }
 
-                var effectId = new ActiveEffectId(
-                    $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}");
+                var effectId = ActiveEffectInstanceIdentity.Mint(context, MarkDefinition);
                 if (context.Timing.Effects.All(effect => !effect.Id.Equals(effectId)))
                 {
                     context.Timing.Create(

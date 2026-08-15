@@ -470,6 +470,90 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // ---------------------------------------------------------------------------------------
+        // Milestone 6.8d: a replay of the same mode is a fresh activation
+        // ---------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Round End retrieval cancels the round-1 effect, so round 2 starts from a spent instance.
+        /// Before 6.8d the capability composed its instance ID from card, node, and definition alone,
+        /// all of which repeat here, and the lifecycle refuses a duplicate ID including a spent one -
+        /// so the second play of the same mode silently created nothing.
+        /// </summary>
+        [TestCase("bulwark-defense-bonus")]
+        [TestCase("bulwark-fast-travel-restriction")]
+        [TestCase("bulwark-move-through-permission")]
+        public void PlayingTheSameModeInALaterRound_CreatesAFreshEffectInstance(string modeNodeId)
+        {
+            var mode = new EffectNodeId(modeNodeId);
+            var session = CreateConfiguredSession();
+            CommitBulwarkTurn(session, "blue-hammer-card");
+            StartBulwarkSkillOnCurrentTurn(session);
+            ChooseMode(session, mode);
+            CompleteCurrentTurn(session);
+            AdvanceToNextRound(session);
+
+            Assert.That(RestoreTiming(session).Effects.Single().Phase,
+                Is.EqualTo(ActiveEffectPhase.Ended),
+                "The round-1 instance must be spent before the replay, or this proves nothing " +
+                "about spent-instance collisions.");
+
+            CommitBulwarkTurn(session, "blue-hammer-card");
+            StartBulwarkSkillOnCurrentTurn(session);
+            ChooseMode(session, mode);
+
+            var effects = RestoreTiming(session).Effects;
+            Assert.That(effects, Has.Count.EqualTo(2),
+                "Playing the card again is a new activation and must create a fresh instance; a " +
+                "spent instance from round 1 is a different activation and must not suppress it.");
+            Assert.That(effects.Select(effect => effect.Id).Distinct().Count(), Is.EqualTo(2),
+                "The two activations carry distinct instance identities.");
+            var replayed = effects.Single(effect => effect.CreatedRoundIndex == 2);
+            Assert.That(replayed.Phase, Is.Not.EqualTo(ActiveEffectPhase.Ended),
+                "The fresh instance begins its own lifecycle rather than inheriting the spent one.");
+            Assert.That(replayed.SourceCardInstanceId, Is.EqualTo(BulwarkCardId));
+        }
+
+        [Test]
+        public void ASecondActivation_SurvivesSnapshotRestoreReplayAndRetainedPrefixUndo()
+        {
+            var session = CreateConfiguredSession();
+            CommitBulwarkTurn(session, "blue-hammer-card");
+            StartBulwarkSkillOnCurrentTurn(session);
+            ChooseMode(session, RestrictionMode);
+            CompleteCurrentTurn(session);
+            AdvanceToNextRound(session);
+            CommitBulwarkTurn(session, "blue-hammer-card");
+            StartBulwarkSkillOnCurrentTurn(session);
+            ChooseMode(session, RestrictionMode);
+
+            var snapshot = session.Projection.AuthoritativeSnapshot;
+            var diagnostic = session.Projection.DiagnosticSnapshot;
+            var commands = session.Projection.AcceptedCommands.ToArray();
+
+            var restored = CreateConfiguredSession();
+            Assert.That(restored.RestoreSnapshot(snapshot).Accepted, Is.True);
+            Assert.That(restored.Projection.AuthoritativeSnapshot, Is.EqualTo(snapshot));
+            Assert.That(RestoreTiming(restored).Effects, Has.Count.EqualTo(2),
+                "Both instances cross the snapshot boundary and restore rebinds both.");
+
+            var replayed = CreateConfiguredSession();
+            foreach (var command in commands)
+            {
+                Assert.That(replayed.Execute(command).Accepted, Is.True,
+                    "Every accepted command must remain acceptable on replay.");
+            }
+
+            Assert.That(replayed.Projection.AuthoritativeSnapshot, Is.EqualTo(snapshot));
+            Assert.That(replayed.Projection.DiagnosticSnapshot, Is.EqualTo(diagnostic));
+
+            Assert.That(session.Undo().Accepted, Is.True);
+            var reExecuted = session.Execute(commands.Last());
+            Assert.That(reExecuted.Accepted, Is.True, reExecuted.Detail);
+            Assert.That(session.Projection.AuthoritativeSnapshot, Is.EqualTo(snapshot),
+                "The retained prefix replays to exactly the state it produced.");
+        }
+
+        // ---------------------------------------------------------------------------------------
         // Helpers
         // ---------------------------------------------------------------------------------------
 
