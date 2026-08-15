@@ -26,11 +26,39 @@ namespace GuardsDigital.Core.Rules.Movement
             HeroOccupancy selectedHero,
             GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
             int movementAllowance,
+            RuleModificationSet modifications) =>
+            FindReachableDestinations(
+                selectedHero.Coordinate,
+                RuleObject.ForHero(selectedHero.HeroId),
+                board,
+                movementAllowance,
+                modifications);
+
+        /// <summary>
+        /// The same reachability for any mover, named by where it stands and what it is.
+        ///
+        /// Milestone 6.4a widened the entry point rather than the algorithm: rulebook p.11 lets card
+        /// text move "another unit or a token", and the walk below never cared which kind of object it
+        /// was walking - only the transit predicate does, and that already takes a
+        /// <see cref="RuleObject"/>. A token passes <see cref="RuleObject.None"/>, which is the honest
+        /// answer rather than a missing one, because p.19 states tokens are not units and so no
+        /// Move-Through permission is ever addressed to one.
+        /// </summary>
+        public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
+            HexCoordinate origin,
+            RuleObject mover,
+            GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
+            int movementAllowance,
             RuleModificationSet modifications)
         {
             if (board == null)
             {
                 throw new ArgumentNullException(nameof(board));
+            }
+
+            if (modifications == null)
+            {
+                throw new ArgumentNullException(nameof(modifications));
             }
 
             if (movementAllowance < 0)
@@ -46,8 +74,6 @@ namespace GuardsDigital.Core.Rules.Movement
                 return Array.Empty<ReachableMovementDestination>();
             }
 
-            var mover = RuleObject.ForHero(selectedHero.HeroId);
-
             // The walkable universe is every space that exists on the map - playable and terrain
             // alike - because milestone 6.8e classifies terrain as an obstacle a permitted mover may
             // cross, not as off-board. The transit and endpoint predicates then decide per mover:
@@ -55,11 +81,41 @@ namespace GuardsDigital.Core.Rules.Movement
             var onMap = new HashSet<HexCoordinate>(board.PlayableCoordinateSet);
             onMap.UnionWith(board.TerrainCoordinateSet);
             return FindReachableCore(
-                selectedHero,
+                origin,
                 onMap,
                 coordinate => ObstacleQuery.BlocksTransit(board, coordinate, mover, modifications),
                 coordinate => ObstacleQuery.BlocksEndOfMovement(board, coordinate),
                 movementAllowance);
+        }
+
+        /// <summary>
+        /// Reachability over a caller-supplied notion of a passable space, for milestone 6.4a's
+        /// displaced-minion correction: p.18 returns a minion "by the shortest path of empty spaces",
+        /// which is a stricter walk than movement's, since a correcting minion may not pass through
+        /// anything at all. Sharing this core rather than writing a second traversal is what keeps the
+        /// two from disagreeing about what a shortest route is.
+        /// </summary>
+        public static IReadOnlyList<ReachableMovementDestination> FindReachableThroughEmptySpaces(
+            HexCoordinate origin,
+            GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
+            int maximumDistance)
+        {
+            if (board == null)
+            {
+                throw new ArgumentNullException(nameof(board));
+            }
+
+            if (maximumDistance <= 0)
+            {
+                return Array.Empty<ReachableMovementDestination>();
+            }
+
+            return FindReachableCore(
+                origin,
+                new HashSet<HexCoordinate>(board.PlayableCoordinateSet),
+                coordinate => !board.IsEmptyPlayableSpace(coordinate),
+                coordinate => !board.IsEmptyPlayableSpace(coordinate),
+                maximumDistance);
         }
 
         public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
@@ -149,7 +205,7 @@ namespace GuardsDigital.Core.Rules.Movement
             // can reach them; an occupied space blocks both transit and endpoint, as it always has.
             blocked.Remove(selectedHero.Coordinate);
             return FindReachableCore(
-                selectedHero,
+                selectedHero.Coordinate,
                 board,
                 blocked.Contains,
                 coordinate => !board.Contains(coordinate) || blocked.Contains(coordinate),
@@ -157,26 +213,26 @@ namespace GuardsDigital.Core.Rules.Movement
         }
 
         private static IReadOnlyList<ReachableMovementDestination> FindReachableCore(
-            HeroOccupancy selectedHero,
+            HexCoordinate origin,
             HashSet<HexCoordinate> board,
             Func<HexCoordinate, bool> blocksTransit,
             Func<HexCoordinate, bool> blocksEndpoint,
             int movementAllowance)
         {
-            if (!board.Contains(selectedHero.Coordinate))
+            if (!board.Contains(origin))
             {
                 return Array.Empty<ReachableMovementDestination>();
             }
 
             var costs = new Dictionary<HexCoordinate, int>
             {
-                [selectedHero.Coordinate] = 0
+                [origin] = 0
             };
             var parents = new Dictionary<HexCoordinate, HexCoordinate>();
             var queue = new Queue<HexCoordinate>();
             var destinations = new List<ReachableMovementDestination>();
 
-            queue.Enqueue(selectedHero.Coordinate);
+            queue.Enqueue(origin);
             while (queue.Count > 0)
             {
                 var current = queue.Dequeue();
@@ -212,7 +268,7 @@ namespace GuardsDigital.Core.Rules.Movement
 
                     destinations.Add(new ReachableMovementDestination(
                         neighbor,
-                        BuildRoute(selectedHero.Coordinate, neighbor, parents),
+                        BuildRoute(origin, neighbor, parents),
                         cost));
                 }
             }

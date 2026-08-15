@@ -208,7 +208,7 @@ namespace GuardsDigital.Tests.EditMode
             // action", so an occupied space blocks a direct Move exactly as it blocks Movement.
             var board = CreateBoard(withMinion: true);
 
-            var destinations = board.FindDirectMoveDestinations(Mover, 2, RuleModificationSet.Empty);
+            var destinations = board.FindDirectMoveDestinations(BoardObjectReference.ForHero(Mover), 2, RuleModificationSet.Empty);
 
             var reached = destinations.Select(destination => destination.Destination).ToArray();
             Assert.That(reached, Has.Member(new HexCoordinate(2, 0)));
@@ -220,12 +220,61 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void FindDirectMoveDestinations_ServesAMinionAndATokenMoverToo()
+        {
+            // Milestone 6.4a widened the subject to p.11's full set - "move, or to move another unit
+            // or a token in the card text". A token holds no Move-Through permission of its own, so it
+            // reaches the transit predicate as RuleObject.None, which is why it needs its own case.
+            var board = CreateBoard(withMinion: true);
+            var token = PlaceToken(board, new HexCoordinate(1, 0));
+
+            var minionRoutes = board.FindDirectMoveDestinations(
+                BoardObjectReference.ForMinion(Minion), 2, RuleModificationSet.Empty);
+            var tokenRoutes = board.FindDirectMoveDestinations(
+                BoardObjectReference.ForToken(token.Id), 2, RuleModificationSet.Empty);
+
+            Assert.That(
+                minionRoutes.Select(destination => destination.Destination),
+                Has.Member(new HexCoordinate(2, 0)),
+                "The minion at (4,0) reaches (2,0) in two spaces.");
+            Assert.That(
+                minionRoutes.Select(destination => destination.Destination),
+                Has.No.Member(new HexCoordinate(0, 0)),
+                "The hero occupies (0,0), and an occupied space is no destination.");
+            Assert.That(
+                tokenRoutes.Select(destination => destination.Destination),
+                Has.Member(new HexCoordinate(3, 0)),
+                "The token at (1,0) reaches (3,0) in two spaces.");
+            Assert.That(
+                tokenRoutes.Select(destination => destination.Destination),
+                Has.No.Member(new HexCoordinate(4, 0)),
+                "The minion occupies (4,0), which blocks the token exactly as it blocks a hero.");
+        }
+
+        [Test]
+        public void FindEmptyPathRoutes_WalksOnlyEmptySpaces()
+        {
+            // p.18 returns a displaced minion "by the shortest path of empty spaces", which is
+            // stricter than movement: a correcting minion passes through nothing at all.
+            var board = CreateBoard(withMinion: true);
+
+            var routes = board.FindEmptyPathRoutes(new HexCoordinate(1, 0), 6);
+
+            var reached = routes.Select(destination => destination.Destination).ToArray();
+            Assert.That(reached, Has.Member(new HexCoordinate(3, 0)));
+            Assert.That(reached, Has.No.Member(new HexCoordinate(4, 0)), "The minion's own space.");
+            Assert.That(reached, Has.No.Member(new HexCoordinate(5, 0)),
+                "Beyond the minion: no empty path reaches it, even though movement could not pass either.");
+            Assert.That(reached, Has.No.Member(new HexCoordinate(0, 0)), "The hero's space.");
+        }
+
+        [Test]
         public void FindDirectMoveDestinations_ForAHeroNotOnTheBoard_IsEmpty()
         {
             var board = CreateBoard();
 
             Assert.That(
-                board.FindDirectMoveDestinations(new HeroId("absent"), 3, RuleModificationSet.Empty),
+                board.FindDirectMoveDestinations(BoardObjectReference.ForHero(new HeroId("absent")), 3, RuleModificationSet.Empty),
                 Is.Empty);
         }
 

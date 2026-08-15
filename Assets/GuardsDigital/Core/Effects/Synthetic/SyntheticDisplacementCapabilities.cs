@@ -117,7 +117,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var mover = BoardObjectReference.ForHero(context.Input("mover").HeroId);
+                if (!TryResolveMover(context, out var mover, out _))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
                 var committed = context.Components.Board.CommitValidatedDisplacement(mover, destination);
                 if (!committed.Accepted)
                 {
@@ -142,9 +146,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HexCoordinate>();
                 }
 
-                var mover = context.Input("mover").HeroId;
                 var distance = context.Input("distance").IntegerValue;
-                if (!mover.IsDefined || distance < 0)
+                if (!TryResolveMover(context, out var mover, out var moverAt) || distance < 0)
                 {
                     return Array.Empty<HexCoordinate>();
                 }
@@ -172,14 +175,48 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // p.18's `Closer (Space)`, measured from the acting hero. A move `towards you` admits
                 // only spaces closer to the actor than the mover's own starting space.
                 if (!components.Board.TryGetObjectCoordinate(
-                        BoardObjectReference.ForHero(context.ActorId), out var actorAt) ||
-                    !components.Board.TryGetObjectCoordinate(
-                        BoardObjectReference.ForHero(mover), out var moverAt))
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
                 {
                     return Array.Empty<HexCoordinate>();
                 }
 
                 return CloserQuery.FilterCloserTo(actorAt, moverAt, spaces);
+            }
+
+            /// <summary>
+            /// The object this node moves, and where it stands.
+            ///
+            /// Still a typed hero. Milestone 6.4a widened the layers beneath this one - the board port
+            /// and the reachability query both take any displaceable object now - but the capability's
+            /// own subject cannot widen until a node can name a non-hero one. The frame resolves a role
+            /// binding from the frame alone and has no board access, so there is no `actor's space`
+            /// role to bind, and naming a minion or token needs the coordinate identity Object Push
+            /// uses for its targets, which in turn needs a target-selection node this fixture has not
+            /// got. Widening the parameter without that would give the definition no legal way to fill
+            /// it, so it waits for the selection node rather than being half-done here.
+            /// </summary>
+            private static bool TryResolveMover(
+                EffectCapabilityContext context,
+                out BoardObjectReference mover,
+                out HexCoordinate moverAt)
+            {
+                mover = default;
+                moverAt = default;
+
+                var components = context.Components;
+                if (components == null || !components.CanDisplace)
+                {
+                    return false;
+                }
+
+                var heroId = context.Input("mover").HeroId;
+                if (!heroId.IsDefined)
+                {
+                    return false;
+                }
+
+                mover = BoardObjectReference.ForHero(heroId);
+                return components.Board.TryGetObjectCoordinate(mover, out moverAt);
             }
         }
 

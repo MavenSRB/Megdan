@@ -170,15 +170,29 @@ namespace GuardsDigital.Core.Components
             RuleModificationSet modifications);
 
         /// <summary>
-        /// The spaces a hero may reach with a direct Move of exactly this allowance, each with its route
-        /// and cost. Rulebook p.11: movement in the card text "follows the same rules and restrictions as
-        /// a Movement action", so this is the same reachability the Movement action uses rather than a
-        /// second traversal written for effects.
+        /// The spaces a displaceable object may reach with a direct Move of this allowance, each with
+        /// its route and cost. Rulebook p.11: movement in the card text "follows the same rules and
+        /// restrictions as a Movement action", so this is the same reachability the Movement action
+        /// uses rather than a second traversal written for effects.
+        ///
+        /// The subject is any board object since milestone 6.4a, because p.11's sentence is "move, or
+        /// to move another unit or a token in the card text". A token holds no Move-Through permission
+        /// of its own - p.19 says tokens are not units - so it reaches the transit predicate as the
+        /// named absence rather than as a unit with nothing granted.
         /// </summary>
         IReadOnlyList<GuardsDigital.Core.Rules.Movement.ReachableMovementDestination> FindDirectMoveDestinations(
-            HeroId mover,
+            BoardObjectReference mover,
             int allowance,
             RuleModificationSet modifications);
+
+        /// <summary>
+        /// The shortest routes of empty spaces from <paramref name="origin"/>, for milestone 6.4a's
+        /// displaced-minion correction. p.18 returns a minion "by the shortest path of empty spaces",
+        /// which is stricter than movement: a correcting minion passes through nothing at all.
+        /// </summary>
+        IReadOnlyList<GuardsDigital.Core.Rules.Movement.ReachableMovementDestination> FindEmptyPathRoutes(
+            HexCoordinate origin,
+            int maximumDistance);
 
         /// <summary>
         /// Relocates an object whose destination the caller has already validated, and reports what

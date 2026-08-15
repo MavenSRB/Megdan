@@ -620,22 +620,27 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 this, pusher, target, requestedDistance, targetObject, pushIgnoresObstacles, modifications);
 
         public IReadOnlyList<ReachableMovementDestination> FindDirectMoveDestinations(
-            HeroId mover,
+            BoardObjectReference mover,
             int allowance,
             RuleModificationSet modifications)
         {
-            var index = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(mover));
-            if (index < 0)
+            if (!TryGetObjectCoordinate(mover, out var origin))
             {
                 return Array.Empty<ReachableMovementDestination>();
             }
 
             // The same reachability the Movement action uses. p.11: movement in the card text
             // "follows the same rules and restrictions as a Movement action", so a second traversal
-            // written for effects would be a place for the two to disagree.
+            // written for effects would be a place for the two to disagree. A token's rules object is
+            // the named absence, which the transit predicate already reads as holding no permission.
             return MovementReachabilityQuery.FindReachableDestinations(
-                occupancies[index], this, allowance, modifications);
+                origin, mover.AsRuleObject(), this, allowance, modifications);
         }
+
+        public IReadOnlyList<ReachableMovementDestination> FindEmptyPathRoutes(
+            HexCoordinate origin,
+            int maximumDistance) =>
+            MovementReachabilityQuery.FindReachableThroughEmptySpaces(origin, this, maximumDistance);
 
         public DisplacementCommitResult CommitValidatedDisplacement(
             BoardObjectReference subject,
