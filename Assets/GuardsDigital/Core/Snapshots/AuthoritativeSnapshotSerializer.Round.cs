@@ -11,6 +11,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -109,6 +110,9 @@ namespace GuardsDigital.Core.Snapshots
             }
             else if (hasRoundCardActions)
             {
+                // No pending action means nothing here consumes the set today, but the site states
+                // the honest live value rather than an implicit none, exactly as the pending-turn
+                // path does; if this arm ever gains a consumer it is already correct.
                 cardActions = CardActionResolutionAuthority.Restore(
                     board,
                     CardActionResolutionRestoreState.WithoutPendingAction(roundDefeatRewards),
@@ -118,7 +122,8 @@ namespace GuardsDigital.Core.Snapshots
                     definitions,
                     cards,
                     participants,
-                    markers);
+                    markers,
+                    RuleModificationQuery.Build(timing, board, participants, tieBreaker));
             }
 
             return RoundResolutionAuthority.Restore(

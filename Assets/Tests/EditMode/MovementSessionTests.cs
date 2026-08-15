@@ -4,6 +4,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Rules.Modifications;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -34,7 +35,7 @@ namespace GuardsDigital.Tests.EditMode
             var destination = origin.GetNeighbor(HexDirection.East);
             var session = CreateSession(heroId, origin, 3);
 
-            var step = session.TryCommitStep(destination);
+            var step = session.TryCommitStep(destination, RuleModificationSet.Empty);
             session.Complete();
 
             Assert.That(step.Accepted, Is.True);
@@ -57,8 +58,8 @@ namespace GuardsDigital.Tests.EditMode
             var secondDestination = firstDestination.GetNeighbor(HexDirection.East);
             var session = CreateSession(heroId, origin, 2);
 
-            var firstStep = session.TryCommitStep(firstDestination);
-            var secondStep = session.TryCommitStep(secondDestination);
+            var firstStep = session.TryCommitStep(firstDestination, RuleModificationSet.Empty);
+            var secondStep = session.TryCommitStep(secondDestination, RuleModificationSet.Empty);
 
             Assert.That(firstStep.Accepted, Is.True);
             Assert.That(firstStep.SessionComplete, Is.False);
@@ -81,8 +82,8 @@ namespace GuardsDigital.Tests.EditMode
             var blockedOverMoveDestination = firstDestination.GetNeighbor(HexDirection.East);
             var session = CreateSession(heroId, origin, 1);
 
-            var firstStep = session.TryCommitStep(firstDestination);
-            var rejectedStep = session.TryCommitStep(blockedOverMoveDestination);
+            var firstStep = session.TryCommitStep(firstDestination, RuleModificationSet.Empty);
+            var rejectedStep = session.TryCommitStep(blockedOverMoveDestination, RuleModificationSet.Empty);
 
             Assert.That(firstStep.Accepted, Is.True);
             Assert.That(rejectedStep.Accepted, Is.False);

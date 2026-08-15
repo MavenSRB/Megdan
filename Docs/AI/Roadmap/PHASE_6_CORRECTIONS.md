@@ -72,7 +72,7 @@ Non-goals: No new terrain type, map-data change, map revision, zone rule, or pla
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68e-classify-terrain-as-a-passable-obstacle-rather-than-as-off-board-completion-evidence).
 
-### [~] 6.8f Require the live modification set at every rules-consuming seam
+### [x] 6.8f Require the live modification set at every rules-consuming seam
 
 **Corrective amendment (2026-08-15, user approved).** Milestone 6.8's review recorded that the modification parameter is optional and defaults to no modifications, so a consumer that forgets it loses rules silently and no mechanical check catches it. That is how the Move-Through permission reached a configured card with no consumer, and 6.8c added further optional parameters rather than closing the hazard.
 
@@ -89,6 +89,8 @@ Acceptance checks:
 - No behaviour changes: every current result is identical, proved against the existing fixtures and the pinned digests.
 
 Non-goals: No new modification family, query, or rules content; no change to how the live set is derived; no Wasp definition; no production art, animation, or audio.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68f-require-the-live-modification-set-at-every-rules-consuming-seam-completion-evidence).
 
 ### [ ] 6.8g Give the `Counts As` effective type its first rules consumer
 

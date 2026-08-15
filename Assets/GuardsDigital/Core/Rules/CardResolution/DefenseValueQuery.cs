@@ -18,7 +18,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// modifier currently supplied to that hero.
         /// </summary>
         /// <param name="modifications">
-        /// The modifications in effect, or <c>null</c> when none apply. Each contributes with its own
+        /// The modifications in effect; <see cref="RuleModificationSet.Empty"/> is the named
+        /// no-modification value (milestone 6.8f). Each contributes with its own
         /// source discriminator, so an Active-effect bonus, a token-owned bonus, and a minion's -1 stay
         /// separately attributable inside one total.
         /// </param>
@@ -28,7 +29,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId defenderId,
             MatchParticipants participants,
             AdjacentMoveAuthority board,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (!defenderId.IsDefined)
             {

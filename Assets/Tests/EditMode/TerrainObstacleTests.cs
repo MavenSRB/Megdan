@@ -84,7 +84,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateTerrainLineBoard();
 
             var destinations = MovementReachabilityQuery.FindReachableDestinations(
-                Occupancy(board), board, 3);
+                Occupancy(board), board, 3, RuleModificationSet.Empty);
 
             Assert.That(
                 destinations.Select(destination => destination.Destination),
@@ -272,7 +272,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.False, "The terrain cell itself is never a destination.");
 
             var withoutPermission = MovementReachabilityQuery.FindReachableDestinations(
-                Occupancy(board), board, 2);
+                Occupancy(board), board, 2, RuleModificationSet.Empty);
             Assert.That(withoutPermission.Any(destination => destination.Destination.Equals(beyond)),
                 Is.False,
                 "Without the permission the crossing does not exist, exactly as before the fix.");

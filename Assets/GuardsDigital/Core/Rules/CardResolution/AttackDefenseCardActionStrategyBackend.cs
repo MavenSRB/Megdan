@@ -49,7 +49,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -75,7 +75,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -198,7 +198,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (participants == null)
             {
@@ -370,7 +370,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (command == null)
             {
@@ -533,7 +533,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (participants == null)
             {
@@ -649,7 +649,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             DefeatRewardAccounting defeatRewards,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (state == null)
             {

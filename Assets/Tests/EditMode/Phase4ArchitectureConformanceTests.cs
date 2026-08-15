@@ -678,14 +678,15 @@ namespace GuardsDigital.Tests.EditMode
 
         private sealed class AlgorithmOwningDispatcherSample
         {
-            public object Resolve() => DefenseValueQuery.Calculate(default, null, default, null, null);
+            public object Resolve() =>
+                DefenseValueQuery.Calculate(default, null, default, null, null, null);
         }
 
         private sealed class FullyQualifiedDispatcherSample
         {
             public object Resolve() =>
                 GuardsDigital.Core.Rules.CardResolution.DefenseValueQuery.Calculate(
-                    default, null, default, null, null);
+                    default, null, default, null, null, null);
         }
 
         /// <summary>The shape milestone 6.1h introduced: the dispatcher names its backend and

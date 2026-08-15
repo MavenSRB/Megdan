@@ -18,7 +18,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// The enemy units this attacker may target.
         /// </summary>
         /// <param name="modifications">
-        /// The modifications in effect, or <c>null</c> when none apply. Rulebook p.18: an immune unit
+        /// The modifications in effect; <see cref="RuleModificationSet.Empty"/> is the named
+        /// no-modification value (milestone 6.8f). Rulebook p.18: an immune unit
         /// cannot be targeted, while an effect that merely checks presence still counts it - which is why
         /// this query filters and <see cref="Modifications.UnitPresenceQuery"/> does not.
         /// </param>
@@ -28,7 +29,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int rangeTotal,
             MatchParticipants participants,
             AdjacentMoveAuthority board,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
 
@@ -66,7 +67,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int rangeTotal,
             MatchParticipants participants,
             IEnumerable<HeroOccupancy> occupancies,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (!attackerId.IsDefined)
             {

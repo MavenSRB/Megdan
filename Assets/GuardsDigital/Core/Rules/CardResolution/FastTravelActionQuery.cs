@@ -22,7 +22,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AdjacentMoveAuthority board,
             MatchParticipants participants,
             IEnumerable<MinionOccupancy> minions,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (board == null)
             {
@@ -73,7 +73,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AdjacentMoveAuthority board,
             MatchParticipants participants,
             IEnumerable<MinionOccupancy> minions,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));

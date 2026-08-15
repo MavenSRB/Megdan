@@ -26,7 +26,7 @@ namespace GuardsDigital.Core.Rules.Movement
             HeroOccupancy selectedHero,
             GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
             int movementAllowance,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (board == null)
             {

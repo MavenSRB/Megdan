@@ -16,6 +16,7 @@ using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Rules.Modifications;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -274,7 +275,7 @@ namespace GuardsDigital.Tests.EditMode
                 definitions,
                 instances,
                 participants,
-                new MarkerAttachmentRegister());
+                new MarkerAttachmentRegister(), RuleModificationSet.Empty);
             var round = new RoundResolutionAuthority(
                 definitions,
                 instances,

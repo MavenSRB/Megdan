@@ -10,6 +10,7 @@ using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Rules.Modifications;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -73,7 +74,7 @@ namespace GuardsDigital.Tests.EditMode
                     opened.PendingTargetChoice.ChoiceId, new MinionId("blue-heavy")),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             Assert.That(heavyRejected.Accepted, Is.False);
             Assert.That(fixture.Board.Minions.Count, Is.EqualTo(2));
 
@@ -82,7 +83,7 @@ namespace GuardsDigital.Tests.EditMode
                     opened.PendingTargetChoice.ChoiceId, new MinionId("blue-melee")),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             Assert.That(meleeDefeat.Accepted, Is.True);
 
             var heavyDefeat = AttackMinion(fixture, "blue-heavy", "second-attack");
@@ -210,7 +211,7 @@ namespace GuardsDigital.Tests.EditMode
                     opened.PendingTargetChoice.ChoiceId, new MinionId(minionId)),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
         }
 
         private static AttackActionResolutionResult StartAttack(Fixture fixture, string resolutionId) =>
@@ -219,7 +220,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.AttackOffer,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
         private static Fixture CreateFixture(params QuickGameMinionSetupState[] minions)
         {

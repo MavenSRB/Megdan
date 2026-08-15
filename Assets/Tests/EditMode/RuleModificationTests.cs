@@ -226,7 +226,7 @@ namespace GuardsDigital.Tests.EditMode
             var targets = AttackTargetQuery.FindLegalEnemyTargets(
                 RedHero, AttackRangeKind.NonRanged, 1, participants, board, modifications);
             var unmodifiedTargets = AttackTargetQuery.FindLegalEnemyTargets(
-                RedHero, AttackRangeKind.NonRanged, 1, participants, board);
+                RedHero, AttackRangeKind.NonRanged, 1, participants, board, RuleModificationSet.Empty);
             var presentMinions = UnitPresenceQuery.FindUnitsWithin(
                 new HexCoordinate(0, 0), 1, EffectiveUnitKind.Minion, board, modifications);
 
@@ -237,7 +237,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(presentMinions, Contains.Item(RuleObject.ForMinion(new MinionId("blue-melee"))));
             Assert.That(
                 UnitPresenceQuery.IsPresentWithin(
-                    new HexCoordinate(0, 0), 1, EffectiveUnitKind.Minion, board, default, modifications),
+                    new HexCoordinate(0, 0), 1, EffectiveUnitKind.Minion, board, modifications),
                 Is.True);
 
             // The same hero is no longer effectively a hero, so a hero-typed presence check misses them.
@@ -520,7 +520,7 @@ namespace GuardsDigital.Tests.EditMode
                 movementOffer.SourceCardInstanceId,
                 selected.ActorId,
                 configuration.CardDefinitions,
-                configuration.CardInstances);
+                configuration.CardInstances, RuleModificationSet.Empty);
             var refused = GeneralRuleActionOfferQuery.GetAvailableFastTravelOffer(
                 movementOffer.ActionDefinitionId,
                 movementOffer.SourceCardInstanceId,

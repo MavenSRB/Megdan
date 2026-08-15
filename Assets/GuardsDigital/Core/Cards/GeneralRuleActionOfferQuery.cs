@@ -39,7 +39,8 @@ namespace GuardsDigital.Core.Cards
                 false));
 
         /// <param name="modifications">
-        /// The modifications in effect, or <c>null</c> when none apply. A restriction naming Fast Travel
+        /// The modifications in effect; <see cref="RuleModificationSet.Empty"/> is the named
+        /// no-modification value (milestone 6.8f). A restriction naming Fast Travel
         /// removes the offer rather than rejecting the command later: an action the actor cannot perform
         /// is not an action they are offered.
         /// </param>
@@ -49,7 +50,7 @@ namespace GuardsDigital.Core.Cards
             HeroId actorId,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (IsRestricted(actorId, ActionKind.FastTravel, modifications))
             {
@@ -77,6 +78,12 @@ namespace GuardsDigital.Core.Cards
             modifications != null && actorId.IsDefined && modifications.IsRestricted(
                 RuleObject.ForHero(actorId), RuleActivityQuery.ForAction(actionKind));
 
+        /// <summary>
+        /// Takes no modification set by the 6.8f audit's explicit disposition: no implemented
+        /// modification family can change a Clear offer today - restrictions reach activities through
+        /// <see cref="RuleActivityQuery.ForAction"/>, and no declared restriction names Clear. The
+        /// milestone that first makes Clear restrictable adds the parameter with its consumer.
+        /// </summary>
         public static ActionOffer? GetAvailableClearOffer(
             ActionDefinitionId replacedAttackActionDefinitionId,
             CardInstanceId sourceCardInstanceId,

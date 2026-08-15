@@ -232,7 +232,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             MarkerAttachmentRegister markers,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var defeatRewards = state.DefeatRewards.IsPresent
@@ -304,7 +304,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             var prepared = PrepareStart(
                 resolutionId,
@@ -334,7 +334,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             var prepared = PrepareStart(
                 resolutionId,
@@ -360,7 +360,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         public CardActionResolutionResult AnswerMovementChoice(
-            MovementChoiceCommand command, RuleModificationSet modifications = null) =>
+            MovementChoiceCommand command, RuleModificationSet modifications) =>
             movementBackend.AnswerMovement(command, modifications);
 
         public CardActionResolutionResult PerformTurnFastTravel(
@@ -372,7 +372,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             IEnumerable<MinionOccupancy> minions,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (HasPendingResolution)
             {
@@ -425,7 +425,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             var prepared = PrepareStart(
                 resolutionId,
@@ -458,7 +458,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             var prepared = PrepareStart(
                 resolutionId,
@@ -490,7 +490,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null) =>
+            RuleModificationSet modifications) =>
             attackDefenseBackend.AnswerAttackTarget(
                 command, definitions, instances, participants, modifications);
 
@@ -499,7 +499,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null) =>
+            RuleModificationSet modifications) =>
             attackDefenseBackend.AnswerDefense(
                 command, definitions, instances, participants, modifications);
 
@@ -507,7 +507,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications = null) =>
+            RuleModificationSet modifications) =>
             attackDefenseBackend.ResolveOutcome(definitions, instances, participants, modifications);
 
         private PreparedStart PrepareStart(

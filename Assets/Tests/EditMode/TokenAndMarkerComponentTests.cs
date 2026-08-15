@@ -5,6 +5,7 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
@@ -312,7 +313,8 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static HexCoordinate[] Reachable(AdjacentMoveAuthority board, HexCoordinate origin) =>
             MovementReachabilityQuery
-                .FindReachableDestinations(new HeroOccupancy(ActorId, origin), board, 1)
+                .FindReachableDestinations(
+                    new HeroOccupancy(ActorId, origin), board, 1, RuleModificationSet.Empty)
                 .Select(destination => destination.Destination)
                 .ToArray();
 

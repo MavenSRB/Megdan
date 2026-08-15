@@ -44,7 +44,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AdjacentMoveAuthority adjacentMoveAuthority,
             MovementBackendRestoreState state,
             PendingMovementChoice verifiedChoice,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (state == null)
             {
@@ -76,7 +76,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -99,7 +99,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -210,7 +210,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         public CardActionResolutionResult AnswerMovement(
-            MovementChoiceCommand command, RuleModificationSet modifications = null)
+            MovementChoiceCommand command, RuleModificationSet modifications)
         {
             if (pendingResolution == null || pendingChoice == null)
             {

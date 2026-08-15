@@ -398,7 +398,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         public AdjacentMoveRouteResult TryCommitRoute(
             HeroId heroId,
             IReadOnlyList<HexCoordinate> route,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (route == null)
             {

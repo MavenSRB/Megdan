@@ -13,6 +13,7 @@ using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Rules.Modifications;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -132,7 +133,7 @@ namespace GuardsDigital.Tests.EditMode
                 attackOffer,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
             var opened = authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
                     started.PendingTargetChoice.ResolutionId,
@@ -140,7 +141,7 @@ namespace GuardsDigital.Tests.EditMode
                     defenderId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
             var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers[0];
             var printed = PrintedValueQuery.CalculatePrintedValue(
                 defenseOffer,
@@ -153,7 +154,7 @@ namespace GuardsDigital.Tests.EditMode
                     defenseOffer.SourceCardInstanceId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(answered.Accepted, Is.True);
             Assert.That(answered.PendingResolution.DefenseTotal, Is.EqualTo(printed.Total - 2));
@@ -188,11 +189,11 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardDefinitions,
                 configuration.CardInstances,
                 configuration.Participants,
-                new MarkerAttachmentRegister());
+                new MarkerAttachmentRegister(), RuleModificationSet.Empty);
             var outcome = restored.ResolveAttackOutcome(
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
             Assert.That(outcome.Accepted, Is.True);
         }
 
@@ -247,7 +248,7 @@ namespace GuardsDigital.Tests.EditMode
                     defenseOffer.SourceCardInstanceId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants).Accepted, Is.True);
+                configuration.Participants, RuleModificationSet.Empty).Accepted, Is.True);
 
             var payload = AuthoritativeSnapshotSerializer.Serialize(round, board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(

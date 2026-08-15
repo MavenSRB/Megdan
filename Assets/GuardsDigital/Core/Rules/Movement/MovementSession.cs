@@ -99,8 +99,10 @@ namespace GuardsDigital.Core.Rules.Movement
             adjacentMoveAuthority.Occupancies.Single(occupancy => occupancy.HeroId.Equals(heroId));
 
         /// <summary>One space, which is the one-element case of <see cref="TryCommitRoute"/>.</summary>
-        public MovementSessionStepResult TryCommitStep(HexCoordinate destination) =>
-            TryCommitRoute(new[] { destination }, null, out _);
+        public MovementSessionStepResult TryCommitStep(
+            HexCoordinate destination,
+            RuleModificationSet modifications) =>
+            TryCommitRoute(new[] { destination }, modifications, out _);
 
         public MovementSessionStepResult TryCommitRoute(
             IReadOnlyList<HexCoordinate> routeSpaces,

@@ -30,7 +30,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             IEnumerable<MinionOccupancy> minions,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (!resolutionId.IsDefined)
             {

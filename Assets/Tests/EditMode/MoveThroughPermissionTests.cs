@@ -41,7 +41,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateLineBoard();
 
             var destinations = MovementReachabilityQuery.FindReachableDestinations(
-                Occupancy(board), board, 3);
+                Occupancy(board), board, 3, RuleModificationSet.Empty);
 
             Assert.That(
                 destinations.Select(destination => destination.Destination),
@@ -196,7 +196,7 @@ namespace GuardsDigital.Tests.EditMode
             var session = new MovementSession(board, Mover, 3);
 
             var result = board.TryCommitRoute(
-                Mover, new[] { new HexCoordinate(1, 0), new HexCoordinate(2, 0) });
+                Mover, new[] { new HexCoordinate(1, 0), new HexCoordinate(2, 0) }, RuleModificationSet.Empty);
 
             Assert.That(result.Accepted, Is.False);
             Assert.That(result.RejectionReason,

@@ -10,6 +10,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Rules.Modifications;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -46,7 +47,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.AttackOffer,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var answer = fixture.Authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
                     start.PendingTargetChoice.ResolutionId,
@@ -54,7 +55,7 @@ namespace GuardsDigital.Tests.EditMode
                     fixture.DefenderId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(start.Accepted, Is.True);
             Assert.That(start.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
@@ -125,7 +126,7 @@ namespace GuardsDigital.Tests.EditMode
                 attackOffer,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                participants);
+                participants, RuleModificationSet.Empty);
 
             Assert.That(start.Accepted, Is.True);
             Assert.That(start.PendingTargetChoice.LegalTargetHeroIds, Is.EqualTo(new[] { adjacentEnemyId }));
@@ -149,7 +150,7 @@ namespace GuardsDigital.Tests.EditMode
                         invalidTarget),
                     configuration.CardDefinitions,
                     configuration.CardInstances,
-                    participants);
+                    participants, RuleModificationSet.Empty);
 
                 Assert.That(rejection.Accepted, Is.False, $"Target '{invalidTarget}' should be rejected.");
                 Assert.That(rejection.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.TargetUnavailable));
@@ -205,7 +206,7 @@ namespace GuardsDigital.Tests.EditMode
                 offer,
                 definitions,
                 instances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(start.Accepted, Is.True);
             Assert.That(start.PendingTargetChoice.LegalTargetHeroIds, Is.EqualTo(new[] { defenderId }));
@@ -245,7 +246,7 @@ namespace GuardsDigital.Tests.EditMode
                 rangedOffer,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                participants);
+                participants, RuleModificationSet.Empty);
             var beyondRange = authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
                     start.PendingTargetChoice.ResolutionId,
@@ -253,7 +254,7 @@ namespace GuardsDigital.Tests.EditMode
                     beyondRangeEnemyId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                participants);
+                participants, RuleModificationSet.Empty);
             var accepted = authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
                     start.PendingTargetChoice.ResolutionId,
@@ -261,7 +262,7 @@ namespace GuardsDigital.Tests.EditMode
                     maximumRangeEnemyId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                participants);
+                participants, RuleModificationSet.Empty);
 
             Assert.That(HexDistanceQuery.Calculate(new HexCoordinate(0, 0), new HexCoordinate(2, 0)), Is.EqualTo(2));
             Assert.That(start.PendingTargetChoice.LegalTargetHeroIds, Is.EqualTo(new[] { maximumRangeEnemyId }));
@@ -301,7 +302,7 @@ namespace GuardsDigital.Tests.EditMode
                 GetRangedAttackOffer(configuration, attackerId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(start.Accepted, Is.True);
             Assert.That(start.PendingTargetChoice.LegalTargetHeroIds, Is.EqualTo(new[] { defenderId }));
@@ -327,7 +328,7 @@ namespace GuardsDigital.Tests.EditMode
                 rangedOffer,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
 
             var restoredTarget = CardActionResolutionAuthority.Restore(
                 new AdjacentMoveAuthority(
@@ -346,7 +347,7 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardDefinitions,
                 configuration.CardInstances,
                 configuration.Participants,
-                new MarkerAttachmentRegister());
+                new MarkerAttachmentRegister(), RuleModificationSet.Empty);
             var restoredTargetChoice = restoredTarget.PendingAttackTargetChoice;
             var answer = restoredTarget.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
@@ -355,7 +356,7 @@ namespace GuardsDigital.Tests.EditMode
                     defenderId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
             var restoredDefense = CardActionResolutionAuthority.Restore(
                 new AdjacentMoveAuthority(
                     CreateRadiusThreeCoordinates(),
@@ -373,7 +374,7 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardDefinitions,
                 configuration.CardInstances,
                 configuration.Participants,
-                new MarkerAttachmentRegister());
+                new MarkerAttachmentRegister(), RuleModificationSet.Empty);
 
             Assert.That(restoredTargetChoice.LegalTargetHeroIds,
                 Is.EqualTo(new[] { defenderId }));
@@ -403,7 +404,7 @@ namespace GuardsDigital.Tests.EditMode
                 GetAttackOffer(configuration, attackerId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(result.Accepted, Is.False);
             Assert.That(result.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.TargetUnavailable));
@@ -424,7 +425,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.AttackOffer,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var originalStates = fixture.Configuration.CardInstances.Select(instance => instance.State).ToArray();
             var moved = fixture.BoardAuthority.TryCommit(new AdjacentMoveCommand(
                 fixture.DefenderId,
@@ -438,7 +439,7 @@ namespace GuardsDigital.Tests.EditMode
                     fixture.DefenderId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(moved.Accepted, Is.True);
             Assert.That(result.Accepted, Is.False);
@@ -460,7 +461,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.AttackOffer,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var answer = fixture.Authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
                     start.PendingTargetChoice.ResolutionId,
@@ -468,7 +469,7 @@ namespace GuardsDigital.Tests.EditMode
                     fixture.DefenderId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var restoredBoard = CreateBoardAuthority(fixture.AttackerId, fixture.DefenderId);
 
             var restored = CardActionResolutionAuthority.Restore(
@@ -482,7 +483,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
                 fixture.Configuration.Participants,
-                new MarkerAttachmentRegister());
+                new MarkerAttachmentRegister(), RuleModificationSet.Empty);
 
             Assert.That(restored.PendingAttackResolution, Is.SameAs(answer.PendingResolution));
             Assert.That(restored.PendingDefenseChoice, Is.SameAs(answer.PendingDefenseChoice));
@@ -506,7 +507,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
                 fixture.Configuration.Participants,
-                new MarkerAttachmentRegister()));
+                new MarkerAttachmentRegister(), RuleModificationSet.Empty));
         }
 
         [Test]
@@ -532,7 +533,7 @@ namespace GuardsDigital.Tests.EditMode
                     selectedCard.Id),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(result.Accepted, Is.True);
             Assert.That(result.PendingResolution.Phase, Is.EqualTo(AttackResolutionPhase.CompareOutcome));
@@ -588,7 +589,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.AttackOffer,
                 fixture.Configuration.CardDefinitions,
                 attackerOnlyInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var opened = fixture.Authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
                     start.PendingTargetChoice.ResolutionId,
@@ -596,7 +597,7 @@ namespace GuardsDigital.Tests.EditMode
                     fixture.DefenderId),
                 fixture.Configuration.CardDefinitions,
                 attackerOnlyInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var originalStates = attackerOnlyInstances.Select(instance => instance.State).ToArray();
 
             var result = fixture.Authority.AnswerDefenseResponse(
@@ -605,7 +606,7 @@ namespace GuardsDigital.Tests.EditMode
                     opened.PendingDefenseChoice.ChoiceId),
                 fixture.Configuration.CardDefinitions,
                 attackerOnlyInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(opened.PendingDefenseChoice.LegalDefenseOffers, Is.Empty);
             Assert.That(result.Accepted, Is.True);
@@ -666,7 +667,7 @@ namespace GuardsDigital.Tests.EditMode
                     command,
                     fixture.Configuration.CardDefinitions,
                     fixture.Configuration.CardInstances,
-                    fixture.Configuration.Participants);
+                    fixture.Configuration.Participants, RuleModificationSet.Empty);
                 Assert.That(rejection.Accepted, Is.False);
                 Assert.That(rejection.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.InvalidChoice));
                 Assert.That(rejection.PendingResolution, Is.SameAs(opened.PendingResolution));
@@ -685,7 +686,7 @@ namespace GuardsDigital.Tests.EditMode
                 DefenseResponseChoiceCommand.SelectCards(choice.ResolutionId, choice.ChoiceId, selectedCard.Id),
                 fixture.Configuration.CardDefinitions,
                 staleInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(discardedRejection.Accepted, Is.False);
             Assert.That(discardedRejection.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.InvalidChoice));
@@ -707,7 +708,7 @@ namespace GuardsDigital.Tests.EditMode
                     selectedCardId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(stale.Accepted, Is.False);
             Assert.That(stale.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.StaleChoice));
@@ -722,12 +723,12 @@ namespace GuardsDigital.Tests.EditMode
                 command,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var replay = fixture.Authority.AnswerDefenseResponse(
                 command,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(accepted.Accepted, Is.True);
             Assert.That(replay.Accepted, Is.False);
@@ -764,7 +765,7 @@ namespace GuardsDigital.Tests.EditMode
                     selectedCardId),
                 fixture.Configuration.CardDefinitions,
                 instancesWithFacedownDefense,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             var restored = CardActionResolutionAuthority.Restore(
                 CreateBoardAuthority(fixture.AttackerId, fixture.DefenderId),
@@ -777,7 +778,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Configuration.CardDefinitions,
                 instancesWithFacedownDefense,
                 fixture.Configuration.Participants,
-                new MarkerAttachmentRegister());
+                new MarkerAttachmentRegister(), RuleModificationSet.Empty);
 
             Assert.That(restored.PendingAttackResolution, Is.SameAs(answered.PendingResolution));
             Assert.That(restored.PendingAttackResolution.Phase, Is.EqualTo(AttackResolutionPhase.CompareOutcome));
@@ -806,12 +807,12 @@ namespace GuardsDigital.Tests.EditMode
                     defenseOffer.SourceCardInstanceId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             var outcome = fixture.Authority.ResolveAttackOutcome(
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(response.PendingResolution.ResolutionId, Is.EqualTo(opened.PendingResolution.ResolutionId));
             Assert.That(response.PendingResolution.AttackTotal, Is.EqualTo(2));
@@ -852,7 +853,7 @@ namespace GuardsDigital.Tests.EditMode
                 GetRangedAttackOffer(configuration, attackerId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
             var opened = authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
                     start.PendingTargetChoice.ResolutionId,
@@ -860,7 +861,7 @@ namespace GuardsDigital.Tests.EditMode
                     defenderId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
             var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
                 PrintedValueQuery.CalculatePrintedValue(
                     offer,
@@ -873,12 +874,12 @@ namespace GuardsDigital.Tests.EditMode
                     defenseOffer.SourceCardInstanceId),
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
 
             var outcome = authority.ResolveAttackOutcome(
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                configuration.Participants);
+                configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(opened.PendingResolution.AttackTotal, Is.EqualTo(3));
             Assert.That(outcome.Accepted, Is.True);
@@ -903,12 +904,12 @@ namespace GuardsDigital.Tests.EditMode
                     defenseOffer.SourceCardInstanceId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             var outcome = fixture.Authority.ResolveAttackOutcome(
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(outcome.Accepted, Is.True);
             Assert.That(outcome.Outcome, Is.EqualTo(AttackResolutionOutcome.AttackSuccessful));
@@ -946,7 +947,7 @@ namespace GuardsDigital.Tests.EditMode
                     fixture.AttackOffer,
                     fixture.Configuration.CardDefinitions,
                     instances,
-                    fixture.Configuration.Participants);
+                    fixture.Configuration.Participants, RuleModificationSet.Empty);
                 var opened = fixture.Authority.AnswerAttackTarget(
                     new AttackTargetChoiceCommand(
                         start.PendingTargetChoice.ResolutionId,
@@ -954,19 +955,19 @@ namespace GuardsDigital.Tests.EditMode
                         fixture.DefenderId),
                     fixture.Configuration.CardDefinitions,
                     instances,
-                    fixture.Configuration.Participants);
+                    fixture.Configuration.Participants, RuleModificationSet.Empty);
                 var response = fixture.Authority.AnswerDefenseResponse(
                     DefenseResponseChoiceCommand.Decline(
                         opened.PendingDefenseChoice.ResolutionId,
                         opened.PendingDefenseChoice.ChoiceId),
                     fixture.Configuration.CardDefinitions,
                     instances,
-                    fixture.Configuration.Participants);
+                    fixture.Configuration.Participants, RuleModificationSet.Empty);
 
                 var outcome = fixture.Authority.ResolveAttackOutcome(
                     fixture.Configuration.CardDefinitions,
                     instances,
-                    fixture.Configuration.Participants);
+                    fixture.Configuration.Participants, RuleModificationSet.Empty);
 
                 Assert.That(opened.PendingDefenseChoice.LegalDefenseOffers.Count == 0,
                     Is.EqualTo(removeDefenderCards));
@@ -993,7 +994,7 @@ namespace GuardsDigital.Tests.EditMode
                     defenseOffer.SourceCardInstanceId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var staleInstances = fixture.Configuration.CardInstances.Select(instance =>
                 instance.Id.Equals(defenseOffer.SourceCardInstanceId)
                     ? new CardInstance(
@@ -1006,7 +1007,7 @@ namespace GuardsDigital.Tests.EditMode
             var rejected = fixture.Authority.ResolveAttackOutcome(
                 fixture.Configuration.CardDefinitions,
                 staleInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(rejected.Accepted, Is.False);
             Assert.That(rejected.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.InvalidChoice));
@@ -1064,10 +1065,10 @@ namespace GuardsDigital.Tests.EditMode
                 attackFixture.AttackOffer,
                 attackFixture.Configuration.CardDefinitions,
                 attackFixture.Configuration.CardInstances,
-                attackFixture.Configuration.Participants);
+                attackFixture.Configuration.Participants, RuleModificationSet.Empty);
             var foreignMovement = attackFixture.Authority.AnswerMovementChoice(MovementChoiceCommand.Stop(
                 attack.PendingResolution.ResolutionId,
-                attack.PendingResolution.CurrentStepId));
+                attack.PendingResolution.CurrentStepId), RuleModificationSet.Empty);
 
             Assert.That(foreignMovement.Accepted, Is.False);
             Assert.That(foreignMovement.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.NoPendingResolution));
@@ -1089,7 +1090,7 @@ namespace GuardsDigital.Tests.EditMode
                 forgedOffer,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(forged.Accepted, Is.False);
             Assert.That(forged.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.UnavailableOffer));
@@ -1105,13 +1106,13 @@ namespace GuardsDigital.Tests.EditMode
                 new ActionResolutionId("movement-resolution"),
                 movementOffer,
                 fixture.Configuration.CardDefinitions,
-                fixture.Configuration.CardInstances);
+                fixture.Configuration.CardInstances, RuleModificationSet.Empty);
             var overlap = fixture.Authority.StartAttackResolution(
                 new ActionResolutionId("overlap-attack"),
                 fixture.AttackOffer,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var foreignAttack = fixture.Authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
                     movement.PendingResolution.ResolutionId,
@@ -1119,7 +1120,7 @@ namespace GuardsDigital.Tests.EditMode
                     fixture.DefenderId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(movement.Accepted, Is.True);
             Assert.That(overlap.Accepted, Is.False);
@@ -1138,7 +1139,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.AttackOffer,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             events.AddRange(start.Events);
             var answer = fixture.Authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
@@ -1147,7 +1148,7 @@ namespace GuardsDigital.Tests.EditMode
                     fixture.DefenderId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             events.AddRange(answer.Events);
 
             return new ReplayResult(
@@ -1164,7 +1165,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.AttackOffer,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             return fixture.Authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(
                     start.PendingTargetChoice.ResolutionId,
@@ -1172,7 +1173,7 @@ namespace GuardsDigital.Tests.EditMode
                     fixture.DefenderId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
         }
 
         private static DefenseReplayResult RunDefenseReplay()
@@ -1187,7 +1188,7 @@ namespace GuardsDigital.Tests.EditMode
                     selectedCardId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             var cardState = fixture.Configuration.CardInstances.Single(
                 instance => instance.Id.Equals(selectedCardId)).State;
             return new DefenseReplayResult(
@@ -1211,11 +1212,11 @@ namespace GuardsDigital.Tests.EditMode
                     defenseOffer.SourceCardInstanceId),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
             return fixture.Authority.ResolveAttackOutcome(
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants);
+                fixture.Configuration.Participants, RuleModificationSet.Empty);
         }
 
         private static ActionKind GetActionKind(

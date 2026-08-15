@@ -10,6 +10,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Core.Rules.Modifications;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -158,7 +159,7 @@ namespace GuardsDigital.Tests.EditMode
                 card.Id,
                 actorId,
                 new[] { definition },
-                new[] { card });
+                new[] { card }, RuleModificationSet.Empty);
 
             Assert.That(offer.HasValue, Is.True);
             Assert.That(offer.Value.InvocationContext, Is.EqualTo(ActionInvocationContext.Replacement));
@@ -227,7 +228,7 @@ namespace GuardsDigital.Tests.EditMode
                 card.Id,
                 actorId,
                 configuration.CardDefinitions,
-                configuration.CardInstances);
+                configuration.CardInstances, RuleModificationSet.Empty);
             Assert.That(replacementOffer.HasValue, Is.True);
             return new Fixture(
                 configuration,
@@ -300,7 +301,7 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardDefinitions,
                     configuration.CardInstances,
                     configuration.Participants,
-                    Board.Minions);
+                    Board.Minions, RuleModificationSet.Empty);
             }
 
             public IReadOnlyList<HexCoordinate> LegalDestinations()
@@ -312,7 +313,7 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     Board,
                     configuration.Participants,
-                    Board.Minions);
+                    Board.Minions, RuleModificationSet.Empty);
             }
         }
     }

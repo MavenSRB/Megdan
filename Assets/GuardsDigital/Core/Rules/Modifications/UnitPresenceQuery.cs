@@ -29,7 +29,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             int distance,
             EffectiveUnitKind effectiveUnitKind,
             AdjacentMoveAuthority board,
-            RuleModificationSet modifications = null)
+            RuleModificationSet modifications)
         {
             if (board == null)
             {
@@ -66,15 +66,17 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         /// <summary>
         /// Whether at least one such unit other than <paramref name="self"/> is present, which is the
-        /// rulebook's own example shape ("if you are adjacent to a minion").
+        /// rulebook's own example shape ("if you are adjacent to a minion"). The required set sits
+        /// before the optional exclusion since milestone 6.8f: supplying no modifications is a named
+        /// decision, while omitting <paramref name="self"/> stays an ordinary default.
         /// </summary>
         public static bool IsPresentWithin(
             HexCoordinate origin,
             int distance,
             EffectiveUnitKind effectiveUnitKind,
             AdjacentMoveAuthority board,
-            RuleObject self = default,
-            RuleModificationSet modifications = null) =>
+            RuleModificationSet modifications,
+            RuleObject self = default) =>
             FindUnitsWithin(origin, distance, effectiveUnitKind, board, modifications)
                 .Any(unit => !(self.IsDefined && unit.Equals(self)));
     }
