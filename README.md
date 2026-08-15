@@ -101,4 +101,4 @@ Guards of Atlantis II is the property of its rights holders. This is an unaffili
 
 - The rulebook PDF is included through Git LFS under the project owner's stated distribution permission. The extracted card corpus and map references remain deliberately excluded from Git and must not be distributed without separate permission.
 - The public source repository and tracked rulebook are the only currently authorized publication. Builds and other excluded or untracked material remain private unless both the project owner and relevant rights holder authorize their distribution.
-- The public `origin` repository is `maven/guards-digital` on the project owner's Gitea service.
+- No Git remote is configured. The previously authorized `maven/guards-digital` Gitea `origin` was removed at the project owner's direction on 2026-08-15; the repository is maintained locally.
