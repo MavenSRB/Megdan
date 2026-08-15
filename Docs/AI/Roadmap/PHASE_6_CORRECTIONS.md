@@ -113,3 +113,57 @@ Non-goals: No new modification family, effective type, or unit kind; no new rule
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68g-give-the-counts-as-effective-type-its-first-rules-consumer-completion-evidence).
 
+### [ ] 6.8h Give marker attachments a per-activation instance identity
+
+**Corrective amendment (2026-08-15, user approved).** Milestone 6.8d fixed the Active-effect family's replay collision and recorded that the marker family carries the same latent compositional shape: the marker capability composes its instance ID as `{card}:{node}:{holder}`, with no activation anchor, so a marker given, returned to the supply, and given again to the same holder by replaying the same card composes an identical instance ID. The token family already carries round and turn in its composition (the 6.2 precedent the effect fix followed); markers are the one component family left behind.
+
+Observable outcome: A card that gives a marker gives a fresh attachment every time it is played, including to a holder who returned that card's earlier marker, and re-executing one activation inside its own resolution remains a no-op.
+
+Prerequisite: milestone 6.8d, whose shared-contract pattern and activation anchors this milestone extends to the marker family.
+
+Acceptance checks:
+
+- Marker instance identity is composed through one shared contract that distinguishes activations - the 6.8d anchor set of source card, action, node, round, and turn, plus the holder - rather than as a string inside the capability. Whether it reuses the effect contract's composition or a marker-shaped sibling is an implementation decision recorded in the commit.
+- Give, return, and give again across rounds produces two distinct attachments with distinct instance IDs, and the returned instance never suppresses the later give. The failing observation records what the repeated composition does today - silent no-op or fault - rather than assuming it.
+- Re-executing one activation inside its own resolution stays a legal no-op, and token instance identity is unchanged.
+- A conformance rule proves no capability composes a marker instance ID outside the shared contract, shown against a deliberate violator and a compliant twin.
+- Marker instance IDs cross the snapshot boundary, so any change to their shape carries an explicit migrate-or-reject decision, and the pinned corpus and aggregate-invariance fixtures are observed before being re-pinned.
+- Snapshot restore, replay, and retained-prefix Undo stay deterministic across a second give.
+
+Non-goals: No new marker rule, return condition, or holder semantics; no end-of-round or defeat return wiring (6.12 owns both); no change to what any marker does; no Wasp definition; no production art, animation, or audio.
+
+### [ ] 6.8i Retire the remaining optional rules parameters
+
+**Corrective amendment (2026-08-15, user approved).** Milestone 6.8f made the modification set a required parameter everywhere and flagged four survivors of the same hazard class, optional parameters whose omission silently changes a rules answer: `RuleModificationQuery.Build` and the `RuleModificationSet` constructor default their Tie Breaker state, which orders p.17's simultaneous modifications; `RuleModificationSet.IsImmuneTo` defaults its actor, and an omitted actor silently disables p.18's "you are never immune to your own actions" - exactly the clause 6.4's Object Push immunity consumer will depend on; and `UnitPresenceQuery.IsPresentWithin` defaults its self-exclusion.
+
+Observable outcome: Ordering state, the acting object, and the self-exclusion are explicit call-site decisions at every rules seam; a genuinely absent value is written at the call site rather than supplied by a parameter default.
+
+Prerequisite: milestone 6.8f, whose required-parameter regime and conformance rule this milestone completes; must precede 6.4, whose Push immunity consumer reads `IsImmuneTo`'s actor semantics.
+
+Acceptance checks:
+
+- All four parameters are required. Call sites state the value they mean; where a genuinely actorless or self-less context exists, the call site writes the undefined object explicitly rather than inheriting it from a default.
+- The 6.8f conformance rule widens to prove no seam of the modification query surface declares an optional parameter of a rule-affecting type, shown against a deliberate violator and a compliant twin, and its subject-count guard still holds.
+- The p.18 self-immunity exception keeps its existing focused coverage, and the actor is stated at every immunity call site that has one.
+- The turn authority remains the single place the live set is derived per command; how the set is derived does not change.
+- No behaviour changes: every current result is identical, proved against the existing fixtures and the pinned digests.
+
+Non-goals: No new modification family or query; no immunity-consumer wiring (6.4 and 6.8b own Push immunity consumption); no change to how the live set is derived; no Wasp definition; no production art, animation, or audio.
+
+### [ ] 6.8j Let a Skill complete at its own start step
+
+**Corrective amendment (2026-08-15, user approved).** Milestone 6.8g's fixture found a latent skill-backend fault: a Skill whose effect root resolves to completion during the start itself - no choice ever opens - reads its completing identity from `step.Frame ?? pendingResolution` in `SkillCardActionStrategyBackend.Complete`, and at start-completion both are null, so the session reports an engine fault. Every configured and synthetic Skill today opens a choice, so no player can reach it, but the fault makes choice-free Skills unwritable: any future card whose Skill simply applies its text would fault at start, and the 6.8g fixture had to adopt a trailing `may` step it did not otherwise need.
+
+Observable outcome: A Skill whose effect completes without ever pausing resolves successfully at its start, emitting the same started/node/completed fact and checkpoint stream shape as any completed Skill.
+
+Prerequisite: none beyond 6.2a's effect frame; independent of the other corrective milestones.
+
+Acceptance checks:
+
+- At start-completion the completing facts read identity from the started resolution and offer rather than from a null frame, and the ordered stream keeps its shape: Action Started, the Skill started fact, node facts with their declared checkpoints, the Skill completed fact, Action Ended.
+- The failing observation is a regression fixture whose Skill root completes at start - reproducing the engine fault at the pre-fix revision through the configured `MatchSession` path - and completing successfully post-fix, with the source card resolved and the turn advancing normally.
+- A Skill that pauses on a choice behaves exactly as before, proved against the existing skill fixtures rather than asserted.
+- Snapshot restore, replay, and retained-prefix Undo stay deterministic across a start-completing Skill.
+- The pinned corpus and aggregate-invariance digests are observed unchanged.
+
+Non-goals: No new capability, effect family, or rules content; no Repeat semantics (6.5's family owns bounded Repeat); no change to choice-opening Skills or to the 6.8g fixture's card; no Wasp definition; no production art, animation, or audio.
