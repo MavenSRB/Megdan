@@ -519,7 +519,7 @@ Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#mile
 
 Non-goals: No generic `ReplaceAction` effect node, pending Clear continuation, token projection or player-facing Clear UI, Wasp definition, printed-text parsing, displacement, general Place/Spawn, Swap/Replace/Remove, end-of-round cleanup, presentation, art, animation, or audio. The Spawn work is only the mandatory token-removal pre-commit seam; milestone 6.5 still owns the complete reusable Spawn capability.
 
-### [~] 6.4 Implement reusable direct Move and Object Push effects
+### [x] 6.4 Implement reusable direct Move and Object Push effects
 
 Observable outcome: Synthetic effects execute the general direct Move and Object Push contracts on the full authoritative map without depending on Wasp definitions or card-name branches.
 
@@ -537,6 +537,8 @@ Acceptance checks:
 Non-goals: No Wasp definition, printed-text parsing, invented Pull keyword, card-name/hero-name branch, configured live action exposure before milestone 6.4a, production presentation, or specialized hero/minion Respawn transition.
 
 ER2 note: 6.1s closes `F-ER2-02` - a pushed minion needs mutable, snapshot-serialized occupancy for the displacement to commit and survive restore.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64-implement-reusable-direct-move-and-object-push-effects-completion-evidence).
 
 ### [ ] 6.4a Integrate after-action displaced-minion correction with core Push
 

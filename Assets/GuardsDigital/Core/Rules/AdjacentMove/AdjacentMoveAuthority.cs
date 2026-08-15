@@ -6,7 +6,9 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -14,7 +16,7 @@ using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.AdjacentMove
 {
-    public sealed class AdjacentMoveAuthority : ITokenPlacementAuthority
+    public sealed class AdjacentMoveAuthority : ITokenPlacementAuthority, IBoardDisplacementAuthority
     {
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly HashSet<HexCoordinate> terrainCoordinates;
@@ -548,6 +550,161 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         public bool IsEmptyPlayableSpace(HexCoordinate coordinate) =>
             boardCoordinates.Contains(coordinate) && !occupancyIndex.IsOccupied(coordinate);
+
+        // ---------------------------------------------------------------------------------------
+        // Milestone 6.4: the displacement port. Direct Move and Object Push relocate an object that
+        // is already on the board without going through a Movement action, so these sit beside the
+        // movement commits above rather than inside them - p.11 and p.18 keep the operations
+        // distinct, and CARD_EFFECT_CAPABILITIES.md forbids treating them as interchangeable.
+        // ---------------------------------------------------------------------------------------
+
+        public bool TryGetObjectAt(HexCoordinate coordinate, out BoardObjectReference subject)
+        {
+            if (!occupancyIndex.TryGetOccupant(coordinate, out var occupant))
+            {
+                subject = default;
+                return false;
+            }
+
+            switch (occupant.Kind)
+            {
+                case BoardOccupantKind.Hero:
+                    subject = BoardObjectReference.ForHero(occupant.HeroId);
+                    return true;
+                case BoardOccupantKind.StandardMinion:
+                    subject = BoardObjectReference.ForMinion(occupant.MinionId);
+                    return true;
+                case BoardOccupantKind.Token:
+                    subject = BoardObjectReference.ForToken(occupant.TokenInstanceId);
+                    return true;
+                default:
+                    // A generic obstacle occupies a space and blocks, but no rule yet displaces one,
+                    // so it is reported as no displaceable subject rather than as an invented kind.
+                    subject = default;
+                    return false;
+            }
+        }
+
+        public bool TryGetObjectCoordinate(BoardObjectReference subject, out HexCoordinate coordinate)
+        {
+            switch (subject.Kind)
+            {
+                case BoardObjectKind.Hero:
+                    return TryGetHeroCoordinate(subject.HeroId, out coordinate);
+                case BoardObjectKind.Minion:
+                {
+                    var index = minions.FindIndex(minion => minion.MinionId.Equals(subject.MinionId));
+                    coordinate = index < 0 ? default : minions[index].Coordinate;
+                    return index >= 0;
+                }
+                case BoardObjectKind.Token:
+                {
+                    var index = tokens.FindIndex(token => token.Id.Equals(subject.TokenInstanceId));
+                    coordinate = index < 0 ? default : tokens[index].Coordinate;
+                    return index >= 0;
+                }
+                default:
+                    coordinate = default;
+                    return false;
+            }
+        }
+
+        public PushPathResult ResolvePush(
+            HexCoordinate pusher,
+            HexCoordinate target,
+            int requestedDistance,
+            RuleObject targetObject,
+            bool pushIgnoresObstacles,
+            RuleModificationSet modifications) =>
+            PushPathQuery.Resolve(
+                this, pusher, target, requestedDistance, targetObject, pushIgnoresObstacles, modifications);
+
+        public IReadOnlyList<ReachableMovementDestination> FindDirectMoveDestinations(
+            HeroId mover,
+            int allowance,
+            RuleModificationSet modifications)
+        {
+            var index = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(mover));
+            if (index < 0)
+            {
+                return Array.Empty<ReachableMovementDestination>();
+            }
+
+            // The same reachability the Movement action uses. p.11: movement in the card text
+            // "follows the same rules and restrictions as a Movement action", so a second traversal
+            // written for effects would be a place for the two to disagree.
+            return MovementReachabilityQuery.FindReachableDestinations(
+                occupancies[index], this, allowance, modifications);
+        }
+
+        public DisplacementCommitResult CommitValidatedDisplacement(
+            BoardObjectReference subject,
+            HexCoordinate destination)
+        {
+            if (!TryGetObjectCoordinate(subject, out var origin))
+            {
+                return DisplacementCommitResult.Reject(DisplacementRejectionReason.UnknownObject);
+            }
+
+            if (origin.Equals(destination))
+            {
+                // A zero-space push (p.18) is a legal outcome that relocates nothing. Accepting it
+                // here without touching the index keeps the caller from having to special-case it.
+                return DisplacementCommitResult.Accept(subject, origin, destination);
+            }
+
+            if (!boardCoordinates.Contains(destination))
+            {
+                return DisplacementCommitResult.Reject(terrainCoordinates.Contains(destination)
+                    ? DisplacementRejectionReason.DestinationTerrain
+                    : DisplacementRejectionReason.DestinationOffBoard);
+            }
+
+            if (occupancyIndex.IsOccupied(destination))
+            {
+                return DisplacementCommitResult.Reject(DisplacementRejectionReason.DestinationOccupied);
+            }
+
+            switch (subject.Kind)
+            {
+                case BoardObjectKind.Hero:
+                {
+                    var index = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(subject.HeroId));
+                    occupancyIndex.Move(origin, destination);
+                    occupancies[index] = new HeroOccupancy(subject.HeroId, destination);
+                    break;
+                }
+
+                case BoardObjectKind.Minion:
+                {
+                    var index = minions.FindIndex(minion => minion.MinionId.Equals(subject.MinionId));
+                    var space = MapDefinition.Spaces.Single(candidate =>
+                        candidate.Kind == BoardMapSpaceKind.Playable &&
+                        candidate.Coordinate.Equals(destination));
+                    occupancyIndex.Move(origin, destination);
+                    minions[index] = minions[index].WithPosition(
+                        new ConfiguredSpaceReference(MapDefinition.Id, space.Id), destination);
+                    break;
+                }
+
+                case BoardObjectKind.Token:
+                {
+                    // p.18 names "a unit or a token" as push targets, so a token relocates like any
+                    // other occupant. It keeps its instance identity, its owner, and its property
+                    // sources: milestone 6.3 ties a token's continuous sources to its remaining
+                    // placed, and moving it never stops it being placed.
+                    var index = tokens.FindIndex(token => token.Id.Equals(subject.TokenInstanceId));
+                    occupancyIndex.Move(origin, destination);
+                    tokens[index] = tokens[index].WithCoordinate(destination);
+                    break;
+                }
+
+                default:
+                    return DisplacementCommitResult.Reject(DisplacementRejectionReason.UnknownObject);
+            }
+
+            return DisplacementCommitResult.Accept(subject, origin, destination);
+        }
 
         public void CommitValidatedTokenPlacement(PlacedToken token)
         {

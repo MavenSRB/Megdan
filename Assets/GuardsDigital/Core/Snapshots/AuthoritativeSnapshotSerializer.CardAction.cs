@@ -83,7 +83,8 @@ namespace GuardsDigital.Core.Snapshots
                     state = CardActionResolutionRestoreState.WithPendingSkill(
                         ReadSkillResolution(
                             reader, definitions, capabilities, participants,
-                            CardActionResolutionAuthority.CreateRestoredComponents(board, markers)),
+                            CardActionResolutionAuthority.CreateRestoredComponents(board, markers),
+                            modifications),
                         defeatRewards);
                     break;
                 default:
@@ -171,7 +172,8 @@ namespace GuardsDigital.Core.Snapshots
             IReadOnlyList<CardDefinition> definitions,
             EffectCapabilityCatalog capabilities,
             MatchParticipants participants,
-            MatchComponents components)
+            MatchComponents components,
+            RuleModificationSet modifications)
         {
             var common = ReadCommonResolution(reader);
             var controllerId = new HeroId(reader.ReadString());
@@ -277,7 +279,7 @@ namespace GuardsDigital.Core.Snapshots
                     : choiceKind == EffectChoiceKind.SelectOption
                         ? node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray()
                         : DeriveCapabilityCandidates(
-                            node, restored, capabilities, participants, components);
+                            node, restored, capabilities, participants, components, modifications);
             if (selected.Any(candidate => !candidates.Contains(candidate)))
             {
                 throw Malformed(
@@ -314,7 +316,8 @@ namespace GuardsDigital.Core.Snapshots
             PendingResolution restored,
             EffectCapabilityCatalog capabilities,
             MatchParticipants participants,
-            MatchComponents components)
+            MatchComponents components,
+            RuleModificationSet modifications)
         {
             var handler = capabilities.Load(node.Capability);
             var offered = handler.Execute(new EffectCapabilityContext(
@@ -329,6 +332,7 @@ namespace GuardsDigital.Core.Snapshots
                 1,
                 participants,
                 null,
+                modifications,
                 components));
             if (offered.Choice == null)
             {

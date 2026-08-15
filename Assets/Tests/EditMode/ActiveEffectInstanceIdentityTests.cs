@@ -4,6 +4,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -171,6 +172,7 @@ namespace GuardsDigital.Tests.EditMode
                 roundIndex,
                 turnIndex,
                 participants,
-                timing);
+                timing,
+                RuleModificationSet.Empty);
     }
 }

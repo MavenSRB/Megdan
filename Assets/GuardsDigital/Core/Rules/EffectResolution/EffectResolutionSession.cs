@@ -6,6 +6,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -111,6 +112,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             ActiveEffectLifecycle timing,
             int roundIndex,
             int turnIndex,
+            RuleModificationSet modifications,
             HeroId opposingHeroId = default,
             MatchComponents components = null)
         {
@@ -120,6 +122,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             Timing = timing;
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
+            Modifications = modifications ?? throw new ArgumentNullException(nameof(modifications));
             OpposingHeroId = opposingHeroId;
             Components = components;
         }
@@ -131,6 +134,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public int RoundIndex { get; }
         public int TurnIndex { get; }
         public HeroId OpposingHeroId { get; }
+
+        /// <summary>
+        /// The modifications in effect for this resolution. Required since milestone 6.4, which added
+        /// the first capabilities that read rules rather than only supplying them: a Push consults
+        /// p.18's immunity and the Move-Through permission, and a direct Move consults the same
+        /// obstacle contract Movement does. <see cref="RuleModificationSet.Empty"/> is the named
+        /// no-modification value, so a genuinely rule-free caller states it rather than inheriting it.
+        /// </summary>
+        public RuleModificationSet Modifications { get; }
 
         /// <summary>Milestone 6.2's token and marker collaborators, or <c>null</c> outside a match.</summary>
         public MatchComponents Components { get; }
@@ -571,6 +583,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.TurnIndex,
                 context.Participants,
                 context.Timing,
+                context.Modifications,
                 context.Components);
         }
 

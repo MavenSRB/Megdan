@@ -8,6 +8,7 @@ using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -162,15 +163,19 @@ namespace GuardsDigital.Tests.EditMode
             new[] { EffectValue.Hero(holder) };
 
         /// <summary>
-        /// A live component set: the trusted catalog, a small board standing in for the token port, and
-        /// an empty marker register.
+        /// A live component set: the trusted catalog, a small board standing in for the token and
+        /// displacement ports, and an empty marker register.
         /// </summary>
-        private static MatchComponents CreateComponents() =>
-            new MatchComponents(
+        private static MatchComponents CreateComponents()
+        {
+            var board = new AdjacentMoveAuthority(
+                Coordinates(), new[] { new HeroOccupancy(Actor, new HexCoordinate(0, 0)) });
+            return new MatchComponents(
                 SyntheticComponentDefinitions.CreateCatalog(),
-                new AdjacentMoveAuthority(
-                    Coordinates(), new[] { new HeroOccupancy(Actor, new HexCoordinate(0, 0)) }),
-                new MarkerAttachmentRegister());
+                board,
+                new MarkerAttachmentRegister(),
+                board);
+        }
 
         private static HexCoordinate[] Coordinates()
         {
@@ -205,6 +210,7 @@ namespace GuardsDigital.Tests.EditMode
                 turnIndex,
                 PlaceholderOneVsOneParticipants.Create(),
                 null,
+                RuleModificationSet.Empty,
                 components);
     }
 }

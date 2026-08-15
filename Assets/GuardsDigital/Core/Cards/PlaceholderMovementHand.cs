@@ -53,6 +53,18 @@ namespace GuardsDigital.Core.Cards
         private static readonly SyntheticSkillProfile BlueComponentSkillProfile =
             new SyntheticSkillProfile("blue-cache", "Blue Cache", 2);
 
+        /// <summary>
+        /// Milestone 6.4's Skill cards, sitting outside their team's ordinary Initiative band for the
+        /// same reason both earlier pairs do. Red's is the highest Initiative in the fixture hand and
+        /// Blue's the lowest, so the Red hero reliably acts first and a displacement fixture never has
+        /// to steer Initiative to reach the Skill.
+        /// </summary>
+        private static readonly SyntheticSkillProfile RedDisplacementSkillProfile =
+            new SyntheticSkillProfile("red-shove", "Red Shove", 16);
+
+        private static readonly SyntheticSkillProfile BlueDisplacementSkillProfile =
+            new SyntheticSkillProfile("blue-shove", "Blue Shove", 1);
+
         private PlaceholderMovementHand(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances)
@@ -92,12 +104,16 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public static PlaceholderMovementHand CreateRedWithSkill(HeroId ownerId)
         {
-            return Create(ownerId, RedProfiles, null, RedSkillProfile, RedComponentSkillProfile);
+            return Create(
+                ownerId, RedProfiles, null, RedSkillProfile, RedComponentSkillProfile,
+                RedDisplacementSkillProfile);
         }
 
         public static PlaceholderMovementHand CreateBlueWithSkill(HeroId ownerId)
         {
-            return Create(ownerId, BlueProfiles, null, BlueSkillProfile, BlueComponentSkillProfile);
+            return Create(
+                ownerId, BlueProfiles, null, BlueSkillProfile, BlueComponentSkillProfile,
+                BlueDisplacementSkillProfile);
         }
 
         internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
@@ -124,7 +140,8 @@ namespace GuardsDigital.Core.Cards
             IReadOnlyList<SyntheticCardProfile> profiles,
             string instancePrefix,
             SyntheticSkillProfile skillProfile = null,
-            SyntheticSkillProfile componentSkillProfile = null)
+            SyntheticSkillProfile componentSkillProfile = null,
+            SyntheticSkillProfile displacementSkillProfile = null)
         {
             if (!ownerId.IsDefined)
             {
@@ -150,6 +167,13 @@ namespace GuardsDigital.Core.Cards
                 AddCard(
                     definitions, instances, CreateComponentSkillDefinition(componentSkillProfile),
                     componentSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (displacementSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances, CreateDisplacementSkillDefinition(displacementSkillProfile),
+                    displacementSkillProfile.Id, instancePrefix, ownerId);
             }
 
             return new PlaceholderMovementHand(
@@ -301,6 +325,96 @@ namespace GuardsDigital.Core.Cards
                 {
                     new ActionDefinition(
                         new ActionDefinitionId("primary-component-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 6.4's Skill: one chooser-owned selection between the two displacement operations
+        /// this milestone implements - a direct Move of the acting hero, and an Object Push of every
+        /// object adjacent to it.
+        ///
+        /// A third Skill card rather than a branch on 6.2's, for the reason recorded there: the five
+        /// ordinary cards pin the card matrix and every default digest, and each milestone's Skill card
+        /// stays separable so a fixture can reach one operation family without the others.
+        ///
+        /// The two branches carry different failure policies on purpose, because that is where p.11 and
+        /// p.18 put the difference. The Move branch is `up to`, so its distance is optional and every
+        /// shorter destination is legal. The Push branch is mandatory at a fixed distance of 2, so it
+        /// opens no distance decision at all and every adjacent object moves as far as it can - which is
+        /// the shape that shows a blocked target still resolving to a legal short or zero-space push. The
+        /// Move branch names the actor as its own mover and sets no `towardActor` policy; a `towards`
+        /// move needs a second unit to move, which no synthetic bound here supplies.
+        ///
+        /// Board-neutral in the same sense as the others: it names no hero, no card, and no space.
+        /// </summary>
+        private static CardDefinition CreateDisplacementSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("displacement-root");
+            var moveBranch = new EffectNodeId("displacement-move-branch");
+            var move = new EffectNodeId("displacement-direct-move");
+            var push = new EffectNodeId("displacement-object-push");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-6-4-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { moveBranch, push },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    // `up to` is the rulebook's own wording for an optional distance (p.11), and it is
+                    // the policy that admits every destination at or below the bound rather than only
+                    // the exact one.
+                    new EffectNodeDefinition(
+                        moveBranch, EffectNodeKind.Optional, EffectFailurePolicy.UpTo,
+                        childNodeIds: new[] { move },
+                        chooser: EffectChooserRole.Actor),
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                        SyntheticDisplacementCapabilities.DirectMoveV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole("mover", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
+                            EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                        },
+                        outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.ObjectPushV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
+                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("distance", EffectValueKind.Integer),
+                            new EffectOutputBinding("moved", EffectValueKind.Integer)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-6-4-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-displacement-skill"),
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
                         Array.Empty<PrintedValueDefinition>(),

@@ -795,7 +795,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             var skillResult = cardActions.StartTurnSkill(
-                resolutionId, offer, definitions, instances, participants, timing, roundIndex, turnIndex);
+                resolutionId, offer, definitions, instances, participants, timing,
+                CurrentModifications(), roundIndex, turnIndex);
             if (!skillResult.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillActionRejected);
             return CompleteSkillStep(skillResult);
@@ -831,7 +832,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             var answered = cardActions.AnswerEffectChoice(
-                command, definitions, participants, timing, roundIndex, turnIndex);
+                command, definitions, participants, timing, CurrentModifications(), roundIndex, turnIndex);
             if (!answered.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
             return CompleteSkillStep(answered);

@@ -249,7 +249,8 @@ namespace GuardsDigital.Tests.EditMode
                     participants,
                     null,
                     1,
-                    1));
+                    1,
+                    RuleModificationSet.Empty));
             Assert.That(live.Accepted, Is.True);
             Assert.That(live.Frame, Is.Not.Null, "The asker capability must pause the resolution.");
             var liveCandidates = live.Frame.PendingChoice.Candidates

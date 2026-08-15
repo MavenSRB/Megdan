@@ -88,9 +88,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <summary>
         /// The component collaborators a Skill's capabilities may reach. The board doubles as the token
         /// placement port, because tokens are board occupants and the board owns the one occupancy index
-        /// milestone 6.1r established. The marker register arrives from the caller rather than being
-        /// created here whenever a live match is composing, so that the register this dispatcher hands to
-        /// capabilities and the register the round authority persists are the same object.
+        /// milestone 6.1r established, and since milestone 6.4 it is also the displacement port for the
+        /// same reason: relocating a board object is the same authority's business. They stay two named
+        /// ports on one object rather than one wide one, because placing from a supply and displacing
+        /// something already placed are different rules questions. The marker register arrives from the
+        /// caller rather than being created here whenever a live match is composing, so that the register
+        /// this dispatcher hands to capabilities and the register the round authority persists are the
+        /// same object.
         /// </summary>
         private static MatchComponents CreateComponents(
             AdjacentMoveAuthority adjacentMoveAuthority,
@@ -98,7 +102,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             new MatchComponents(
                 SyntheticComponentDefinitions.CreateCatalog(),
                 adjacentMoveAuthority,
-                markers ?? new MarkerAttachmentRegister());
+                markers ?? new MarkerAttachmentRegister(),
+                adjacentMoveAuthority);
 
         /// <summary>
         /// The same collaborators, for the snapshot reader that has to re-ask a paused capability what
@@ -150,6 +155,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
             int roundIndex,
             int turnIndex)
         {
@@ -170,7 +176,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             return skillBackend.StartTurnSkill(
                 resolutionId, offer, prepared.Definitions, prepared.Instances, participants,
-                timing, components, roundIndex, turnIndex);
+                timing, modifications, components, roundIndex, turnIndex);
         }
 
         public CardActionResolutionResult AnswerEffectChoice(
@@ -178,10 +184,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             MatchParticipants participants,
             GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
             int roundIndex,
             int turnIndex) =>
             skillBackend.AnswerEffectChoice(
-                command, definitions, participants, timing, components, roundIndex, turnIndex);
+                command, definitions, participants, timing, modifications, components, roundIndex, turnIndex);
 
         public CardActionResolutionRestoreState CaptureRestoreState()
         {

@@ -80,6 +80,12 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         internal bool IsOccupied(HexCoordinate coordinate) => occupants.ContainsKey(coordinate);
 
+        // Which occupant, not merely whether there is one. Milestone 6.4's displacement port names a
+        // push target by the space it stands on, which the one-obstacle-per-space rule above makes an
+        // unambiguous identity for every kind at once; this is where that space becomes the identity.
+        internal bool TryGetOccupant(HexCoordinate coordinate, out BoardOccupant occupant) =>
+            occupants.TryGetValue(coordinate, out occupant);
+
         internal void Add(HexCoordinate coordinate, BoardOccupant occupant, string parameterName)
         {
             if (occupants.ContainsKey(coordinate))

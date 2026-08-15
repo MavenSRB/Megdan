@@ -5,6 +5,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -109,6 +110,7 @@ namespace GuardsDigital.Core.Effects
             int turnIndex,
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
             MatchComponents components = null)
         {
             if (!nodeId.IsDefined)
@@ -132,6 +134,7 @@ namespace GuardsDigital.Core.Effects
             TurnIndex = turnIndex;
             Participants = participants;
             Timing = timing;
+            Modifications = modifications ?? throw new ArgumentNullException(nameof(modifications));
             Components = components;
         }
 
@@ -146,6 +149,14 @@ namespace GuardsDigital.Core.Effects
         public int TurnIndex { get; }
         public MatchParticipants Participants { get; }
         public ActiveEffectLifecycle Timing { get; }
+
+        /// <summary>
+        /// The modifications in effect. Required since milestone 6.4: a handler that displaces
+        /// something consults p.18's immunity and the Move-Through permission, so a capability is a
+        /// rules-consuming seam like any other and takes the live set rather than an optional one.
+        /// <see cref="RuleModificationSet.Empty"/> is the named absence.
+        /// </summary>
+        public RuleModificationSet Modifications { get; }
 
         /// <summary>
         /// Milestone 6.2's token and marker collaborators, or <c>null</c> outside a live match. Like

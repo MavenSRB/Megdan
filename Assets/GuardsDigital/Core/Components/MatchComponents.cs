@@ -21,11 +21,13 @@ namespace GuardsDigital.Core.Components
         public MatchComponents(
             ComponentDefinitionCatalog catalog,
             ITokenPlacementAuthority tokens,
-            MarkerAttachmentRegister markers)
+            MarkerAttachmentRegister markers,
+            IBoardDisplacementAuthority board)
         {
             Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             Tokens = tokens;
             Markers = markers;
+            Board = board;
         }
 
         public ComponentDefinitionCatalog Catalog { get; }
@@ -36,7 +38,23 @@ namespace GuardsDigital.Core.Components
         /// <summary>The marker register, or <c>null</c> outside a live match.</summary>
         public MarkerAttachmentRegister Markers { get; }
 
-        /// <summary>Whether both authorities are present, so a component operation can actually run.</summary>
+        /// <summary>
+        /// The board's displacement port (milestone 6.4), or <c>null</c> outside a live match. It is a
+        /// third named port rather than a widening of <see cref="Tokens"/> because relocating a board
+        /// object is a different authority question from placing one from a supply, and p.18 keeps
+        /// Push, Place, and Movement as separate operations.
+        /// </summary>
+        public IBoardDisplacementAuthority Board { get; }
+
+        /// <summary>
+        /// Whether the token and marker authorities are present, so a component operation can run.
+        /// Deliberately unchanged by the board port: the token and marker capabilities that predate
+        /// milestone 6.4 must not start reporting themselves unable to act because a port they never
+        /// use is absent. A displacement capability asks <see cref="CanDisplace"/> instead.
+        /// </summary>
         public bool IsLive => Tokens != null && Markers != null;
+
+        /// <summary>Whether the board displacement port is present, so a displacement can be committed.</summary>
+        public bool CanDisplace => Board != null;
     }
 }

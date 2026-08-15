@@ -6,6 +6,7 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -64,6 +65,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
             MatchComponents components,
             int roundIndex,
             int turnIndex)
@@ -86,7 +88,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var context = new EffectResolutionContext(
-                action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex,
+                action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 components: components);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -106,6 +108,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
             MatchComponents components,
             int roundIndex,
             int turnIndex)
@@ -124,7 +127,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var context = new EffectResolutionContext(
-                effectRoot, catalog, participants, timing, roundIndex, turnIndex,
+                effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 components: components);
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)

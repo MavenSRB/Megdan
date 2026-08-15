@@ -743,8 +743,9 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     configuration.Participants,
                     new ActiveEffectLifecycle(),
-                    1,
-                    1);
+                    RuleModificationSet.Empty,
+                     1,
+                     1);
             var mismatchedResult = CreateResolutionAuthority(redFocus.OwnerId, new HexCoordinate(0, 0))
                 .StartTurnSkill(
                     new ActionResolutionId("mismatched-context-skill"),
@@ -753,8 +754,9 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     configuration.Participants,
                     new ActiveEffectLifecycle(),
-                    1,
-                    1);
+                    RuleModificationSet.Empty,
+                     1,
+                     1);
 
             Assert.That(forgedResult.Accepted, Is.False);
             Assert.That(forgedResult.RejectionReason,

@@ -89,7 +89,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new MarkActorHandler()
                 }
                 .Concat(SyntheticComponentCapabilities.Handlers())
-                .Concat(SyntheticModificationCapabilities.Handlers()));
+                .Concat(SyntheticModificationCapabilities.Handlers())
+                .Concat(SyntheticDisplacementCapabilities.Handlers()));
 
         /// <summary>
         /// Creates one Active effect on the actor. This is the capability that gives acceptance check 5

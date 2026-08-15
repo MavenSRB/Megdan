@@ -67,16 +67,41 @@ namespace GuardsDigital.Tests.EditMode
         /// one 7-bit-encoded prefix byte, so nothing else shifted, and the other six payloads including
         /// <c>placed-token-v9</c> are byte-identical, which is the token family's independent proof
         /// that this milestone left it alone.
+        /// Milestone 6.4 keeps schema v9 and re-pins all seven fixtures for one cause: the build now
+        /// registers two more effect capabilities - <c>synthetic-direct-move</c> and
+        /// <c>synthetic-object-push</c> - and every payload records the capability contract set it was
+        /// written against. The decision is reject rather than migrate, and it needs no reader change
+        /// because <c>ValidateCapabilityRegistrations</c> already refuses any payload whose stored list
+        /// is not sequence-equal to this build's: a payload written against the sixteen-capability set
+        /// states a contract set that no longer describes this build, and restoring it would leave a
+        /// saved match unable to resolve a definition binding either new capability. The delta was read
+        /// at the byte level rather than assumed. The registration list grows 16 -> 18 entries, the
+        /// decoded payload grows 2893 -> 2945 bytes - exactly the 52 bytes those two entries cost as
+        /// 7-bit length-prefixed ids plus int32 revisions - and the change is confined to one
+        /// contiguous region, with a 608-byte common prefix and a 1986-byte common suffix that are
+        /// byte-identical either side. No effect, board, component, or round field moved.
+        /// A second and separable 6.4 cause moves only <c>placed-token-v9</c> and
+        /// <c>attached-marker-v9</c>: the milestone's displacement Skill card joins the Skill-fixture
+        /// hands, and those are the two fixtures built from them, so their definition table gains
+        /// <c>placeholder-red-shove</c> and <c>placeholder-blue-shove</c> at
+        /// <c>phase-6-4-rev-1</c> and their card list gains one instance per hand. Measured rather than
+        /// assumed: 241 bytes on top of the capability delta, of which 77 are the two definition-table
+        /// entries and 164 the two instance records. The decision is reject for the same reason as the
+        /// capability cause and by the same existing check - a payload written against the two-card
+        /// fixture hand states a card set the trusted catalog no longer supplies. The other five
+        /// fixtures are untouched by this cause because only the component snapshots use the Skill
+        /// fixture, which is that hand's own proof that adding a card to it leaves the ordinary
+        /// five-card matrix alone, exactly as 6.2a's separate-profile decision intended.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v9", "1b3a1800ad0acaf2fbb7dcdd49747fb5a63023b6c923e06cd5ced121c86c596f"),
-            new CompatibilityFixture("active-turn-v9", "505b7ee6d3485563492610cee08546622997ac395c65fe579a0b6acf9979129e"),
-            new CompatibilityFixture("pending-choice-v9", "1e5cf43896472066b5673f27618afcbe5424eca558278e4eb86bc3ac7296f8d9"),
-            new CompatibilityFixture("end-of-round-v9", "ca5385c7b6fcaca3f68761f8e9dbde1c556df02f8c2a7191c3cc664f58d9ff2f"),
-            new CompatibilityFixture("pending-minion-battle-v9", "c5a0f8aee447d403418f8f3033f8c2507e08ed5fed675c1e9014a1785ed367f1"),
-            new CompatibilityFixture("placed-token-v9", "3080ef46fc0a141400f2db3b8925226806a60e87be155f293a4775ca582ec083"),
-            new CompatibilityFixture("attached-marker-v9", "a1474d9a2bc9f2eb3fb7ed4a94394b7ba270c8e7f87b4069dc3d114f03f07684")
+            new CompatibilityFixture("setup-v9", "635b1ef433a0b4bba39d904bdfaa36fb3b299909bb7d0f425ea769a7c06a0c54"),
+            new CompatibilityFixture("active-turn-v9", "beb5d54ba46310f3c3781a803ecf39fceef171330c25468c199fef9c5072313e"),
+            new CompatibilityFixture("pending-choice-v9", "9666905cd013952cbc7bc11a048d9d5599a764d9299966a38774e4cb0375f7a6"),
+            new CompatibilityFixture("end-of-round-v9", "11b275eae1736436aafb8f929843a4e34947a9e323b3ec8ace839992b8eb7fb0"),
+            new CompatibilityFixture("pending-minion-battle-v9", "149449ce02650ad5bbc7d3b69e827f8fb5cc10f1bf6e7ac84e8bc2c294c9fdb5"),
+            new CompatibilityFixture("placed-token-v9", "113497a297dae49484c186fb82602b943acd13e3ebaf21d05f8f9acee8fd026b"),
+            new CompatibilityFixture("attached-marker-v9", "2b8078992c5e3a5fb1375e09ef0580808e04e50bf1233a0e4e063453b7342c10")
         };
 
         [Test]
