@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.1ar**. The configured v
 ## Current authorization and next route
 
 - Current completed milestone: **6.1ar**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.4**, in progress.
 - Next proposed milestone: **6.4**.
 
 Milestone **6.1ar** completed on 2026-08-15, clearing threshold room before 6.4. The rule-modification regime - the modifier/restriction/permission/immunity/`Counts As` contract, its required-parameter rule and named absences, every named consumer, the three-way obstacle classification, and per-activation effect identity - moved verbatim into the new [Project/RULE_MODIFICATIONS.md](Project/RULE_MODIFICATIONS.md), leaving the inventory at 3,041 of 4,500 words with 784 words of headroom. It is preventive rather than corrective and says so: the file was 70 words *below* its warning line beforehand, so 6.1aq's present-then-absent transition could not be observed here and was not claimed. The evidence is the measured before/after counts, every other threshold unchanged, and a case-sensitive comparison proving the moved body byte-identical. Both hazards from the earlier splits were checked rather than assumed - the moved body carries zero relative links, and the pinned snapshot-schema claim stays in the paragraph beside it, so `Tools/PinnedConstants.txt` needed no retargeting. **6.4** is proposed next under the mechanics-showcase route below. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
