@@ -542,11 +542,19 @@ Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#mile
 
 ### [ ] 6.4a Integrate after-action displaced-minion correction with core Push
 
+**Corrective amendment (2026-08-15, user approved).** Two additions, both arising from what milestone 6.4 actually shipped.
+
+The first is a subject widening that this milestone's own seventh acceptance check already requires. 6.4 implemented direct Move for a hero only, recording the non-hero mover as open; but the correction below applies to minion miniatures, so direct Move must be able to displace a minion before it can exercise the correction authority at all. Milestone 6.5b independently requires the same thing. The user approved widening to the full p.11 subject set - "move, or to move another unit or a token in the card text" - in one pass, because minion and token movers change the same three signatures and splitting them would reopen the seam twice. The widening is deliberately not a widening of the correction: p.18 states that the correction "is only relevant for minions represented by minion miniatures; objects that count as minions are unaffected", so a displaced token and a hero counting as a minion are both moved and never corrected, and this milestone asks the intrinsic unit-type question rather than the effective one.
+
+The second is a correction. 6.4's `DisplacementRecord` and `DisplacementKind` shipped with no producer and no consumer, appearing only in their own file, while the capabilities published node-output facts instead; the milestone's evidence record overstated that as a typed fact being recorded, and that row is corrected in this milestone's commit. This is the dead-contract pattern 6.8c and 6.8b were corrected for, and it was not mechanically detectable: `unreachable-component` scans only MonoBehaviour and ScriptableObject types, never a plain Core record. 6.4a is where it closes rather than a separate corrective milestone, because the correction authority below is the consumer that was missing.
+
 Observable outcome: A completed synthetic direct Move or Object Push action invokes the general displaced-minion correction once after all of that action's effect nodes and simultaneous batches finish.
 
 Acceptance checks:
 
 - Correction applies only to intrinsic minion miniatures outside the Battle Zone after the whole action.
+- Direct Move accepts any displaceable board object as its subject - hero, minion, or token - through the same reachability the Movement action uses, and a displaced token is never corrected.
+- Every committed displacement is recorded through the typed displacement record, which the correction authority reads; the record has a producer in both capabilities rather than existing unread.
 - Battle-Zone membership is resolved through one authority-owned query shared with Minion Battle, Heavy immunity, and Lane Push; correction does not derive or cache its own zone boundary.
 - A minion follows a shortest empty path; its team chooses among equally short valid paths.
 - With no path or legal move, the minion is Placed into a nearest empty Battle-Zone space.
