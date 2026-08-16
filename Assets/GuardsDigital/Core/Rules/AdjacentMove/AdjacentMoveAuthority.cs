@@ -575,6 +575,33 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             return removed;
         }
 
+        internal HeroOccupancy CommitValidatedHeroRemoval(HeroId heroId)
+        {
+            var index = occupancies.FindIndex(hero => hero.HeroId.Equals(heroId));
+            if (index < 0)
+            {
+                throw new InvalidOperationException("A validated hero target is no longer on the board.");
+            }
+
+            var removed = occupancies[index];
+            occupancies.RemoveAt(index);
+            occupancyIndex.Remove(removed.Coordinate);
+            return removed;
+        }
+
+        internal bool CommitValidatedHeroRespawn(HeroId heroId, HexCoordinate destination)
+        {
+            if (occupancies.Any(hero => hero.HeroId.Equals(heroId)) ||
+                !IsEmptyPlayableSpace(destination))
+            {
+                return false;
+            }
+
+            occupancyIndex.Add(destination, BoardOccupant.ForHero(heroId), nameof(heroId));
+            occupancies.Add(new HeroOccupancy(heroId, destination));
+            return true;
+        }
+
         // The validated authority-level minion position mutation required before Object Push
         // (6.4), Lane Push (6.9-6.11), and minion Respawn can move minions. No player-facing
         // command or session exposure exists yet; consumers arrive with those milestones.

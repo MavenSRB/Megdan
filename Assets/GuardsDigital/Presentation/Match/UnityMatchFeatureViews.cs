@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -69,6 +70,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             Model = model ?? throw new ArgumentNullException(nameof(model));
+            var heroChoiceCues = model.HeroChoiceCues.ToDictionary(value => value.HeroId);
             foreach (var hero in heroes)
             {
                 var occupancy = model.Heroes.SingleOrDefault(value =>
@@ -81,7 +83,10 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 6.5c: an effect-choice target is addressed by its space, so whichever
                 // unit stands there wears the cue. The hero path exists because a Push may name one.
                 hero.SetChoiceCue(
-                    model.EffectChoiceTargetSpace.HasValue && occupancy.HeroId.IsDefined &&
+                    occupancy.HeroId.IsDefined && heroChoiceCues.TryGetValue(
+                        occupancy.HeroId, out var heroChoiceCue)
+                        ? heroChoiceCue.Kind
+                        : model.EffectChoiceTargetSpace.HasValue && occupancy.HeroId.IsDefined &&
                         occupancy.Coordinate.Equals(model.EffectChoiceTargetSpace.Value)
                         ? MinionChoiceCueKind.Highlighted
                         : MinionChoiceCueKind.None);
@@ -97,6 +102,10 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 6.5c: an empty effect-choice candidate is a destination like any other, and
             // is the whole surface for that candidate - no control is drawn for it anywhere.
             targetCoordinates.UnionWith(model.EffectChoiceDestinations);
+            if (model.HeroRespawnHighlight.HasValue)
+            {
+                targetCoordinates.Add(model.HeroRespawnHighlight.Value);
+            }
             foreach (var targetId in model.AttackTargets)
             {
                 var target = model.Heroes.Single(value => value.HeroId.Equals(targetId));
@@ -338,8 +347,10 @@ namespace GuardsDigital.Presentation.Match
         /// reads this to mark that object and light where the projected operation would leave it.
         /// </summary>
         public event Action<EffectChoiceTargetViewModel> TargetHighlighted;
+        public event Action<HeroRespawnOptionViewModel> RespawnHighlighted;
 
         public EffectChoiceTargetViewModel HighlightedTarget { get; private set; }
+        public HeroRespawnOptionViewModel HighlightedRespawn { get; private set; }
 
         public void Render(RoundActionViewModel model)
         {
@@ -364,6 +375,12 @@ namespace GuardsDigital.Presentation.Match
             {
                 SetTargetHighlight(null);
             }
+
+            if (HighlightedRespawn != null &&
+                !Model.HeroRespawnOptions.Any(value => ReferenceEquals(value, HighlightedRespawn)))
+            {
+                SetRespawnHighlight(null);
+            }
         }
 
         /// <summary>Forwards one named target control, for a driver that has no pointer.</summary>
@@ -378,6 +395,10 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Reports a pointed-at target directly, for a driver that has no pointer.</summary>
         public void ForwardTargetHighlight(EffectChoiceTargetViewModel target) =>
             SetTargetHighlight(target);
+
+        /// <summary>Reports a hovered or keyboard-focused respawn control without a pointer driver.</summary>
+        public void ForwardRespawnHighlight(HeroRespawnOptionViewModel option) =>
+            SetRespawnHighlight(option);
 
         private bool DrawEffectChoiceTarget(EffectChoiceTargetViewModel target, int index)
         {
@@ -411,6 +432,17 @@ namespace GuardsDigital.Presentation.Match
 
             HighlightedTarget = target;
             TargetHighlighted?.Invoke(target);
+        }
+
+        private void SetRespawnHighlight(HeroRespawnOptionViewModel option)
+        {
+            if (ReferenceEquals(HighlightedRespawn, option))
+            {
+                return;
+            }
+
+            HighlightedRespawn = option;
+            RespawnHighlighted?.Invoke(option);
         }
 
         public void Draw()
@@ -449,6 +481,33 @@ namespace GuardsDigital.Presentation.Match
                 DrawInvocation(effectChoice, 170f);
             }
 
+            var hoveredRespawn = default(HeroRespawnOptionViewModel);
+            for (var index = 0; index < Model.HeroRespawnOptions.Count; index++)
+            {
+                var option = Model.HeroRespawnOptions[index];
+                var controlName = $"HeroRespawn-{Model.Version}-{index}";
+                GUI.SetNextControlName(controlName);
+                if (GUILayout.Button(
+                    option.Label,
+                    GUILayout.MinWidth(CalculateContentWidth(option.Label, GUI.skin.button)),
+                    GUILayout.Height(46f)))
+                {
+                    InvocationSubmitted?.Invoke(new TypedInvocationViewModel(option.Label, option.Command));
+                }
+
+                if (Event.current.type == EventType.Repaint)
+                {
+                    var rect = GUILayoutUtility.GetLastRect();
+                    if (rect.Contains(Event.current.mousePosition) ||
+                        string.Equals(GUI.GetNameOfFocusedControl(), controlName, StringComparison.Ordinal))
+                    {
+                        hoveredRespawn = option;
+                    }
+                }
+            }
+
+            DrawInvocation(Model.ResolveWithoutRespawn, 190f);
+
             // Milestone 6.5c: one control per target the choice names, reporting which one the
             // pointer or keyboard focus is on so the board can mark it and show where it would land.
             // Nothing is drawn for a destination candidate - the lit board is its control.
@@ -467,6 +526,7 @@ namespace GuardsDigital.Presentation.Match
             if (Event.current.type == EventType.Repaint)
             {
                 SetTargetHighlight(hoveredTarget);
+                SetRespawnHighlight(hoveredRespawn);
             }
 
             if (Model.DefenseChoices.Count > 0)
@@ -728,16 +788,16 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class MinionChoiceUnityView : IMinionChoiceView
     {
-        private MinionId highlightedMinionId;
+        private RuleObject highlightedUnit;
 
         public MinionChoiceViewModel Model { get; private set; }
 
         /// <summary>The candidate the pointer or keyboard focus is currently on, if any.</summary>
-        public MinionId HighlightedMinionId => highlightedMinionId;
+        public RuleObject HighlightedUnit => highlightedUnit;
 
         public event Action<MinionChoiceCandidateViewModel> CandidateSubmitted;
         public event Action ConfirmRequested;
-        public event Action<MinionId> CandidateHighlighted;
+        public event Action<RuleObject> CandidateHighlighted;
 
         public void Render(MinionChoiceViewModel model)
         {
@@ -772,12 +832,12 @@ namespace GuardsDigital.Presentation.Match
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(84f);
-            var hovered = default(MinionId);
+            var hovered = RuleObject.None;
             for (var index = 0; index < model.Candidates.Count; index++)
             {
                 if (DrawCandidate(model, index))
                 {
-                    hovered = model.Candidates[index].MinionId;
+                    hovered = model.Candidates[index].Unit;
                 }
             }
 
@@ -811,9 +871,9 @@ namespace GuardsDigital.Presentation.Match
             ConfirmRequested?.Invoke();
         }
 
-        public void ForwardHighlight(MinionId minionId)
+        public void ForwardHighlight(RuleObject unit)
         {
-            SetHighlight(minionId);
+            SetHighlight(unit);
         }
 
         private bool DrawCandidate(MinionChoiceViewModel model, int index)
@@ -845,15 +905,15 @@ namespace GuardsDigital.Presentation.Match
                 string.Equals(GUI.GetNameOfFocusedControl(), controlName, StringComparison.Ordinal);
         }
 
-        private void SetHighlight(MinionId minionId)
+        private void SetHighlight(RuleObject unit)
         {
-            if (highlightedMinionId.Equals(minionId))
+            if (highlightedUnit.Equals(unit))
             {
                 return;
             }
 
-            highlightedMinionId = minionId;
-            CandidateHighlighted?.Invoke(minionId);
+            highlightedUnit = unit;
+            CandidateHighlighted?.Invoke(unit);
         }
     }
 

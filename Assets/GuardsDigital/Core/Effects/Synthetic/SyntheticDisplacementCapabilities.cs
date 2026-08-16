@@ -244,7 +244,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 moverAt = subject.Coordinate;
-                return components.Board.TryGetObjectAt(moverAt, out mover);
+                if (!components.Board.TryGetObjectAt(moverAt, out mover))
+                {
+                    return false;
+                }
+
+                var unit = mover.AsRuleObject();
+                return !unit.IsDefined || !ImmunityQuery.IsImmuneTo(
+                    unit,
+                    RuleActivity.Skill,
+                    RuleObject.ForHero(context.ActorId),
+                    components.Board,
+                    context.Participants,
+                    context.Modifications);
             }
         }
 
@@ -540,8 +552,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
             EffectCapabilityContext context, BoardObjectReference occupant, RuleObject pushingUnit)
         {
             var asRuleObject = occupant.AsRuleObject();
-            return asRuleObject.IsDefined &&
-                context.Modifications.IsImmuneTo(asRuleObject, RuleActivity.ObjectPush, pushingUnit);
+            return asRuleObject.IsDefined && ImmunityQuery.IsImmuneTo(
+                asRuleObject,
+                RuleActivity.ObjectPush,
+                pushingUnit,
+                context.Components.Board,
+                context.Participants,
+                context.Modifications);
         }
     }
 }

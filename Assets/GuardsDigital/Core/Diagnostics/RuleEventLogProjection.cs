@@ -147,7 +147,9 @@ namespace GuardsDigital.Core.Diagnostics
                             $"resolution={ruleEvent.EndOfRoundResolutionId.Value}",
                             $"choice={ruleEvent.EndOfRoundChoiceId.Value}",
                             $"team={ruleEvent.TeamId.Value}",
-                            $"minion={ruleEvent.MinionId.Value}"),
+                            ruleEvent.HeroId.IsDefined
+                                ? $"hero={ruleEvent.HeroId.Value}"
+                                : $"minion={ruleEvent.MinionId.Value}"),
                         $"side={ruleEvent.TeamSide};operation={ruleEvent.MinionBattleChoiceCommandKind}");
                     return;
                 case RoundResolutionEventKind.MinionBattleMinionRemoved:
@@ -157,7 +159,9 @@ namespace GuardsDigital.Core.Diagnostics
                             roundReference,
                             $"resolution={ruleEvent.EndOfRoundResolutionId.Value}",
                             $"team={ruleEvent.TeamId.Value}",
-                            $"minion={ruleEvent.MinionId.Value}"),
+                            ruleEvent.HeroId.IsDefined
+                                ? $"hero={ruleEvent.HeroId.Value}"
+                                : $"minion={ruleEvent.MinionId.Value}"),
                         $"side={ruleEvent.TeamSide};stage={ruleEvent.EndOfRoundStage}");
                     return;
                 case RoundResolutionEventKind.LanePushRequested:

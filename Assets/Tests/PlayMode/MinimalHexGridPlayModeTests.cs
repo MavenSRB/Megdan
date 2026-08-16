@@ -9,6 +9,7 @@ using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
@@ -851,7 +852,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             MinionChoiceCandidateViewModel submitted = null;
             var confirmed = 0;
-            var highlights = new List<MinionId>();
+            var highlights = new List<RuleObject>();
             runtime.MinionChoiceView.CandidateSubmitted += value => submitted = value;
             runtime.MinionChoiceView.ConfirmRequested += () => confirmed++;
             runtime.MinionChoiceView.CandidateHighlighted += value => highlights.Add(value);
@@ -860,10 +861,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(submitted, Is.SameAs(selectedCandidate));
             runtime.MinionChoiceView.ForwardConfirm();
             Assert.That(confirmed, Is.EqualTo(1));
-            runtime.MinionChoiceView.ForwardHighlight(default);
-            runtime.MinionChoiceView.ForwardHighlight(blue[1].MinionId);
-            Assert.That(highlights.Last(), Is.EqualTo(blue[1].MinionId));
-            Assert.That(runtime.MinionChoiceView.HighlightedMinionId, Is.EqualTo(blue[1].MinionId));
+            runtime.MinionChoiceView.ForwardHighlight(RuleObject.None);
+            runtime.MinionChoiceView.ForwardHighlight(RuleObject.ForMinion(blue[1].MinionId));
+            Assert.That(highlights.Last(), Is.EqualTo(RuleObject.ForMinion(blue[1].MinionId)));
+            Assert.That(runtime.MinionChoiceView.HighlightedUnit,
+                Is.EqualTo(RuleObject.ForMinion(blue[1].MinionId)));
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(acceptedBefore),
                 "The passive prompt reports intent; it never advances authoritative state itself.");
             Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(snapshotBefore));
@@ -983,6 +985,68 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
             Assert.That(CountResultingSpaceMaterials(), Is.EqualTo(1));
             AssertCurrentMinionBindings(second);
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_RespawnButtonHoverUsesTheMovementDestinationHighlight()
+        {
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+            var baseBoard = runtime.BoardView.Model;
+            var tile = Object.FindObjectsByType<HexTileView>()
+                .First(candidate => candidate.IsPlayable);
+            var destination = tile.Coordinate;
+
+            runtime.BoardView.Render(new BoardInteractionViewModel(
+                baseBoard.Version + 1,
+                baseBoard.Heroes,
+                baseBoard.Minions,
+                new[] { destination },
+                baseBoard.AttackTargets,
+                baseBoard.MinionAttackTargets,
+                baseBoard.FocusedHeroId));
+            Assert.That(tile.IsHighlighted, Is.True);
+            var movementHighlightMaterial = tile.GetComponent<MeshRenderer>().sharedMaterial;
+
+            runtime.BoardView.Render(new BoardInteractionViewModel(
+                baseBoard.Version + 2,
+                baseBoard.Heroes,
+                baseBoard.Minions,
+                System.Array.Empty<HexCoordinate>(),
+                baseBoard.AttackTargets,
+                baseBoard.MinionAttackTargets,
+                baseBoard.FocusedHeroId,
+                heroRespawnHighlight: destination));
+            Assert.That(tile.IsHighlighted, Is.True);
+            Assert.That(tile.GetComponent<MeshRenderer>().sharedMaterial,
+                Is.SameAs(movementHighlightMaterial),
+                "Respawn hover uses the exact movement destination highlight, not a second visual language.");
+
+            var hero = runtime.Setup.Heroes.Single(value => value.TeamSide == TeamSide.Blue).HeroId;
+            var card = runtime.Cards.First(value => value.OwnerId.Equals(hero));
+            var option = new HeroRespawnOptionViewModel(
+                "RESPAWN AT SPAWN #1",
+                destination,
+                DirectorCommand.RespawnHero(new HeroRespawnCommand(
+                    HeroRespawnCommandKind.Respawn, hero, card.Id, destination)));
+            HeroRespawnOptionViewModel highlighted = null;
+            runtime.RoundView.RespawnHighlighted += value => highlighted = value;
+            runtime.RoundView.Render(new RoundActionViewModel(
+                runtime.RoundView.Model.Version + 1,
+                runtime.RoundIndex,
+                runtime.RoundView.Model.TurnIndex,
+                RoundResolutionPhase.ResolvingTurn,
+                "Choose respawn",
+                System.Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                System.Array.Empty<TypedInvocationViewModel>(),
+                System.Array.Empty<TypedInvocationViewModel>(),
+                heroRespawnOptions: new[] { option }));
+            runtime.RoundView.ForwardRespawnHighlight(option);
+            Assert.That(highlighted, Is.SameAs(option));
+            Assert.That(highlighted.Destination, Is.EqualTo(destination));
+            yield return null;
         }
 
         private static IEnumerator LoadScene()

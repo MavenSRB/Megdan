@@ -14,6 +14,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -59,6 +60,24 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public MinionId MinionId { get; }
+        public MinionChoiceCueKind Kind { get; }
+    }
+
+    public readonly struct HeroChoiceCueViewModel
+    {
+        public HeroChoiceCueViewModel(HeroId heroId, MinionChoiceCueKind kind)
+        {
+            if (!heroId.IsDefined || kind == MinionChoiceCueKind.None)
+            {
+                throw new ArgumentException(
+                    "A hero choice cue requires a stable identity and a visible kind.");
+            }
+
+            HeroId = heroId;
+            Kind = kind;
+        }
+
+        public HeroId HeroId { get; }
         public MinionChoiceCueKind Kind { get; }
     }
 
@@ -152,7 +171,9 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HexCoordinate> correctionDestinations = null,
             IEnumerable<HexCoordinate> effectChoiceDestinations = null,
             HexCoordinate? effectChoiceTargetSpace = null,
-            HexCoordinate? effectChoiceResultingSpace = null)
+            HexCoordinate? effectChoiceResultingSpace = null,
+            HexCoordinate? heroRespawnHighlight = null,
+            IEnumerable<HeroChoiceCueViewModel> heroChoiceCues = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -170,6 +191,8 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<MinionDefenseCueViewModel>()).ToArray());
             MinionChoiceCues = Array.AsReadOnly((minionChoiceCues ??
                 Enumerable.Empty<MinionChoiceCueViewModel>()).ToArray());
+            HeroChoiceCues = Array.AsReadOnly((heroChoiceCues ??
+                Enumerable.Empty<HeroChoiceCueViewModel>()).ToArray());
             if (MinionChoiceCues.Select(value => value.MinionId).Distinct().Count() !=
                 MinionChoiceCues.Count)
             {
@@ -184,6 +207,7 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             EffectChoiceTargetSpace = effectChoiceTargetSpace;
             EffectChoiceResultingSpace = effectChoiceResultingSpace;
+            HeroRespawnHighlight = heroRespawnHighlight;
             if (effectChoiceResultingSpace.HasValue && !effectChoiceTargetSpace.HasValue)
             {
                 throw new ArgumentException(
@@ -210,6 +234,7 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
         public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
         public IReadOnlyList<MinionChoiceCueViewModel> MinionChoiceCues { get; }
+        public IReadOnlyList<HeroChoiceCueViewModel> HeroChoiceCues { get; }
 
         /// <summary>Milestone 6.4b: the pending correction's legal route endpoints or Place spaces.</summary>
         public IReadOnlyList<HexCoordinate> CorrectionDestinations { get; }
@@ -229,6 +254,7 @@ namespace GuardsDigital.Presentation.Match
         /// target, and never drawn as a destination: it is a consequence, not a choice.
         /// </summary>
         public HexCoordinate? EffectChoiceResultingSpace { get; }
+        public HexCoordinate? HeroRespawnHighlight { get; }
     }
 
     public interface IBoardInteractionView
@@ -282,9 +308,11 @@ namespace GuardsDigital.Presentation.Match
         private MatchSessionProjection fastTravelSelectionProjection;
         private ActionDefinitionId? selectedFastTravelActionDefinitionId;
         private MatchSessionProjection choiceHighlightProjection;
-        private MinionId highlightedChoiceMinionId;
+        private RuleObject highlightedChoiceUnit;
         private MatchSessionProjection effectChoiceHighlightProjection;
         private HexCoordinate? highlightedEffectChoiceSpace;
+        private MatchSessionProjection respawnHighlightProjection;
+        private HexCoordinate? highlightedRespawnSpace;
 
         public BoardInteractionPresenter(IMatchSession session, IBoardInteractionView view)
         {
@@ -308,7 +336,7 @@ namespace GuardsDigital.Presentation.Match
             // Undo - drops it, so the board never keeps a cue for a choice that has moved on.
             if (!ReferenceEquals(projection, choiceHighlightProjection))
             {
-                highlightedChoiceMinionId = default;
+                highlightedChoiceUnit = RuleObject.None;
                 choiceHighlightProjection = null;
             }
 
@@ -318,6 +346,12 @@ namespace GuardsDigital.Presentation.Match
             {
                 highlightedEffectChoiceSpace = null;
                 effectChoiceHighlightProjection = null;
+            }
+
+            if (!ReferenceEquals(projection, respawnHighlightProjection))
+            {
+                highlightedRespawnSpace = null;
+                respawnHighlightProjection = null;
             }
 
             if (!ReferenceEquals(projection, lastProjection))
@@ -340,7 +374,9 @@ namespace GuardsDigital.Presentation.Match
                     CreateMinionChoiceCues(
                         projection.PendingMinionBattleChoice,
                         projection.PendingDisplacedMinionCorrection,
-                        highlightedChoiceMinionId),
+                        highlightedChoiceUnit.Kind == RuleObjectKind.Minion
+                            ? highlightedChoiceUnit.MinionId
+                            : default),
                     projection.PendingDisplacedMinionCorrection?.Stage ==
                         DisplacedMinionCorrectionStage.SelectDestination
                             ? projection.PendingDisplacedMinionCorrection.DestinationCandidates
@@ -348,7 +384,11 @@ namespace GuardsDigital.Presentation.Match
                             : Enumerable.Empty<HexCoordinate>(),
                     SelectableEffectChoiceDestinations(projection),
                     highlightedEffectChoiceSpace,
-                    FindResultingSpace(projection, highlightedEffectChoiceSpace));
+                    FindResultingSpace(projection, highlightedEffectChoiceSpace),
+                    highlightedRespawnSpace,
+                    CreateHeroChoiceCues(
+                        projection.PendingMinionBattleChoice,
+                        highlightedChoiceUnit));
             }
 
             view.Render(lastViewModel);
@@ -359,25 +399,26 @@ namespace GuardsDigital.Presentation.Match
         /// minion a hovered or focused prompt control refers to. Returns false when nothing changed,
         /// which is what stops a per-frame hover notification from rebuilding the board every repaint.
         /// </summary>
-        public bool HighlightMinionChoiceCandidate(MinionId minionId)
+        public bool HighlightMinionChoiceCandidate(RuleObject unit)
         {
             var projection = session.Projection;
             var choice = projection.PendingMinionBattleChoice;
             var correction = projection.PendingDisplacedMinionCorrection;
-            var resolved = minionId.IsDefined &&
+            var resolved = unit.IsDefined &&
                 (choice != null &&
-                        choice.Candidates.Any(candidate => candidate.MinionId.Equals(minionId)) ||
+                        choice.Candidates.Any(candidate => candidate.Unit.Equals(unit)) ||
                     correction?.Stage == DisplacedMinionCorrectionStage.SelectSubject &&
-                        correction.SubjectCandidates.Any(subject => subject.MinionId.Equals(minionId)))
-                    ? minionId
-                    : default;
-            if (resolved.Equals(highlightedChoiceMinionId) &&
+                        IntrinsicKindQuery.IsMinionMiniature(unit) &&
+                        correction.SubjectCandidates.Any(subject => subject.MinionId.Equals(unit.MinionId)))
+                    ? unit
+                    : RuleObject.None;
+            if (resolved.Equals(highlightedChoiceUnit) &&
                 (!resolved.IsDefined || ReferenceEquals(projection, choiceHighlightProjection)))
             {
                 return false;
             }
 
-            highlightedChoiceMinionId = resolved;
+            highlightedChoiceUnit = resolved;
             choiceHighlightProjection = resolved.IsDefined ? projection : null;
             lastProjection = null;
             return true;
@@ -404,6 +445,26 @@ namespace GuardsDigital.Presentation.Match
 
             highlightedEffectChoiceSpace = resolved;
             effectChoiceHighlightProjection = resolved.HasValue ? projection : null;
+            lastProjection = null;
+            return true;
+        }
+
+        public bool HighlightHeroRespawnDestination(HexCoordinate? space)
+        {
+            var projection = session.Projection;
+            var resolved = space.HasValue && projection.PendingHeroRespawnChoice != null &&
+                projection.PendingHeroRespawnChoice.Destinations.Any(destination =>
+                    destination.Coordinate.Equals(space.Value))
+                ? space
+                : null;
+            if (Nullable.Equals(resolved, highlightedRespawnSpace) &&
+                (!resolved.HasValue || ReferenceEquals(projection, respawnHighlightProjection)))
+            {
+                return false;
+            }
+
+            highlightedRespawnSpace = resolved;
+            respawnHighlightProjection = resolved.HasValue ? projection : null;
             lastProjection = null;
             return true;
         }
@@ -461,7 +522,8 @@ namespace GuardsDigital.Presentation.Match
             if (choice != null)
             {
                 var cues = new List<MinionChoiceCueViewModel>();
-                foreach (var candidate in choice.Candidates)
+                foreach (var candidate in choice.Candidates.Where(candidate =>
+                    candidate.MinionId.IsDefined))
                 {
                     var kind = choice.SelectedMinionIds.Contains(candidate.MinionId)
                         ? MinionChoiceCueKind.Selected
@@ -501,6 +563,31 @@ namespace GuardsDigital.Presentation.Match
             {
                 new MinionChoiceCueViewModel(correction.SubjectMinionId, MinionChoiceCueKind.Selected)
             };
+        }
+
+        private static IReadOnlyList<HeroChoiceCueViewModel> CreateHeroChoiceCues(
+            PendingMinionBattleChoice choice,
+            RuleObject highlightedUnit)
+        {
+            if (choice == null)
+            {
+                return Array.Empty<HeroChoiceCueViewModel>();
+            }
+
+            return choice.Candidates
+                .Where(candidate => candidate.HeroId.IsDefined)
+                .Select(candidate =>
+                {
+                    var kind = choice.SelectedUnits.Contains(candidate.Unit)
+                        ? MinionChoiceCueKind.Selected
+                        : highlightedUnit.Equals(candidate.Unit)
+                            ? MinionChoiceCueKind.Highlighted
+                            : MinionChoiceCueKind.None;
+                    return new { candidate.HeroId, Kind = kind };
+                })
+                .Where(value => value.Kind != MinionChoiceCueKind.None)
+                .Select(value => new HeroChoiceCueViewModel(value.HeroId, value.Kind))
+                .ToArray();
         }
 
         public bool ActivateFastTravel(ActionDefinitionId replacedMovementActionDefinitionId)
@@ -983,7 +1070,9 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<FastTravelOfferViewModel> fastTravelOffers = null,
             IEnumerable<TypedInvocationViewModel> effectChoices = null,
             IEnumerable<EffectChoiceTargetViewModel> effectChoiceTargets = null,
-            IEnumerable<TypedInvocationViewModel> effectChoiceDestinations = null)
+            IEnumerable<TypedInvocationViewModel> effectChoiceDestinations = null,
+            IEnumerable<HeroRespawnOptionViewModel> heroRespawnOptions = null,
+            TypedInvocationViewModel resolveWithoutRespawn = null)
         {
             Version = version;
             RoundIndex = roundIndex;
@@ -1005,6 +1094,9 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<EffectChoiceTargetViewModel>()).ToArray());
             EffectChoiceDestinations = Array.AsReadOnly((effectChoiceDestinations ??
                 Enumerable.Empty<TypedInvocationViewModel>()).ToArray());
+            HeroRespawnOptions = Array.AsReadOnly((heroRespawnOptions ??
+                Enumerable.Empty<HeroRespawnOptionViewModel>()).ToArray());
+            ResolveWithoutRespawn = resolveWithoutRespawn;
             HudHeader =$"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
                 $"TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound} - {phase.ToString().ToUpperInvariant()}";
         }
@@ -1038,8 +1130,29 @@ namespace GuardsDigital.Presentation.Match
         /// board lights them, and clicking a lit space is how they are answered.
         /// </summary>
         public IReadOnlyList<TypedInvocationViewModel> EffectChoiceDestinations { get; }
+        public IReadOnlyList<HeroRespawnOptionViewModel> HeroRespawnOptions { get; }
+        public TypedInvocationViewModel ResolveWithoutRespawn { get; }
 
         public string HudHeader { get; }
+    }
+
+    public sealed class HeroRespawnOptionViewModel
+    {
+        public HeroRespawnOptionViewModel(
+            string label,
+            HexCoordinate destination,
+            DirectorCommand command)
+        {
+            Label = string.IsNullOrWhiteSpace(label)
+                ? throw new ArgumentException("A hero respawn option requires a label.", nameof(label))
+                : label;
+            Destination = destination;
+            Command = command ?? throw new ArgumentNullException(nameof(command));
+        }
+
+        public string Label { get; }
+        public HexCoordinate Destination { get; }
+        public DirectorCommand Command { get; }
     }
 
     public interface IRoundActionView
@@ -1083,6 +1196,9 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 6.5c: a destination carries no control, but it is still a projected
                 // invocation this presenter owns, so the board's click submits through here.
                 .Concat(current.EffectChoiceDestinations)
+                .Concat(current.ResolveWithoutRespawn != null
+                    ? new[] { current.ResolveWithoutRespawn }
+                    : Array.Empty<TypedInvocationViewModel>())
                 .Concat(current.EndTurnInvocation != null
                     ? new[] { current.EndTurnInvocation }
                     : Array.Empty<TypedInvocationViewModel>())
@@ -1090,7 +1206,8 @@ namespace GuardsDigital.Presentation.Match
                     ? new[] { current.ContinueEndOfRoundInvocation }
                     : Array.Empty<TypedInvocationViewModel>())
                 .Any(value => value.Command.Equals(invocation.Command)) ||
-                current.EffectChoiceTargets.Any(value => value.Command.Equals(invocation.Command));
+                current.EffectChoiceTargets.Any(value => value.Command.Equals(invocation.Command)) ||
+                current.HeroRespawnOptions.Any(value => value.Command.Equals(invocation.Command));
             if (!legal)
             {
                 return false;
@@ -1177,6 +1294,7 @@ namespace GuardsDigital.Presentation.Match
             // Core refuses a second action while one is in progress, so an offer shown during the
             // pause is a control that can only produce a rejection.
             var hasPendingResolution = projection.PendingInitiativeChoice != null ||
+                projection.PendingHeroRespawnChoice != null ||
                 projection.PendingMovementChoice != null || projection.PendingMovementResolution != null ||
                 projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
                 projection.PendingAttackResolution != null ||
@@ -1213,6 +1331,17 @@ namespace GuardsDigital.Presentation.Match
                 out var effectChoiceControls,
                 out var effectChoiceTargets,
                 out var effectChoiceDestinations);
+            var respawn = projection.PendingHeroRespawnChoice;
+            var respawnOptions = respawn == null
+                ? Array.Empty<HeroRespawnOptionViewModel>()
+                : respawn.Destinations.Select((destination, index) =>
+                    new HeroRespawnOptionViewModel(
+                        destination.IsFallback
+                            ? $"RESPAWN NEAR SPAWN #{index + 1}"
+                            : $"RESPAWN AT SPAWN #{index + 1}",
+                        destination.Coordinate,
+                        DirectorCommand.RespawnHero(respawn.RespawnInvocations[index])))
+                    .ToArray();
 
             return new RoundActionViewModel(
                 projection.Version,
@@ -1233,7 +1362,13 @@ namespace GuardsDigital.Presentation.Match
                 fastTravelOffers,
                 effectChoiceControls,
                 effectChoiceTargets,
-                effectChoiceDestinations);
+                effectChoiceDestinations,
+                respawnOptions,
+                respawn == null
+                    ? null
+                    : new TypedInvocationViewModel(
+                        "RESOLVE WITHOUT ACTION",
+                        DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation)));
         }
 
         /// <summary>
@@ -1554,6 +1689,11 @@ namespace GuardsDigital.Presentation.Match
                 return $"Defense response pending against Attack {projection.PendingDefenseChoice.AttackTotal}.";
             }
 
+            if (projection.PendingHeroRespawnChoice != null)
+            {
+                return "Hero is off board: choose a respawn point or resolve the card without an action.";
+            }
+
             if (projection.PendingAttackTargetChoice != null)
             {
                 return "Choose a legal Attack target.";
@@ -1599,7 +1739,17 @@ namespace GuardsDigital.Presentation.Match
             int ordinal,
             bool isSelected,
             DirectorCommand command)
-            : this(minionId, label, ordinal, isSelected, command, null)
+            : this(RuleObject.ForMinion(minionId), label, ordinal, isSelected, command, null)
+        {
+        }
+
+        public MinionChoiceCandidateViewModel(
+            HeroId heroId,
+            string label,
+            int ordinal,
+            bool isSelected,
+            DirectorCommand command)
+            : this(RuleObject.ForHero(heroId), label, ordinal, isSelected, command, null)
         {
         }
 
@@ -1615,14 +1765,26 @@ namespace GuardsDigital.Presentation.Match
             bool isSelected,
             DirectorCommand command,
             HexCoordinate? destination)
+            : this(
+                RuleObject.ForMinion(minionId), label, ordinal, isSelected, command, destination)
         {
-            if (!minionId.IsDefined || ordinal < 1)
+        }
+
+        private MinionChoiceCandidateViewModel(
+            RuleObject unit,
+            string label,
+            int ordinal,
+            bool isSelected,
+            DirectorCommand command,
+            HexCoordinate? destination)
+        {
+            if (!unit.IsDefined || ordinal < 1)
             {
                 throw new ArgumentException(
                     "A minion choice candidate requires a stable identity and its projected ordinal.");
             }
 
-            MinionId = minionId;
+            Unit = unit;
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A minion choice candidate requires a label.", nameof(label))
                 : label;
@@ -1632,7 +1794,9 @@ namespace GuardsDigital.Presentation.Match
             Destination = destination;
         }
 
-        public MinionId MinionId { get; }
+        public RuleObject Unit { get; }
+        public MinionId MinionId => Unit.Kind == RuleObjectKind.Minion ? Unit.MinionId : default;
+        public HeroId HeroId => Unit.Kind == RuleObjectKind.Hero ? Unit.HeroId : default;
         public string Label { get; }
         public int Ordinal { get; }
 
@@ -1919,9 +2083,9 @@ namespace GuardsDigital.Presentation.Match
             {
                 var candidate = choice.Candidates[index];
                 var select = choice.SelectInvocations.SingleOrDefault(value =>
-                    value.MinionId.Equals(candidate.MinionId));
+                    value.Unit.Equals(candidate.Unit));
                 var deselect = choice.DeselectInvocations.SingleOrDefault(value =>
-                    value.MinionId.Equals(candidate.MinionId));
+                    value.Unit.Equals(candidate.Unit));
                 if (select == null && deselect == null)
                 {
                     // The authority currently offers neither invocation for this minion - a Heavy
@@ -1932,15 +2096,19 @@ namespace GuardsDigital.Presentation.Match
 
                 var isSelected = deselect != null;
                 var ordinal = index + 1;
-                candidates.Add(new MinionChoiceCandidateViewModel(
-                    candidate.MinionId,
-                    $"{(isSelected ? "KEEP" : "REMOVE")} " +
-                        $"{MinionChoiceLabels.CandidateLabel(choice.ChoosingSide, candidate.MinionType, ordinal)}",
-                    ordinal,
-                    isSelected,
-                    isSelected
-                        ? DirectorCommand.DeselectMinionBattleRemoval(deselect)
-                        : DirectorCommand.SelectMinionBattleRemoval(select)));
+                var command = isSelected
+                    ? DirectorCommand.DeselectMinionBattleRemoval(deselect)
+                    : DirectorCommand.SelectMinionBattleRemoval(select);
+                var label = candidate.HeroId.IsDefined
+                    ? $"{(isSelected ? "KEEP" : "REMOVE")} " +
+                        $"{MinionChoiceLabels.TeamLabel(choice.ChoosingSide)} HERO {candidate.HeroId.Value.ToUpperInvariant()}"
+                    : $"{(isSelected ? "KEEP" : "REMOVE")} " +
+                        $"{MinionChoiceLabels.CandidateLabel(choice.ChoosingSide, candidate.MinionType, ordinal)}";
+                candidates.Add(candidate.HeroId.IsDefined
+                    ? new MinionChoiceCandidateViewModel(
+                        candidate.HeroId, label, ordinal, isSelected, command)
+                    : new MinionChoiceCandidateViewModel(
+                        candidate.MinionId, label, ordinal, isSelected, command));
             }
 
             return new MinionChoiceViewModel(
@@ -1950,7 +2118,7 @@ namespace GuardsDigital.Presentation.Match
                 choice.LosingTeamId,
                 choice.ChoosingSide,
                 choice.RequiredRemovalCount,
-                choice.SelectedMinionIds.Count,
+                choice.SelectedUnits.Count,
                 candidates,
                 choice.CanConfirm
                     ? new TypedInvocationViewModel(

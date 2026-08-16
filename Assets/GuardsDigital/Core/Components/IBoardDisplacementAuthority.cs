@@ -144,6 +144,12 @@ namespace GuardsDigital.Core.Components
     /// </summary>
     public interface IBoardDisplacementAuthority
     {
+        BoardMapDefinition MapDefinition { get; }
+
+        IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroOccupancy> Occupancies { get; }
+
+        IReadOnlyList<GuardsDigital.Core.Units.Minions.MinionOccupancy> Minions { get; }
+
         /// <summary>
         /// The object occupying <paramref name="coordinate"/>, or <c>false</c> when the space is empty.
         ///

@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Timing;
 
@@ -204,6 +205,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var named = context.Input("subject");
                 if (radius < 1 || named.Kind != EffectValueKind.Coordinate ||
                     !components.Board.TryGetObjectAt(named.Coordinate, out subject))
+                {
+                    return false;
+                }
+
+                var unit = subject.AsRuleObject();
+                if (unit.IsDefined && ImmunityQuery.IsImmuneTo(
+                        unit,
+                        RuleActivity.Skill,
+                        RuleObject.ForHero(context.ActorId),
+                        components.Board,
+                        context.Participants,
+                        context.Modifications))
                 {
                     return false;
                 }

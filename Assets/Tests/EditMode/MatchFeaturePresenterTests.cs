@@ -881,6 +881,57 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.AcceptedCommands, Is.Empty);
         }
 
+        [Test]
+        public void RespawnButton_HoverAndKeyboardFocusForwardItsExactBoardDestination()
+        {
+            var destination = new HexCoordinate(-3, 11);
+            var command = DirectorCommand.RespawnHero(new HeroRespawnCommand(
+                HeroRespawnCommandKind.Respawn,
+                new HeroId("blue-synthetic-hero"),
+                new CardInstanceId("blue-feint-card"),
+                destination));
+            var option = new HeroRespawnOptionViewModel(
+                "RESPAWN AT SPAWN #1", destination, command);
+            var model = new RoundActionViewModel(
+                7,
+                2,
+                1,
+                RoundResolutionPhase.ResolvingTurn,
+                "Choose respawn",
+                Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>(),
+                heroRespawnOptions: new[] { option });
+            var view = new RoundActionUnityView();
+            HeroRespawnOptionViewModel highlighted = null;
+            view.RespawnHighlighted += value => highlighted = value;
+
+            view.Render(model);
+            view.ForwardRespawnHighlight(option);
+
+            Assert.That(view.HighlightedRespawn, Is.SameAs(option));
+            Assert.That(highlighted, Is.SameAs(option));
+            Assert.That(highlighted.Destination, Is.EqualTo(destination),
+                "The board receives the authoritative button destination and can render it with " +
+                "the ordinary movement highlight material.");
+
+            view.Render(new RoundActionViewModel(
+                8,
+                2,
+                1,
+                RoundResolutionPhase.ResolvingTurn,
+                "No respawn",
+                Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>()));
+            Assert.That(view.HighlightedRespawn, Is.Null,
+                "A rebuilt projection that no longer offers the button clears the board preview.");
+        }
+
         private static void AssertPresenterDependencies<TPresenter, TView>()
         {
             var fields = typeof(TPresenter).GetFields(BindingFlags.Instance | BindingFlags.NonPublic);

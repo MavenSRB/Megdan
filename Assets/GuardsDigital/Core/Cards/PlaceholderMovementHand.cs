@@ -741,11 +741,13 @@ namespace GuardsDigital.Core.Cards
                         childNodeIds: new[] { selectTarget, push }),
                     new EffectNodeDefinition(
                         selectTarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        SyntheticTargetingCapabilities.ChooseTargetV2,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                "activity", EffectValue.Integer((int)Rules.Modifications.RuleActivity.ObjectPush))
                         },
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -904,7 +906,7 @@ namespace GuardsDigital.Core.Cards
                 int defenseValue) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.PushPlaceSkill,
-                    "phase-6-5a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    "phase-6-5aa-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             public string Id { get; }
             public string DisplayName { get; }

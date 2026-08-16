@@ -28,4 +28,6 @@ That preview is authority-computed, the way milestone 5.8b's Defense preview is:
 
 ## Maintenance rule
 
+Corrective milestone 6.5aa widens the Minion-Battle surface from `MinionId` to projected hero-or-minion `RuleObject` candidates, so a counts-as hero receives the same authoritative remove/keep control and downward board cue without presentation deciding its effective type. It also adds the p.7 Hero Respawn surface: one button per authoritative destination plus `RESOLVE WITHOUT ACTION`. Pointing at or keyboard-focusing a destination button previews exactly that coordinate using the same board highlight material as Movement; exit/blur clears it, and stale projection identity cannot submit or retain the preview.
+
 Maintain this as a subject-oriented snapshot of what the configured presentation surfaces do now. Replace or consolidate affected statements when behavior changes; do not append a milestone-by-milestone journal. Detailed completed outcome, validation, and review evidence belongs once in the commit message body, addressed by SHA, with one row in the indexed phase-handoff archive.

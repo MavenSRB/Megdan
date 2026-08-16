@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -38,7 +39,9 @@ namespace GuardsDigital.Core.Cards
         SkillCommandRejected = 20,
         ClearAuthorityUnavailable = 21,
         ClearActionRejected = 22,
-        CorrectionCommandRejected = 23
+        CorrectionCommandRejected = 23,
+        HeroRespawnChoicePending = 24,
+        HeroRespawnCommandRejected = 25
     }
 
     public enum TurnResolutionEventKind
@@ -54,7 +57,9 @@ namespace GuardsDigital.Core.Cards
         FastTravelActionProgressed = 8,
         TimingProgressed = 9,
         SkillActionProgressed = 10,
-        ClearActionProgressed = 11
+        ClearActionProgressed = 11,
+        HeroRespawned = 12,
+        CardResolvedWithoutAction = 13
     }
 
     public readonly struct TurnResolutionEvent
@@ -67,7 +72,8 @@ namespace GuardsDigital.Core.Cards
             ActionDefinitionId actionDefinitionId,
             ActionInvocationContext invocationContext,
             CardActionResolutionEvent cardActionEvent,
-            ActiveEffectLifecycleEvent activeEffectEvent = default)
+            ActiveEffectLifecycleEvent activeEffectEvent = default,
+            HexCoordinate coordinate = default)
         {
             Kind = kind;
             InitiativeEvent = initiativeEvent;
@@ -77,6 +83,7 @@ namespace GuardsDigital.Core.Cards
             InvocationContext = invocationContext;
             CardActionEvent = cardActionEvent;
             ActiveEffectEvent = activeEffectEvent;
+            Coordinate = coordinate;
         }
 
         public TurnResolutionEventKind Kind { get; }
@@ -94,6 +101,8 @@ namespace GuardsDigital.Core.Cards
         public CardActionResolutionEvent CardActionEvent { get; }
 
         public ActiveEffectLifecycleEvent ActiveEffectEvent { get; }
+
+        public HexCoordinate Coordinate { get; }
 
         public static TurnResolutionEvent FromInitiative(InitiativeResolutionEvent initiativeEvent)
         {
@@ -151,6 +160,32 @@ namespace GuardsDigital.Core.Cards
                 ActionInvocationContext.None,
                 default);
         }
+
+        public static TurnResolutionEvent HeroWasRespawned(
+            HeroId heroId,
+            CardInstanceId cardInstanceId,
+            HexCoordinate coordinate) =>
+            new TurnResolutionEvent(
+                TurnResolutionEventKind.HeroRespawned,
+                default,
+                cardInstanceId,
+                heroId,
+                default,
+                ActionInvocationContext.None,
+                default,
+                coordinate: coordinate);
+
+        public static TurnResolutionEvent CardWasResolvedWithoutAction(
+            CardInstanceId cardInstanceId,
+            HeroId heroId) =>
+            new TurnResolutionEvent(
+                TurnResolutionEventKind.CardResolvedWithoutAction,
+                default,
+                cardInstanceId,
+                heroId,
+                default,
+                ActionInvocationContext.None,
+                default);
 
         public static TurnResolutionEvent FromCardAction(CardActionResolutionEvent cardActionEvent)
         {
@@ -353,6 +388,15 @@ namespace GuardsDigital.Core.Cards
 
         public SelectedInitiativeActor SelectedActor => initiative.SelectedActor;
 
+        public PendingHeroRespawnChoice PendingHeroRespawnChoice =>
+            !IsStarted || IsEnded || !initiative.SelectedActor.IsDefined || cardActions?.Board == null
+                ? null
+                : HeroRespawnRules.CreateChoice(
+                    initiative.SelectedActor.ActorId,
+                    initiative.SelectedActor.CardInstanceId,
+                    participants,
+                    cardActions.Board);
+
         public PendingCardActionResolution PendingMovementResolution => cardActions?.PendingResolution;
 
         public PendingMovementChoice PendingMovementChoice => cardActions?.PendingChoice;
@@ -471,6 +515,81 @@ namespace GuardsDigital.Core.Cards
             return result.Accepted
                 ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromInitiative))
                 : TurnResolutionResult.Reject(TurnResolutionRejectionReason.InitiativeCommandRejected);
+        }
+
+        public TurnResolutionResult TryAnswerHeroRespawn(HeroRespawnCommand command)
+        {
+            if (command == null)
+            {
+                throw new ArgumentNullException(nameof(command));
+            }
+
+            if (!IsStarted)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.TurnNotStarted);
+            }
+
+            if (IsEnded)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.TurnAlreadyEnded);
+            }
+
+            var choice = PendingHeroRespawnChoice;
+            if (choice == null || !command.HeroId.Equals(choice.HeroId) ||
+                !command.CardInstanceId.Equals(choice.CardInstanceId))
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.HeroRespawnCommandRejected);
+            }
+
+            if (command.Kind == HeroRespawnCommandKind.Respawn)
+            {
+                if (!choice.RespawnInvocations.Contains(command) ||
+                    !cardActions.Board.CommitValidatedHeroRespawn(
+                        command.HeroId, command.Destination))
+                {
+                    return TurnResolutionResult.Reject(
+                        TurnResolutionRejectionReason.HeroRespawnCommandRejected);
+                }
+
+                return TurnResolutionResult.Accept(new[]
+                {
+                    TurnResolutionEvent.HeroWasRespawned(
+                        command.HeroId, command.CardInstanceId, command.Destination)
+                });
+            }
+
+            if (!choice.DeclineInvocation.Equals(command))
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.HeroRespawnCommandRejected);
+            }
+
+            var card = instances.Single(candidate => candidate.Id.Equals(command.CardInstanceId));
+            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardResolutionFailed);
+            }
+
+            var events = new List<TurnResolutionEvent>
+            {
+                TurnResolutionEvent.CardWasResolvedWithoutAction(card.Id, command.HeroId),
+                TurnResolutionEvent.CardWasResolved(card.Id, command.HeroId)
+            };
+            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+            {
+                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+            }
+
+            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            if (!acknowledgement.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A card resolved without action could not be acknowledged by Initiative authority.");
+            }
+
+            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
+            return AdvanceInitiative(events);
         }
 
         public TurnResolutionResult TryPerformHold(CardInstanceId cardInstanceId)
@@ -1163,6 +1282,11 @@ namespace GuardsDigital.Core.Cards
             if (!IsStarted)
             {
                 return TurnResolutionRejectionReason.TurnNotStarted;
+            }
+
+            if (PendingHeroRespawnChoice != null)
+            {
+                return TurnResolutionRejectionReason.HeroRespawnChoicePending;
             }
 
             return IsEnded

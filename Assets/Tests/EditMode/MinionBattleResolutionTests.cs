@@ -4,11 +4,15 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using NUnit.Framework;
@@ -217,6 +221,60 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingLanePushRequest.RequestId, Is.EqualTo(requestId));
             AssertAtomicRejection(session, DirectorCommand.AdvanceEndOfRound());
             Assert.That(session.Projection.PendingLanePushRequest.RequestId, Is.EqualTo(requestId));
+        }
+
+        [Test]
+        public void CountsAsHero_IsAMinionBattleRemovalCandidate_ThenChoosesARespawnPointNextRound()
+        {
+            var fixture = CreateBattleZoneFixture("MMM", "M", countsAsBlueHero: true);
+            Assert.That(AdvanceToMinionBattle(fixture).Accepted, Is.True);
+
+            var choice = fixture.Authority.PendingMinionBattleChoice;
+            Assert.That(choice, Is.Not.Null);
+            Assert.That(choice.RequiredRemovalCount, Is.EqualTo(1));
+            Assert.That(choice.Candidates.Select(candidate => candidate.Unit),
+                Has.Member(RuleObject.ForHero(fixture.Blue.OwnerId)),
+                "The hero's effective minion identity contributes to both the count and removal set.");
+
+            var removeHero = choice.SelectInvocations.Single(invocation =>
+                invocation.HeroId.Equals(fixture.Blue.OwnerId));
+            Assert.That(fixture.Authority.TryAnswerMinionBattleChoice(removeHero).Accepted, Is.True);
+            var completed = fixture.Authority.TryAnswerMinionBattleChoice(
+                fixture.Authority.PendingMinionBattleChoice.ConfirmInvocation);
+            Assert.That(completed.Accepted, Is.True);
+            Assert.That(fixture.Board.TryGetHeroCoordinate(fixture.Blue.OwnerId, out _), Is.False);
+            Assert.That(fixture.Board.Minions.Count(minion => minion.TeamSide == TeamSide.Blue),
+                Is.EqualTo(1), "Removal of the hero removes no minion miniature.");
+            Assert.That(fixture.Authority.PendingLanePushRequest, Is.Null,
+                "The remaining effective minion keeps the losing side in the Battle Zone.");
+            Assert.That(completed.Events.Single(value =>
+                value.Kind == RoundResolutionEventKind.MinionBattleMinionRemoved).HeroId,
+                Is.EqualTo(fixture.Blue.OwnerId));
+
+            while (fixture.Authority.Phase == RoundResolutionPhase.EndOfRound)
+            {
+                Assert.That(fixture.Authority.TryAdvanceEndOfRound().Accepted, Is.True);
+            }
+
+            Assert.That(fixture.Authority.TryCommitCard(
+                fixture.Red.OwnerId, fixture.Red.Id).Accepted, Is.True);
+            Assert.That(fixture.Authority.TryCommitCard(
+                fixture.Blue.OwnerId, fixture.Blue.Id).Accepted, Is.True);
+            Assert.That(fixture.Authority.TryPerformHold(fixture.Red.Id).Accepted, Is.True);
+            var respawn = fixture.Authority.CurrentTurnAuthority.PendingHeroRespawnChoice;
+            Assert.That(respawn, Is.Not.Null);
+            Assert.That(respawn.Destinations.Select(value => value.Coordinate),
+                Is.EqualTo(new[] { fixture.BlueSpawn }));
+            Assert.That(fixture.Authority.TryPerformHold(fixture.Blue.Id).TurnRejectionReason,
+                Is.EqualTo(TurnResolutionRejectionReason.HeroRespawnChoicePending));
+
+            Assert.That(fixture.Authority.TryAnswerHeroRespawn(
+                respawn.RespawnInvocations.Single()).Accepted, Is.True);
+            Assert.That(fixture.Board.TryGetHeroCoordinate(
+                fixture.Blue.OwnerId, out var respawnedAt), Is.True);
+            Assert.That(respawnedAt, Is.EqualTo(fixture.BlueSpawn));
+            Assert.That(fixture.Authority.TryPerformHold(fixture.Blue.Id).Accepted, Is.True,
+                "After respawning, the hero performs an ordinary action with the selected card.");
         }
 
         // -----------------------------------------------------------------------------------------
@@ -737,13 +795,15 @@ namespace GuardsDigital.Tests.EditMode
                 AdjacentMoveAuthority board,
                 IReadOnlyList<QuickGameMinionSetupState> setupMinions,
                 CardInstance red,
-                CardInstance blue)
+                CardInstance blue,
+                HexCoordinate blueSpawn)
             {
                 Authority = authority;
                 Board = board;
                 SetupMinions = setupMinions;
                 Red = red;
                 Blue = blue;
+                BlueSpawn = blueSpawn;
             }
 
             public RoundResolutionAuthority Authority { get; }
@@ -754,24 +814,40 @@ namespace GuardsDigital.Tests.EditMode
             public IReadOnlyList<QuickGameMinionSetupState> SetupMinions { get; }
             public CardInstance Red { get; }
             public CardInstance Blue { get; }
+            public HexCoordinate BlueSpawn { get; }
         }
 
         private static BattleZoneFixture CreateBattleZoneFixture(string redShape, string blueShape)
+            => CreateBattleZoneFixture(redShape, blueShape, countsAsBlueHero: false);
+
+        private static BattleZoneFixture CreateBattleZoneFixture(
+            string redShape,
+            string blueShape,
+            bool countsAsBlueHero)
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
             var mapId = new MapId("synthetic-battle-zone-map");
             var total = redShape.Length + blueShape.Length;
-            var coordinates = Enumerable.Range(0, Math.Max(total, 1))
+            var coordinates = Enumerable.Range(0, Math.Max(total + 2, 3))
                 .Select(index => new HexCoordinate(index, 0))
                 .ToArray();
-            var zone = new BoardMapZone(BattleZoneId, "Synthetic Battle Zone", "lane", null, false, true);
+            var zone = new BoardMapZone(
+                BattleZoneId, "Synthetic Battle Zone", "lane", "blue", true, true);
             var spaces = coordinates
                 .Select(coordinate => new BoardMapSpace(
                     SpaceIdFor(coordinate), coordinate, BoardMapSpaceKind.Playable, zone.Id))
                 .ToArray();
             var map = new BoardMapDefinition(
                 mapId, 1, "Synthetic Battle Zone Map", spaces, new[] { zone },
-                Array.Empty<BoardMapSpawnPoint>(), Array.Empty<ZoneId>());
+                new[]
+                {
+                    new BoardMapSpawnPoint(
+                        new SpawnPointId("blue-hero-spawn"),
+                        SpaceIdFor(coordinates[total + 1]),
+                        "blue",
+                        "hero")
+                },
+                Array.Empty<ZoneId>());
 
             var minions = new List<QuickGameMinionSetupState>();
             var position = 0;
@@ -797,8 +873,20 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
+            var redHero = participants.GetHeroesForTeam(
+                new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue)).Single().Id;
+            var blueHero = participants.GetHeroesForTeam(
+                new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue)).Single().Id;
+            var blueSpawn = coordinates[total + 1];
             var board = new AdjacentMoveAuthority(
-                map, Array.Empty<HeroOccupancy>(), Array.Empty<ObstacleOccupancy>(), minions);
+                map,
+                new[]
+                {
+                    new HeroOccupancy(redHero, coordinates[total]),
+                    new HeroOccupancy(blueHero, blueSpawn)
+                },
+                Array.Empty<ObstacleOccupancy>(),
+                minions);
 
             var redDefinition = SyntheticDefinition("battle-red", 7);
             var blueDefinition = SyntheticDefinition("battle-blue", 4);
@@ -811,6 +899,22 @@ namespace GuardsDigital.Tests.EditMode
                 blueDefinition.Reference,
                 participants.GetHeroesForTeam(new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue)).Single().Id);
 
+            var timing = new ActiveEffectLifecycle();
+            if (countsAsBlueHero)
+            {
+                timing.Create(
+                    new ActiveEffectId("battle-blue-counts-as-minion"),
+                    SyntheticModificationCapabilities.CountsAsMinionDefinition,
+                    blueHero,
+                    TeamSide.Blue,
+                    blueHero,
+                    blue.Id,
+                    new ActionDefinitionId("battle-counts-as-minion-action"),
+                    1,
+                    1);
+            }
+
+            var cardActions = new CardActionResolutionAuthority(board);
             var authority = new RoundResolutionAuthority(
                 new[] { redDefinition, blueDefinition },
                 new[] { red, blue },
@@ -818,9 +922,10 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red),
                 1,
                 new RoundResolutionComposition(
-                    null, board, null, null, EndOfRoundFixtureCapabilities.ConfiguredMatch(), null));
+                    cardActions, board, timing, null,
+                    EndOfRoundFixtureCapabilities.ConfiguredMatch(), null));
 
-            return new BattleZoneFixture(authority, board, minions, red, blue);
+            return new BattleZoneFixture(authority, board, minions, red, blue, blueSpawn);
         }
 
         private static SpaceId SpaceIdFor(HexCoordinate coordinate) =>

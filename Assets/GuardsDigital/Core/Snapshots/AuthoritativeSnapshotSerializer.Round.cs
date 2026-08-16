@@ -236,11 +236,19 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(choice.Candidates.Count);
             foreach (var candidate in choice.Candidates)
             {
-                writer.Write(candidate.MinionId.Value);
+                writer.Write((int)candidate.Unit.Kind);
+                writer.Write(candidate.Unit.Kind == RuleObjectKind.Hero
+                    ? candidate.HeroId.Value
+                    : candidate.MinionId.Value);
                 writer.Write((int)candidate.MinionType);
             }
 
-            WriteStrings(writer, choice.SelectedMinionIds.Select(value => value.Value));
+            writer.Write(choice.SelectedUnits.Count);
+            foreach (var unit in choice.SelectedUnits)
+            {
+                writer.Write((int)unit.Kind);
+                writer.Write(unit.Kind == RuleObjectKind.Hero ? unit.HeroId.Value : unit.MinionId.Value);
+            }
         }
 
         private static PendingMinionBattleChoice ReadPendingMinionBattleChoice(BinaryReader reader)
@@ -257,11 +265,23 @@ namespace GuardsDigital.Core.Snapshots
             var battleZoneId = new ZoneId(reader.ReadString());
             var requiredRemovalCount = reader.ReadInt32();
             var candidates = ReadMany(reader, "Minion Battle candidates", () =>
-                new MinionBattleCandidate(
-                    new MinionId(reader.ReadString()),
-                    SnapshotEnumReader.Read<StandardMinionType>(reader, "Minion Battle candidate type")));
-            var selected = ReadStrings(reader, "selected Minion Battle minions")
-                .Select(value => new MinionId(value));
+            {
+                var kind = SnapshotEnumReader.Read<RuleObjectKind>(reader, "Minion Battle candidate kind");
+                var identity = reader.ReadString();
+                var type = SnapshotEnumReader.Read<StandardMinionType>(
+                    reader, "Minion Battle candidate type");
+                return kind == RuleObjectKind.Hero
+                    ? new MinionBattleCandidate(new HeroId(identity))
+                    : new MinionBattleCandidate(new MinionId(identity), type);
+            });
+            var selected = ReadMany(reader, "selected Minion Battle units", () =>
+            {
+                var kind = SnapshotEnumReader.Read<RuleObjectKind>(reader, "selected Minion Battle unit kind");
+                var identity = reader.ReadString();
+                return kind == RuleObjectKind.Hero
+                    ? RuleObject.ForHero(new HeroId(identity))
+                    : RuleObject.ForMinion(new MinionId(identity));
+            });
             return new PendingMinionBattleChoice(
                 resolutionId,
                 choiceId,

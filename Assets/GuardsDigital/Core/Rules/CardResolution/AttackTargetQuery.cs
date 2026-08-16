@@ -40,7 +40,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (board == null) throw new ArgumentNullException(nameof(board));
 
             var heroes = FindLegalEnemyHeroes(
-                attackerId, attackRange, rangeTotal, participants, board.Occupancies, modifications)
+                attackerId, attackRange, rangeTotal, participants, board, modifications)
                 .Select(AttackTarget.Hero);
             var attackerOccupancy = board.Occupancies.SingleOrDefault(value => value.HeroId.Equals(attackerId));
             if (!attackerOccupancy.HeroId.IsDefined)
@@ -55,8 +55,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .Where(minion =>
                     !minion.TeamId.Equals(attackerTeam) &&
                     HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, minion.Coordinate) <= maximumDistance &&
-                    !IsImmuneHeavy(minion, board, participants, modifications) &&
-                    !IsDeclaredImmune(RuleObject.ForMinion(minion.MinionId), attacker, modifications))
+                    !ImmunityQuery.IsImmuneTo(
+                        RuleObject.ForMinion(minion.MinionId), RuleActivity.Attack, attacker,
+                        board, participants, modifications))
                 .Select(minion => AttackTarget.Minion(minion.MinionId));
 
             return Array.AsReadOnly(heroes.Concat(minions)
@@ -72,7 +73,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackRangeKind attackRange,
             int rangeTotal,
             MatchParticipants participants,
-            IEnumerable<HeroOccupancy> occupancies,
+            AdjacentMoveAuthority board,
             RuleModificationSet modifications)
         {
             if (!attackerId.IsDefined)
@@ -85,9 +86,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentNullException(nameof(participants));
             }
 
-            if (occupancies == null)
+            if (board == null)
             {
-                throw new ArgumentNullException(nameof(occupancies));
+                throw new ArgumentNullException(nameof(board));
             }
 
             if (attackRange != AttackRangeKind.NonRanged && attackRange != AttackRangeKind.Ranged)
@@ -100,7 +101,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentOutOfRangeException(nameof(rangeTotal), rangeTotal, "Attack Range Total must be positive.");
             }
 
-            var occupancyArray = occupancies.ToArray();
+            var occupancyArray = board.Occupancies.ToArray();
             var attackerOccupancies = occupancyArray
                 .Where(occupancy => occupancy.HeroId.Equals(attackerId))
                 .ToArray();
@@ -121,82 +122,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     participantHeroIds.Contains(occupancy.HeroId) &&
                     HexDistanceQuery.Calculate(attackerCoordinate, occupancy.Coordinate) <= maximumDistance &&
                     !participants.GetTeamForHero(occupancy.HeroId).Id.Equals(attackerTeamId) &&
-                    !IsDeclaredImmune(RuleObject.ForHero(occupancy.HeroId), attacker, modifications))
+                    !ImmunityQuery.IsImmuneTo(
+                        RuleObject.ForHero(occupancy.HeroId), RuleActivity.Attack, attacker,
+                        board, participants, modifications))
                 .Select(occupancy => occupancy.HeroId)
                 .OrderBy(heroId => heroId.Value, StringComparer.Ordinal)
                 .ToArray());
         }
 
-        /// <summary>
-        /// Whether a declared immunity refuses this Attack. The verified Heavy rule below stays separate:
-        /// it is a standing p.13 property of the board position rather than a modification any source
-        /// supplies, and folding it into the declaration set would make it look cancellable.
-        /// </summary>
-        private static bool IsDeclaredImmune(
-            RuleObject target,
-            RuleObject attacker,
-            RuleModificationSet modifications) =>
-            modifications != null && modifications.IsImmuneTo(target, RuleActivity.Attack, attacker);
-
-        /// <summary>
-        /// The p.13 Heavy rule asks two different unit-type questions, declared per the unit-type
-        /// question ledger in Docs/AI/Rules/RULE_SYSTEMS.md. The immune subject - "the heavy minion
-        /// is Immune" - is the Heavy miniature itself: an intrinsic subtype identity. The
-        /// accompaniment - "any friendly non-heavy minions in the Battle Zone" - is a bare membership
-        /// question, so p.17's replacement doctrine applies and it asks the effective question
-        /// through the zone-scoped presence query: a hero counting as a minion accompanies. Since
-        /// milestone 6.8g this is the effective type's first production consumer.
-        /// </summary>
-        private static bool IsImmuneHeavy(
-            MinionOccupancy candidate,
-            AdjacentMoveAuthority board,
-            MatchParticipants participants,
-            RuleModificationSet modifications)
-        {
-            if (candidate.MinionType != StandardMinionType.Heavy)
-            {
-                return false;
-            }
-
-            // Milestone 6.4a: membership through the one authority-owned Battle-Zone query.
-            if (!BattleZoneQuery.IsInStartingBattleZone(
-                    board.MapDefinition, candidate.OccupiedSpace.SpaceId))
-            {
-                return false;
-            }
-
-            return UnitPresenceQuery
-                .FindUnitsInZone(
-                    BattleZoneQuery.GetStartingBattleZone(board.MapDefinition).Id,
-                    EffectiveUnitKind.Minion, board, modifications)
-                .Any(unit => AccompaniesHeavy(unit, candidate, board, participants));
-        }
-
-        /// <summary>
-        /// Whether one effectively-minion unit in the candidate's zone is a friendly non-heavy
-        /// accompaniment. A minion miniature answers by its intrinsic subtype; a hero counting as a
-        /// minion has no Heavy subtype - p.17 replaces its type with the generic minion type - so it
-        /// accompanies whenever it shares the candidate's team.
-        /// </summary>
-        private static bool AccompaniesHeavy(
-            RuleObject unit,
-            MinionOccupancy candidate,
-            AdjacentMoveAuthority board,
-            MatchParticipants participants)
-        {
-            if (IntrinsicKindQuery.IsMinionMiniature(unit))
-            {
-                if (unit.MinionId.Equals(candidate.MinionId))
-                {
-                    return false;
-                }
-
-                var occupancy = board.Minions.Single(minion => minion.MinionId.Equals(unit.MinionId));
-                return occupancy.TeamId.Equals(candidate.TeamId) &&
-                    occupancy.MinionType != StandardMinionType.Heavy;
-            }
-
-            return participants.GetTeamForHero(unit.HeroId).Id.Equals(candidate.TeamId);
-        }
     }
 }

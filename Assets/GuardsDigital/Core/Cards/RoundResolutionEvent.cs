@@ -5,6 +5,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Timing;
@@ -52,6 +53,7 @@ namespace GuardsDigital.Core.Cards
             TeamId teamId = default,
             TeamSide teamSide = TeamSide.None,
             MinionId minionId = default,
+            RuleObject unit = default,
             LanePushRequestId lanePushRequestId = default,
             MinionBattleChoiceCommandKind minionBattleChoiceCommandKind = MinionBattleChoiceCommandKind.None)
         {
@@ -71,7 +73,10 @@ namespace GuardsDigital.Core.Cards
             EndOfRoundChoiceId = endOfRoundChoiceId;
             TeamId = teamId;
             TeamSide = teamSide;
-            MinionId = minionId;
+            Unit = unit.IsDefined
+                ? unit
+                : minionId.IsDefined ? RuleObject.ForMinion(minionId) : RuleObject.None;
+            MinionId = Unit.Kind == RuleObjectKind.Minion ? Unit.MinionId : default;
             LanePushRequestId = lanePushRequestId;
             MinionBattleChoiceCommandKind = minionBattleChoiceCommandKind;
         }
@@ -93,6 +98,8 @@ namespace GuardsDigital.Core.Cards
         public TeamId TeamId { get; }
         public TeamSide TeamSide { get; }
         public MinionId MinionId { get; }
+        public HeroId HeroId => Unit.Kind == RuleObjectKind.Hero ? Unit.HeroId : default;
+        public RuleObject Unit { get; }
         public LanePushRequestId LanePushRequestId { get; }
         public MinionBattleChoiceCommandKind MinionBattleChoiceCommandKind { get; }
 
@@ -266,14 +273,14 @@ namespace GuardsDigital.Core.Cards
         public static RoundResolutionEvent MinionBattleSelectionChanged(
             int roundIndex,
             PendingMinionBattleChoice choice,
-            MinionId minionId,
+            RuleObject unit,
             MinionBattleChoiceCommandKind commandKind)
         {
-            if (choice == null || !minionId.IsDefined ||
+            if (choice == null || !unit.IsDefined ||
                 (commandKind != MinionBattleChoiceCommandKind.Select &&
                     commandKind != MinionBattleChoiceCommandKind.Deselect))
             {
-                throw new ArgumentException("A Minion Battle selection event requires choice and minion identity.");
+                throw new ArgumentException("A Minion Battle selection event requires choice and unit identity.");
             }
 
             return new RoundResolutionEvent(
@@ -285,16 +292,16 @@ namespace GuardsDigital.Core.Cards
                 endOfRoundChoiceId: choice.ChoiceId,
                 teamId: choice.LosingTeamId,
                 teamSide: choice.ChoosingSide,
-                minionId: minionId,
+                unit: unit,
                 minionBattleChoiceCommandKind: commandKind);
         }
 
-        public static RoundResolutionEvent MinionBattleMinionRemoved(
+        public static RoundResolutionEvent MinionBattleUnitRemoved(
             int roundIndex,
             EndOfRoundResolutionId resolutionId,
             TeamId losingTeamId,
             TeamSide losingSide,
-            MinionId minionId)
+            RuleObject unit)
         {
             return new RoundResolutionEvent(
                 RoundResolutionEventKind.MinionBattleMinionRemoved,
@@ -304,7 +311,7 @@ namespace GuardsDigital.Core.Cards
                 endOfRoundResolutionId: resolutionId,
                 teamId: losingTeamId,
                 teamSide: losingSide,
-                minionId: minionId);
+                unit: unit);
         }
 
         public static RoundResolutionEvent LanePushRequested(

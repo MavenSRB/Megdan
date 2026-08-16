@@ -237,6 +237,7 @@ namespace GuardsDigital.Application
             IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
             PendingDefensePreviewProjection pendingDefensePreview = null,
             PendingMinionBattleChoice pendingMinionBattleChoice = null,
+            PendingHeroRespawnChoice pendingHeroRespawnChoice = null,
             PendingLanePushRequest pendingLanePushRequest = null,
             GuardsDigital.Core.Rules.EffectResolution.PendingResolution pendingSkillResolution = null,
             PendingEffectChoice pendingEffectChoice = null,
@@ -295,6 +296,7 @@ namespace GuardsDigital.Application
                 Enumerable.Empty<FastTravelOptionProjection>()).ToArray());
             PendingDefensePreview = pendingDefensePreview;
             PendingMinionBattleChoice = pendingMinionBattleChoice;
+            PendingHeroRespawnChoice = pendingHeroRespawnChoice;
             PendingLanePushRequest = pendingLanePushRequest;
             PendingDisplacedMinionCorrection = pendingDisplacedMinionCorrection;
             PendingEffectChoicePreview = Array.AsReadOnly((pendingEffectChoicePreview ??
@@ -389,6 +391,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<FastTravelOptionProjection> AvailableFastTravelOptions { get; }
         public PendingDefensePreviewProjection PendingDefensePreview { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
+        public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
         public PendingLanePushRequest PendingLanePushRequest { get; }
 
         public bool IsTurnActive =>

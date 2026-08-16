@@ -10,4 +10,6 @@ Modifiers, restrictions, permissions, immunity, and `Counts As` are one contract
 
 ## Maintenance rule
 
+Corrective milestone 6.5aa centralizes the behavior that supersedes the earlier Attack/Object-Push-only description above. `ImmunityQuery` combines declared exact-activity immunity with standing p.13 Heavy immunity and is called during both candidate derivation and final mutation for Attack, direct Move, Object Push, and Place. Blue Feint's Push immunity therefore removes its hero from Red Needle's Push candidate controls instead of offering a choice that later refuses. The same correction makes Minion Battle consume effective-minion identity: a counts-as hero counts and may be selected, while remaining intrinsically a hero for identity and the approved remove-without-Defeat consequence.
+
 Maintain this as a subject-oriented snapshot of what the rule-modification contract and its consumers do now. Replace or consolidate affected statements when behavior changes; do not append a milestone-by-milestone journal. Detailed completed outcome, validation, and review evidence belongs once in the commit message body, addressed by SHA, with one row in the indexed phase-handoff archive.

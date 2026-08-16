@@ -79,7 +79,7 @@ Milestone 6.8 implements the general contracts these four subjects share. One im
 
 ### Counts As
 
-`CountsAsModifier` replaces all applicable rules and qualities of the object with the specified effective type(s) for its duration. Type-based targeting, occupancy, immunity, rewards, and other rules queries use those effective characteristics. A capability that cites intrinsic miniatures/representation explicitly declares `IntrinsicKindQuery`; for example, the p.18 Battle-Zone correction applies only to minion miniatures and excludes objects that merely count as minions.
+`CountsAsModifier` replaces all applicable rules and qualities of the object with the specified effective type(s) for its duration. Type-based targeting, occupancy, immunity, rewards, Minion-Battle membership, and other rules queries use those effective characteristics. A capability that cites intrinsic miniatures/representation explicitly declares `IntrinsicKindQuery`; for example, the p.18 Battle-Zone correction applies only to minion miniatures and excludes objects that merely count as minions. Under the approved 6.5aa interpretation, a counts-as-minion hero is also a Minion-Battle removal candidate; removal leaves it off board without Defeat/reward/Life consequences and the ordinary p.7 Hero Respawn choice follows at its next action opportunity.
 
 `EffectiveUnitKindQuery` implements the replacement and `IntrinsicKindQuery` the representation, and the second deliberately accepts no modification set at all, so a rule that cites miniatures cannot consult a `Counts As` declaration even by accident. A hero counting as a minion therefore stops satisfying a hero-typed query while remaining a hero for identity, ownership, occupancy kind, supply, and the p.18 correction.
 
@@ -87,7 +87,7 @@ Milestone 6.8 implements the general contracts these four subjects share. One im
 
 `ImmunityModifier` declares immune object, scope (action/effect/type/source), duration, and exceptions. Immunity prevents targeting and being affected but does not remove the object from presence checks. A hero is never immune to their own actions.
 
-Milestone 6.8 implements that split: the Attack target query refuses a declared-immune unit, while `UnitPresenceQuery` consults no immunity at all and still counts it, which is p.18's own distinction between targeting and presence. An immunity naming one activity leaves every other activity unaffected, and the self exception is answered before any declaration is read. The p.13 Heavy rule stays where it is, as a standing property of the board position rather than a modification a source supplies.
+Corrective milestone 6.5aa completes that split through `ImmunityQuery`: Attack, direct Move, Object Push, and Place ask the same exact-activity decision both while deriving candidates and immediately before mutation. The query composes declared immunity with the p.13 standing Heavy rule, including effective-minion accompaniment, while `UnitPresenceQuery` consults no immunity and still counts the object. An immunity naming one activity leaves every other activity unaffected, and the self exception is answered before any declaration is read.
 
 ### Permissions and prohibitions
 

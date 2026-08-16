@@ -135,6 +135,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public DefeatRewardAccounting DefeatRewards => attackDefenseBackend.DefeatRewards;
 
+        internal AdjacentMoveAuthority Board => board;
+
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
             skillBackend.PendingResolution;
 

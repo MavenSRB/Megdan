@@ -80,6 +80,49 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void StandingHeavyImmunity_ExcludesTheProtectedHeavyFromEveryActivityTargetQuery()
+        {
+            var session = CreateCountsAsSession();
+            CommitBothCards(session);
+            StartCountsAsSkill(session);
+
+            var board = RestoreBoard(session);
+            var participants = session.Projection.Participants;
+            var modifications = Modifications(session);
+            var redHero = participants.Heroes.Single(hero =>
+                participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            foreach (var activity in new[]
+            {
+                RuleActivity.Attack,
+                RuleActivity.Movement,
+                RuleActivity.Skill,
+                RuleActivity.ObjectPush
+            })
+            {
+                Assert.That(TargetQuery.FindTargetsWithin(
+                        RedHeroAt,
+                        1,
+                        false,
+                        RuleObject.ForHero(redHero),
+                        activity,
+                        board,
+                        participants,
+                        modifications).Select(target => target.MinionId),
+                    Has.No.Member(BlueHeavy),
+                    $"Standing Heavy immunity must exclude the target for {activity}, not only Attack.");
+                Assert.That(ImmunityQuery.IsImmuneTo(
+                        RuleObject.ForMinion(BlueHeavy),
+                        activity,
+                        RuleObject.ForHero(redHero),
+                        board,
+                        participants,
+                        modifications),
+                    Is.True,
+                    $"The shared final-application query must protect the Heavy from {activity}.");
+            }
+        }
+
+        [Test]
         public void WithoutTheDeclaration_TheLoneHeavyStaysTargetable()
         {
             var session = CreateCountsAsSession();

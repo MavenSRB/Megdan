@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Participants;
 
 namespace GuardsDigital.Core.Rules.Modifications
 {
@@ -43,6 +44,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             RuleObject targetingUnit,
             RuleActivity activity,
             IBoardDisplacementAuthority board,
+            MatchParticipants participants,
             RuleModificationSet modifications)
         {
             if (board == null)
@@ -85,8 +87,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     }
 
                     var asRuleObject = occupant.AsRuleObject();
-                    if (asRuleObject.IsDefined &&
-                        modifications.IsImmuneTo(asRuleObject, activity, targetingUnit))
+                    if (asRuleObject.IsDefined && ImmunityQuery.IsImmuneTo(
+                            asRuleObject, activity, targetingUnit, board, participants, modifications))
                     {
                         continue;
                     }

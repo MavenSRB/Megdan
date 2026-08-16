@@ -45,7 +45,9 @@ namespace GuardsDigital.Core.Replay
         /// Each is one-shot: selecting is the advance, so there is no deselect or confirm.
         /// </summary>
         ChooseCorrectionSubject = 17,
-        ChooseCorrectionDestination = 18
+        ChooseCorrectionDestination = 18,
+        RespawnHero = 19,
+        ResolveCardWithoutRespawn = 20
     }
 
     public sealed class DirectorCommand : IEquatable<DirectorCommand>
@@ -141,6 +143,37 @@ namespace GuardsDigital.Core.Replay
 
         public static DirectorCommand StartAction(ActionDefinitionId actionDefinitionId) =>
             new DirectorCommand(DirectorCommandKind.StartAction, actionDefinitionId: actionDefinitionId);
+
+        public static DirectorCommand RespawnHero(HeroRespawnCommand invocation)
+        {
+            if (invocation == null || invocation.Kind != HeroRespawnCommandKind.Respawn)
+            {
+                throw new ArgumentException(
+                    "A hero respawn command requires the exact projected destination invocation.",
+                    nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.RespawnHero,
+                heroId: invocation.HeroId,
+                cardInstanceId: invocation.CardInstanceId,
+                coordinate: invocation.Destination);
+        }
+
+        public static DirectorCommand ResolveCardWithoutRespawn(HeroRespawnCommand invocation)
+        {
+            if (invocation == null || invocation.Kind != HeroRespawnCommandKind.ResolveWithoutAction)
+            {
+                throw new ArgumentException(
+                    "Resolving without respawn requires the exact projected decline invocation.",
+                    nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.ResolveCardWithoutRespawn,
+                heroId: invocation.HeroId,
+                cardInstanceId: invocation.CardInstanceId);
+        }
 
         public static DirectorCommand PerformFastTravel(
             ActionDefinitionId replacedMovementActionDefinitionId,
@@ -296,6 +329,7 @@ namespace GuardsDigital.Core.Replay
                 DirectorCommandKind.SelectMinionBattleRemoval,
                 teamSide: invocation.ChoosingSide,
                 minionId: invocation.MinionId,
+                heroId: invocation.HeroId,
                 endOfRoundResolutionId: invocation.ResolutionId,
                 endOfRoundChoiceId: invocation.ChoiceId);
         }
@@ -311,6 +345,7 @@ namespace GuardsDigital.Core.Replay
                 DirectorCommandKind.DeselectMinionBattleRemoval,
                 teamSide: invocation.ChoosingSide,
                 minionId: invocation.MinionId,
+                heroId: invocation.HeroId,
                 endOfRoundResolutionId: invocation.ResolutionId,
                 endOfRoundChoiceId: invocation.ChoiceId);
         }

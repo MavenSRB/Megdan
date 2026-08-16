@@ -93,7 +93,7 @@ namespace GuardsDigital.Tests.EditMode
                 redHand.Definitions.Select(definition => definition.ContentRevision),
                 Is.EqualTo(new[]
                 {
-                    "phase-6-5a-rev-1",
+                    "phase-6-5aa-rev-1",
                     "phase-6-8a-rev-1",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3",

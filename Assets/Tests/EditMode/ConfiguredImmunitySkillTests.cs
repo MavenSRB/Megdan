@@ -50,9 +50,13 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly ActionDefinitionId DisplacementSkill =
             new ActionDefinitionId("primary-displacement-skill");
 
+        private static readonly ActionDefinitionId NeedleSkill =
+            new ActionDefinitionId("primary-push-place-skill");
+
         private static readonly EffectNodeId ImmunityMode = new EffectNodeId("feint-push-immunity");
         private static readonly EffectNodeId CountsAsMode = new EffectNodeId("feint-counts-as-minion");
         private static readonly EffectNodeId PushBranch = new EffectNodeId("displacement-object-push");
+        private static readonly EffectNodeId NeedlePushBranch = new EffectNodeId("needle-push-branch");
 
         private static readonly HexCoordinate RedAt = new HexCoordinate(-2, -5);
         private static readonly HexCoordinate BlueAt = new HexCoordinate(-1, -5);
@@ -313,6 +317,26 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void RedNeedle_DoesNotOfferItsPushImmuneOpponentAsATarget()
+        {
+            var session = StartFeintSkill(out _);
+            ChooseMode(session, ImmunityMode);
+            CompleteCurrentTurn(session);
+            CommitCards(session, redCardFragment: "needle", blueCardFragment: "sentinel");
+
+            var offer = session.Projection.AvailableTurnActions
+                .Single(candidate => candidate.ActionDefinitionId.Equals(NeedleSkill));
+            Accept(session, DirectorCommand.StartAction(offer.ActionDefinitionId));
+            ChooseMode(session, NeedlePushBranch);
+
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "The exact Push immunity is applied while candidates are derived, so the opposing " +
+                "player is never shown an illegal target button or board cue.");
+            Assert.That(session.Projection.PendingSkillResolution, Is.Null,
+                "With no legal adjacent target, the mandatory branch stops normally.");
+        }
+
+        [Test]
         public void TheSameHeroWithTheOtherMode_IsPushedNormally()
         {
             // The same card, the same turn shape, the same push - with the mode that declares no
@@ -348,13 +372,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 TargetQuery.FindTargetsWithin(
                     RedAt, 1, false, RuleObject.ForHero(redId), RuleActivity.ObjectPush,
-                    board, modifications),
+                    board, session.Projection.Participants, modifications),
                 Is.Empty,
                 "Targeting for the activity the immunity names refuses the hero.");
             Assert.That(
                 TargetQuery.FindTargetsWithin(
                     RedAt, 1, false, RuleObject.ForHero(redId), RuleActivity.Attack,
-                    board, modifications).Select(target => target.HeroId),
+                    board, session.Projection.Participants, modifications).Select(target => target.HeroId),
                 Has.Member(blueId),
                 "An immunity to a specific activity leaves every other activity alone.");
             Assert.That(

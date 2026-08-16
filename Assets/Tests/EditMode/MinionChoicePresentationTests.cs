@@ -8,6 +8,7 @@ using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -234,8 +235,8 @@ namespace GuardsDigital.Tests.EditMode
                 "Nothing is selected and nothing is pointed at, so the board stays unmarked.");
 
             var pointedAt = choice.LegalSelectMinionIds[0];
-            Assert.That(board.HighlightMinionChoiceCandidate(pointedAt), Is.True);
-            Assert.That(board.HighlightMinionChoiceCandidate(pointedAt), Is.False,
+            Assert.That(board.HighlightMinionChoiceCandidate(RuleObject.ForMinion(pointedAt)), Is.True);
+            Assert.That(board.HighlightMinionChoiceCandidate(RuleObject.ForMinion(pointedAt)), Is.False,
                 "An unchanged hover rebuilds nothing.");
             board.Refresh();
             var highlighted = boardView.Model.MinionChoiceCues.Single();
@@ -243,7 +244,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(highlighted.Kind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
 
             var heavy = choice.Candidates.Single(value => value.MinionType == StandardMinionType.Heavy);
-            Assert.That(board.HighlightMinionChoiceCandidate(heavy.MinionId), Is.True);
+            Assert.That(board.HighlightMinionChoiceCandidate(
+                RuleObject.ForMinion(heavy.MinionId)), Is.True);
             board.Refresh();
             Assert.That(boardView.Model.MinionChoiceCues.Single().MinionId, Is.EqualTo(heavy.MinionId),
                 "A candidate can be pointed at even while the authority offers it no control.");
@@ -257,7 +259,8 @@ namespace GuardsDigital.Tests.EditMode
                 "The accepted command replaced the projection, which drops the pointed-at cue with it.");
             Assert.That(selectedCue.Kind, Is.EqualTo(MinionChoiceCueKind.Selected));
 
-            Assert.That(board.HighlightMinionChoiceCandidate(heavy.MinionId), Is.True);
+            Assert.That(board.HighlightMinionChoiceCandidate(
+                RuleObject.ForMinion(heavy.MinionId)), Is.True);
             board.Refresh();
             Assert.That(boardView.Model.MinionChoiceCues.Select(value => (value.MinionId, value.Kind)),
                 Is.EquivalentTo(new[]

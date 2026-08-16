@@ -109,6 +109,13 @@ namespace GuardsDigital.Presentation.Match
                     BoardPresenter.Refresh();
                 }
             };
+            RoundView.RespawnHighlighted += option =>
+            {
+                if (BoardPresenter.HighlightHeroRespawnDestination(option?.Destination))
+                {
+                    BoardPresenter.Refresh();
+                }
+            };
             RoundPresenter.FastTravelSelectionRequested += selection =>
             {
                 if (BoardPresenter.ActivateFastTravel(selection.ReplacedMovementActionDefinitionId))

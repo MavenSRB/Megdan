@@ -66,7 +66,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(definition.Id, Is.EqualTo(new CardDefinitionId("placeholder-red-needle")),
                 "The conversion advances the revision, never the card's identity.");
-            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-5a-rev-1"));
+            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-5aa-rev-1"));
             Assert.That(definition.ContentAuthority,
                 Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(definition.Initiative.Value, Is.EqualTo(13));
@@ -123,7 +123,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var selectTarget = effect.Nodes.Single(node => node.Id.Equals(SelectTarget));
             Assert.That(selectTarget.Capability,
-                Is.EqualTo(SyntheticTargetingCapabilities.ChooseTargetV1));
+                Is.EqualTo(SyntheticTargetingCapabilities.ChooseTargetV2));
             Assert.That(
                 selectTarget.Inputs.Single(input => input.ParameterName == "range").Literal.IntegerValue,
                 Is.EqualTo(1), "`another adjacent unit` is Radius 1.");
@@ -131,6 +131,11 @@ namespace GuardsDigital.Tests.EditMode
                 selectTarget.Inputs.Single(input => input.ParameterName == "includeSelf")
                     .Literal.BooleanValue,
                 Is.False, "`another` excludes the acting hero.");
+            Assert.That(
+                (RuleActivity)selectTarget.Inputs.Single(input => input.ParameterName == "activity")
+                    .Literal.IntegerValue,
+                Is.EqualTo(RuleActivity.ObjectPush),
+                "The target offer asks the same immunity question as its consuming Push.");
 
             var push = effect.Nodes.Single(node => node.Id.Equals(Push));
             Assert.That(push.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.PushTargetV1),

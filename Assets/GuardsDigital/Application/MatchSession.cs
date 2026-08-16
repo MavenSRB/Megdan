@@ -224,6 +224,17 @@ namespace GuardsDigital.Application
                     return AnswerCorrection(command,
                         GuardsDigital.Core.Rules.Displacement
                             .DisplacedMinionCorrectionCommandKind.SelectDestination);
+                case DirectorCommandKind.RespawnHero:
+                    return DispatchResult.From(round.TryAnswerHeroRespawn(new HeroRespawnCommand(
+                        HeroRespawnCommandKind.Respawn,
+                        command.HeroId,
+                        command.CardInstanceId,
+                        command.Coordinate)));
+                case DirectorCommandKind.ResolveCardWithoutRespawn:
+                    return DispatchResult.From(round.TryAnswerHeroRespawn(new HeroRespawnCommand(
+                        HeroRespawnCommandKind.ResolveWithoutAction,
+                        command.HeroId,
+                        command.CardInstanceId)));
                 default:
                     return DispatchResult.Unavailable("The command kind is not supported by this match session.");
             }
@@ -463,7 +474,11 @@ namespace GuardsDigital.Application
                 command.EndOfRoundResolutionId,
                 command.EndOfRoundChoiceId,
                 command.TeamSide,
-                command.MinionId);
+                command.HeroId.IsDefined
+                    ? RuleObject.ForHero(command.HeroId)
+                    : command.MinionId.IsDefined
+                        ? RuleObject.ForMinion(command.MinionId)
+                        : RuleObject.None);
             return DispatchResult.From(round.TryAnswerMinionBattleChoice(invocation));
         }
 
@@ -550,7 +565,8 @@ namespace GuardsDigital.Application
                     commitment != null && commitment.CanPass(hero.Id),
                     commitment?.GetRevealedCardInstanceId(hero.Id)))
                 .ToArray();
-            var availableActions = turn != null && turn.SelectedActor.IsDefined
+            var availableActions = turn != null && turn.SelectedActor.IsDefined &&
+                turn.PendingHeroRespawnChoice == null
                 ? ActionOfferQuery.GetAvailableTurnActionOffers(
                     configuration.CardDefinitions,
                     configuration.CardInstances,
@@ -561,6 +577,7 @@ namespace GuardsDigital.Application
             // rules would refuse never appears in a projection as available.
             var turnModifications = turn?.CurrentModifications() ?? RuleModificationSet.Empty;
             var hasPendingAction = turn?.PendingChoice != null ||
+                turn?.PendingHeroRespawnChoice != null ||
                 turn?.PendingMovementChoice != null || turn?.PendingMovementResolution != null ||
                 turn?.PendingAttackTargetChoice != null || turn?.PendingDefenseChoice != null ||
                 turn?.PendingAttackResolution != null ||
@@ -651,6 +668,7 @@ namespace GuardsDigital.Application
                 availableFastTravelOptions,
                 defensePreview,
                 round.PendingMinionBattleChoice,
+                turn?.PendingHeroRespawnChoice,
                 round.PendingLanePushRequest,
                 turn?.PendingSkillResolution,
                 turn?.PendingEffectChoice,

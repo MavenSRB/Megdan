@@ -84,13 +84,22 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 ILConformanceScanner.References(
-                    ILConformanceScanner.WithNestedTypes(typeof(AttackTargetQuery)),
+                    ILConformanceScanner.WithNestedTypes(typeof(ImmunityQuery)),
                     ILConformanceScanner.Method(
-                        typeof(UnitPresenceQuery), nameof(UnitPresenceQuery.FindUnitsInZone))),
+                        typeof(EffectiveUnitKindQuery), nameof(EffectiveUnitKindQuery.Is))),
                 Is.True,
-                "The p.13 Heavy-immunity accompaniment clause is the effective type's first " +
-                "production consumer: AttackTargetQuery must ask the zone-scoped presence question, " +
-                "which applies Counts As, rather than scanning the intrinsic minion register.");
+                "The shared p.13 Heavy-immunity accompaniment clause must ask the effective type " +
+                "question, so Counts As protects the Heavy for every activity rather than Attack alone.");
+
+            var minionBattleRules = typeof(AttackTargetQuery).Assembly.GetType(
+                "GuardsDigital.Core.Cards.MinionBattleRules");
+            Assert.That(
+                ILConformanceScanner.References(
+                    ILConformanceScanner.WithNestedTypes(minionBattleRules),
+                    ILConformanceScanner.Method(
+                        typeof(EffectiveUnitKindQuery), nameof(EffectiveUnitKindQuery.Is))),
+                Is.True,
+                "Minion Battle must count the effective minion type, including a counts-as hero.");
         }
 
         [Test]

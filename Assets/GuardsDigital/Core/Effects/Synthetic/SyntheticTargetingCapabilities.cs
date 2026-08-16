@@ -23,10 +23,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// Its candidate set comes from <see cref="TargetQuery"/>, the reusable targeting contract, rather
     /// than effect-local geometry. Immunity therefore filters selection - p.18 makes it a targeting
     /// rule - while a presence question over the same spaces still counts the immune unit. The activity
-    /// consulted is <see cref="RuleActivity.Skill"/>: effect frames execute only under Skill actions
-    /// (the Skill backend is the one effect executor), so the enclosing Skill is the activity doing the
-    /// targeting; a capability whose consuming operation carries its own activity - Object Push - keeps
-    /// filtering by that activity itself, as its handler already does.
+    /// consulted is declared by revision 2. Revision 1 remains bound to Skill for saved definitions;
+    /// definitions feeding a consuming effect with its own activity use revision 2 so the offer and
+    /// final operation ask the identical immunity question.
     ///
     /// This is the seam 6.5b and 6.6a reuse: Red Needle's Push, Red Bombard's direct Move of another
     /// adjacent unit, and Blue Sentinel's Swap all name their object through this one selection rather
@@ -40,8 +39,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference ChooseTargetV1 =>
             new EffectCapabilityReference(ChooseTarget, 1);
 
+        public static EffectCapabilityReference ChooseTargetV2 =>
+            new EffectCapabilityReference(ChooseTarget, 2);
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
-            new IEffectCapabilityHandler[] { new ChooseTargetHandler() };
+            new IEffectCapabilityHandler[]
+            {
+                new ChooseTargetHandler(ChooseTargetV1, declaresActivity: false),
+                new ChooseTargetHandler(ChooseTargetV2, declaresActivity: true)
+            };
 
         /// <summary>
         /// Offers every targetable object within range of the acting hero as an authoritative
@@ -55,15 +61,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class ChooseTargetHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => ChooseTargetV1;
+            private readonly bool declaresActivity;
 
-            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                new[]
+            public ChooseTargetHandler(
+                EffectCapabilityReference reference,
+                bool declaresActivity)
+            {
+                Reference = reference;
+                this.declaresActivity = declaresActivity;
+                var parameters = new List<EffectCapabilityParameter>
                 {
                     new EffectCapabilityParameter("range", EffectValueKind.Integer),
                     new EffectCapabilityParameter("includeSelf", EffectValueKind.Boolean)
-                },
-                new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
+                };
+                if (declaresActivity)
+                {
+                    parameters.Add(new EffectCapabilityParameter("activity", EffectValueKind.Integer));
+                }
+
+                Schema = new EffectCapabilityParameterSchema(
+                    parameters,
+                    new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; }
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -111,7 +134,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// The spaces of every object the acting hero may target, in canonical axial order. Nothing
             /// here walks the board or invents geometry: the reusable targeting contract owns both.
             /// </summary>
-            private static IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
+            private IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
             {
                 var components = context.Components;
                 if (components == null || !components.CanDisplace)
@@ -132,13 +155,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HexCoordinate>();
                 }
 
+                var activity = declaresActivity
+                    ? (RuleActivity)context.Input("activity").IntegerValue
+                    : RuleActivity.Skill;
+                if (activity == RuleActivity.None || !Enum.IsDefined(typeof(RuleActivity), activity))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
                 var targets = TargetQuery.FindTargetsWithin(
                     origin,
                     range,
                     context.Input("includeSelf").BooleanValue,
                     selector.AsRuleObject(),
-                    RuleActivity.Skill,
+                    activity,
                     board,
+                    context.Participants,
                     context.Modifications);
 
                 var spaces = new List<HexCoordinate>(targets.Count);

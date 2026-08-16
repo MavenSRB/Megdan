@@ -14,6 +14,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Timing;
@@ -25,6 +26,11 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
+        // v11: milestone 6.5aa widens Minion Battle candidates and selections from intrinsic minion
+        // IDs to stable effective-unit identities, so a counts-as-minion hero can be removed and the
+        // resulting off-board hero occupancy can survive restore. v10 is rejected rather than
+        // migrated because it cannot encode the widened pending continuation.
+        //
         // v10: milestone 6.4a's paused after-action displaced-minion correction joins the card-action
         // section as continuation kind 4, carrying the owning action's identity, the stage, the
         // deciding team, and candidate identities only - routes, costs, and coordinates of subjects are
@@ -41,7 +47,7 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 10;
+        public const int CurrentSchemaVersion = 11;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full
