@@ -605,6 +605,12 @@ A user-approved roadmap amendment on 2026-08-13 scheduled the open ER2 dispositi
 | --- | --- | --- |
 | 6.5aa | One shared exact-activity/Heavy immunity decision now governs offers and mutation; effective Minion Battle can remove a counts-as hero without Defeat consequences; p.7 next-action respawn offers authoritative destination/decline buttons whose hover or focus previews the destination with the Movement board highlight. | `af61692` |
 
+## Milestone 6.5ab Hide removed heroes in configured board presentation completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 6.5ab | Configured hero visibility now follows authoritative occupancy: removal hides and disables the retained hero view, while Respawn, Undo, restart, or restore repositions and reactivates it without changing rules or minion presentation. | `6b73fc7` |
+
 ## Milestone 6.5a Convert Red Needle into the Push/Place showcase Skill completion evidence
 
 | ID | Outcome | Commit |
