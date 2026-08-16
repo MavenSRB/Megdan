@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.6a**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.6a**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.2d**.
 - Next proposed milestone: **6.2d**.
 
 Corrective amendment (2026-08-16, user approved): milestone **6.2d** is defined in [Roadmap/PHASE_6_CORRECTIONS.md](Roadmap/PHASE_6_CORRECTIONS.md) and proposed ahead of 6.7, making the route **6.2d -> 6.7 -> 6.7a -> 6.9 onward**. Milestone 6.6a's handoff finding is that two of Blue Sentinel's three modes name and change a token the board draws nothing for, and the gap is wider than that card: the configured scene cannot hold a token at all, because the only capability that places one lives on a Skill-fixture card the scene never deals, so 6.3's Clear has also been offered since 6.3 with nothing it could act on. Milestone 6.2's review left this unowned by ID on purpose, assigning it to the first presentation milestone that needed a token view; 6.6a is what made one needed. Hands-on validation then folded a second board-surface defect into the same milestone on the user's direction: where a pending choice draws one control per destination, every destination stays lit for as long as the choice stands instead of following the pointer, which the correction prompt shows with both its endpoints lit at once. Scheduling is not authorization.

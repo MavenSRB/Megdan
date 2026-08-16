@@ -405,7 +405,7 @@ Non-goals: No prevention source, and no widening of the modification vocabulary 
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-66b-give-the-defeat-removal-stage-its-prevention-consumer-completion-evidence).
 
-### [ ] 6.2d Give a placed token a surface, and let the board follow the pointer
+### [~] 6.2d Give a placed token a surface, and let the board follow the pointer
 
 **Corrective amendment (2026-08-16, user approved).** Milestone 6.2 made a placed token an authoritative board occupant and recorded the decision that presentation receives no token projection. Its review deliberately left the follow-up unowned by ID rather than unowned outright: the 6.2b review outcome in [PHASE_6.md](PHASE_6.md) states that the projection has no component field and that "how a token occupant reaches a view belongs to the first presentation milestone that needs one". Milestone 6.6a is the milestone that fired that trigger, and it reported the consequence at handoff rather than absorbing it.
 
