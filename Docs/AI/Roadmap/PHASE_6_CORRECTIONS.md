@@ -282,3 +282,42 @@ Acceptance checks:
 - Focused authority, projection, presenter, and saved-scene scenarios cover both proving cases, the all-unperformable node, stale and forged selects, restore, replay, and retained-prefix Undo. The silent-stop path receives a failing-then-passing regression.
 
 Non-goals: No change to what any card declares, to any capability's rules, geometry, candidate sets, immunity filtering, or the 6.4a correction path; no automatic selection of a sole remaining performable option, because refusing an unperformable option is not choosing on the player's behalf; no per-option reason text, tooltip, or explanatory popup, which the 2026-08-16 user decision defers past greying; no new pending-choice family or prompt framework; no change to how a choice confirms; no change to the separate open finding that `up to` admits distance 0 for Push but not for direct Move; no Wasp definition, printed-text parsing, card-name/hero-name branch, production art, animation, or audio.
+
+### [ ] 6.5ad Read one optional distance the same way for every displacement
+
+**Corrective amendment (2026-08-16, user approved).** Milestone 6.5b reported, and did not settle, that the two displacement capabilities read `up to X spaces` differently: Object Push offers distances `0..X` and calls zero a legal choice, while direct Move offers only `1..X`, because its candidate set is the Movement action's own reachability walk and that walk never emits the mover's own space. The question was recorded as unsettled on the assumption that the rulebook could not be searched. It can: `pdftotext` extracts the second-printing PDF in this environment even though page rendering does not work, and the text answers it. Page 10 lists `up to` beside `you may` and `if able` as non-mandatory wording, and page 11's movement-in-the-card-text clause requires the exact number of spaces only where the distance is *not* optional. No clause sets a floor of one space, so `up to 2 spaces` admits zero and the Push's reading is the correct one. This is therefore a defect in one capability rather than an open rules question, and it is scheduled as a rules correction rather than folded into a card conversion, because it belongs to milestone 6.4's capabilities and settling it inside a card would be a rule decided by a card.
+
+Observable outcome: A card-text direct Move of `up to X spaces` lets the acting player choose to move the unit no spaces at all, the same way a Push of `up to X spaces` already lets them choose distance zero. A mandatory exact distance is unchanged: `Move 2 spaces` still means two or p.10's stop.
+
+Prerequisite: None beyond milestone 6.4, which owns both capabilities. It is independent of the showcase route and of corrective milestone 6.5ae.
+
+Acceptance checks:
+
+- The optional-distance reading is stated once and cited to pages 10 and 11, and both displacement capabilities are shown to consult it rather than each carrying its own answer. A conformance-style or shared-derivation check prevents the two from drifting apart again.
+- Under `up to`, a direct Move admits the mover's own space as a candidate destination, and choosing it relocates nothing, publishes the mover's unchanged space as the node's output, and reports a legal applied result rather than a decline or a failure - the same distinction p.18's zero-space push already draws.
+- Under every other failure policy the admitted set is unchanged, and the exact-distance case still stops the action when the exact number cannot be walked.
+- Choosing zero raises no movement, displacement, correction, or Lane-Push consequence that moving one space would not have raised, and a minion that never left the Battle Zone opens no after-action correction.
+- Milestone 6.5ac's option walk reads the widened candidate set without change: a direct Move branch whose subject can only stand still is performable rather than refused, which is the behaviour difference a player sees.
+- The regression is observed failing before the production change and passing afterward, at the capability level and through the configured Red Bombard branch. Because the change crosses candidate derivation, effect resolution, and the pinned corpus, it completes at T3 with both unfiltered suites, and any digest movement is measured against the pre-change revision rather than assumed.
+
+Non-goals: No change to the Movement action's own reachability, allowance, or Fast Travel; no change to Push geometry, the simultaneous batch, or immunity; no new capability, revision, or parameter; no card text, content revision, or card-name branch; no schema change is expected, and one is not to be introduced to carry a distance.
+
+### [ ] 6.5ae Let the player close an action whose every option is refused
+
+**Corrective amendment (2026-08-16, user approved).** Milestone 6.5ac delivered every acceptance check but one, and recorded the gap rather than dropping it: the player does not see the options greyed when *no* option of a `Choose` can be performed, because the node reports itself impossible without opening a prompt. The reason was that pausing there left the match with no legal command - a mandatory `Choose` offers no decline, and the round presenter withholds every action, Fast-Travel offer, and End Turn while an effect choice stands - so the alternatives looked like a frame escapable only through Undo or a new prompt family that milestone's non-goals forbade. The user settled it on 2026-08-16: in that position End Turn is the one legal command, it is offered rather than performed, and the player clicks it. That is not a new prompt family; it is the stop affordance a paused Movement has carried since Phase 1, where `PendingMovementChoice.CanStop` projects the same End Turn control and `StopMovement` closes the action.
+
+Observable outcome: A `Choose` whose every option is refused pauses with all of them shown greyed, and the only control offered is End Turn. Clicking it stops the action exactly as p.10's stop already does - the same card state, the same facts, the same turn hand-off the silent stop produced - and nothing stops the action until the player asks for it.
+
+Prerequisites: Corrective milestone 6.5ac must be complete, since it owns the refusal this surfaces.
+
+Acceptance checks:
+
+- The pending effect choice carries an authority-projected stop invocation, in the shape `PendingMovementChoice.CanStop` established, offered only where no option can be performed. Presentation renders it as the existing End Turn control and never submits it on the player's behalf, on any timer, or as a consequence of any other command.
+- Accepting that stop produces exactly the outcome the unprompted stop produced: the same node result, the same ordered facts, the same card resolution status, and the same turn continuation, so the correction changes when the action ends and not what ending it means.
+- While such a choice stands, every other control remains withheld, and a command other than the stop is rejected atomically without touching card, occupancy, continuation, or events - including a select naming any of the greyed options.
+- Every option is projected and greyed, so the player reads which modes exist and that none can be taken, with no reason text, by the same 2026-08-16 decision that governs the mixed case.
+- The stop is never written to a snapshot as an answer: the pause, the refusals, and the stop invocation are re-derived on restore, replay, and retained-prefix Undo from the state as it then stands, so a frame restored after the last refusal lifts offers the option again instead of the stop.
+- An optional `Choose` is unaffected: where its own policy already declines, it continues to decline without pausing, because there is nothing for a player to close.
+- The regression is observed failing before the production change and passing afterward, including the saved-scene position where Red Bombard's two modes are both unperformable, which is where the defect was found. Because the change crosses effect resolution, the projected command set, and configured presentation, it completes at T3 with both unfiltered suites.
+
+Non-goals: No change to which options are refused or how feasibility is judged; no automatic stop, no automatic selection, and no automatic End Turn anywhere; no per-option reason text; no new pending-choice family, prompt framework, or director command kind beyond the stop this reuses; no change to how a performable choice confirms; no Wasp definition, production art, animation, or audio.
