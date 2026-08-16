@@ -325,3 +325,27 @@ Acceptance checks:
 Non-goals: No change to which options are refused or how feasibility is judged; no automatic stop, no automatic selection, and no automatic End Turn anywhere; no per-option reason text; no new pending-choice family, prompt framework, or director command kind beyond the stop this reuses; no change to how a performable choice confirms; no Wasp definition, production art, animation, or audio.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65ae-let-the-player-close-an-action-whose-every-option-is-refused-completion-evidence).
+
+### [ ] 6.5af Refuse a Skill that can do nothing before the turn is spent on it
+
+**Corrective amendment (2026-08-16, user approved).** Milestone 6.5ae gave the all-refused `Choose` a way out, but it did not stop the player being walked into it. Nothing judges a Skill when its action is *offered*: `ActionOfferQuery` derives printed offers from card state alone - definitions, instances, and the actor - and always reports `IsAvailable`, so a Skill whose effect can apply nothing is offered exactly like one that can. The player starts it, and only then learns it was inert.
+
+Rulebook p.12 is explicit that this is what the Hold action is for: it names performing any other action being not possible as the common reason to Hold, and states that because any card can Hold, a player is never forced to perform an action they do not want to. The correction is therefore sourced rather than invented - the rules assume the player can see that an action is impossible before choosing it.
+
+What the player loses is not the Hold, which stays available, and not the outcome, which milestone 6.5ae already made identical. It is the *other* action on the same card. Red Bombard prints a Secondary Movement 2 beside the Skill this defect was found on, so in that position starting the inert Skill spends a turn that could have moved two spaces, and only Undo takes it back.
+
+Observable outcome: A Skill whose effect can apply nothing is shown but cannot be started, so the player picks another action on the card - or Hold - while it is still theirs to pick. Every other action on the card is offered unchanged, and a Skill that can do something is offered exactly as before.
+
+Prerequisites: Corrective milestones 6.5ac, which owns the feasibility question, and 6.5ae, which owns what happens when a paused choice has nothing in it.
+
+Acceptance checks:
+
+- The feasibility question 6.5ac built is asked of a whole Skill's effect root through the same walk and the same `Anticipate` contract, against the execution frame a start *would* create rather than one it created. There is no second copy of the rule, no probe performs anything, and 6.5ac's two conformance rules cover the new caller unchanged because it reaches the same members.
+- An inert Skill is projected as an offer that cannot be started: it keeps its label and its place in the offer order, carries no invocation, and the command path refuses it atomically, so a start naming it - forged, stale, or left over from an older model - touches no card, occupancy, continuation, or event.
+- Every other action the same card offers is unaffected and still startable, and Hold remains available throughout. Nothing performs Hold, selects an action, or ends a turn on the player's behalf.
+- The judgement is re-derived per projection rather than stored, so a Skill that becomes performable inside the same turn becomes startable, and one that stops being performable stops being startable.
+- Nothing about the judgement reaches a snapshot: restore, replay, and retained-prefix Undo re-derive it from the state as it then stands, for the reason 6.5ac's refusals and 6.5ae's stop are re-derived.
+- The projection cost of asking it is measured rather than assumed, because the offer set is rebuilt on every command while a paused choice is built only at a pause.
+- The regression is observed failing before the production change and passing afterward, including the saved-scene position where Red Bombard's Skill is inert and its Secondary Movement is not. Because the change crosses offer derivation, the command path, and configured presentation, it completes at T3 with both unfiltered suites.
+
+Non-goals: No change to Movement, Attack, Defense, Fast Travel, Clear, or Hold availability, or to any general-rule or reaction offer; no change to what feasibility means or to which options milestone 6.5ac refuses; no per-offer reason text, tooltip, or explanation, by the same 2026-08-16 user decision that governs a greyed option; no automatic Hold, automatic action selection, or automatic End Turn anywhere; no new pending-choice family, prompt framework, or director command kind; no card text, content revision, or card-name branch; no schema change, and one is not to be introduced to carry a judgement that is derived.
