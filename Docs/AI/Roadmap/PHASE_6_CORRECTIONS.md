@@ -326,7 +326,7 @@ Non-goals: No change to which options are refused or how feasibility is judged; 
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65ae-let-the-player-close-an-action-whose-every-option-is-refused-completion-evidence).
 
-### [ ] 6.5af Refuse a Skill that can do nothing before the turn is spent on it
+### [~] 6.5af Refuse a Skill that can do nothing before the turn is spent on it
 
 **Corrective amendment (2026-08-16, user approved).** Milestone 6.5ae gave the all-refused `Choose` a way out, but it did not stop the player being walked into it. Nothing judges a Skill when its action is *offered*: `ActionOfferQuery` derives printed offers from card state alone - definitions, instances, and the actor - and always reports `IsAvailable`, so a Skill whose effect can apply nothing is offered exactly like one that can. The player starts it, and only then learns it was inert.
 

@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.5ae**. The configured v
 ## Current authorization and next route
 
 - Current completed milestone: **6.5ae**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.5af**, in progress.
 - Next proposed milestone: **6.5af**.
 
 Corrective milestone **6.5ae** completed on 2026-08-16, closing the one acceptance clause 6.5ac had recorded as undelivered. Where no option of a mandatory `Choose` can be performed, the node used to report itself impossible before any prompt opened, so the player never saw the modes at all; the recorded reason was that pausing left the match with no legal command. The user settled it - End Turn is that command, offered and never performed for the player - and the shape already existed, so the pending effect choice now projects the same stop a paused Movement has carried since Phase 1. The choice pauses with every option greyed, End Turn is the only control, and accepting it ends the action with the node result, ordered facts, card resolution and turn hand-off the unprompted stop produced; the stop is derived from the refusals and the node's own policy rather than stored, so restore, replay and Undo re-derive it. No schema, registration, revision, or digest moved. **6.5af** is proposed next. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
