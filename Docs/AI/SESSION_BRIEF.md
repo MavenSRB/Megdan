@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.6**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **6.6**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.8l**.
 - Next proposed milestone: **6.8l**.
 
 Milestone **6.6** completed on 2026-08-16: rulebook p.19's Swap, Replace, and Remove are three registered capabilities over three shared operations and a fifth named board port, because none of them can reach the displacement commit that every earlier relocation uses - it requires an empty destination, and a Swap has two occupied spaces, a Replace never empties the one it works in, and a Remove has no board destination at all. Each states its own declaration or typed outcome and borrows none of another's vocabulary, which is what the catalog's ban on treating them as interchangeable asks for. p.8's mid-turn Lane-Push cause is recorded by the removal stage alone, over the same effective Battle-Zone minion count the Minion Battle uses, and a conformance rule keeps that the only caller, so "moving, pushing, or swapping the last Battle-Zone minion never qualifies" holds for displacements written later rather than only for today's three. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
