@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.5ac**. The configured v
 ## Current authorization and next route
 
 - Current completed milestone: **6.5ac**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.5ad**, in progress.
 - Next proposed milestone: **6.5ad**.
 
 Corrective milestone **6.5ac** completed on 2026-08-16. A `Choose` used to offer every branch unconditionally, so a mode that could do nothing was selectable and spent the card in silence - the third appearance of a rule printed onto a configured card that a player can select and observe nothing from. Every capability now answers what it would report without performing anything, an option proven to apply nothing is projected greyed and carries no invocation, and a node whose every option is refused reports itself impossible rather than pausing on a decision nobody could answer. The correction is on the option contract rather than on Red Bombard, so 6.6a and 6.7a inherit it, and nothing about schema, registrations, or pinned digests moved. One clause of its acceptance text was deliberately not delivered and is recorded with its reason in the completion commit. **6.6** is proposed next. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
