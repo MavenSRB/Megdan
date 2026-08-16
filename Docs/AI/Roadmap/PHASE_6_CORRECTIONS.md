@@ -379,7 +379,7 @@ Non-goals: No new pending-choice family, prompt framework, or director command k
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68l-let-a-target-selection-know-what-it-selects-for-completion-evidence).
 
-### [ ] 6.6b Give the Defeat removal stage its prevention consumer
+### [~] 6.6b Give the Defeat removal stage its prevention consumer
 
 **Corrective amendment (2026-08-16, user approved).** Milestone 5.6 declared `DefeatRemovalResultKind.RemovalPrevented` and never produced it. The Attack backend records a removal attempt and then hard-codes the removed result, and `MinionDefeatResolution` refuses to be constructed with anything else, so the prevented arm has had no production producer for the whole of its existence.
 

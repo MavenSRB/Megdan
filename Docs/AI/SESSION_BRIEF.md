@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.8l**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.8l**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.6b**.
 - Next proposed milestone: **6.6b**.
 
 Corrective milestone **6.8l** completed on 2026-08-16: a target selection now declares the node whose eligibility it selects for, so it offers only the objects that step can act on and a branch behind one none of its candidates would serve is refused before it is chosen. This closes the last place the offer-a-mode-that-does-nothing defect could still occur, and the blind spot was the intersection of two earlier decisions rather than a fault in either - 6.5ac's walk deliberately errs toward offering what it cannot read, and 6.8k made every named subject arrive through a selection. The declaration is an ordinary literal input binding naming another node of the same definition, so the parameter type-match the validator already runs does most of the checking; a node reference is a definition-time address that no role supplies, no capability publishes, and no payload carries. The conservative reading is kept by construction wherever the pairing still cannot be read, which is why the synthetic Skill's Swap branch is deliberately left as it was. **6.6b** is proposed next. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
