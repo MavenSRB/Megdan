@@ -4,6 +4,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Units.Minions;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Units.Heroes
@@ -53,8 +54,17 @@ namespace GuardsDigital.Presentation.Units.Heroes
         [SerializeField]
         private float verticalOffset = DefaultVerticalOffset;
 
+        /// <summary>
+        /// Milestone 6.5c: where the choice marker hangs above the prism. It sits clear of the top
+        /// face rather than at the minion's sprite offset, and needs no mirroring, because this view
+        /// is an upright mesh instead of an inherited-orientation token.
+        /// </summary>
+        private static readonly Vector3 ChoiceCueLocalPosition = new Vector3(0f, DefaultHeight + 0.28f, -0.15f);
+
         private Mesh ownedMesh;
         private Material ownedMaterial;
+        private TextMesh choiceCue;
+        private TextMesh choiceCueBackground;
 
         public HeroOccupancy Occupancy => new HeroOccupancy(new HeroId(heroId), Coordinate);
 
@@ -143,6 +153,56 @@ namespace GuardsDigital.Presentation.Units.Heroes
         public void ApplyLayout()
         {
             transform.localPosition = HexWorldLayout.ToWorld(Coordinate, outerRadius) + (Vector3.up * verticalOffset);
+        }
+
+        /// <summary>Which cue kind this hero currently carries; <c>None</c> unless one is pointed at.</summary>
+        public MinionChoiceCueKind ChoiceCueKind { get; private set; }
+
+        /// <summary>
+        /// Milestone 6.5c: says "this one" above the hero with the marker every other choice prompt
+        /// uses. An effect choice can name a hero as its target, so the cue that already answered
+        /// "which minion is this control" has to answer it for a hero without becoming a second
+        /// vocabulary.
+        /// </summary>
+        public void SetChoiceCue(MinionChoiceCueKind kind)
+        {
+            if (kind != MinionChoiceCueKind.None && kind != MinionChoiceCueKind.Highlighted &&
+                kind != MinionChoiceCueKind.Selected)
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(kind));
+            }
+
+            ChoiceCueKind = kind;
+            if (kind == MinionChoiceCueKind.None)
+            {
+                if (choiceCue != null)
+                {
+                    choiceCue.gameObject.SetActive(false);
+                    choiceCueBackground.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
+            if (choiceCue == null)
+            {
+                BoardChoiceCue.CreatePair(
+                    transform,
+                    "Hero Choice Cue",
+                    ChoiceCueLocalPosition,
+                    mirrored: false,
+                    out choiceCue,
+                    out choiceCueBackground);
+                choiceCue.characterSize = BoardChoiceCue.MarkerCharacterSize;
+            }
+
+            choiceCue.gameObject.SetActive(true);
+            choiceCueBackground.gameObject.SetActive(true);
+            choiceCue.text = BoardChoiceCue.Marker;
+            choiceCue.color = kind == MinionChoiceCueKind.Selected
+                ? BoardChoiceCue.SelectedColor
+                : BoardChoiceCue.HighlightedColor;
+            BoardChoiceCue.Center(transform, choiceCue, choiceCueBackground, ChoiceCueLocalPosition);
         }
 
         public void EnsurePrimitiveVisual()

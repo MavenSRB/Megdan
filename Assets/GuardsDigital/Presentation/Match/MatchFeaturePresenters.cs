@@ -5,6 +5,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
@@ -107,6 +108,32 @@ namespace GuardsDigital.Presentation.Match
 
         public const string ConfirmLabel = "CONFIRM CHOICE";
         public const string DeclineLabel = "DECLINE";
+
+        /// <summary>
+        /// Milestone 6.5c: a value candidate that names a board object is named after that object, so
+        /// a player reads who a control targets instead of an ordinal. Every part is projected state -
+        /// the configured display name, the projected team and intrinsic type, the candidate's own
+        /// ordinal - and none of it is printed card text or a rules answer. The ordinal stays because
+        /// two candidates of one team and type are otherwise indistinguishable, which is exactly why
+        /// milestone 6.1a put it on the minion prompt.
+        /// </summary>
+        public static string HeroTargetLabel(TeamSide side, string displayName) =>
+            string.IsNullOrWhiteSpace(displayName)
+                ? throw new ArgumentException("A hero target label requires the projected display name.", nameof(displayName))
+                : $"{MinionChoiceLabels.TeamLabel(side)} {displayName.ToUpperInvariant()}";
+
+        public static string MinionTargetLabel(TeamSide side, StandardMinionType minionType, int ordinal) =>
+            MinionChoiceLabels.CandidateLabel(side, minionType, ordinal);
+
+        /// <summary>
+        /// A token is named by its ordinal alone. Milestone 6.2's decision that presentation gets no
+        /// token projection still stands, so the only thing the board can honestly say about one is
+        /// which candidate it is; the preview says a token stands there, and nothing more is invented.
+        /// </summary>
+        public static string TokenTargetLabel(int ordinal) =>
+            ordinal < 1
+                ? throw new ArgumentOutOfRangeException(nameof(ordinal))
+                : $"TOKEN #{ordinal}";
     }
 
     public sealed class BoardInteractionViewModel
@@ -122,7 +149,10 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HexCoordinate> fastTravelDestinations = null,
             IEnumerable<MinionDefenseCueViewModel> minionDefenseCues = null,
             IEnumerable<MinionChoiceCueViewModel> minionChoiceCues = null,
-            IEnumerable<HexCoordinate> correctionDestinations = null)
+            IEnumerable<HexCoordinate> correctionDestinations = null,
+            IEnumerable<HexCoordinate> effectChoiceDestinations = null,
+            HexCoordinate? effectChoiceTargetSpace = null,
+            HexCoordinate? effectChoiceResultingSpace = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -150,6 +180,24 @@ namespace GuardsDigital.Presentation.Match
 
             CorrectionDestinations = Array.AsReadOnly((correctionDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
+            EffectChoiceDestinations = Array.AsReadOnly((effectChoiceDestinations ??
+                Enumerable.Empty<HexCoordinate>()).ToArray());
+            EffectChoiceTargetSpace = effectChoiceTargetSpace;
+            EffectChoiceResultingSpace = effectChoiceResultingSpace;
+            if (effectChoiceResultingSpace.HasValue && !effectChoiceTargetSpace.HasValue)
+            {
+                throw new ArgumentException(
+                    "A resulting space belongs to the target being pointed at.",
+                    nameof(effectChoiceResultingSpace));
+            }
+
+            if (effectChoiceTargetSpace.HasValue &&
+                EffectChoiceDestinations.Contains(effectChoiceTargetSpace.Value))
+            {
+                throw new ArgumentException(
+                    "A space is either an empty destination or a target, never both.",
+                    nameof(effectChoiceTargetSpace));
+            }
         }
 
         public long Version { get; }
@@ -165,11 +213,64 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Milestone 6.4b: the pending correction's legal route endpoints or Place spaces.</summary>
         public IReadOnlyList<HexCoordinate> CorrectionDestinations { get; }
+
+        /// <summary>
+        /// Milestone 6.5c: the empty spaces a pending effect choice currently offers. They are the
+        /// whole surface for that kind of candidate - a space the actor may take carries no prompt
+        /// control, because the board already says everything the control would have.
+        /// </summary>
+        public IReadOnlyList<HexCoordinate> EffectChoiceDestinations { get; }
+
+        /// <summary>The space of the effect-choice target the pointer or keyboard focus is on, if any.</summary>
+        public HexCoordinate? EffectChoiceTargetSpace { get; }
+
+        /// <summary>
+        /// Where the authority projects that target would end up. Present only alongside a pointed-at
+        /// target, and never drawn as a destination: it is a consequence, not a choice.
+        /// </summary>
+        public HexCoordinate? EffectChoiceResultingSpace { get; }
     }
 
     public interface IBoardInteractionView
     {
         void Render(BoardInteractionViewModel model);
+    }
+
+    /// <summary>
+    /// Milestone 6.5c: how an effect-choice selection reaches its end.
+    ///
+    /// An exactly-one choice - `Choose one`, one target, one destination - is finished the moment the
+    /// single selection is made, but the authority still models the answer as select then confirm, so
+    /// a player who has already decided is asked to say so twice. Presentation closes that by
+    /// forwarding both invocations the authority itself offers, in the order it offers them; it
+    /// invents no command, decides no legality, and changes nothing about how the choice confirms.
+    /// A choice with any other bounds keeps its explicit confirm, because there the selection really
+    /// is unfinished.
+    ///
+    /// It applies to a value candidate only. A mode is the one decision whose control set milestone
+    /// 6.5c leaves exactly as milestone 6.8a built it, and taking a mode back before committing to it
+    /// is worth the second click; a target or a destination is picked off the board, where the pick
+    /// itself is the commitment.
+    /// </summary>
+    internal static class EffectChoiceCompletion
+    {
+        public static DirectorCommand FindImmediateConfirm(
+            MatchSessionProjection projection, EffectChoiceCommand accepted)
+        {
+            var choice = projection?.PendingEffectChoice;
+            if (choice == null || accepted == null ||
+                accepted.Kind != EffectChoiceCommandKind.Select ||
+                accepted.Candidate.Kind != EffectChoiceCandidateKind.Value ||
+                !choice.ChoiceId.Equals(accepted.ChoiceId) ||
+                !choice.ResolutionId.Equals(accepted.ResolutionId) ||
+                choice.MinimumSelections != 1 || choice.MaximumSelections != 1 ||
+                choice.ConfirmInvocation == null)
+            {
+                return null;
+            }
+
+            return DirectorCommand.AnswerEffectChoice(choice.ConfirmInvocation);
+        }
     }
 
     public sealed class BoardInteractionPresenter
@@ -182,6 +283,8 @@ namespace GuardsDigital.Presentation.Match
         private ActionDefinitionId? selectedFastTravelActionDefinitionId;
         private MatchSessionProjection choiceHighlightProjection;
         private MinionId highlightedChoiceMinionId;
+        private MatchSessionProjection effectChoiceHighlightProjection;
+        private HexCoordinate? highlightedEffectChoiceSpace;
 
         public BoardInteractionPresenter(IMatchSession session, IBoardInteractionView view)
         {
@@ -209,6 +312,14 @@ namespace GuardsDigital.Presentation.Match
                 choiceHighlightProjection = null;
             }
 
+            // Milestone 6.5c: a pointed-at effect-choice target is anchored the same way, so the cue
+            // and the resulting space it predicts cannot outlive the projection they were read from.
+            if (!ReferenceEquals(projection, effectChoiceHighlightProjection))
+            {
+                highlightedEffectChoiceSpace = null;
+                effectChoiceHighlightProjection = null;
+            }
+
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
@@ -234,7 +345,10 @@ namespace GuardsDigital.Presentation.Match
                         DisplacedMinionCorrectionStage.SelectDestination
                             ? projection.PendingDisplacedMinionCorrection.DestinationCandidates
                                 .Select(value => value.Destination)
-                            : Enumerable.Empty<HexCoordinate>());
+                            : Enumerable.Empty<HexCoordinate>(),
+                    SelectableEffectChoiceDestinations(projection),
+                    highlightedEffectChoiceSpace,
+                    FindResultingSpace(projection, highlightedEffectChoiceSpace));
             }
 
             view.Render(lastViewModel);
@@ -267,6 +381,76 @@ namespace GuardsDigital.Presentation.Match
             choiceHighlightProjection = resolved.IsDefined ? projection : null;
             lastProjection = null;
             return true;
+        }
+
+        /// <summary>
+        /// Marks one target of the pending effect choice as pointed at, so the board can say which
+        /// object a hovered or focused control names and where the projected operation would leave it.
+        /// Returns false when nothing changed, which is what stops a per-frame hover notification from
+        /// rebuilding the board every repaint.
+        /// </summary>
+        public bool HighlightEffectChoiceCandidate(HexCoordinate? space)
+        {
+            var projection = session.Projection;
+            var resolved = space.HasValue && projection.PendingEffectChoicePreview.Any(preview =>
+                    preview.NamesObject && preview.Coordinate.Equals(space.Value))
+                ? space
+                : null;
+            if (Nullable.Equals(resolved, highlightedEffectChoiceSpace) &&
+                (!resolved.HasValue || ReferenceEquals(projection, effectChoiceHighlightProjection)))
+            {
+                return false;
+            }
+
+            highlightedEffectChoiceSpace = resolved;
+            effectChoiceHighlightProjection = resolved.HasValue ? projection : null;
+            lastProjection = null;
+            return true;
+        }
+
+        /// <summary>
+        /// The empty spaces the choice can still be answered with. A candidate the authority no longer
+        /// offers a select invocation for - because the selection is already at its maximum - is not
+        /// lit, so a lit space is always one a click can take.
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> SelectableEffectChoiceDestinations(
+            MatchSessionProjection projection)
+        {
+            var choice = projection.PendingEffectChoice;
+            if (choice == null || projection.PendingEffectChoicePreview.Count == 0)
+            {
+                return Array.Empty<HexCoordinate>();
+            }
+
+            var empty = new HashSet<HexCoordinate>(projection.PendingEffectChoicePreview
+                .Where(preview => !preview.NamesObject)
+                .Select(preview => preview.Coordinate));
+            return choice.SelectInvocations
+                .Where(invocation =>
+                    invocation.Candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    invocation.Candidate.Value.Kind == EffectValueKind.Coordinate &&
+                    empty.Contains(invocation.Candidate.Value.Coordinate))
+                .Select(invocation => invocation.Candidate.Value.Coordinate)
+                .ToArray();
+        }
+
+        private static HexCoordinate? FindResultingSpace(
+            MatchSessionProjection projection, HexCoordinate? targetSpace)
+        {
+            if (!targetSpace.HasValue)
+            {
+                return null;
+            }
+
+            foreach (var preview in projection.PendingEffectChoicePreview)
+            {
+                if (preview.NamesObject && preview.Coordinate.Equals(targetSpace.Value))
+                {
+                    return preview.ResultingCoordinate;
+                }
+            }
+
+            return null;
         }
 
         private static IReadOnlyList<MinionChoiceCueViewModel> CreateMinionChoiceCues(
@@ -351,6 +535,26 @@ namespace GuardsDigital.Presentation.Match
                     Execute(DirectorCommand.ChooseCorrectionDestination(invocation));
             }
 
+            // Milestone 6.5c: a lit effect-choice space is answered from the board alone. Same
+            // exclusivity as the correction above - a paused effect frame forbids a movement choice
+            // or a fast-travel activation - so this is a route rather than a priority.
+            var effectChoice = session.Projection.PendingEffectChoice;
+            if (effectChoice != null)
+            {
+                // Only an empty space answers from the board. A candidate that names an object is
+                // answered by its named control, so a click on an occupied space selects nothing.
+                if (!SelectableEffectChoiceDestinations(session.Projection).Contains(destination))
+                {
+                    return false;
+                }
+
+                var selection = effectChoice.SelectInvocations.SingleOrDefault(value =>
+                    value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    value.Candidate.Value.Kind == EffectValueKind.Coordinate &&
+                    value.Candidate.Value.Coordinate.Equals(destination));
+                return selection != null && SubmitEffectChoiceSelection(selection);
+            }
+
             var choice = session.Projection.PendingMovementChoice;
             if (choice == null || choice.LegalDestinations.Count(value => value.Destination.Equals(destination)) != 1)
             {
@@ -397,6 +601,28 @@ namespace GuardsDigital.Presentation.Match
                 choice.ResolutionId,
                 choice.ChoiceId,
                 minionId));
+        }
+
+        /// <summary>
+        /// Forwards one projected select invocation and, for an exactly-one choice, the confirm the
+        /// authority offers immediately afterwards. Both are the authority's own commands.
+        /// </summary>
+        private bool SubmitEffectChoiceSelection(EffectChoiceCommand selection)
+        {
+            var result = session.Execute(DirectorCommand.AnswerEffectChoice(selection));
+            if (!result.Accepted)
+            {
+                return false;
+            }
+
+            SessionProjectionChanged?.Invoke(result.Projection);
+            var confirm = EffectChoiceCompletion.FindImmediateConfirm(result.Projection, selection);
+            if (confirm != null)
+            {
+                Execute(confirm);
+            }
+
+            return true;
         }
 
         private FastTravelOptionProjection GetSelectedFastTravelOption(MatchSessionProjection projection)
@@ -711,6 +937,36 @@ namespace GuardsDigital.Presentation.Match
         public int LegalDestinationCount { get; }
     }
 
+    /// <summary>
+    /// Milestone 6.5c: one control of a pending effect choice that names a board object. The space is
+    /// the object's identity for this purpose - the same space-as-identity the effect definition binds
+    /// - so hovering the control and lighting the board agree without presentation holding a second
+    /// notion of which object a control means.
+    /// </summary>
+    public sealed class EffectChoiceTargetViewModel
+    {
+        public EffectChoiceTargetViewModel(
+            string label,
+            HexCoordinate space,
+            HexCoordinate? resultingSpace,
+            DirectorCommand command)
+        {
+            Label = string.IsNullOrWhiteSpace(label)
+                ? throw new ArgumentException("An effect choice target requires a label.", nameof(label))
+                : label;
+            Space = space;
+            ResultingSpace = resultingSpace;
+            Command = command ?? throw new ArgumentNullException(nameof(command));
+        }
+
+        public string Label { get; }
+        public HexCoordinate Space { get; }
+
+        /// <summary>Where the authority projects this target would end up, when an operation moves it.</summary>
+        public HexCoordinate? ResultingSpace { get; }
+        public DirectorCommand Command { get; }
+    }
+
     public sealed class RoundActionViewModel
     {
         public RoundActionViewModel(
@@ -725,7 +981,9 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<TypedInvocationViewModel> initiativeChoices,
             IEnumerable<TypedInvocationViewModel> defenseChoices,
             IEnumerable<FastTravelOfferViewModel> fastTravelOffers = null,
-            IEnumerable<TypedInvocationViewModel> effectChoices = null)
+            IEnumerable<TypedInvocationViewModel> effectChoices = null,
+            IEnumerable<EffectChoiceTargetViewModel> effectChoiceTargets = null,
+            IEnumerable<TypedInvocationViewModel> effectChoiceDestinations = null)
         {
             Version = version;
             RoundIndex = roundIndex;
@@ -743,7 +1001,11 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<FastTravelOfferViewModel>()).ToArray());
             EffectChoices = Array.AsReadOnly((effectChoices ??
                 Enumerable.Empty<TypedInvocationViewModel>()).ToArray());
-            HudHeader = $"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
+            EffectChoiceTargets = Array.AsReadOnly((effectChoiceTargets ??
+                Enumerable.Empty<EffectChoiceTargetViewModel>()).ToArray());
+            EffectChoiceDestinations = Array.AsReadOnly((effectChoiceDestinations ??
+                Enumerable.Empty<TypedInvocationViewModel>()).ToArray());
+            HudHeader =$"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
                 $"TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound} - {phase.ToString().ToUpperInvariant()}";
         }
 
@@ -764,6 +1026,18 @@ namespace GuardsDigital.Presentation.Match
         /// already built. Empty whenever no effect choice is pending.
         /// </summary>
         public IReadOnlyList<TypedInvocationViewModel> EffectChoices { get; }
+
+        /// <summary>
+        /// Milestone 6.5c: the candidates of that decision which name a board object. Each carries its
+        /// space, so pointing at the control tells the board which object it means.
+        /// </summary>
+        public IReadOnlyList<EffectChoiceTargetViewModel> EffectChoiceTargets { get; }
+
+        /// <summary>
+        /// The candidates which name an empty space. They carry legal invocations but no control: the
+        /// board lights them, and clicking a lit space is how they are answered.
+        /// </summary>
+        public IReadOnlyList<TypedInvocationViewModel> EffectChoiceDestinations { get; }
 
         public string HudHeader { get; }
     }
@@ -806,25 +1080,69 @@ namespace GuardsDigital.Presentation.Match
                 .Concat(current.InitiativeChoices)
                 .Concat(current.DefenseChoices)
                 .Concat(current.EffectChoices)
+                // Milestone 6.5c: a destination carries no control, but it is still a projected
+                // invocation this presenter owns, so the board's click submits through here.
+                .Concat(current.EffectChoiceDestinations)
                 .Concat(current.EndTurnInvocation != null
                     ? new[] { current.EndTurnInvocation }
                     : Array.Empty<TypedInvocationViewModel>())
                 .Concat(current.ContinueEndOfRoundInvocation != null
                     ? new[] { current.ContinueEndOfRoundInvocation }
                     : Array.Empty<TypedInvocationViewModel>())
-                .Any(value => value.Command.Equals(invocation.Command));
+                .Any(value => value.Command.Equals(invocation.Command)) ||
+                current.EffectChoiceTargets.Any(value => value.Command.Equals(invocation.Command));
             if (!legal)
             {
                 return false;
             }
 
-            var result = session.Execute(invocation.Command);
-            if (result.Accepted)
+            return Execute(invocation.Command);
+        }
+
+        /// <summary>
+        /// Forwards one named target control. Selecting a target of an exactly-one choice finishes it,
+        /// so the confirm the authority offers straight afterwards is forwarded with it.
+        /// </summary>
+        public bool SubmitTarget(EffectChoiceTargetViewModel target)
+        {
+            if (target == null)
             {
-                SessionProjectionChanged?.Invoke(result.Projection);
+                return false;
             }
 
-            return result.Accepted;
+            var current = GetOrCreateViewModel(session.Projection);
+            return current.EffectChoiceTargets.Any(value => value.Command.Equals(target.Command)) &&
+                Execute(target.Command);
+        }
+
+        private bool Execute(DirectorCommand command)
+        {
+            var result = session.Execute(command);
+            if (!result.Accepted)
+            {
+                return false;
+            }
+
+            SessionProjectionChanged?.Invoke(result.Projection);
+            if (command.Kind != DirectorCommandKind.AnswerEffectChoice)
+            {
+                return true;
+            }
+
+            var confirm = EffectChoiceCompletion.FindImmediateConfirm(
+                result.Projection, command.EffectChoice);
+            if (confirm == null)
+            {
+                return true;
+            }
+
+            var confirmed = session.Execute(confirm);
+            if (confirmed.Accepted)
+            {
+                SessionProjectionChanged?.Invoke(confirmed.Projection);
+            }
+
+            return true;
         }
 
         public bool SelectFastTravel(FastTravelOfferViewModel selection)
@@ -890,6 +1208,11 @@ namespace GuardsDigital.Presentation.Match
                         option.ReplacedMovementActionDefinitionId,
                         option.LegalDestinations.Count))
                     .ToArray();
+            CreateEffectChoices(
+                projection,
+                out var effectChoiceControls,
+                out var effectChoiceTargets,
+                out var effectChoiceDestinations);
 
             return new RoundActionViewModel(
                 projection.Version,
@@ -908,7 +1231,9 @@ namespace GuardsDigital.Presentation.Match
                 initiativeChoices,
                 defenseChoices,
                 fastTravelOffers,
-                CreateEffectChoices(projection.PendingEffectChoice));
+                effectChoiceControls,
+                effectChoiceTargets,
+                effectChoiceDestinations);
         }
 
         /// <summary>
@@ -916,13 +1241,26 @@ namespace GuardsDigital.Presentation.Match
         /// is one the projection already constructed and bounded - which candidates may still be
         /// selected, whether the selection satisfies the minimum, whether declining is allowed - so
         /// this method chooses only the order they are shown in, which is the projection's own.
+        ///
+        /// Milestone 6.5c splits where a candidate is answered, and the split is the option/value one
+        /// the authority already draws plus the projected occupancy of a value. An option is a mode
+        /// and stays a control; a value naming an object is a control named after that object; a value
+        /// naming an empty space has no control at all, because the board says it better. No branch
+        /// here reads a card, a hero, or a node name.
         /// </summary>
-        private static IReadOnlyList<TypedInvocationViewModel> CreateEffectChoices(
-            PendingEffectChoice choice)
+        private static void CreateEffectChoices(
+            MatchSessionProjection projection,
+            out IReadOnlyList<TypedInvocationViewModel> controls,
+            out IReadOnlyList<EffectChoiceTargetViewModel> targets,
+            out IReadOnlyList<TypedInvocationViewModel> destinations)
         {
+            controls = Array.Empty<TypedInvocationViewModel>();
+            targets = Array.Empty<EffectChoiceTargetViewModel>();
+            destinations = Array.Empty<TypedInvocationViewModel>();
+            var choice = projection.PendingEffectChoice;
             if (choice == null)
             {
-                return Array.Empty<TypedInvocationViewModel>();
+                return;
             }
 
             var ordinals = new Dictionary<EffectChoiceCandidate, int>();
@@ -931,13 +1269,38 @@ namespace GuardsDigital.Presentation.Match
                 ordinals[choice.Candidates[index]] = index + 1;
             }
 
+            var previews = projection.PendingEffectChoicePreview
+                .ToDictionary(preview => preview.Coordinate);
             var invocations = new List<TypedInvocationViewModel>();
+            var namedTargets = new List<EffectChoiceTargetViewModel>();
+            var boardDestinations = new List<TypedInvocationViewModel>();
             foreach (var invocation in choice.SelectInvocations)
             {
-                invocations.Add(new TypedInvocationViewModel(
-                    EffectChoiceLabels.CandidateLabel(
-                        invocation.Candidate.OptionNodeId, ordinals[invocation.Candidate]),
-                    DirectorCommand.AnswerEffectChoice(invocation)));
+                var candidate = invocation.Candidate;
+                var command = DirectorCommand.AnswerEffectChoice(invocation);
+                if (candidate.Kind != EffectChoiceCandidateKind.Value ||
+                    candidate.Value.Kind != EffectValueKind.Coordinate ||
+                    !previews.TryGetValue(candidate.Value.Coordinate, out var preview))
+                {
+                    invocations.Add(new TypedInvocationViewModel(
+                        EffectChoiceLabels.CandidateLabel(candidate.OptionNodeId, ordinals[candidate]),
+                        command));
+                    continue;
+                }
+
+                if (!preview.NamesObject)
+                {
+                    boardDestinations.Add(new TypedInvocationViewModel(
+                        EffectChoiceLabels.CandidateLabel(candidate.OptionNodeId, ordinals[candidate]),
+                        command));
+                    continue;
+                }
+
+                namedTargets.Add(new EffectChoiceTargetViewModel(
+                    FormatTargetLabel(projection, preview, ordinals[candidate]),
+                    preview.Coordinate,
+                    preview.ResultingCoordinate,
+                    command));
             }
 
             foreach (var invocation in choice.DeselectInvocations)
@@ -962,7 +1325,39 @@ namespace GuardsDigital.Presentation.Match
                     DirectorCommand.AnswerEffectChoice(choice.DeclineInvocation)));
             }
 
-            return invocations;
+            controls = invocations;
+            targets = namedTargets;
+            destinations = boardDestinations;
+        }
+
+        /// <summary>
+        /// Names the object a target candidate stands on, from projected state alone. A hero is named
+        /// by its configured display name, a minion by the team and intrinsic type its occupancy
+        /// carries, and a token by its ordinal, which is all presentation is given about one.
+        /// </summary>
+        private static string FormatTargetLabel(
+            MatchSessionProjection projection,
+            EffectChoiceCandidatePreview preview,
+            int ordinal)
+        {
+            switch (preview.Occupant.Kind)
+            {
+                case BoardObjectKind.Hero:
+                    var hero = projection.Setup.Heroes.SingleOrDefault(value =>
+                        value.HeroId.Equals(preview.Occupant.HeroId));
+                    return hero == null
+                        ? EffectChoiceLabels.CandidateLabel(default, ordinal)
+                        : EffectChoiceLabels.HeroTargetLabel(hero.TeamSide, hero.DisplayName);
+                case BoardObjectKind.Minion:
+                    var minion = projection.Minions.SingleOrDefault(value =>
+                        value.MinionId.Equals(preview.Occupant.MinionId));
+                    return minion == null
+                        ? EffectChoiceLabels.CandidateLabel(default, ordinal)
+                        : EffectChoiceLabels.MinionTargetLabel(
+                            minion.TeamSide, minion.MinionType, ordinal);
+                default:
+                    return EffectChoiceLabels.TokenTargetLabel(ordinal);
+            }
         }
 
         private RoundActionViewModel GetOrCreateViewModel(MatchSessionProjection projection)

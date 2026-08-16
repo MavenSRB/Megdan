@@ -920,21 +920,28 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(new[] { 1, 2 }));
         }
 
+        /// <summary>
+        /// Milestone 6.5c added the second board highlight, so the composition root now generates two
+        /// materials. What this fixture guards is unchanged and is the point: both are owned by the
+        /// root, both are released on reload, and neither accumulates a copy per scene load.
+        /// </summary>
         [UnityTest]
-        public IEnumerator SceneReload_ReleasesAndReusesExactlyOneOwnedHighlightMaterial()
+        public IEnumerator SceneReload_ReleasesAndReusesExactlyOneOwnedHighlightMaterialOfEachKind()
         {
             yield return LoadScene();
             var first = Root();
             Assert.That(first.OwnsGeneratedHighlightMaterial, Is.True);
-            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(1));
+            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(2));
             Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
+            Assert.That(CountResultingSpaceMaterials(), Is.EqualTo(1));
             AssertCurrentMinionBindings(first);
 
             yield return LoadScene();
             yield return null;
             var second = Root();
-            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(1));
+            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(2));
             Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
+            Assert.That(CountResultingSpaceMaterials(), Is.EqualTo(1));
             AssertCurrentMinionBindings(second);
         }
 
@@ -1038,6 +1045,11 @@ namespace GuardsDigital.Tests.PlayMode
         private static int CountHighlightMaterials() =>
             Resources.FindObjectsOfTypeAll<Material>().Count(value =>
                 value != null && value.name == DestinationHighlightMaterialOwner.GeneratedMaterialName);
+
+        private static int CountResultingSpaceMaterials() =>
+            Resources.FindObjectsOfTypeAll<Material>().Count(value =>
+                value != null &&
+                value.name == DestinationHighlightMaterialOwner.GeneratedResultingSpaceMaterialName);
 
         private static void AssertCurrentMinionBindings(MatchSceneCompositionRoot root)
         {

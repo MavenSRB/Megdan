@@ -26,12 +26,19 @@ namespace GuardsDigital.Presentation.Interaction
         [SerializeField] private Material assignedHighlightMaterial;
 
         [Tooltip(
+            "Milestone 6.5c: the second board highlight, marking where a projected Push would leave " +
+            "its target. Left unassigned it is generated in its own dark color, so it never reads " +
+            "as a space the player may click.")]
+        [SerializeField] private Material assignedResultingSpaceMaterial;
+
+        [Tooltip(
             "Compose the board while the editor is not playing. Off by default: edit-mode composition " +
             "regenerates the full board on every domain reload and can serialize generated objects " +
             "into the saved scene. Enable only to preview, and do not save the scene while enabled.")]
         [SerializeField] private bool composeInEditMode;
 
         private DestinationHighlightMaterialOwner highlightOwner;
+        private DestinationHighlightMaterialOwner resultingSpaceHighlightOwner;
         private ConfiguredMatchHudRenderer hud;
         private ConfiguredMatchSceneRuntime runtime;
 
@@ -39,7 +46,14 @@ namespace GuardsDigital.Presentation.Interaction
         public IMatchSession Session => runtime?.Session;
         public ConfiguredMatchHudRenderer Hud => hud;
         public bool OwnsGeneratedHighlightMaterial => highlightOwner?.IsGenerated == true;
-        public int OwnedHighlightNativeResourceCount => highlightOwner?.OwnedNativeResourceCount ?? 0;
+
+        /// <summary>
+        /// Both generated highlights are owned here and disposed together, so the second one cannot
+        /// become the leak the first one is tested against.
+        /// </summary>
+        public int OwnedHighlightNativeResourceCount =>
+            (highlightOwner?.OwnedNativeResourceCount ?? 0) +
+            (resultingSpaceHighlightOwner?.OwnedNativeResourceCount ?? 0);
 
         public void Compose()
         {
@@ -81,6 +95,8 @@ namespace GuardsDigital.Presentation.Interaction
             var minions = mapView.CurrentMinionViews.ToArray();
             var obstacles = mapView.CurrentObstacles.ToArray();
             highlightOwner = new DestinationHighlightMaterialOwner(assignedHighlightMaterial);
+            resultingSpaceHighlightOwner = DestinationHighlightMaterialOwner.ForResultingSpace(
+                assignedResultingSpaceMaterial);
             hud = GetComponent<ConfiguredMatchHudRenderer>();
             if (hud == null)
             {
@@ -97,7 +113,8 @@ namespace GuardsDigital.Presentation.Interaction
                 tiles,
                 obstacles,
                 highlightOwner.Material,
-                hud);
+                hud,
+                resultingSpaceHighlightOwner.Material);
 
             foreach (var selector in pointerSelectors.Where(value => value != null))
             {
@@ -183,6 +200,8 @@ namespace GuardsDigital.Presentation.Interaction
             runtime = null;
             highlightOwner?.Dispose();
             highlightOwner = null;
+            resultingSpaceHighlightOwner?.Dispose();
+            resultingSpaceHighlightOwner = null;
         }
     }
 }

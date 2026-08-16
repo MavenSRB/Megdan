@@ -368,6 +368,16 @@ namespace GuardsDigital.Core.Cards
 
         public PendingEffectChoice PendingEffectChoice => cardActions?.PendingEffectChoice;
 
+        /// <summary>
+        /// Milestone 6.5c: the board meaning of the pending effect choice's space-valued candidates,
+        /// forwarded from the dispatcher that owns both the frame and the components.
+        /// </summary>
+        public IReadOnlyList<EffectChoiceCandidatePreview> DescribePendingEffectChoice(
+            IEnumerable<CardDefinition> definitions,
+            RuleModificationSet modifications) =>
+            cardActions?.DescribePendingEffectChoice(definitions, modifications) ??
+                Array.Empty<EffectChoiceCandidatePreview>();
+
         internal CardActionResolutionAuthority CardActions => cardActions;
 
         public ActiveEffectLifecycle Timing => timing;

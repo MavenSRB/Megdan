@@ -25,6 +25,9 @@ namespace GuardsDigital.Tests.PlayMode
     /// boundary in `ConfiguredPushPlaceSkillTests`; what this fixture adds is the passive-view half -
     /// that the rendered controls carry exactly the projected invocations and that a control the
     /// projection never offered forwards nothing at all.
+    ///
+    /// Milestone 6.5c changed what "rendered" means for the Place branch: its destinations are lit on
+    /// the board and carry no controls, and one click answers the choice outright.
     /// </summary>
     public sealed class PushPlaceSkillPlayModeTests
     {
@@ -66,13 +69,28 @@ namespace GuardsDigital.Tests.PlayMode
                 destinations.All(space => HexDistanceQuery.Calculate(origin, space) <= 4), Is.True,
                 "Radius 4 is inclusive rulebook distance.");
 
+            // Milestone 6.5c: the destinations carry no controls at all now - the board lights them
+            // and one click answers the choice, because the select and the confirm the authority
+            // offers with it are forwarded together for an exactly-one selection.
+            Assert.That(runtime.RoundView.Model.EffectChoiceTargets, Is.Empty,
+                "An empty space names no object, so no named control is drawn for one.");
+            Assert.That(runtime.RoundView.Model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
+                Is.False,
+                "The anonymous destination buttons are gone.");
+            Assert.That(runtime.RoundView.Model.EffectChoiceDestinations.Select(value =>
+                    value.Command.EffectChoice.Candidate.Value.Coordinate),
+                Is.EqualTo(destinations),
+                "Each offered space keeps the projected invocation a board click forwards.");
+            Assert.That(runtime.BoardView.Model.EffectChoiceDestinations, Is.EqualTo(destinations),
+                "And the board lights exactly those spaces.");
+
             var chosen = destinations[0];
             Assert.That(runtime.SubmitEffectChoiceValue(chosen), Is.True,
-                "The rendered destination control carries the projection's own invocation.");
-            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
+                "The lit space carries the projection's own invocation.");
             yield return null;
 
-            Assert.That(runtime.PendingEffectChoice, Is.Null, "The Skill completes.");
+            Assert.That(runtime.PendingEffectChoice, Is.Null, "The Skill completes in one click.");
             Assert.That(
                 runtime.Heroes.Single(hero => hero.HeroId.Equals(actorId)).Coordinate,
                 Is.EqualTo(chosen),

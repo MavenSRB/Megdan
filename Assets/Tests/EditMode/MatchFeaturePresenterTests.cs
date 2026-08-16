@@ -6,6 +6,7 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
@@ -500,6 +501,173 @@ namespace GuardsDigital.Tests.EditMode
                 "The completed frame leaves no decision behind.");
         }
 
+        /// <summary>
+        /// Milestone 6.5c. `choose another adjacent unit and Push it 3 spaces` is answered by controls
+        /// named after the units they target, and each carries the space the authority projects the
+        /// push would leave that unit on. Nothing here is derived: the names come from projected
+        /// occupancy and the resulting space from the projected preview.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_NamesEveryPushTargetAndCarriesItsProjectedResultingSpace()
+        {
+            var session = CreateNeedleSession(NeedleRedAt, NeedleBlueAt);
+            StartNeedleTurn(session);
+            ChooseNeedleBranch(session, NeedlePushBranch);
+
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+            var choice = session.Projection.PendingEffectChoice;
+            var blueHero = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue);
+
+            Assert.That(model.EffectChoiceDestinations, Is.Empty,
+                "Every candidate of this branch stands on the space it names, so none is a destination.");
+            Assert.That(model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
+                Is.False,
+                "A target is offered as a named control, never as an anonymous select.");
+            Assert.That(model.EffectChoiceTargets.Select(value => value.Space),
+                Is.EqualTo(choice.SelectInvocations.Select(value => value.Candidate.Value.Coordinate)),
+                "One control per selectable target, in the projection's own order.");
+
+            var target = model.EffectChoiceTargets.Single(value => value.Space.Equals(NeedleBlueAt));
+            Assert.That(target.Label, Is.EqualTo(
+                EffectChoiceLabels.HeroTargetLabel(TeamSide.Blue, blueHero.DisplayName)),
+                "The control is named after the unit it targets.");
+            Assert.That(target.ResultingSpace, Is.EqualTo(NeedleBeyondBlue),
+                "The projected push endpoint rides the control, so the board can light it.");
+            Assert.That(target.Command.Kind, Is.EqualTo(DirectorCommandKind.AnswerEffectChoice));
+            Assert.That(target.Command.EffectChoice.ResolutionId, Is.EqualTo(choice.ResolutionId));
+            Assert.That(target.Command.EffectChoice.ChoiceId, Is.EqualTo(choice.ChoiceId));
+        }
+
+        /// <summary>
+        /// Milestone 6.5c. `Place your hero in a different empty space within Radius 4` offers no
+        /// control at all: the board lights the spaces and a click answers the choice.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_LeavesEveryPlaceDestinationToTheBoardWithNoControl()
+        {
+            var session = CreateNeedleSession(NeedleRedAt, NeedleBlueAt);
+            StartNeedleTurn(session);
+            ChooseNeedleBranch(session, NeedlePlaceBranch);
+
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+            var choice = session.Projection.PendingEffectChoice;
+
+            Assert.That(model.EffectChoiceTargets, Is.Empty,
+                "An empty space names no object, so no control is named after one.");
+            Assert.That(model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
+                Is.False,
+                "The anonymous OPTION #n buttons this milestone exists to remove are gone.");
+            Assert.That(model.EffectChoiceDestinations.Count,
+                Is.EqualTo(choice.SelectInvocations.Count));
+            Assert.That(model.EffectChoiceDestinations.All(value =>
+                    value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
+                Is.True,
+                "Each still carries the projected invocation a board click forwards.");
+        }
+
+        /// <summary>
+        /// Milestone 6.5c. The board is the whole Place surface: every offered space is lit with the
+        /// same highlight Movement, Fast Travel, and corrections use, and clicking one answers the
+        /// choice outright, because an exactly-one selection leaves nothing further to confirm.
+        /// </summary>
+        [Test]
+        public void BoardPresenter_LightsEveryPlaceDestinationAndAnswersTheChoiceInOneClick()
+        {
+            var session = CreateNeedleSession(NeedleRedAt, NeedleBlueAt);
+            StartNeedleTurn(session);
+            ChooseNeedleBranch(session, NeedlePlaceBranch);
+            var view = new CapturingBoardView();
+            var presenter = new BoardInteractionPresenter(session, view);
+            presenter.Refresh();
+
+            // Read before the click: completing the Skill hands the turn on, so the projection's
+            // selected actor is the other hero by the time the assertion runs.
+            var actorId = session.Projection.SelectedActor.ActorId;
+            var offered = session.Projection.PendingEffectChoice.SelectInvocations
+                .Select(value => value.Candidate.Value.Coordinate)
+                .ToArray();
+            Assert.That(view.Model.EffectChoiceDestinations, Is.EqualTo(offered));
+            Assert.That(view.Model.EffectChoiceTargetSpace, Is.Null);
+            Assert.That(view.Model.EffectChoiceResultingSpace, Is.Null);
+
+            var chosen = offered.First();
+            Assert.That(presenter.SubmitDestination(chosen), Is.True);
+
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "Select and the confirm the authority offers with it are both forwarded.");
+            Assert.That(session.Projection.Heroes.Single(hero => hero.HeroId.Equals(actorId)).Coordinate,
+                Is.EqualTo(chosen),
+                "One click placed the hero on the space that was clicked.");
+        }
+
+        /// <summary>
+        /// Milestone 6.5c. Pointing at a named target marks that unit and lights where the push would
+        /// leave it, and both cues belong to the projection they were read from.
+        /// </summary>
+        [Test]
+        public void BoardPresenter_MarksThePointedAtTargetAndItsProjectedResultingSpace()
+        {
+            var session = CreateNeedleSession(NeedleRedAt, NeedleBlueAt);
+            StartNeedleTurn(session);
+            ChooseNeedleBranch(session, NeedlePushBranch);
+            var view = new CapturingBoardView();
+            var presenter = new BoardInteractionPresenter(session, view);
+            presenter.Refresh();
+
+            Assert.That(view.Model.EffectChoiceTargetSpace, Is.Null, "Nothing is pointed at yet.");
+            Assert.That(presenter.HighlightEffectChoiceCandidate(NeedleBlueAt), Is.True);
+            presenter.Refresh();
+
+            Assert.That(view.Model.EffectChoiceTargetSpace, Is.EqualTo(NeedleBlueAt));
+            Assert.That(view.Model.EffectChoiceResultingSpace, Is.EqualTo(NeedleBeyondBlue));
+            Assert.That(view.Model.EffectChoiceDestinations, Is.Empty,
+                "The resulting space is a prediction, so it never joins the selectable set.");
+
+            Assert.That(presenter.HighlightEffectChoiceCandidate(NeedleBlueAt), Is.False,
+                "An unchanged hover does not rebuild the board on every repaint.");
+            Assert.That(presenter.HighlightEffectChoiceCandidate(new HexCoordinate(99, 99)), Is.True);
+            presenter.Refresh();
+            Assert.That(view.Model.EffectChoiceTargetSpace, Is.Null,
+                "A space the choice does not offer marks nothing.");
+
+            Assert.That(presenter.HighlightEffectChoiceCandidate(NeedleBlueAt), Is.True);
+            presenter.Refresh();
+            Assert.That(session.Undo().Accepted, Is.True);
+            presenter.Refresh();
+            Assert.That(view.Model.EffectChoiceTargetSpace, Is.Null,
+                "Undo rebuilds authoritative state, and the cue does not outlive its projection.");
+        }
+
+        /// <summary>
+        /// Milestone 6.5c. A named target control answers its choice in one click too, and a control
+        /// left over from an earlier projection submits nothing.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_SubmitsANamedTargetOnceAndRefusesAStaleOne()
+        {
+            var session = CreateNeedleSession(NeedleRedAt, NeedleBlueAt);
+            StartNeedleTurn(session);
+            ChooseNeedleBranch(session, NeedlePushBranch);
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            var stale = RoundActionPresenter.CreateViewModel(session.Projection).EffectChoiceTargets
+                .Single(value => value.Space.Equals(NeedleBlueAt));
+
+            Assert.That(presenter.SubmitTarget(stale), Is.True);
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "Select and confirm are forwarded together for an exactly-one choice.");
+            Assert.That(session.Projection.Heroes.Single(hero =>
+                    hero.HeroId.Equals(BlueHeroId(session))).Coordinate,
+                Is.EqualTo(NeedleBeyondBlue),
+                "The push resolved exactly where the control said it would.");
+
+            Assert.That(presenter.SubmitTarget(stale), Is.False,
+                "The same control belongs to a projection that has moved on.");
+            Assert.That(presenter.SubmitTarget(null), Is.False);
+        }
+
         [Test]
         public void DefensePreview_ProjectsAuthorityComputedBreakdownsAndStableSignedMinionCues()
         {
@@ -738,6 +906,80 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.TieBreakerState,
                 map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        // Milestone 6.5c's geography, the same official-map spots milestone 6.5a proved Red Needle on:
+        // from `q-2_r-5` a push of 3 carries the adjacent Blue hero exactly one space, because
+        // `q1_r-5` is terrain.
+        private static readonly HexCoordinate NeedleRedAt = new HexCoordinate(-2, -5);
+        private static readonly HexCoordinate NeedleBlueAt = new HexCoordinate(-1, -5);
+        private static readonly HexCoordinate NeedleBeyondBlue = new HexCoordinate(0, -5);
+        private static readonly EffectNodeId NeedlePushBranch = new EffectNodeId("needle-push-branch");
+        private static readonly EffectNodeId NeedlePlaceBranch = new EffectNodeId("needle-place-branch");
+
+        private static HeroId BlueHeroId(MatchSession session) =>
+            session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+
+        /// <summary>
+        /// Commits Red Needle at Initiative 13 against Blue Longbow at 4, so the Red hero acts first
+        /// and its converted Skill is the current actor's offer.
+        /// </summary>
+        private static void StartNeedleTurn(MatchSession session)
+        {
+            var red = GetHandCards(session, TeamSide.Red)
+                .Single(card => card.Id.Value == "red-needle-card");
+            var blue = GetHandCards(session, TeamSide.Blue)
+                .Single(card => card.Id.Value == "blue-longbow-card");
+            Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id));
+            var skill = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Skill);
+            Assert.That(session.Execute(DirectorCommand.StartAction(skill.ActionDefinitionId)).Accepted,
+                Is.True);
+        }
+
+        /// <summary>
+        /// Answers the mode choice. A mode keeps its explicit confirm, which is exactly what milestone
+        /// 6.5c leaves alone, so both invocations are sent here.
+        /// </summary>
+        private static void ChooseNeedleBranch(MatchSession session, EffectNodeId branch)
+        {
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(
+                    choice.SelectInvocations.Single(candidate =>
+                        candidate.Candidate.OptionNodeId.Equals(branch)))).Accepted,
+                Is.True);
+            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation)).Accepted, Is.True);
+        }
+
+        private static MatchSession CreateNeedleSession(HexCoordinate redAt, HexCoordinate blueAt)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var redHeroId = configuration.Participants.Heroes
+                .Single(hero => configuration.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            var blueHeroId = configuration.Participants.Heroes
+                .Single(hero => configuration.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue).Id;
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                new[]
+                {
+                    new HeroOccupancy(redHeroId, redAt),
+                    new HeroOccupancy(blueHeroId, blueAt)
+                },
                 Array.Empty<ObstacleOccupancy>());
             return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
         }

@@ -142,6 +142,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
             skillBackend.PendingChoice;
 
         /// <summary>
+        /// Milestone 6.5c: what each space-valued candidate of the pending effect choice currently
+        /// means on the board. This dispatcher answers it because it is the one component holding both
+        /// the paused frame and the component composition capabilities execute against, so the preview
+        /// a reader sees is derived from exactly the state the next command would resolve against.
+        /// Empty whenever no effect choice is pending or none of its candidates name a space.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>
+            DescribePendingEffectChoice(
+                IEnumerable<CardDefinition> definitions,
+                RuleModificationSet modifications)
+        {
+            var pending = skillBackend.PendingResolution;
+            var choice = skillBackend.PendingChoice;
+            if (pending == null || choice == null)
+            {
+                return Array.Empty<
+                    GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>();
+            }
+
+            var materialized = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            return GuardsDigital.Core.Rules.EffectResolution.EffectChoicePreviewQuery.Describe(
+                SkillCardActionStrategyBackend.FindEffectRoot(materialized, pending),
+                choice,
+                pending.ActorId,
+                components,
+                modifications);
+        }
+
+        /// <summary>
         /// Milestone 6.4a's paused after-action correction, or <c>null</c>. It is dispatcher-owned
         /// rather than backend-owned because the correction belongs to the action boundary itself:
         /// every displacement-capable operation the Skill backend hosts - and every later one - reaches

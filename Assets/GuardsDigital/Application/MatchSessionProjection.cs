@@ -241,7 +241,9 @@ namespace GuardsDigital.Application
             GuardsDigital.Core.Rules.EffectResolution.PendingResolution pendingSkillResolution = null,
             PendingEffectChoice pendingEffectChoice = null,
             GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
-                pendingDisplacedMinionCorrection = null)
+                pendingDisplacedMinionCorrection = null,
+            IEnumerable<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>
+                pendingEffectChoicePreview = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -295,6 +297,9 @@ namespace GuardsDigital.Application
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingLanePushRequest = pendingLanePushRequest;
             PendingDisplacedMinionCorrection = pendingDisplacedMinionCorrection;
+            PendingEffectChoicePreview = Array.AsReadOnly((pendingEffectChoicePreview ??
+                Enumerable.Empty<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>())
+                .ToArray());
         }
 
         public long Version { get; }
@@ -331,6 +336,16 @@ namespace GuardsDigital.Application
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution { get; }
 
         public PendingEffectChoice PendingEffectChoice { get; }
+
+        /// <summary>
+        /// Milestone 6.5c: what each space-valued candidate of that choice means on the board right
+        /// now - the object standing there, and where a consuming Push would leave it. Empty unless
+        /// such a choice is pending. It is the effect-frame counterpart of
+        /// <see cref="PendingDefensePreview"/>: an authority-computed reading of a decision the player
+        /// has not made yet, so presentation can show consequences without deriving any rule.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>
+            PendingEffectChoicePreview { get; }
 
         /// <summary>
         /// Milestone 6.4a's paused after-action correction, or <c>null</c>. Presentation reads the

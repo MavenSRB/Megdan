@@ -145,7 +145,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// definitions rather than from anything the frame carries. The frame holds a reference; the
         /// semantics always come from the definition the match was configured with.
         /// </summary>
-        private static EffectDefinition FindEffectRoot(
+        internal static EffectDefinition FindEffectRoot(
             IReadOnlyList<CardDefinition> definitions,
             PendingResolution pending)
         {

@@ -36,7 +36,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HexTileView> tiles,
             System.Collections.Generic.IEnumerable<PlaceholderObstacleView> obstacles,
             UnityEngine.Material highlightMaterial,
-            ConfiguredMatchHudRenderer hudRenderer)
+            ConfiguredMatchHudRenderer hudRenderer,
+            UnityEngine.Material resultingSpaceMaterial = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -74,7 +75,8 @@ namespace GuardsDigital.Presentation.Match
                     maps,
                     configuration));
 
-            BoardView = new BoardInteractionUnityView(heroViews, tileViews, highlightMaterial, minionViews);
+            BoardView = new BoardInteractionUnityView(
+                heroViews, tileViews, highlightMaterial, minionViews, resultingSpaceMaterial);
             HandsView = new DirectorHandsUnityView();
             RoundView = new RoundActionUnityView();
             UndoRestartView = new UndoRestartUnityView();
@@ -96,6 +98,17 @@ namespace GuardsDigital.Presentation.Match
             HandsView.PassRequested += heroId => HandsPresenter.Pass(heroId);
             RoundView.InvocationSubmitted += invocation => RoundPresenter.Submit(invocation);
             RoundView.FastTravelSelected += selection => RoundPresenter.SelectFastTravel(selection);
+            RoundView.TargetSubmitted += target => RoundPresenter.SubmitTarget(target);
+            RoundView.TargetHighlighted += target =>
+            {
+                // Only the board is refreshed, for the same reason the minion prompt refreshes only
+                // the board: this fires inside the HUD's own draw, and rebuilding the immediate-mode
+                // models mid-pass would change the control count between layout and repaint.
+                if (BoardPresenter.HighlightEffectChoiceCandidate(target?.Space))
+                {
+                    BoardPresenter.Refresh();
+                }
+            };
             RoundPresenter.FastTravelSelectionRequested += selection =>
             {
                 if (BoardPresenter.ActivateFastTravel(selection.ReplacedMovementActionDefinitionId))
@@ -268,12 +281,39 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public bool SubmitEffectChoiceValue(GuardsDigital.Core.Board.HexCoordinate coordinate)
         {
-            var invocation = RoundView.Model?.EffectChoices.SingleOrDefault(value =>
-                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
-                value.Command.EffectChoice.Candidate.Kind == EffectChoiceCandidateKind.Value &&
-                value.Command.EffectChoice.Candidate.Value.Coordinate.Equals(coordinate));
+            // Milestone 6.5c split where a value candidate is answered: an empty space carries a
+            // board-only invocation and an occupied one carries a named control. Addressing by
+            // coordinate still reaches either, which is what keeps a saved-scene driver honest.
+            var model = RoundView.Model;
+            var target = model?.EffectChoiceTargets.SingleOrDefault(value =>
+                value.Space.Equals(coordinate));
+            if (target != null)
+            {
+                return RoundPresenter.SubmitTarget(target);
+            }
+
+            var invocation = model?.EffectChoices
+                .Concat(model.EffectChoiceDestinations)
+                .SingleOrDefault(value =>
+                    value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                    value.Command.EffectChoice.Candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    value.Command.EffectChoice.Candidate.Value.Coordinate.Equals(coordinate));
             return RoundPresenter.Submit(invocation);
+        }
+
+        /// <summary>
+        /// Reports which named target control is pointed at, addressed by space, for a driver with no
+        /// pointer. Passing no coordinate clears the cue.
+        /// </summary>
+        public bool HighlightEffectChoiceTarget(GuardsDigital.Core.Board.HexCoordinate? coordinate)
+        {
+            var target = coordinate.HasValue
+                ? RoundView.Model?.EffectChoiceTargets.SingleOrDefault(value =>
+                    value.Space.Equals(coordinate.Value))
+                : null;
+            RoundView.ForwardTargetHighlight(target);
+            return BoardPresenter.HighlightEffectChoiceCandidate(target?.Space);
         }
 
         public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection

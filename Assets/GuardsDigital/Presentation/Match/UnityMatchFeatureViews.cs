@@ -19,6 +19,7 @@ namespace GuardsDigital.Presentation.Match
         private IReadOnlyList<StandardMinionView> minions;
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly Material highlightMaterial;
+        private readonly Material resultingSpaceMaterial;
         private Func<HeroId, bool> heroIntentHandler;
         private Func<MinionId, bool> minionIntentHandler;
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
@@ -27,7 +28,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<PrimitiveHeroView> heroes,
             IEnumerable<HexTileView> tiles,
             Material highlightMaterial,
-            IEnumerable<StandardMinionView> minions = null)
+            IEnumerable<StandardMinionView> minions = null,
+            Material resultingSpaceMaterial = null)
         {
             this.heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes)))
                 .Where(value => value != null).Distinct().ToArray());
@@ -36,6 +38,9 @@ namespace GuardsDigital.Presentation.Match
             this.tiles = Array.AsReadOnly((tiles ?? throw new ArgumentNullException(nameof(tiles)))
                 .Where(value => value != null).Distinct().ToArray());
             this.highlightMaterial = highlightMaterial ?? throw new ArgumentNullException(nameof(highlightMaterial));
+            // Milestone 6.5c: without its own material the resulting space cannot be drawn at all,
+            // because painting a prediction in the destination color would say "click here".
+            this.resultingSpaceMaterial = resultingSpaceMaterial;
         }
 
         public BoardInteractionViewModel Model { get; private set; }
@@ -72,6 +77,14 @@ namespace GuardsDigital.Presentation.Match
                 {
                     hero.Configure(occupancy, hero.OuterRadius);
                 }
+
+                // Milestone 6.5c: an effect-choice target is addressed by its space, so whichever
+                // unit stands there wears the cue. The hero path exists because a Push may name one.
+                hero.SetChoiceCue(
+                    model.EffectChoiceTargetSpace.HasValue && occupancy.HeroId.IsDefined &&
+                        occupancy.Coordinate.Equals(model.EffectChoiceTargetSpace.Value)
+                        ? MinionChoiceCueKind.Highlighted
+                        : MinionChoiceCueKind.None);
             }
 
             RenderMinions(model);
@@ -81,6 +94,9 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 6.4b: correction route endpoints and Place spaces highlight exactly like
             // every other projected destination, and clicking one submits its projected invocation.
             targetCoordinates.UnionWith(model.CorrectionDestinations);
+            // Milestone 6.5c: an empty effect-choice candidate is a destination like any other, and
+            // is the whole surface for that candidate - no control is drawn for it anywhere.
+            targetCoordinates.UnionWith(model.EffectChoiceDestinations);
             foreach (var targetId in model.AttackTargets)
             {
                 var target = model.Heroes.Single(value => value.HeroId.Equals(targetId));
@@ -92,8 +108,20 @@ namespace GuardsDigital.Presentation.Match
                 targetCoordinates.Add(target.Coordinate);
             }
 
+            // The predicted landing space is drawn in its own color and is never selectable, so it is
+            // resolved after the selectable set and can never be added to it.
+            var resultingSpace = resultingSpaceMaterial == null
+                ? null
+                : model.EffectChoiceResultingSpace;
             foreach (var tile in tiles.Where(value => value.IsPlayable))
             {
+                if (resultingSpace.HasValue && tile.Coordinate.Equals(resultingSpace.Value) &&
+                    !targetCoordinates.Contains(tile.Coordinate))
+                {
+                    tile.SetHighlighted(true, resultingSpaceMaterial);
+                    continue;
+                }
+
                 var highlighted = targetCoordinates.Contains(tile.Coordinate);
                 tile.SetHighlighted(highlighted, highlighted ? highlightMaterial : null);
             }
@@ -132,7 +160,10 @@ namespace GuardsDigital.Presentation.Match
                         defenseCues.TryGetValue(boundId, out var amount) ? amount : 0);
                     minion.SetChoiceCue(choiceCues.TryGetValue(boundId, out var choiceCue)
                         ? choiceCue.Kind
-                        : MinionChoiceCueKind.None);
+                        : model.EffectChoiceTargetSpace.HasValue &&
+                            state.Coordinate.Equals(model.EffectChoiceTargetSpace.Value)
+                            ? MinionChoiceCueKind.Highlighted
+                            : MinionChoiceCueKind.None);
 
                     projectedMinions.Remove(state.MinionId);
                 }
@@ -299,6 +330,17 @@ namespace GuardsDigital.Presentation.Match
         public event Action<TypedInvocationViewModel> InvocationSubmitted;
         public event Action<FastTravelOfferViewModel> FastTravelSelected;
 
+        /// <summary>Milestone 6.5c: the named target control that was activated.</summary>
+        public event Action<EffectChoiceTargetViewModel> TargetSubmitted;
+
+        /// <summary>
+        /// The target control the pointer or keyboard focus is on, or null when none is. The board
+        /// reads this to mark that object and light where the projected operation would leave it.
+        /// </summary>
+        public event Action<EffectChoiceTargetViewModel> TargetHighlighted;
+
+        public EffectChoiceTargetViewModel HighlightedTarget { get; private set; }
+
         public void Render(RoundActionViewModel model)
         {
             if (ReferenceEquals(Model, model))
@@ -314,6 +356,61 @@ namespace GuardsDigital.Presentation.Match
             {
                 ClearDefensePreview();
             }
+
+            // A highlight belongs to the model it was read from. A rebuilt model drops it, so the
+            // board never keeps a cue for a control that is no longer offered.
+            if (HighlightedTarget != null &&
+                !Model.EffectChoiceTargets.Any(value => ReferenceEquals(value, HighlightedTarget)))
+            {
+                SetTargetHighlight(null);
+            }
+        }
+
+        /// <summary>Forwards one named target control, for a driver that has no pointer.</summary>
+        public void ForwardTarget(EffectChoiceTargetViewModel target)
+        {
+            if (target != null)
+            {
+                TargetSubmitted?.Invoke(target);
+            }
+        }
+
+        /// <summary>Reports a pointed-at target directly, for a driver that has no pointer.</summary>
+        public void ForwardTargetHighlight(EffectChoiceTargetViewModel target) =>
+            SetTargetHighlight(target);
+
+        private bool DrawEffectChoiceTarget(EffectChoiceTargetViewModel target, int index)
+        {
+            var controlName = $"EffectChoiceTarget-{Model.Version}-{index}";
+            GUI.SetNextControlName(controlName);
+            var pressed = GUILayout.Button(
+                target.Label,
+                GUILayout.MinWidth(CalculateContentWidth(target.Label, GUI.skin.button)),
+                GUILayout.Height(46f));
+            if (pressed)
+            {
+                ForwardTarget(target);
+            }
+
+            if (Event.current.type != EventType.Repaint)
+            {
+                return false;
+            }
+
+            var rect = GUILayoutUtility.GetLastRect();
+            return rect.Contains(Event.current.mousePosition) ||
+                string.Equals(GUI.GetNameOfFocusedControl(), controlName, StringComparison.Ordinal);
+        }
+
+        private void SetTargetHighlight(EffectChoiceTargetViewModel target)
+        {
+            if (ReferenceEquals(HighlightedTarget, target))
+            {
+                return;
+            }
+
+            HighlightedTarget = target;
+            TargetHighlighted?.Invoke(target);
         }
 
         public void Draw()
@@ -352,9 +449,25 @@ namespace GuardsDigital.Presentation.Match
                 DrawInvocation(effectChoice, 170f);
             }
 
+            // Milestone 6.5c: one control per target the choice names, reporting which one the
+            // pointer or keyboard focus is on so the board can mark it and show where it would land.
+            // Nothing is drawn for a destination candidate - the lit board is its control.
+            var hoveredTarget = default(EffectChoiceTargetViewModel);
+            for (var index = 0; index < Model.EffectChoiceTargets.Count; index++)
+            {
+                if (DrawEffectChoiceTarget(Model.EffectChoiceTargets[index], index))
+                {
+                    hoveredTarget = Model.EffectChoiceTargets[index];
+                }
+            }
+
             GUILayout.FlexibleSpace();
             DrawInvocation(Model.EndTurnInvocation, 130f);
             GUILayout.EndHorizontal();
+            if (Event.current.type == EventType.Repaint)
+            {
+                SetTargetHighlight(hoveredTarget);
+            }
 
             if (Model.DefenseChoices.Count > 0)
             {
