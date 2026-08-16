@@ -263,3 +263,27 @@ Closing check: acceptance evidence rather than a failing-then-passing defect pai
 Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No validator-script edit, since `Get-Limit` already governs `Docs/AI/Project/*.md` by pattern. No rewrite of completed definitions or archive evidence, and no new implementation claim; this milestone moves existing text and registers its home.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ar-shard-the-rule-modification-inventory-completion-evidence).
+
+### [ ] 6.1as Shard the board-operation inventory
+
+**Corrective amendment (2026-08-16, user approved).** `Project/CURRENT_IMPLEMENTATION.md` has been carried over its warning threshold by five consecutive milestones. 6.5a compressed its own additions and recorded that the next milestone to grow the file should shard instead; 6.5b, 6.5c, and 6.5ac each recorded the same conclusion and each left it higher, and 6.5ad recorded it again at 4,143 of the file's 4,500-word limit against a 3,825-word warning line. This is the pattern 6.1aq existed to end, now repeated one milestone at a time: a threshold that fires every handoff and is answered every handoff by trimming the newest sentences stops being a governed limit and becomes background noise. 6.1ar showed the cheaper move is to route a whole subject out while there is still a whole subject to route.
+
+The subject that moves is the board-operation inventory: the four paragraphs describing the registered operations that change the board - tokens and markers as authoritative components with a derived supply, direct Move and Object Push over one displacement seam, Clear as the immediate Attack replacement, and Place beside Spawn. At 1,183 words across four paragraphs it is the file's largest single subject, larger than the rule-modification regime 6.1ar moved, and its growth is structural rather than incidental: it grew at 6.2, 6.3, 6.4, 6.5, 6.5a, 6.5b, and 6.5ad, and every remaining showcase milestone adds to exactly it - 6.6 brings Swap, Replace, and token-only Remove, 6.7 brings bounded Repeat, and 6.6a and 6.7a bring their surfaces. Two of the three hazards the earlier splits recorded are already known absent here and were counted rather than assumed: the four paragraphs contain no relative link, and `Tools/PinnedConstants.txt` targets the snapshot-schema claim, which lives in a paragraph that stays.
+
+The three paragraphs interleaved with them stay put, because they are different subjects: the rule-modification pointer 6.1ar left behind, the schema-versioned snapshot paragraph that carries the pinned constant, and the enum-decoding boundary. What moves is therefore four non-adjacent paragraphs rather than one contiguous block, and each is compared for byte-identity on its own.
+
+Observable outcome: The implementation inventory is below its warning threshold with recorded headroom for the milestones scheduled against it, and every fact still has exactly one canonical home.
+
+Acceptance checks:
+
+- `Project/CURRENT_IMPLEMENTATION.md` is below its warning threshold with recorded headroom for the next scheduled milestone, and no content is deleted to achieve it; what moves, moves to a named shard.
+- Each moved paragraph is byte-identical to the text it replaces, proven by a case-sensitive comparison, so the only deltas are the pointer paragraph and the shard header.
+- The split shard is registered as a canonical home in the ownership matrix, the shard index, and the routing table, exactly as the three earlier implementation-inventory splits were.
+- The new shard's subject boundary is stated against `Card-System/BOARD_CAPABILITIES.md`, which owns the declared contract for every board capability including the unimplemented ones, and against `CARD_EFFECT_CAPABILITIES.md`, which owns the capability and query contracts, so the implemented inventory and the contract documents cannot drift into each other.
+- Subject ownership is preserved rather than chronology: each shard owns whole subjects, and no fact is stated in two places.
+- The route/status coherence statement and the pinned snapshot-schema claim both stay in `Project/CURRENT_IMPLEMENTATION.md`, so the four status sites and `Tools/PinnedConstants.txt` need no new indirection.
+- Every existing inbound link to the moved content resolves, and the validator's link, anchor, orphan-shard, archive-destination, and pinned-constant checks pass.
+
+Closing check: the `warning-threshold` issue for `Project/CURRENT_IMPLEMENTATION.md` is present before and absent after, with every other threshold unchanged. Unlike 6.1ar this is a real transition rather than acceptance evidence, because the warning is firing at the pre-split revision.
+
+Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No rewrite of completed definitions or archive evidence, and no new implementation claim; this milestone moves existing text and registers its home. It does not touch the gameplay route, which continues from 6.5ae.
