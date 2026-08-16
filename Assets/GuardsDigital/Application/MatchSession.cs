@@ -664,6 +664,7 @@ namespace GuardsDigital.Application
                 authoritative,
                 canRecordHistory,
                 board.Minions,
+                board.PlacedTokens,
                 availableFastTravelOptions,
                 defensePreview,
                 round.PendingMinionBattleChoice,

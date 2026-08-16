@@ -27,12 +27,15 @@ namespace GuardsDigital.Tests.EditMode
     /// member, no pending-choice class, no projection property, and no continuation arm of its own, and
     /// the fixture below is what shows the frame actually carries the weight.
     ///
-    /// Tokens are read back by deserializing the authoritative snapshot rather than from a projection
-    /// field, because 6.2's non-goals bar a token-specific projection property. That is not a
-    /// workaround: what the wire carries is exactly what a later presentation milestone will project.
+    /// Tokens were read back here by deserializing the authoritative snapshot rather than from a
+    /// projection field, because 6.2's non-goals barred a token-specific projection property, and this
+    /// comment predicted that what the wire carries is exactly what a later presentation milestone
+    /// would project. Milestone 6.2d is that milestone, and it redeemed the prediction rather than
+    /// correcting it: <c>MatchSessionProjection.PlacedTokens</c> hands over the board authority's own
+    /// instances, and the case below pins the two readings against each other so neither can drift.
+    /// The snapshot readback stays, because it is the only one that proves what crossed the wire.
     /// Milestone 6.3 reuses that same readback to prove Clear's authority-level command, diagnostic
-    /// facts, source-card completion, retained-prefix Undo, and deterministic replay without adding a
-    /// token projection ahead of its presentation owner.
+    /// facts, source-card completion, retained-prefix Undo, and deterministic replay.
     /// </summary>
     public sealed class MatchSessionComponentDispatchTests
     {
@@ -85,6 +88,43 @@ namespace GuardsDigital.Tests.EditMode
                 SyntheticComponentDefinitions.CreateCatalog().CountAvailableTokens(
                     SyntheticComponentDefinitions.HazardV3, board.PlacedTokens),
                 Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount - 1));
+        }
+
+        /// <summary>
+        /// Milestone 6.2d's first acceptance check, and the redemption of this fixture's own
+        /// prediction. The projection carries the board authority's instances rather than a summary of
+        /// them, so what a reader sees is the identity, the coordinate and the trusted definition the
+        /// board already holds - checked here against the same tokens read back off the wire, which is
+        /// the only comparison that can catch the projection quietly deriving something of its own.
+        /// </summary>
+        [Test]
+        public void TheProjection_CarriesEveryPlacedTokenTheWireDoes()
+        {
+            var session = StartComponentSkill(out _);
+            Assert.That(session.Projection.PlacedTokens, Is.Empty,
+                "Nothing has been placed yet, and a projection invents no piece.");
+
+            ChooseOption(session, PlaceBranch);
+            var spaces = session.Projection.PendingEffectChoice;
+            var chosen = spaces.Candidates[0].Value.Coordinate;
+            Accept(session, DirectorCommand.AnswerEffectChoice(spaces.SelectInvocations[0]));
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+
+            var projected = session.Projection.PlacedTokens.Single();
+            var authoritative = RestoreBoard(session).PlacedTokens.Single();
+
+            Assert.That(projected.Id, Is.EqualTo(authoritative.Id));
+            Assert.That(projected.Coordinate, Is.EqualTo(chosen));
+            Assert.That(projected.Definition,
+                Is.SameAs(SyntheticComponentDefinitions.HazardDefinition),
+                "The trusted definition object travels with the instance, which is how a reader " +
+                "names a token without ever reaching for the component catalog.");
+            Assert.That(projected.Definition.DisplayName, Is.EqualTo("TEST - Hazard"));
+
+            Assert.That(session.Undo().Accepted, Is.True);
+            Assert.That(session.Projection.PlacedTokens, Is.Empty,
+                "Undo takes the piece off the board, and the projection says so.");
         }
 
         [Test]

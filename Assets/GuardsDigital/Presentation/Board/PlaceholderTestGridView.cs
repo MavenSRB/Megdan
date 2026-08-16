@@ -33,6 +33,7 @@ namespace GuardsDigital.Presentation.Board
         private readonly Dictionary<ZoneId, Material> zoneMaterials = new Dictionary<ZoneId, Material>();
         private readonly List<HexTileView> currentTiles = new List<HexTileView>();
         private readonly List<StandardMinionView> currentMinionViews = new List<StandardMinionView>();
+        private readonly List<PlacedTokenView> currentTokenViews = new List<PlacedTokenView>();
         private readonly List<PlaceholderObstacleView> currentObstacles = new List<PlaceholderObstacleView>();
         private BoardMapDefinition renderedDefinition;
         private QuickGameSetupState renderedSetup;
@@ -64,6 +65,7 @@ namespace GuardsDigital.Presentation.Board
         /// </summary>
         public IReadOnlyList<HexTileView> CurrentTiles => currentTiles;
         public IReadOnlyList<StandardMinionView> CurrentMinionViews => currentMinionViews;
+        public IReadOnlyList<PlacedTokenView> CurrentTokenViews => currentTokenViews;
         public IReadOnlyList<PlaceholderObstacleView> CurrentObstacles => currentObstacles;
 
         public event System.Action<IReadOnlyList<StandardMinionView>> ConfiguredMinionViewsChanged;
@@ -132,6 +134,10 @@ namespace GuardsDigital.Presentation.Board
             RemoveLegacyObstacles();
             if (clearConfiguredMinions)
             {
+                // A token view belongs to a match rather than to a map, so it is retired exactly where
+                // a configured minion view is - the map-only rebuild, which runs before any runtime
+                // holds a reference to one. The setup path deliberately keeps both.
+                ClearTokenViews();
                 ClearConfiguredMinions();
             }
             FrameWholeMap(sceneCamera, definition);
@@ -347,6 +353,42 @@ namespace GuardsDigital.Presentation.Board
 
             currentMinionViews.Clear();
             ConfiguredMinionViewsChanged?.Invoke(System.Array.Empty<StandardMinionView>());
+        }
+
+        /// <summary>
+        /// Milestone 6.2d: builds a view for a token the board has not drawn before, at this grid's own
+        /// outer radius, and hands it back already configured for that token.
+        ///
+        /// A token has no declared roster to build views from, the way <see cref="EnsureConfiguredMinions"/>
+        /// builds one view per setup minion. Its identity is minted when an effect places it, so the
+        /// board asks for a view the first time it sees one and pools it from then on; this grid keeps
+        /// them for the same reason it keeps tiles and minions, so that nothing generated at runtime is
+        /// re-discovered through a child search.
+        /// </summary>
+        public PlacedTokenView CreateTokenView(GuardsDigital.Core.Components.PlacedToken token)
+        {
+            if (token == null) throw new System.ArgumentNullException(nameof(token));
+            var tokenObject = CreateGeneratedObject(string.Empty, transform);
+            var view = tokenObject.AddComponent<PlacedTokenView>();
+            view.Configure(token, outerRadius);
+            currentTokenViews.Add(view);
+            return view;
+        }
+
+        private void ClearTokenViews()
+        {
+            foreach (var token in currentTokenViews)
+            {
+                if (token == null)
+                {
+                    continue;
+                }
+
+                token.gameObject.SetActive(false);
+                DestroyObject(token.gameObject);
+            }
+
+            currentTokenViews.Clear();
         }
 
         private static void RetireMinionView(StandardMinionView view)

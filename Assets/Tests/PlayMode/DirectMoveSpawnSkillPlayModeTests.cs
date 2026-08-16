@@ -94,8 +94,9 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Commits Red Bombard at Initiative 5 against the Blue hand's lowest card, Blue Longbow at 4,
-        /// which is the only Blue Initiative below it, so the Red hero acts first.
+        /// Commits Red Bombard at Initiative 5 against the Blue hand's lowest card, so the Red hero
+        /// acts first. Since milestone 6.2d dealt the Cache card into the scene that is Blue Cache at
+        /// 2 rather than Blue Longbow at 4; both sit below the Bombard, which is all this needs.
         /// </summary>
         private static void CommitBombardTurn(ConfiguredMatchSceneRuntime runtime)
         {

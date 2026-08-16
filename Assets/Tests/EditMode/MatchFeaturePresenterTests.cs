@@ -637,6 +637,34 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 6.2d. Milestone 6.5c wanted the catalog name here and settled for `TOKEN #n`,
+        /// because 6.2's decision left presentation nothing to read one from. With the projection in
+        /// place the label states what the token is, and keeps the ordinal only where the choice
+        /// offers that name twice - which is the rule the minion label already follows and the reason
+        /// the hero label carries no ordinal at all.
+        /// </summary>
+        [Test]
+        public void TokenTargetLabels_NameTheTokenAndKeepAnOrdinalOnlyWhenOneWouldRepeat()
+        {
+            Assert.That(EffectChoiceLabels.TokenTargetLabel("TEST - Hazard", null),
+                Is.EqualTo("TEST - HAZARD"),
+                "One Hazard among the candidates is fully identified by its name.");
+            Assert.That(EffectChoiceLabels.TokenTargetLabel("TEST - Hazard", 2),
+                Is.EqualTo("TEST - HAZARD #2"),
+                "Two of one kind are otherwise indistinguishable, so the ordinal stays.");
+            Assert.That(EffectChoiceLabels.TokenTargetLabel("TEST - Ward", null),
+                Is.EqualTo("TEST - WARD"),
+                "Nothing here is a token kind this label knows about; the name is projected state.");
+            Assert.That(
+                () => EffectChoiceLabels.TokenTargetLabel(" ", null),
+                Throws.ArgumentException,
+                "A label with no projected name would be a made-up one.");
+            Assert.That(
+                () => EffectChoiceLabels.TokenTargetLabel("TEST - Hazard", 0),
+                Throws.TypeOf<ArgumentOutOfRangeException>());
+        }
+
+        /// <summary>
         /// Milestone 6.5ac. Red Bombard's Spawn mode can do nothing while every declared miniature
         /// stands, so the authority refuses it. Presentation shows it greyed rather than hiding it -
         /// the player reads that the mode exists and cannot be taken - and it carries no command at

@@ -545,8 +545,14 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(live.Candidates.Select(value => value.Command)));
         }
 
+        /// <summary>
+        /// Milestone 6.2d. Milestone 6.4b lit every legal endpoint for as long as the choice stood,
+        /// which said only that several spaces were involved; each of them already carries its own
+        /// control, so the board now follows the pointer to one of them. Nothing about which endpoints
+        /// are legal, or how one is answered, moved with it - the submit below is 6.4b's, unchanged.
+        /// </summary>
         [Test]
-        public void CorrectionBoardAdapter_LightsTheProjectedDestinationsAndMarksTheSubject()
+        public void CorrectionBoardAdapter_LightsOnlyTheEndpointBeingPointedAtAndMarksTheSubject()
         {
             var session = CreatePendingCorrectionSession();
             var boardView = new CapturingBoardView();
@@ -555,29 +561,58 @@ namespace GuardsDigital.Tests.EditMode
             boardPresenter.Refresh();
 
             var pending = session.Projection.PendingDisplacedMinionCorrection;
-            Assert.That(boardView.Model.CorrectionDestinations,
-                Is.EqualTo(pending.DestinationCandidates.Select(value => value.Destination)),
-                "Every legal route endpoint is selectable off the board without presentation " +
-                "calculating paths, distances, zones, or occupancy.");
+            Assert.That(pending.DestinationCandidates.Count, Is.GreaterThan(1),
+                "The fixture has to offer more than one endpoint, or following the pointer to one " +
+                "of them proves nothing.");
+            Assert.That(boardView.Model.CorrectionDestination, Is.Null,
+                "Nobody is pointing at a control yet, so no endpoint is lit.");
             Assert.That(boardView.Model.MinionChoiceCues.Single().MinionId,
                 Is.EqualTo(pending.SubjectMinionId),
-                "The board marks which minion the offered destinations would receive.");
+                "The board marks which minion the offered destinations would receive, throughout.");
             Assert.That(boardView.Model.MinionChoiceCues.Single().Kind,
                 Is.EqualTo(MinionChoiceCueKind.Selected));
 
-            var destination = pending.DestinationCandidates[0].Destination;
-            Assert.That(boardPresenter.SubmitDestination(destination), Is.True,
-                "Clicking a lit space forwards only the projected invocation.");
+            var subject = RuleObject.ForMinion(pending.SubjectMinionId);
+            var pointedAt = pending.DestinationCandidates[1].Destination;
+            Assert.That(boardPresenter.HighlightMinionChoiceCandidate(subject, pointedAt), Is.True);
+            Assert.That(boardPresenter.HighlightMinionChoiceCandidate(subject, pointedAt), Is.False,
+                "An unchanged hover rebuilds nothing.");
+            boardPresenter.Refresh();
+            Assert.That(boardView.Model.CorrectionDestination, Is.EqualTo(pointedAt));
+            Assert.That(boardView.Model.MinionChoiceCues.Single().MinionId,
+                Is.EqualTo(pending.SubjectMinionId),
+                "Pointing at a destination says where it would land as well as which minion lands " +
+                "there; the pair is what the prompt names.");
+
+            var elsewhere = pending.DestinationCandidates[0].Destination;
+            Assert.That(boardPresenter.HighlightMinionChoiceCandidate(subject, elsewhere), Is.True);
+            boardPresenter.Refresh();
+            Assert.That(boardView.Model.CorrectionDestination, Is.EqualTo(elsewhere),
+                "One control at a time - moving the pointer moves the light rather than adding one.");
+
+            Assert.That(
+                boardPresenter.HighlightMinionChoiceCandidate(
+                    subject, new HexCoordinate(99, 99)),
+                Is.True);
+            boardPresenter.Refresh();
+            Assert.That(boardView.Model.CorrectionDestination, Is.Null,
+                "A space this choice does not offer lights nothing, however it is reported.");
+
+            Assert.That(boardPresenter.HighlightMinionChoiceCandidate(subject, null), Is.False,
+                "Dropping an already-dropped highlight rebuilds nothing.");
+            Assert.That(boardPresenter.SubmitDestination(elsewhere), Is.True,
+                "Clicking a space still forwards only the projected invocation, lit or not.");
             Assert.That(session.Projection.PendingDisplacedMinionCorrection, Is.Null);
             Assert.That(
                 session.Projection.Minions.Single(value =>
                     value.MinionId.Equals(pending.SubjectMinionId)).Coordinate,
-                Is.EqualTo(destination));
+                Is.EqualTo(elsewhere));
 
             boardPresenter.Refresh();
-            Assert.That(boardView.Model.CorrectionDestinations, Is.Empty);
+            Assert.That(boardView.Model.CorrectionDestination, Is.Null);
             Assert.That(boardView.Model.MinionChoiceCues, Is.Empty);
         }
+
 
         [Test]
         public void RoundControls_AreWithheldWhileACorrectionIsPending()

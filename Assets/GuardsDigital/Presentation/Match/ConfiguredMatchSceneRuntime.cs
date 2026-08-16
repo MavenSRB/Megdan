@@ -11,6 +11,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -37,7 +38,8 @@ namespace GuardsDigital.Presentation.Match
             System.Collections.Generic.IEnumerable<PlaceholderObstacleView> obstacles,
             UnityEngine.Material highlightMaterial,
             ConfiguredMatchHudRenderer hudRenderer,
-            UnityEngine.Material resultingSpaceMaterial = null)
+            UnityEngine.Material resultingSpaceMaterial = null,
+            Func<GuardsDigital.Core.Components.PlacedToken, PlacedTokenView> tokenViewFactory = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -76,7 +78,8 @@ namespace GuardsDigital.Presentation.Match
                     configuration));
 
             BoardView = new BoardInteractionUnityView(
-                heroViews, tileViews, highlightMaterial, minionViews, resultingSpaceMaterial);
+                heroViews, tileViews, highlightMaterial, minionViews, resultingSpaceMaterial,
+                tokenViewFactory);
             HandsView = new DirectorHandsUnityView();
             RoundView = new RoundActionUnityView();
             UndoRestartView = new UndoRestartUnityView();
@@ -128,12 +131,13 @@ namespace GuardsDigital.Presentation.Match
             DiagnosticView.ToggleRequested += () => DiagnosticPresenter.Toggle();
             MinionChoiceView.CandidateSubmitted += candidate => MinionChoicePresenter.Submit(candidate);
             MinionChoiceView.ConfirmRequested += () => MinionChoicePresenter.Confirm();
-            MinionChoiceView.CandidateHighlighted += minionId =>
+            MinionChoiceView.CandidateHighlighted += candidate =>
             {
                 // Only the board is refreshed here. This fires from inside the HUD's own draw, and
                 // rebuilding the immediate-mode models mid-pass would change the control count
                 // between the layout and repaint events of the same frame.
-                if (BoardPresenter.HighlightMinionChoiceCandidate(minionId))
+                if (BoardPresenter.HighlightMinionChoiceCandidate(
+                    candidate?.Unit ?? RuleObject.None, candidate?.Destination))
                 {
                     BoardPresenter.Refresh();
                 }
@@ -340,6 +344,25 @@ namespace GuardsDigital.Presentation.Match
             var candidate = MinionChoiceView.Model?.Candidates.SingleOrDefault(value =>
                 value.Destination != null && value.Destination.Value.Equals(destination));
             return MinionChoicePresenter.Submit(candidate);
+        }
+
+        /// <summary>
+        /// Milestone 6.2d: reports which minion-choice control is pointed at, addressed by the space
+        /// its candidate would use, for a driver with no pointer. Passing no coordinate clears the cue.
+        /// It is the correction destination prompt's counterpart of
+        /// <see cref="HighlightEffectChoiceTarget"/>, and reaches the board the same way - through the
+        /// view, so a driver and a pointer take the identical route.
+        /// </summary>
+        public bool HighlightCorrectionDestination(
+            GuardsDigital.Core.Board.HexCoordinate? destination)
+        {
+            var candidate = destination.HasValue
+                ? MinionChoiceView.Model?.Candidates.SingleOrDefault(value =>
+                    value.Destination != null && value.Destination.Value.Equals(destination.Value))
+                : null;
+            MinionChoiceView.ForwardHighlight(candidate);
+            return BoardPresenter.HighlightMinionChoiceCandidate(
+                candidate?.Unit ?? RuleObject.None, candidate?.Destination);
         }
 
         public bool Undo() => UndoRestartPresenter.Undo();

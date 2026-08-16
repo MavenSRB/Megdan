@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
@@ -234,6 +235,7 @@ namespace GuardsDigital.Application
             string authoritativeSnapshot,
             bool isHistoryAvailable,
             IEnumerable<MinionOccupancy> minions,
+            IEnumerable<PlacedToken> placedTokens,
             IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
             PendingDefensePreviewProjection pendingDefensePreview = null,
             PendingMinionBattleChoice pendingMinionBattleChoice = null,
@@ -255,6 +257,8 @@ namespace GuardsDigital.Application
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
             Obstacles = Array.AsReadOnly((obstacles ?? throw new ArgumentNullException(nameof(obstacles))).ToArray());
             Minions = Array.AsReadOnly((minions ?? throw new ArgumentNullException(nameof(minions))).ToArray());
+            PlacedTokens = Array.AsReadOnly((placedTokens ??
+                throw new ArgumentNullException(nameof(placedTokens))).ToArray());
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
             Phase = phase;
@@ -313,6 +317,20 @@ namespace GuardsDigital.Application
         public IReadOnlyList<HeroOccupancy> Heroes { get; }
         public IReadOnlyList<ObstacleOccupancy> Obstacles { get; }
         public IReadOnlyList<MinionOccupancy> Minions { get; }
+
+        /// <summary>
+        /// Milestone 6.2d: the tokens standing on the board, as the board authority holds them.
+        ///
+        /// It supersedes milestone 6.2's decision that presentation receives no token projection. That
+        /// decision was correct while nothing consumed one; 6.6a printed a Replace and a token-only
+        /// Remove onto a configured card, and 6.2b had already assigned this to the first presentation
+        /// milestone that needed a token view. What is handed over is the authoritative instance, not a
+        /// summary of it: the stable identity, the coordinate, and the trusted <c>TokenDefinition</c>
+        /// object the catalog supplied. That last part is what keeps presentation free of any component
+        /// catalog reference - a display name is read off the instance it belongs to, and nothing here
+        /// is derived, so no rule can come to depend on a reading only this projection performs.
+        /// </summary>
+        public IReadOnlyList<PlacedToken> PlacedTokens { get; }
         public int RoundIndex { get; }
         public int TurnIndex { get; }
         public RoundResolutionPhase Phase { get; }

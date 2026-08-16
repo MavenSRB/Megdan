@@ -302,7 +302,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(compositionRoots, Has.Length.EqualTo(1));
             Assert.That(compositionRoots[0].Runtime, Is.Not.Null);
             Assert.That(compositionRoots[0].Session, Is.Not.Null);
-            Assert.That(compositionRoots[0].Session.Projection.Cards, Has.Count.EqualTo(10));
+            // Milestone 6.2d: twelve rather than ten. The scene deals milestone 6.2's Cache card
+            // beside the five ordinary ones, which is the only way a player can put a token on this
+            // board at all; the default configuration every pinned digest measures still deals five.
+            Assert.That(compositionRoots[0].Session.Projection.Cards, Has.Count.EqualTo(12));
             Assert.That(compositionRoots[0].Session.Projection.Heroes, Has.Count.EqualTo(2));
             Assert.That(inputs[0].EventCamera, Is.Not.Null);
             Assert.That(inputs[0].Selectors.Count, Is.EqualTo(2));

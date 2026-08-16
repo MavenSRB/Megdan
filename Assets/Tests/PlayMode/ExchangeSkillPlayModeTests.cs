@@ -14,18 +14,18 @@ namespace GuardsDigital.Tests.PlayMode
     /// <summary>
     /// Milestone 6.6a in the saved configured scene.
     ///
-    /// The scene's own geography decides what is reachable, and here it decides all three modes are
-    /// empty-handed: the two heroes start on their configured spawn points far from everything, so no
-    /// unit stands beside the acting hero for the Swap to exchange with, and no token stands anywhere
-    /// on the board at all, so neither the Replace nor the Remove has a piece to work on. Nothing in
-    /// the five-card hand can place one - the token Skill lives on milestone 6.2's Cache card, which
-    /// the saved scene does not deal.
+    /// The scene's own geography decides what is reachable, and on the opening round it decides all
+    /// three modes are empty-handed: the two heroes start on their configured spawn points far from
+    /// everything, so no unit stands beside the acting hero for the Swap to exchange with, and nobody
+    /// has placed a token yet, so neither the Replace nor the Remove has a piece to work on.
     ///
-    /// So what this fixture pins is milestone 6.5af's judgement reaching a player: the Skill is drawn
-    /// greyed rather than offered, and the card's Secondary Movement is still there to take. The
-    /// player-facing paths where each branch has something to work with run through the application
-    /// boundary in `ConfiguredExchangeSkillTests`, which places a Hazard from the Cache Skill the way
-    /// an ordinary match does.
+    /// Milestone 6.2d changed what happens after that round rather than during it. The scene now deals
+    /// milestone 6.2's Cache card, so a player can place a Hazard and give the other two modes
+    /// something to act on; what this fixture pins is the position before anyone has, which is where
+    /// milestone 6.5af's judgement reaches a player - the Skill is drawn greyed rather than offered,
+    /// and the card's Secondary Movement is still there to take. That a placed token is drawn at all
+    /// is `PlacedTokenPlayModeTests`, and the branch-by-branch behaviour runs through the application
+    /// boundary in `ConfiguredExchangeSkillTests`.
     /// </summary>
     public sealed class ExchangeSkillPlayModeTests
     {

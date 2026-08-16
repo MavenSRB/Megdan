@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Modifications;
@@ -18,6 +19,8 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IReadOnlyList<PrimitiveHeroView> heroes;
         private IReadOnlyList<StandardMinionView> minions;
+        private readonly List<PlacedTokenView> tokens = new List<PlacedTokenView>();
+        private readonly Func<PlacedToken, PlacedTokenView> tokenViewFactory;
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly Material highlightMaterial;
         private readonly Material resultingSpaceMaterial;
@@ -30,7 +33,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HexTileView> tiles,
             Material highlightMaterial,
             IEnumerable<StandardMinionView> minions = null,
-            Material resultingSpaceMaterial = null)
+            Material resultingSpaceMaterial = null,
+            Func<PlacedToken, PlacedTokenView> tokenViewFactory = null)
         {
             this.heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes)))
                 .Where(value => value != null).Distinct().ToArray());
@@ -42,10 +46,21 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 6.5c: without its own material the resulting space cannot be drawn at all,
             // because painting a prediction in the destination color would say "click here".
             this.resultingSpaceMaterial = resultingSpaceMaterial;
+            // Milestone 6.2d: where a view for a newly placed token comes from. A token has no
+            // declared roster - its identity is minted when an effect places it - so unlike heroes and
+            // minions its views cannot all exist before the match does. Left unbound, a projected
+            // token faults rather than being quietly left undrawn.
+            this.tokenViewFactory = tokenViewFactory;
         }
 
         public BoardInteractionViewModel Model { get; private set; }
         public IReadOnlyList<StandardMinionView> MinionViews => minions;
+
+        /// <summary>Every token view this board has ever built, active or pooled.</summary>
+        public IReadOnlyList<PlacedTokenView> TokenViews => tokens;
+
+        /// <summary>The tiles this board paints, so a caller can read what is currently lit.</summary>
+        public IReadOnlyList<HexTileView> TileViews => tiles;
 
         public event Action<HeroId> HeroSubmitted;
         public event Action<MinionId> MinionSubmitted;
@@ -100,12 +115,17 @@ namespace GuardsDigital.Presentation.Match
             }
 
             RenderMinions(model);
+            RenderTokens(model);
 
             var targetCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(model.MovementDestinations);
             targetCoordinates.UnionWith(model.FastTravelDestinations);
-            // Milestone 6.4b: correction route endpoints and Place spaces highlight exactly like
-            // every other projected destination, and clicking one submits its projected invocation.
-            targetCoordinates.UnionWith(model.CorrectionDestinations);
+            // Milestone 6.4b highlighted every correction route endpoint and Place space at once;
+            // milestone 6.2d lights the one whose control is being pointed at, because each of them
+            // carries its own control and the board was saying nothing the controls did not already.
+            if (model.CorrectionDestination.HasValue)
+            {
+                targetCoordinates.Add(model.CorrectionDestination.Value);
+            }
             // Milestone 6.5c: an empty effect-choice candidate is a destination like any other, and
             // is the whole surface for that candidate - no control is drawn for it anywhere.
             targetCoordinates.UnionWith(model.EffectChoiceDestinations);
@@ -195,6 +215,84 @@ namespace GuardsDigital.Presentation.Match
             {
                 throw new InvalidOperationException("The configured board has no view for a projected minion identity.");
             }
+        }
+
+        /// <summary>
+        /// Milestone 6.2d: draws one piece per projected token and nothing else.
+        ///
+        /// The discipline is the minions': projection presence owns visibility, a view is never
+        /// destroyed, and a projected identity with nowhere to go is a fault rather than a silently
+        /// missing piece. What differs is where a view comes from. A minion's identity is declared in
+        /// the setup, so every minion view exists before the match starts and stays bound to its own
+        /// identity forever. A token's identity is minted the moment an effect places one, so views
+        /// are pooled instead: a view is bound while its token is projected, released when it is not,
+        /// and the pool grows only when more tokens stand at once than ever have before. That is what
+        /// makes a Remove, a Clear and an Undo all reach the same place - the piece stops being drawn
+        /// or starts again, and no identity outlives the projection that named it.
+        ///
+        /// A Replace needs no arm of its own. The outgoing token leaves the projection and the
+        /// incoming one arrives in the same command, so the space is redrawn once, carrying the new
+        /// definition's name; it is never drawn empty in between, which is the single-stage property
+        /// the operation itself declares.
+        /// </summary>
+        private void RenderTokens(BoardInteractionViewModel model)
+        {
+            var projectedTokens = model.PlacedTokens.ToDictionary(value => value.Id);
+            var released = new List<PlacedTokenView>();
+            foreach (var token in tokens)
+            {
+                var boundId = token.BoundTokenId;
+                if (boundId.IsDefined && projectedTokens.TryGetValue(boundId, out var state))
+                {
+                    token.gameObject.SetActive(true);
+                    if (!ReferenceEquals(token.Token, state))
+                    {
+                        token.Configure(state, token.OuterRadius);
+                    }
+
+                    projectedTokens.Remove(boundId);
+                }
+                else
+                {
+                    token.gameObject.SetActive(false);
+                    released.Add(token);
+                }
+            }
+
+            var freeIndex = 0;
+            foreach (var state in model.PlacedTokens.Where(value => projectedTokens.ContainsKey(value.Id)))
+            {
+                PlacedTokenView view;
+                if (freeIndex < released.Count)
+                {
+                    view = released[freeIndex++];
+                    view.Configure(state, view.OuterRadius);
+                }
+                else
+                {
+                    view = CreateTokenView(state);
+                }
+
+                view.gameObject.SetActive(true);
+            }
+        }
+
+        /// <summary>
+        /// Asks the board for a view of a token it has never drawn. The factory owns the board's own
+        /// outer radius and hands back a view already configured for this token, which is why nothing
+        /// here has to know one.
+        /// </summary>
+        private PlacedTokenView CreateTokenView(PlacedToken state)
+        {
+            var created = tokenViewFactory?.Invoke(state);
+            if (created == null)
+            {
+                throw new InvalidOperationException(
+                    "The configured board has no view for a projected token identity.");
+            }
+
+            tokens.Add(created);
+            return created;
         }
 
         public bool TryForwardHeroIntent(HeroId heroId)
@@ -851,16 +949,25 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class MinionChoiceUnityView : IMinionChoiceView
     {
-        private RuleObject highlightedUnit;
-
         public MinionChoiceViewModel Model { get; private set; }
 
-        /// <summary>The candidate the pointer or keyboard focus is currently on, if any.</summary>
-        public RuleObject HighlightedUnit => highlightedUnit;
+        /// <summary>
+        /// The candidate the pointer or keyboard focus is currently on, or <c>null</c> when none is.
+        ///
+        /// Milestone 6.2d reports the whole candidate rather than its unit alone. Every candidate of a
+        /// correction destination prompt shares the one displaced subject and is told apart by its
+        /// destination, so reporting the unit said the same thing for every control - which is why the
+        /// board could only light all of them or none.
+        /// </summary>
+        public MinionChoiceCandidateViewModel HighlightedCandidate { get; private set; }
+
+        /// <summary>The unit of the candidate being pointed at, undefined when none is.</summary>
+        public RuleObject HighlightedUnit =>
+            HighlightedCandidate?.Unit ?? RuleObject.None;
 
         public event Action<MinionChoiceCandidateViewModel> CandidateSubmitted;
         public event Action ConfirmRequested;
-        public event Action<RuleObject> CandidateHighlighted;
+        public event Action<MinionChoiceCandidateViewModel> CandidateHighlighted;
 
         public void Render(MinionChoiceViewModel model)
         {
@@ -870,9 +977,13 @@ namespace GuardsDigital.Presentation.Match
             }
 
             Model = model;
-            if (Model == null)
+            // A highlight belongs to the model it was read from, exactly as the round view's target
+            // and respawn highlights do; a rebuilt prompt drops it rather than keeping a cue for a
+            // control that is no longer drawn.
+            if (HighlightedCandidate != null &&
+                Model?.Candidates.Any(value => ReferenceEquals(value, HighlightedCandidate)) != true)
             {
-                SetHighlight(default);
+                SetHighlight(null);
             }
         }
 
@@ -895,12 +1006,12 @@ namespace GuardsDigital.Presentation.Match
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(84f);
-            var hovered = RuleObject.None;
+            var hovered = default(MinionChoiceCandidateViewModel);
             for (var index = 0; index < model.Candidates.Count; index++)
             {
                 if (DrawCandidate(model, index))
                 {
-                    hovered = model.Candidates[index].Unit;
+                    hovered = model.Candidates[index];
                 }
             }
 
@@ -934,9 +1045,10 @@ namespace GuardsDigital.Presentation.Match
             ConfirmRequested?.Invoke();
         }
 
-        public void ForwardHighlight(RuleObject unit)
+        /// <summary>Reports a hovered or keyboard-focused candidate directly, for a driver with no pointer.</summary>
+        public void ForwardHighlight(MinionChoiceCandidateViewModel candidate)
         {
-            SetHighlight(unit);
+            SetHighlight(candidate);
         }
 
         private bool DrawCandidate(MinionChoiceViewModel model, int index)
@@ -968,15 +1080,15 @@ namespace GuardsDigital.Presentation.Match
                 string.Equals(GUI.GetNameOfFocusedControl(), controlName, StringComparison.Ordinal);
         }
 
-        private void SetHighlight(RuleObject unit)
+        private void SetHighlight(MinionChoiceCandidateViewModel candidate)
         {
-            if (highlightedUnit.Equals(unit))
+            if (ReferenceEquals(HighlightedCandidate, candidate))
             {
                 return;
             }
 
-            highlightedUnit = unit;
-            CandidateHighlighted?.Invoke(unit);
+            HighlightedCandidate = candidate;
+            CandidateHighlighted?.Invoke(candidate);
         }
     }
 

@@ -76,7 +76,10 @@ namespace GuardsDigital.Presentation.Interaction
 
             var catalog = OfficialBoardMapCatalog.Load();
             var map = catalog.Load(OfficialBoardMapCatalog.SelectedMap);
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            // Milestone 6.2d: the scene's own hand, which is the ordinary five plus milestone 6.2's
+            // Cache card. Without it the scene could not put a token on the board at all, so 6.3's
+            // Clear and two of 6.6a's three modes were controls with nothing to act on.
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForConfiguredScene();
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 configuration.Participants,
@@ -114,7 +117,11 @@ namespace GuardsDigital.Presentation.Interaction
                 obstacles,
                 highlightOwner.Material,
                 hud,
-                resultingSpaceHighlightOwner.Material);
+                resultingSpaceHighlightOwner.Material,
+                // Milestone 6.2d: where a view for a newly placed token comes from. The map view owns
+                // the outer radius and keeps every generated board object, so it builds them for the
+                // same reason it builds tiles and minions rather than the board view doing it.
+                mapView.CreateTokenView);
 
             foreach (var selector in pointerSelectors.Where(value => value != null))
             {

@@ -198,8 +198,16 @@ namespace GuardsDigital.Tests.PlayMode
 
             for (var approachTurn = 0; approachTurn < 3; approachTurn++)
             {
+                // Milestone 6.2d: the approach card is named by the printed action it has to perform
+                // rather than by being the top of the band. The scene now deals milestone 6.2's Cache
+                // card, whose only printed action is a Skill, and it sits above every ordinary Red
+                // card - so "Red's highest" would pick a card with no Movement to approach with.
                 var red = Hand(runtime, TeamSide.Red).Cards
-                    .Where(card => !card.Id.Equals(attackCard.Id))
+                    .Where(card => !card.Id.Equals(attackCard.Id) &&
+                        runtime.Definitions.Single(definition =>
+                            definition.Reference.Equals(card.DefinitionReference))
+                        .ActionDefinitions.Any(action =>
+                            action.Kind == GuardsDigital.Core.Cards.ActionKind.Movement))
                     .OrderByDescending(card => runtime.Definitions.Single(definition =>
                         definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
                     .First();
@@ -589,8 +597,8 @@ namespace GuardsDigital.Tests.PlayMode
                 baseBoard.AttackTargets,
                 System.Array.Empty<MinionId>(),
                 baseBoard.FocusedHeroId,
-                baseBoard.FastTravelDestinations,
-                new[]
+                fastTravelDestinations: baseBoard.FastTravelDestinations,
+                minionDefenseCues: new[]
                 {
                     new MinionDefenseCueViewModel(supporting.MinionId, 1),
                     new MinionDefenseCueViewModel(hindering.MinionId, -1)
@@ -859,7 +867,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             MinionChoiceCandidateViewModel submitted = null;
             var confirmed = 0;
-            var highlights = new List<RuleObject>();
+            var highlights = new List<MinionChoiceCandidateViewModel>();
             runtime.MinionChoiceView.CandidateSubmitted += value => submitted = value;
             runtime.MinionChoiceView.ConfirmRequested += () => confirmed++;
             runtime.MinionChoiceView.CandidateHighlighted += value => highlights.Add(value);
@@ -868,11 +876,16 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(submitted, Is.SameAs(selectedCandidate));
             runtime.MinionChoiceView.ForwardConfirm();
             Assert.That(confirmed, Is.EqualTo(1));
-            runtime.MinionChoiceView.ForwardHighlight(RuleObject.None);
-            runtime.MinionChoiceView.ForwardHighlight(RuleObject.ForMinion(blue[1].MinionId));
-            Assert.That(highlights.Last(), Is.EqualTo(RuleObject.ForMinion(blue[1].MinionId)));
+
+            // Milestone 6.2d: the prompt reports the whole candidate rather than its unit alone, so a
+            // control that shares its unit with every other one is still distinguishable. The unit is
+            // still readable off it, which is what the board's minion cue goes on reading.
+            runtime.MinionChoiceView.ForwardHighlight(null);
+            runtime.MinionChoiceView.ForwardHighlight(selectedCandidate);
+            Assert.That(highlights.Last(), Is.SameAs(selectedCandidate));
+            Assert.That(runtime.MinionChoiceView.HighlightedCandidate, Is.SameAs(selectedCandidate));
             Assert.That(runtime.MinionChoiceView.HighlightedUnit,
-                Is.EqualTo(RuleObject.ForMinion(blue[1].MinionId)));
+                Is.EqualTo(RuleObject.ForMinion(blue[0].MinionId)));
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(acceptedBefore),
                 "The passive prompt reports intent; it never advances authoritative state itself.");
             Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(snapshotBefore));
@@ -903,9 +916,9 @@ namespace GuardsDigital.Tests.PlayMode
                 baseBoard.AttackTargets,
                 System.Array.Empty<MinionId>(),
                 baseBoard.FocusedHeroId,
-                baseBoard.FastTravelDestinations,
-                baseBoard.MinionDefenseCues,
-                cues));
+                fastTravelDestinations: baseBoard.FastTravelDestinations,
+                minionDefenseCues: baseBoard.MinionDefenseCues,
+                minionChoiceCues: cues));
         }
 
         [UnityTest]

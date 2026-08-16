@@ -111,7 +111,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "Selection is the advance for a correction; there is nothing separate to confirm.");
 
             // The route stage: candidates are destinations for the one named subject; the board marks
-            // that subject and highlights exactly the offered spaces.
+            // that subject, and since milestone 6.2d lights the one endpoint whose control is being
+            // pointed at rather than every offered space at once.
             var subject = minions[0];
             var destinationChoiceId = new ActionResolutionStepId($"correction-{subject.MinionId.Value}");
             var destinations = new[]
@@ -147,10 +148,13 @@ namespace GuardsDigital.Tests.PlayMode
                 baseBoard.AttackTargets,
                 System.Array.Empty<MinionId>(),
                 baseBoard.FocusedHeroId,
-                baseBoard.FastTravelDestinations,
-                System.Array.Empty<MinionDefenseCueViewModel>(),
-                new[] { new MinionChoiceCueViewModel(subject.MinionId, MinionChoiceCueKind.Selected) },
-                destinations));
+                fastTravelDestinations: baseBoard.FastTravelDestinations,
+                minionDefenseCues: System.Array.Empty<MinionDefenseCueViewModel>(),
+                minionChoiceCues: new[]
+                {
+                    new MinionChoiceCueViewModel(subject.MinionId, MinionChoiceCueKind.Selected)
+                },
+                correctionDestination: destinations[1]));
             yield return null;
 
             Assert.That(runtime.MinionChoiceView.Model.PromptLabel,
@@ -165,7 +169,15 @@ namespace GuardsDigital.Tests.PlayMode
                 value.BoundMinionId.Equals(subject.MinionId));
             Assert.That(subjectView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected),
                 "The board marks which minion the offered destinations would receive.");
-            Assert.That(runtime.BoardView.Model.CorrectionDestinations, Is.EqualTo(destinations));
+            Assert.That(runtime.BoardView.Model.CorrectionDestination, Is.EqualTo(destinations[1]),
+                "Milestone 6.2d: the board lights the endpoint being pointed at, and only that one.");
+            var litTiles = runtime.BoardView.TileViews
+                .Where(value => value.IsHighlighted)
+                .Select(value => value.Coordinate)
+                .ToArray();
+            Assert.That(litTiles, Contains.Item(destinations[1]));
+            Assert.That(litTiles, Has.No.Member(destinations[0]),
+                "The endpoint nobody is pointing at is drawn no differently from any other space.");
 
             // Place wording stays apart from Move wording inside the correction family.
             runtime.MinionChoiceView.Render(MinionChoiceViewModel.ForCorrection(
@@ -209,7 +221,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "The hand-rendered board cue stays until the board view is re-rendered from authority.");
             runtime.BoardPresenter.Refresh();
             yield return null;
-            Assert.That(runtime.BoardView.Model.CorrectionDestinations, Is.Empty,
+            Assert.That(runtime.BoardView.Model.CorrectionDestination, Is.Null,
                 "The authoritative projection carries no correction, so no destination stays lit.");
         }
 

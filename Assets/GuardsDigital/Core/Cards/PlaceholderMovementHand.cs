@@ -123,6 +123,26 @@ namespace GuardsDigital.Core.Cards
                 BlueDisplacementSkillProfile);
         }
 
+        /// <summary>
+        /// The five ordinary cards plus milestone 6.2's Cache card alone, for the configured scene.
+        ///
+        /// Milestone 6.2d deals this hand rather than the Skill-fixture one. The scene needed exactly
+        /// one thing it did not have - a way for a player to put a token on the board through ordinary
+        /// commands - and the Cache card already places a Hazard into an adjacent empty space, so this
+        /// invents no content and prints nothing onto a card. The other two fixture Skills are left out
+        /// deliberately: each exists so a fixture can reach one operation family in isolation, and
+        /// dealing them into the scene would widen it well past what 6.2d needs.
+        /// </summary>
+        public static PlaceholderMovementHand CreateRedWithComponentSkill(HeroId ownerId)
+        {
+            return Create(ownerId, RedProfiles, null, componentSkillProfile: RedComponentSkillProfile);
+        }
+
+        public static PlaceholderMovementHand CreateBlueWithComponentSkill(HeroId ownerId)
+        {
+            return Create(ownerId, BlueProfiles, null, componentSkillProfile: BlueComponentSkillProfile);
+        }
+
         internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
             new PlaceholderMovementHandRestoreState(Definitions, Instances);
 

@@ -145,14 +145,24 @@ namespace GuardsDigital.Presentation.Match
             MinionChoiceLabels.CandidateLabel(side, minionType, ordinal);
 
         /// <summary>
-        /// A token is named by its ordinal alone. Milestone 6.2's decision that presentation gets no
-        /// token projection still stands, so the only thing the board can honestly say about one is
-        /// which candidate it is; the preview says a token stands there, and nothing more is invented.
+        /// Milestone 6.2d: a token is named by what it is.
+        ///
+        /// Milestone 6.5c asked for the catalog name here and settled for an ordinal, because 6.2's
+        /// decision left presentation with no token projection to read one from. That decision is
+        /// retired: the projected instance carries its trusted definition, so the display name is
+        /// projected state exactly as a hero's is. The ordinal is kept only where two candidates
+        /// would otherwise read identically - the same rule the minion label follows, and the reason
+        /// the hero label carries no ordinal at all.
         /// </summary>
-        public static string TokenTargetLabel(int ordinal) =>
-            ordinal < 1
-                ? throw new ArgumentOutOfRangeException(nameof(ordinal))
-                : $"TOKEN #{ordinal}";
+        public static string TokenTargetLabel(string displayName, int? ordinal) =>
+            string.IsNullOrWhiteSpace(displayName)
+                ? throw new ArgumentException(
+                    "A token target label requires the projected display name.", nameof(displayName))
+                : !ordinal.HasValue
+                    ? displayName.ToUpperInvariant()
+                    : ordinal.Value < 1
+                        ? throw new ArgumentOutOfRangeException(nameof(ordinal))
+                        : $"{displayName.ToUpperInvariant()} #{ordinal.Value}";
     }
 
     public sealed class BoardInteractionViewModel
@@ -165,10 +175,11 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HeroId> attackTargets,
             IEnumerable<MinionId> minionAttackTargets,
             HeroId focusedHeroId,
+            IEnumerable<PlacedToken> placedTokens = null,
             IEnumerable<HexCoordinate> fastTravelDestinations = null,
             IEnumerable<MinionDefenseCueViewModel> minionDefenseCues = null,
             IEnumerable<MinionChoiceCueViewModel> minionChoiceCues = null,
-            IEnumerable<HexCoordinate> correctionDestinations = null,
+            HexCoordinate? correctionDestination = null,
             IEnumerable<HexCoordinate> effectChoiceDestinations = null,
             HexCoordinate? effectChoiceTargetSpace = null,
             HexCoordinate? effectChoiceResultingSpace = null,
@@ -178,6 +189,8 @@ namespace GuardsDigital.Presentation.Match
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
             Minions = Array.AsReadOnly((minions ?? throw new ArgumentNullException(nameof(minions))).ToArray());
+            PlacedTokens = Array.AsReadOnly((placedTokens ??
+                Enumerable.Empty<PlacedToken>()).ToArray());
             MovementDestinations = Array.AsReadOnly((movementDestinations ??
                 throw new ArgumentNullException(nameof(movementDestinations))).ToArray());
             AttackTargets = Array.AsReadOnly((attackTargets ??
@@ -201,8 +214,7 @@ namespace GuardsDigital.Presentation.Match
                     nameof(minionChoiceCues));
             }
 
-            CorrectionDestinations = Array.AsReadOnly((correctionDestinations ??
-                Enumerable.Empty<HexCoordinate>()).ToArray());
+            CorrectionDestination = correctionDestination;
             EffectChoiceDestinations = Array.AsReadOnly((effectChoiceDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             EffectChoiceTargetSpace = effectChoiceTargetSpace;
@@ -227,6 +239,13 @@ namespace GuardsDigital.Presentation.Match
         public long Version { get; }
         public IReadOnlyList<HeroOccupancy> Heroes { get; }
         public IReadOnlyList<MinionOccupancy> Minions { get; }
+
+        /// <summary>
+        /// Milestone 6.2d: the tokens standing on the board, straight off the projection. The board
+        /// draws one piece per entry and nothing else reads them, which is what keeps a token a thing
+        /// that is shown rather than a thing presentation reasons about.
+        /// </summary>
+        public IReadOnlyList<PlacedToken> PlacedTokens { get; }
         public IReadOnlyList<HexCoordinate> MovementDestinations { get; }
         public IReadOnlyList<HeroId> AttackTargets { get; }
         public IReadOnlyList<MinionId> MinionAttackTargets { get; }
@@ -236,8 +255,19 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<MinionChoiceCueViewModel> MinionChoiceCues { get; }
         public IReadOnlyList<HeroChoiceCueViewModel> HeroChoiceCues { get; }
 
-        /// <summary>Milestone 6.4b: the pending correction's legal route endpoints or Place spaces.</summary>
-        public IReadOnlyList<HexCoordinate> CorrectionDestinations { get; }
+        /// <summary>
+        /// The pending correction's route endpoint or Place space that the player is currently
+        /// pointing at, and no other.
+        ///
+        /// Milestone 6.4b projected every legal endpoint as a list, and every one of them stayed lit
+        /// for as long as the choice stood, so the board said only that several spaces were involved.
+        /// Milestone 6.2d made it a single value rather than emptying a list, because that is the
+        /// difference between a rule and a habit: a nullable cannot regress to a standing set, and it
+        /// is the same shape <see cref="HeroRespawnHighlight"/> has carried since that prompt was
+        /// built. What is legal has not changed - the controls are still one per endpoint, and a
+        /// click still answers the same way.
+        /// </summary>
+        public HexCoordinate? CorrectionDestination { get; }
 
         /// <summary>
         /// Milestone 6.5c: the empty spaces a pending effect choice currently offers. They are the
@@ -309,6 +339,7 @@ namespace GuardsDigital.Presentation.Match
         private ActionDefinitionId? selectedFastTravelActionDefinitionId;
         private MatchSessionProjection choiceHighlightProjection;
         private RuleObject highlightedChoiceUnit;
+        private HexCoordinate? highlightedCorrectionDestination;
         private MatchSessionProjection effectChoiceHighlightProjection;
         private HexCoordinate? highlightedEffectChoiceSpace;
         private MatchSessionProjection respawnHighlightProjection;
@@ -337,6 +368,7 @@ namespace GuardsDigital.Presentation.Match
             if (!ReferenceEquals(projection, choiceHighlightProjection))
             {
                 highlightedChoiceUnit = RuleObject.None;
+                highlightedCorrectionDestination = null;
                 choiceHighlightProjection = null;
             }
 
@@ -366,6 +398,7 @@ namespace GuardsDigital.Presentation.Match
                     projection.PendingAttackTargetChoice?.LegalTargetHeroIds ?? Array.Empty<HeroId>(),
                     projection.PendingAttackTargetChoice?.LegalTargetMinionIds ?? Array.Empty<MinionId>(),
                     projection.SelectedActor.IsDefined ? projection.SelectedActor.ActorId : default,
+                    projection.PlacedTokens,
                     GetSelectedFastTravelOption(projection)?.LegalDestinations ??
                         Array.Empty<HexCoordinate>(),
                     projection.PendingDefensePreview?.MinionContributions.Select(value =>
@@ -377,11 +410,7 @@ namespace GuardsDigital.Presentation.Match
                         highlightedChoiceUnit.Kind == RuleObjectKind.Minion
                             ? highlightedChoiceUnit.MinionId
                             : default),
-                    projection.PendingDisplacedMinionCorrection?.Stage ==
-                        DisplacedMinionCorrectionStage.SelectDestination
-                            ? projection.PendingDisplacedMinionCorrection.DestinationCandidates
-                                .Select(value => value.Destination)
-                            : Enumerable.Empty<HexCoordinate>(),
+                    highlightedCorrectionDestination,
                     SelectableEffectChoiceDestinations(projection),
                     highlightedEffectChoiceSpace,
                     FindResultingSpace(projection, highlightedEffectChoiceSpace),
@@ -399,7 +428,20 @@ namespace GuardsDigital.Presentation.Match
         /// minion a hovered or focused prompt control refers to. Returns false when nothing changed,
         /// which is what stops a per-frame hover notification from rebuilding the board every repaint.
         /// </summary>
-        public bool HighlightMinionChoiceCandidate(RuleObject unit)
+        public bool HighlightMinionChoiceCandidate(RuleObject unit) =>
+            HighlightMinionChoiceCandidate(unit, null);
+
+        /// <summary>
+        /// Milestone 6.2d: the same report, carrying both halves of the candidate a correction
+        /// destination control names.
+        ///
+        /// The pointer has been tracked since 6.4b and the destination has ridden on the candidate
+        /// since 6.4b as well; only the unit half was ever reported, so the board lit every endpoint
+        /// at once and left the player to guess which control was theirs. Both halves are resolved
+        /// against the authoritative pending choice here rather than trusted from the control - a
+        /// stale prompt names a space this choice no longer offers, and that must light nothing.
+        /// </summary>
+        public bool HighlightMinionChoiceCandidate(RuleObject unit, HexCoordinate? destination)
         {
             var projection = session.Projection;
             var choice = projection.PendingMinionBattleChoice;
@@ -412,14 +454,23 @@ namespace GuardsDigital.Presentation.Match
                         correction.SubjectCandidates.Any(subject => subject.MinionId.Equals(unit.MinionId)))
                     ? unit
                     : RuleObject.None;
+            var resolvedDestination = destination.HasValue &&
+                correction?.Stage == DisplacedMinionCorrectionStage.SelectDestination &&
+                correction.DestinationCandidates.Any(candidate =>
+                    candidate.Destination.Equals(destination.Value))
+                    ? destination
+                    : null;
+            var pointsAtSomething = resolved.IsDefined || resolvedDestination.HasValue;
             if (resolved.Equals(highlightedChoiceUnit) &&
-                (!resolved.IsDefined || ReferenceEquals(projection, choiceHighlightProjection)))
+                Nullable.Equals(resolvedDestination, highlightedCorrectionDestination) &&
+                (!pointsAtSomething || ReferenceEquals(projection, choiceHighlightProjection)))
             {
                 return false;
             }
 
             highlightedChoiceUnit = resolved;
-            choiceHighlightProjection = resolved.IsDefined ? projection : null;
+            highlightedCorrectionDestination = resolvedDestination;
+            choiceHighlightProjection = pointsAtSomething ? projection : null;
             lastProjection = null;
             return true;
         }
@@ -1530,6 +1581,16 @@ namespace GuardsDigital.Presentation.Match
 
             var previews = projection.PendingEffectChoicePreview
                 .ToDictionary(preview => preview.Coordinate);
+
+            // Milestone 6.2d: which token names this choice would repeat, decided once over the whole
+            // offered set rather than per candidate. A name that occurs twice keeps its ordinal, so two
+            // Hazards stay distinguishable; a name that occurs once drops it.
+            var repeatedTokenNames = new HashSet<string>(projection.PendingEffectChoicePreview
+                .Select(preview => FindTokenName(projection, preview))
+                .Where(name => name != null)
+                .GroupBy(name => name, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key), StringComparer.Ordinal);
             var invocations = new List<TypedInvocationViewModel>();
             var namedTargets = new List<EffectChoiceTargetViewModel>();
             var boardDestinations = new List<TypedInvocationViewModel>();
@@ -1570,7 +1631,7 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 namedTargets.Add(new EffectChoiceTargetViewModel(
-                    FormatTargetLabel(projection, preview, ordinals[candidate]),
+                    FormatTargetLabel(projection, preview, ordinals[candidate], repeatedTokenNames),
                     preview.Coordinate,
                     preview.ResultingCoordinate,
                     command));
@@ -1615,12 +1676,14 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// Names the object a target candidate stands on, from projected state alone. A hero is named
         /// by its configured display name, a minion by the team and intrinsic type its occupancy
-        /// carries, and a token by its ordinal, which is all presentation is given about one.
+        /// carries, and - since milestone 6.2d - a token by the display name its projected definition
+        /// carries, with an ordinal only where the choice offers that name twice.
         /// </summary>
         private static string FormatTargetLabel(
             MatchSessionProjection projection,
             EffectChoiceCandidatePreview preview,
-            int ordinal)
+            int ordinal,
+            ICollection<string> repeatedTokenNames)
         {
             switch (preview.Occupant.Kind)
             {
@@ -1638,8 +1701,31 @@ namespace GuardsDigital.Presentation.Match
                         : EffectChoiceLabels.MinionTargetLabel(
                             minion.TeamSide, minion.MinionType, ordinal);
                 default:
-                    return EffectChoiceLabels.TokenTargetLabel(ordinal);
+                    var tokenName = FindTokenName(projection, preview);
+                    return tokenName == null
+                        ? EffectChoiceLabels.CandidateLabel(default, ordinal)
+                        : EffectChoiceLabels.TokenTargetLabel(
+                            tokenName,
+                            repeatedTokenNames.Contains(tokenName) ? ordinal : (int?)null);
             }
+        }
+
+        /// <summary>
+        /// The projected display name of the token a preview names, or <c>null</c> when the preview
+        /// names something else. A projection that has lost the instance falls back to the anonymous
+        /// label rather than faulting, which is the same tolerance the hero and minion arms show.
+        /// </summary>
+        private static string FindTokenName(
+            MatchSessionProjection projection, EffectChoiceCandidatePreview preview)
+        {
+            if (preview.Occupant.Kind != BoardObjectKind.Token)
+            {
+                return null;
+            }
+
+            return projection.PlacedTokens
+                .SingleOrDefault(token => token.Id.Equals(preview.Occupant.TokenInstanceId))
+                ?.Definition.DisplayName;
         }
 
         /// <summary>

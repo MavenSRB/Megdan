@@ -201,8 +201,7 @@ namespace GuardsDigital.Tests.EditMode
                     Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
                     Array.Empty<MinionId>(),
                     default,
-                    null,
-                    new[] { new MinionDefenseCueViewModel(state.MinionId, -1) }));
+                    minionDefenseCues: new[] { new MinionDefenseCueViewModel(state.MinionId, -1) }));
 
                 Assert.That(minion.DefenseCueAmount, Is.EqualTo(-1));
                 var textMeshes = minion.GetComponentsInChildren<TextMesh>(true);

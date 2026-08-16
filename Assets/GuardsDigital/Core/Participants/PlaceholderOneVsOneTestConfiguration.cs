@@ -57,14 +57,37 @@ namespace GuardsDigital.Core.Participants
 
         public static PlaceholderOneVsOneTestConfiguration Create()
         {
-            return Create(TieBreakerSetupAuthority.CreateNormalSetupState());
+            return Create(
+                TieBreakerSetupAuthority.CreateNormalSetupState(),
+                PlaceholderMovementHand.CreateRed,
+                PlaceholderMovementHand.CreateBlue);
+        }
+
+        /// <summary>
+        /// The configured scene's hand: the ordinary five plus milestone 6.2's Cache card.
+        ///
+        /// Milestone 6.2d added it, and kept it separate from <see cref="Create"/> for the reason
+        /// <see cref="CreateForSkillFixture"/> is separate: the default configuration is what every
+        /// pinned digest, corpus fixture and card-matrix assertion measures, and a scene that can hold
+        /// a token must not move any of them. What the extra card buys is the first layer of 6.2d's
+        /// problem - the scene had no way to put a token on the board at all, so milestone 6.3's Clear
+        /// and two of milestone 6.6a's three modes were controls whose result could never be seen.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForConfiguredScene()
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateNormalSetupState(),
+                PlaceholderMovementHand.CreateRedWithComponentSkill,
+                PlaceholderMovementHand.CreateBlueWithComponentSkill);
         }
 
         public static PlaceholderOneVsOneTestConfiguration CreateForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
-                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide));
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                PlaceholderMovementHand.CreateRed,
+                PlaceholderMovementHand.CreateBlue);
         }
 
         public PlaceholderConfigurationRestoreState CaptureRestoreState() =>
@@ -114,27 +137,28 @@ namespace GuardsDigital.Core.Participants
         {
             return Create(
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
-                true);
+                PlaceholderMovementHand.CreateRedWithSkill,
+                PlaceholderMovementHand.CreateBlueWithSkill);
         }
 
+        /// <summary>
+        /// Each named configuration says which hand it deals rather than setting a flag another one
+        /// reads. Milestone 6.2d needed a third combination and a second boolean would have made the
+        /// four callers here describe themselves by what they are not.
+        /// </summary>
         private static PlaceholderOneVsOneTestConfiguration Create(
             TieBreakerState tieBreakerState,
-            bool withSkillCard = false)
+            Func<HeroId, PlaceholderMovementHand> redHand,
+            Func<HeroId, PlaceholderMovementHand> blueHand)
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
-            var redHand = withSkillCard
-                ? PlaceholderMovementHand.CreateRedWithSkill(redHeroId)
-                : PlaceholderMovementHand.CreateRed(redHeroId);
-            var blueHand = withSkillCard
-                ? PlaceholderMovementHand.CreateBlueWithSkill(blueHeroId)
-                : PlaceholderMovementHand.CreateBlue(blueHeroId);
 
             return new PlaceholderOneVsOneTestConfiguration(
                 participants,
-                redHand,
-                blueHand,
+                redHand(redHeroId),
+                blueHand(blueHeroId),
                 tieBreakerState);
         }
     }
