@@ -54,7 +54,7 @@ Non-goals: No value modifier, action restriction, narrow permission, change to t
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68b-convert-blue-feint-into-the-immunityeffective-type-timing-showcase-skill-completion-evidence).
 
-### [ ] 6.5a Convert Red Needle into the Push/Place showcase Skill
+### [~] 6.5a Convert Red Needle into the Push/Place showcase Skill
 
 Observable outcome: The configured Red hand's existing Red Needle card replaces its printed Primary Attack with the exact synthetic modal Skill `Choose one: choose another adjacent unit and Push it 3 spaces; or Place your hero in a different empty space within Radius 4`, making the completed Push, Place, Radius, occupancy, and displaced-minion-correction contracts visibly testable through the normal match session.
 
