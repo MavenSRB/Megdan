@@ -77,7 +77,7 @@ Milestone 6.4 implements this as the registered `synthetic-direct-move` capabili
 - Push is not a Movement action or Place effect and does not itself trigger a Lane Push merely by displacing the last minion.
 - Minions outside the Battle Zone are corrected at the after-action checkpoint, not after each pushed step.
 
-The executor emits `PushDeclared`, a simultaneous `ObjectsPushed` batch where applicable, and occupancy events. The action/system controller alone runs after-action minion correction after all action nodes finish.
+The executor emits `PushDeclared`, a simultaneous `ObjectsPushed` batch where applicable, and occupancy events. The action/system controller alone runs after-action minion correction after all action nodes finish - implemented at milestone 6.4a: the card-action dispatcher invokes the correction once when a Skill's effect nodes and batches have all finished, derives everything from board position through `BattleZoneQuery`, and holds the source card unresolved until the correction completes. A minion follows a shortest empty path back, its team choosing among equally short returns and among its own displaced minions (the 2026-08-16 correction-order amendment); with no path it is Placed into a nearest empty Battle-Zone space, and with no empty space either it stays where it ended up as a typed left-in-place outcome. Cross-team order is the Tie Breaker's, read but never flipped.
 
 Milestone 6.4 implements this as the registered `synthetic-object-push` capability over a shared `PushPathQuery`. The direction comes from the straight-line query rather than effect-local geometry, and the walk asks the obstacle query p.18's two separate questions: transit legality, which the pushing effect's own ignore-obstacles flag or the target's Move-Through permission can answer, and endpoint legality, which nothing can, so a permitted target crosses an obstacle but still has to reach an empty space. A blocked target is a short push and a target blocked immediately is a zero-space push; both are applied results rather than failures, and a pusher and target sharing no file is the one refusal, kept distinct from a direction that exists and cannot be used. The `up to X` multi-target case is one node with one decision: the shared distance is chosen once, every target is resolved against one pre-effect state before anything commits, and the commits then run farthest-from-the-pusher first so a batch never refuses itself. That discharges the one-batch requirement inside the capability; the general `SimultaneousBatch` control node stays deferred, as the timing shard's status table records. Immunity filters the target set - p.18 makes it a targeting rule - while a presence question over the same spaces would still count the immune unit. A pushed token holds no immunity of its own because p.19 states tokens are not units, so the rules-object vocabulary has no token member and reports the named absence instead.
 
@@ -86,6 +86,8 @@ Milestone 6.4 implements this as the registered `synthetic-object-push` capabili
 `PlaceEffect` takes a game piece from the board or supply and puts it into a different empty space. It does not count as movement. The contract declares source container, eligible piece type, destination query, chooser, and what happens when no legal empty destination exists.
 
 Placing tokens additionally uses the limited-supply rules in the token section. Placing a board object must not silently use Spawn semantics.
+
+Milestone 6.4a implements the minimum correction-owned Place path: the displaced-minion fallback carries typed policy/outcome data - correction kind, candidate destinations from `NearestQuery` over empty Battle-Zone spaces, and a left-in-place outcome for a full zone - and emits Place rather than Movement facts, with no route because Place is not movement. It is an internal authority operation rather than a registered effect capability, because no card text drives Place yet and a registration without a definition binding would be a dead contract; milestone 6.5 migrates this path to, or proves it conformant with, the general `PlaceEffect`.
 
 ### Spawn and Respawn
 
@@ -163,9 +165,7 @@ Every query contract below is specified but not yet implemented as a named type.
 | `DistanceQuery` | Specified, not implemented | 6.4 |
 | `FartherQuery` | Specified, not implemented | 6.4 |
 | `FarthestQuery` | Specified, not implemented | 6.4 |
-| `NearestQuery` | Specified, not implemented | 6.4a |
 | `SameZoneQuery` | Specified, not implemented | 6.8 |
 | `AdjacentZoneQuery` | Specified, not implemented | 6.8 |
-| `BattleZoneQuery` | Specified, not implemented | 6.4a |
 | `EmptySpaceQuery` | Specified, not implemented | 6.5 |
 | `EmptySpawnPointQuery` | Specified, not implemented | 6.5 |

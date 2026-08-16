@@ -25,19 +25,23 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
+        // v10: milestone 6.4a's paused after-action displaced-minion correction joins the card-action
+        // section as continuation kind 4, carrying the owning action's identity, the stage, the
+        // deciding team, and candidate identities only - routes, costs, and coordinates of subjects are
+        // never on the wire, because the correction is a positional predicate the restore re-derives
+        // from the board and the Tie Breaker, refusing any payload the derivation does not reproduce.
+        // v9 is rejected rather than migrated, per the standing decision: a v9 payload could not
+        // represent a paused correction, the engine has one read path per version, and no persisted
+        // state exists outside the version-controlled corpus to strand.
+        //
         // v9: placed tokens join the board section and attached markers join the round section, each
         // carrying identity, provenance and position only; supply size, display name and marker return
         // condition come from the registered component catalog, which the payload also records so a
         // restore can refuse a build whose component content differs. v8 is explicitly rejected rather
-        // than migrated (milestone 6.2 migrate-or-reject decision). Reading a v8 payload as a match with
-        // no components would in fact be faithful - v8 could not represent one - so this is the first
-        // bump where migration was defensible; it is refused anyway, because the engine has never had a
-        // second read path, no persisted state exists outside the version-controlled corpus to strand,
-        // and one rule for every version is worth more than one payload's convenience.
-        //
-        // v8 rejected v7 because the Active-effect section left semantics on the wire, and v7 rejected
-        // v6 for the analogous reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 9;
+        // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
+        // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
+        // reason at milestone 6.1s.
+        public const int CurrentSchemaVersion = 10;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

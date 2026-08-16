@@ -1,5 +1,6 @@
 using System;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -15,7 +16,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
         None = 0,
         Movement = 1,
         Attack = 2,
-        Skill = 3
+        Skill = 3,
+
+        /// <summary>
+        /// Milestone 6.4a: the action's effect nodes have all finished and the after-action
+        /// displaced-minion correction is paused on a team choice. Resuming it resumes the same
+        /// authoritative continuation - the source card resolves and Initiative advances only when
+        /// the correction completes.
+        /// </summary>
+        Correction = 4
     }
 
     /// <summary>
@@ -38,13 +47,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingCardActionResolution pendingMovementResolution,
             PendingAttackResolution pendingAttackResolution,
             PendingResolution pendingSkillResolution,
-            DefeatRewardRestoreStateHolder defeatRewards)
+            DefeatRewardRestoreStateHolder defeatRewards,
+            PendingDisplacedMinionCorrection pendingCorrection = null)
         {
             ContinuationKind = continuationKind;
             PendingSkillResolution = pendingSkillResolution;
             PendingMovementResolution = pendingMovementResolution;
             PendingAttackResolution = pendingAttackResolution;
             DefeatRewards = defeatRewards;
+            PendingCorrection = pendingCorrection;
         }
 
         public CardActionContinuationKind ContinuationKind { get; }
@@ -57,6 +68,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Set only when <see cref="ContinuationKind"/> is Skill.</summary>
         public PendingResolution PendingSkillResolution { get; }
+
+        /// <summary>Set only when <see cref="ContinuationKind"/> is Correction.</summary>
+        public PendingDisplacedMinionCorrection PendingCorrection { get; }
 
         /// <summary>
         /// The Defeat-reward accounting to restore. Never omitted: an authority with no
@@ -117,5 +131,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 null,
                 pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
                 defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)));
+
+        public static CardActionResolutionRestoreState WithPendingCorrection(
+            PendingDisplacedMinionCorrection pendingCorrection,
+            DefeatRewardRestoreStateHolder defeatRewards) =>
+            new CardActionResolutionRestoreState(
+                CardActionContinuationKind.Correction,
+                null,
+                null,
+                null,
+                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                pendingCorrection ?? throw new ArgumentNullException(nameof(pendingCorrection)));
     }
 }

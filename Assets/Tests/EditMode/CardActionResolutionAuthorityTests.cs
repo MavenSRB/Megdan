@@ -9,6 +9,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Rules.Modifications;
@@ -744,6 +745,7 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.Participants,
                     new ActiveEffectLifecycle(),
                     RuleModificationSet.Empty,
+                    TieBreakerState.Unrevealed,
                      1,
                      1);
             var mismatchedResult = CreateResolutionAuthority(redFocus.OwnerId, new HexCoordinate(0, 0))
@@ -755,6 +757,7 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.Participants,
                     new ActiveEffectLifecycle(),
                     RuleModificationSet.Empty,
+                    TieBreakerState.Unrevealed,
                      1,
                      1);
 

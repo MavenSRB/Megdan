@@ -37,7 +37,8 @@ namespace GuardsDigital.Core.Cards
         SkillActionRejected = 19,
         SkillCommandRejected = 20,
         ClearAuthorityUnavailable = 21,
-        ClearActionRejected = 22
+        ClearActionRejected = 22,
+        CorrectionCommandRejected = 23
     }
 
     public enum TurnResolutionEventKind
@@ -796,7 +797,7 @@ namespace GuardsDigital.Core.Cards
 
             var skillResult = cardActions.StartTurnSkill(
                 resolutionId, offer, definitions, instances, participants, timing,
-                CurrentModifications(), roundIndex, turnIndex);
+                CurrentModifications(), TieBreakerState, roundIndex, turnIndex);
             if (!skillResult.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillActionRejected);
             return CompleteSkillStep(skillResult);
@@ -832,9 +833,48 @@ namespace GuardsDigital.Core.Cards
             }
 
             var answered = cardActions.AnswerEffectChoice(
-                command, definitions, participants, timing, CurrentModifications(), roundIndex, turnIndex);
+                command, definitions, participants, timing, CurrentModifications(), TieBreakerState,
+                roundIndex, turnIndex);
             if (!answered.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+            return CompleteSkillStep(answered);
+        }
+
+        /// <summary>Milestone 6.4a's paused after-action correction, or <c>null</c>.</summary>
+        public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
+            PendingDisplacedMinionCorrection => cardActions?.PendingDisplacedMinionCorrection;
+
+        /// <summary>
+        /// Answers milestone 6.4a's paused after-action correction. The gate is the pending choice's
+        /// own choosing side rather than the selected actor, because p.18 hands the decision to the
+        /// displaced minion's team - which can be the acting hero's opponent - while the correction
+        /// still belongs to the selected actor's action, whose card resolves only when it completes.
+        /// </summary>
+        public TurnResolutionResult TryAnswerDisplacedMinionCorrection(
+            GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionCommand command)
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            var pending = cardActions?.PendingDisplacedMinionCorrection;
+            if (command == null || pending == null || !initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CorrectionCommandRejected);
+            }
+
+            if (!pending.SourceCardInstanceId.Equals(initiative.SelectedActor.CardInstanceId) ||
+                command.ChoosingSide != pending.ChoosingSide)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CorrectionCommandRejected);
+            }
+
+            var answered = cardActions.AnswerDisplacedMinionCorrection(
+                command, participants, TieBreakerState);
+            if (!answered.Accepted)
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CorrectionCommandRejected);
             return CompleteSkillStep(answered);
         }
 

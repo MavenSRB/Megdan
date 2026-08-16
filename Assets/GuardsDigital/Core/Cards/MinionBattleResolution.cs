@@ -446,11 +446,12 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentNullException(nameof(participants));
             }
 
-            var battleZone = board.MapDefinition.Zones.Single(value => value.IsStartingBattleZone);
-            var battleMinions = board.Minions.Where(minion =>
-                board.MapDefinition.GetZoneForSpace(minion.OccupiedSpace.SpaceId).Id.Equals(battleZone.Id))
-                .OrderBy(minion => minion.MinionId.Value, StringComparer.Ordinal)
-                .ToArray();
+            // Milestone 6.4a: one authority-owned membership query, shared with Heavy immunity,
+            // Lane Push, setup, and the displaced-minion correction.
+            var battleZone = GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
+                .GetStartingBattleZone(board.MapDefinition);
+            var battleMinions = GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
+                .FindMinionsInside(board);
             var red = battleMinions.Where(value => value.TeamSide == TeamSide.Red).ToArray();
             var blue = battleMinions.Where(value => value.TeamSide == TeamSide.Blue).ToArray();
             var resolutionId = new EndOfRoundResolutionId($"round-{roundIndex}-minion-battle");

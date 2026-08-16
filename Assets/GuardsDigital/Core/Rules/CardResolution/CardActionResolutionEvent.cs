@@ -10,6 +10,49 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
+    /// <summary>
+    /// The displaced-minion correction detail a correction fact carries (milestone 6.4a): which
+    /// miniature, how it was corrected, and where from and to. A left-in-place outcome records the one
+    /// coordinate twice, because nothing moved and the fact says so.
+    /// </summary>
+    public readonly struct DisplacedMinionCorrectionEvent : IEquatable<DisplacedMinionCorrectionEvent>
+    {
+        public DisplacedMinionCorrectionEvent(
+            MinionId minionId,
+            GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionKind kind,
+            HexCoordinate origin,
+            HexCoordinate destination)
+        {
+            MinionId = minionId;
+            CorrectionKind = kind;
+            Origin = origin;
+            Destination = destination;
+        }
+
+        public MinionId MinionId { get; }
+        public GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionKind CorrectionKind { get; }
+        public HexCoordinate Origin { get; }
+        public HexCoordinate Destination { get; }
+
+        public bool Equals(DisplacedMinionCorrectionEvent other) =>
+            MinionId.Equals(other.MinionId) && CorrectionKind == other.CorrectionKind &&
+            Origin.Equals(other.Origin) && Destination.Equals(other.Destination);
+
+        public override bool Equals(object obj) =>
+            obj is DisplacedMinionCorrectionEvent other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = MinionId.GetHashCode();
+                hash = (hash * 397) ^ (int)CorrectionKind;
+                hash = (hash * 397) ^ Origin.GetHashCode();
+                return (hash * 397) ^ Destination.GetHashCode();
+            }
+        }
+    }
+
     public readonly struct CardActionResolutionEvent : IEquatable<CardActionResolutionEvent>
     {
         private CardActionResolutionEvent(
@@ -33,7 +76,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefeatOutcomeId defeatOutcomeId = default,
             TokenInstanceId targetTokenInstanceId = default,
             TokenDefinitionReference targetTokenDefinitionReference = default,
-            HexCoordinate targetTokenCoordinate = default)
+            HexCoordinate targetTokenCoordinate = default,
+            DisplacedMinionCorrectionEvent correctionEvent = default)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -86,6 +130,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             TargetTokenInstanceId = targetTokenInstanceId;
             TargetTokenDefinitionReference = targetTokenDefinitionReference;
             TargetTokenCoordinate = targetTokenCoordinate;
+            CorrectionEvent = correctionEvent;
         }
 
         public CardActionResolutionEventKind Kind { get; }
@@ -123,6 +168,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public TokenInstanceId TargetTokenInstanceId { get; }
         public TokenDefinitionReference TargetTokenDefinitionReference { get; }
         public HexCoordinate TargetTokenCoordinate { get; }
+        public DisplacedMinionCorrectionEvent CorrectionEvent { get; }
 
         public static CardActionResolutionEvent MovementActionStarted(
             PendingCardActionResolution resolution)
@@ -388,7 +434,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 DefeatOutcomeId.Equals(other.DefeatOutcomeId) &&
                 TargetTokenInstanceId.Equals(other.TargetTokenInstanceId) &&
                 TargetTokenDefinitionReference.Equals(other.TargetTokenDefinitionReference) &&
-                TargetTokenCoordinate.Equals(other.TargetTokenCoordinate);
+                TargetTokenCoordinate.Equals(other.TargetTokenCoordinate) &&
+                CorrectionEvent.Equals(other.CorrectionEvent);
         }
 
         public override bool Equals(object obj)
@@ -420,7 +467,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ DefeatOutcomeId.GetHashCode();
                 hashCode = (hashCode * 397) ^ TargetTokenInstanceId.GetHashCode();
                 hashCode = (hashCode * 397) ^ TargetTokenDefinitionReference.GetHashCode();
-                return (hashCode * 397) ^ TargetTokenCoordinate.GetHashCode();
+                hashCode = (hashCode * 397) ^ TargetTokenCoordinate.GetHashCode();
+                return (hashCode * 397) ^ CorrectionEvent.GetHashCode();
             }
         }
 
@@ -542,6 +590,55 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AttackResolutionOutcome.None,
                 default,
                 default);
+
+        /// <summary>
+        /// Milestone 6.4a. Correction facts belong to the action whose boundary triggered them, so they
+        /// carry that action's full identity; the step names the phase or the subject, and the typed
+        /// correction detail rides its own field the way movement and Fast Travel details do.
+        /// </summary>
+        public static CardActionResolutionEvent DisplacedMinionCorrection(
+            CardActionResolutionEventKind kind,
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            string stepId,
+            DisplacedMinionCorrectionEvent correction = default)
+        {
+            if (kind != CardActionResolutionEventKind.DisplacedMinionCorrectionStarted &&
+                kind != CardActionResolutionEventKind.DisplacedMinionCorrectionChoiceRequested &&
+                kind != CardActionResolutionEventKind.DisplacedMinionCorrectionMoved &&
+                kind != CardActionResolutionEventKind.DisplacedMinionCorrectionPlaced &&
+                kind != CardActionResolutionEventKind.DisplacedMinionCorrectionLeftInPlace &&
+                kind != CardActionResolutionEventKind.DisplacedMinionCorrectionCompleted)
+            {
+                throw new ArgumentOutOfRangeException(nameof(kind), "Not a displaced-minion correction fact kind.");
+            }
+
+            return new CardActionResolutionEvent(
+                kind,
+                resolutionId,
+                sourceCardInstanceId,
+                actionDefinitionId,
+                default,
+                actorId,
+                default,
+                new ActionResolutionStepId(stepId),
+                0,
+                0,
+                default,
+                0,
+                AttackResolutionOutcome.None,
+                default,
+                default,
+                MinionDefeatFactKind.None,
+                correction.MinionId,
+                default,
+                default,
+                default,
+                default,
+                correction);
+        }
 
         private static CardActionResolutionEvent FromAttackResolution(
             CardActionResolutionEventKind kind,

@@ -58,7 +58,8 @@ namespace GuardsDigital.Core.Snapshots
             // produced live is reproduced here rather than looking like tampering.
             cardActions = ReadCardAction(
                 reader, board, definitions, cards, participants, capabilities, markers,
-                RuleModificationQuery.Build(timing, board, participants, tieBreaker));
+                RuleModificationQuery.Build(timing, board, participants, tieBreaker),
+                tieBreaker);
             return TurnResolutionAuthority.Restore(
                 definitions,
                 cards,

@@ -268,6 +268,41 @@ namespace GuardsDigital.Core.Board
                 Array.Empty<BoardMapSpawnPoint>(), Array.Empty<ZoneId>());
         }
 
+        /// <summary>
+        /// Synthetic two-zone board with a flagged starting Battle Zone, added at milestone 6.4a so a
+        /// focused fixture can express "outside the Battle Zone" at all - the single-zone synthetic
+        /// board makes every playable space a member, so nothing on it is ever displaced. A separate
+        /// explicit factory rather than an optional flag, per the recorded no-optional-parameters
+        /// doctrine. Composing one flips the round authority's end-of-round probe to the configured
+        /// capabilities, so round-level fixtures account for a live Minion Battle or stay below the
+        /// round.
+        /// </summary>
+        public static BoardMapDefinition CreateSyntheticWithStartingBattleZone(
+            MapId id,
+            int revision,
+            IEnumerable<HexCoordinate> battleZoneCoordinates,
+            IEnumerable<HexCoordinate> outerZoneCoordinates,
+            IEnumerable<HexCoordinate> terrainCoordinates)
+        {
+            var battleZone = new BoardMapZone(
+                new ZoneId("synthetic-battle-zone"), "Synthetic Battle Zone", "synthetic", null, false, true);
+            var outerZone = new BoardMapZone(
+                new ZoneId("synthetic-outer-zone"), "Synthetic Outer Zone", "synthetic", null, false, false);
+            var battle = (battleZoneCoordinates ?? throw new ArgumentNullException(nameof(battleZoneCoordinates)))
+                .Select(value => new BoardMapSpace(
+                    new SpaceId($"q{value.Q}_r{value.R}"), value, BoardMapSpaceKind.Playable, battleZone.Id));
+            var outer = (outerZoneCoordinates ?? throw new ArgumentNullException(nameof(outerZoneCoordinates)))
+                .Select(value => new BoardMapSpace(
+                    new SpaceId($"q{value.Q}_r{value.R}"), value, BoardMapSpaceKind.Playable, outerZone.Id));
+            var terrain = (terrainCoordinates ?? throw new ArgumentNullException(nameof(terrainCoordinates)))
+                .Select(value => new BoardMapSpace(
+                    new SpaceId($"q{value.Q}_r{value.R}"), value, BoardMapSpaceKind.Terrain, null));
+            return new BoardMapDefinition(
+                id, revision, id.Value, battle.Concat(outer).Concat(terrain),
+                new[] { battleZone, outerZone },
+                Array.Empty<BoardMapSpawnPoint>(), Array.Empty<ZoneId>());
+        }
+
         private static void ValidateOrderedLane(
             ZoneId[] lane,
             BoardMapZone[] zones,

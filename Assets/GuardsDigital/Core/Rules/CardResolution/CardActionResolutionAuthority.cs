@@ -8,9 +8,12 @@ using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -66,6 +69,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 adjacentMoveAuthority)
         {
         }
+
+        private PendingDisplacedMinionCorrection pendingCorrection;
 
         private CardActionResolutionAuthority(
             MovementCardActionStrategyBackend movementBackend,
@@ -134,6 +139,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             skillBackend.PendingChoice;
 
         /// <summary>
+        /// Milestone 6.4a's paused after-action correction, or <c>null</c>. It is dispatcher-owned
+        /// rather than backend-owned because the correction belongs to the action boundary itself:
+        /// every displacement-capable operation the Skill backend hosts - and every later one - reaches
+        /// it through the same completion path, which is the reuse the roadmap requires.
+        /// </summary>
+        public PendingDisplacedMinionCorrection PendingDisplacedMinionCorrection => pendingCorrection;
+
+        /// <summary>
         /// The modifications in effect right now, derived from the supplied timing state and this
         /// authority's board. Built per command rather than cached: an Active effect can expire and a
         /// token can be removed between two commands, and a cached set would answer for the wrong moment.
@@ -146,7 +159,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
-            skillBackend.HasPendingResolution;
+            skillBackend.HasPendingResolution || pendingCorrection != null;
 
         public CardActionResolutionResult StartTurnSkill(
             ActionResolutionId resolutionId,
@@ -156,6 +169,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
+            TieBreakerState tieBreaker,
             int roundIndex,
             int turnIndex)
         {
@@ -174,9 +188,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     PendingChoice);
             }
 
-            return skillBackend.StartTurnSkill(
+            var result = skillBackend.StartTurnSkill(
                 resolutionId, offer, prepared.Definitions, prepared.Instances, participants,
                 timing, modifications, components, roundIndex, turnIndex);
+            return RunCorrectionAfterAction(
+                result, resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId,
+                offer.ActorId, participants, tieBreaker);
         }
 
         public CardActionResolutionResult AnswerEffectChoice(
@@ -185,10 +202,278 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
+            TieBreakerState tieBreaker,
             int roundIndex,
-            int turnIndex) =>
-            skillBackend.AnswerEffectChoice(
+            int turnIndex)
+        {
+            // Read the owning action's identity before the answer: a completing answer clears the
+            // frame, and the correction facts still have to name the action they close.
+            var frame = skillBackend.PendingResolution;
+            var result = skillBackend.AnswerEffectChoice(
                 command, definitions, participants, timing, modifications, components, roundIndex, turnIndex);
+            if (frame == null)
+            {
+                return result;
+            }
+
+            return RunCorrectionAfterAction(
+                result, new ActionResolutionId(frame.ResolutionId.Value), frame.SourceCardInstanceId,
+                frame.ActionDefinitionId, frame.ActorId, participants, tieBreaker);
+        }
+
+        /// <summary>
+        /// Answers the paused after-action correction. Everything is validated against a fresh
+        /// derivation from the live board rather than the stored candidates - the same discipline the
+        /// Minion Battle answer applies - so a stale or tampered answer is refused and the pending
+        /// choice survives untouched.
+        /// </summary>
+        public CardActionResolutionResult AnswerDisplacedMinionCorrection(
+            DisplacedMinionCorrectionCommand command,
+            MatchParticipants participants,
+            TieBreakerState tieBreaker)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            if (pendingCorrection == null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.NoPendingCorrection, null, null);
+            }
+
+            if (!command.ResolutionId.Equals(pendingCorrection.ResolutionId) ||
+                !command.ChoiceId.Equals(pendingCorrection.ChoiceId) ||
+                command.ChoosingSide != pendingCorrection.ChoosingSide)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.StaleCorrectionChoice, null, null);
+            }
+
+            var pending = pendingCorrection;
+            var steps = new List<ResolutionStep>();
+            if (pending.Stage == DisplacedMinionCorrectionStage.SelectSubject)
+            {
+                if (command.Kind != DisplacedMinionCorrectionCommandKind.SelectSubject)
+                {
+                    return CardActionResolutionResult.Reject(
+                        CardActionResolutionRejectionReason.IllegalCorrectionChoice, null, null);
+                }
+
+                var derived = DisplacedMinionCorrectionPlanner.DeriveNext(
+                    board, participants, tieBreaker, pending.ResolutionId,
+                    pending.SourceCardInstanceId, pending.ActionDefinitionId, pending.ActorId);
+                if (derived.Kind != DisplacedMinionCorrectionStepKind.Choice ||
+                    derived.Pending.Stage != DisplacedMinionCorrectionStage.SelectSubject ||
+                    !derived.Pending.SubjectCandidates.Any(subject =>
+                        subject.MinionId.Equals(command.MinionId)))
+                {
+                    return CardActionResolutionResult.Reject(
+                        CardActionResolutionRejectionReason.IllegalCorrectionChoice, null, null);
+                }
+
+                var subject = board.Minions.Single(minion => minion.MinionId.Equals(command.MinionId));
+                var zoneCoordinates = BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition);
+                var destinationStep = DisplacedMinionCorrectionPlanner.DeriveDestinationStep(
+                    board, participants, pending.BattleZoneId, zoneCoordinates, subject,
+                    pending.ResolutionId, pending.SourceCardInstanceId,
+                    pending.ActionDefinitionId, pending.ActorId);
+                if (destinationStep.Kind == DisplacedMinionCorrectionStepKind.Choice)
+                {
+                    pendingCorrection = destinationStep.Pending;
+                    steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.DisplacedMinionCorrection(
+                        CardActionResolutionEventKind.DisplacedMinionCorrectionChoiceRequested,
+                        pending.ResolutionId, pending.SourceCardInstanceId, pending.ActionDefinitionId,
+                        pending.ActorId, destinationStep.Pending.ChoiceId.Value)));
+                    return CardActionResolutionResult.Accept(false, null, null, steps);
+                }
+
+                CommitCorrection(steps, pending, destinationStep);
+            }
+            else
+            {
+                if (command.Kind != DisplacedMinionCorrectionCommandKind.SelectDestination ||
+                    !command.MinionId.Equals(pending.SubjectMinionId))
+                {
+                    return CardActionResolutionResult.Reject(
+                        CardActionResolutionRejectionReason.IllegalCorrectionChoice, null, null);
+                }
+
+                var subject = board.Minions.SingleOrDefault(minion =>
+                    minion.MinionId.Equals(pending.SubjectMinionId));
+                var zoneCoordinates = BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition);
+                var candidates = subject.MinionId.IsDefined &&
+                    !BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, subject.OccupiedSpace.SpaceId)
+                        ? DisplacedMinionCorrectionPlanner.DeriveCandidates(
+                            board, zoneCoordinates, subject, out var kind)
+                        : Array.Empty<DisplacedMinionCorrectionCandidate>();
+                var chosen = candidates.Where(candidate =>
+                    candidate.Destination.Equals(command.Destination)).ToArray();
+                if (chosen.Length != 1)
+                {
+                    return CardActionResolutionResult.Reject(
+                        CardActionResolutionRejectionReason.IllegalCorrectionChoice, null, null);
+                }
+
+                CommitCorrection(
+                    steps, pending,
+                    DisplacedMinionCorrectionStep.Apply(subject, pending.Kind, chosen[0]));
+            }
+
+            pendingCorrection = null;
+            var complete = AppendCorrectionSteps(
+                steps, pending.ResolutionId, pending.SourceCardInstanceId, pending.ActionDefinitionId,
+                pending.ActorId, participants, tieBreaker, true);
+            return CardActionResolutionResult.Accept(complete, null, null, steps);
+        }
+
+        /// <summary>
+        /// Runs the after-action displaced-minion correction once a Skill's effect nodes and batches
+        /// have all finished (p.18: "after you perform an action"). Appends nothing at all when no
+        /// minion miniature ended up outside the Battle Zone, so every existing action's fact stream
+        /// is untouched by the seam existing.
+        /// </summary>
+        private CardActionResolutionResult RunCorrectionAfterAction(
+            CardActionResolutionResult result,
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            MatchParticipants participants,
+            TieBreakerState tieBreaker)
+        {
+            if (!result.Accepted || !result.IsComplete)
+            {
+                return result;
+            }
+
+            var steps = new List<ResolutionStep>(result.Steps);
+            var complete = AppendCorrectionSteps(
+                steps, resolutionId, sourceCardInstanceId, actionDefinitionId, actorId,
+                participants, tieBreaker, false);
+            return complete && steps.Count == result.Steps.Count
+                ? result
+                : CardActionResolutionResult.Accept(complete, null, null, steps);
+        }
+
+        /// <summary>
+        /// Applies corrections until the board is clean, a team must decide, or only uncorrectable
+        /// strays remain. Every iteration re-derives from the live board, because an earlier correction
+        /// can free or block a later one's shortest path.
+        /// </summary>
+        private bool AppendCorrectionSteps(
+            List<ResolutionStep> steps,
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            MatchParticipants participants,
+            TieBreakerState tieBreaker,
+            bool correctionAlreadyStarted)
+        {
+            var emitted = correctionAlreadyStarted;
+            while (true)
+            {
+                var step = DisplacedMinionCorrectionPlanner.DeriveNext(
+                    board, participants, tieBreaker, resolutionId, sourceCardInstanceId,
+                    actionDefinitionId, actorId);
+                switch (step.Kind)
+                {
+                    case DisplacedMinionCorrectionStepKind.Apply:
+                        EmitStartedOnce(steps, ref emitted, resolutionId, sourceCardInstanceId, actionDefinitionId, actorId);
+                        CommitCorrection(steps, resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, step);
+                        continue;
+
+                    case DisplacedMinionCorrectionStepKind.Choice:
+                        EmitStartedOnce(steps, ref emitted, resolutionId, sourceCardInstanceId, actionDefinitionId, actorId);
+                        pendingCorrection = step.Pending;
+                        steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.DisplacedMinionCorrection(
+                            CardActionResolutionEventKind.DisplacedMinionCorrectionChoiceRequested,
+                            resolutionId, sourceCardInstanceId, actionDefinitionId, actorId,
+                            step.Pending.ChoiceId.Value)));
+                        return false;
+
+                    default:
+                        if (step.LeftInPlace.Count > 0)
+                        {
+                            EmitStartedOnce(steps, ref emitted, resolutionId, sourceCardInstanceId, actionDefinitionId, actorId);
+                            foreach (var stranded in step.LeftInPlace)
+                            {
+                                steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.DisplacedMinionCorrection(
+                                    CardActionResolutionEventKind.DisplacedMinionCorrectionLeftInPlace,
+                                    resolutionId, sourceCardInstanceId, actionDefinitionId, actorId,
+                                    $"correction-left-{stranded.MinionId.Value}",
+                                    new DisplacedMinionCorrectionEvent(
+                                        stranded.MinionId, DisplacedMinionCorrectionKind.None,
+                                        stranded.Coordinate, stranded.Coordinate))));
+                            }
+                        }
+
+                        if (emitted)
+                        {
+                            steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.DisplacedMinionCorrection(
+                                CardActionResolutionEventKind.DisplacedMinionCorrectionCompleted,
+                                resolutionId, sourceCardInstanceId, actionDefinitionId, actorId,
+                                "correction-complete")));
+                        }
+
+                        return true;
+                }
+            }
+        }
+
+        private void EmitStartedOnce(
+            List<ResolutionStep> steps,
+            ref bool emitted,
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId)
+        {
+            if (emitted)
+            {
+                return;
+            }
+
+            emitted = true;
+            steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.DisplacedMinionCorrection(
+                CardActionResolutionEventKind.DisplacedMinionCorrectionStarted,
+                resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, "correction-start")));
+        }
+
+        private void CommitCorrection(
+            List<ResolutionStep> steps,
+            PendingDisplacedMinionCorrection pending,
+            DisplacedMinionCorrectionStep step) =>
+            CommitCorrection(
+                steps, pending.ResolutionId, pending.SourceCardInstanceId,
+                pending.ActionDefinitionId, pending.ActorId, step);
+
+        private void CommitCorrection(
+            List<ResolutionStep> steps,
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            DisplacedMinionCorrectionStep step)
+        {
+            var origin = step.Subject.Coordinate;
+            var committed = board.CommitValidatedDisplacement(
+                BoardObjectReference.ForMinion(step.Subject.MinionId), step.Destination.Destination);
+            if (!committed.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A derived correction destination could not be committed; the planner and the " +
+                    "board disagree about the same state.");
+            }
+
+            var kind = step.CorrectionKind == DisplacedMinionCorrectionKind.Place
+                ? CardActionResolutionEventKind.DisplacedMinionCorrectionPlaced
+                : CardActionResolutionEventKind.DisplacedMinionCorrectionMoved;
+            steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.DisplacedMinionCorrection(
+                kind, resolutionId, sourceCardInstanceId, actionDefinitionId, actorId,
+                $"correction-{step.Subject.MinionId.Value}",
+                new DisplacedMinionCorrectionEvent(
+                    step.Subject.MinionId, step.CorrectionKind, origin, step.Destination.Destination))));
+        }
 
         public CardActionResolutionRestoreState CaptureRestoreState()
         {
@@ -205,8 +490,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return CardActionResolutionRestoreState.WithPendingAttack(PendingAttackResolution, rewards);
             }
 
-            return PendingSkillResolution != null
-                ? CardActionResolutionRestoreState.WithPendingSkill(PendingSkillResolution, rewards)
+            if (PendingSkillResolution != null)
+            {
+                return CardActionResolutionRestoreState.WithPendingSkill(PendingSkillResolution, rewards);
+            }
+
+            return pendingCorrection != null
+                ? CardActionResolutionRestoreState.WithPendingCorrection(pendingCorrection, rewards)
                 : CardActionResolutionRestoreState.WithoutPendingAction(rewards);
         }
 
@@ -293,6 +583,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             new SkillBackendRestoreState(state.PendingSkillResolution)),
                         components,
                         adjacentMoveAuthority);
+
+                case CardActionContinuationKind.Correction:
+                    var restored = new CardActionResolutionAuthority(
+                        new MovementCardActionStrategyBackend(adjacentMoveAuthority),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
+                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
+                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
+                        components,
+                        adjacentMoveAuthority);
+                    restored.pendingCorrection = state.PendingCorrection;
+                    return restored;
 
                 default:
                     return new CardActionResolutionAuthority(

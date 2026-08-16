@@ -419,7 +419,8 @@ namespace GuardsDigital.Core.Setup
                     throw Reject(QuickGameSetupRejectionReason.SpawnTeamMismatch, $"Minion '{definition.MinionId}' uses the wrong team spawn point.");
                 if (!string.Equals(resolved.Spawn.UnitType, GetMapUnitType(definition.MinionType), StringComparison.Ordinal))
                     throw Reject(QuickGameSetupRejectionReason.SpawnUnitTypeMismatch, $"Minion '{definition.MinionId}' uses the wrong minion-type spawn point.");
-                if (!selectedMap.GetZoneForSpace(resolved.Space.Id).IsStartingBattleZone)
+                if (!GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                        selectedMap, resolved.Space.Id))
                     throw Reject(QuickGameSetupRejectionReason.InvalidMinionZone, $"Minion '{definition.MinionId}' must start in the starting Battle Zone.");
 
                 minionStates.Add(new QuickGameMinionSetupState(

@@ -49,6 +49,11 @@ namespace GuardsDigital.Core.Snapshots
             {
                 WriteSkillResolution(writer, pendingSkill);
             }
+
+            if (continuationKind == CardActionContinuationKind.Correction)
+            {
+                WriteCorrectionResolution(writer, state.PendingCorrection);
+            }
         }
 
         private static CardActionResolutionAuthority ReadCardAction(
@@ -59,7 +64,8 @@ namespace GuardsDigital.Core.Snapshots
             MatchParticipants participants,
             EffectCapabilityCatalog capabilities,
             MarkerAttachmentRegister markers,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            TieBreakerState tieBreaker)
         {
             var kind = reader.ReadInt32();
             var defeatRewards = ReadDefeatRewards(reader);
@@ -87,6 +93,11 @@ namespace GuardsDigital.Core.Snapshots
                             modifications),
                         defeatRewards);
                     break;
+                case CardActionContinuationKind.Correction:
+                    state = CardActionResolutionRestoreState.WithPendingCorrection(
+                        ReadCorrectionResolution(reader, board, participants, tieBreaker),
+                        defeatRewards);
+                    break;
                 default:
                     throw Malformed("Unknown pending card-action kind.");
             }
@@ -95,6 +106,119 @@ namespace GuardsDigital.Core.Snapshots
             // restore, so no verified choice is supplied here.
             return CardActionResolutionAuthority.Restore(
                 board, state, null, null, null, definitions, cards, participants, markers, modifications);
+        }
+
+        /// <summary>
+        /// Milestone 6.4a. A paused correction writes the owning action's identity, the stage, the
+        /// deciding team, and the candidate identities - never a route, a cost, or anything else the
+        /// board can answer. Restore re-derives the whole correction from the restored board and the
+        /// Tie Breaker and refuses any payload the derivation does not reproduce, so a tampered
+        /// candidate is unrepresentable and a tampered identity is refused.
+        /// </summary>
+        private static void WriteCorrectionResolution(
+            BinaryWriter writer, GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection pending)
+        {
+            writer.Write(pending.ResolutionId.Value);
+            writer.Write(pending.SourceCardInstanceId.Value);
+            writer.Write(pending.ActionDefinitionId.Value);
+            writer.Write(pending.ActorId.Value);
+            writer.Write((int)pending.Stage);
+            writer.Write(pending.ChoosingTeamId.Value);
+            writer.Write((int)pending.ChoosingSide);
+            writer.Write(pending.BattleZoneId.Value);
+            if (pending.Stage == GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionStage.SelectSubject)
+            {
+                WriteStrings(writer, pending.SubjectCandidates.Select(subject => subject.MinionId.Value));
+            }
+            else
+            {
+                writer.Write(pending.SubjectMinionId.Value);
+                writer.Write((int)pending.Kind);
+                writer.Write(pending.DestinationCandidates.Count);
+                foreach (var candidate in pending.DestinationCandidates)
+                {
+                    writer.Write(candidate.Destination.Q);
+                    writer.Write(candidate.Destination.R);
+                }
+            }
+        }
+
+        private static GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
+            ReadCorrectionResolution(
+                BinaryReader reader,
+                AdjacentMoveAuthority board,
+                MatchParticipants participants,
+                TieBreakerState tieBreaker)
+        {
+            var resolutionId = new ActionResolutionId(reader.ReadString());
+            var cardId = new CardInstanceId(reader.ReadString());
+            var actionId = new ActionDefinitionId(reader.ReadString());
+            var actorId = new HeroId(reader.ReadString());
+            var stage = SnapshotEnumReader.Read<GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionStage>(
+                reader, "correction stage");
+            var teamId = new TeamId(reader.ReadString());
+            var side = SnapshotEnumReader.Read<TeamSide>(reader, "correction choosing side");
+            var zoneId = new ZoneId(reader.ReadString());
+
+            if (stage == GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionStage.SelectSubject)
+            {
+                var subjectIds = ReadStrings(reader, "correction subject candidates");
+                var derived = GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionPlanner.DeriveNext(
+                    board, participants, tieBreaker, resolutionId, cardId, actionId, actorId);
+                if (derived.Kind != GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionStepKind.Choice ||
+                    derived.Pending.Stage != GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionStage.SelectSubject ||
+                    !derived.Pending.ChoosingTeamId.Equals(teamId) ||
+                    derived.Pending.ChoosingSide != side ||
+                    !derived.Pending.BattleZoneId.Equals(zoneId) ||
+                    !derived.Pending.SubjectCandidates.Select(subject => subject.MinionId.Value)
+                        .SequenceEqual(subjectIds))
+                {
+                    throw Malformed(
+                        "Snapshot pending correction subjects do not match the authoritative derivation.");
+                }
+
+                return derived.Pending;
+            }
+
+            var subjectMinionId = new MinionId(reader.ReadString());
+            var kind = SnapshotEnumReader.Read<GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionKind>(
+                reader, "correction kind");
+            var destinationCount = reader.ReadInt32();
+            var destinations = new List<HexCoordinate>(destinationCount);
+            for (var index = 0; index < destinationCount; index++)
+            {
+                var q = reader.ReadInt32();
+                var r = reader.ReadInt32();
+                destinations.Add(new HexCoordinate(q, r));
+            }
+
+            var subject = board.Minions.SingleOrDefault(minion => minion.MinionId.Equals(subjectMinionId));
+            if (subject == null ||
+                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                    board.MapDefinition, subject.OccupiedSpace.SpaceId))
+            {
+                throw Malformed("Snapshot pending correction names a subject the board does not show displaced.");
+            }
+
+            var zoneCoordinates = GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
+                .FindStartingBattleZoneCoordinates(board.MapDefinition);
+            var destinationStep = GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionPlanner
+                .DeriveDestinationStep(
+                    board, participants, zoneId, zoneCoordinates, subject,
+                    resolutionId, cardId, actionId, actorId);
+            if (destinationStep.Kind != GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionStepKind.Choice ||
+                destinationStep.Pending.Kind != kind ||
+                !destinationStep.Pending.ChoosingTeamId.Equals(teamId) ||
+                destinationStep.Pending.ChoosingSide != side ||
+                !destinationStep.Pending.BattleZoneId.Equals(zoneId) ||
+                !destinationStep.Pending.DestinationCandidates.Select(candidate => candidate.Destination)
+                    .SequenceEqual(destinations))
+            {
+                throw Malformed(
+                    "Snapshot pending correction destinations do not match the authoritative derivation.");
+            }
+
+            return destinationStep.Pending;
         }
 
         /// <summary>

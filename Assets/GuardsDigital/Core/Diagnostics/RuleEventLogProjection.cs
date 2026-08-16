@@ -306,6 +306,15 @@ namespace GuardsDigital.Core.Diagnostics
                 detailParts.Add($"space={ruleEvent.TargetTokenCoordinate}");
             }
 
+            if (ruleEvent.Kind == CardActionResolutionEventKind.DisplacedMinionCorrectionMoved ||
+                ruleEvent.Kind == CardActionResolutionEventKind.DisplacedMinionCorrectionPlaced ||
+                ruleEvent.Kind == CardActionResolutionEventKind.DisplacedMinionCorrectionLeftInPlace)
+            {
+                detailParts.Add(
+                    $"correction={ruleEvent.CorrectionEvent.Origin}->{ruleEvent.CorrectionEvent.Destination}");
+                detailParts.Add($"correctionKind={ruleEvent.CorrectionEvent.CorrectionKind}");
+            }
+
             Add($"Action.{ruleEvent.Kind}", references, string.Join(";", detailParts));
         }
 

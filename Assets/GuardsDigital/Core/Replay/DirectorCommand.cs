@@ -36,7 +36,16 @@ namespace GuardsDigital.Core.Replay
         /// reason to add a command kind; a new authority-level operation is.
         /// </summary>
         AnswerEffectChoice = 15,
-        PerformClear = 16
+        PerformClear = 16,
+
+        /// <summary>
+        /// Milestone 6.4a. The after-action displaced-minion correction is a new authority-level
+        /// operation - its own pending family with its own resume path, exactly the Minion-Battle
+        /// precedent - so its two decisions get command kinds rather than riding another family's.
+        /// Each is one-shot: selecting is the advance, so there is no deselect or confirm.
+        /// </summary>
+        ChooseCorrectionSubject = 17,
+        ChooseCorrectionDestination = 18
     }
 
     public sealed class DirectorCommand : IEquatable<DirectorCommand>
@@ -234,6 +243,47 @@ namespace GuardsDigital.Core.Replay
 
         public static DirectorCommand AdvanceEndOfRound() =>
             new DirectorCommand(DirectorCommandKind.AdvanceEndOfRound);
+
+        public static DirectorCommand ChooseCorrectionSubject(
+            GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionCommand invocation)
+        {
+            if (invocation == null ||
+                invocation.Kind != GuardsDigital.Core.Rules.Displacement
+                    .DisplacedMinionCorrectionCommandKind.SelectSubject)
+            {
+                throw new ArgumentException(
+                    "A correction subject command requires the exact projected subject invocation.",
+                    nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.ChooseCorrectionSubject,
+                teamSide: invocation.ChoosingSide,
+                minionId: invocation.MinionId,
+                resolutionId: invocation.ResolutionId,
+                choiceId: invocation.ChoiceId);
+        }
+
+        public static DirectorCommand ChooseCorrectionDestination(
+            GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionCommand invocation)
+        {
+            if (invocation == null ||
+                invocation.Kind != GuardsDigital.Core.Rules.Displacement
+                    .DisplacedMinionCorrectionCommandKind.SelectDestination)
+            {
+                throw new ArgumentException(
+                    "A correction destination command requires the exact projected destination invocation.",
+                    nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.ChooseCorrectionDestination,
+                teamSide: invocation.ChoosingSide,
+                minionId: invocation.MinionId,
+                coordinate: invocation.Destination,
+                resolutionId: invocation.ResolutionId,
+                choiceId: invocation.ChoiceId);
+        }
 
         public static DirectorCommand SelectMinionBattleRemoval(MinionBattleChoiceCommand invocation)
         {

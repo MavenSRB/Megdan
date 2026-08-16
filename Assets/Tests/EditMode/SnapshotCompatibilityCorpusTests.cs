@@ -109,16 +109,30 @@ namespace GuardsDigital.Tests.EditMode
         /// revision strings - because their move branch now runs a target-selection node whose
         /// published space is the direct move's subject. The reject decision for that cause is the
         /// content-revision check, exactly as at 6.8a.
+        /// Milestone 6.4a moves every fixture from v9 to v10 and adds the eighth,
+        /// <c>pending-correction-v10</c>: a completed Object Push has displaced one minion outside the
+        /// Battle Zone and the after-action correction is paused on its team's route choice between
+        /// two equal-shortest return endpoints. The pending block carries the owning action's
+        /// identity, the stage, the deciding team, and candidate identities only - routes and costs
+        /// are never on the wire, because restore re-derives the whole correction from the restored
+        /// board and the Tie Breaker and refuses any payload the derivation does not reproduce. The
+        /// migrate-or-reject decision is reject, as at every bump: a v9 payload could not represent a
+        /// paused correction, the engine has one read path per version, and no persisted state exists
+        /// outside this corpus. Measured rather than assumed: each carried-over payload keeps its
+        /// exact decoded length and differs from its v9 predecessor in the one version integer,
+        /// because the correction block is written only under continuation kind 4 and no carried-over
+        /// fixture holds one.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v9", "b4e4208d0530f93208ae5ba4ab8638c6493833dbddd7c4b6e2a97873e4c4e671"),
-            new CompatibilityFixture("active-turn-v9", "f7c81e3dd66997eec74f2af4f1a7f52268be2f833ac8214eaaed6867a8e25e4f"),
-            new CompatibilityFixture("pending-choice-v9", "b285b7479d646ae6856056bf3276f657a83bbf827b75aea1d1b635dc4b88582f"),
-            new CompatibilityFixture("end-of-round-v9", "762214af76c570428c3b06e936e02a1d6373334f7a8bca20c5dc46516d49a982"),
-            new CompatibilityFixture("pending-minion-battle-v9", "0a85911d9bcd070e8b47f17763a1802ef58ab4fe4d78cc7c0281fe0e570d3eb5"),
-            new CompatibilityFixture("placed-token-v9", "2e02d50991b3d87f7b8cbb8d2faf9f4225b83478795e4993b946fd8b7d1c9717"),
-            new CompatibilityFixture("attached-marker-v9", "53a68b0bc7e640e7829d7ee6160312e2939fa70dba435b58242ea768af28a6fc")
+            new CompatibilityFixture("setup-v10", "1f8c22c74cbd34e5888afd53174b15fe09d5109658b5b9afa1f191c7e3ec62f1"),
+            new CompatibilityFixture("active-turn-v10", "4ebfe2b5b69f77f2a9005d81644681cd2da7cbbac33b29a3b705be0d77952c18"),
+            new CompatibilityFixture("pending-choice-v10", "15532fa52e1ae4ea995a39b9d679bc12b4f4a53927c21355f0e81f8ba0cc3014"),
+            new CompatibilityFixture("end-of-round-v10", "7cac1abaf1a6ae3fd29ea25d55d4c0f33578d6eab431b70a0f8c23ea4f2e0d45"),
+            new CompatibilityFixture("pending-minion-battle-v10", "12614b4043e8edefc8aa27b013542864ca41e2a18796286380fc12360c67f26d"),
+            new CompatibilityFixture("placed-token-v10", "75478ea4f377c11f5c5f6cc0dbe79783731bf0a5a10ef6bdc1d13b42c957396c"),
+            new CompatibilityFixture("attached-marker-v10", "f6b4efdc025541ab89826676ade4a71533a34774d802a5653d4f3c6c7652fd35"),
+            new CompatibilityFixture("pending-correction-v10", "366166d013122b97cbd28f13b5db4c9359f83267376f9241f229535f289ece07")
         };
 
         [Test]
@@ -201,16 +215,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v9", session.CaptureSnapshot());
+            values.Add("setup-v10", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v9", session.CaptureSnapshot());
+            values.Add("active-turn-v10", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v9", session.CaptureSnapshot());
+            values.Add("pending-choice-v10", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -226,7 +240,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v9", session.CaptureSnapshot());
+            values.Add("end-of-round-v10", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -235,14 +249,97 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v9", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v10", session.CaptureSnapshot());
 
             // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
             // carry zero components would leave the sections it exists to protect untested, so one
             // payload holds a token on the board and one holds a marker on a hero.
-            values.Add("placed-token-v9", CaptureComponentSnapshot("component-place-branch"));
-            values.Add("attached-marker-v9", CaptureComponentSnapshot("component-give-marker"));
+            values.Add("placed-token-v10", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v10", CaptureComponentSnapshot("component-give-marker"));
+
+            // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
+            // so the paused after-action correction gets the eighth.
+            values.Add("pending-correction-v10", CapturePendingCorrectionSnapshot());
             return values;
+        }
+
+        /// <summary>
+        /// Drives the displacement Skill's Push branch on real official-map geography chosen so the
+        /// batch displaces exactly one minion outside the Battle Zone: the pusher stands at (0,-1),
+        /// and red-melee-01 at (-1,-1) travels its full two spaces to (-3,-1), outside the zone, while
+        /// every other adjacent object ends inside it. The correction then pauses on the Red team's
+        /// route choice between the two equal-shortest return endpoints, which is the paused state
+        /// this fixture exists to pin.
+        /// </summary>
+        private static string CapturePendingCorrectionSnapshot()
+        {
+            var session = CreateCorrectionSession();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.Single(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.Id.Value.Contains("shove") &&
+                    candidate.State.Location == CardLocation.Hand);
+                Assert.That(session.Execute(
+                    DirectorCommand.CommitCard(card.OwnerId, card.Id)).Accepted, Is.True);
+            }
+
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                Assert.That(session.Execute(DirectorCommand.ChooseTiedActor(
+                    tie.OwningSide, tie.CandidateCardInstanceIds[0])).Accepted, Is.True);
+            }
+
+            var offer = session.Projection.AvailableTurnActions.Single(candidate =>
+                candidate.ActionDefinitionId.Equals(new ActionDefinitionId("primary-displacement-skill")));
+            Assert.That(session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId)).Accepted, Is.True);
+
+            var push = session.Projection.PendingEffectChoice.SelectInvocations.Single(candidate =>
+                candidate.Candidate.OptionNodeId.Value == "displacement-object-push");
+            AnswerEffect(session, push);
+            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+
+            var pending = session.Projection.PendingDisplacedMinionCorrection;
+            Assert.That(pending, Is.Not.Null,
+                "The push must leave the after-action correction paused, or this fixture pins nothing.");
+            Assert.That(pending.DestinationCandidates.Count, Is.GreaterThanOrEqualTo(2),
+                "The paused stage must be a real route choice.");
+            return session.CaptureSnapshot();
+        }
+
+        /// <summary>
+        /// The Skill-fixture configuration with the acting Red hero placed beside the Battle Zone's
+        /// north-east minions rather than on its Throne spawn, so a two-space push crosses the zone
+        /// boundary. Scenario occupancies override setup placements exactly as the displacement
+        /// dispatch fixture does.
+        /// </summary>
+        private static MatchSession CreateCorrectionSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var redHeroId = configuration.Participants.Heroes
+                .Single(hero => configuration.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            var blueHeroId = configuration.Participants.Heroes
+                .Single(hero => configuration.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue).Id;
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                new[]
+                {
+                    new HeroOccupancy(redHeroId, new HexCoordinate(0, -1)),
+                    new HeroOccupancy(blueHeroId, new HexCoordinate(-1, -5))
+                },
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
         }
 
         /// <summary>
@@ -293,7 +390,8 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateRestoreTarget(string fixtureName) =>
             fixtureName.StartsWith("placed-token", StringComparison.Ordinal) ||
-            fixtureName.StartsWith("attached-marker", StringComparison.Ordinal)
+            fixtureName.StartsWith("attached-marker", StringComparison.Ordinal) ||
+            fixtureName.StartsWith("pending-correction", StringComparison.Ordinal)
                 ? CreateComponentSession()
                 : CreateSession();
 

@@ -216,6 +216,14 @@ namespace GuardsDigital.Application
                     return AnswerMinionBattle(command, MinionBattleChoiceCommandKind.Confirm);
                 case DirectorCommandKind.AnswerEffectChoice:
                     return AnswerEffectChoice(command);
+                case DirectorCommandKind.ChooseCorrectionSubject:
+                    return AnswerCorrection(command,
+                        GuardsDigital.Core.Rules.Displacement
+                            .DisplacedMinionCorrectionCommandKind.SelectSubject);
+                case DirectorCommandKind.ChooseCorrectionDestination:
+                    return AnswerCorrection(command,
+                        GuardsDigital.Core.Rules.Displacement
+                            .DisplacedMinionCorrectionCommandKind.SelectDestination);
                 default:
                     return DispatchResult.Unavailable("The command kind is not supported by this match session.");
             }
@@ -282,6 +290,33 @@ namespace GuardsDigital.Application
             }
 
             return DispatchResult.From(round.TryAnswerEffectChoice(command.EffectChoice));
+        }
+
+        private DispatchResult AnswerCorrection(
+            DirectorCommand command,
+            GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionCommandKind kind)
+        {
+            var pending = round.PendingDisplacedMinionCorrection;
+            if (pending == null)
+            {
+                return DispatchResult.Unavailable("No displaced-minion correction is pending.");
+            }
+
+            if (!command.ResolutionId.Equals(pending.ResolutionId) ||
+                !command.ChoiceId.Equals(pending.ChoiceId))
+            {
+                return DispatchResult.Unavailable(
+                    "The correction identity is stale or does not match the pending choice.");
+            }
+
+            return DispatchResult.From(round.TryAnswerDisplacedMinionCorrection(
+                new GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionCommand(
+                    kind,
+                    command.ResolutionId,
+                    pending.ChoiceId,
+                    command.TeamSide,
+                    command.MinionId,
+                    command.Coordinate)));
         }
 
         private DispatchResult AnswerMovement(DirectorCommand command, bool stop)
@@ -618,7 +653,8 @@ namespace GuardsDigital.Application
                 round.PendingMinionBattleChoice,
                 round.PendingLanePushRequest,
                 turn?.PendingSkillResolution,
-                turn?.PendingEffectChoice);
+                turn?.PendingEffectChoice,
+                round.PendingDisplacedMinionCorrection);
         }
 
         private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn,

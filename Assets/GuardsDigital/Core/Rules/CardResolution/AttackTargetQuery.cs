@@ -158,14 +158,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return false;
             }
 
-            var candidateZone = board.MapDefinition.GetZoneForSpace(candidate.OccupiedSpace.SpaceId);
-            if (!candidateZone.IsStartingBattleZone)
+            // Milestone 6.4a: membership through the one authority-owned Battle-Zone query.
+            if (!BattleZoneQuery.IsInStartingBattleZone(
+                    board.MapDefinition, candidate.OccupiedSpace.SpaceId))
             {
                 return false;
             }
 
             return UnitPresenceQuery
-                .FindUnitsInZone(candidateZone.Id, EffectiveUnitKind.Minion, board, modifications)
+                .FindUnitsInZone(
+                    BattleZoneQuery.GetStartingBattleZone(board.MapDefinition).Id,
+                    EffectiveUnitKind.Minion, board, modifications)
                 .Any(unit => AccompaniesHeavy(unit, candidate, board, participants));
         }
 

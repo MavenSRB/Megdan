@@ -103,7 +103,8 @@ namespace GuardsDigital.Core.Cards
             this.timing = timing ?? new ActiveEffectLifecycle();
             this.markers = markers ?? new MarkerAttachmentRegister();
             this.endOfRoundCapabilities = endOfRoundCapabilities ??
-                (board != null && board.MapDefinition.Zones.Count(value => value.IsStartingBattleZone) == 1
+                (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
+                        .TryGetStartingBattleZone(board.MapDefinition, out _)
                     ? EndOfRoundFixtureCapabilities.ConfiguredMatch()
                     : EndOfRoundFixtureCapabilities.SyntheticRepeatedRound());
             var handlers = endOfRoundHandlers != null
@@ -154,6 +155,10 @@ namespace GuardsDigital.Core.Cards
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; private set; }
 
         public PendingLanePushRequest PendingLanePushRequest { get; private set; }
+
+        /// <summary>Milestone 6.4a's paused after-action correction, or <c>null</c>.</summary>
+        public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
+            PendingDisplacedMinionCorrection => CardActions?.PendingDisplacedMinionCorrection;
 
         public TurnCardCommitmentAuthority CurrentCommitmentAuthority { get; private set; }
 
@@ -297,12 +302,13 @@ namespace GuardsDigital.Core.Cards
                         pendingLanePushRequest.LosingSide ||
                     !pendingLanePushRequest.CauseResolutionId.Equals(
                         new EndOfRoundResolutionId($"round-{roundIndex}-minion-battle")) ||
-                    board.MapDefinition.Zones.Count(value =>
-                        value.Id.Equals(pendingLanePushRequest.BattleZoneId) && value.IsStartingBattleZone) != 1 ||
+                    !GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.TryGetStartingBattleZone(
+                        board.MapDefinition, out var flaggedZone) ||
+                    !flaggedZone.Id.Equals(pendingLanePushRequest.BattleZoneId) ||
                     board.Minions.Any(value =>
                         value.TeamSide == pendingLanePushRequest.LosingSide &&
-                        board.MapDefinition.GetZoneForSpace(value.OccupiedSpace.SpaceId).Id.Equals(
-                            pendingLanePushRequest.BattleZoneId))))
+                        GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                            board.MapDefinition, value.OccupiedSpace.SpaceId))))
             {
                 throw new ArgumentException("Restored Lane-Push request does not match authoritative end-of-round state.");
             }
@@ -409,6 +415,13 @@ namespace GuardsDigital.Core.Cards
         public RoundResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
         {
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerEffectChoice(command));
+        }
+
+        public RoundResolutionResult TryAnswerDisplacedMinionCorrection(
+            GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionCommand command)
+        {
+            return ExecuteTurnCommand(() =>
+                CurrentTurnAuthority.TryAnswerDisplacedMinionCorrection(command));
         }
 
         public RoundResolutionResult TryAnswerAttackTarget(AttackTargetChoiceCommand command)
@@ -568,7 +581,8 @@ namespace GuardsDigital.Core.Cards
             if (candidates.Any(value => value == null) ||
                 candidates.Any(value =>
                     losingTeam == null || value.TeamSide != losingTeam.Side ||
-                    !board.MapDefinition.GetZoneForSpace(value.OccupiedSpace.SpaceId).Id.Equals(battleZoneId)))
+                    !GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                        board.MapDefinition, value.OccupiedSpace.SpaceId)))
             {
                 return RoundResolutionResult.Reject(
                     RoundResolutionRejectionReason.IneligibleMinionBattleSelection);
@@ -594,7 +608,8 @@ namespace GuardsDigital.Core.Cards
             if (losingTeam != null && ordered.Length > 0 &&
                 !board.Minions.Any(value =>
                     value.TeamSide == losingTeam.Side &&
-                    board.MapDefinition.GetZoneForSpace(value.OccupiedSpace.SpaceId).Id.Equals(battleZoneId)))
+                    GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                        board.MapDefinition, value.OccupiedSpace.SpaceId)))
             {
                 PendingLanePushRequest = new PendingLanePushRequest(
                     new LanePushRequestId($"round-{RoundIndex}-minion-battle-lane-push"),

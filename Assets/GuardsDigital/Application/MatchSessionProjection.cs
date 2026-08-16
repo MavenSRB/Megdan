@@ -239,7 +239,9 @@ namespace GuardsDigital.Application
             PendingMinionBattleChoice pendingMinionBattleChoice = null,
             PendingLanePushRequest pendingLanePushRequest = null,
             GuardsDigital.Core.Rules.EffectResolution.PendingResolution pendingSkillResolution = null,
-            PendingEffectChoice pendingEffectChoice = null)
+            PendingEffectChoice pendingEffectChoice = null,
+            GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
+                pendingDisplacedMinionCorrection = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -292,6 +294,7 @@ namespace GuardsDigital.Application
             PendingDefensePreview = pendingDefensePreview;
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingLanePushRequest = pendingLanePushRequest;
+            PendingDisplacedMinionCorrection = pendingDisplacedMinionCorrection;
         }
 
         public long Version { get; }
@@ -328,6 +331,15 @@ namespace GuardsDigital.Application
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution { get; }
 
         public PendingEffectChoice PendingEffectChoice { get; }
+
+        /// <summary>
+        /// Milestone 6.4a's paused after-action correction, or <c>null</c>. Presentation reads the
+        /// projected invocations off the choice; it never derives paths, distances, Battle-Zone
+        /// membership, occupancy, or Tie-Breaker ordering itself.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
+            PendingDisplacedMinionCorrection { get; }
+
         public IReadOnlyList<ActionOffer> AvailableTurnActions { get; }
         public IReadOnlyList<DirectorCommand> AcceptedCommands { get; }
         public IReadOnlyList<RoundResolutionEvent> RoundEvents { get; }

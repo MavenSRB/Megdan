@@ -35,6 +35,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         SkillActionCompleted = 30,
         ClearActionStarted = 31,
         TokenCleared = 32,
-        ClearActionCompleted = 33
+        ClearActionCompleted = 33,
+        DisplacedMinionCorrectionStarted = 34,
+        DisplacedMinionCorrectionChoiceRequested = 35,
+        DisplacedMinionCorrectionMoved = 36,
+        DisplacedMinionCorrectionPlaced = 37,
+        DisplacedMinionCorrectionLeftInPlace = 38,
+        DisplacedMinionCorrectionCompleted = 39
     }
 }
