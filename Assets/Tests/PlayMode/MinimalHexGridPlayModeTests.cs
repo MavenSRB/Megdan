@@ -11,6 +11,7 @@ using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
@@ -967,6 +968,54 @@ namespace GuardsDigital.Tests.PlayMode
         /// materials. What this fixture guards is unchanged and is the point: both are owned by the
         /// root, both are released on reload, and neither accumulates a copy per scene load.
         /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_HidesAnAuthoritativelyAbsentHeroAndShowsItAgainWhenReturned()
+        {
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+            var baseBoard = runtime.BoardView.Model;
+            var heroViews = Object.FindObjectsByType<PrimitiveHeroView>();
+            var blueHeroId = runtime.Setup.Heroes.Single(value => value.TeamSide == TeamSide.Blue).HeroId;
+            var blueView = heroViews.Single(value => value.Occupancy.HeroId.Equals(blueHeroId));
+            var remainingHeroes = baseBoard.Heroes
+                .Where(value => !value.HeroId.Equals(blueHeroId))
+                .ToArray();
+
+            runtime.BoardView.Render(new BoardInteractionViewModel(
+                baseBoard.Version + 1,
+                remainingHeroes,
+                baseBoard.Minions,
+                System.Array.Empty<HexCoordinate>(),
+                baseBoard.AttackTargets,
+                baseBoard.MinionAttackTargets,
+                default));
+
+            Assert.That(blueView.gameObject.activeSelf, Is.False,
+                "A Minion-Battle-removed hero must disappear when its occupancy leaves projection.");
+
+            var returnedCoordinate = Object.FindObjectsByType<HexTileView>()
+                .First(tile => tile.IsPlayable && remainingHeroes.All(hero =>
+                    !hero.Coordinate.Equals(tile.Coordinate)))
+                .Coordinate;
+            var returnedHeroes = remainingHeroes.Concat(new[]
+            {
+                new HeroOccupancy(blueHeroId, returnedCoordinate)
+            });
+            runtime.BoardView.Render(new BoardInteractionViewModel(
+                baseBoard.Version + 2,
+                returnedHeroes,
+                baseBoard.Minions,
+                System.Array.Empty<HexCoordinate>(),
+                baseBoard.AttackTargets,
+                baseBoard.MinionAttackTargets,
+                default));
+
+            Assert.That(blueView.gameObject.activeSelf, Is.True);
+            Assert.That(blueView.Occupancy.Coordinate, Is.EqualTo(returnedCoordinate),
+                "Respawn, Undo, or restore reuses and repositions the configured hero view.");
+            yield return null;
+        }
+
         [UnityTest]
         public IEnumerator SceneReload_ReleasesAndReusesExactlyOneOwnedHighlightMaterialOfEachKind()
         {

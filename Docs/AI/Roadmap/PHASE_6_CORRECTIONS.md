@@ -240,3 +240,21 @@ Acceptance checks:
 - Focused failing-then-passing regressions cover protected-Heavy selection/application under friendly and enemy actions, Blue Feint's leaked Push choice, stale activation, effective Minion Battle count/winner/removal, no reward/Life consequence, optional Hero Respawn destinations/decline, passive presentation, snapshot restore, replay, retained-prefix Undo/restart, and ordered events. Because the correction crosses shared targeting, effect mutation, round state, hero occupancy/respawn, persistence, and configured presentation, it completes at T3 with both unfiltered suites.
 
 Non-goals: No Red Needle or Blue Feint printed rule/value change; no card-name/hero-name branch; no general Hero Attack-Defeat removal, reward, Life, or victory consequence; no Lane-Push consumption, Battle-Zone transition, or minion respawn; no Swap/Replace/standalone Remove/Repeat implementation; no Wasp definition, production art, animation, or audio.
+
+### [x] 6.5ab Hide removed heroes in configured board presentation
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65ab-hide-removed-heroes-in-configured-board-presentation-completion-evidence).
+
+**Corrective amendment (2026-08-16, user approved).** Hands-on validation of 6.5aa showed that Minion Battle authoritatively removed Blue's counts-as hero and minion in the correct order, but only the minion disappeared from the configured board. `BoardInteractionUnityView` retained every hero object and reconfigured it when occupancy existed, but had no absent-occupancy branch corresponding to its minion path, so the removed hero remained visible and selectable.
+
+Observable outcome: The configured board shows exactly the authoritative hero occupancies. A removed hero disappears immediately; a later Respawn, Undo, restart, or restore reactivates and repositions the same retained hero view.
+
+Prerequisite: Corrective milestone 6.5aa must be complete so an authoritative off-board hero and its respawn path exist.
+
+Acceptance checks:
+
+- Rendering a projection without a configured hero's occupancy clears its choice cue and deactivates that hero GameObject, including its pointer collider; no hero-removal rule is inferred by presentation.
+- Rendering a later projection containing that stable hero identity reactivates the retained view and configures its authoritative coordinate, covering Respawn, Undo, restart, and restore without rebuilding the configured hero set.
+- The regression is observed failing before the production change and passing afterward. A saved-scene Play Mode case verifies disappearance and reappearance, and the complete directly affected board-interaction Edit Mode and saved-scene Play Mode fixtures remain green at T2.
+
+Non-goals: No Minion-Battle count, selection, removal, timing, event, snapshot, or respawn-rule change; no minion presentation change; no new scene object, prefab, identity, pointer framework, art, animation, or audio.

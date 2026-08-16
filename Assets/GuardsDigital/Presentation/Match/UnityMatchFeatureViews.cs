@@ -75,18 +75,25 @@ namespace GuardsDigital.Presentation.Match
             {
                 var occupancy = model.Heroes.SingleOrDefault(value =>
                     value.HeroId.Equals(hero.Occupancy.HeroId));
-                if (occupancy.HeroId.IsDefined)
+                if (!occupancy.HeroId.IsDefined)
                 {
-                    hero.Configure(occupancy, hero.OuterRadius);
+                    hero.SetChoiceCue(MinionChoiceCueKind.None);
+                    hero.gameObject.SetActive(false);
+                    continue;
                 }
+
+                // Hero views are retained across removal for Respawn, Undo, and restore, just as
+                // minion views are retained across removal. Projection presence owns visibility;
+                // an absent hero must not remain as a stale selectable board object.
+                hero.Configure(occupancy, hero.OuterRadius);
+                hero.gameObject.SetActive(true);
 
                 // Milestone 6.5c: an effect-choice target is addressed by its space, so whichever
                 // unit stands there wears the cue. The hero path exists because a Push may name one.
                 hero.SetChoiceCue(
-                    occupancy.HeroId.IsDefined && heroChoiceCues.TryGetValue(
-                        occupancy.HeroId, out var heroChoiceCue)
+                    heroChoiceCues.TryGetValue(occupancy.HeroId, out var heroChoiceCue)
                         ? heroChoiceCue.Kind
-                        : model.EffectChoiceTargetSpace.HasValue && occupancy.HeroId.IsDefined &&
+                        : model.EffectChoiceTargetSpace.HasValue &&
                         occupancy.Coordinate.Equals(model.EffectChoiceTargetSpace.Value)
                         ? MinionChoiceCueKind.Highlighted
                         : MinionChoiceCueKind.None);

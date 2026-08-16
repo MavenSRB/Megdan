@@ -178,6 +178,50 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void PassiveBoardView_HidesAnAbsentHeroAndReactivatesItAtReturnedOccupancy()
+        {
+            var objects = new List<GameObject>();
+            var material = new Material(Shader.Find("Standard"));
+
+            try
+            {
+                var initial = new HeroOccupancy(new HeroId("blue-hero"), new HexCoordinate(0, 0));
+                var returned = new HeroOccupancy(initial.HeroId, new HexCoordinate(2, -1));
+                var hero = CreateHero(objects, initial);
+                var view = new BoardInteractionUnityView(
+                    new[] { hero },
+                    Array.Empty<HexTileView>(),
+                    material);
+
+                view.Render(BoardModel(1, initial, Array.Empty<HexCoordinate>()));
+                Assert.That(hero.gameObject.activeSelf, Is.True);
+
+                view.Render(new BoardInteractionViewModel(
+                    2,
+                    Array.Empty<HeroOccupancy>(),
+                    Array.Empty<MinionOccupancy>(),
+                    Array.Empty<HexCoordinate>(),
+                    Array.Empty<HeroId>(),
+                    Array.Empty<MinionId>(),
+                    default));
+
+                Assert.That(hero.gameObject.activeSelf, Is.False,
+                    "A hero removed from authoritative occupancy must not remain visible on the board.");
+
+                view.Render(BoardModel(3, returned, Array.Empty<HexCoordinate>()));
+
+                Assert.That(hero.gameObject.activeSelf, Is.True,
+                    "Respawn, Undo, and restore must be able to reactivate the retained hero view.");
+                Assert.That(hero.Occupancy, Is.EqualTo(returned));
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
         public void PassiveBoardView_RestoresTheExactDefaultTileMaterialWhenHighlightingClears()
         {
             var objects = new List<GameObject>();
