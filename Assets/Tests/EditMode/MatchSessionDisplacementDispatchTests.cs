@@ -161,13 +161,19 @@ namespace GuardsDigital.Tests.EditMode
             var spaces = session.Projection.PendingEffectChoice;
             Assert.That(spaces, Is.Not.Null, "Which destination is the move's one decision.");
             Assert.That(spaces.Kind, Is.EqualTo(EffectChoiceKind.SelectTarget));
-            var chosen = spaces.Candidates[0].Value.Coordinate;
             Assert.That(
                 spaces.Candidates.Select(candidate => candidate.Value.Coordinate),
-                Has.No.Member(RedAt),
-                "A direct Move relocates; the actor's own space is not a destination.");
+                Has.Member(RedAt),
+                "Milestone 6.5ad: `up to` is p.10's non-mandatory wording, so no distance at all is " +
+                "one of the distances offered, and the mover's own space is what that looks like " +
+                "among destinations. This assertion used to state the opposite, which was the defect.");
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(spaces.SelectInvocations[0]));
+            // This scenario is about the relocation, so it takes one of the destinations that is one.
+            var chosen = spaces.Candidates
+                .Select(candidate => candidate.Value.Coordinate)
+                .First(space => !space.Equals(RedAt));
+            Accept(session, DirectorCommand.AnswerEffectChoice(spaces.SelectInvocations
+                .Single(invocation => invocation.Candidate.Value.Coordinate.Equals(chosen))));
             Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
 

@@ -212,10 +212,113 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
             var spaces = offered.Choice.Candidates.Select(candidate => candidate.Coordinate).ToArray();
-            Assert.That(spaces, Is.EqualTo(new[] { new HexCoordinate(1, 0), new HexCoordinate(2, 0) }),
-                "Only the two spaces closer to the actor than (3,0) qualify, in axial order.");
+            Assert.That(
+                spaces,
+                Is.EqualTo(new[]
+                {
+                    new HexCoordinate(1, 0), new HexCoordinate(2, 0), new HexCoordinate(3, 0)
+                }),
+                "Only the two spaces closer to the actor than (3,0) qualify as travel, in axial order, " +
+                "beside the mover's own space that milestone 6.5ad's optional distance admits.");
             Assert.That(spaces, Has.No.Member(new HexCoordinate(4, 0)),
                 "A space farther from the actor is refused by a `towards` policy.");
+        }
+
+        [Test]
+        public void AMoveTowardsTheActor_StillAdmitsStandingStill()
+        {
+            // Milestone 6.5ad. `Closer` is a rule about where the mover may end up if it travels, and
+            // the mover's own space is never closer to the actor than itself, so filtering the whole
+            // admitted set through it would leave `move a unit up to X towards you` unable to express
+            // p.10's own "up to". Admitting no distance at all is a property of the wording, so it is
+            // decided before the geometry and added to what the geometry admits.
+            var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
+
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, towardActor: true));
+
+            Assert.That(
+                offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Has.Member(new HexCoordinate(3, 0)));
+        }
+
+        [Test]
+        public void AnUpToDirectMove_AdmitsTheMoversOwnSpaceTheWayAnUpToPushAdmitsDistanceZero()
+        {
+            // The defect milestone 6.5ad corrects. p.10 lists `up to` among the non-mandatory wordings
+            // and p.11 requires the exact number of spaces only where the distance is not optional, so
+            // `up to 2 spaces` admits none at all. Object Push read that sentence correctly and offered
+            // 0..X; direct Move offered only 1..X, not by decision but because its candidates come from
+            // the Movement action's reachability walk, which never emits the mover's own space.
+            var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
+
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, towardActor: false));
+
+            Assert.That(
+                offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Has.Member(new HexCoordinate(3, 0)),
+                "The mover's own space is the destination that moves it no spaces at all.");
+        }
+
+        [Test]
+        public void ChoosingTheMoversOwnSpace_RelocatesNothingAndIsAnAppliedResult()
+        {
+            // The same distinction p.18's zero-space push already draws: standing still is a legal
+            // applied outcome, not a decline and not a failure, and the node publishes the space the
+            // mover is still on so later text reading `if that unit moved` sees the truth.
+            var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
+            var moverAt = new HexCoordinate(3, 0);
+
+            var applied = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Resume(
+                MoveContext(board, EffectFailurePolicy.UpTo, moverAt, distance: 2, towardActor: false),
+                new[] { EffectValue.Space(moverAt) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(Output(applied, "moved").Coordinate, Is.EqualTo(moverAt));
+            Assert.That(
+                board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(moverAt),
+                "Nothing was relocated, and the occupancy index was never asked to move anything.");
+        }
+
+        [Test]
+        public void AnExactDistance_StillRefusesTheMoversOwnSpace()
+        {
+            // The control. p.11 requires the exact number of spaces wherever the distance is not
+            // optional, so the correction above must not reach a mandatory node.
+            var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
+
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
+                MoveContext(board, EffectFailurePolicy.Mandatory, new HexCoordinate(3, 0), 2, false));
+
+            Assert.That(
+                offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Has.No.Member(new HexCoordinate(3, 0)));
+        }
+
+        [Test]
+        public void AMoverWithNowhereToGo_CanStandStillRatherThanBeingRefusedOutright()
+        {
+            // Acceptance check 5, and the difference a player sees: milestone 6.5ac's option walk asks
+            // this capability what it would report, so a `up to` branch whose subject is walled in used
+            // to be judged unperformable and greyed. It is performable - declining the distance is
+            // something the chooser may do - and the walk reads the widened set without changing.
+            var board = CreateLineBoard(otherAt: new HexCoordinate(-2, 0));
+            PlaceToken(board, new HexCoordinate(-1, 0));
+            var handler = Handler(SyntheticDisplacementCapabilities.DirectMoveV2);
+            var context = MoveContext(
+                board, EffectFailurePolicy.UpTo, new HexCoordinate(-2, 0), distance: 2, towardActor: false);
+
+            var offered = handler.Execute(context);
+
+            Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
+            Assert.That(
+                offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Is.EqualTo(new[] { new HexCoordinate(-2, 0) }),
+                "The board's west end is walled in by the token, so the only admitted distance is none.");
+            Assert.That(handler.Anticipate(context), Is.EqualTo(EffectExecutionResultKind.NeedsChoice),
+                "The probe reads the same derivation, so the option is offered rather than greyed.");
         }
 
         [Test]

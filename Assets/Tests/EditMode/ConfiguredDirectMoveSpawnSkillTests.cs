@@ -243,6 +243,64 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void TheMoveBranch_LetsThePlayerMoveTheChosenUnitNoSpacesAtAll()
+        {
+            // Milestone 6.5ad, through the card the defect was found on. `up to 2 spaces` is p.10's
+            // non-mandatory wording, and p.11 requires the exact number only where the distance is not
+            // optional, so none at all is one of the distances this branch offers - which is what the
+            // adjacency-derived Push on Red Needle has offered since milestone 6.4.
+            var session = StartBombardSkill();
+            var blueId = BlueHero(session);
+
+            ChooseBranch(session, MoveBranch);
+            SelectSpace(session, BlueAt);
+
+            var offered = session.Projection.PendingEffectChoice.Candidates
+                .Select(candidate => candidate.Value.Coordinate)
+                .ToArray();
+            Assert.That(offered, Has.Member(BlueAt),
+                "The chosen unit's own space is the destination that moves it nowhere.");
+
+            SelectSpace(session, BlueAt);
+
+            Assert.That(Coordinate(RestoreBoard(session), blueId), Is.EqualTo(BlueAt),
+                "Choosing it relocates nothing.");
+            Assert.That(session.Projection.PendingSkillResolution, Is.Null,
+                "It is an applied result rather than a decline or a stop, so the Skill completes.");
+            Assert.That(session.Projection.Cards.Single(card => card.Id.Equals(BombardCardId))
+                .State.ResolutionStatus, Is.Not.EqualTo(CardResolutionStatus.Unresolved));
+        }
+
+        [Test]
+        public void AMinionThatStaysWhereItIs_RaisesNoCorrectionAndNoMovementFact()
+        {
+            // The consequence check. p.18 corrects a minion miniature that ends up outside the Battle
+            // Zone after the action; one that never left raises nothing, and neither the zero distance
+            // nor the ordinary one may add a Movement, Fast-Travel, or Lane-Push consequence of its own.
+            var session = StartBombardSkillBesideAMinion(out var minionId, out var minionAt);
+
+            ChooseBranch(session, MoveBranch);
+            SelectSpace(session, minionAt);
+            SelectSpace(session, minionAt);
+
+            Assert.That(session.Projection.PendingDisplacedMinionCorrection, Is.Null);
+            Assert.That(session.Projection.PendingMovementChoice, Is.Null);
+            Assert.That(session.Projection.PendingLanePushRequest, Is.Null);
+            Assert.That(
+                RestoreBoard(session).Minions.Single(minion => minion.MinionId.Equals(minionId)).Coordinate,
+                Is.EqualTo(minionAt));
+            Assert.That(
+                SkillFacts(session).Select(fact => fact.Kind).Distinct(),
+                Is.SubsetOf(new[]
+                {
+                    CardActionResolutionEventKind.SkillActionStarted,
+                    CardActionResolutionEventKind.SkillChoiceRequested,
+                    CardActionResolutionEventKind.SkillEffectNodeApplied,
+                    CardActionResolutionEventKind.SkillActionCompleted
+                }));
+        }
+
+        [Test]
         public void TheMoveBranch_IsNeitherAMovementActionNorFastTravel()
         {
             // p.11: card-text movement "cannot be used to Fast Travel", and it is not a Movement

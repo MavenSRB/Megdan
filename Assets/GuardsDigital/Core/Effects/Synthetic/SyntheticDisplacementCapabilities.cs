@@ -179,6 +179,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// <summary>
             /// The destinations this move may use, from the Movement action's own reachability plus the
             /// node's distance policy and the source-relative policy. Nothing here walks the board.
+            ///
+            /// How much of the declared distance is optional is <see cref="AdmittedDistances"/>'s
+            /// answer rather than this handler's, which is milestone 6.5ad's correction: reading p.10
+            /// and p.11 here as well let this capability and Object Push disagree about whether `up to
+            /// X spaces` admits no spaces at all, and they did.
             /// </summary>
             private static IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
             {
@@ -194,35 +199,39 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HexCoordinate>();
                 }
 
-                var reachable = components.Board.FindDirectMoveDestinations(
-                    mover, distance, context.Modifications);
+                var admitted = AdmittedDistances.ForDeclared(context.FailurePolicy, distance);
+                IEnumerable<HexCoordinate> travelled = components.Board
+                    .FindDirectMoveDestinations(mover, distance, context.Modifications)
+                    .Where(destination => admitted.Admits(destination.Cost))
+                    .Select(destination => destination.Destination);
 
-                // `up to` makes the distance itself optional, so every shorter destination is legal.
-                // Every other policy means the exact number of spaces (p.11).
-                var admitted = context.FailurePolicy == EffectFailurePolicy.UpTo
-                    ? reachable
-                    : reachable.Where(destination => destination.Cost == distance).ToArray();
+                if (context.Input("towardActor").BooleanValue)
+                {
+                    // p.18's `Closer (Space)`, measured from the acting hero. A move `towards you`
+                    // admits only spaces closer to the actor than the mover's own starting space.
+                    if (!components.Board.TryGetObjectCoordinate(
+                            BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                    {
+                        return Array.Empty<HexCoordinate>();
+                    }
 
-                var spaces = admitted
-                    .Select(destination => destination.Destination)
+                    travelled = CloserQuery.FilterCloserTo(actorAt, moverAt, travelled);
+                }
+
+                // Standing still is admitted by the wording, not by the geometry, so it is added to
+                // whatever the geometry admits rather than filtered through it. The reachability walk
+                // beneath never emits the mover's own space - a Movement action's destination costs at
+                // least one point - and `Closer` would refuse it as well, since no space is closer to
+                // the actor than itself. Both are right about travel and neither is being asked about
+                // travel: this is p.10's decision not to move.
+                var spaces = admitted.AdmitsStandingStill
+                    ? travelled.Concat(new[] { moverAt })
+                    : travelled;
+
+                return spaces
                     .OrderBy(coordinate => coordinate.Q)
                     .ThenBy(coordinate => coordinate.R)
                     .ToArray();
-
-                if (!context.Input("towardActor").BooleanValue)
-                {
-                    return spaces;
-                }
-
-                // p.18's `Closer (Space)`, measured from the acting hero. A move `towards you` admits
-                // only spaces closer to the actor than the mover's own starting space.
-                if (!components.Board.TryGetObjectCoordinate(
-                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
-                {
-                    return Array.Empty<HexCoordinate>();
-                }
-
-                return CloserQuery.FilterCloserTo(actorAt, moverAt, spaces);
             }
 
             /// <summary>
@@ -380,8 +389,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             // "If a card allows you to push multiple targets up to X spaces, you choose the
-            // distance": zero is a legal choice, so the candidate range starts there.
-            var candidates = Enumerable.Range(0, distance + 1)
+            // distance", and which distances that offers is the one optional-distance reading rather
+            // than arithmetic written here - the same statement direct Move consults, which is what
+            // stops the two from answering differently again.
+            var candidates = AdmittedDistances.ForDeclared(context.FailurePolicy, distance)
+                .Enumerate()
                 .Select(EffectValue.Integer)
                 .ToArray();
             return EffectExecutionResult.NeedsChoice(

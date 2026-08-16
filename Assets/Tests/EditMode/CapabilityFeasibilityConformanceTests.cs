@@ -183,42 +183,12 @@ namespace GuardsDigital.Tests.EditMode
         private static IReadOnlyList<ILConformanceScanner.ScannedMethod> Reachable(
             Type handlerType, string entryPointName)
         {
-            var scope = ILConformanceScanner
-                .Scan(ILConformanceScanner.WithNestedTypes(handlerType)
+            var reached = ILConformanceScanner.ReachableFrom(
+                handlerType,
+                entryPointName,
+                ILConformanceScanner.WithNestedTypes(handlerType)
                     .Concat(ILConformanceScanner.WithNestedTypes(handlerType.DeclaringType))
-                    .Distinct())
-                .GroupBy(scanned => Identity(scanned.Method))
-                .ToDictionary(group => group.Key, group => group.First());
-
-            var reached = new List<ILConformanceScanner.ScannedMethod>();
-            var seen = new HashSet<string>();
-            var pending = new Queue<ILConformanceScanner.ScannedMethod>(scope.Values
-                .Where(scanned => scanned.Method.DeclaringType == handlerType)
-                .Where(scanned => string.Equals(
-                    scanned.Method.Name, entryPointName, StringComparison.Ordinal)));
-            foreach (var entry in pending)
-            {
-                seen.Add(Identity(entry.Method));
-            }
-
-            while (pending.Count > 0)
-            {
-                var current = pending.Dequeue();
-                reached.Add(current);
-                foreach (var instruction in current.Instructions)
-                {
-                    if (instruction.Member == null)
-                    {
-                        continue;
-                    }
-
-                    var identity = Identity(instruction.Member);
-                    if (scope.TryGetValue(identity, out var next) && seen.Add(identity))
-                    {
-                        pending.Enqueue(next);
-                    }
-                }
-            }
+                    .Distinct());
 
             Assert.That(reached, Is.Not.Empty,
                 $"{handlerType.Name} declares no {entryPointName}; a rule cannot judge a member that " +

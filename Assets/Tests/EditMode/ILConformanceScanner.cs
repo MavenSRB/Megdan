@@ -86,6 +86,63 @@ namespace GuardsDigital.Tests.EditMode
         public static IReadOnlyList<string> UnresolvedTokens(IEnumerable<Type> types) =>
             Scan(types).SelectMany(method => method.UnresolvedTokens).ToArray();
 
+        /// <summary>
+        /// Every method body reachable from the methods named <paramref name="entryPointName"/> on
+        /// <paramref name="entryType"/>, following calls into <paramref name="scopeTypes"/> and no
+        /// further. A rule that scanned one method body could be evaded by putting the work one call
+        /// away; a rule that followed every call would never terminate, so the caller states the
+        /// boundary, which is normally the entry type, its nested types, and the static class holding
+        /// the routines its siblings share.
+        ///
+        /// Extracted at milestone 6.5ad, when a second rule needed the same walk milestone 6.5ac's
+        /// feasibility rules introduced. Scanning the scope types directly would answer a different
+        /// question - it would let one member pass because a sibling declared beside it makes the call.
+        /// </summary>
+        public static IReadOnlyList<ScannedMethod> ReachableFrom(
+            Type entryType, string entryPointName, IEnumerable<Type> scopeTypes)
+        {
+            if (entryType == null)
+            {
+                throw new ArgumentNullException(nameof(entryType));
+            }
+
+            var scope = Scan(scopeTypes ?? throw new ArgumentNullException(nameof(scopeTypes)))
+                .GroupBy(scanned => Identity(scanned.Method))
+                .ToDictionary(group => group.Key, group => group.First());
+
+            var reached = new List<ScannedMethod>();
+            var seen = new HashSet<string>();
+            var pending = new Queue<ScannedMethod>(scope.Values
+                .Where(scanned => scanned.Method.DeclaringType == entryType)
+                .Where(scanned => string.Equals(
+                    scanned.Method.Name, entryPointName, StringComparison.Ordinal)));
+            foreach (var entry in pending)
+            {
+                seen.Add(Identity(entry.Method));
+            }
+
+            while (pending.Count > 0)
+            {
+                var current = pending.Dequeue();
+                reached.Add(current);
+                foreach (var instruction in current.Instructions)
+                {
+                    if (instruction.Member == null)
+                    {
+                        continue;
+                    }
+
+                    var identity = Identity(instruction.Member);
+                    if (scope.TryGetValue(identity, out var next) && seen.Add(identity))
+                    {
+                        pending.Enqueue(next);
+                    }
+                }
+            }
+
+            return reached;
+        }
+
         public static bool References(IEnumerable<Type> types, MemberInfo member)
         {
             var identity = Identity(member ?? throw new ArgumentNullException(nameof(member)));
