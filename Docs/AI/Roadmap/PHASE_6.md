@@ -572,7 +572,7 @@ Non-goals: No correction-rule change, redesign of 6.1a's removal authority, one 
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64b-add-player-facing-displaced-minion-correction-choices-completion-evidence).
 
-### [ ] 6.5 Complete reusable Place and Spawn effects
+### [~] 6.5 Complete reusable Place and Spawn effects
 
 Observable outcome: Synthetic effects use general typed Place and Spawn operations for eligible board pieces and supplies before verified hero content is introduced.
 
