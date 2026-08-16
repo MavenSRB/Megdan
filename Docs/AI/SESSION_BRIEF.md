@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.2d**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.2d**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.3a**.
 - Next proposed milestone: **6.3a**.
 
 Corrective milestone **6.2d** completed on 2026-08-16: a token a player places is drawn on the board, and milestone 6.2's decision that presentation receives no token projection is retired rather than reinterpreted. Three layers were empty and closing any one alone would have shown nothing, so all three moved together - the projection carries the board authority's own placed-token instances, the configured scene deals milestone 6.2's Cache card so a player can put one there at all, and a retained-view pool draws it. The same milestone generalized milestone 6.5c's line to a family that predated it: where a destination carries its own control, the board lights the one being pointed at rather than every endpoint at once. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).

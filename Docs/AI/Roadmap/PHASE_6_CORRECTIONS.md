@@ -447,7 +447,7 @@ Non-goals: No new token content, definition, property, or supply; no marker view
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-62d-give-a-placed-token-a-surface-and-let-the-board-follow-the-pointer-completion-evidence).
 
-### [ ] 6.3a Let a player choose Clear, and point token controls back to the board
+### [~] 6.3a Let a player choose Clear, and point token controls back to the board
 
 **Corrective amendment (2026-08-17, user approved).** Hands-on validation after milestone 6.2d reached the state its token surface was built to expose: Cache placed a visible `TEST - HAZARD`, and Blue Sentinel's token-target decision rendered a readable `TEST - HAZARD` control. The screenshot shows both remaining presentation gaps. First, milestone 6.3 implemented Clear as the general replacement for a current replaceable Attack, but deliberately excluded player-facing Clear UI; the configured HUD projects no Clear entry and has no way for a player to submit the already-implemented `PerformClear` command. Second, pointing at the control that names the Hazard gives no indication which board piece it means. Minion removal already has the intended vocabulary: pointing at or keyboard-focusing a named control marks the exact projected piece with the shared downward board cue, and a selected piece retains the selected form of that cue.
 
