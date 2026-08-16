@@ -264,7 +264,7 @@ Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No valid
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61ar-shard-the-rule-modification-inventory-completion-evidence).
 
-### [~] 6.1as Shard the board-operation inventory
+### [x] 6.1as Shard the board-operation inventory
 
 **Corrective amendment (2026-08-16, user approved).** `Project/CURRENT_IMPLEMENTATION.md` has been carried over its warning threshold by five consecutive milestones. 6.5a compressed its own additions and recorded that the next milestone to grow the file should shard instead; 6.5b, 6.5c, and 6.5ac each recorded the same conclusion and each left it higher, and 6.5ad recorded it again at 4,143 of the file's 4,500-word limit against a 3,825-word warning line. This is the pattern 6.1aq existed to end, now repeated one milestone at a time: a threshold that fires every handoff and is answered every handoff by trimming the newest sentences stops being a governed limit and becomes background noise. 6.1ar showed the cheaper move is to route a whole subject out while there is still a whole subject to route.
 
@@ -287,3 +287,5 @@ Acceptance checks:
 Closing check: the `warning-threshold` issue for `Project/CURRENT_IMPLEMENTATION.md` is present before and absent after, with every other threshold unchanged. Unlike 6.1ar this is a real transition rather than acceptance evidence, because the warning is firing at the pre-split revision.
 
 Non-goals: No gameplay, rules, card, snapshot, test, or tooling change. No rewrite of completed definitions or archive evidence, and no new implementation claim; this milestone moves existing text and registers its home. It does not touch the gameplay route, which continues from 6.5ae.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61as-shard-the-board-operation-inventory-completion-evidence).
