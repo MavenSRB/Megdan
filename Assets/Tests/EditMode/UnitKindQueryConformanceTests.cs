@@ -91,15 +91,28 @@ namespace GuardsDigital.Tests.EditMode
                 "The shared p.13 Heavy-immunity accompaniment clause must ask the effective type " +
                 "question, so Counts As protects the Heavy for every activity rather than Attack alone.");
 
+            // Milestone 6.6 moved the effective reading of "the minions in the Battle Zone" into the
+            // shared Battle-Zone query, so p.8's last-minion Lane-Push cause counts the same set. The
+            // rule follows the same two links rather than weakening: the resolution must reach that
+            // query, and the query must ask the effective type question.
             var minionBattleRules = typeof(AttackTargetQuery).Assembly.GetType(
                 "GuardsDigital.Core.Cards.MinionBattleRules");
             Assert.That(
                 ILConformanceScanner.References(
                     ILConformanceScanner.WithNestedTypes(minionBattleRules),
                     ILConformanceScanner.Method(
+                        typeof(BattleZoneQuery), nameof(BattleZoneQuery.FindEffectiveMinionsInside))),
+                Is.True,
+                "Minion Battle must count the Battle Zone through the shared effective query.");
+
+            Assert.That(
+                ILConformanceScanner.References(
+                    ILConformanceScanner.WithNestedTypes(typeof(BattleZoneQuery)),
+                    ILConformanceScanner.Method(
                         typeof(EffectiveUnitKindQuery), nameof(EffectiveUnitKindQuery.Is))),
                 Is.True,
-                "Minion Battle must count the effective minion type, including a counts-as hero.");
+                "The shared Battle-Zone count must ask the effective minion type, including a " +
+                "counts-as hero, or every consumer of it silently counts miniatures alone.");
         }
 
         [Test]

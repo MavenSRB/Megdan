@@ -538,27 +538,14 @@ namespace GuardsDigital.Core.Cards
             }
 
             // Milestone 6.4a: one authority-owned membership query, shared with Heavy immunity,
-            // Lane Push, setup, and the displaced-minion correction.
+            // Lane Push, setup, and the displaced-minion correction. Milestone 6.6 moved the
+            // effective reading of "the minions in the Battle Zone" there too, so p.8's last-minion
+            // Lane-Push cause counts exactly the set this resolution counts.
             var battleZone = GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                 .GetStartingBattleZone(board.MapDefinition);
-            var battleMinions = BattleZoneQuery.FindMinionsInside(board)
-                .Select(value => new EffectiveBattleMinion(
-                    RuleObject.ForMinion(value.MinionId), value.TeamSide,
-                    value.MinionType == StandardMinionType.Heavy));
-            var battleHeroes = board.Occupancies
-                .Select(value => RuleObject.ForHero(value.HeroId))
-                .Where(unit => EffectiveUnitKindQuery.Is(unit, EffectiveUnitKind.Minion, modifications))
-                .Where(unit =>
-                {
-                    board.TryGetHeroCoordinate(unit.HeroId, out var coordinate);
-                    var space = board.MapDefinition.Spaces.Single(candidate =>
-                        candidate.Kind == BoardMapSpaceKind.Playable &&
-                        candidate.Coordinate.Equals(coordinate));
-                    return BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, space.Id);
-                })
-                .Select(unit => new EffectiveBattleMinion(
-                    unit, participants.GetTeamForHero(unit.HeroId).Side, false));
-            var effective = battleMinions.Concat(battleHeroes).ToArray();
+            var effective = BattleZoneQuery
+                .FindEffectiveMinionsInside(board, participants, modifications)
+                .ToArray();
             var red = effective.Where(value => value.TeamSide == TeamSide.Red).ToArray();
             var blue = effective.Where(value => value.TeamSide == TeamSide.Blue).ToArray();
             var resolutionId = new EndOfRoundResolutionId($"round-{roundIndex}-minion-battle");
@@ -644,18 +631,5 @@ namespace GuardsDigital.Core.Cards
                 choice);
         }
 
-        private readonly struct EffectiveBattleMinion
-        {
-            public EffectiveBattleMinion(RuleObject unit, TeamSide teamSide, bool isHeavy)
-            {
-                Unit = unit;
-                TeamSide = teamSide;
-                IsHeavy = isHeavy;
-            }
-
-            public RuleObject Unit { get; }
-            public TeamSide TeamSide { get; }
-            public bool IsHeavy { get; }
-        }
     }
 }

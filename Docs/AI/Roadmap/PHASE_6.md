@@ -588,7 +588,7 @@ Non-goals: No Wasp definition, hero Respawn eligibility/timing, Lane-Push minion
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65-complete-reusable-place-and-spawn-effects-completion-evidence).
 
-### [~] 6.6 Complete reusable board-object Swap, Replace, and Remove effects
+### [x] 6.6 Complete reusable board-object Swap, Replace, and Remove effects
 
 Observable outcome: Synthetic effects atomically exchange, substitute, or remove authoritative board objects through distinct reusable operations before verified hero content is introduced.
 
@@ -602,6 +602,8 @@ Acceptance checks:
 - Synthetic accepted, rejected, prevented, snapshot, replay, and Undo scenarios prove atomic state and deterministic typed outcomes.
 
 Non-goals: No Wasp definition, card-state swap or upgrade replacement, hero Defeat consequences, specialized Respawn, card-name/hero-name branch, or production presentation.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-66-complete-reusable-board-object-swap-replace-and-remove-effects-completion-evidence).
 
 ### [ ] 6.7 Add bounded Repeat action control flow
 

@@ -1,3 +1,4 @@
+using System;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.Modifications;
 
@@ -20,9 +21,13 @@ namespace GuardsDigital.Core.Components.Synthetic
     {
         public static TokenDefinitionId Hazard { get; } = new TokenDefinitionId("synthetic-hazard-token");
 
+        public static TokenDefinitionId Ward { get; } = new TokenDefinitionId("synthetic-ward-token");
+
         public static MarkerDefinitionId Focus { get; } = new MarkerDefinitionId("synthetic-focus-marker");
 
         public static TokenDefinitionReference HazardV3 => new TokenDefinitionReference(Hazard, 3);
+
+        public static TokenDefinitionReference WardV1 => new TokenDefinitionReference(Ward, 1);
 
         public static MarkerDefinitionReference FocusV1 => new MarkerDefinitionReference(Focus, 1);
 
@@ -49,13 +54,32 @@ namespace GuardsDigital.Core.Components.Synthetic
                         RuleModification.ForValue(PrintedValueChannel.Defense, 1))
                 });
 
+        /// <summary>
+        /// A second token kind, added by milestone 6.6 so p.19's Replace has "a different object" to
+        /// substitute in: a Replace between two instances of one definition would change nothing the
+        /// rules can see, and the shared operation refuses it for exactly that reason.
+        ///
+        /// It declares no property, which is the point rather than an omission. p.19 ties a token's
+        /// properties to the instance - "once a token is placed, it retains all its properties until
+        /// that token is removed" - so replacing a Hazard with a Ward is observably a loss of the
+        /// Hazard's continuous source, and that is what a no-transfer replacement means. Its supply is
+        /// one, so a second Replace has nothing left to bring in.
+        /// </summary>
+        public static TokenDefinition WardDefinition { get; } =
+            new TokenDefinition(
+                Ward,
+                1,
+                "TEST - Ward",
+                1,
+                Array.Empty<TokenPropertyDefinition>());
+
         /// <summary>A one-marker supply, so a second give has nothing left to take.</summary>
         public static MarkerDefinition FocusDefinition { get; } =
             new MarkerDefinition(Focus, 1, "TEST - Focus", 1, MarkerReturnCondition.GeneralCleanup);
 
         public static ComponentDefinitionCatalog CreateCatalog() =>
             new ComponentDefinitionCatalog(
-                new[] { HazardDefinition },
+                new[] { HazardDefinition, WardDefinition },
                 new[] { FocusDefinition });
     }
 }

@@ -23,13 +23,15 @@ namespace GuardsDigital.Core.Components
             ITokenPlacementAuthority tokens,
             MarkerAttachmentRegister markers,
             IBoardDisplacementAuthority board,
-            IUnitSpawnAuthority units)
+            IUnitSpawnAuthority units,
+            IBoardObjectExchangeAuthority exchange)
         {
             Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             Tokens = tokens;
             Markers = markers;
             Board = board;
             Units = units;
+            Exchange = exchange;
         }
 
         public ComponentDefinitionCatalog Catalog { get; }
@@ -57,6 +59,14 @@ namespace GuardsDigital.Core.Components
         public IUnitSpawnAuthority Units { get; }
 
         /// <summary>
+        /// The board's exchange port (milestone 6.6), or <c>null</c> outside a live match. It is a
+        /// fifth named port for the reason the third and fourth exist: p.19's Swap, Replace, and
+        /// Remove are their own operations, and none of them can reach the displacement commit, which
+        /// requires an empty destination that none of the three has.
+        /// </summary>
+        public IBoardObjectExchangeAuthority Exchange { get; }
+
+        /// <summary>
         /// Whether the token and marker authorities are present, so a component operation can run.
         /// Deliberately unchanged by the board port: the token and marker capabilities that predate
         /// milestone 6.4 must not start reporting themselves unable to act because a port they never
@@ -69,5 +79,13 @@ namespace GuardsDigital.Core.Components
 
         /// <summary>Whether the unit Spawn port is present, so a supply miniature can enter the board.</summary>
         public bool CanSpawnUnits => Units != null;
+
+        /// <summary>
+        /// Whether a Swap, Replace, or Remove can be committed. It requires the displacement port too,
+        /// because all three read where their subjects currently stand through it before they mutate
+        /// anything, and a capability that could commit an exchange it could not first resolve would
+        /// have no pre-effect state to validate against.
+        /// </summary>
+        public bool CanExchangeObjects => Exchange != null && Board != null;
     }
 }

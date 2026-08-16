@@ -190,17 +190,30 @@ namespace GuardsDigital.Tests.EditMode
         /// table's Red Bombard entry and in the <c>red-bombard-card</c> instance's definition
         /// reference. The decision is reject rather than migrate, by the existing content-revision
         /// check: the saved revision states a printed Attack the trusted catalog no longer supplies.
+        /// Milestone 6.6 keeps schema v11 and re-pins every fixture for two causes, both registration
+        /// rather than persistence: the capability list gains p.19's Swap, Replace, and Remove, and the
+        /// synthetic shove card's Skill advances from <c>phase-6-5-rev-1</c> to <c>phase-6-6-rev-1</c>
+        /// because it appends the three branches that expose them. Both decisions are reject rather
+        /// than migrate, by the existing capability-sequence and content-revision checks: a payload
+        /// naming a capability set this build does not register, or a Skill revision offering different
+        /// branches, states semantics that no longer exist, and there is still no persisted state
+        /// outside this corpus. The three operations themselves add no wire field - they pause through
+        /// the existing effect frame and store nothing of their own - which is why the version int is
+        /// byte-identical. Measured in a throwaway worktree at pre-change revision <c>86fa070</c>
+        /// rather than assumed: every one of the eight payloads grows by exactly 124 bytes in exactly
+        /// one contiguous region, with a common prefix and a common suffix either side of it, so
+        /// nothing else shifted.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v11", "bcb1582bec39dcc9869b543ac3ab12c63541493967c83b9dd80a5dc06f72025b"),
-            new CompatibilityFixture("active-turn-v11", "20a5542fab442f194bb1039f7e63eed6e9ea5ee0abdd965df868936ec11d28a4"),
-            new CompatibilityFixture("pending-choice-v11", "3964cde3bf6dc6314072a300655c72c740abb970e742f5c21ec854998906046e"),
-            new CompatibilityFixture("end-of-round-v11", "2bedfce466dbf5c5aa40ed47f40dffafb5bc4e895595ac056a81ffd1619798a9"),
-            new CompatibilityFixture("pending-minion-battle-v11", "5691851b9bbb6c4bbea35ad03a69f6b8ef1045bb0f4ad51c6a53ad53cf4ac758"),
-            new CompatibilityFixture("placed-token-v11", "5ade11803f83bb29707b990bf69837bb08501eb0edeae444ef52c791381adba3"),
-            new CompatibilityFixture("attached-marker-v11", "a0e2026b2d7bc88b89ef28338623a26e7aa24105e9c1ca7096e6fc3de8cab427"),
-            new CompatibilityFixture("pending-correction-v11", "6d006e8ca1618000ed7b1205d98d072ac5a8854eb8a0754193c0603afccab2cc")
+            new CompatibilityFixture("setup-v11", "e091b5fe5b091c96ff9c64829d32bb81dd3c06440dfbeca5a3717b4b6a916abf"),
+            new CompatibilityFixture("active-turn-v11", "cf9fbb77ed4ce4257b6b7fe91d8dfd5b89663e3a4a798e7b01db2a824b8c4d2b"),
+            new CompatibilityFixture("pending-choice-v11", "97f37479725ab7c2674a69b781c448f3eb2eac629f348efe823235ee03a18a8a"),
+            new CompatibilityFixture("end-of-round-v11", "89c7c47bd85606489ff510a1099429d003a1ef9f050d7865680c4b6dfaa7d00b"),
+            new CompatibilityFixture("pending-minion-battle-v11", "f773050c24cece747d49058819e83dfeb2c908c490f3076e4616030d84aefcf6"),
+            new CompatibilityFixture("placed-token-v11", "b4f8df038b11e0779ab942183020e31eb9ffdf57ca2c474727f446f1e9ee2fb6"),
+            new CompatibilityFixture("attached-marker-v11", "d048c98fbf131acaec88bd4af87f1012c4b0474b1b15a09a145ce9ec9164a498"),
+            new CompatibilityFixture("pending-correction-v11", "5d6216de67bb14a697a223af06b33385aba69b669996b031b773f5b856cd5943")
         };
 
         [Test]

@@ -63,9 +63,12 @@ namespace GuardsDigital.Tests.EditMode
                     MoveBranch,
                     PushBranch,
                     new EffectNodeId("placement-place-branch"),
-                    new EffectNodeId("placement-spawn")
+                    new EffectNodeId("placement-spawn"),
+                    new EffectNodeId("exchange-swap-branch"),
+                    new EffectNodeId("exchange-replace-branch"),
+                    new EffectNodeId("exchange-remove-branch")
                 }),
-                "Milestone 6.5 appended its two branches, so 6.4's two keep their positions.");
+                "Milestones 6.5 and 6.6 appended their branches, so 6.4's two keep their positions.");
         }
 
         [Test]

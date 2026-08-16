@@ -569,7 +569,7 @@ namespace GuardsDigital.Tests.EditMode
                 modifications,
                 new MatchComponents(
                     SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
-                    board, board));
+                    board, board, board));
 
         /// <summary>A playable East-West file (-2,0)..(6,0) with the actor at (0,0).</summary>
         private static AdjacentMoveAuthority CreateLineBoard(HexCoordinate otherAt)

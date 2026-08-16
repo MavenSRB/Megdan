@@ -175,6 +175,7 @@ namespace GuardsDigital.Tests.EditMode
                 board,
                 new MarkerAttachmentRegister(),
                 board,
+                board,
                 board);
         }
 

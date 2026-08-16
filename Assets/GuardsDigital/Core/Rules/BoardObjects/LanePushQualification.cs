@@ -1,0 +1,158 @@
+using System;
+using System.Linq;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
+
+namespace GuardsDigital.Core.Rules.BoardObjects
+{
+    /// <summary>
+    /// Why a mid-turn Lane Push would be owed. Rulebook p.8 names exactly two causes and rules the
+    /// rest out in the same breath: "If you defeat, or remove, the last remaining enemy minion in the
+    /// Battle Zone, the Lane is immediately Pushed ... Note: A Lane Push can never be triggered by
+    /// moving, pushing, or swapping a minion. It must be either defeated, or removed."
+    ///
+    /// The enum has one member because milestone 6.6 implements one of the two. p.13's Defeat reaches
+    /// its removal through its own staged outcome, and giving that stage a cause here before it
+    /// produces one would be a member with no producer.
+    /// </summary>
+    public enum LanePushCauseKind
+    {
+        None = 0,
+
+        /// <summary>A standalone Remove took the last unit counting as a minion off a side (p.19, p.8).</summary>
+        Removal = 1
+    }
+
+    /// <summary>
+    /// The recorded cause of a mid-turn Lane Push, or the named absence.
+    ///
+    /// It records a cause and never a request: p.8's push is a system transition with a winner, a
+    /// losing side, a Wave counter, and a whole board rearrangement, and milestone 6.9 owns emitting
+    /// and resolving it. What this milestone owes 6.9 is the one fact only the removing operation can
+    /// know - that this particular removal, rather than the board simply being empty, is what p.8
+    /// qualifies.
+    /// </summary>
+    public readonly struct LanePushQualification : IEquatable<LanePushQualification>
+    {
+        private LanePushQualification(LanePushCauseKind cause, TeamSide losingSide, ZoneId battleZoneId)
+        {
+            Cause = cause;
+            LosingSide = losingSide;
+            BattleZoneId = battleZoneId;
+        }
+
+        /// <summary>The absence of a cause: this operation qualifies nothing.</summary>
+        public static LanePushQualification None { get; } =
+            new LanePushQualification(LanePushCauseKind.None, TeamSide.None, default);
+
+        public LanePushCauseKind Cause { get; }
+
+        /// <summary>The side left with no minion in the Battle Zone.</summary>
+        public TeamSide LosingSide { get; }
+
+        public ZoneId BattleZoneId { get; }
+
+        public bool Qualifies => Cause != LanePushCauseKind.None;
+
+        public static LanePushQualification ForRemoval(TeamSide losingSide, ZoneId battleZoneId)
+        {
+            if (losingSide != TeamSide.Red && losingSide != TeamSide.Blue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(losingSide), losingSide, "A Lane-Push cause names the side that lost its minions.");
+            }
+
+            if (string.IsNullOrWhiteSpace(battleZoneId.Value))
+            {
+                throw new ArgumentException(
+                    "A Lane-Push cause names the Battle Zone it emptied.", nameof(battleZoneId));
+            }
+
+            return new LanePushQualification(LanePushCauseKind.Removal, losingSide, battleZoneId);
+        }
+
+        public bool Equals(LanePushQualification other) =>
+            Cause == other.Cause && LosingSide == other.LosingSide &&
+            BattleZoneId.Equals(other.BattleZoneId);
+
+        public override bool Equals(object obj) => obj is LanePushQualification other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = (int)Cause;
+                hash = (hash * 397) ^ (int)LosingSide;
+                return (hash * 397) ^ BattleZoneId.GetHashCode();
+            }
+        }
+
+        public override string ToString() =>
+            Qualifies ? $"{Cause} emptied {LosingSide} in {BattleZoneId}" : "No Lane-Push cause";
+    }
+
+    /// <summary>
+    /// Whether a completed removal is p.8's last-minion Lane-Push cause.
+    ///
+    /// One question, asked in one place, by the one operation the rulebook allows to ask it. That is
+    /// the whole of this milestone's fourth acceptance check: direct Move, Object Push, and Swap do not
+    /// call this and have no member to hold its answer, so "moving, pushing, or swapping the last
+    /// Battle-Zone minion never qualifies" is a structural property rather than three tested cases, and
+    /// a conformance rule holds it that way.
+    ///
+    /// The set it counts is <see cref="BattleZoneQuery.FindEffectiveMinionsInside"/>, the same one the
+    /// Minion Battle counts. p.8 says the mid-turn push happens "in the same way as it would during a
+    /// Minion Battle", so counting a different set here would make one rulebook phrase mean two things
+    /// in adjacent rules - the defect milestone 6.5ad corrected for optional distances.
+    ///
+    /// It is asked <em>after</em> the removal has committed, because the question p.8 poses is about
+    /// what remains, not about what left.
+    /// </summary>
+    public static class LanePushQualificationQuery
+    {
+        public static LanePushQualification AfterRemoval(
+            RuleObject removedUnit,
+            TeamSide removedSide,
+            HexCoordinate removedFrom,
+            IBoardDisplacementAuthority board,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (board == null) throw new ArgumentNullException(nameof(board));
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            if (modifications == null) throw new ArgumentNullException(nameof(modifications));
+
+            // A token is not a unit (p.19), so removing one empties nothing p.8 counts, and the named
+            // absence is the honest answer rather than a side with no minions.
+            if (!removedUnit.IsDefined ||
+                (removedSide != TeamSide.Red && removedSide != TeamSide.Blue))
+            {
+                return LanePushQualification.None;
+            }
+
+            if (!BattleZoneQuery.TryGetStartingBattleZone(board.MapDefinition, out var battleZone))
+            {
+                // A map that flags no single Battle Zone - every synthetic board - has no lane to
+                // push, which is the same reading the displaced-minion correction takes.
+                return LanePushQualification.None;
+            }
+
+            // p.8 asks about "the last remaining enemy minion in the Battle Zone", so a removal that
+            // happened outside it qualifies nothing even when that side has none inside: the zone is
+            // no emptier than it was before the piece was taken.
+            if (!BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, removedFrom))
+            {
+                return LanePushQualification.None;
+            }
+
+            var remaining = BattleZoneQuery
+                .FindEffectiveMinionsInside(board, participants, modifications)
+                .Any(minion => minion.TeamSide == removedSide);
+            return remaining
+                ? LanePushQualification.None
+                : LanePushQualification.ForRemoval(removedSide, battleZone.Id);
+        }
+    }
+}

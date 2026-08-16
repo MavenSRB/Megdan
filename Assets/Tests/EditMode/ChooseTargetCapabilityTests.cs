@@ -149,7 +149,7 @@ namespace GuardsDigital.Tests.EditMode
                 RuleModificationSet.Empty,
                 new MatchComponents(
                     SyntheticComponentDefinitions.CreateCatalog(), null, new MarkerAttachmentRegister(),
-                    null, null)));
+                    null, null, null)));
 
             Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
                 "An absent board is being unable to act, the honest rules answer over a silent success.");
@@ -184,7 +184,7 @@ namespace GuardsDigital.Tests.EditMode
                 modifications ?? RuleModificationSet.Empty,
                 new MatchComponents(
                     SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
-                    board, board));
+                    board, board, board));
 
         private static AdjacentMoveAuthority CreateBoard(HexCoordinate otherAt)
         {

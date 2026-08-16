@@ -122,6 +122,34 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             }
         }
 
+        // Milestone 6.6's Swap (p.19): "Two objects on the board swap places with each other." Written
+        // as two assignments rather than a remove-and-add pair, so the one-obstacle-per-space rule this
+        // index owns holds at every instant - a pair would leave one space momentarily empty and could
+        // lose an occupant entirely if the second half threw.
+        internal void Exchange(HexCoordinate first, HexCoordinate second)
+        {
+            if (!occupants.TryGetValue(first, out var firstOccupant) ||
+                !occupants.TryGetValue(second, out var secondOccupant))
+            {
+                throw new InvalidOperationException("A board exchange requires an occupant in both spaces.");
+            }
+
+            occupants[first] = secondOccupant;
+            occupants[second] = firstOccupant;
+        }
+
+        // Milestone 6.6's Replace (p.19): one object stands where another stood. The space stays
+        // occupied throughout, which is what separates a substitution from a removal and a placement.
+        internal void Substitute(HexCoordinate coordinate, BoardOccupant occupant)
+        {
+            if (!occupants.ContainsKey(coordinate))
+            {
+                throw new InvalidOperationException("No board occupant exists at the substitution coordinate.");
+            }
+
+            occupants[coordinate] = occupant;
+        }
+
         internal BoardOccupancyIndex Clone() =>
             new BoardOccupancyIndex(new Dictionary<HexCoordinate, BoardOccupant>(occupants));
     }

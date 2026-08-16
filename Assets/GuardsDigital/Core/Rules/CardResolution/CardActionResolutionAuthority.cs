@@ -94,8 +94,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <summary>
         /// The component collaborators a Skill's capabilities may reach. The board doubles as the token
         /// placement port, because tokens are board occupants and the board owns the one occupancy index
-        /// milestone 6.1r established, and since milestone 6.4 it is also the displacement port and
-        /// since milestone 6.5 the unit Spawn port, for the same reason: every one of them mutates the
+        /// milestone 6.1r established, and since milestone 6.4 it is also the displacement port, since
+        /// milestone 6.5 the unit Spawn port, and since milestone 6.6 the exchange port, for the same
+        /// reason: every one of them mutates the
         /// same occupancy, and that is the same authority's business. They stay named ports on one
         /// object rather than one wide one, because placing from a supply, displacing something already
         /// placed, and taking a miniature out of the supply are different rules questions. The marker
@@ -110,6 +111,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 SyntheticComponentDefinitions.CreateCatalog(),
                 adjacentMoveAuthority,
                 markers ?? new MarkerAttachmentRegister(),
+                adjacentMoveAuthority,
                 adjacentMoveAuthority,
                 adjacentMoveAuthority);
 

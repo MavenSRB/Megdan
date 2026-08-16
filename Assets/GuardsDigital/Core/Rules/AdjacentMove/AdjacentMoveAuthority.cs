@@ -17,7 +17,8 @@ using GuardsDigital.Core.Units.Minions;
 namespace GuardsDigital.Core.Rules.AdjacentMove
 {
     public sealed class AdjacentMoveAuthority :
-        ITokenPlacementAuthority, IBoardDisplacementAuthority, IUnitSpawnAuthority
+        ITokenPlacementAuthority, IBoardDisplacementAuthority, IUnitSpawnAuthority,
+        IBoardObjectExchangeAuthority
     {
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly HashSet<HexCoordinate> terrainCoordinates;
@@ -874,6 +875,143 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 space.Id.Equals(definition.SpaceId) && space.Kind == BoardMapSpaceKind.Playable).Coordinate;
             var token = tokens.SingleOrDefault(candidate => candidate.Coordinate.Equals(coordinate));
             return token == null ? null : CommitValidatedTokenReclamation(token.Id);
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // Milestone 6.6: the board-object exchange port. p.19 keeps Swap, Replace, and Remove as three
+        // more distinct operations, and none of them is expressible through the displacement commit
+        // above: that commit needs an empty destination, and a Swap has two occupied spaces, a Replace
+        // never empties the one it works in, and a Remove has no board destination at all.
+        // ---------------------------------------------------------------------------------------
+
+        public BoardObjectSwapCommitResult CommitValidatedSwap(
+            BoardObjectReference first,
+            BoardObjectReference second)
+        {
+            if (first.Equals(second))
+            {
+                return BoardObjectSwapCommitResult.Reject(BoardObjectSwapRejectionReason.SameObject);
+            }
+
+            if (!TryGetObjectCoordinate(first, out var firstOrigin) ||
+                !TryGetObjectCoordinate(second, out var secondOrigin))
+            {
+                return BoardObjectSwapCommitResult.Reject(BoardObjectSwapRejectionReason.UnknownObject);
+            }
+
+            // Neither space needs an emptiness or terrain check. Each object is entering a space the
+            // other currently stands in, so both are playable spaces this board already admits an
+            // occupant in, and the exchange leaves exactly as many occupants as it found.
+            occupancyIndex.Exchange(firstOrigin, secondOrigin);
+            Reposition(first, secondOrigin);
+            Reposition(second, firstOrigin);
+            return BoardObjectSwapCommitResult.Accept(first, second, firstOrigin, secondOrigin);
+        }
+
+        public BoardObjectRemovalCommitResult CommitValidatedRemoval(BoardObjectReference subject)
+        {
+            if (subject.Kind == BoardObjectKind.Hero)
+            {
+                // p.13 takes a hero off the board through Defeat and its consequences, so this port is
+                // not the back door to it.
+                return BoardObjectRemovalCommitResult.Reject(
+                    BoardObjectRemovalRejectionReason.HeroRequiresDefeat);
+            }
+
+            if (!TryGetObjectCoordinate(subject, out var origin))
+            {
+                return BoardObjectRemovalCommitResult.Reject(
+                    BoardObjectRemovalRejectionReason.UnknownObject);
+            }
+
+            switch (subject.Kind)
+            {
+                case BoardObjectKind.Minion:
+                    // The same commit the Minion Battle and the Attack's Defeat stage use, so a
+                    // removed miniature rejoins the reserve exactly once and by one route.
+                    CommitValidatedMinionRemoval(subject.MinionId);
+                    break;
+                case BoardObjectKind.Token:
+                    CommitValidatedTokenReclamation(subject.TokenInstanceId);
+                    break;
+                default:
+                    return BoardObjectRemovalCommitResult.Reject(
+                        BoardObjectRemovalRejectionReason.UnknownObject);
+            }
+
+            return BoardObjectRemovalCommitResult.Accept(subject, origin);
+        }
+
+        public BoardObjectReplacementCommitResult CommitValidatedTokenReplacement(
+            TokenInstanceId outgoing,
+            PlacedToken incoming)
+        {
+            if (incoming == null) throw new ArgumentNullException(nameof(incoming));
+
+            var index = tokens.FindIndex(token => token.Id.Equals(outgoing));
+            if (index < 0)
+            {
+                return BoardObjectReplacementCommitResult.Reject(
+                    BoardObjectReplacementRejectionReason.OutgoingNotOnBoard);
+            }
+
+            if (tokens.Any(token => token.Id.Equals(incoming.Id)))
+            {
+                return BoardObjectReplacementCommitResult.Reject(
+                    BoardObjectReplacementRejectionReason.IncomingAlreadyOnBoard);
+            }
+
+            var replaced = tokens[index];
+            if (!replaced.Coordinate.Equals(incoming.Coordinate))
+            {
+                return BoardObjectReplacementCommitResult.Reject(
+                    BoardObjectReplacementRejectionReason.DestinationMismatch);
+            }
+
+            // One transaction in one space. The index is substituted rather than emptied and refilled,
+            // so no other commit can see the space free and take it.
+            occupancyIndex.Substitute(replaced.Coordinate, BoardOccupant.ForToken(incoming.Id));
+            tokens[index] = incoming;
+            return BoardObjectReplacementCommitResult.Accept(replaced, incoming);
+        }
+
+        /// <summary>
+        /// Records an already exchanged object's new space in its own occupancy list. It never touches
+        /// the index, because <see cref="BoardOccupancyIndex.Exchange"/> has already moved both at once.
+        /// </summary>
+        private void Reposition(BoardObjectReference subject, HexCoordinate destination)
+        {
+            switch (subject.Kind)
+            {
+                case BoardObjectKind.Hero:
+                {
+                    var index = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(subject.HeroId));
+                    occupancies[index] = new HeroOccupancy(subject.HeroId, destination);
+                    break;
+                }
+
+                case BoardObjectKind.Minion:
+                {
+                    var index = minions.FindIndex(minion => minion.MinionId.Equals(subject.MinionId));
+                    var space = MapDefinition.Spaces.Single(candidate =>
+                        candidate.Kind == BoardMapSpaceKind.Playable &&
+                        candidate.Coordinate.Equals(destination));
+                    minions[index] = minions[index].WithPosition(
+                        new ConfiguredSpaceReference(MapDefinition.Id, space.Id), destination);
+                    break;
+                }
+
+                case BoardObjectKind.Token:
+                {
+                    var index = tokens.FindIndex(token => token.Id.Equals(subject.TokenInstanceId));
+                    tokens[index] = tokens[index].WithCoordinate(destination);
+                    break;
+                }
+
+                default:
+                    throw new InvalidOperationException(
+                        "A board exchange can only reposition a hero, a minion, or a token.");
+            }
         }
 
         // ---------------------------------------------------------------------------------------

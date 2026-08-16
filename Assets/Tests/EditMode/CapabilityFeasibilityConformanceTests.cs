@@ -5,6 +5,7 @@ using System.Reflection;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -87,10 +88,10 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheNamedMembers_Resolve()
         {
-            Assert.That(PerformingMembers(), Has.Length.EqualTo(11),
+            Assert.That(PerformingMembers(), Has.Length.EqualTo(17),
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(19),
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(22),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }
@@ -206,9 +207,10 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Everything a probe must never reach: the four board and component commits, the two identity
-        /// mints, the two arms of the shared Place operation, the marker register's two transitions,
-        /// and the lifecycle creation. Each is named as a resolved member rather than a string.
+        /// Everything a probe must never reach: the seven board and component commits, the two identity
+        /// mints, the two arms of the shared Place operation, milestone 6.6's three board-object
+        /// operations, the marker register's two transitions, and the lifecycle creation. Each is named
+        /// as a resolved member rather than a string.
         /// </summary>
         private static MemberInfo[] PerformingMembers() => new MemberInfo[]
         {
@@ -236,7 +238,20 @@ namespace GuardsDigital.Tests.EditMode
             ILConformanceScanner.Method(
                 typeof(PlaceOperation), nameof(PlaceOperation.PlaceFromBoard)),
             ILConformanceScanner.Method(
-                typeof(PlaceOperation), nameof(PlaceOperation.PlaceFromSupply))
+                typeof(PlaceOperation), nameof(PlaceOperation.PlaceFromSupply)),
+            ILConformanceScanner.Method(
+                typeof(IBoardObjectExchangeAuthority),
+                nameof(IBoardObjectExchangeAuthority.CommitValidatedSwap)),
+            ILConformanceScanner.Method(
+                typeof(IBoardObjectExchangeAuthority),
+                nameof(IBoardObjectExchangeAuthority.CommitValidatedRemoval)),
+            ILConformanceScanner.Method(
+                typeof(IBoardObjectExchangeAuthority),
+                nameof(IBoardObjectExchangeAuthority.CommitValidatedTokenReplacement)),
+            ILConformanceScanner.Method(typeof(SwapOperation), nameof(SwapOperation.Swap)),
+            ILConformanceScanner.Method(
+                typeof(ReplaceOperation), nameof(ReplaceOperation.ReplaceToken)),
+            ILConformanceScanner.Method(typeof(RemoveOperation), nameof(RemoveOperation.Remove))
         };
 
         private static MethodInfo ResultFactory(string name) =>

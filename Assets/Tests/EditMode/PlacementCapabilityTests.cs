@@ -355,7 +355,7 @@ namespace GuardsDigital.Tests.EditMode
                 RuleModificationSet.Empty,
                 new MatchComponents(
                     SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
-                    board, board));
+                    board, board, board));
 
         private static EffectCapabilityContext BoardlessContext() =>
             new EffectCapabilityContext(
@@ -373,7 +373,7 @@ namespace GuardsDigital.Tests.EditMode
                 RuleModificationSet.Empty,
                 new MatchComponents(
                     SyntheticComponentDefinitions.CreateCatalog(), null, new MarkerAttachmentRegister(),
-                    null, null));
+                    null, null, null));
 
         private static HexCoordinate Coordinate(AdjacentMoveAuthority board, HeroId heroId) =>
             board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(heroId)).Coordinate;

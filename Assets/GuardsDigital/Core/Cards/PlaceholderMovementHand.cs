@@ -373,6 +373,13 @@ namespace GuardsDigital.Core.Cards
         /// invented for it. They are appended rather than inserted so the existing branch positions the
         /// 6.4 and 6.8k fixtures name are untouched.
         ///
+        /// Milestone 6.6 appends three more, again at the end and for the same reason: p.19's Swap of
+        /// the acting hero with one adjacent object, its Replace of one adjacent Hazard token with a
+        /// Ward from the supply, and its Remove of one adjacent piece back to its supply. All three are
+        /// Sequences behind a target selection, because each names the piece it works on by space and a
+        /// role cannot supply a coordinate. The Swap's selection excludes the actor - p.19 requires two
+        /// objects - while the other two include it harmlessly, since neither admits a hero.
+        ///
         /// Board-neutral in the same sense as the others: it names no hero, no card, and no space.
         /// </summary>
         private static CardDefinition CreateDisplacementSkillDefinition(SyntheticSkillProfile profile)
@@ -387,16 +394,29 @@ namespace GuardsDigital.Core.Cards
             var actorSpace = new EffectNodeId("placement-actor-space");
             var place = new EffectNodeId("placement-place");
             var spawn = new EffectNodeId("placement-spawn");
+            var swapBranch = new EffectNodeId("exchange-swap-branch");
+            var swapSelect = new EffectNodeId("exchange-swap-select");
+            var swapActorSpace = new EffectNodeId("exchange-swap-actor-space");
+            var swap = new EffectNodeId("exchange-swap");
+            var replaceBranch = new EffectNodeId("exchange-replace-branch");
+            var replaceSelect = new EffectNodeId("exchange-replace-select");
+            var replace = new EffectNodeId("exchange-replace");
+            var removeBranch = new EffectNodeId("exchange-remove-branch");
+            var removeSelect = new EffectNodeId("exchange-remove-select");
+            var remove = new EffectNodeId("exchange-remove");
 
             var effect = new EffectDefinition(
                 new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
-                "phase-6-5-rev-1",
+                "phase-6-6-rev-1",
                 root,
                 new[]
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { moveBranch, push, placeBranch, spawn },
+                        childNodeIds: new[]
+                        {
+                            moveBranch, push, placeBranch, spawn, swapBranch, replaceBranch, removeBranch
+                        },
                         chooser: EffectChooserRole.Actor,
                         minimumSelections: 1,
                         maximumSelections: 1),
@@ -467,12 +487,90 @@ namespace GuardsDigital.Core.Cards
                         {
                             new EffectOutputBinding("spawned", EffectValueKind.Minion),
                             new EffectOutputBinding("at", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        swapBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { swapSelect, swapActorSpace, swap }),
+                    new EffectNodeDefinition(
+                        swapSelect, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                            // p.19 requires two objects, so the actor is not among its own candidates.
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        swapActorSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[] { new EffectOutputBinding("space", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        swap, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticExchangeCapabilities.SwapV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "first", swapActorSpace, "space", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromNodeOutput(
+                                "second", swapSelect, "chosen", EffectValueKind.Coordinate)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("firstAt", EffectValueKind.Coordinate),
+                            new EffectOutputBinding("secondAt", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        replaceBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { replaceSelect, replace }),
+                    new EffectNodeDefinition(
+                        replaceSelect, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        replace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticExchangeCapabilities.ReplaceTokenV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "subject", replaceSelect, "chosen", EffectValueKind.Coordinate)
+                        },
+                        outputs: new[] { new EffectOutputBinding("replaced", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        removeBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { removeSelect, remove }),
+                    new EffectNodeDefinition(
+                        removeSelect, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        remove, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticExchangeCapabilities.RemoveV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "subject", removeSelect, "chosen", EffectValueKind.Coordinate)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("removed", EffectValueKind.Coordinate),
+                            new EffectOutputBinding("lanePush", EffectValueKind.Boolean)
                         })
                 });
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
-                "phase-6-5-rev-1",
+                "phase-6-6-rev-1",
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
