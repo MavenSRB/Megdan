@@ -23,9 +23,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// Its candidate set comes from <see cref="TargetQuery"/>, the reusable targeting contract, rather
     /// than effect-local geometry. Immunity therefore filters selection - p.18 makes it a targeting
     /// rule - while a presence question over the same spaces still counts the immune unit. The activity
-    /// consulted is declared by revision 2. Revision 1 remains bound to Skill for saved definitions;
-    /// definitions feeding a consuming effect with its own activity use revision 2 so the offer and
-    /// final operation ask the identical immunity question.
+    /// consulted is declared by revision 4. Revision 3 is bound to Skill; definitions feeding a
+    /// consuming effect with its own activity use revision 4 so the offer and final operation ask the
+    /// identical immunity question.
+    ///
+    /// Milestone 6.8l replaced revisions 1 and 2 with 3 and 4, which declare one further optional
+    /// parameter: the node this selection selects for. A legal target and a target the consuming step
+    /// can act on are different questions, and until the selection could name its consumer only the
+    /// first was asked - so a branch behind one was offered whatever the step after it would do. The
+    /// revisions moved rather than being joined because the registration list records contracts, the
+    /// same reason milestone 6.8k retired direct Move revision 1 when it widened the subject.
     ///
     /// This is the seam 6.5b and 6.6a reuse: Red Needle's Push, Red Bombard's direct Move of another
     /// adjacent unit, and Blue Sentinel's Swap all name their object through this one selection rather
@@ -36,17 +43,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityId ChooseTarget { get; } =
             new EffectCapabilityId("synthetic-choose-target");
 
-        public static EffectCapabilityReference ChooseTargetV1 =>
-            new EffectCapabilityReference(ChooseTarget, 1);
+        /// <summary>
+        /// Revision 3, minted at milestone 6.8l: revision 1's declaration plus an optional consumer.
+        /// The enclosing action's activity is what it asks immunity for.
+        /// </summary>
+        public static EffectCapabilityReference ChooseTargetV3 =>
+            new EffectCapabilityReference(ChooseTarget, 3);
 
-        public static EffectCapabilityReference ChooseTargetV2 =>
-            new EffectCapabilityReference(ChooseTarget, 2);
+        /// <summary>
+        /// Revision 4, minted at milestone 6.8l: revision 2's declaration plus an optional consumer.
+        /// The activity it asks immunity for is the definition's, for an operation p.18 gives one.
+        /// </summary>
+        public static EffectCapabilityReference ChooseTargetV4 =>
+            new EffectCapabilityReference(ChooseTarget, 4);
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
-                new ChooseTargetHandler(ChooseTargetV1, declaresActivity: false),
-                new ChooseTargetHandler(ChooseTargetV2, declaresActivity: true)
+                new ChooseTargetHandler(ChooseTargetV3, declaresActivity: false),
+                new ChooseTargetHandler(ChooseTargetV4, declaresActivity: true)
             };
 
         /// <summary>
@@ -59,7 +74,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// re-asking this handler, exactly as every other capability choice restores. Selecting mutates
         /// nothing; the consuming node does whatever the effect does.
         /// </summary>
-        private sealed class ChooseTargetHandler : IEffectCapabilityHandler
+        private sealed class ChooseTargetHandler
+            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
         {
             private readonly bool declaresActivity;
 
@@ -78,6 +94,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     parameters.Add(new EffectCapabilityParameter("activity", EffectValueKind.Integer));
                 }
+
+                // Milestone 6.8l. Optional, because a selection whose result no single later node
+                // consumes still has a legal shape, and one that names nothing keeps exactly the
+                // conservative reading milestone 6.5ac chose. Nothing here reads this parameter: the
+                // handler cannot see the definition, so the resolver owns the narrowing and this
+                // declaration is what lets a definition state it.
+                parameters.Add(new EffectCapabilityParameter(
+                    EffectSelectionDeclaration.ConsumerParameterName,
+                    EffectValueKind.Node,
+                    isRequired: false));
 
                 Schema = new EffectCapabilityParameterSchema(
                     parameters,
@@ -139,6 +165,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 Candidates(context).Count == 0
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// Milestone 6.8l: the same spaces <see cref="Execute"/> would offer, as the same typed
+            /// values, from the same derivation. The resolver asks for them so it can put each one to
+            /// the node this selection selects for; what it does with the answer is not this handler's
+            /// business, and could not be - a handler sees its own context, never the definition
+            /// around it.
+            /// </summary>
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
 
             /// <summary>
             /// The spaces of every object the acting hero may target, in canonical axial order. Nothing

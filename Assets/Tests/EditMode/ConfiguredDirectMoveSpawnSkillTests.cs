@@ -87,7 +87,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(definition.Id, Is.EqualTo(new CardDefinitionId("placeholder-red-bombard")),
                 "The conversion advances the revision, never the card's identity.");
-            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-5b-rev-1"));
+            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-8l-rev-1"));
             Assert.That(definition.ContentAuthority,
                 Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(definition.Initiative.Value, Is.EqualTo(5));
@@ -145,7 +145,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var selectTarget = effect.Nodes.Single(node => node.Id.Equals(SelectTarget));
             Assert.That(selectTarget.Capability,
-                Is.EqualTo(SyntheticTargetingCapabilities.ChooseTargetV1),
+                Is.EqualTo(SyntheticTargetingCapabilities.ChooseTargetV3),
                 "Card-text direct Move has no activity of its own to declare - p.11 says it is " +
                 "expressly not a Movement action - so the offer uses the revision already bound to " +
                 "the enclosing action's activity rather than naming Skill a second time.");

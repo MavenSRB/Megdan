@@ -332,4 +332,30 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         EffectExecutionResultKind Anticipate(EffectCapabilityContext context);
     }
+
+    /// <summary>
+    /// Milestone 6.8l: what a capability must add to accept a consumer.
+    ///
+    /// A selection that declares <see cref="EffectSelectionDeclaration.ConsumerParameterName"/> is asked
+    /// to offer only the objects that consumer can act on, and both the feasibility walk and the live
+    /// pause therefore need the set it <em>would</em> offer. <see cref="IEffectCapabilityHandler.Anticipate"/>
+    /// cannot supply it: it answers with a kind, deliberately, because a result carries facts and
+    /// checkpoints a probe has neither of. Running <see cref="IEffectCapabilityHandler.Execute"/> to
+    /// find out is what milestone 6.5ac's whole contract exists to avoid.
+    ///
+    /// So the candidate derivation the handler already owns is declared separately, under the same rule
+    /// the probe obeys: nothing here may mutate board, card, effect, component, supply, timing, or
+    /// identity state, and nothing may mint. The catalog refuses to register a handler that declares the
+    /// parameter without implementing this, so a selection can never accept a consumer it has no way to
+    /// answer for.
+    /// </summary>
+    public interface IEffectSelectionCapabilityHandler
+    {
+        /// <summary>
+        /// The candidate values <see cref="IEffectCapabilityHandler.Execute"/> would offer here, derived
+        /// without opening the choice. Empty means the selection has nothing to name, which is the same
+        /// state its probe reports as <see cref="EffectExecutionResultKind.ImpossibleMandatory"/>.
+        /// </summary>
+        IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context);
+    }
 }

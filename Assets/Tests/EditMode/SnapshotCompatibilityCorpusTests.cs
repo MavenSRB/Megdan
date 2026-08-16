@@ -203,17 +203,35 @@ namespace GuardsDigital.Tests.EditMode
         /// rather than assumed: every one of the eight payloads grows by exactly 124 bytes in exactly
         /// one contiguous region, with a common prefix and a common suffix either side of it, so
         /// nothing else shifted.
+        /// Milestone 6.8l keeps schema v11 and re-pins every fixture for causes that are all content
+        /// revisions and one registration list whose <em>length</em> does not move. The selection
+        /// capability's declared schema gains the node it selects for, so its two revisions are
+        /// replaced rather than joined - 1 and 2 become 3 and 4, the precedent being 6.8k retiring
+        /// direct Move revision 1 when it widened the subject - and because a revision is a fixed-width
+        /// int beside an unchanged id, the registration list costs exactly nothing while still
+        /// differing, which is what makes a payload naming the old contracts reject. Three card
+        /// revisions move with it: Red Needle from <c>phase-6-5aa-rev-1</c>, Red Bombard from
+        /// <c>phase-6-5b-rev-1</c>, and the two shove Skill cards from <c>phase-6-6-rev-1</c>, all to
+        /// <c>phase-6-8l-rev-1</c>. Measured in a throwaway worktree at pre-change revision
+        /// <c>f8ad140</c> rather than assumed: Red Needle's string is one character shorter than
+        /// before and appears twice per payload, Red Bombard's is the same length, and each shove card
+        /// is one character longer and appears twice, so the five ordinary fixtures lose exactly 2
+        /// bytes each and the three Skill-fixture ones - <c>placed-token</c>, <c>attached-marker</c>,
+        /// and <c>pending-correction</c> - gain exactly 2, with a common prefix and a common suffix
+        /// either side. Every decision is reject rather than migrate, by the existing
+        /// capability-sequence and content-revision checks: a payload naming revision 1 or 2 of the
+        /// selection describes an offer that no longer knows what it is for.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v11", "e091b5fe5b091c96ff9c64829d32bb81dd3c06440dfbeca5a3717b4b6a916abf"),
-            new CompatibilityFixture("active-turn-v11", "cf9fbb77ed4ce4257b6b7fe91d8dfd5b89663e3a4a798e7b01db2a824b8c4d2b"),
-            new CompatibilityFixture("pending-choice-v11", "97f37479725ab7c2674a69b781c448f3eb2eac629f348efe823235ee03a18a8a"),
-            new CompatibilityFixture("end-of-round-v11", "89c7c47bd85606489ff510a1099429d003a1ef9f050d7865680c4b6dfaa7d00b"),
-            new CompatibilityFixture("pending-minion-battle-v11", "f773050c24cece747d49058819e83dfeb2c908c490f3076e4616030d84aefcf6"),
-            new CompatibilityFixture("placed-token-v11", "b4f8df038b11e0779ab942183020e31eb9ffdf57ca2c474727f446f1e9ee2fb6"),
-            new CompatibilityFixture("attached-marker-v11", "d048c98fbf131acaec88bd4af87f1012c4b0474b1b15a09a145ce9ec9164a498"),
-            new CompatibilityFixture("pending-correction-v11", "5d6216de67bb14a697a223af06b33385aba69b669996b031b773f5b856cd5943")
+            new CompatibilityFixture("setup-v11", "2f097b5bc50da4c8e7a204ddb3fc0bf22bb5146998990f6599f761507ec3d018"),
+            new CompatibilityFixture("active-turn-v11", "cb51d949dab880f4afcc49d4f7215f82c20334aecb794d9a697d3f03ce0079fb"),
+            new CompatibilityFixture("pending-choice-v11", "abfc15f71ac1e438a8be7aeaab1180877e070f8c0c85a45caa6c18fef9515ec8"),
+            new CompatibilityFixture("end-of-round-v11", "e9a93f6a4df19ab7dd6141a4b397df7e36a1df8c5e0a095f91e91454984f18d2"),
+            new CompatibilityFixture("pending-minion-battle-v11", "6950ea86a7edb197785cf7f4f10239867d8859d1a3793838a33232308b3a633e"),
+            new CompatibilityFixture("placed-token-v11", "b6ad64249d98fe9c7691906e135c007d2716f5891d4c1d81a9473527e40e3528"),
+            new CompatibilityFixture("attached-marker-v11", "3e69211a27c271e0e680f6c0560131a4f66e86b2b452ff9e124e6613fd7f8fe7"),
+            new CompatibilityFixture("pending-correction-v11", "1984dce87c24ff964f92c5d274978db6e4e7395cdf2a2871d0b8269fe967c589")
         };
 
         [Test]

@@ -379,10 +379,25 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     break;
 
                 case EffectNodeKind.Capability:
+                    var selected = choice.SelectedCandidates
+                        .Select(candidate => candidate.Value)
+                        .ToArray();
+
+                    // Milestone 6.8l: eligibility is read again here rather than trusted from the
+                    // offer, for the reason the selection handler re-derives its own targets in
+                    // Resume - what was true when the choice opened is not what this answer applies
+                    // to. Rejecting leaves the frame and its pending choice exactly as they were, so
+                    // the decision is still there to be made.
+                    if (!EffectSelectionEligibilityQuery.AreStillEligible(
+                            node, selected, frame, outcomes, context))
+                    {
+                        return EffectResolutionStepResult.Reject(
+                            EffectResolutionRejectionReason.InvalidChoice, frame);
+                    }
+
                     var handler = context.Catalog.Load(node.Capability);
                     var resumed = handler.Resume(
-                        BuildCapabilityContext(frame, node, outcomes, context),
-                        choice.SelectedCandidates.Select(candidate => candidate.Value).ToArray());
+                        BuildCapabilityContext(frame, node, outcomes, context), selected);
                     var terminal = ApplyCapabilityResult(
                         frame, node, resumed, continuation, outcomes, choices, events, context);
                     if (terminal != null)
@@ -556,27 +571,31 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             switch (result.Kind)
             {
                 case EffectExecutionResultKind.NeedsChoice:
+                    // Milestone 6.8l: a selection that declares what it selects for offers only the
+                    // objects that consumer can act on, so the prompt stops naming targets the effect
+                    // would refuse. Every other capability's candidates come back exactly as offered.
+                    var offered = EffectSelectionEligibilityQuery.EligibleCandidates(
+                        node, result.Choice.Candidates, frame, outcomes, context);
+                    if (offered.Count == 0 || offered.Count < result.Choice.MinimumSelections)
+                    {
+                        // Nothing left to name is the same position as nothing to name in the first
+                        // place, which is what the handler itself reports as impossible. The refusal
+                        // carries no result, because the one this node produced was a request for a
+                        // choice that is not going to be opened.
+                        return RefuseCapability(
+                            frame, node, null, continuation, outcomes, choices, events);
+                    }
+
                     return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
                         frame, node, context, EffectChoiceKind.SelectTarget,
-                        result.Choice.Candidates.Select(EffectChoiceCandidate.Value_).ToArray(),
+                        offered.Select(EffectChoiceCandidate.Value_).ToArray(),
                         result.Choice.MinimumSelections,
-                        result.Choice.MaximumSelections,
+                        Math.Min(result.Choice.MaximumSelections, offered.Count),
                         result.Choice.Chooser));
 
                 case EffectExecutionResultKind.ImpossibleMandatory:
-                    Pop(continuation);
-                    if (node.FailurePolicy == EffectFailurePolicy.Mandatory)
-                    {
-                        // The action stops here. Everything already applied stays applied.
-                        Record(outcomes, events, node.Id, EffectExecutionResultKind.ImpossibleMandatory, result);
-                        continuation.Clear();
-                        return EffectResolutionStepResult.Accept(
-                            Rebuild(frame, continuation, outcomes, choices), true, events);
-                    }
-
-                    // `if able`, `may`, and `up to` all treat an impossible step as simply not taken.
-                    Record(outcomes, events, node.Id, EffectExecutionResultKind.DeclinedOptional, result);
-                    return null;
+                    return RefuseCapability(
+                        frame, node, result, continuation, outcomes, choices, events);
 
                 case EffectExecutionResultKind.DeclinedOptional:
                     Pop(continuation);
@@ -588,6 +607,34 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied, result);
                     return null;
             }
+        }
+
+        /// <summary>
+        /// What a capability node that cannot be taken does to the resolution: stops it where the node
+        /// is mandatory, and is skipped where p.10's `if able`, `may`, and `up to` say a step nobody
+        /// can take is simply not taken. Returns a terminal result only in the first case.
+        /// </summary>
+        private static EffectResolutionStepResult RefuseCapability(
+            PendingResolution frame,
+            EffectNodeDefinition node,
+            EffectExecutionResult result,
+            List<EffectContinuationFrame> continuation,
+            List<EffectNodeOutcome> outcomes,
+            List<EffectChoiceRecord> choices,
+            List<EffectResolutionEvent> events)
+        {
+            Pop(continuation);
+            if (node.FailurePolicy != EffectFailurePolicy.Mandatory)
+            {
+                Record(outcomes, events, node.Id, EffectExecutionResultKind.DeclinedOptional, result);
+                return null;
+            }
+
+            // The action stops here. Everything already applied stays applied.
+            Record(outcomes, events, node.Id, EffectExecutionResultKind.ImpossibleMandatory, result);
+            continuation.Clear();
+            return EffectResolutionStepResult.Accept(
+                Rebuild(frame, continuation, outcomes, choices), true, events);
         }
 
         private static EffectResolutionStepResult PauseOn(
@@ -665,8 +712,45 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             PendingResolution frame,
             EffectNodeDefinition node,
             IReadOnlyList<EffectNodeOutcome> outcomes,
-            EffectResolutionContext context)
+            EffectResolutionContext context) =>
+            BuildCapabilityContext(
+                frame, node, outcomes, context, ResolveInputBindings(node, frame, outcomes), null);
+
+        /// <summary>
+        /// The same context, with some inputs answered rather than resolved.
+        ///
+        /// Milestone 6.8l asks a node what it would do with a subject a prior selection has not chosen
+        /// yet, so it supplies that subject instead of the nothing the binding currently resolves to.
+        /// It builds the context here rather than assembling one of its own, because everything else a
+        /// handler is allowed to see - the actor, the source card, the round, the modifications, the
+        /// components - has to be the same in a probe as in the execution it is asking about, and one
+        /// construction site is what keeps it so.
+        /// </summary>
+        internal static EffectCapabilityContext BuildCapabilityContext(
+            PendingResolution frame,
+            EffectNodeDefinition node,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            IReadOnlyDictionary<string, EffectValue> resolvedInputs,
+            IReadOnlyDictionary<string, EffectValue> substitutedInputs)
         {
+            var inputs = resolvedInputs;
+            if (substitutedInputs != null && substitutedInputs.Count > 0)
+            {
+                var merged = new Dictionary<string, EffectValue>(StringComparer.Ordinal);
+                foreach (var entry in resolvedInputs)
+                {
+                    merged[entry.Key] = entry.Value;
+                }
+
+                foreach (var entry in substitutedInputs)
+                {
+                    merged[entry.Key] = entry.Value;
+                }
+
+                inputs = merged;
+            }
+
             return new EffectCapabilityContext(
                 node.Id,
                 node.FailurePolicy,
@@ -674,7 +758,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 frame.ControllerId,
                 frame.SourceCardInstanceId,
                 frame.ActionDefinitionId,
-                ResolveInputBindings(node, frame, outcomes),
+                inputs,
                 context.RoundIndex,
                 context.TurnIndex,
                 context.Participants,

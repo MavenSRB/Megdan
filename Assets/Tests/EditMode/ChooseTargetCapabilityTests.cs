@@ -160,7 +160,7 @@ namespace GuardsDigital.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         private static IEffectCapabilityHandler Handler() =>
-            SyntheticEffectCapabilities.CreateCatalog().Load(SyntheticTargetingCapabilities.ChooseTargetV1);
+            SyntheticEffectCapabilities.CreateCatalog().Load(SyntheticTargetingCapabilities.ChooseTargetV3);
 
         private static EffectCapabilityContext Context(
             AdjacentMoveAuthority board, int range, bool includeSelf,

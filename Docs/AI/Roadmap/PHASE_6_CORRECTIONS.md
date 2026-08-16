@@ -352,7 +352,7 @@ Non-goals: No change to Movement, Attack, Defense, Fast Travel, Clear, or Hold a
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65af-refuse-a-skill-that-can-do-nothing-before-the-turn-is-spent-on-it-completion-evidence).
 
-### [~] 6.8l Let a target selection know what it selects for
+### [x] 6.8l Let a target selection know what it selects for
 
 **Corrective amendment (2026-08-16, user approved).** Milestone 6.5ac's walk refuses an option it can prove applies nothing, and treats one it cannot read as performable - the direction it deliberately errs in. Milestone 6.8k then made every subject arrive through a target-selection node, because a role cannot supply a coordinate. Together those two decisions leave a blind spot that has widened with each milestone: the walk reaches the selection, sees that a selection can always pause, and offers the branch without ever judging the step that consumes the chosen object.
 
@@ -376,6 +376,8 @@ Acceptance checks:
 - The regression is observed failing before the production change and passing afterward, on the position this was found in: the Replace branch offered while no token it can replace stands anywhere on the board.
 
 Non-goals: No new pending-choice family, prompt framework, or director command kind; no change to what feasibility means for a node that is already decidable; no expression language, predicate script, or general eligibility DSL; no card conversion, card text, or card-name branch; no schema change, since eligibility is derived and nothing about it may reach a payload; no presentation change beyond the greying and candidate lists that already exist.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68l-let-a-target-selection-know-what-it-selects-for-completion-evidence).
 
 ### [ ] 6.6b Give the Defeat removal stage its prevention consumer
 

@@ -419,7 +419,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 byCapability
                     .Where(entry => entry.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV2))
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV4))
                     .Select(entry => entry.Id.Value),
                 Is.EqualTo(new[] { "placeholder-red-needle" }));
 
@@ -429,7 +429,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 byCapability
                     .Where(entry => entry.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV1))
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV3))
                     .Select(entry => entry.Id.Value),
                 Is.EqualTo(new[] { "placeholder-red-bombard" }));
         }

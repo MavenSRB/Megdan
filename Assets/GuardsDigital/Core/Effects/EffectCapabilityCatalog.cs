@@ -66,6 +66,22 @@ namespace GuardsDigital.Core.Effects
                     "Every registered capability handler must declare a parameter schema.", nameof(handlers));
             }
 
+            // Milestone 6.8l. A capability that accepts a consumer is asked for the candidate set it
+            // would offer, and neither the feasibility walk nor the live pause may run Execute to get
+            // it. Declaring the parameter without declaring that derivation would leave the narrowing
+            // silently undone, which is the failure this milestone exists to remove rather than move.
+            var unanswerableSelection = registered.FirstOrDefault(handler =>
+                EffectSelectionDeclaration.DeclaresConsumerParameter(handler.Schema) &&
+                !(handler is IEffectSelectionCapabilityHandler));
+            if (unanswerableSelection != null)
+            {
+                throw new ArgumentException(
+                    $"Capability '{unanswerableSelection.Reference}' declares a " +
+                    $"'{EffectSelectionDeclaration.ConsumerParameterName}' parameter but does not " +
+                    $"implement {nameof(IEffectSelectionCapabilityHandler)}, so nothing could ask it " +
+                    "which of its candidates that consumer accepts.", nameof(handlers));
+            }
+
             if (registered.Select(handler => handler.Reference).Distinct().Count() != registered.Length)
             {
                 throw new ArgumentException(

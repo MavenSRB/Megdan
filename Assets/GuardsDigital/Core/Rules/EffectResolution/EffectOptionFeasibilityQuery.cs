@@ -220,7 +220,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 return Verdict.Performable;
             }
 
-            switch (handler.Anticipate(capabilityContext))
+            // Milestone 6.8l: a selection that says what it selects for is judged by that consumer
+            // rather than by its own ability to pause. Without this a branch behind a selection was
+            // performable whenever anything was targetable, however little the step after it could do
+            // with what was chosen - and since milestone 6.8k every named subject arrives this way.
+            var anticipated = EffectSelectionEligibilityQuery.JudgeSelection(
+                handler.Anticipate(capabilityContext),
+                handler,
+                node,
+                capabilityContext,
+                frame,
+                outcomes,
+                context);
+
+            switch (anticipated)
             {
                 case EffectExecutionResultKind.Applied:
                 case EffectExecutionResultKind.NeedsChoice:

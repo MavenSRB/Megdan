@@ -18,7 +18,20 @@ namespace GuardsDigital.Core.Effects
         UnresolvedNodeOutput = 8,
         NodeOutputNotGuaranteed = 9,
         PredicateMustReturnBoolean = 10,
-        RoleCannotSupplyValueKind = 11
+        RoleCannotSupplyValueKind = 11,
+
+        /// <summary>
+        /// Milestone 6.8l. A selection names a consumer this definition does not declare. One
+        /// definition is one action's node table, so this is also how "a node in another action" is
+        /// refused: there is no address that reaches out of it.
+        /// </summary>
+        UnresolvedSelectionConsumer = 12,
+
+        /// <summary>
+        /// Milestone 6.8l. A selection names a node that reads nothing it publishes, so the two are
+        /// unrelated and filtering the candidates by that node's eligibility would be a guess.
+        /// </summary>
+        SelectionConsumerReadsNothing = 13
     }
 
     public readonly struct EffectDefinitionRejection
@@ -204,6 +217,8 @@ namespace GuardsDigital.Core.Effects
                 }
             }
 
+            ValidateSelectionConsumer(definition, node, rejections);
+
             foreach (var input in node.Inputs
                 .Where(candidate => candidate.SourceKind == EffectBindingSourceKind.NodeOutput))
             {
@@ -240,6 +255,43 @@ namespace GuardsDigital.Core.Effects
                         EffectDefinitionRejectionReason.NodeOutputNotGuaranteed,
                         $"Node '{node.Id}' reads output '{input.SourceOutputName}' from '{input.SourceNodeId}', which is not guaranteed to have executed first."));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Milestone 6.8l. The two things a parameter type-match cannot state about the node a
+        /// selection selects for: that this definition declares it, and that it reads something the
+        /// selection publishes.
+        ///
+        /// Both are refused here rather than at the first pause for the reason every other binding
+        /// rule is: a definition naming a node that is not there, or one that ignores the choice, does
+        /// not describe an effect anybody can play, and finding that out mid-resolution would mean
+        /// finding it out after a card was spent. The kind of the binding needs no rule - it is a
+        /// declared parameter like any other, and the type-match above already checks it.
+        /// </summary>
+        private static void ValidateSelectionConsumer(
+            EffectDefinition definition,
+            EffectNodeDefinition node,
+            ICollection<EffectDefinitionRejection> rejections)
+        {
+            if (!EffectSelectionDeclaration.TryReadConsumer(node, out var consumerNodeId))
+            {
+                return;
+            }
+
+            if (!definition.TryGetNode(consumerNodeId, out var consumer))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.UnresolvedSelectionConsumer,
+                    $"Node '{node.Id}' selects for '{consumerNodeId}', which this definition does not declare."));
+                return;
+            }
+
+            if (EffectSelectionDeclaration.ConsumedParameters(consumer, node.Id).Count == 0)
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.SelectionConsumerReadsNothing,
+                    $"Node '{node.Id}' selects for '{consumerNodeId}', which binds no output of '{node.Id}'."));
             }
         }
 

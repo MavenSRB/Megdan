@@ -31,6 +31,8 @@ namespace GuardsDigital.Tests.EditMode
     /// placed during play, from a different card's Skill. Nothing about the dispatch path differs
     /// between the three: all three pause through the same target selection, commit inside the same
     /// resolution, and store nothing of their own, which is exactly what these cases establish.
+    /// Since milestone 6.8l that absence is itself observable here: the branch is refused before it
+    /// can be chosen, which is the whole point of a selection knowing what it selects for.
     ///
     /// Board state is read back by deserializing the authoritative snapshot, as milestone 6.2's
     /// component fixture and 6.4's and 6.5's do, because this milestone's non-goals bar an
@@ -230,24 +232,75 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ABranchBehindATargetSelection_IsOfferedEvenWhenItsLaterStepCannotApply()
+        public void TheReplaceBranch_IsRefusedWhileNoTokenItCanReplaceStands()
         {
-            // The recorded boundary of milestone 6.5ac's walk, not a defect this milestone introduces:
-            // the walk short-circuits at the first thing that can apply, and a target selection can
-            // always pause, so a branch whose selection has candidates is offered without its later
-            // nodes being judged. Every subject since milestone 6.8k arrives that way - a role cannot
-            // supply a coordinate - so direct Move, Place, Swap, Replace, and Remove all share it.
-            // Here no Hazard token stands anywhere, so the Replace can apply nothing at all.
+            // Milestone 6.8l's regression, on the position it was found in. The Replace needs an
+            // adjacent Hazard token and none stands anywhere on the board, but its selection can
+            // always pause, so until the selection could say what it selects for the walk read the
+            // branch as performable and the player could spend the action and the card on it.
             var session = StartExchangeSkill(out _, out _, out _);
 
             var choice = session.Projection.PendingEffectChoice;
             Assert.That(
                 choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
-                Has.Member(ReplaceBranch),
-                "The branch is offered because its first step can be taken, which is the direction " +
-                "6.5ac chose to err in: refuse what is provably empty, never disable what is merely " +
-                "unreadable.");
+                Has.No.Member(ReplaceBranch),
+                "A branch whose selection can name nothing its consumer accepts carries no " +
+                "invocation, which is what stops the card being spent on it.");
+            Assert.That(choice.UnavailableCandidates, Has.Member(EffectChoiceCandidate.Option(ReplaceBranch)),
+                "It stays greyed among the options rather than disappearing: the mode exists, and " +
+                "hiding it would tell the player less than the card does.");
             Assert.That(RestoreBoard(session).PlacedTokens, Is.Empty, "Nothing was placed to find out.");
+        }
+
+        [Test]
+        public void TheRemoveSelection_NamesOnlyThePiecesItsRemoveAdmits()
+        {
+            // Milestone 6.8l where a player meets it. p.19's Remove takes a game piece and admits no
+            // hero, and the selection above it is a targeting question that has always found one -
+            // so the prompt named the enemy hero, and choosing them spent the action on a mandatory
+            // stop. Both objects are still legal targets; only one of them is a target this effect
+            // can act on, and that is the difference the selection can now state.
+            var session = StartExchangeSkill(
+                false, true, out _, out _, out var minionAt, out var opposingHeroAt);
+            ChooseBranch(session, RemoveBranch);
+
+            var offered = session.Projection.PendingEffectChoice.Candidates
+                .Select(candidate => candidate.Value.Coordinate)
+                .ToArray();
+            Assert.That(offered, Has.Member(minionAt));
+            Assert.That(offered, Has.No.Member(opposingHeroAt),
+                "The hero is targetable and unremovable, which is exactly the pairing that used to " +
+                "reach the player as a legal-looking choice.");
+
+            var restored = Restore(session).Round.CurrentTurnAuthority.PendingEffectChoice;
+            Assert.That(
+                restored.Candidates.Select(candidate => candidate.Value.Coordinate),
+                Is.EqualTo(offered),
+                "Restore re-derives the narrowed set rather than carrying it, for the reason the " +
+                "candidate set itself is re-derived: it is a reading of the board as it now stands.");
+            Assert.That(restored.SelectInvocations.Count, Is.EqualTo(offered.Length));
+        }
+
+        [Test]
+        public void ABranchWhoseConsumerReadsALaterStep_StaysOffered()
+        {
+            // The conservative default milestone 6.8l keeps. The Swap declares what it selects for
+            // like the other three, but its Swap also reads the actor's own space from a node that
+            // runs after the selection, so the consumer cannot be asked yet - and a question nobody
+            // has posed is not an answer of "no". Narrowing what can be read must not turn into
+            // disabling what merely might fail.
+            var session = StartExchangeSkill(out _, out _, out _);
+
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(
+                choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Has.Member(SwapBranch),
+                "An unreadable consumer leaves the branch exactly where 6.5ac left it.");
+            Assert.That(
+                choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Has.Member(RemoveBranch),
+                "The Remove's consumer is readable and accepts the adjacent minion, so this is a " +
+                "branch judged and kept rather than one that escaped judgement.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -300,13 +353,23 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession StartExchangeSkill(
             out HexCoordinate actorAt, out MinionId minion, out HexCoordinate minionAt) =>
-            StartExchangeSkill(false, out actorAt, out minion, out minionAt);
+            StartExchangeSkill(false, false, out actorAt, out minion, out minionAt, out _);
 
         private static MatchSession StartExchangeSkill(
             bool actorOutsideBattleZone,
             out HexCoordinate actorAt,
             out MinionId minion,
-            out HexCoordinate minionAt)
+            out HexCoordinate minionAt) =>
+            StartExchangeSkill(
+                actorOutsideBattleZone, false, out actorAt, out minion, out minionAt, out _);
+
+        private static MatchSession StartExchangeSkill(
+            bool actorOutsideBattleZone,
+            bool opposingHeroBesideTheActor,
+            out HexCoordinate actorAt,
+            out MinionId minion,
+            out HexCoordinate minionAt,
+            out HexCoordinate opposingHeroAt)
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var configured = QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
@@ -338,7 +401,23 @@ namespace GuardsDigital.Tests.EditMode
             minionAt = candidate.Minion.Coordinate;
             actorAt = candidate.Beside;
 
-            var session = CreateSession(map, setup, configuration, acting, candidate.Beside);
+            // The opposing hero can be put beside the actor too, so a selection bounded to Radius 1
+            // has a hero and a minion among its legal targets. Milestone 6.8l's narrowing is only
+            // visible where the two differ to the consuming step.
+            opposingHeroAt = opposingHeroBesideTheActor
+                ? map.Spaces
+                    .Where(space => space.Kind == BoardMapSpaceKind.Playable)
+                    .Where(space =>
+                        HexDistanceQuery.Calculate(space.Coordinate, candidate.Beside) == 1 &&
+                        !occupied.Contains(space.Coordinate) &&
+                        !space.Coordinate.Equals(candidate.Beside))
+                    .Select(space => space.Coordinate)
+                    .First()
+                : default;
+
+            var session = CreateSession(
+                map, setup, configuration, acting, candidate.Beside,
+                opposingHeroBesideTheActor ? opposingHeroAt : (HexCoordinate?)null);
             CommitShoveCards(session);
             Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(acting),
                 "The hero the board was built around must be the one whose turn this is.");
@@ -370,12 +449,15 @@ namespace GuardsDigital.Tests.EditMode
             QuickGameSetupState setup,
             PlaceholderOneVsOneTestConfiguration configuration,
             HeroId placed,
-            HexCoordinate at)
+            HexCoordinate at,
+            HexCoordinate? otherAt = null)
         {
             var occupancies = setup.Heroes
                 .Select(hero => new HeroOccupancy(
                     hero.HeroId,
-                    placed.IsDefined && hero.HeroId.Equals(placed) ? at : ElsewhereFor(hero.HeroId)))
+                    placed.IsDefined && hero.HeroId.Equals(placed)
+                        ? at
+                        : otherAt ?? ElsewhereFor(hero.HeroId)))
                 .ToArray();
             var scenario = new InitialScenarioDescription(
                 configuration.Participants,

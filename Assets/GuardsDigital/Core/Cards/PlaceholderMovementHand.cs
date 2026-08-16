@@ -380,6 +380,13 @@ namespace GuardsDigital.Core.Cards
         /// role cannot supply a coordinate. The Swap's selection excludes the actor - p.19 requires two
         /// objects - while the other two include it harmlessly, since neither admits a hero.
         ///
+        /// Milestone 6.8l adds no branch and moves none. Each of the four selections now names the node
+        /// its chosen object is for, so a branch is judged by what that step could do rather than by
+        /// whether anything at all stands in range. Three of them are answerable straight away; the
+        /// Swap's is not, because its Swap also reads the actor's own space from a node that runs after
+        /// the selection, and a consumer missing an input a later step publishes is left alone. That is
+        /// the conservative case rather than a gap in the coverage.
+        ///
         /// Board-neutral in the same sense as the others: it names no hero, no card, and no space.
         /// </summary>
         private static CardDefinition CreateDisplacementSkillDefinition(SyntheticSkillProfile profile)
@@ -407,7 +414,7 @@ namespace GuardsDigital.Core.Cards
 
             var effect = new EffectDefinition(
                 new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
-                "phase-6-6-rev-1",
+                "phase-6-8l-rev-1",
                 root,
                 new[]
                 {
@@ -432,11 +439,14 @@ namespace GuardsDigital.Core.Cards
                         childNodeIds: new[] { selectSubject, move }),
                     new EffectNodeDefinition(
                         selectSubject, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        SyntheticTargetingCapabilities.ChooseTargetV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(true))
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(true)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(move))
                         },
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -493,12 +503,15 @@ namespace GuardsDigital.Core.Cards
                         childNodeIds: new[] { swapSelect, swapActorSpace, swap }),
                     new EffectNodeDefinition(
                         swapSelect, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        SyntheticTargetingCapabilities.ChooseTargetV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
                             // p.19 requires two objects, so the actor is not among its own candidates.
-                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(swap))
                         },
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -525,11 +538,14 @@ namespace GuardsDigital.Core.Cards
                         childNodeIds: new[] { replaceSelect, replace }),
                     new EffectNodeDefinition(
                         replaceSelect, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        SyntheticTargetingCapabilities.ChooseTargetV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(replace))
                         },
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -546,11 +562,14 @@ namespace GuardsDigital.Core.Cards
                         childNodeIds: new[] { removeSelect, remove }),
                     new EffectNodeDefinition(
                         removeSelect, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        SyntheticTargetingCapabilities.ChooseTargetV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(remove))
                         },
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -570,7 +589,7 @@ namespace GuardsDigital.Core.Cards
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
-                "phase-6-6-rev-1",
+                "phase-6-8l-rev-1",
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
@@ -841,13 +860,16 @@ namespace GuardsDigital.Core.Cards
                         childNodeIds: new[] { selectTarget, push }),
                     new EffectNodeDefinition(
                         selectTarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticTargetingCapabilities.ChooseTargetV2,
+                        SyntheticTargetingCapabilities.ChooseTargetV4,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
                             EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
                             EffectInputBinding.FromLiteral(
-                                "activity", EffectValue.Integer((int)Rules.Modifications.RuleActivity.ObjectPush))
+                                "activity", EffectValue.Integer((int)Rules.Modifications.RuleActivity.ObjectPush)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(push))
                         },
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -946,11 +968,14 @@ namespace GuardsDigital.Core.Cards
                         childNodeIds: new[] { selectTarget, move }),
                     new EffectNodeDefinition(
                         selectTarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        SyntheticTargetingCapabilities.ChooseTargetV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(move))
                         },
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     // `up to` is p.11's own wording for an optional distance, and it is the policy the
@@ -1100,7 +1125,7 @@ namespace GuardsDigital.Core.Cards
                 int defenseValue) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.PushPlaceSkill,
-                    "phase-6-5aa-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    "phase-6-8l-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             /// <summary>Milestone 6.5b's converted card, on the same terms as the three before it.</summary>
             public static SyntheticCardProfile WithDirectMoveSpawnSkill(
@@ -1111,7 +1136,7 @@ namespace GuardsDigital.Core.Cards
                 int defenseValue) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.DirectMoveSpawnSkill,
-                    "phase-6-5b-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    "phase-6-8l-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             public string Id { get; }
             public string DisplayName { get; }

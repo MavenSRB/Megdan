@@ -20,7 +20,16 @@ namespace GuardsDigital.Core.Effects
         Hero = 3,
         Minion = 4,
         CardInstance = 5,
-        Coordinate = 6
+        Coordinate = 6,
+
+        /// <summary>
+        /// Milestone 6.8l. A node inside this same definition, so one node can name another as the
+        /// step its own result is for. Unlike every other arm this is a definition-time address rather
+        /// than a rules fact: it may be written as a literal input and nothing else - no role supplies
+        /// one, no capability publishes one, and the snapshot writer refuses one - which is what keeps
+        /// eligibility derived and out of every payload.
+        /// </summary>
+        Node = 7
     }
 
     /// <summary>Where an input binding reads its value from.</summary>
@@ -72,7 +81,8 @@ namespace GuardsDigital.Core.Effects
             HeroId heroId,
             MinionId minionId,
             CardInstanceId cardInstanceId,
-            HexCoordinate coordinate)
+            HexCoordinate coordinate,
+            EffectNodeId nodeId)
         {
             Kind = kind;
             BooleanValue = booleanValue;
@@ -81,6 +91,7 @@ namespace GuardsDigital.Core.Effects
             MinionId = minionId;
             CardInstanceId = cardInstanceId;
             Coordinate = coordinate;
+            NodeId = nodeId;
         }
 
         public EffectValueKind Kind { get; }
@@ -90,14 +101,15 @@ namespace GuardsDigital.Core.Effects
         public MinionId MinionId { get; }
         public CardInstanceId CardInstanceId { get; }
         public HexCoordinate Coordinate { get; }
+        public EffectNodeId NodeId { get; }
 
         public bool IsDefined => Kind != EffectValueKind.None;
 
         public static EffectValue Boolean(bool value) =>
-            new EffectValue(EffectValueKind.Boolean, value, 0, default, default, default, default);
+            new EffectValue(EffectValueKind.Boolean, value, 0, default, default, default, default, default);
 
         public static EffectValue Integer(int value) =>
-            new EffectValue(EffectValueKind.Integer, false, value, default, default, default, default);
+            new EffectValue(EffectValueKind.Integer, false, value, default, default, default, default, default);
 
         public static EffectValue Hero(HeroId value)
         {
@@ -106,7 +118,7 @@ namespace GuardsDigital.Core.Effects
                 throw new ArgumentException("A Hero effect value requires a defined hero.", nameof(value));
             }
 
-            return new EffectValue(EffectValueKind.Hero, false, 0, value, default, default, default);
+            return new EffectValue(EffectValueKind.Hero, false, 0, value, default, default, default, default);
         }
 
         public static EffectValue Minion(MinionId value)
@@ -116,7 +128,7 @@ namespace GuardsDigital.Core.Effects
                 throw new ArgumentException("A minion effect value requires a defined minion.", nameof(value));
             }
 
-            return new EffectValue(EffectValueKind.Minion, false, 0, default, value, default, default);
+            return new EffectValue(EffectValueKind.Minion, false, 0, default, value, default, default, default);
         }
 
         public static EffectValue Card(CardInstanceId value)
@@ -126,11 +138,28 @@ namespace GuardsDigital.Core.Effects
                 throw new ArgumentException("A card effect value requires a defined card.", nameof(value));
             }
 
-            return new EffectValue(EffectValueKind.CardInstance, false, 0, default, default, value, default);
+            return new EffectValue(
+                EffectValueKind.CardInstance, false, 0, default, default, value, default, default);
         }
 
         public static EffectValue Space(HexCoordinate value) =>
-            new EffectValue(EffectValueKind.Coordinate, false, 0, default, default, default, value);
+            new EffectValue(
+                EffectValueKind.Coordinate, false, 0, default, default, default, value, default);
+
+        /// <summary>
+        /// Milestone 6.8l. Names another node of the same definition - the step a selection's chosen
+        /// object is for.
+        /// </summary>
+        public static EffectValue Node(EffectNodeId value)
+        {
+            if (!value.IsDefined)
+            {
+                throw new ArgumentException("A node effect value requires a defined node.", nameof(value));
+            }
+
+            return new EffectValue(
+                EffectValueKind.Node, false, 0, default, default, default, default, value);
+        }
 
         public bool Equals(EffectValue other)
         {
@@ -153,6 +182,8 @@ namespace GuardsDigital.Core.Effects
                     return CardInstanceId.Equals(other.CardInstanceId);
                 case EffectValueKind.Coordinate:
                     return Coordinate.Equals(other.Coordinate);
+                case EffectValueKind.Node:
+                    return NodeId.Equals(other.NodeId);
                 default:
                     return true;
             }
@@ -176,6 +207,8 @@ namespace GuardsDigital.Core.Effects
                     return ((int)Kind * 397) ^ CardInstanceId.GetHashCode();
                 case EffectValueKind.Coordinate:
                     return ((int)Kind * 397) ^ Coordinate.GetHashCode();
+                case EffectValueKind.Node:
+                    return ((int)Kind * 397) ^ NodeId.GetHashCode();
                 default:
                     return (int)Kind;
             }
@@ -197,6 +230,8 @@ namespace GuardsDigital.Core.Effects
                     return CardInstanceId.ToString();
                 case EffectValueKind.Coordinate:
                     return Coordinate.ToString();
+                case EffectValueKind.Node:
+                    return NodeId.ToString();
                 default:
                     return "none";
             }
@@ -258,6 +293,7 @@ namespace GuardsDigital.Core.Effects
             }
 
             RequireValueKind(valueKind);
+            RequireRuntimeValueKind(valueKind, "role");
             return new EffectInputBinding(
                 parameterName, EffectBindingSourceKind.Role, valueKind, role, default, null, default);
         }
@@ -282,6 +318,7 @@ namespace GuardsDigital.Core.Effects
             }
 
             RequireValueKind(valueKind);
+            RequireRuntimeValueKind(valueKind, "node output");
             return new EffectInputBinding(
                 parameterName, EffectBindingSourceKind.NodeOutput, valueKind,
                 EffectRoleKind.None, sourceNodeId, sourceOutputName, default);
@@ -302,6 +339,23 @@ namespace GuardsDigital.Core.Effects
             {
                 throw new ArgumentException(
                     "An effect input binding requires a typed value kind.", nameof(valueKind));
+            }
+        }
+
+        /// <summary>
+        /// Milestone 6.8l. Refuses <see cref="EffectValueKind.Node"/> anywhere a value is produced
+        /// while the match runs. A node reference addresses this definition's own table, so it is
+        /// written into the definition or it does not exist: a frame resolving one from a role, or a
+        /// handler publishing one for a later node to read, would be inventing a definition at
+        /// runtime.
+        /// </summary>
+        private static void RequireRuntimeValueKind(EffectValueKind valueKind, string source)
+        {
+            if (valueKind == EffectValueKind.Node)
+            {
+                throw new ArgumentException(
+                    $"A node reference is a definition-time address, so no {source} supplies one; " +
+                    "bind it as a literal.", nameof(valueKind));
             }
         }
 
@@ -339,6 +393,16 @@ namespace GuardsDigital.Core.Effects
                     "An effect output binding requires a typed value kind.", nameof(valueKind));
             }
 
+            if (valueKind == EffectValueKind.Node)
+            {
+                // Milestone 6.8l. Nothing may publish a node reference: it addresses the definition
+                // that is already loaded, so a produced one could only name a step the payload
+                // carrying it did not describe.
+                throw new ArgumentException(
+                    "A node reference is a definition-time address, never a produced fact.",
+                    nameof(valueKind));
+            }
+
             OutputName = outputName;
             ValueKind = valueKind;
         }
@@ -371,6 +435,15 @@ namespace GuardsDigital.Core.Effects
             if (!value.IsDefined)
             {
                 throw new ArgumentException("An effect outcome requires a defined value.", nameof(value));
+            }
+
+            if (value.Kind == EffectValueKind.Node)
+            {
+                // Milestone 6.8l, the same rule <see cref="EffectOutputBinding"/> states: a produced
+                // fact crosses the snapshot boundary, and a node reference has no meaning there.
+                throw new ArgumentException(
+                    "A node reference is a definition-time address, never a produced fact.",
+                    nameof(value));
             }
 
             OutputName = outputName;

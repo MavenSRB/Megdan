@@ -195,7 +195,7 @@ namespace GuardsDigital.Tests.EditMode
                 Sequence("root", "select", "move"),
                 new EffectNodeDefinition(
                     new EffectNodeId("select"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                    SyntheticTargetingCapabilities.ChooseTargetV1,
+                    SyntheticTargetingCapabilities.ChooseTargetV3,
                     inputs: new[]
                     {
                         EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
@@ -263,6 +263,73 @@ namespace GuardsDigital.Tests.EditMode
                 "A Sequence orders at least one child.");
         }
 
+        [Test]
+        public void ASelectionNamingAConsumerThisDefinitionDoesNotDeclare_IsRejected()
+        {
+            // Milestone 6.8l. A definition is one action's node table, so this is also how a selection
+            // reaching for a node in another action is refused: there is no address that leaves here.
+            var rejections = Validate(
+                Sequence("root", "select", "move"),
+                Selection("select", "somewhere-else"),
+                Mover("move", "select"));
+
+            Assert.That(rejections.Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.UnresolvedSelectionConsumer));
+        }
+
+        [Test]
+        public void ASelectionNamingANodeThatReadsNothingItPublishes_IsRejected()
+        {
+            // The two nodes are unrelated, so narrowing the selection's candidates by that node's
+            // eligibility would be a guess about a pairing the definition never stated.
+            var rejections = Validate(
+                Sequence("root", "select", "move", "unrelated"),
+                Selection("select", "unrelated"),
+                Mover("move", "select"),
+                Leaf("unrelated"));
+
+            Assert.That(rejections.Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.SelectionConsumerReadsNothing));
+        }
+
+        [Test]
+        public void ASelectionNamingTheNodeThatBindsItsOutput_IsAccepted()
+        {
+            // The vacuity guard for both rules above, and the shape every converted card now uses.
+            Assert.That(
+                Validate(
+                    Sequence("root", "select", "move"),
+                    Selection("select", "move"),
+                    Mover("move", "select")),
+                Is.Empty);
+        }
+
+        [Test]
+        public void ANodeReference_CanOnlyEverBeALiteral()
+        {
+            // Milestone 6.8l states this where the binding is built rather than as a validator rule,
+            // because a node reference addresses the definition that is already loaded: a frame
+            // resolving one from a role, or a handler publishing one, would be inventing a definition
+            // while the match runs. That also keeps it out of every payload by construction.
+            Assert.Throws<ArgumentException>(() => EffectInputBinding.FromRole(
+                    EffectSelectionDeclaration.ConsumerParameterName,
+                    EffectRoleKind.Actor,
+                    EffectValueKind.Node),
+                "No role supplies a node reference.");
+            Assert.Throws<ArgumentException>(() => EffectInputBinding.FromNodeOutput(
+                    EffectSelectionDeclaration.ConsumerParameterName,
+                    new EffectNodeId("earlier"),
+                    "chosen",
+                    EffectValueKind.Node),
+                "And no node publishes one.");
+            Assert.Throws<ArgumentException>(
+                () => new EffectOutputBinding("consumer", EffectValueKind.Node),
+                "So no capability may declare one as an output either.");
+            Assert.Throws<ArgumentException>(
+                () => new EffectOutcomeFact("consumer", EffectValue.Node(new EffectNodeId("move"))),
+                "Nor publish one as a produced fact.");
+        }
+
         private static System.Collections.Generic.IReadOnlyList<EffectDefinitionRejection> Validate(
             params EffectNodeDefinition[] nodes) =>
             EffectDefinitionValidator.Validate(
@@ -285,6 +352,33 @@ namespace GuardsDigital.Tests.EditMode
                 new EffectNodeId(id), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                 SyntheticEffectCapabilities.NoteActorV1,
                 outputs: new[] { new EffectOutputBinding("hero", EffectValueKind.Hero) });
+
+        /// <summary>Milestone 6.8l's shape: a selection declaring the node it selects for.</summary>
+        private static EffectNodeDefinition Selection(string id, string consumerId) =>
+            new EffectNodeDefinition(
+                new EffectNodeId(id), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                SyntheticTargetingCapabilities.ChooseTargetV3,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                    EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(true)),
+                    EffectInputBinding.FromLiteral(
+                        EffectSelectionDeclaration.ConsumerParameterName,
+                        EffectValue.Node(new EffectNodeId(consumerId)))
+                },
+                outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
+
+        private static EffectNodeDefinition Mover(string id, string selectionId) =>
+            new EffectNodeDefinition(
+                new EffectNodeId(id), EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                SyntheticDisplacementCapabilities.DirectMoveV2,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromNodeOutput(
+                        "mover", new EffectNodeId(selectionId), "chosen", EffectValueKind.Coordinate),
+                    EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                    EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                });
 
         private static EffectNodeDefinition Reader(string id, string sourceId) =>
             new EffectNodeDefinition(

@@ -392,6 +392,9 @@ namespace GuardsDigital.Core.Snapshots
                 throw Malformed($"Snapshot pending effect choice names unknown node '{nodeId}'.");
             }
 
+            var resolution = new EffectResolutionContext(
+                trusted, capabilities, participants, null, 1, 1, modifications, components: components);
+
             // Candidates are never written. A control node's options come from the trusted
             // definition; a capability's come from asking the trusted handler again. Either way a
             // payload can only ever narrow an authoritative candidate set, never invent one.
@@ -402,12 +405,18 @@ namespace GuardsDigital.Core.Snapshots
                     ? Array.Empty<EffectChoiceCandidate>()
                     : choiceKind == EffectChoiceKind.SelectOption
                         ? node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray()
-                        : DeriveCapabilityCandidates(
-                            node, restored, capabilities, participants, components, modifications);
+                        : DeriveCapabilityCandidates(node, restored, resolution);
             if (selected.Any(candidate => !candidates.Contains(candidate)))
             {
                 throw Malformed(
                     $"Snapshot pending effect choice selects a candidate node '{nodeId}' does not offer.");
+            }
+
+            if (maximum > candidates.Length)
+            {
+                throw Malformed(
+                    $"Snapshot pending effect choice at node '{nodeId}' allows {maximum} selections " +
+                    $"from the {candidates.Length} the restored state offers.");
             }
 
             // Milestone 6.5ac: which options are unperformable is never written either. It is asked
@@ -416,12 +425,7 @@ namespace GuardsDigital.Core.Snapshots
             // now stand, so carrying one in the payload could only carry a stale one.
             var unavailable = choiceKind == EffectChoiceKind.SelectOption
                 ? EffectOptionFeasibilityQuery.FindUnperformableOptions(
-                    node,
-                    restored,
-                    restored.CompletedOutcomes,
-                    new EffectResolutionContext(
-                        trusted, capabilities, participants, null, 1, 1, modifications,
-                        components: components))
+                    node, restored, restored.CompletedOutcomes, resolution)
                 : Array.Empty<EffectChoiceCandidate>();
             if (selected.Any(candidate => unavailable.Contains(candidate)))
             {
@@ -461,17 +465,17 @@ namespace GuardsDigital.Core.Snapshots
         /// Milestone 6.2c extended the same discipline to input bindings: the request resolves the
         /// node's inputs from the choice-less restored frame through the resolver's own binding path,
         /// so a capability whose candidates depend on a bound input re-derives what live execution
-        /// offered instead of being re-asked with none.
+        /// offered instead of being re-asked with none. Milestone 6.8l extended it once more: a
+        /// selection that declares what it selects for offered only the objects that consumer accepts,
+        /// so the same narrowing is applied to the re-asked set. It is asked here rather than carried
+        /// for the reason the set itself is - eligibility is a reading of the board as it now stands.
         /// </remarks>
         private static EffectChoiceCandidate[] DeriveCapabilityCandidates(
             EffectNodeDefinition node,
             PendingResolution restored,
-            EffectCapabilityCatalog capabilities,
-            MatchParticipants participants,
-            MatchComponents components,
-            RuleModificationSet modifications)
+            EffectResolutionContext resolution)
         {
-            var handler = capabilities.Load(node.Capability);
+            var handler = resolution.Catalog.Load(node.Capability);
             var offered = handler.Execute(new EffectCapabilityContext(
                 node.Id,
                 node.FailurePolicy,
@@ -482,17 +486,21 @@ namespace GuardsDigital.Core.Snapshots
                 EffectResolutionSession.ResolveInputBindings(node, restored, restored.CompletedOutcomes),
                 1,
                 1,
-                participants,
+                resolution.Participants,
                 null,
-                modifications,
-                components));
+                resolution.Modifications,
+                resolution.Components));
             if (offered.Choice == null)
             {
                 throw Malformed(
                     $"Snapshot pending effect choice names node '{node.Id}', whose capability no longer requests a choice.");
             }
 
-            return offered.Choice.Candidates.Select(EffectChoiceCandidate.Value_).ToArray();
+            return EffectSelectionEligibilityQuery
+                .EligibleCandidates(
+                    node, offered.Choice.Candidates, restored, restored.CompletedOutcomes, resolution)
+                .Select(EffectChoiceCandidate.Value_)
+                .ToArray();
         }
 
         private static EffectDefinition FindTrustedEffectRoot(
@@ -561,6 +569,16 @@ namespace GuardsDigital.Core.Snapshots
 
         private static void WriteEffectValue(BinaryWriter writer, EffectValue value)
         {
+            if (value.Kind == EffectValueKind.Node)
+            {
+                // Milestone 6.8l. A node reference addresses the trusted definition a restore already
+                // loads, so writing one would put a second, weaker statement of the same thing in the
+                // payload. The typed value union carries it for a literal binding and nowhere else,
+                // and this is the boundary that says so.
+                throw new InvalidOperationException(
+                    "A node reference is a definition-time address and is never written to a snapshot.");
+            }
+
             writer.Write((int)value.Kind);
             switch (value.Kind)
             {

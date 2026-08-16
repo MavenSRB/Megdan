@@ -89,16 +89,18 @@ namespace GuardsDigital.Tests.EditMode
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
             // Each showcase conversion advances exactly one card - 6.8a Red Bulwark, 6.8b Blue Feint,
             // 6.5b Red Bombard - and the seven still at the 5.1a revision is what proves nothing else
-            // moved with it.
+            // moved with it. Milestone 6.8l is the first non-conversion to advance a card revision,
+            // and it advances exactly the two whose Skill opens a target selection: what changed is
+            // the declaration those selections carry, not what either card does.
             Assert.That(
                 redHand.Definitions.Select(definition => definition.ContentRevision),
                 Is.EqualTo(new[]
                 {
-                    "phase-6-5aa-rev-1",
+                    "phase-6-8l-rev-1",
                     "phase-6-8a-rev-1",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3",
-                    "phase-6-5b-rev-1"
+                    "phase-6-8l-rev-1"
                 }));
             Assert.That(
                 blueHand.Definitions.Select(definition => definition.ContentRevision),

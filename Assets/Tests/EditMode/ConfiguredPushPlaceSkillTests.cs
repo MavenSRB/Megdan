@@ -66,7 +66,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(definition.Id, Is.EqualTo(new CardDefinitionId("placeholder-red-needle")),
                 "The conversion advances the revision, never the card's identity.");
-            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-5aa-rev-1"));
+            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-8l-rev-1"));
             Assert.That(definition.ContentAuthority,
                 Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(definition.Initiative.Value, Is.EqualTo(13));
@@ -123,7 +123,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var selectTarget = effect.Nodes.Single(node => node.Id.Equals(SelectTarget));
             Assert.That(selectTarget.Capability,
-                Is.EqualTo(SyntheticTargetingCapabilities.ChooseTargetV2));
+                Is.EqualTo(SyntheticTargetingCapabilities.ChooseTargetV4));
             Assert.That(
                 selectTarget.Inputs.Single(input => input.ParameterName == "range").Literal.IntegerValue,
                 Is.EqualTo(1), "`another adjacent unit` is Radius 1.");
