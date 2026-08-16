@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
+using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -142,9 +143,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// which spaces a real effect may target comes from its card text through the reusable targeting
         /// contracts milestone 6.8 owns, and this milestone has no verified text to read. What is not
         /// synthetic is that the space must be empty and playable, which p.18 states outright.
+        ///
+        /// Since milestone 6.5 it is the supply arm of the one shared <see cref="PlaceOperation"/>
+        /// rather than a second implementation of the same p.18 sentence: it declares the same five
+        /// things every Place declares - supply source, token piece, a radius-1 destination question
+        /// measured from the actor, the acting hero choosing, and impossible without a destination -
+        /// and the operation validates and commits. Its observable behaviour is unchanged, because
+        /// empty playable spaces within radius 1 of the actor, excluding the actor's own space, is
+        /// exactly the neighbour set it derived before.
         /// </summary>
         private sealed class PlaceTokenHandler : IEffectCapabilityHandler
         {
+            /// <summary>
+            /// This capability's declared Place. Constant rather than derived, because none of the
+            /// five depends on the node: a token placement is always a supply Place of a token into
+            /// an adjacent empty space, and p.18's short-supply step is the separate reclamation node
+            /// beside it rather than a policy of this one.
+            /// </summary>
+            private static readonly PlacePolicy Policy = new PlacePolicy(
+                PlaceSourceContainer.Supply,
+                PlaceEligiblePieceKind.Token,
+                PlaceDestinationScope.EmptySpacesWithinRadius,
+                1,
+                PlaceChooserKind.ActingHero,
+                PlaceNoDestinationPolicy.Impossible);
+
             public EffectCapabilityReference Reference => PlaceTokenV1;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
@@ -187,48 +210,51 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var reference = SyntheticComponentDefinitions.HazardV3;
                 var coordinate = selected[0].Coordinate;
-                // Re-checked against current state rather than trusted from the paused choice: a space
-                // legal when the choice opened may have been taken before the answer arrived.
-                if (!components.Tokens.IsEmptyPlayableSpace(coordinate) ||
-                    components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) < 1)
+                if (!components.Tokens.TryGetHeroCoordinate(context.ActorId, out var origin))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                components.Tokens.CommitValidatedTokenPlacement(new PlacedToken(
-                    // Deterministic under replay - the same command prefix produces the same identity -
-                    // and unique across placements, because the round and turn distinguish a token from
-                    // a later one that happens to occupy the space the first was reclaimed from.
-                    new TokenInstanceId(
-                        $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}" +
-                        $":r{context.RoundIndex}t{context.TurnIndex}:{coordinate.Q}:{coordinate.R}"),
-                    components.Catalog.LoadToken(reference),
-                    context.ActorId,
-                    context.ControllerId,
-                    context.SourceCardInstanceId,
-                    coordinate));
+                // The operation re-derives the admitted spaces and re-asks the supply rather than
+                // trusting the paused choice: a space legal when the choice opened may have been taken
+                // before the answer arrived, and the last copy may have been placed elsewhere.
+                var outcome = PlaceOperation.PlaceFromSupply(
+                    Policy,
+                    components.Tokens,
+                    components.Catalog,
+                    new PlacedToken(
+                        // Deterministic under replay - the same command prefix produces the same
+                        // identity - and unique across placements, because the round and turn
+                        // distinguish a token from a later one that happens to occupy the space the
+                        // first was reclaimed from.
+                        new TokenInstanceId(
+                            $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}" +
+                            $":r{context.RoundIndex}t{context.TurnIndex}:{coordinate.Q}:{coordinate.R}"),
+                        components.Catalog.LoadToken(reference),
+                        context.ActorId,
+                        context.ControllerId,
+                        context.SourceCardInstanceId,
+                        coordinate),
+                    origin,
+                    Array.Empty<HexCoordinate>());
+                if (!outcome.Accepted)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
 
                 return EffectExecutionResult.Applied(new[]
                 {
-                    new EffectOutcomeFact("placed", EffectValue.Space(coordinate))
+                    new EffectOutcomeFact("placed", EffectValue.Space(outcome.Destination))
                 });
             }
 
             private static IEnumerable<HexCoordinate> LegalSpaces(
                 EffectCapabilityContext context,
-                MatchComponents components)
-            {
-                if (!components.Tokens.TryGetHeroCoordinate(context.ActorId, out var origin))
-                {
-                    return Array.Empty<HexCoordinate>();
-                }
-
-                return origin.GetNeighbors()
-                    .Where(components.Tokens.IsEmptyPlayableSpace)
-                    .OrderBy(coordinate => coordinate.Q)
-                    .ThenBy(coordinate => coordinate.R)
-                    .ToArray();
-            }
+                MatchComponents components) =>
+                components.Tokens.TryGetHeroCoordinate(context.ActorId, out var origin)
+                    ? PlaceDestinationQuery.FindDestinations(
+                        Policy, components.Tokens, origin, Array.Empty<HexCoordinate>())
+                    : Array.Empty<HexCoordinate>();
         }
 
         /// <summary>

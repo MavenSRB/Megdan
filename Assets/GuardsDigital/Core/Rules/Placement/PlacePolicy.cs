@@ -1,0 +1,186 @@
+using System;
+
+namespace GuardsDigital.Core.Rules.Placement
+{
+    /// <summary>
+    /// Where the placed piece is taken from. Rulebook p.18 states both arms in one sentence: "Take a
+    /// game piece (such as a miniature, or a token) from the board or from the supply, and put it into
+    /// a different space."
+    ///
+    /// The two arms are not interchangeable, which is why this is declared rather than inferred from
+    /// whatever the subject happens to be: a supply Place consumes a finite component and a board Place
+    /// vacates a space, and p.18's Spawn is defined by ruling one of them out ("the spawned object must
+    /// be taken from the supply and cannot be taken from the board").
+    /// </summary>
+    public enum PlaceSourceContainer
+    {
+        None = 0,
+        Board = 1,
+        Supply = 2
+    }
+
+    /// <summary>
+    /// What kind of piece a Place may take. p.18's own general answer is any game piece; a narrower
+    /// rule states its own narrower kind, and p.18's displaced-minion correction is exactly such a
+    /// rule - it applies to "minions represented by minion miniatures" and says outright that "objects
+    /// that count as minions are unaffected".
+    ///
+    /// This is an intrinsic-representation question, not an effective one: it asks which miniature is
+    /// being picked up, so no <c>Counts As</c> is consulted anywhere it is used.
+    /// </summary>
+    public enum PlaceEligiblePieceKind
+    {
+        None = 0,
+
+        /// <summary>Any game piece: p.18's unrestricted "such as a miniature, or a token".</summary>
+        GamePiece = 1,
+
+        /// <summary>A minion miniature only, for p.18's after-action correction.</summary>
+        MinionMiniature = 2,
+
+        /// <summary>A token only, for p.18's token placement and its short-supply rule.</summary>
+        Token = 3
+    }
+
+    /// <summary>
+    /// The declared question that produces a Place's legal destinations. A Place never walks a path -
+    /// p.18 says outright that placing "does not count as movement" - so every scope here is geometric
+    /// or set-membership, and each is measured with the shared queries rather than local arithmetic.
+    /// </summary>
+    public enum PlaceDestinationScope
+    {
+        None = 0,
+
+        /// <summary>
+        /// Every empty playable space within an inclusive rulebook distance of the origin, excluding
+        /// the origin itself. Distance counts spaces including spaces with obstacles (p.18's
+        /// Farther/Nearest), which is the same measure Range and Radius use.
+        /// </summary>
+        EmptySpacesWithinRadius = 1,
+
+        /// <summary>
+        /// The equally-nearest empty spaces of a declared coordinate set - p.18's correction fallback,
+        /// "place that minion in the nearest empty space of the Battle Zone".
+        /// </summary>
+        NearestEmptySpacesInScope = 2
+    }
+
+    /// <summary>
+    /// Who decides among the legal destinations. Placement never picks for a player, so a Place states
+    /// the chooser the way every other authoritative choice does. The two members are the two the
+    /// rulebook actually names: the hero performing the action, and - for the correction - "the
+    /// minion's team decides" (p.18).
+    /// </summary>
+    public enum PlaceChooserKind
+    {
+        None = 0,
+        ActingHero = 1,
+        OwningTeam = 2
+    }
+
+    /// <summary>
+    /// What a Place means when its destination query yields nothing at all. Distinct from a rejected
+    /// commit: this is the rules answer to "there is nowhere to put it", which p.10 makes either a
+    /// stop or a skip depending on whether the step is mandatory.
+    /// </summary>
+    public enum PlaceNoDestinationPolicy
+    {
+        None = 0,
+
+        /// <summary>A mandatory Place with no destination stops the action at that step.</summary>
+        Impossible = 1,
+
+        /// <summary>A `may` or `if able` Place with no destination is skipped and the action continues.</summary>
+        Decline = 2
+    }
+
+    /// <summary>
+    /// The complete declaration of one Place operation: its source container, eligible piece kind,
+    /// destination query, chooser, and no-destination policy.
+    ///
+    /// It exists as one object rather than five arguments because those five are exactly what
+    /// <c>CARD_EFFECT_CAPABILITIES.md</c> requires a placement definition to state - "Source container,
+    /// destination, occupancy, supply, or endpoint policy is incomplete for the operation" is a
+    /// content-load rejection - so a Place that fails to state one cannot be constructed at all. Every
+    /// caller declares its own instance: the general capability, the token placement, and the
+    /// after-action correction fallback each state a different five, and nothing infers them.
+    /// </summary>
+    public sealed class PlacePolicy
+    {
+        public PlacePolicy(
+            PlaceSourceContainer sourceContainer,
+            PlaceEligiblePieceKind eligiblePiece,
+            PlaceDestinationScope destinationScope,
+            int destinationRadius,
+            PlaceChooserKind chooser,
+            PlaceNoDestinationPolicy noDestinationPolicy)
+        {
+            if (sourceContainer == PlaceSourceContainer.None)
+            {
+                throw new ArgumentException(
+                    "A Place declares whether its piece comes from the board or the supply.",
+                    nameof(sourceContainer));
+            }
+
+            if (eligiblePiece == PlaceEligiblePieceKind.None)
+            {
+                throw new ArgumentException(
+                    "A Place declares which kind of game piece it may take.", nameof(eligiblePiece));
+            }
+
+            if (destinationScope == PlaceDestinationScope.None)
+            {
+                throw new ArgumentException(
+                    "A Place declares the question that produces its destinations.", nameof(destinationScope));
+            }
+
+            if (chooser == PlaceChooserKind.None)
+            {
+                throw new ArgumentException(
+                    "A Place declares who chooses among its destinations.", nameof(chooser));
+            }
+
+            if (noDestinationPolicy == PlaceNoDestinationPolicy.None)
+            {
+                throw new ArgumentException(
+                    "A Place declares what having no destination means.", nameof(noDestinationPolicy));
+            }
+
+            if (destinationScope == PlaceDestinationScope.EmptySpacesWithinRadius && destinationRadius < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(destinationRadius),
+                    destinationRadius,
+                    "A radius scope needs a positive radius; a radius of zero admits only the origin, " +
+                    "which p.18 excludes by requiring a different space.");
+            }
+
+            SourceContainer = sourceContainer;
+            EligiblePiece = eligiblePiece;
+            DestinationScope = destinationScope;
+            DestinationRadius = destinationRadius;
+            Chooser = chooser;
+            NoDestinationPolicy = noDestinationPolicy;
+        }
+
+        public PlaceSourceContainer SourceContainer { get; }
+        public PlaceEligiblePieceKind EligiblePiece { get; }
+        public PlaceDestinationScope DestinationScope { get; }
+
+        /// <summary>
+        /// The inclusive rulebook distance <see cref="PlaceDestinationScope.EmptySpacesWithinRadius"/>
+        /// measures, and zero for a scope that derives its own candidate set.
+        /// </summary>
+        public int DestinationRadius { get; }
+
+        public PlaceChooserKind Chooser { get; }
+        public PlaceNoDestinationPolicy NoDestinationPolicy { get; }
+
+        public override string ToString() =>
+            $"Place {EligiblePiece} from {SourceContainer} into {DestinationScope}" +
+            (DestinationScope == PlaceDestinationScope.EmptySpacesWithinRadius
+                ? $"({DestinationRadius})"
+                : string.Empty) +
+            $", chosen by {Chooser}, {NoDestinationPolicy} without one";
+    }
+}

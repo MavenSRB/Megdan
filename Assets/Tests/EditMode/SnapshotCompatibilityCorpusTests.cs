@@ -122,17 +122,38 @@ namespace GuardsDigital.Tests.EditMode
         /// exact decoded length and differs from its v9 predecessor in the one version integer,
         /// because the correction block is written only under continuation kind 4 and no carried-over
         /// fixture holds one.
+        /// Milestone 6.5 keeps schema v10 and re-pins all eight fixtures for two separable causes, and
+        /// adds no fixture: it introduces no persisted family, because the unit supply a Spawn draws
+        /// from is derived on restore as the configured roster minus the restored positions and never
+        /// written. The first cause reaches every payload - the capability list gains
+        /// <c>synthetic-actor-space</c>, <c>synthetic-place</c>, and <c>synthetic-spawn</c> - and the
+        /// decision is reject rather than migrate, by the same existing
+        /// <c>ValidateCapabilityRegistrations</c> sequence check 6.4 and 6.8k relied on: a payload
+        /// recording the nineteen-capability set states a contract set this build no longer supplies.
+        /// Measured rather than assumed: each of the five ordinary fixtures grows exactly 66 bytes -
+        /// the three registration entries as 7-bit length-prefixed ids of 21, 15, and 15 characters
+        /// plus an int32 revision each - in one contiguous region with a 452-byte common prefix and
+        /// every later section byte-identical.
+        /// The second cause moves only the three Skill-fixture payloads, by 4 bytes the other way: the
+        /// two shove cards become the fixture hand's board-object Skill and advance from
+        /// <c>phase-6-8k-rev-1</c> to <c>phase-6-5-rev-1</c>, one character shorter, and each card
+        /// writes its revision twice - once for the card and once for its effect definition - so the
+        /// string appears four times per payload and each payload nets 66 - 4 = 62 bytes. Its reject
+        /// decision is the content-revision check, exactly as at 6.8a: a payload naming the shove card
+        /// at the 6.8k revision states a branch set the trusted catalog no longer supplies, and reading
+        /// it as the widened card would silently give a saved match Place and Spawn options it never
+        /// recorded.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v10", "1f8c22c74cbd34e5888afd53174b15fe09d5109658b5b9afa1f191c7e3ec62f1"),
-            new CompatibilityFixture("active-turn-v10", "4ebfe2b5b69f77f2a9005d81644681cd2da7cbbac33b29a3b705be0d77952c18"),
-            new CompatibilityFixture("pending-choice-v10", "15532fa52e1ae4ea995a39b9d679bc12b4f4a53927c21355f0e81f8ba0cc3014"),
-            new CompatibilityFixture("end-of-round-v10", "7cac1abaf1a6ae3fd29ea25d55d4c0f33578d6eab431b70a0f8c23ea4f2e0d45"),
-            new CompatibilityFixture("pending-minion-battle-v10", "12614b4043e8edefc8aa27b013542864ca41e2a18796286380fc12360c67f26d"),
-            new CompatibilityFixture("placed-token-v10", "75478ea4f377c11f5c5f6cc0dbe79783731bf0a5a10ef6bdc1d13b42c957396c"),
-            new CompatibilityFixture("attached-marker-v10", "f6b4efdc025541ab89826676ade4a71533a34774d802a5653d4f3c6c7652fd35"),
-            new CompatibilityFixture("pending-correction-v10", "366166d013122b97cbd28f13b5db4c9359f83267376f9241f229535f289ece07")
+            new CompatibilityFixture("setup-v10", "7fe4e494555a4fce4fc609604aae7fe8c7790625d79494e72b4e8a1a102d4e7c"),
+            new CompatibilityFixture("active-turn-v10", "50608b65290a6dba2b44d721cc35f14a67200df9b6b0cdb961fecd1e99e254dc"),
+            new CompatibilityFixture("pending-choice-v10", "0f3cbb39878d14c4d4393cc5f8b40dc86e246ff48c38fb7a03a6bfc236de20ae"),
+            new CompatibilityFixture("end-of-round-v10", "baccb00e06abb8b79ae5266da9a5054b8605c908bdbd3dea62868c43947131bb"),
+            new CompatibilityFixture("pending-minion-battle-v10", "7a120bb5571a8f703baaf819378aaf6fe4e247df4f69c7e96127c6c45dc00737"),
+            new CompatibilityFixture("placed-token-v10", "6b2258a1a687236f863adce55b15a54c42cb06304b8b1d1ee8e8ab42c71f0281"),
+            new CompatibilityFixture("attached-marker-v10", "bcc6d59f1783d13af38049c9e61fb3e9a8b40da0b4e868b7cc78bc7d103332fe"),
+            new CompatibilityFixture("pending-correction-v10", "b6bb06eab839ae773830c71337b0d1771d89b149fd1d40d253c75f4adbdbf067")
         };
 
         [Test]

@@ -16,13 +16,27 @@ using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.AdjacentMove
 {
-    public sealed class AdjacentMoveAuthority : ITokenPlacementAuthority, IBoardDisplacementAuthority
+    public sealed class AdjacentMoveAuthority :
+        ITokenPlacementAuthority, IBoardDisplacementAuthority, IUnitSpawnAuthority
     {
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly HashSet<HexCoordinate> terrainCoordinates;
         private readonly List<HeroOccupancy> occupancies;
         private readonly List<ObstacleOccupancy> obstacleOccupancies;
         private readonly List<MinionOccupancy> minions;
+
+        /// <summary>
+        /// The declared minion miniatures that are not standing on the board - rulebook p.18's supply
+        /// for a unit Spawn. It is board-adjacent runtime state rather than a second persisted list:
+        /// a removal moves a miniature here, a Spawn moves one back, and a restore rebuilds it as the
+        /// configured roster minus the restored positions, so nothing about it reaches the wire.
+        ///
+        /// Each entry keeps its identity-bound content - team, type, and Spawn point - and carries the
+        /// declared setup placement in its position fields, which mean nothing while the miniature is
+        /// off the board and are replaced when it Spawns.
+        /// </summary>
+        private readonly List<MinionOccupancy> reserveMinions;
+
         private readonly List<PlacedToken> tokens;
         private readonly BoardOccupancyIndex occupancyIndex;
         private readonly IReadOnlyList<HeroOccupancy> occupanciesView;
@@ -100,6 +114,22 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
             IEnumerable<MinionOccupancy> initialMinions,
             IEnumerable<PlacedToken> initialTokens)
+            : this(
+                mapDefinition, initialOccupancies, initialObstacleOccupancies, initialMinions,
+                initialTokens, Enumerable.Empty<MinionOccupancy>())
+        {
+        }
+
+        // The reserve arm, for a restore that knows the whole configured roster and only some of it is
+        // standing. A live match reaches the same state through a removal rather than through this
+        // constructor, so every other entry point declares an empty reserve (milestone 6.5).
+        private AdjacentMoveAuthority(
+            BoardMapDefinition mapDefinition,
+            IEnumerable<HeroOccupancy> initialOccupancies,
+            IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
+            IEnumerable<MinionOccupancy> initialMinions,
+            IEnumerable<PlacedToken> initialTokens,
+            IEnumerable<MinionOccupancy> initialReserveMinions)
         {
             MapDefinition = mapDefinition ?? throw new ArgumentNullException(nameof(mapDefinition));
 
@@ -121,6 +151,11 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             if (initialTokens == null)
             {
                 throw new ArgumentNullException(nameof(initialTokens));
+            }
+
+            if (initialReserveMinions == null)
+            {
+                throw new ArgumentNullException(nameof(initialReserveMinions));
             }
 
             this.boardCoordinates = new HashSet<HexCoordinate>(mapDefinition.PlayableCoordinates);
@@ -215,7 +250,21 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 occupancyIndex.Add(token.Coordinate, BoardOccupant.ForToken(token.Id), nameof(initialTokens));
             }
 
+            // The supply is validated for identity alone: a reserve miniature stands nowhere, so no
+            // space, occupancy, or map question applies to it until it Spawns.
+            var materializedReserve = initialReserveMinions.ToArray();
+            if (materializedReserve.Any(minion => minion == null) ||
+                materializedReserve.Select(minion => minion.MinionId).Distinct().Count() != materializedReserve.Length ||
+                materializedReserve.Any(minion =>
+                    materializedMinions.Any(placed => placed.MinionId.Equals(minion.MinionId))))
+            {
+                throw new ArgumentException(
+                    "Reserve minions must be non-null, uniquely identified, and absent from the board.",
+                    nameof(initialReserveMinions));
+            }
+
             minions = new List<MinionOccupancy>(materializedMinions);
+            reserveMinions = new List<MinionOccupancy>(materializedReserve);
             tokens = new List<PlacedToken>(materializedTokens);
             occupanciesView = occupancies.AsReadOnly();
             obstacleOccupanciesView = obstacleOccupancies.AsReadOnly();
@@ -235,6 +284,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             occupancies = new List<HeroOccupancy>(source.occupancies);
             obstacleOccupancies = new List<ObstacleOccupancy>(source.obstacleOccupancies);
             minions = new List<MinionOccupancy>(source.minions);
+            reserveMinions = new List<MinionOccupancy>(source.reserveMinions);
             tokens = new List<PlacedToken>(source.tokens);
             occupancyIndex = source.occupancyIndex.Clone();
             occupanciesView = occupancies.AsReadOnly();
@@ -335,13 +385,25 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 return MinionOccupancy.FromSetup(setup).WithPosition(
                     new ConfiguredSpaceReference(mapDefinition.Id, space.Id),
                     position.Coordinate);
-            });
+            }).ToArray();
+
+            // Milestone 6.5's supply, rebuilt rather than read: every declared miniature the restored
+            // positions do not account for is one that has left the board, which is exactly p.18's
+            // supply. Deriving it here is what keeps it off the wire - a stored supply would be a
+            // second count that could disagree with the positions beside it.
+            var reserve = available
+                .Where(minion => !state.RemainingMinions.Any(position =>
+                    position.MinionId.Equals(minion.MinionId)))
+                .Select(MinionOccupancy.FromSetup)
+                .ToArray();
+
             return new AdjacentMoveAuthority(
                 mapDefinition,
                 state.HeroOccupancies,
                 state.ObstacleOccupancies,
                 remaining,
-                state.PlacedTokens);
+                state.PlacedTokens,
+                reserve);
         }
 
         public AdjacentMoveResult TryCommit(AdjacentMoveCommand command)
@@ -505,6 +567,11 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             var removed = minions[index];
             minions.RemoveAt(index);
             occupancyIndex.Remove(removed.Coordinate);
+
+            // A miniature that leaves the board is back in the supply (p.18's Respawn states the
+            // ordering outright: "a minion must first be removed, before it can be respawned"), so
+            // the Spawn supply is live rather than fixed at setup.
+            reserveMinions.Add(removed);
             return removed;
         }
 
@@ -780,6 +847,91 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 space.Id.Equals(definition.SpaceId) && space.Kind == BoardMapSpaceKind.Playable).Coordinate;
             var token = tokens.SingleOrDefault(candidate => candidate.Coordinate.Equals(coordinate));
             return token == null ? null : CommitValidatedTokenReclamation(token.Id);
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // Milestone 6.5: the unit Spawn port. Taking a miniature out of the supply is a different
+        // authority question from relocating one that already stands, so these sit beside the
+        // displacement and token commits rather than inside them - p.18 keeps Place, Push, and Spawn
+        // distinct operations, and CARD_EFFECT_CAPABILITIES.md forbids treating them as
+        // interchangeable.
+        // ---------------------------------------------------------------------------------------
+
+        public IReadOnlyList<SpawnableUnit> FindUnitSupply() =>
+            reserveMinions
+                .OrderBy(minion => minion.MinionId.Value, StringComparer.Ordinal)
+                .Select(minion => new SpawnableUnit(
+                    minion.MinionId, minion.TeamSide, minion.MinionType, minion.SpawnPoint))
+                .ToArray();
+
+        public bool TryGetSpawnPointCoordinate(
+            ConfiguredSpawnPointReference spawnPoint, out HexCoordinate coordinate)
+        {
+            coordinate = default;
+            if (!spawnPoint.MapId.Equals(MapDefinition.Id))
+            {
+                return false;
+            }
+
+            var definition = MapDefinition.SpawnPoints.SingleOrDefault(candidate =>
+                candidate.Id.Equals(spawnPoint.SpawnPointId));
+            if (definition == null)
+            {
+                return false;
+            }
+
+            var space = MapDefinition.Spaces.SingleOrDefault(candidate =>
+                candidate.Id.Equals(definition.SpaceId) && candidate.Kind == BoardMapSpaceKind.Playable);
+            if (space == null)
+            {
+                return false;
+            }
+
+            coordinate = space.Coordinate;
+            return true;
+        }
+
+        public UnitSpawnCommitResult CommitValidatedUnitSpawn(MinionId minionId)
+        {
+            var index = reserveMinions.FindIndex(minion => minion.MinionId.Equals(minionId));
+            if (index < 0)
+            {
+                return UnitSpawnCommitResult.Reject(
+                    minions.Any(minion => minion.MinionId.Equals(minionId))
+                        ? UnitSpawnRejectionReason.UnitAlreadyOnBoard
+                        : UnitSpawnRejectionReason.UnknownUnit);
+            }
+
+            var reserved = reserveMinions[index];
+            if (!TryGetSpawnPointCoordinate(reserved.SpawnPoint, out var destination))
+            {
+                return UnitSpawnCommitResult.Reject(UnitSpawnRejectionReason.UnknownSpawnPoint);
+            }
+
+            // p.19: "If a unit Spawns in a Spawn Point covered by a token, remove the token first,
+            // then spawn the unit." Any other obstacle simply blocks - the same page's
+            // one-obstacle-per-space rule admits no second occupant, and no rule clears a miniature
+            // out of the way.
+            PlacedToken clearedToken = null;
+            if (occupancyIndex.IsOccupied(destination))
+            {
+                var covering = tokens.SingleOrDefault(token => token.Coordinate.Equals(destination));
+                if (covering == null)
+                {
+                    return UnitSpawnCommitResult.Reject(UnitSpawnRejectionReason.SpawnPointOccupied);
+                }
+
+                clearedToken = CommitValidatedTokenRemovalBeforeUnitSpawn(reserved.SpawnPoint);
+            }
+
+            var space = MapDefinition.Spaces.Single(candidate =>
+                candidate.Kind == BoardMapSpaceKind.Playable && candidate.Coordinate.Equals(destination));
+            var spawned = reserved.WithPosition(
+                new ConfiguredSpaceReference(MapDefinition.Id, space.Id), destination);
+            occupancyIndex.Add(destination, BoardOccupant.ForMinion(spawned.MinionId), nameof(minionId));
+            reserveMinions.RemoveAt(index);
+            minions.Add(spawned);
+            return UnitSpawnCommitResult.Accept(spawned, destination, clearedToken);
         }
     }
 }

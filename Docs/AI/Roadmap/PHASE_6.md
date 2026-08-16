@@ -572,7 +572,7 @@ Non-goals: No correction-rule change, redesign of 6.1a's removal authority, one 
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64b-add-player-facing-displaced-minion-correction-choices-completion-evidence).
 
-### [~] 6.5 Complete reusable Place and Spawn effects
+### [x] 6.5 Complete reusable Place and Spawn effects
 
 Observable outcome: Synthetic effects use general typed Place and Spawn operations for eligible board pieces and supplies before verified hero content is introduced.
 
@@ -585,6 +585,8 @@ Acceptance checks:
 - Milestone 6.4a's minimum minion-correction Place path is migrated to or proven conformant with the completed general Place capability without changing its verified outcome.
 
 Non-goals: No Wasp definition, hero Respawn eligibility/timing, Lane-Push minion Respawn, card-name/hero-name branch, or production presentation.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65-complete-reusable-place-and-spawn-effects-completion-evidence).
 
 ### [ ] 6.6 Complete reusable board-object Swap, Replace, and Remove effects
 

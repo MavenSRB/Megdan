@@ -8,6 +8,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -348,6 +349,27 @@ namespace GuardsDigital.Core.Rules.Displacement
     /// </summary>
     internal static class DisplacedMinionCorrectionPlanner
     {
+        /// <summary>
+        /// The correction fallback's declared Place (milestone 6.5). p.18: "If there is no path to the
+        /// Battle Zone, or the minion cannot move, place that minion in the nearest empty space of the
+        /// Battle Zone." Every field is that sentence: the piece comes off the board, it is a minion
+        /// miniature and explicitly not an object that merely counts as one, the destinations are the
+        /// nearest empty spaces of the declared zone, the minion's own team decides between equally
+        /// near ones, and there is no no-destination arm to take because the planner has already
+        /// filtered a subject with nowhere to go out of the correctable set.
+        ///
+        /// It is declared here rather than inside the operation because the operation is general and
+        /// this rule is not: milestone 6.5's fifth acceptance check is exactly that this fallback stops
+        /// being its own minimum placement and becomes one more caller of the shared Place.
+        /// </summary>
+        internal static PlacePolicy FallbackPlacePolicy { get; } = new PlacePolicy(
+            PlaceSourceContainer.Board,
+            PlaceEligiblePieceKind.MinionMiniature,
+            PlaceDestinationScope.NearestEmptySpacesInScope,
+            0,
+            PlaceChooserKind.OwningTeam,
+            PlaceNoDestinationPolicy.Impossible);
+
         internal static DisplacedMinionCorrectionStep DeriveNext(
             AdjacentMoveAuthority board,
             MatchParticipants participants,
@@ -481,15 +503,18 @@ namespace GuardsDigital.Core.Rules.Displacement
                     .ToArray();
             }
 
-            var empty = zoneCoordinates.Where(board.IsEmptyPlayableSpace).ToArray();
-            if (empty.Length == 0)
+            // The fallback's destinations are the general Place's own question, asked through the
+            // shared query rather than re-derived here (milestone 6.5).
+            var placements = PlaceDestinationQuery.FindDestinations(
+                FallbackPlacePolicy, board, subject.Coordinate, zoneCoordinates);
+            if (placements.Count == 0)
             {
                 kind = DisplacedMinionCorrectionKind.None;
                 return Array.Empty<DisplacedMinionCorrectionCandidate>();
             }
 
             kind = DisplacedMinionCorrectionKind.Place;
-            return NearestQuery.FindNearest(subject.Coordinate, empty)
+            return placements
                 .Select(destination => new DisplacedMinionCorrectionCandidate(
                     destination,
                     Enumerable.Empty<HexCoordinate>(),

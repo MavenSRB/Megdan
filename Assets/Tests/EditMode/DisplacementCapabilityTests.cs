@@ -465,7 +465,8 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 modifications,
                 new MatchComponents(
-                    SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(), board));
+                    SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
+                    board, board));
 
         /// <summary>A playable East-West file (-2,0)..(6,0) with the actor at (0,0).</summary>
         private static AdjacentMoveAuthority CreateLineBoard(HexCoordinate otherAt)

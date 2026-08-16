@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Presentation.Board;
 using NUnit.Framework;
 
@@ -60,13 +61,22 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// The rule's other half. Component lifetime has to happen somewhere, and where it happens is
-        /// the registered capability handlers - the same seam every other rules mutation goes through.
+        /// the registered capability handlers and the shared rules operations they invoke - the same
+        /// seam every other rules mutation goes through.
+        ///
+        /// <see cref="PlaceOperation"/> joined that set at milestone 6.5, when the token placement
+        /// capability stopped implementing p.18's Place a second time and became one caller of the one
+        /// shared operation. The rule's subject is unchanged: what it forbids is a presentation type
+        /// deciding that a component exists, and what it requires is that some Core rules seam still
+        /// does. Naming only the handler after the commit moved would have made the rule pass
+        /// vacuously while nothing was checked.
         /// </summary>
         [Test]
         public void TheCapabilityHandlers_AreWhereComponentLifetimeActuallyHappens()
         {
             var handlers = ILConformanceScanner
                 .WithNestedTypes(typeof(SyntheticComponentCapabilities))
+                .Concat(new[] { typeof(PlaceOperation) })
                 .ToArray();
 
             foreach (var member in ForbiddenLifetimeMembers())

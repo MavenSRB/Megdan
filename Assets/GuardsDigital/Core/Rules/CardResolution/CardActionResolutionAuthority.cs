@@ -11,6 +11,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -93,13 +94,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <summary>
         /// The component collaborators a Skill's capabilities may reach. The board doubles as the token
         /// placement port, because tokens are board occupants and the board owns the one occupancy index
-        /// milestone 6.1r established, and since milestone 6.4 it is also the displacement port for the
-        /// same reason: relocating a board object is the same authority's business. They stay two named
-        /// ports on one object rather than one wide one, because placing from a supply and displacing
-        /// something already placed are different rules questions. The marker register arrives from the
-        /// caller rather than being created here whenever a live match is composing, so that the register
-        /// this dispatcher hands to capabilities and the register the round authority persists are the
-        /// same object.
+        /// milestone 6.1r established, and since milestone 6.4 it is also the displacement port and
+        /// since milestone 6.5 the unit Spawn port, for the same reason: every one of them mutates the
+        /// same occupancy, and that is the same authority's business. They stay named ports on one
+        /// object rather than one wide one, because placing from a supply, displacing something already
+        /// placed, and taking a miniature out of the supply are different rules questions. The marker
+        /// register arrives from the caller rather than being created here whenever a live match is
+        /// composing, so that the register this dispatcher hands to capabilities and the register the
+        /// round authority persists are the same object.
         /// </summary>
         private static MatchComponents CreateComponents(
             AdjacentMoveAuthority adjacentMoveAuthority,
@@ -108,6 +110,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 SyntheticComponentDefinitions.CreateCatalog(),
                 adjacentMoveAuthority,
                 markers ?? new MarkerAttachmentRegister(),
+                adjacentMoveAuthority,
                 adjacentMoveAuthority);
 
         /// <summary>
@@ -456,9 +459,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DisplacedMinionCorrectionStep step)
         {
             var origin = step.Subject.Coordinate;
-            var committed = board.CommitValidatedDisplacement(
-                BoardObjectReference.ForMinion(step.Subject.MinionId), step.Destination.Destination);
-            if (!committed.Accepted)
+            var subject = BoardObjectReference.ForMinion(step.Subject.MinionId);
+
+            // p.18 gives the correction two different operations, so this commits through two: a
+            // shortest-path return is a relocation, and the no-path fallback is a Place. Since
+            // milestone 6.5 the fallback is the shared general Place rather than a minimum path of its
+            // own, which is what makes the eligible piece kind, the destination question, and the
+            // different-space requirement one implementation with every other Place.
+            var accepted = step.CorrectionKind == DisplacedMinionCorrectionKind.Place
+                ? PlaceOperation.PlaceFromBoard(
+                    DisplacedMinionCorrectionPlanner.FallbackPlacePolicy,
+                    board,
+                    board,
+                    subject,
+                    step.Destination.Destination,
+                    BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition)).Accepted
+                : board.CommitValidatedDisplacement(subject, step.Destination.Destination).Accepted;
+            if (!accepted)
             {
                 throw new InvalidOperationException(
                     "A derived correction destination could not be committed; the planner and the " +

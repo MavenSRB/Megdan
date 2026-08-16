@@ -12,7 +12,9 @@ using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using NUnit.Framework;
@@ -204,6 +206,48 @@ namespace GuardsDigital.Tests.EditMode
                 Has.None.EqualTo(CardActionResolutionEventKind.DisplacedMinionCorrectionMoved),
                 "The fallback emits Place rather than Movement facts.");
             AssertActionResolvedAndTurnAdvanced(session);
+        }
+
+        [Test]
+        public void TheFallbackPlace_IsTheGeneralPlaceRatherThanAMinimumOfItsOwn()
+        {
+            // Milestone 6.5's fifth acceptance check. The fallback used to derive and commit its own
+            // minimum placement; it now states a PlacePolicy against the shared operation, so the
+            // candidates a player is offered are exactly what the general destination query answers
+            // for that declaration - board source, minion miniature, nearest empty spaces of the
+            // declared Battle Zone - and the verified outcome above is unchanged.
+            var session = CreateSession(
+                TeamSide.Red,
+                Reposition("red-melee-01", DisplacedRedAt),
+                ZonePerimeterWall());
+            CommitBothSides(session);
+            Accept(session, DirectorCommand.StartAction(InstantSkill));
+
+            var pending = session.Projection.PendingDisplacedMinionCorrection;
+            Assert.That(pending, Is.Not.Null);
+            Assert.That(pending.Kind, Is.EqualTo(DisplacedMinionCorrectionKind.Place));
+
+            var board = AuthoritativeSnapshotSerializer.Deserialize(
+                session.Projection.AuthoritativeSnapshot,
+                session.Projection.Definitions,
+                new[] { session.Projection.SelectedMap },
+                session.Projection.Setup.Minions).Board;
+            var declared = new PlacePolicy(
+                PlaceSourceContainer.Board,
+                PlaceEligiblePieceKind.MinionMiniature,
+                PlaceDestinationScope.NearestEmptySpacesInScope,
+                0,
+                PlaceChooserKind.OwningTeam,
+                PlaceNoDestinationPolicy.Impossible);
+
+            Assert.That(
+                pending.DestinationCandidates.Select(candidate => candidate.Destination),
+                Is.EqualTo(PlaceDestinationQuery.FindDestinations(
+                    declared,
+                    board,
+                    DisplacedRedAt,
+                    BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition))),
+                "The correction offers exactly the general Place's own answer for its declaration.");
         }
 
         [Test]

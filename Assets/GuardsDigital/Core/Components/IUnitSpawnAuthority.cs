@@ -1,0 +1,170 @@
+using System;
+using System.Collections.Generic;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Minions;
+
+namespace GuardsDigital.Core.Components
+{
+    /// <summary>
+    /// One unit miniature currently in the supply: declared match content that is not standing on the
+    /// board. Rulebook p.18 defines Spawn as taking a piece that "must be taken from the supply and
+    /// cannot be taken from the board", so this is exactly the set a Spawn may draw from.
+    ///
+    /// It carries the identity-bound content the miniature keeps whether or not it is placed - its
+    /// team, its type, and the Spawn point it belongs to - because those are setup content rather than
+    /// board state, and the miniature standing back up must be the same miniature.
+    /// </summary>
+    public readonly struct SpawnableUnit : IEquatable<SpawnableUnit>
+    {
+        public SpawnableUnit(
+            MinionId minionId,
+            TeamSide teamSide,
+            StandardMinionType minionType,
+            ConfiguredSpawnPointReference spawnPoint)
+        {
+            if (!minionId.IsDefined)
+            {
+                throw new ArgumentException("A spawnable unit requires a defined minion ID.", nameof(minionId));
+            }
+
+            MinionId = minionId;
+            TeamSide = teamSide;
+            MinionType = minionType;
+            SpawnPoint = spawnPoint;
+        }
+
+        public MinionId MinionId { get; }
+        public TeamSide TeamSide { get; }
+        public StandardMinionType MinionType { get; }
+
+        /// <summary>The configured Spawn point this miniature belongs to (p.19: "Spaces on the board used to spawn minions and heroes").</summary>
+        public ConfiguredSpawnPointReference SpawnPoint { get; }
+
+        public bool Equals(SpawnableUnit other) =>
+            MinionId.Equals(other.MinionId) && TeamSide == other.TeamSide &&
+            MinionType == other.MinionType && SpawnPoint.Equals(other.SpawnPoint);
+
+        public override bool Equals(object obj) => obj is SpawnableUnit other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = MinionId.GetHashCode();
+                hash = (hash * 397) ^ (int)TeamSide;
+                hash = (hash * 397) ^ (int)MinionType;
+                return (hash * 397) ^ SpawnPoint.GetHashCode();
+            }
+        }
+
+        public override string ToString() => $"{MinionId} ({MinionType}) at {SpawnPoint}";
+    }
+
+    /// <summary>Why a validated unit Spawn was refused.</summary>
+    public enum UnitSpawnRejectionReason
+    {
+        None = 0,
+
+        /// <summary>No such miniature is declared for this match.</summary>
+        UnknownUnit = 1,
+
+        /// <summary>The miniature is already standing on the board, so it is not in the supply.</summary>
+        UnitAlreadyOnBoard = 2,
+
+        /// <summary>The miniature's Spawn point is not a playable space of the selected map.</summary>
+        UnknownSpawnPoint = 3,
+
+        /// <summary>An obstacle other than a token stands on the Spawn point, so nothing may enter it.</summary>
+        SpawnPointOccupied = 4
+    }
+
+    /// <summary>
+    /// The outcome of one unit Spawn, including whether p.19's token-clearance step actually removed
+    /// anything: "If a unit Spawns in a Spawn Point covered by a token, remove the token first, then
+    /// spawn the unit."
+    /// </summary>
+    public readonly struct UnitSpawnCommitResult
+    {
+        private UnitSpawnCommitResult(
+            bool accepted,
+            UnitSpawnRejectionReason rejectionReason,
+            MinionOccupancy spawned,
+            HexCoordinate destination,
+            PlacedToken clearedToken)
+        {
+            Accepted = accepted;
+            RejectionReason = rejectionReason;
+            Spawned = spawned;
+            Destination = destination;
+            ClearedToken = clearedToken;
+        }
+
+        public bool Accepted { get; }
+        public UnitSpawnRejectionReason RejectionReason { get; }
+
+        /// <summary>The miniature now standing on the board, or <c>null</c> when the Spawn was refused.</summary>
+        public MinionOccupancy Spawned { get; }
+
+        public HexCoordinate Destination { get; }
+
+        /// <summary>The token removed to clear the Spawn point, or <c>null</c> when none covered it.</summary>
+        public PlacedToken ClearedToken { get; }
+
+        public static UnitSpawnCommitResult Accept(
+            MinionOccupancy spawned, HexCoordinate destination, PlacedToken clearedToken) =>
+            new UnitSpawnCommitResult(
+                true, UnitSpawnRejectionReason.None, spawned, destination, clearedToken);
+
+        public static UnitSpawnCommitResult Reject(UnitSpawnRejectionReason reason)
+        {
+            if (reason == UnitSpawnRejectionReason.None)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(reason), reason, "A refused unit Spawn requires a reason.");
+            }
+
+            return new UnitSpawnCommitResult(false, reason, null, default, null);
+        }
+    }
+
+    /// <summary>
+    /// The board port a Spawn capability reaches, beside <see cref="ITokenPlacementAuthority"/> and
+    /// <see cref="IBoardDisplacementAuthority"/> and for the reason milestone 6.4 recorded when it
+    /// added the second: taking a miniature out of the supply is a different authority question from
+    /// relocating one that is already standing, and p.18 keeps Place, Push, and Spawn distinct
+    /// operations rather than modes of one.
+    ///
+    /// It is deliberately narrow, and in particular it answers no eligibility question of its own.
+    /// p.18's Respawn adds a rule about how many Spawn points of a type and colour exist relative to
+    /// miniatures present in the Battle Zone; that specialized rule stays unimplemented and belongs
+    /// with hero and minion Respawn, so nothing here may be read as supplying it.
+    /// </summary>
+    public interface IUnitSpawnAuthority
+    {
+        /// <summary>
+        /// Every declared unit miniature not currently on the board, in canonical identity order.
+        ///
+        /// Derived from the declared roster and live occupancy on every call, never stored. That is
+        /// the same decision milestone 6.2 made for the token supply and for the same reason: a second
+        /// count is a second thing that can disagree with the board, and there is nothing here to
+        /// serialize, so a restored match cannot carry a stale supply.
+        /// </summary>
+        IReadOnlyList<SpawnableUnit> FindUnitSupply();
+
+        /// <summary>
+        /// The playable coordinate of a configured Spawn point, or <c>false</c> when the selected map
+        /// declares no such point.
+        /// </summary>
+        bool TryGetSpawnPointCoordinate(
+            ConfiguredSpawnPointReference spawnPoint, out HexCoordinate coordinate);
+
+        /// <summary>
+        /// Puts a supply miniature onto its declared Spawn point as one transaction: p.19's token
+        /// clearance first, then the occupant. Refusals are returned rather than thrown, because a
+        /// Spawn point taken between derivation and commit is a real race an effect must report.
+        /// </summary>
+        UnitSpawnCommitResult CommitValidatedUnitSpawn(MinionId minionId);
+    }
+}

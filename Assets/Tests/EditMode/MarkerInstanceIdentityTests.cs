@@ -174,6 +174,7 @@ namespace GuardsDigital.Tests.EditMode
                 SyntheticComponentDefinitions.CreateCatalog(),
                 board,
                 new MarkerAttachmentRegister(),
+                board,
                 board);
         }
 

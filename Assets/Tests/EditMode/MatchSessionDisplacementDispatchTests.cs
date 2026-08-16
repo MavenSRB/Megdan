@@ -46,7 +46,7 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly HexCoordinate TerrainBeyond = new HexCoordinate(1, -5);
 
         [Test]
-        public void TheDisplacementSkill_OffersItsTwoBranchesInDefinitionOrder()
+        public void TheDisplacementSkill_OffersItsBranchesInDefinitionOrder()
         {
             var session = StartDisplacementSkill();
 
@@ -58,7 +58,14 @@ namespace GuardsDigital.Tests.EditMode
                 "The acting hero owns the decision; the resolver never picks for a player.");
             Assert.That(
                 choice.Candidates.Select(candidate => candidate.OptionNodeId),
-                Is.EqualTo(new[] { MoveBranch, PushBranch }));
+                Is.EqualTo(new[]
+                {
+                    MoveBranch,
+                    PushBranch,
+                    new EffectNodeId("placement-place-branch"),
+                    new EffectNodeId("placement-spawn")
+                }),
+                "Milestone 6.5 appended its two branches, so 6.4's two keep their positions.");
         }
 
         [Test]

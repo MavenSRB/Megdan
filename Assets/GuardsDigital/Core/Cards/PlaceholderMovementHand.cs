@@ -58,6 +58,13 @@ namespace GuardsDigital.Core.Cards
         /// same reason both earlier pairs do. Red's is the highest Initiative in the fixture hand and
         /// Blue's the lowest, so the Red hero reliably acts first and a displacement fixture never has
         /// to steer Initiative to reach the Skill.
+        ///
+        /// Milestone 6.5 widened them from the displacement Skill into the fixture hand's board-object
+        /// Skill: the same card now also carries p.18's Place and Spawn. A fifth pair of cards would
+        /// have needed a fifth free Initiative outside the ordinary band, and Blue's band already
+        /// reaches down to 1 with no positive value left below it, so a new pair could only have been
+        /// bought by renumbering cards several pinned fixtures name. Separability is unaffected: the
+        /// operations are branches of one `Choose`, so a fixture still reaches exactly the one it wants.
         /// </summary>
         private static readonly SyntheticSkillProfile RedDisplacementSkillProfile =
             new SyntheticSkillProfile("red-shove", "Red Shove", 16);
@@ -358,6 +365,14 @@ namespace GuardsDigital.Core.Cards
         /// adjacent minion or token is the subject breadth 6.4a's correction needs. No `towards` policy
         /// is set; a `towards` bound needs verified card text to read it from.
         ///
+        /// Milestone 6.5 appends two more branches to the same `Choose`: a Place of the acting hero
+        /// into a different empty space within radius 2, and a Spawn of one friendly supply miniature
+        /// onto its own Spawn point. The Place branch is a Sequence, because p.18's Place names the
+        /// piece it moves and a coordinate can only reach a capability through a prior node's published
+        /// output - here the actor's own space, which is a fact rather than a decision, so no prompt is
+        /// invented for it. They are appended rather than inserted so the existing branch positions the
+        /// 6.4 and 6.8k fixtures name are untouched.
+        ///
         /// Board-neutral in the same sense as the others: it names no hero, no card, and no space.
         /// </summary>
         private static CardDefinition CreateDisplacementSkillDefinition(SyntheticSkillProfile profile)
@@ -368,16 +383,20 @@ namespace GuardsDigital.Core.Cards
             var selectSubject = new EffectNodeId("displacement-select-subject");
             var move = new EffectNodeId("displacement-direct-move");
             var push = new EffectNodeId("displacement-object-push");
+            var placeBranch = new EffectNodeId("placement-place-branch");
+            var actorSpace = new EffectNodeId("placement-actor-space");
+            var place = new EffectNodeId("placement-place");
+            var spawn = new EffectNodeId("placement-spawn");
 
             var effect = new EffectDefinition(
                 new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
-                "phase-6-8k-rev-1",
+                "phase-6-5-rev-1",
                 root,
                 new[]
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { moveBranch, push },
+                        childNodeIds: new[] { moveBranch, push, placeBranch, spawn },
                         chooser: EffectChooserRole.Actor,
                         minimumSelections: 1,
                         maximumSelections: 1),
@@ -423,12 +442,37 @@ namespace GuardsDigital.Core.Cards
                         {
                             new EffectOutputBinding("distance", EffectValueKind.Integer),
                             new EffectOutputBinding("moved", EffectValueKind.Integer)
+                        }),
+                    new EffectNodeDefinition(
+                        placeBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { actorSpace, place }),
+                    new EffectNodeDefinition(
+                        actorSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[] { new EffectOutputBinding("space", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        place, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.PlaceV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "subject", actorSpace, "space", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("radius", EffectValue.Integer(2))
+                        },
+                        outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        spawn, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.SpawnV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("spawned", EffectValueKind.Minion),
+                            new EffectOutputBinding("at", EffectValueKind.Coordinate)
                         })
                 });
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
-                "phase-6-8k-rev-1",
+                "phase-6-5-rev-1",
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,

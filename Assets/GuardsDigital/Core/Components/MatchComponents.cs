@@ -22,12 +22,14 @@ namespace GuardsDigital.Core.Components
             ComponentDefinitionCatalog catalog,
             ITokenPlacementAuthority tokens,
             MarkerAttachmentRegister markers,
-            IBoardDisplacementAuthority board)
+            IBoardDisplacementAuthority board,
+            IUnitSpawnAuthority units)
         {
             Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             Tokens = tokens;
             Markers = markers;
             Board = board;
+            Units = units;
         }
 
         public ComponentDefinitionCatalog Catalog { get; }
@@ -47,6 +49,14 @@ namespace GuardsDigital.Core.Components
         public IBoardDisplacementAuthority Board { get; }
 
         /// <summary>
+        /// The board's unit Spawn port (milestone 6.5), or <c>null</c> outside a live match. It is a
+        /// fourth named port for the reason the third exists: p.18's Spawn takes a miniature out of
+        /// the supply, which is neither a relocation of something already standing nor a token
+        /// placement, and the rulebook keeps the three operations distinct.
+        /// </summary>
+        public IUnitSpawnAuthority Units { get; }
+
+        /// <summary>
         /// Whether the token and marker authorities are present, so a component operation can run.
         /// Deliberately unchanged by the board port: the token and marker capabilities that predate
         /// milestone 6.4 must not start reporting themselves unable to act because a port they never
@@ -56,5 +66,8 @@ namespace GuardsDigital.Core.Components
 
         /// <summary>Whether the board displacement port is present, so a displacement can be committed.</summary>
         public bool CanDisplace => Board != null;
+
+        /// <summary>Whether the unit Spawn port is present, so a supply miniature can enter the board.</summary>
+        public bool CanSpawnUnits => Units != null;
     }
 }
