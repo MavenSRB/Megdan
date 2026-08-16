@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.5af**. The configured v
 ## Current authorization and next route
 
 - Current completed milestone: **6.5af**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.6**.
 - Next proposed milestone: **6.6**.
 
 Corrective milestone **6.5af** completed on 2026-08-16, from a question the user raised immediately after 6.5ae shipped: what the rules already do about a card that can achieve nothing. They do have an answer, and it had never been recorded - p.12's Hold action, which any card can perform, exists precisely so that a player is never forced to perform an action that is impossible or disadvantageous. Nothing judged a Skill when its action was *offered*, so the player spent their one action on an inert Skill and lost the other action the same card printed; on Red Bombard that is a Secondary Movement 2. A Skill whose whole effect can apply nothing is now judged by 6.5ac's own walk against the frame a start would create, drawn greyed rather than dropped, and refused on the command path too. This changes what 6.5ae's own surface is for rather than retiring it: 6.5af declines an action it can prove empty up front, and 6.5ae still closes a choice that only turns out to be empty later. **6.6** is proposed next. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
