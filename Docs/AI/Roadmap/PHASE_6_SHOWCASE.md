@@ -73,7 +73,7 @@ Non-goals: No Direct Move, Spawn, Swap, Replace, Remove, Repeat, Wasp definition
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65a-convert-red-needle-into-the-pushplace-showcase-skill-completion-evidence).
 
-### [ ] 6.5b Convert Red Bombard into the Direct-Move/Spawn showcase Skill
+### [~] 6.5b Convert Red Bombard into the Direct-Move/Spawn showcase Skill
 
 Observable outcome: The configured Red hand's existing Red Bombard card replaces its printed Primary Attack with a bounded synthetic `Choose one` Skill whose first branch directly Moves another adjacent unit up to 2 spaces and whose second branch Spawns one declared synthetic reserve unit at an eligible empty source-defined Spawn point.
 

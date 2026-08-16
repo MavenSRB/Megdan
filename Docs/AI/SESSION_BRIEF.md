@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.5ab**. The configured v
 ## Current authorization and next route
 
 - Current completed milestone: **6.5ab**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.5b**, in progress.
 - Next proposed milestone: **6.5b**.
 
 Corrective milestone **6.5ab** completed on 2026-08-16. The configured board now treats authoritative hero occupancy as visibility: a Minion-Battle-removed hero clears its cue and deactivates, while a later Respawn, Undo, restart, or restore reactivates the same retained view at its projected coordinate. No rule, authority, minion, snapshot, or scene-object contract changed. **6.5b** is proposed next under the mechanics-showcase route below. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
