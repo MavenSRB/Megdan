@@ -218,6 +218,12 @@ namespace GuardsDigital.Core.Rules.BoardObjects
     /// Threading four more parameters through <see cref="RemoveOperation"/> would widen an operation
     /// that decides nothing about any of them, which is the mistake milestone 6.4a recorded when it
     /// tried to make a card-state query reach the board. The capability binds them once here instead.
+    ///
+    /// Since milestone 6.6b it is shared rather than the standalone Remove's own: p.13's Defeat asks it
+    /// the same first question before taking its target off the board, so a prevention source added
+    /// later is honoured by both paths or by neither. Neither path may ask around it - the Lane-Push
+    /// conformance rule already permits exactly one asker of p.8's question - which is what makes the
+    /// sharing structural rather than a convention two call sites happen to follow.
     /// </summary>
     public sealed class RemovalStageDecision
     {
@@ -227,14 +233,23 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         private readonly IUnitSpawnAuthority units;
         private readonly MatchParticipants participants;
         private readonly RuleModificationSet modifications;
+        private readonly LanePushCauseKind lanePushCause;
 
+        /// <param name="lanePushCause">
+        /// Which of p.8's two sentences this operation answers when its removal empties a side out of
+        /// the Battle Zone. It is declared by the caller rather than derived from
+        /// <paramref name="activity"/>, because the activity says who is acting and the cause says what
+        /// was done - a Skill can Remove and an Attack can Defeat, and neither reading follows from the
+        /// other.
+        /// </param>
         public RemovalStageDecision(
             RuleActivity activity,
             RuleObject actingUnit,
             IBoardDisplacementAuthority board,
             IUnitSpawnAuthority units,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            LanePushCauseKind lanePushCause)
         {
             if (activity == RuleActivity.None)
             {
@@ -242,6 +257,14 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                     "A removal stage is performed by a named activity (p.18).", nameof(activity));
             }
 
+            if (lanePushCause != LanePushCauseKind.Removal && lanePushCause != LanePushCauseKind.Defeat)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(lanePushCause), lanePushCause,
+                    "A removal stage declares which of p.8's two causes it would record.");
+            }
+
+            this.lanePushCause = lanePushCause;
             this.activity = activity;
             this.actingUnit = actingUnit;
             this.board = board ?? throw new ArgumentNullException(nameof(board));
@@ -265,7 +288,8 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         /// <summary>p.8's cause, asked after the piece has actually left the board.</summary>
         public LanePushQualification QualifyLanePush(BoardObjectReference subject, HexCoordinate origin) =>
             LanePushQualificationQuery.AfterRemoval(
-                subject.AsRuleObject(), SideOf(subject), origin, board, participants, modifications);
+                lanePushCause, subject.AsRuleObject(), SideOf(subject), origin, board, participants,
+                modifications);
 
         /// <summary>
         /// The side the removed piece belonged to, or <see cref="TeamSide.None"/> for a token, which

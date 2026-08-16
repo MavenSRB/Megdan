@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
@@ -246,7 +248,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (command.Target.Kind == AttackTargetKind.Minion)
             {
-                return ResolveMinionTarget(command.TargetMinionId, participants);
+                return ResolveMinionTarget(command.TargetMinionId, participants, modifications);
             }
 
             var attackValue = PrintedValueQuery.CalculatePrintedValue(
@@ -313,7 +315,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private AttackActionResolutionResult ResolveMinionTarget(
             MinionId targetMinionId,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleModificationSet modifications)
         {
             var target = adjacentMoveAuthority.Minions.Single(minion => minion.MinionId.Equals(targetMinionId));
             var resolution = new PendingAttackResolution(
@@ -343,11 +346,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var removalAttempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
-            var removed = adjacentMoveAuthority.CommitValidatedMinionRemoval(targetMinionId);
-            var removalResult = new DefeatRemovalResult(
-                outcome.Id, outcome.TargetId, DefeatRemovalResultKind.Removed);
-            var defeat = new MinionDefeatResolution(
-                outcome, reward, removalAttempt, removalResult, removed);
+            var defeat = ResolveRemovalStage(
+                targetMinionId, outcome, reward, removalAttempt, participants, modifications);
             var events = new List<ResolutionStep>
             {
                 ResolutionStep.FromFact(CardActionResolutionEvent.AttackTargetValidated(resolution)),
@@ -368,6 +368,68 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return AttackActionResolutionResult.Accept(
                 null, null, null, events,
                 AttackResolutionOutcome.AttackSuccessful, defeat);
+        }
+
+        /// <summary>
+        /// p.13's removal stage, decided by milestone 6.6's shared <see cref="RemovalStageDecision"/>
+        /// rather than by this path reading the rules for itself.
+        ///
+        /// Before milestone 6.6b this method's answer was a constant: the removal was committed and the
+        /// result written down as removed, so `DefeatRemovalResultKind.RemovalPrevented` had no producer
+        /// while the standalone Remove reported it against live state. Two paths take a minion off the
+        /// board and they disagreed about whether a removal can be stopped at all, which is worse than
+        /// the rule being missing - a minion protected from a Skill's Remove still died to an Attack.
+        ///
+        /// The decision is asked before anything is committed, so a prevented removal touches neither
+        /// occupancy nor the reserve, and p.8's question is asked only afterwards, because the rule is
+        /// about what remains rather than about what was attempted. The reward has already been awarded
+        /// by the time this runs, which is p.13's own ordering: its Bolster example prevents the removal
+        /// and collects the coins in the same breath.
+        ///
+        /// No source can currently answer "prevented" for a legal Attack target - the only prevention
+        /// the rules can express is p.18's immunity, and an immune minion is filtered out of the legal
+        /// targets and revalidated immediately before this point. What the sharing guarantees is that
+        /// the general prevent-removal family, when it arrives with verified card text, is honoured by
+        /// both removal paths rather than by whichever one remembered to ask.
+        /// </summary>
+        private MinionDefeatResolution ResolveRemovalStage(
+            MinionId targetMinionId,
+            DefeatOutcome outcome,
+            DefeatRewardResult reward,
+            DefeatRemovalAttempt removalAttempt,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var subject = BoardObjectReference.ForMinion(targetMinionId);
+            var removalStage = new RemovalStageDecision(
+                RuleActivity.Attack,
+                RuleObject.ForHero(pendingAttackResolution.ActorId),
+                adjacentMoveAuthority,
+                adjacentMoveAuthority,
+                participants,
+                modifications,
+                LanePushCauseKind.Defeat);
+
+            if (removalStage.IsPrevented(subject))
+            {
+                return MinionDefeatResolution.Prevented(
+                    outcome,
+                    reward,
+                    removalAttempt,
+                    new DefeatRemovalResult(
+                        outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented));
+            }
+
+            var origin = adjacentMoveAuthority.Minions
+                .Single(minion => minion.MinionId.Equals(targetMinionId)).Coordinate;
+            var removed = adjacentMoveAuthority.CommitValidatedMinionRemoval(targetMinionId);
+            return MinionDefeatResolution.Removed(
+                outcome,
+                reward,
+                removalAttempt,
+                new DefeatRemovalResult(outcome.Id, outcome.TargetId, DefeatRemovalResultKind.Removed),
+                removed,
+                removalStage.QualifyLanePush(subject, origin));
         }
 
 

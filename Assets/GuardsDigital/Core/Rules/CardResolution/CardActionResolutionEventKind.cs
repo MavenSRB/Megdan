@@ -41,6 +41,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         DisplacedMinionCorrectionMoved = 36,
         DisplacedMinionCorrectionPlaced = 37,
         DisplacedMinionCorrectionLeftInPlace = 38,
-        DisplacedMinionCorrectionCompleted = 39
+        DisplacedMinionCorrectionCompleted = 39,
+        MinionRemovalPrevented = 40
     }
 }

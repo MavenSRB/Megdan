@@ -412,7 +412,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.Components.Board,
                     context.Components.Units,
                     context.Participants,
-                    context.Modifications);
+                    context.Modifications,
+                    LanePushCauseKind.Removal);
         }
 
         /// <summary>

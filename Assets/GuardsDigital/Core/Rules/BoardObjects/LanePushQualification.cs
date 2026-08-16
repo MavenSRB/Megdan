@@ -13,16 +13,25 @@ namespace GuardsDigital.Core.Rules.BoardObjects
     /// Battle Zone, the Lane is immediately Pushed ... Note: A Lane Push can never be triggered by
     /// moving, pushing, or swapping a minion. It must be either defeated, or removed."
     ///
-    /// The enum has one member because milestone 6.6 implements one of the two. p.13's Defeat reaches
-    /// its removal through its own staged outcome, and giving that stage a cause here before it
-    /// produces one would be a member with no producer.
+    /// The enum has both members since milestone 6.6b. Milestone 6.6 declared only the first, because
+    /// p.13's Defeat reached its removal through a stage that hard-coded the removed result and asked
+    /// p.8 nothing, so a Defeat cause would have been a member with no producer. Routing that stage
+    /// through the same shared decision gave it one.
     /// </summary>
     public enum LanePushCauseKind
     {
         None = 0,
 
         /// <summary>A standalone Remove took the last unit counting as a minion off a side (p.19, p.8).</summary>
-        Removal = 1
+        Removal = 1,
+
+        /// <summary>
+        /// p.13's Defeat took the last unit counting as a minion off a side (p.8). It is a separate
+        /// member rather than a shared "something left the board", because p.8 names the two causes
+        /// separately - "It must be either defeated, or removed" - and a later milestone reading the
+        /// recorded cause is entitled to know which sentence it is answering.
+        /// </summary>
+        Defeat = 2
     }
 
     /// <summary>
@@ -56,8 +65,21 @@ namespace GuardsDigital.Core.Rules.BoardObjects
 
         public bool Qualifies => Cause != LanePushCauseKind.None;
 
-        public static LanePushQualification ForRemoval(TeamSide losingSide, ZoneId battleZoneId)
+        /// <summary>
+        /// The recorded cause, named by the operation that took the piece off the board. The cause is
+        /// supplied rather than inferred: nothing about the emptied zone distinguishes p.8's two
+        /// sentences from each other, and the only thing that knows which one applies is the operation
+        /// that ran.
+        /// </summary>
+        public static LanePushQualification For(
+            LanePushCauseKind cause, TeamSide losingSide, ZoneId battleZoneId)
         {
+            if (cause != LanePushCauseKind.Removal && cause != LanePushCauseKind.Defeat)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(cause), cause, "p.8 recognizes a removal or a Defeat and nothing else.");
+            }
+
             if (losingSide != TeamSide.Red && losingSide != TeamSide.Blue)
             {
                 throw new ArgumentOutOfRangeException(
@@ -70,7 +92,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                     "A Lane-Push cause names the Battle Zone it emptied.", nameof(battleZoneId));
             }
 
-            return new LanePushQualification(LanePushCauseKind.Removal, losingSide, battleZoneId);
+            return new LanePushQualification(cause, losingSide, battleZoneId);
         }
 
         public bool Equals(LanePushQualification other) =>
@@ -113,6 +135,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
     public static class LanePushQualificationQuery
     {
         public static LanePushQualification AfterRemoval(
+            LanePushCauseKind cause,
             RuleObject removedUnit,
             TeamSide removedSide,
             HexCoordinate removedFrom,
@@ -152,7 +175,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                 .Any(minion => minion.TeamSide == removedSide);
             return remaining
                 ? LanePushQualification.None
-                : LanePushQualification.ForRemoval(removedSide, battleZone.Id);
+                : LanePushQualification.For(cause, removedSide, battleZone.Id);
         }
     }
 }

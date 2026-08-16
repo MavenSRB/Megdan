@@ -128,7 +128,8 @@ namespace GuardsDigital.Tests.EditMode
                 MatchParticipants participants,
                 RuleModificationSet modifications) =>
                 LanePushQualificationQuery.AfterRemoval(
-                    subject.AsRuleObject(), TeamSide.Red, from, board, participants, modifications)
+                    LanePushCauseKind.Removal, subject.AsRuleObject(), TeamSide.Red, from, board,
+                    participants, modifications)
                     .Qualifies;
         }
 

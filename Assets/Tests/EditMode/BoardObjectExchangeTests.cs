@@ -421,7 +421,8 @@ namespace GuardsDigital.Tests.EditMode
                 BoardObjectReference.ForMinion(heavy),
                 new RemovalStageDecision(
                     RuleActivity.Skill, RuleObject.ForHero(actor), board, board,
-                    PlaceholderOneVsOneParticipants.Create(), RuleModificationSet.Empty));
+                    PlaceholderOneVsOneParticipants.Create(), RuleModificationSet.Empty,
+                    LanePushCauseKind.Removal));
 
             Assert.That(outcome.Accepted, Is.True,
                 "The operation did everything the rules asked; the rules answered that the piece stays.");
@@ -603,7 +604,8 @@ namespace GuardsDigital.Tests.EditMode
                     board,
                     board,
                     PlaceholderOneVsOneParticipants.Create(),
-                    CountsAsMinion(redHero)));
+                    CountsAsMinion(redHero),
+                    LanePushCauseKind.Removal));
 
             Assert.That(outcome.ResultKind, Is.EqualTo(RemoveResultKind.Removed));
             Assert.That(outcome.LanePush.Qualifies, Is.False,
@@ -659,7 +661,8 @@ namespace GuardsDigital.Tests.EditMode
                 board,
                 board,
                 PlaceholderOneVsOneParticipants.Create(),
-                RuleModificationSet.Empty);
+                RuleModificationSet.Empty,
+                LanePushCauseKind.Removal);
 
         /// <summary>A live `Counts As` minion declaration for one hero, as an Active-effect source would supply it.</summary>
         private static RuleModificationSet CountsAsMinion(HeroId heroId) =>

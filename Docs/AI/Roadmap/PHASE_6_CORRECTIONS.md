@@ -379,7 +379,7 @@ Non-goals: No new pending-choice family, prompt framework, or director command k
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68l-let-a-target-selection-know-what-it-selects-for-completion-evidence).
 
-### [~] 6.6b Give the Defeat removal stage its prevention consumer
+### [x] 6.6b Give the Defeat removal stage its prevention consumer
 
 **Corrective amendment (2026-08-16, user approved).** Milestone 5.6 declared `DefeatRemovalResultKind.RemovalPrevented` and never produced it. The Attack backend records a removal attempt and then hard-codes the removed result, and `MinionDefeatResolution` refuses to be constructed with anything else, so the prevented arm has had no production producer for the whole of its existence.
 
@@ -402,3 +402,5 @@ Acceptance checks:
 - What is still owed is recorded rather than implied: the general prevent-removal source family remains unimplemented, and this milestone is what guarantees both removal paths will honour it on the day one exists.
 
 Non-goals: No prevention source, and no widening of the modification vocabulary or the Active-effect affected scope to carry one; no schema change; no hero Defeat consequence, reward derivation, Life, or respawn work; no Lane-Push emission or consumption; no change to Attack targeting, Defense, or the Clear replacement; no card text or card-name branch.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-66b-give-the-defeat-removal-stage-its-prevention-consumer-completion-evidence).

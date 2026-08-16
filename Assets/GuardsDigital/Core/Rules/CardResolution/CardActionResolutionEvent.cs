@@ -401,6 +401,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case MinionDefeatFactKind.RewardAwarded: eventKind = CardActionResolutionEventKind.MinionRewardAwarded; break;
                 case MinionDefeatFactKind.RemovalAttempted: eventKind = CardActionResolutionEventKind.MinionRemovalAttempted; break;
                 case MinionDefeatFactKind.RemovalCompleted: eventKind = CardActionResolutionEventKind.MinionRemovalCompleted; break;
+                case MinionDefeatFactKind.RemovalPrevented: eventKind = CardActionResolutionEventKind.MinionRemovalPrevented; break;
                 default: throw new ArgumentOutOfRangeException(nameof(factKind));
             }
 
