@@ -553,7 +553,7 @@ Non-goals: No new displacement operation, Wasp definition, card-name/hero-name b
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64a-integrate-after-action-displaced-minion-correction-with-core-push-completion-evidence).
 
-### [ ] 6.4b Add player-facing displaced-minion correction choices
+### [~] 6.4b Add player-facing displaced-minion correction choices
 
 Observable outcome: When milestone 6.4a's authority pauses for a displaced-minion route or fallback-Place choice, the configured passive presentation reuses milestone 6.1a's general authority-owned minion-choice interface so the authorized team can choose among the exact legal candidates and resume the same authoritative after-action continuation.
 
