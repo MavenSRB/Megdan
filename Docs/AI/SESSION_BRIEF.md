@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.5ac**. The configured v
 ## Current authorization and next route
 
 - Current completed milestone: **6.5ad**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.1as**, in progress.
 - Next proposed milestone: **6.5ae**.
 
 Corrective milestone **6.5ad** completed on 2026-08-16. The two displacement capabilities read `up to X spaces` differently: Object Push offered zero through X, while card-text direct Move offered only one through X, because its candidates came from the Movement action's reachability walk and that walk never emits the mover's own space. The rulebook settles it - page 10 lists `up to` among the non-mandatory wordings and page 11 requires the exact number of spaces only where the distance is not optional - so how much of a declared distance is optional is now stated once and consulted by both, with a conformance rule over every capability that declares one. A direct Move of `up to X` admits the mover's own space, which relocates nothing and is an applied result rather than a decline. **6.5ae** is proposed next. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
