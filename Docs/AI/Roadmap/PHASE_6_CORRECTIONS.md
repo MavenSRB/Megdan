@@ -195,7 +195,7 @@ Non-goals: No displaced-minion correction (6.4a owns it), no new displacement op
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68k-give-effect-definitions-a-typed-target-selection-node-completion-evidence).
 
-### [ ] 6.5c Give the Red Needle Push and Place branches their player-facing choice surfaces
+### [~] 6.5c Give the Red Needle Push and Place branches their player-facing choice surfaces
 
 **Corrective amendment (2026-08-16, user approved).** Milestone 6.5a proved both branches of the converted Skill through the ordinary match session, but neither branch reached a surface a player can read. A value-shaped effect-choice candidate carries no option node to name, so `EffectChoiceLabels` falls back to `OPTION #n` and both branches present as anonymous buttons; the board lights nothing for either, though the same session already lights Movement, Fast Travel, and correction spaces; and the coordinate-addressed submitter 6.4b built for this consumer has no board caller at all. The defect is the shared one this shard collects: 6.4b gave the correction its surfaces and 6.8k deferred value addressing to its first consumer, and the consumer arrived without either being finished. Fixing it on the value/option split rather than on Red Needle is what makes 6.5b, 6.6a, and 6.7a inherit both surfaces.
 
