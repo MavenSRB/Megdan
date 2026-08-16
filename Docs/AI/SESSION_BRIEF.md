@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.6b**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.6b**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.6a**.
 - Next proposed milestone: **6.6a**.
 
 Corrective milestone **6.6b** completed on 2026-08-16: p.13's Defeat and p.19's standalone Remove now ask one shared decision about whether a removal happens, so a minion the rules protect cannot survive one path and die to the other. Until now the Attack recorded the removal attempt and wrote the result down as a constant, leaving `DefeatRemovalResultKind.RemovalPrevented` without a production producer for the whole of its existence while 6.6's Remove reported the same outcome against live state - a half-true rule, which is harder to find than a missing one. A prevented removal is a complete Defeat rather than a failed one, exactly as p.13's Bolster example describes it: the outcome and the already-collected coins stay recorded, the attempt stays recorded, no removed occupancy is required, and the ordered facts state the outcome distinctly instead of one fact going missing. p.8's second recognized cause gained its producer in the same change, since the stage that now answers for a Defeat is the one permitted to ask whether the Battle Zone was emptied. No prevention source can answer yes yet and this milestone deliberately adds none; what it guarantees is that both paths honour one on the day verified card text supplies it. **6.6a** is proposed next. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
