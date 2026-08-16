@@ -230,6 +230,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer.ActorId, participants, tieBreaker);
         }
 
+        /// <summary>
+        /// Milestone 6.5af: whether starting this offer's Skill could apply anything. The components
+        /// this authority owns are what make the question answerable at all, which is why it is asked
+        /// here rather than in the card-state-only offer query.
+        /// </summary>
+        public bool CanSkillApplyAnything(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            MatchParticipants participants,
+            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex) =>
+            skillBackend.CanApplyAnything(
+                offer, definitions, participants, timing, modifications, components,
+                roundIndex, turnIndex);
+
         public CardActionResolutionResult AnswerEffectChoice(
             GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command,
             IEnumerable<CardDefinition> definitions,

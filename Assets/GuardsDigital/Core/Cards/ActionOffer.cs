@@ -86,6 +86,23 @@ namespace GuardsDigital.Core.Cards
 
         public bool IsAvailable { get; }
 
+        /// <summary>
+        /// The same offer with availability decided. Milestone 6.5af gave this field its first
+        /// producer of <c>false</c>: the card query that builds an offer sees card state alone, so it
+        /// cannot know whether the action could do anything, and the authority that can stamps the
+        /// answer here rather than rebuilding the offer and risking a differing copy.
+        /// </summary>
+        public ActionOffer WithAvailability(bool isAvailable) =>
+            new ActionOffer(
+                SourceCardInstanceId,
+                SourceDefinitionReference,
+                ActionDefinitionId,
+                ActorId,
+                InvocationContext,
+                isAvailable,
+                AttackRange,
+                SourceCardStateTransition);
+
         public AttackRangeKind AttackRange { get; }
 
         public ActionCardStateTransition SourceCardStateTransition { get; }

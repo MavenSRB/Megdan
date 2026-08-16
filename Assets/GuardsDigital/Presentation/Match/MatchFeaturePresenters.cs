@@ -1066,6 +1066,34 @@ namespace GuardsDigital.Presentation.Match
     /// There is no reason text. The 2026-08-16 user decision recorded as open rules question 11 is
     /// that greying alone is the surface this owes.
     /// </summary>
+    /// <summary>
+    /// Milestone 6.5af: one printed action the authority judged unstartable, drawn rather than
+    /// dropped. It carries no <c>DirectorCommand</c> at all, for the reason a refused mode does not:
+    /// a click cannot reach the session by any route rather than being refused once it arrives.
+    /// </summary>
+    public sealed class UnavailableActionViewModel
+    {
+        public UnavailableActionViewModel(string label, ActionDefinitionId actionDefinitionId)
+        {
+            Label = string.IsNullOrWhiteSpace(label)
+                ? throw new ArgumentException(
+                    "An unavailable action requires a label.", nameof(label))
+                : label;
+            ActionDefinitionId = actionDefinitionId.IsDefined
+                ? actionDefinitionId
+                : throw new ArgumentException(
+                    "An unavailable action names the action it stands for.", nameof(actionDefinitionId));
+        }
+
+        public string Label { get; }
+
+        /// <summary>
+        /// The action this control would have started. Presentation holds it so the presenter can
+        /// refuse a command naming it rather than only failing to offer one.
+        /// </summary>
+        public ActionDefinitionId ActionDefinitionId { get; }
+    }
+
     public sealed class UnavailableEffectChoiceViewModel
     {
         public UnavailableEffectChoiceViewModel(string label, EffectChoiceCandidate candidate)
@@ -1108,7 +1136,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<TypedInvocationViewModel> effectChoiceDestinations = null,
             IEnumerable<HeroRespawnOptionViewModel> heroRespawnOptions = null,
             TypedInvocationViewModel resolveWithoutRespawn = null,
-            IEnumerable<UnavailableEffectChoiceViewModel> unavailableEffectChoices = null)
+            IEnumerable<UnavailableEffectChoiceViewModel> unavailableEffectChoices = null,
+            IEnumerable<UnavailableActionViewModel> unavailableActions = null)
         {
             Version = version;
             RoundIndex = roundIndex;
@@ -1135,6 +1164,8 @@ namespace GuardsDigital.Presentation.Match
             ResolveWithoutRespawn = resolveWithoutRespawn;
             UnavailableEffectChoices = Array.AsReadOnly((unavailableEffectChoices ??
                 Enumerable.Empty<UnavailableEffectChoiceViewModel>()).ToArray());
+            UnavailableActions = Array.AsReadOnly((unavailableActions ??
+                Enumerable.Empty<UnavailableActionViewModel>()).ToArray());
             HudHeader =$"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
                 $"TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound} - {phase.ToString().ToUpperInvariant()}";
         }
@@ -1175,6 +1206,14 @@ namespace GuardsDigital.Presentation.Match
         /// taken, and none of them carries a command.
         /// </summary>
         public IReadOnlyList<UnavailableEffectChoiceViewModel> UnavailableEffectChoices { get; }
+
+        /// <summary>
+        /// Milestone 6.5af: the actions this card prints that the authority has judged unstartable.
+        /// They keep their label and their place in the offer order and carry no command, so a player
+        /// reads that the action exists and cannot be taken - the treatment milestone 6.5ac gave a
+        /// refused mode, on an offer.
+        /// </summary>
+        public IReadOnlyList<UnavailableActionViewModel> UnavailableActions { get; }
 
         public IReadOnlyList<HeroRespawnOptionViewModel> HeroRespawnOptions { get; }
         public TypedInvocationViewModel ResolveWithoutRespawn { get; }
@@ -1244,6 +1283,16 @@ namespace GuardsDigital.Presentation.Match
             if (current.UnavailableEffectChoices.Any(option =>
                     invocation.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
                     invocation.Command.EffectChoice.Candidate.Equals(option.Candidate)))
+            {
+                return false;
+            }
+
+            // Milestone 6.5af: the same guard for a greyed action. Its own entry carries no command,
+            // so nothing a view holds reaches here through it; what this refuses is a start left over
+            // from an older model naming an action the authority has since judged unstartable.
+            if (current.UnavailableActions.Any(action =>
+                    invocation.Command.Kind == DirectorCommandKind.StartAction &&
+                    invocation.Command.ActionDefinitionId.Equals(action.ActionDefinitionId)))
             {
                 return false;
             }
@@ -1359,13 +1408,24 @@ namespace GuardsDigital.Presentation.Match
                 projection.PendingAttackResolution != null ||
                 projection.PendingSkillResolution != null || projection.PendingEffectChoice != null ||
                 projection.PendingDisplacedMinionCorrection != null;
-            var actions = (projection.IsTurnActive && !hasPendingResolution
-                    ? projection.AvailableTurnActions
-                    : Array.Empty<ActionOffer>())
+            var offered = projection.IsTurnActive && !hasPendingResolution
+                ? projection.AvailableTurnActions
+                : Array.Empty<ActionOffer>();
+            var actions = offered
                 .Where(offer => offer.IsAvailable)
                 .Select(offer => new TypedInvocationViewModel(
                     FormatActionLabel(projection, offer),
                     DirectorCommand.StartAction(offer.ActionDefinitionId)))
+                .ToArray();
+
+            // Milestone 6.5af: an offer the authority judged unstartable is drawn greyed rather than
+            // dropped, keeping its label and its place. Presentation decides nothing here - which
+            // actions those are is projected, exactly as which options are refused already is.
+            var unavailableActions = offered
+                .Where(offer => !offer.IsAvailable)
+                .Select(offer => new UnavailableActionViewModel(
+                    FormatActionLabel(projection, offer),
+                    offer.ActionDefinitionId))
                 .ToArray();
             var initiativeChoices = projection.PendingInitiativeChoice == null
                 ? Array.Empty<TypedInvocationViewModel>()
@@ -1429,7 +1489,8 @@ namespace GuardsDigital.Presentation.Match
                     : new TypedInvocationViewModel(
                         "RESOLVE WITHOUT ACTION",
                         DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation)),
-                unavailableEffectChoices);
+                unavailableEffectChoices,
+                unavailableActions);
         }
 
         /// <summary>

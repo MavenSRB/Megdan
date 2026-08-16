@@ -103,6 +103,52 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return Complete(step, resolutionId, offer, true);
         }
 
+        /// <summary>
+        /// Milestone 6.5af: whether starting this Skill could apply anything.
+        ///
+        /// Asked before the action starts, so nothing is created and no frame is kept - the probe
+        /// builds the frame a start would begin from, hands it to the same feasibility walk milestone
+        /// 6.5ac built for a mode, and drops it. The resolution identity it composes never leaves this
+        /// method and never could matter: a capability is given the node, the actor, the controller,
+        /// the source card, the action, its inputs, and the match state, and no resolution ID at all.
+        ///
+        /// Anything that is not a Skill with an effect root answers <c>true</c>. This question is about
+        /// what an effect can do, and an action that has no effect is judged by the rules that already
+        /// judge it.
+        /// </summary>
+        public bool CanApplyAnything(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            MatchComponents components,
+            int roundIndex,
+            int turnIndex)
+        {
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            if (!ActionOfferQuery.TryFindActionDefinition(offer, materializedDefinitions, out var action) ||
+                action.Kind != ActionKind.Skill || action.EffectRoot == null)
+            {
+                return true;
+            }
+
+            var context = new EffectResolutionContext(
+                action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
+                components: components);
+            return EffectOptionFeasibilityQuery.CanApplyAnything(
+                EffectResolutionSession.BuildStartFrame(
+                    new EffectResolutionId($"probe-{offer.SourceCardInstanceId.Value}-{offer.ActionDefinitionId.Value}"),
+                    offer.SourceCardInstanceId,
+                    offer.SourceDefinitionReference,
+                    offer.ActionDefinitionId,
+                    offer.ActorId,
+                    offer.ActorId,
+                    offer.InvocationContext,
+                    context),
+                context);
+        }
+
         public CardActionResolutionResult AnswerEffectChoice(
             EffectChoiceCommand command,
             IEnumerable<CardDefinition> definitions,

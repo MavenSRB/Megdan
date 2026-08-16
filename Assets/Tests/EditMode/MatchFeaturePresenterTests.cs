@@ -683,46 +683,51 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 6.5ae. Where no mode can be performed, both are greyed and the one control offered
-        /// is End Turn - the same contextual control a paused Movement has projected since Phase 1,
-        /// now on the decision family that lacked it. Presentation never submits it: the player does.
+        /// Milestone 6.5af. A Skill that can apply nothing is drawn greyed rather than dropped - the
+        /// treatment milestone 6.5ac gave a refused mode, on an offer - and it carries no command, so a
+        /// click cannot reach the session by any route. The Movement beside it is untouched, which is
+        /// the turn the old behaviour spent.
+        ///
+        /// This position is where milestone 6.5ae's stop surface used to be reached from. 6.5af turns
+        /// it into a position the player never enters, so the stop's own presentation arm has no
+        /// configured route left; it is covered at the authority level in `EffectOptionFeasibilityTests`
+        /// and recorded as a material coverage limitation in 6.5af's evidence.
         /// </summary>
         [Test]
-        public void RoundPresenter_OffersEndTurnAsTheOnlyControlWhereNoModeCanBePerformed()
+        public void RoundPresenter_GreysASkillThatCanDoNothingAndKeepsEveryOtherActionStartable()
         {
             var session = CreateNeedleSession(NeedleRedAt, new HexCoordinate(-3, 10));
-            StartBombardTurn(session);
-            var choice = session.Projection.PendingEffectChoice;
-            Assert.That(choice.UnavailableCandidates, Is.EqualTo(choice.Candidates),
+            CommitBombardCards(session);
+            var skill = session.Projection.AvailableTurnActions
+                .Single(offer => GetActionKind(session.Projection, offer) == ActionKind.Skill);
+            Assert.That(skill.IsAvailable, Is.False,
                 "Fixture precondition: nothing stands adjacent and the supply is empty, so neither " +
-                "mode of this card can be taken.");
+                "mode of this Skill can be taken.");
 
-            var view = new CapturingRoundView();
-            var presenter = new RoundActionPresenter(session, view);
-            presenter.Refresh();
-            var model = view.Model;
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
 
+            var greyed = model.UnavailableActions.Single();
+            Assert.That(greyed.ActionDefinitionId, Is.EqualTo(skill.ActionDefinitionId));
+            Assert.That(greyed.Label, Does.StartWith("PRIMARY "),
+                "It keeps the label it would have had, so the refusal reads as the same action " +
+                "rather than as a different control.");
+            Assert.That(model.Actions, Is.Not.Empty,
+                "Every other action the card prints is still a control - the Movement above all.");
             Assert.That(
-                model.UnavailableEffectChoices.Select(value => value.Candidate.OptionNodeId),
-                Is.EqualTo(new[] { BombardMoveBranch, BombardSpawn }),
-                "Every mode is greyed, so the player reads which ones exist and that none can be taken.");
-            Assert.That(model.EffectChoices, Is.Empty);
-            Assert.That(model.EffectChoiceTargets, Is.Empty);
-            Assert.That(model.EffectChoiceDestinations, Is.Empty);
-            Assert.That(model.Actions, Is.Empty, "Every other control stays withheld.");
-            Assert.That(model.FastTravelOffers, Is.Empty);
-            Assert.That(model.EndTurnInvocation, Is.Not.Null);
-            Assert.That(model.EndTurnInvocation.Label, Is.EqualTo("END TURN"));
-            Assert.That(model.EndTurnInvocation.Command.Kind,
-                Is.EqualTo(DirectorCommandKind.AnswerEffectChoice));
-            Assert.That(model.EndTurnInvocation.Command.EffectChoice, Is.EqualTo(choice.StopInvocation),
-                "It is the invocation the authority projected, not one presentation composed.");
-            Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
-                "Rendering it submits nothing: nothing stops the action until the player asks.");
+                model.Actions.Any(value =>
+                    value.Command.ActionDefinitionId.Equals(skill.ActionDefinitionId)), Is.False,
+                "And the Skill is not among them.");
+            Assert.That(model.EndTurnInvocation, Is.Not.Null,
+                "Hold is still offered throughout, which is p.12's own answer to this position.");
 
-            Assert.That(presenter.Submit(model.EndTurnInvocation), Is.True);
-            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
-                "And forwarding it closes the action, exactly as the paused-Movement stop does.");
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            var forged = new TypedInvocationViewModel(
+                greyed.Label, DirectorCommand.StartAction(skill.ActionDefinitionId));
+            Assert.That(presenter.Submit(forged), Is.False,
+                "The unavailable list joins the presenter's legality decision rather than sitting " +
+                "outside it, so a start left over from an older model is refused here too.");
+            Assert.That(session.Projection.PendingSkillResolution, Is.Null,
+                "Nothing about the turn moved.");
         }
 
         /// <summary>
@@ -1138,6 +1143,19 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static void StartBombardTurn(MatchSession session)
         {
+            CommitBombardCards(session);
+            var skill = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Skill);
+            Assert.That(session.Execute(DirectorCommand.StartAction(skill.ActionDefinitionId)).Accepted,
+                Is.True);
+        }
+
+        /// <summary>
+        /// The same turn with the Skill left unstarted, for the positions milestone 6.5af refuses to
+        /// start at all.
+        /// </summary>
+        private static void CommitBombardCards(MatchSession session)
+        {
             var red = GetHandCards(session, TeamSide.Red)
                 .Single(card => card.Id.Value == "red-bombard-card");
             var blue = GetHandCards(session, TeamSide.Blue)
@@ -1145,10 +1163,6 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
             Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
             Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id));
-            var skill = session.Projection.AvailableTurnActions.Single(offer =>
-                GetActionKind(session.Projection, offer) == ActionKind.Skill);
-            Assert.That(session.Execute(DirectorCommand.StartAction(skill.ActionDefinitionId)).Accepted,
-                Is.True);
         }
 
         /// <summary>

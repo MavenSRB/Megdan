@@ -326,7 +326,7 @@ Non-goals: No change to which options are refused or how feasibility is judged; 
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65ae-let-the-player-close-an-action-whose-every-option-is-refused-completion-evidence).
 
-### [~] 6.5af Refuse a Skill that can do nothing before the turn is spent on it
+### [x] 6.5af Refuse a Skill that can do nothing before the turn is spent on it
 
 **Corrective amendment (2026-08-16, user approved).** Milestone 6.5ae gave the all-refused `Choose` a way out, but it did not stop the player being walked into it. Nothing judges a Skill when its action is *offered*: `ActionOfferQuery` derives printed offers from card state alone - definitions, instances, and the actor - and always reports `IsAvailable`, so a Skill whose effect can apply nothing is offered exactly like one that can. The player starts it, and only then learns it was inert.
 
@@ -349,3 +349,5 @@ Acceptance checks:
 - The regression is observed failing before the production change and passing afterward, including the saved-scene position where Red Bombard's Skill is inert and its Secondary Movement is not. Because the change crosses offer derivation, the command path, and configured presentation, it completes at T3 with both unfiltered suites.
 
 Non-goals: No change to Movement, Attack, Defense, Fast Travel, Clear, or Hold availability, or to any general-rule or reaction offer; no change to what feasibility means or to which options milestone 6.5ac refuses; no per-offer reason text, tooltip, or explanation, by the same 2026-08-16 user decision that governs a greyed option; no automatic Hold, automatic action selection, or automatic End Turn anywhere; no new pending-choice family, prompt framework, or director command kind; no card text, content revision, or card-name branch; no schema change, and one is not to be introduced to carry a judgement that is derived.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65af-refuse-a-skill-that-can-do-nothing-before-the-turn-is-spent-on-it-completion-evidence).

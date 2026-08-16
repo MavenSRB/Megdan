@@ -41,7 +41,13 @@ namespace GuardsDigital.Core.Cards
         ClearActionRejected = 22,
         CorrectionCommandRejected = 23,
         HeroRespawnChoicePending = 24,
-        HeroRespawnCommandRejected = 25
+        HeroRespawnCommandRejected = 25,
+
+        /// <summary>
+        /// Milestone 6.5af: the Skill can apply nothing, so starting it would spend the turn on an
+        /// action p.12 says the player is never forced to perform.
+        /// </summary>
+        SkillCannotApplyAnything = 26
     }
 
     public enum TurnResolutionEventKind
@@ -924,6 +930,16 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
 
+            // Milestone 6.5af: refused here rather than only left out of the projection, because the
+            // dispatcher revalidates a start against the card-state offer query, which cannot see the
+            // board and so cannot know this. A start naming an inert Skill is rejected before any
+            // frame exists, so nothing to roll back was created.
+            if (!CanStartSkill(offer))
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.SkillCannotApplyAnything);
+            }
+
             var skillResult = cardActions.StartTurnSkill(
                 resolutionId, offer, definitions, instances, participants, timing,
                 CurrentModifications(), TieBreakerState, roundIndex, turnIndex);
@@ -931,6 +947,46 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillActionRejected);
             return CompleteSkillStep(skillResult);
         }
+
+        /// <summary>
+        /// Milestone 6.5af: the current turn's action offers with each one's availability decided
+        /// rather than assumed.
+        ///
+        /// `ActionOfferQuery` derives what the card prints from card state alone and cannot see the
+        /// board, so every offer it builds says it is available. This is where that becomes an answer:
+        /// a Skill whose effect can apply nothing is stamped unavailable, and every other offer is
+        /// returned exactly as the card query built it. `ActionOffer.IsAvailable` has carried this
+        /// meaning since it was introduced; until now nothing produced a false.
+        /// </summary>
+        public IReadOnlyList<ActionOffer> GetTurnActionOffers()
+        {
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return Array.Empty<ActionOffer>();
+            }
+
+            var offers = ActionOfferQuery.GetAvailableTurnActionOffers(
+                definitions,
+                instances,
+                initiative.SelectedActor.ActorId,
+                initiative.SelectedActor.CardInstanceId);
+            return Array.AsReadOnly(offers
+                .Select(offer => offer.IsAvailable && !CanStartSkill(offer)
+                    ? offer.WithAvailability(false)
+                    : offer)
+                .ToArray());
+        }
+
+        /// <summary>
+        /// One statement of the judgement, so the offer set and the start command cannot disagree.
+        /// Answered <c>true</c> wherever it cannot be asked at all - no Skill authority yet - because
+        /// this refuses an action proven empty and never one that merely could not be judged.
+        /// </summary>
+        private bool CanStartSkill(ActionOffer offer) =>
+            cardActions == null ||
+            cardActions.CanSkillApplyAnything(
+                offer, definitions, participants, timing, CurrentModifications(),
+                roundIndex, turnIndex);
 
         public TurnResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
         {

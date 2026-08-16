@@ -473,6 +473,14 @@ namespace GuardsDigital.Presentation.Match
                 DrawInvocation(action);
             }
 
+            // Milestone 6.5af: an action the authority judged unstartable is drawn beside the ones
+            // that can be started, disabled, for the reason a refused mode is - a player reads that
+            // the action exists and cannot be taken, and reaches for another one or for Hold.
+            foreach (var unavailable in Model.UnavailableActions)
+            {
+                DrawUnavailableAction(unavailable);
+            }
+
             foreach (var fastTravel in Model.FastTravelOffers)
             {
                 if (GUILayout.Button(fastTravel.Label, GUILayout.Height(46f)))
@@ -608,6 +616,24 @@ namespace GuardsDigital.Presentation.Match
         /// assigned back to true, so this cannot silently re-enable a row an enclosing scope had
         /// already disabled.
         /// </summary>
+        private void DrawUnavailableAction(UnavailableActionViewModel action)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            // `GUI.enabled` is restored rather than assigned true, so this cannot re-enable a row an
+            // enclosing scope had disabled - the same care the refused-mode row takes.
+            var wasEnabled = GUI.enabled;
+            GUI.enabled = false;
+            GUILayout.Button(
+                action.Label,
+                GUILayout.MinWidth(CalculateContentWidth(action.Label, GUI.skin.button)),
+                GUILayout.Height(46f));
+            GUI.enabled = wasEnabled;
+        }
+
         private void DrawUnavailableEffectChoice(UnavailableEffectChoiceViewModel option)
         {
             if (option == null)

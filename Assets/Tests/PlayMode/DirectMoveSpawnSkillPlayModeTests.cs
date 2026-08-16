@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Linq;
 using GuardsDigital.Core.Cards;
-using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Presentation.Interaction;
@@ -25,9 +24,12 @@ namespace GuardsDigital.Tests.PlayMode
     /// what they saw was p.10's stop. That was the defect, not the fixture's limitation - choosing a
     /// mode that was never going to do anything spent the card, ended the turn, changed nothing on the
     /// board, and explained nothing. 6.5ac refused both modes but had to stop the action before any
-    /// prompt opened, so the player still saw nothing at all. 6.5ae is the surface: the choice pauses
-    /// with both modes greyed and offers End Turn, and this scene position is where the whole defect
-    /// was found, so it is where the correction is proved.
+    /// prompt opened, so the player still saw nothing at all. 6.5ae gave that pause a way out.
+    ///
+    /// 6.5af is what stops the player entering it: the Skill is judged before it is offered, so in
+    /// this position it is drawn greyed and the card's Secondary Movement - which the old behaviour
+    /// silently spent the turn instead of - is still there to take. p.12 is the source: a player is
+    /// never forced to perform an action, because any card can Hold.
     ///
     /// The player-facing paths where each branch has something to work with run through the
     /// application boundary in `ConfiguredDirectMoveSpawnSkillTests`, and the mixed surface - one mode
@@ -39,11 +41,8 @@ namespace GuardsDigital.Tests.PlayMode
         private static readonly ActionDefinitionId BombardSkill =
             new ActionDefinitionId("primary-direct-move-spawn-skill");
 
-        private static readonly EffectNodeId MoveBranch = new EffectNodeId("bombard-move-branch");
-        private static readonly EffectNodeId Spawn = new EffectNodeId("bombard-spawn");
-
         [UnityTest]
-        public IEnumerator Scene_GreysBothBranchesAndOffersEndTurnAsTheOnlyControl()
+        public IEnumerator Scene_GreysTheSkillItCannotStartAndLeavesTheTurnStillSpendable()
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
@@ -51,57 +50,47 @@ namespace GuardsDigital.Tests.PlayMode
             var minionsBefore = runtime.BoardView.Model.Minions.Count;
             var cardId = runtime.SelectedActor.CardInstanceId;
 
-            Assert.That(runtime.SubmitAction(BombardSkill), Is.True);
-            yield return null;
-
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The action pauses on a decision the player can see, rather than ending unasked.");
+            var greyed = runtime.RoundView.Model.UnavailableActions.Single();
+            Assert.That(greyed.ActionDefinitionId, Is.EqualTo(BombardSkill),
+                "Neither mode can be performed from the scene's starting position, so the Skill is " +
+                "drawn greyed rather than offered.");
+            Assert.That(runtime.RoundView.Model.Actions, Is.Not.Empty,
+                "And the card's other actions are still controls - the Secondary Movement above all.");
             Assert.That(
-                runtime.RoundView.Model.UnavailableEffectChoices
-                    .Select(value => value.Candidate.OptionNodeId),
-                Is.EqualTo(new[] { MoveBranch, Spawn }),
-                "Both modes are drawn greyed, in the definition's own order.");
-            Assert.That(runtime.RoundView.Model.EffectChoices, Is.Empty);
-            Assert.That(runtime.RoundView.Model.Actions, Is.Empty);
-            Assert.That(runtime.RoundView.Model.FastTravelOffers, Is.Empty);
-            Assert.That(runtime.SubmitEffectChoiceOption(MoveBranch), Is.False,
-                "Neither mode can be chosen, so neither can be spent on.");
-            Assert.That(runtime.SubmitEffectChoiceOption(Spawn), Is.False);
-            Assert.That(
-                runtime.Cards.Single(card => card.Id.Equals(cardId)).State.ResolutionStatus,
-                Is.EqualTo(CardResolutionStatus.Unresolved),
-                "And nothing stops the action while the player is still looking at it.");
+                runtime.RoundView.Model.Actions.Any(value =>
+                    value.Command.ActionDefinitionId.Equals(BombardSkill)), Is.False);
 
-            Assert.That(runtime.RoundView.Model.EndTurnInvocation, Is.Not.Null,
-                "End Turn is the one legal command in this position.");
-            Assert.That(runtime.SubmitEndTurn(), Is.True);
+            Assert.That(runtime.SubmitAction(BombardSkill), Is.False,
+                "It cannot be started, so the turn is not spent on it.");
             yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Null);
             Assert.That(
                 runtime.Cards.Single(card => card.Id.Equals(cardId)).State.ResolutionStatus,
-                Is.Not.EqualTo(CardResolutionStatus.Unresolved),
-                "p.10: the stop ends the action there, and the action closes rather than being left " +
-                "pending.");
+                Is.EqualTo(CardResolutionStatus.Unresolved),
+                "The card is unspent and the decision is still the player's, which is the whole point.");
+            Assert.That(runtime.RoundView.Model.EndTurnInvocation, Is.Not.Null,
+                "p.12's Hold is offered throughout, for the player who wants it.");
             Assert.That(runtime.BoardView.Model.Minions, Has.Count.EqualTo(minionsBefore),
                 "Nothing was invented, and nothing was quietly taken away either.");
         }
 
         [UnityTest]
-        public IEnumerator Scene_LightsNoBoardCueForTheModesItRefused()
+        public IEnumerator Scene_LightsNoBoardCueForTheSkillItRefused()
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
             CommitBombardTurn(runtime);
-
-            Assert.That(runtime.SubmitAction(BombardSkill), Is.True);
             yield return null;
 
             Assert.That(runtime.RoundView.Model.EffectChoiceTargets, Is.Empty,
-                "`another adjacent unit` names nothing here, so no unit is drawn as a target.");
+                "No frame is paused, so no unit is drawn as a target.");
             Assert.That(runtime.RoundView.Model.EffectChoiceDestinations, Is.Empty);
             Assert.That(runtime.BoardView.Model.EffectChoiceDestinations, Is.Empty,
                 "And the board lights nothing, because no destination was ever offered.");
+            Assert.That(runtime.RoundView.Model.UnavailableEffectChoices, Is.Empty,
+                "A refused mode is greyed inside a decision the player is being asked; there is no " +
+                "decision here, because the action it belongs to was never started.");
         }
 
         /// <summary>

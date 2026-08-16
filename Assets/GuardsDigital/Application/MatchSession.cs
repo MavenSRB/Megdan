@@ -565,13 +565,12 @@ namespace GuardsDigital.Application
                     commitment != null && commitment.CanPass(hero.Id),
                     commitment?.GetRevealedCardInstanceId(hero.Id)))
                 .ToArray();
+            // Milestone 6.5af: the turn authority's judged offer set rather than the card query's raw
+            // one, so an action the rules can prove would do nothing arrives already marked. It is the
+            // same judgement the start command is refused by, asked once.
             var availableActions = turn != null && turn.SelectedActor.IsDefined &&
                 turn.PendingHeroRespawnChoice == null
-                ? ActionOfferQuery.GetAvailableTurnActionOffers(
-                    configuration.CardDefinitions,
-                    configuration.CardInstances,
-                    turn.SelectedActor.ActorId,
-                    turn.SelectedActor.CardInstanceId)
+                ? turn.GetTurnActionOffers()
                 : Array.Empty<ActionOffer>();
             // The same modifications the turn authority resolves commands against, so an offer the
             // rules would refuse never appears in a projection as available.

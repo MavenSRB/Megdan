@@ -173,6 +173,31 @@ namespace GuardsDigital.Core.Cards
             return definition.ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId));
         }
 
+        /// <summary>
+        /// The same resolution for a caller that runs before the offer has been validated, and so must
+        /// treat an offer naming nothing as a question it cannot answer rather than as a fault.
+        ///
+        /// Milestone 6.5af needs this because it judges an offer ahead of the start that would check
+        /// it: a forged offer naming an action no definition carries has to reach the existing typed
+        /// rejection, not fault inside a probe on the way there.
+        /// </summary>
+        internal static bool TryFindActionDefinition(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            out ActionDefinition action)
+        {
+            action = null;
+            if (!BuildDefinitionLookup(definitions)
+                .TryGetValue(offer.SourceDefinitionReference, out var definition))
+            {
+                return false;
+            }
+
+            action = definition.ActionDefinitions
+                .SingleOrDefault(candidate => candidate.Id.Equals(offer.ActionDefinitionId));
+            return action != null;
+        }
+
         internal static Dictionary<CardDefinitionReference, CardDefinition> BuildDefinitionLookup(
             IEnumerable<CardDefinition> definitions)
         {

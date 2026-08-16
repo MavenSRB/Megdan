@@ -177,7 +177,41 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
-            var frame = new PendingResolution(
+            return Advance(
+                BuildStartFrame(
+                    resolutionId,
+                    sourceCardInstanceId,
+                    sourceDefinitionReference,
+                    actionDefinitionId,
+                    actorId,
+                    controllerId,
+                    invocationContext,
+                    context),
+                context,
+                new List<EffectResolutionEvent>());
+        }
+
+        /// <summary>
+        /// The exact frame a start begins from, before a single node has run.
+        ///
+        /// Extracted at milestone 6.5af so that asking whether an effect could do anything asks it of
+        /// the frame a start <em>would</em> create rather than of a hand-built approximation. The two
+        /// cannot drift, because <see cref="Start"/> begins from this same method.
+        ///
+        /// Public because <see cref="EffectOptionFeasibilityQuery.CanApplyAnything"/> is: a caller that
+        /// may ask the question must be able to build the frame the question is asked about, and this
+        /// is the only sanctioned way to build one.
+        /// </summary>
+        public static PendingResolution BuildStartFrame(
+            EffectResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            HeroId controllerId,
+            ActionInvocationContext invocationContext,
+            EffectResolutionContext context) =>
+            new PendingResolution(
                 resolutionId,
                 sourceCardInstanceId,
                 sourceDefinitionReference,
@@ -187,9 +221,6 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 controllerId,
                 invocationContext,
                 new[] { new EffectContinuationFrame(context.Definition.RootNodeId, 0) });
-
-            return Advance(frame, context, new List<EffectResolutionEvent>());
-        }
 
         public static EffectResolutionStepResult Answer(
             PendingResolution frame,

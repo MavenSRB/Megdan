@@ -114,6 +114,103 @@ namespace GuardsDigital.Tests.EditMode
                 "A stop answers no question, so it names no candidate.");
         }
 
+        /// <summary>
+        /// Milestone 6.5af judges a whole effect before its action is offered, which raises the
+        /// question of whether milestone 6.5ae's pause is still reachable at all. It is, and this is
+        /// the shape that reaches it: the walk short-circuits at the first thing that can apply, so a
+        /// definition whose first step works is offered without its later nodes being judged, and the
+        /// `Choose` after it can still turn out to refuse everything once execution gets there.
+        ///
+        /// That is the honest division between the two milestones. 6.5af declines to offer an action
+        /// it can prove up front is empty; 6.5ae closes one that only turns out to be empty later.
+        /// </summary>
+        [Test]
+        public void AnEffectWhoseLaterChooseRefusesEverything_IsStillOfferedAndStillReachesTheStop()
+        {
+            var first = new EffectNodeId("first-step");
+            var choose = new EffectNodeId("later-choose");
+            var sequence = new EffectNodeId("sequence");
+            var definition = new EffectDefinition(
+                new EffectDefinitionId("late-refusal-fixture"), "rev-1", sequence,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        sequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { first, choose }),
+                    Leaf(first, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory),
+                    new EffectNodeDefinition(
+                        choose, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { First, Second },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                    Leaf(Second, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory)
+                });
+            var context = Context(definition);
+
+            var prospective = EffectResolutionSession.BuildStartFrame(
+                new EffectResolutionId("late-refusal-probe"),
+                new CardInstanceId("feasibility-card"),
+                default,
+                new ActionDefinitionId("feasibility-action"),
+                Actor,
+                Actor,
+                ActionInvocationContext.PrintedPrimary,
+                context);
+            Assert.That(EffectOptionFeasibilityQuery.CanApplyAnything(prospective, context), Is.True,
+                "The first step can apply, so milestone 6.5af offers the action - it refuses what it " +
+                "can prove is empty and never what it merely has not judged.");
+
+            var paused = Start(definition);
+
+            var choice = paused.Frame.PendingChoice;
+            Assert.That(choice, Is.Not.Null);
+            Assert.That(choice.UnavailableCandidates, Is.EqualTo(choice.Candidates),
+                "And once execution reaches the Choose, every option really is refused.");
+            Assert.That(choice.StopInvocation, Is.Not.Null,
+                "So milestone 6.5ae's stop is what closes it, which is why that milestone is not " +
+                "made dead by this one.");
+        }
+
+        [Test]
+        public void AnEffectThatCanApplyNothing_IsProvenEmptyBeforeItStarts()
+        {
+            var definition = Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                Leaf(Second, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory));
+            var context = Context(definition);
+
+            var prospective = EffectResolutionSession.BuildStartFrame(
+                new EffectResolutionId("empty-probe"),
+                new CardInstanceId("feasibility-card"),
+                default,
+                new ActionDefinitionId("feasibility-action"),
+                Actor,
+                Actor,
+                ActionInvocationContext.PrintedPrimary,
+                context);
+
+            Assert.That(EffectOptionFeasibilityQuery.CanApplyAnything(prospective, context), Is.False,
+                "Nothing in this definition can apply, so milestone 6.5af refuses to offer it.");
+            Assert.That(
+                EffectOptionFeasibilityQuery.CanApplyAnything(
+                    EffectResolutionSession.BuildStartFrame(
+                        new EffectResolutionId("a-completely-different-identity"),
+                        new CardInstanceId("feasibility-card"),
+                        default,
+                        new ActionDefinitionId("feasibility-action"),
+                        Actor,
+                        Actor,
+                        ActionInvocationContext.PrintedPrimary,
+                        context),
+                    context),
+                Is.False,
+                "The probe's own resolution identity cannot change the answer, because a capability " +
+                "is never given one - which is what lets the probe compose a throwaway.");
+        }
+
         [Test]
         public void AChoiceWithOnePerformableOption_OffersNoStop()
         {

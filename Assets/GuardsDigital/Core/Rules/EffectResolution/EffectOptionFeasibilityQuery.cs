@@ -81,6 +81,33 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         }
 
         /// <summary>
+        /// Milestone 6.5af: whether a whole effect definition could apply anything at all, asked of
+        /// the frame a start would begin from rather than of one it began.
+        ///
+        /// It is the same walk, the same verdicts, and the same <c>Anticipate</c> contract the option
+        /// question uses - one root instead of a control node's children - so an action is judged by
+        /// exactly the rule its modes are, and a later definition of any shape is covered without
+        /// naming it. <c>false</c> is returned only where the walk can prove nothing applies; a branch
+        /// it cannot read stays performable, so this refuses an action it knows is empty and never one
+        /// it merely cannot judge.
+        /// </summary>
+        public static bool CanApplyAnything(
+            PendingResolution prospectiveFrame,
+            EffectResolutionContext context)
+        {
+            if (prospectiveFrame == null) throw new ArgumentNullException(nameof(prospectiveFrame));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+
+            var budget = MaximumNodesPerOption;
+            return Walk(
+                context.Definition.RootNodeId,
+                prospectiveFrame,
+                Array.Empty<EffectNodeOutcome>(),
+                context,
+                ref budget) == Verdict.Performable;
+        }
+
+        /// <summary>
         /// One node's verdict, and its subtree's, in the order execution would reach them. The walk
         /// short-circuits at the first thing that can apply, because an option only has to do one
         /// thing to be worth offering.

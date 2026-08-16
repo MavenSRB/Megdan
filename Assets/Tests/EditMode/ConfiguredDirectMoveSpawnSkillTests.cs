@@ -339,119 +339,84 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void WhereNeitherModeCanBeTaken_TheChoicePausesGreyedWithOnlyAStopOffered()
+        public void WhereNeitherModeCanBeTaken_TheSkillCannotBeStartedAndTheMovementStillCan()
         {
             // Milestone 6.5ac. `another adjacent unit` names nothing when the acting hero stands
-            // alone, so the Move branch can do nothing and is refused rather than offered. Here the
-            // Spawn mode cannot be performed either - every declared miniature still stands - so no
-            // option of this card can be taken at all.
+            // alone, so the Move branch can do nothing. Here the Spawn mode cannot be performed either
+            // - every declared miniature still stands - so no option of this card can be taken at all.
             //
-            // Milestone 6.5ae. 6.5ac stopped the action there without asking, so the player never saw
-            // the modes; the recorded reason was that a mandatory Choose has no decline and every
-            // other control is withheld while a choice stands, leaving no legal command. The stop is
-            // that command, and this is the position it was defined for.
-            var session = StartBombardSkill(blueAt: new HexCoordinate(-3, 10));
+            // Milestone 6.5af. 6.5ae gave that position a way out; this stops the player entering it.
+            // The Skill is judged before it is offered, so the turn is still theirs to spend - and
+            // Red Bombard prints a Secondary Movement 2 beside the Skill, which is exactly what was
+            // being lost. Rulebook p.12: a player is never forced to perform an action.
+            var session = StartBombardTurnWithoutStarting(blueAt: new HexCoordinate(-3, 10));
 
-            var choice = session.Projection.PendingEffectChoice;
-            Assert.That(choice, Is.Not.Null, "The action pauses rather than ending unasked.");
-            Assert.That(choice.Candidates.Select(candidate => candidate.OptionNodeId),
-                Is.EqualTo(new[] { MoveBranch, Spawn }));
-            Assert.That(choice.UnavailableCandidates, Is.EqualTo(choice.Candidates),
-                "Both modes are shown greyed: the player reads which ones exist and that neither " +
-                "can be taken.");
-            Assert.That(choice.SelectInvocations, Is.Empty);
-            Assert.That(choice.ConfirmInvocation, Is.Null);
-            Assert.That(choice.DeclineInvocation, Is.Null);
-            Assert.That(choice.StopInvocation, Is.Not.Null,
-                "And the one control offered is the stop.");
+            var skill = session.Projection.AvailableTurnActions
+                .Single(offer => offer.ActionDefinitionId.Equals(BombardSkill));
+            Assert.That(skill.IsAvailable, Is.False,
+                "The Skill can apply nothing, so it is projected as an offer that cannot be started.");
+            Assert.That(
+                session.Projection.AvailableTurnActions
+                    .Where(offer => offer.IsAvailable)
+                    .Select(offer => offer.ActionDefinitionId),
+                Is.Not.Empty,
+                "Every other action the card prints is untouched - the Movement above all, which is " +
+                "the turn the old behaviour spent.");
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "Nothing is started and nothing is paused: the decision is still the player's.");
             Assert.That(session.Projection.Cards.Single(card => card.Id.Equals(BombardCardId))
                 .State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved),
-                "Nothing stops the action until the player asks for it.");
+                "And the card is unspent, which is the whole point.");
+        }
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.StopInvocation));
+        [Test]
+        public void AStartNamingTheUnstartableSkill_IsRefusedWithoutTouchingTheFrameOrTheCard()
+        {
+            var session = StartBombardTurnWithoutStarting(blueAt: new HexCoordinate(-3, 10));
+            var before = session.Projection;
 
-            Assert.That(session.Projection.PendingEffectChoice, Is.Null);
+            var refused = session.Execute(DirectorCommand.StartAction(BombardSkill));
+
+            Assert.That(refused.Accepted, Is.False,
+                "The refusal is on the command path too: the dispatcher revalidates a start against " +
+                "the card-state offer query, which cannot see the board.");
+            Assert.That(session.Projection.AuthoritativeSnapshot, Is.EqualTo(before.AuthoritativeSnapshot),
+                "Nothing was created to roll back - no frame, card, occupancy, continuation, or event.");
             Assert.That(session.Projection.PendingSkillResolution, Is.Null);
             Assert.That(session.Projection.Cards.Single(card => card.Id.Equals(BombardCardId))
-                .State.ResolutionStatus, Is.Not.EqualTo(CardResolutionStatus.Unresolved),
-                "Clicking it stops the action exactly as p.10's stop already did, and the card " +
-                "resolves rather than being left pending.");
-            Assert.That(
-                SkillFacts(session).Count(fact =>
-                    fact.Kind == CardActionResolutionEventKind.SkillEffectNodeStopped), Is.EqualTo(1),
-                "One stop, published once, whichever step of the action the player reached it from.");
+                .State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
         }
 
         [Test]
-        public void WhereNeitherModeCanBeTaken_EveryCommandButTheStop_IsRejectedAtomically()
+        public void ASkillWithOnePerformableMode_IsStartableAndItsRefusedModeStaysGreyed()
         {
-            var session = StartBombardSkill(blueAt: new HexCoordinate(-3, 10));
-            var before = session.Projection;
-            var choice = before.PendingEffectChoice;
-
-            foreach (var option in new[] { MoveBranch, Spawn })
-            {
-                var refused = session.Execute(DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
-                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Select,
-                    EffectChoiceCandidate.Option(option))));
-                Assert.That(refused.Accepted, Is.False, "A greyed mode cannot be selected.");
-            }
-
-            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
-                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Confirm))).Accepted,
-                Is.False);
-            Assert.That(session.Execute(DirectorCommand.StartAction(BombardSkill)).Accepted, Is.False,
-                "And no other action starts while the choice stands.");
-            Assert.That(session.Projection.AuthoritativeSnapshot, Is.EqualTo(before.AuthoritativeSnapshot),
-                "None of it touches card, occupancy, continuation, or events.");
-        }
-
-        [Test]
-        public void TheStopSurvivesSnapshotRestoreReplayAndRetainedPrefixUndo()
-        {
-            var session = StartBombardSkill(blueAt: new HexCoordinate(-3, 10));
-            var payload = session.CaptureSnapshot();
-            var revived = StartBombardSkill(blueAt: new HexCoordinate(-3, 10));
-            Assert.That(revived.RestoreSnapshot(payload).Accepted, Is.True);
-
-            var restored = revived.Projection.PendingEffectChoice;
-            Assert.That(restored.UnavailableCandidates, Is.EqualTo(restored.Candidates),
-                "The refusals are re-derived against the state this payload restored, never read " +
-                "from it.");
-            Assert.That(restored.StopInvocation, Is.Not.Null,
-                "And so is the stop, which follows from them and from the trusted node's own policy.");
-            Assert.That(restored.StopInvocation,
-                Is.EqualTo(session.Projection.PendingEffectChoice.StopInvocation));
-
-            var beforeStop = session.Projection.DiagnosticSnapshot;
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.StopInvocation));
-            var afterStop = session.Projection.DiagnosticSnapshot;
-
-            Assert.That(session.Undo().Accepted, Is.True);
-            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeStop));
-            Assert.That(session.Projection.PendingEffectChoice.StopInvocation, Is.Not.Null,
-                "Undo returns to the pause, and the stop is derived there again rather than replayed.");
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.StopInvocation));
-            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(afterStop),
-                "Replaying the same stop reproduces the same state and the same ordered facts.");
-        }
-
-        [Test]
-        public void AFrameRestoredAfterTheLastRefusalLifts_OffersTheModeAgainRatherThanTheStop()
-        {
-            // The reason the stop is derived rather than stored: a payload written while nothing could
-            // be taken, restored into a board where a miniature has left, must offer the mode again.
+            // The control that keeps milestone 6.5af measured rather than blanket, and the position
+            // milestone 6.5ac's greyed surface still lives in: one mode can be taken, so the action is
+            // offered and the other is greyed inside it.
             var session = StartBombardSkillAfterAMinionBattleRemoval(
                 out _, blueAt: new HexCoordinate(-3, 10));
 
             var choice = session.Projection.PendingEffectChoice;
             Assert.That(choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
                 Is.EqualTo(new[] { MoveBranch }),
-                "The supply is no longer empty, so the Spawn mode can be taken.");
+                "The supply is no longer empty, so the Spawn mode can be taken and the Skill starts.");
             Assert.That(choice.StopInvocation, Is.Null,
-                "There is a decision to make again, so no stop is offered.");
+                "There is a decision to make, so milestone 6.5ae offers no stop.");
+
+            // Milestone 6.5ae's acceptance check 5, in the direction this card can still reach: the
+            // stop is derived from the refusals and the node's policy rather than stored, so a payload
+            // restored where a mode can be taken carries no stop either.
+            var payload = session.CaptureSnapshot();
+            var revived = StartBombardSkillAfterAMinionBattleRemoval(
+                out _, blueAt: new HexCoordinate(-3, 10));
+            Assert.That(revived.RestoreSnapshot(payload).Accepted, Is.True);
+            var restored = revived.Projection.PendingEffectChoice;
+            Assert.That(restored.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { MoveBranch }),
+                "The refusals are re-derived against the state this payload restored, never read " +
+                "from it.");
+            Assert.That(restored.StopInvocation, Is.Null,
+                "And the stop is re-derived with them rather than carried.");
         }
 
         [Test]
@@ -807,12 +772,23 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession StartBombardSkill(
             HexCoordinate? redAt = null, HexCoordinate? blueAt = null)
         {
+            var session = StartBombardTurnWithoutStarting(redAt, blueAt);
+            StartTheSkill(session);
+            return session;
+        }
+
+        /// <summary>
+        /// The same turn with the Skill left unstarted, for the positions milestone 6.5af refuses to
+        /// start at all. Everything up to the action choice is identical.
+        /// </summary>
+        private static MatchSession StartBombardTurnWithoutStarting(
+            HexCoordinate? redAt = null, HexCoordinate? blueAt = null)
+        {
             var session = CreateBombardSession(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 redAt ?? RedAt,
                 blueAt ?? BlueAt);
             CommitCards(session, "bombard", "longbow");
-            StartTheSkill(session);
             return session;
         }
 
