@@ -194,3 +194,24 @@ Acceptance checks:
 Non-goals: No displaced-minion correction (6.4a owns it), no new displacement operation, no Place/Spawn/Swap/Replace, no Wasp definition, no card-name/hero-name branch, no configured live exposure, and no production presentation.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68k-give-effect-definitions-a-typed-target-selection-node-completion-evidence).
+
+### [ ] 6.5c Give the Red Needle Push and Place branches their player-facing choice surfaces
+
+**Corrective amendment (2026-08-16, user approved).** Milestone 6.5a proved both branches of the converted Skill through the ordinary match session, but neither branch reached a surface a player can read. A value-shaped effect-choice candidate carries no option node to name, so `EffectChoiceLabels` falls back to `OPTION #n` and both branches present as anonymous buttons; the board lights nothing for either, though the same session already lights Movement, Fast Travel, and correction spaces; and the coordinate-addressed submitter 6.4b built for this consumer has no board caller at all. The defect is the shared one this shard collects: 6.4b gave the correction its surfaces and 6.8k deferred value addressing to its first consumer, and the consumer arrived without either being finished. Fixing it on the value/option split rather than on Red Needle is what makes 6.5b, 6.6a, and 6.7a inherit both surfaces.
+
+Observable outcome: The Place branch offers no prompt control at all - its legal spaces are lit on the board exactly as Fast Travel's are and one click answers the choice - while the Push branch offers one named control per target that, when pointed at or focused, marks that target on the board and lights the space the push would leave it on.
+
+Prerequisites: Milestones 6.5a, 6.4b, and 6.8k must be complete. This milestone consumes their projections, prompt vocabulary, and value addressing, and changes no rule, geometry, or candidate set.
+
+Acceptance checks:
+
+- An authority-computed preview accompanies a pending effect choice the way milestone 5.8b's Defense preview accompanies a Defense choice: for each value candidate it carries the board object standing on that space when one does, and the space that candidate's consuming operation would leave that object on when the operation is a Push. Presentation derives no direction, distance, occupancy, or obstacle result of its own.
+- The preview finds that consuming operation and its declared distance by reading the paused frame's own definition graph and the registered capability contract, so no card, hero, or node name is branched on and any later definition of the same shape is previewed by the same code.
+- A value candidate on an empty space carries no prompt control. The board lights every such candidate with the destination highlight Movement, Fast Travel, and corrections already share, and clicking a lit space forwards only that candidate's projected invocations, in the order the authority offers them, so an exactly-one choice completes in one click without presentation inventing a command.
+- A value candidate naming a board object carries one control, labelled from projected occupancy - team, intrinsic type, and projected ordinal for a minion, display name for a hero, catalog name for a token - and never from printed card text.
+- Pointing at or focusing such a control marks its target with the choice cue milestone 6.1ao settled, extended from minions to whichever object kind stands on the space, and lights that candidate's projected resulting space with a second highlight whose color is distinct from the destination one, because a resulting space is a prediction rather than something selectable.
+- Both cues are anchored to the projection they were read from, so an accepted command, refusal, restore, replay, or Undo drops them; a zero-space push marks the target's own space; and a control whose target is no longer projected submits nothing and rebuilds from the authoritative choice.
+- Mode choices keep their existing controls, and the option/value distinction is the only thing deciding which surface a candidate reaches.
+- Focused presenter, board-adapter, projection, and saved-scene scenarios cover both branches plus stale controls, refusal, restore, replay, and retained-prefix Undo.
+
+Non-goals: No change to the Skill's rules, geometry, candidate sets, immunity filtering, or the 6.4a correction path; no board-click selection of a Push target, since the named control is that selection; no new pending-choice family or prompt framework; no authority-side change to how a choice confirms; no Wasp definition, printed-text parsing, card-name/hero-name branch, production art, animation, or audio.
