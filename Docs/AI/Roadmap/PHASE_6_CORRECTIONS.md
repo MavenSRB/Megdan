@@ -447,7 +447,7 @@ Non-goals: No new token content, definition, property, or supply; no marker view
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-62d-give-a-placed-token-a-surface-and-let-the-board-follow-the-pointer-completion-evidence).
 
-### [~] 6.3a Let a player choose Clear, and point token controls back to the board
+### [x] 6.3a Let a player choose Clear, and point token controls back to the board
 
 **Corrective amendment (2026-08-17, user approved).** Hands-on validation after milestone 6.2d reached the state its token surface was built to expose: Cache placed a visible `TEST - HAZARD`, and Blue Sentinel's token-target decision rendered a readable `TEST - HAZARD` control. The screenshot shows both remaining presentation gaps. First, milestone 6.3 implemented Clear as the general replacement for a current replaceable Attack, but deliberately excluded player-facing Clear UI; the configured HUD projects no Clear entry and has no way for a player to submit the already-implemented `PerformClear` command. Second, pointing at the control that names the Hazard gives no indication which board piece it means. Minion removal already has the intended vocabulary: pointing at or keyboard-focusing a named control marks the exact projected piece with the shared downward board cue, and a selected piece retains the selected form of that cue.
 
@@ -473,3 +473,5 @@ Acceptance checks:
 - Compatibility is measured rather than assumed. No authoritative state, command, event, capability registration, card definition, component definition, or snapshot field is intended to change; schema v11, the compatibility corpus, and the aggregate-invariance digests should therefore remain byte-identical.
 
 Non-goals: No change to Clear eligibility, adjacency, empty-subset legality, removal ordering, facts, checkpoints, Attack replacement semantics, or `PerformClear`; no pending Clear continuation or snapshot schema change; no token placement, property, supply, Replace, Remove, or Blue Sentinel rule change; no direct pointer/collider interaction on the token itself; no hover tooltip, popup, card-text explanation, marker view, Wasp content, printed-text parsing, production art, animation, or audio.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-63a-let-a-player-choose-clear-and-point-token-controls-back-to-the-board-completion-evidence).

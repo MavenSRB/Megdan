@@ -10,6 +10,7 @@ using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -114,6 +115,108 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 6.3a: the piece wears the shared board cue while a control names it.
+        ///
+        /// Both visible kinds say "this one", so the marker is the minion prompt's and only the colour
+        /// separates a chosen piece from the one being pointed at. The cue hangs from an anchor
+        /// carrying the shared board-facing rotation for the reason milestone 6.5c recorded: the board
+        /// is the XZ plane under a top-down camera, so a glyph at identity rotation on this upright
+        /// transform would render edge-on while every local-offset assertion about it still passed.
+        /// </summary>
+        [Test]
+        public void APointedAtToken_WearsTheSharedBoardCueAndDropsItWhenNothingNamesIt()
+        {
+            var space = new HexCoordinate(1, 0);
+            using (var board = new TokenBoard(space))
+            {
+                var token = Token("hazard-1", SyntheticComponentDefinitions.HazardDefinition, space);
+                board.Render(1, token);
+                var view = board.View.TokenViews.Single();
+
+                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
+                Assert.That(view.ChoiceCue, Is.Null, "No cue is built until one is asked for.");
+
+                board.Render(2, new[] { token },
+                    new TokenChoiceCueViewModel(token.Id, MinionChoiceCueKind.Highlighted));
+
+                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
+                Assert.That(view.ChoiceCue.gameObject.activeSelf, Is.True);
+                Assert.That(view.ChoiceCue.text, Is.EqualTo(BoardChoiceCue.Marker));
+                // `TextMesh` quantises to 8 bits per channel, so the comparison is to that precision
+                // rather than to the float the shared construction declares.
+                Assert.That(view.ChoiceCue.color,
+                    Is.EqualTo(BoardChoiceCue.HighlightedColor).Using(ColorComparer));
+                Assert.That(view.ChoiceCue.transform.rotation,
+                    Is.EqualTo(BoardChoiceCue.BoardFacingRotation).Using(RotationComparer),
+                    "It faces the camera that looks down the board rather than lying edge-on to it.");
+
+                board.Render(3, new[] { token },
+                    new TokenChoiceCueViewModel(token.Id, MinionChoiceCueKind.Selected));
+
+                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected));
+                Assert.That(view.ChoiceCue.color,
+                    Is.EqualTo(BoardChoiceCue.SelectedColor).Using(ColorComparer));
+
+                board.Render(4, token);
+
+                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
+                Assert.That(view.ChoiceCue.gameObject.activeSelf, Is.False);
+            }
+        }
+
+        /// <summary>
+        /// A cue is addressed by identity, so a released view cannot keep one: the piece it marked is
+        /// no longer projected, and the pooled view is reused for whatever arrives next.
+        /// </summary>
+        [Test]
+        public void AReleasedTokenView_LosesItsCueRatherThanCarryingItToTheNextPiece()
+        {
+            var space = new HexCoordinate(1, 0);
+            using (var board = new TokenBoard(space))
+            {
+                var hazard = Token("hazard-1", SyntheticComponentDefinitions.HazardDefinition, space);
+                board.Render(1, new[] { hazard },
+                    new TokenChoiceCueViewModel(hazard.Id, MinionChoiceCueKind.Selected));
+                var view = board.View.TokenViews.Single();
+                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected));
+
+                board.Render(2);
+
+                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
+
+                board.Render(3, Token("ward-1", SyntheticComponentDefinitions.WardDefinition, space));
+
+                Assert.That(board.View.TokenViews.Single(), Is.SameAs(view));
+                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None),
+                    "The pooled view draws the incoming piece plainly rather than inheriting a cue.");
+            }
+        }
+
+        private static readonly IEqualityComparer<Quaternion> RotationComparer =
+            new QuaternionComparer();
+
+        private static readonly IEqualityComparer<Color> ColorComparer = new EightBitColorComparer();
+
+        private sealed class QuaternionComparer : IEqualityComparer<Quaternion>
+        {
+            public bool Equals(Quaternion left, Quaternion right) =>
+                Quaternion.Angle(left, right) < 0.01f;
+
+            public int GetHashCode(Quaternion value) => 0;
+        }
+
+        private sealed class EightBitColorComparer : IEqualityComparer<Color>
+        {
+            public bool Equals(Color left, Color right) =>
+                Mathf.Abs(left.r - right.r) <= 1f / 255f &&
+                Mathf.Abs(left.g - right.g) <= 1f / 255f &&
+                Mathf.Abs(left.b - right.b) <= 1f / 255f &&
+                Mathf.Abs(left.a - right.a) <= 1f / 255f;
+
+            public int GetHashCode(Color value) => 0;
+        }
+
         [Test]
         public void AProjectedTokenWithNoAvailableView_IsAFaultRatherThanAMissingPiece()
         {
@@ -162,7 +265,11 @@ namespace GuardsDigital.Tests.EditMode
 
             public int Created { get; private set; }
 
-            public void Render(long version, params PlacedToken[] tokens)
+            public void Render(long version, params PlacedToken[] tokens) =>
+                Render(version, tokens, Array.Empty<TokenChoiceCueViewModel>());
+
+            public void Render(
+                long version, PlacedToken[] tokens, params TokenChoiceCueViewModel[] cues)
             {
                 View.Render(new BoardInteractionViewModel(
                     version,
@@ -172,7 +279,8 @@ namespace GuardsDigital.Tests.EditMode
                     Array.Empty<HeroId>(),
                     Array.Empty<MinionId>(),
                     default,
-                    placedTokens: tokens));
+                    placedTokens: tokens,
+                    tokenChoiceCues: cues));
             }
 
             public void Dispose()

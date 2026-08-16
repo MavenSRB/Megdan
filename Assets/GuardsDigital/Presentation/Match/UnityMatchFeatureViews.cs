@@ -238,6 +238,9 @@ namespace GuardsDigital.Presentation.Match
         private void RenderTokens(BoardInteractionViewModel model)
         {
             var projectedTokens = model.PlacedTokens.ToDictionary(value => value.Id);
+            // Milestone 6.3a: which drawn pieces a control currently names. A cue is addressed by the
+            // token's own identity rather than by its space, so a released view can never keep one.
+            var choiceCues = model.TokenChoiceCues.ToDictionary(value => value.TokenId);
             var released = new List<PlacedTokenView>();
             foreach (var token in tokens)
             {
@@ -250,10 +253,14 @@ namespace GuardsDigital.Presentation.Match
                         token.Configure(state, token.OuterRadius);
                     }
 
+                    token.SetChoiceCue(choiceCues.TryGetValue(boundId, out var choiceCue)
+                        ? choiceCue.Kind
+                        : MinionChoiceCueKind.None);
                     projectedTokens.Remove(boundId);
                 }
                 else
                 {
+                    token.SetChoiceCue(MinionChoiceCueKind.None);
                     token.gameObject.SetActive(false);
                     released.Add(token);
                 }
@@ -273,6 +280,9 @@ namespace GuardsDigital.Presentation.Match
                     view = CreateTokenView(state);
                 }
 
+                view.SetChoiceCue(choiceCues.TryGetValue(state.Id, out var newCue)
+                    ? newCue.Kind
+                    : MinionChoiceCueKind.None);
                 view.gameObject.SetActive(true);
             }
         }
@@ -454,8 +464,23 @@ namespace GuardsDigital.Presentation.Match
         public event Action<EffectChoiceTargetViewModel> TargetHighlighted;
         public event Action<HeroRespawnOptionViewModel> RespawnHighlighted;
 
+        /// <summary>Milestone 6.3a: the Clear replacement whose control was activated.</summary>
+        public event Action<ClearOfferViewModel> ClearSelected;
+
+        /// <summary>One offered token control was activated, added to or taken out of the subset.</summary>
+        public event Action<ClearTokenCandidateViewModel> ClearTokenToggled;
+        public event Action ClearConfirmed;
+        public event Action ClearCancelled;
+
+        /// <summary>
+        /// The Clear token control the pointer or keyboard focus is on, or null when none is. The
+        /// board reads this to mark that exact piece.
+        /// </summary>
+        public event Action<ClearTokenCandidateViewModel> ClearTokenHighlighted;
+
         public EffectChoiceTargetViewModel HighlightedTarget { get; private set; }
         public HeroRespawnOptionViewModel HighlightedRespawn { get; private set; }
+        public ClearTokenCandidateViewModel HighlightedClearToken { get; private set; }
 
         public void Render(RoundActionViewModel model)
         {
@@ -485,6 +510,16 @@ namespace GuardsDigital.Presentation.Match
                 !Model.HeroRespawnOptions.Any(value => ReferenceEquals(value, HighlightedRespawn)))
             {
                 SetRespawnHighlight(null);
+            }
+
+            // Milestone 6.3a: on the same terms. A rebuilt model - a new projection, or a change to
+            // the selection itself - drops the pointed-at token, so the board never keeps a cue for a
+            // control that is no longer drawn.
+            if (HighlightedClearToken != null &&
+                Model.ClearSelection?.Candidates.Any(value =>
+                    ReferenceEquals(value, HighlightedClearToken)) != true)
+            {
+                SetClearTokenHighlight(null);
             }
         }
 
@@ -550,6 +585,96 @@ namespace GuardsDigital.Presentation.Match
             RespawnHighlighted?.Invoke(option);
         }
 
+        /// <summary>Reports a pointed-at Clear token control directly, for a driver with no pointer.</summary>
+        public void ForwardClearTokenHighlight(ClearTokenCandidateViewModel candidate) =>
+            SetClearTokenHighlight(candidate);
+
+        private void SetClearTokenHighlight(ClearTokenCandidateViewModel candidate)
+        {
+            if (ReferenceEquals(HighlightedClearToken, candidate))
+            {
+                return;
+            }
+
+            HighlightedClearToken = candidate;
+            ClearTokenHighlighted?.Invoke(candidate);
+        }
+
+        /// <summary>
+        /// Milestone 6.3a: the open Clear's own row - one control per offered token, then the confirm
+        /// and the way out. It is drawn beside the action row rather than inside it, because the two
+        /// are never live at once: opening a Clear replaces the action choice with this decision, and
+        /// cancelling puts the action choice back untouched.
+        /// </summary>
+        private void DrawClearSelection()
+        {
+            var selection = Model.ClearSelection;
+            if (selection == null)
+            {
+                return;
+            }
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Clear", GUILayout.Width(54f));
+            var hoveredToken = default(ClearTokenCandidateViewModel);
+            for (var index = 0; index < selection.Candidates.Count; index++)
+            {
+                var candidate = selection.Candidates[index];
+                var controlName = $"ClearToken-{Model.Version}-{index}";
+                GUI.SetNextControlName(controlName);
+                var previous = GUI.backgroundColor;
+                GUI.backgroundColor = candidate.IsSelected
+                    ? new Color(0.35f, 0.75f, 1f)
+                    : Color.white;
+                if (GUILayout.Button(
+                    candidate.Label,
+                    GUILayout.MinWidth(CalculateContentWidth(candidate.Label, GUI.skin.button)),
+                    GUILayout.Height(46f)))
+                {
+                    ClearTokenToggled?.Invoke(candidate);
+                }
+
+                GUI.backgroundColor = previous;
+                if (Event.current.type == EventType.Repaint)
+                {
+                    var rect = GUILayoutUtility.GetLastRect();
+                    if (rect.Contains(Event.current.mousePosition) ||
+                        string.Equals(GUI.GetNameOfFocusedControl(), controlName, StringComparison.Ordinal))
+                    {
+                        hoveredToken = candidate;
+                    }
+                }
+            }
+
+            if (selection.Candidates.Count == 0)
+            {
+                GUILayout.Label("NO ADJACENT TOKEN - CLEARING NONE STILL RESOLVES THE CARD");
+            }
+
+            if (GUILayout.Button(
+                selection.Confirm.Label,
+                GUILayout.MinWidth(CalculateContentWidth(selection.Confirm.Label, GUI.skin.button)),
+                GUILayout.Height(46f)))
+            {
+                ClearConfirmed?.Invoke();
+            }
+
+            if (GUILayout.Button(
+                selection.CancelLabel,
+                GUILayout.MinWidth(CalculateContentWidth(selection.CancelLabel, GUI.skin.button)),
+                GUILayout.Height(46f)))
+            {
+                ClearCancelled?.Invoke();
+            }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            if (Event.current.type == EventType.Repaint)
+            {
+                SetClearTokenHighlight(hoveredToken);
+            }
+        }
+
         public void Draw()
         {
             if (Model == null)
@@ -584,6 +709,20 @@ namespace GuardsDigital.Presentation.Match
                 if (GUILayout.Button(fastTravel.Label, GUILayout.Height(46f)))
                 {
                     ForwardFastTravelSelection(fastTravel);
+                }
+            }
+
+            // Milestone 6.3a: the other general-rule replacement, beside the action it replaces. It is
+            // drawn whenever the projection offers one, including where no token stands adjacent -
+            // p.13 permits clearing none, so the replacement is available either way.
+            foreach (var clear in Model.ClearOffers)
+            {
+                if (GUILayout.Button(
+                    clear.Label,
+                    GUILayout.MinWidth(CalculateContentWidth(clear.Label, GUI.skin.button)),
+                    GUILayout.Height(46f)))
+                {
+                    ClearSelected?.Invoke(clear);
                 }
             }
 
@@ -650,6 +789,8 @@ namespace GuardsDigital.Presentation.Match
                 SetTargetHighlight(hoveredTarget);
                 SetRespawnHighlight(hoveredRespawn);
             }
+
+            DrawClearSelection();
 
             if (Model.DefenseChoices.Count > 0)
             {

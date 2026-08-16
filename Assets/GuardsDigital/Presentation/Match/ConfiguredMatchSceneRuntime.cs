@@ -107,7 +107,15 @@ namespace GuardsDigital.Presentation.Match
                 // Only the board is refreshed, for the same reason the minion prompt refreshes only
                 // the board: this fires inside the HUD's own draw, and rebuilding the immediate-mode
                 // models mid-pass would change the control count between layout and repaint.
-                if (BoardPresenter.HighlightEffectChoiceCandidate(target?.Space))
+                //
+                // Milestone 6.3a: both halves are reported. A hero or minion target is marked by the
+                // space, which is how the effect definition names it; a token target is marked by the
+                // identity the control carries, because the board must not read occupancy out of a
+                // coordinate to find out which piece the words mean.
+                var moved = BoardPresenter.HighlightEffectChoiceCandidate(target?.Space);
+                moved |= BoardPresenter.HighlightTokenChoiceCandidate(
+                    target?.TokenId ?? default);
+                if (moved)
                 {
                     BoardPresenter.Refresh();
                 }
@@ -126,6 +134,43 @@ namespace GuardsDigital.Presentation.Match
                     RefreshAll();
                 }
             };
+            RoundView.ClearSelected += offer =>
+            {
+                if (RoundPresenter.SelectClear(offer))
+                {
+                    RefreshAll();
+                }
+            };
+            RoundView.ClearTokenToggled += candidate =>
+            {
+                if (RoundPresenter.ToggleClearToken(candidate))
+                {
+                    RefreshAll();
+                }
+            };
+            RoundView.ClearConfirmed += () => RoundPresenter.ConfirmClear();
+            RoundView.ClearCancelled += () =>
+            {
+                if (RoundPresenter.CancelClear())
+                {
+                    RefreshAll();
+                }
+            };
+            RoundView.ClearTokenHighlighted += candidate =>
+            {
+                // Only the board, for the reason every other hover notification gives: this fires
+                // inside the HUD's own draw, and rebuilding the immediate-mode models mid-pass would
+                // change the control count between layout and repaint.
+                if (BoardPresenter.HighlightTokenChoiceCandidate(
+                    candidate?.TokenId ?? default))
+                {
+                    BoardPresenter.Refresh();
+                }
+            };
+            RoundPresenter.ClearSelectionChanged += selection =>
+                BoardPresenter.SetSelectedClearTokens(
+                    selection?.SelectedTokenIds ??
+                    Array.Empty<GuardsDigital.Core.Components.TokenInstanceId>());
             UndoRestartView.UndoRequested += () => UndoRestartPresenter.Undo();
             UndoRestartView.RestartRequested += () => UndoRestartPresenter.Restart();
             DiagnosticView.ToggleRequested += () => DiagnosticPresenter.Toggle();
@@ -324,7 +369,72 @@ namespace GuardsDigital.Presentation.Match
                     value.Space.Equals(coordinate.Value))
                 : null;
             RoundView.ForwardTargetHighlight(target);
-            return BoardPresenter.HighlightEffectChoiceCandidate(target?.Space);
+            var moved = BoardPresenter.HighlightEffectChoiceCandidate(target?.Space);
+            moved |= BoardPresenter.HighlightTokenChoiceCandidate(target?.TokenId ?? default);
+            return moved;
+        }
+
+        public IReadOnlyList<ClearOfferViewModel> ClearOffers =>
+            RoundView.Model?.ClearOffers ?? Array.Empty<ClearOfferViewModel>();
+
+        public ClearSelectionViewModel ClearSelection => RoundView.Model?.ClearSelection;
+
+        /// <summary>
+        /// Milestone 6.3a: opens the one Clear the current card offers, for a driver with no pointer.
+        /// It goes through the rendered model rather than the projection, so a caller cannot reach a
+        /// replacement presentation is not currently showing.
+        /// </summary>
+        public bool SelectClear() =>
+            Refreshed(RoundPresenter.SelectClear(RoundView.Model?.ClearOffers.SingleOrDefault()));
+
+        public bool SelectClear(ActionDefinitionId replacedAttackActionDefinitionId) =>
+            Refreshed(RoundPresenter.SelectClear(RoundView.Model?.ClearOffers.SingleOrDefault(value =>
+                value.ReplacedAttackActionDefinitionId.Equals(replacedAttackActionDefinitionId))));
+
+        /// <summary>Adds or removes one offered token, addressed by its stable identity.</summary>
+        public bool ToggleClearToken(GuardsDigital.Core.Components.TokenInstanceId tokenId) =>
+            Refreshed(RoundPresenter.ToggleClearToken(RoundView.Model?.ClearSelection?.Candidates
+                .SingleOrDefault(value => value.TokenId.Equals(tokenId))));
+
+        /// <summary>
+        /// Forwards the confirm. It needs no refresh of its own: an accepted command rebuilds the
+        /// projection, which the coordinator already redraws every surface from.
+        /// </summary>
+        public bool ConfirmClear() => RoundPresenter.ConfirmClear();
+
+        public bool CancelClear() => Refreshed(RoundPresenter.CancelClear());
+
+        /// <summary>
+        /// A local Clear change moves no authoritative state, so nothing redraws on its own. The
+        /// pointer path refreshes from the view's own handler; a driver with no pointer takes the same
+        /// step here, so both routes leave the same rendered models behind.
+        /// </summary>
+        private bool Refreshed(bool changed)
+        {
+            if (changed)
+            {
+                RefreshAll();
+            }
+
+            return changed;
+        }
+
+        /// <summary>
+        /// Reports which Clear token control is pointed at, addressed by identity, for a driver with
+        /// no pointer. Passing an undefined identity clears the cue. It reaches the board through the
+        /// view, so a driver and a pointer take the identical route - and because that route already
+        /// marks the board, what is returned is whether the named control was found and forwarded
+        /// rather than whether this call is what moved the cue.
+        /// </summary>
+        public bool HighlightClearToken(GuardsDigital.Core.Components.TokenInstanceId tokenId)
+        {
+            var candidate = tokenId.IsDefined
+                ? RoundView.Model?.ClearSelection?.Candidates.SingleOrDefault(value =>
+                    value.TokenId.Equals(tokenId))
+                : null;
+            RoundView.ForwardClearTokenHighlight(candidate);
+            BoardPresenter.HighlightTokenChoiceCandidate(candidate?.TokenId ?? default);
+            return candidate != null || !tokenId.IsDefined;
         }
 
         public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection

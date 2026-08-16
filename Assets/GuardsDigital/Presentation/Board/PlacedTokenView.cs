@@ -1,5 +1,6 @@
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Presentation.Units.Minions;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Board
@@ -18,6 +19,13 @@ namespace GuardsDigital.Presentation.Board
     /// It is deliberately smaller than a unit and sits lower, so a highlighted tile still reads
     /// through, and it carries no pointer selector: a token is named by a prompt control and marked by
     /// its space, exactly as milestone 6.5c settled for every other board object a choice can name.
+    ///
+    /// Milestone 6.3a gave it the marking half of that sentence. Until then "marked by its space" was
+    /// true of a hero and a minion and of nothing else - milestone 6.6a's finding was a control
+    /// reading `TEST - HAZARD` beside a board that said nothing - because this view had no cue to set.
+    /// It now carries the shared <see cref="BoardChoiceCue"/> construction and the same two
+    /// treatments, so a Clear candidate, a Remove target and a minion up for removal are all pointed
+    /// at in one vocabulary.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -30,6 +38,20 @@ namespace GuardsDigital.Presentation.Board
 
         public const float NameCharacterSize = 0.035f;
 
+        /// <summary>
+        /// The choice cue's glyph and size, taken from the shared construction rather than restated,
+        /// so a token being pointed at reads exactly as a minion being pointed at does.
+        /// </summary>
+        public const string ChoiceCueMarker = BoardChoiceCue.Marker;
+        public const float ChoiceCueCharacterSize = BoardChoiceCue.MarkerCharacterSize;
+
+        /// <summary>
+        /// How far up-screen the cue hangs, as a share of the tile's outer radius. The token is
+        /// smaller than a unit and sits lower, so its cue is proportional to the board rather than
+        /// borrowing the minion's absolute offset, which was measured against a 1.35-scaled sprite.
+        /// </summary>
+        public const float ChoiceCueRadiusFraction = 0.85f;
+
         private static readonly Vector3 NameLocalPosition = new Vector3(0f, 0.01f, 0f);
 
         [SerializeField, HideInInspector]
@@ -40,6 +62,9 @@ namespace GuardsDigital.Presentation.Board
 
         private PlacedToken token;
         private TextMesh nameLabel;
+        private Transform cueAnchor;
+        private TextMesh choiceCue;
+        private TextMesh choiceCueBackground;
         private Mesh ownedMesh;
         private Material ownedMaterial;
 
@@ -58,6 +83,12 @@ namespace GuardsDigital.Presentation.Board
 
         /// <summary>The name this view is currently drawing, or the empty string before its first bind.</summary>
         public string NameText => nameLabel != null ? nameLabel.text : string.Empty;
+
+        /// <summary>What this piece currently says about its part in a pending decision.</summary>
+        public MinionChoiceCueKind ChoiceCueKind { get; private set; }
+
+        /// <summary>The drawn cue, for a fixture that has to read it through the camera.</summary>
+        public TextMesh ChoiceCue => choiceCue;
 
         public void Configure(PlacedToken state, float radius)
         {
@@ -79,9 +110,60 @@ namespace GuardsDigital.Presentation.Board
         }
 
         /// <summary>
-        /// Builds the disc and the name once. Both are generated rather than authored, for the reason
-        /// every other placeholder board object is: a token instance does not exist until an effect
-        /// places one, so there is no scene object to author against.
+        /// Milestone 6.3a: shows this token's part in a pending decision, in the shared board-facing
+        /// vocabulary. `Selected` outranks `Highlighted`, decided by the caller, on the same terms the
+        /// minion prompt set: a piece already chosen keeps saying so while the pointer moves on.
+        /// </summary>
+        public void SetChoiceCue(MinionChoiceCueKind kind)
+        {
+            if (kind != MinionChoiceCueKind.None && kind != MinionChoiceCueKind.Highlighted &&
+                kind != MinionChoiceCueKind.Selected)
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(kind));
+            }
+
+            ChoiceCueKind = kind;
+            if (kind == MinionChoiceCueKind.None)
+            {
+                if (choiceCue != null)
+                {
+                    choiceCue.gameObject.SetActive(false);
+                    choiceCueBackground.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
+            EnsureVisual();
+            if (choiceCue == null)
+            {
+                BoardChoiceCue.CreatePair(
+                    cueAnchor, "Placed Token Choice Cue", ChoiceCueLocalPosition(),
+                    mirrored: true, out choiceCue, out choiceCueBackground);
+                choiceCue.characterSize = ChoiceCueCharacterSize;
+            }
+
+            choiceCue.gameObject.SetActive(true);
+            choiceCueBackground.gameObject.SetActive(true);
+            choiceCue.text = ChoiceCueMarker;
+            choiceCue.color = kind == MinionChoiceCueKind.Selected
+                ? BoardChoiceCue.SelectedColor
+                : BoardChoiceCue.HighlightedColor;
+            BoardChoiceCue.Center(
+                cueAnchor, choiceCue, choiceCueBackground, ChoiceCueLocalPosition());
+        }
+
+        /// <summary>
+        /// Where the cue hangs, in the board-facing anchor's own space: up-screen from the disc, and a
+        /// touch nearer the camera so it is never lost inside the piece it marks.
+        /// </summary>
+        private Vector3 ChoiceCueLocalPosition() =>
+            new Vector3(0f, outerRadius * ChoiceCueRadiusFraction, 0.02f);
+
+        /// <summary>
+        /// Builds the disc, the name, and the anchor they share once. All are generated rather than
+        /// authored, for the reason every other placeholder board object is: a token instance does not
+        /// exist until an effect places one, so there is no scene object to author against.
         /// </summary>
         private void EnsureVisual()
         {
@@ -98,6 +180,18 @@ namespace GuardsDigital.Presentation.Board
             {
                 ownedMaterial = CreateDiscMaterial();
                 meshRenderer.sharedMaterial = ownedMaterial;
+            }
+
+            // Milestone 6.3a: a second anchor at the piece's own origin, carrying the same rotation
+            // for the same reason. It is separate from the name's so the cue's offset is measured
+            // from the token rather than from wherever the name happens to sit.
+            if (cueAnchor == null)
+            {
+                var cueObject = new GameObject("Placed Token Cue Anchor");
+                cueObject.transform.SetParent(transform, false);
+                cueObject.transform.localPosition = Vector3.zero;
+                cueObject.transform.localRotation = BoardChoiceCue.BoardFacingRotation;
+                cueAnchor = cueObject.transform;
             }
 
             if (nameLabel != null)

@@ -625,6 +625,51 @@ namespace GuardsDigital.Application
                     .Where(option => option != null)
                     .ToArray()
                 : Array.Empty<FastTravelOptionProjection>();
+            // Milestone 6.3a: the same shape one line up, over the other replaceable action. It asks
+            // the two queries the `PerformClear` dispatch already asks - which Clear offer stands, and
+            // which adjacent tokens it admits - so the surface and the command agree by construction
+            // rather than by both being written to agree. An option with no adjacent token is kept:
+            // p.13 permits clearing none, and milestone 6.3 accepts the empty selection, so an
+            // available replaceable Attack always offers the replacement.
+            var availableClearOptions = turn != null &&
+                turn.SelectedActor.IsDefined && !hasPendingAction
+                ? availableActions.Where(offer => offer.IsAvailable).Select(offer =>
+                    {
+                        var definition = configuration.CardDefinitions.Single(value =>
+                            value.Reference.Equals(offer.SourceDefinitionReference));
+                        var action = definition.ActionDefinitions.Single(value =>
+                            value.Id.Equals(offer.ActionDefinitionId));
+                        if (action.Kind != ActionKind.Attack || !action.DefaultPolicy.CanBeReplaced)
+                        {
+                            return null;
+                        }
+
+                        var replacementOffer = GeneralRuleActionOfferQuery.GetAvailableClearOffer(
+                            action.Id,
+                            offer.SourceCardInstanceId,
+                            offer.ActorId,
+                            configuration.CardDefinitions,
+                            configuration.CardInstances);
+                        if (!replacementOffer.HasValue)
+                        {
+                            return null;
+                        }
+
+                        var legalTokenIds = ClearActionQuery.FindLegalTokenIds(
+                            replacementOffer.Value,
+                            action.Id,
+                            configuration.CardDefinitions,
+                            configuration.CardInstances,
+                            board);
+                        return new ClearOptionProjection(
+                            replacementOffer.Value,
+                            action.Id,
+                            legalTokenIds.Select(id =>
+                                board.PlacedTokens.Single(token => token.Id.Equals(id))));
+                    })
+                    .Where(option => option != null)
+                    .ToArray()
+                : Array.Empty<ClearOptionProjection>();
             var defensePreview = CreateDefensePreview(turn, turnModifications);
             // Reads the aggregate's memo rather than re-serializing state the previous command
             // already encoded. The diagnostic envelope is not built here at all: the projection
@@ -673,7 +718,8 @@ namespace GuardsDigital.Application
                 turn?.PendingSkillResolution,
                 turn?.PendingEffectChoice,
                 round.PendingDisplacedMinionCorrection,
-                turn?.DescribePendingEffectChoice(configuration.CardDefinitions, turnModifications));
+                turn?.DescribePendingEffectChoice(configuration.CardDefinitions, turnModifications),
+                availableClearOptions);
         }
 
         private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn,

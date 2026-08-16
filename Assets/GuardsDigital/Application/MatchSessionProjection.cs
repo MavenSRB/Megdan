@@ -178,6 +178,121 @@ namespace GuardsDigital.Application
         public IReadOnlyList<HexCoordinate> LegalDestinations { get; }
     }
 
+    /// <summary>
+    /// Milestone 6.3a: one currently available replaceable Attack, the tokens the general Clear
+    /// could take instead, and the exact command for every subset a player may confirm.
+    ///
+    /// Milestone 6.3 implemented Clear and deliberately shipped no player-facing selection, so the
+    /// configured HUD had no way to submit the `PerformClear` command that already existed. This is
+    /// what that surface reads. Nothing here is new legality: the offer is
+    /// <see cref="GeneralRuleActionOfferQuery.GetAvailableClearOffer"/>'s and the candidates are
+    /// <see cref="ClearActionQuery.FindLegalTokenIds"/>'s, which are the same two answers the
+    /// command path asks on its way in.
+    ///
+    /// The invocations are enumerated here rather than composed by presentation, because a payload a
+    /// view builds is a payload a view can build wrongly. Adjacency bounds the candidate set to the
+    /// six neighbouring spaces, so the enumeration is at most 64 commands and is refused outright
+    /// above that - a bound this type asserts rather than assumes, since an unbounded candidate set
+    /// would silently make the enumeration exponential.
+    /// </summary>
+    public sealed class ClearOptionProjection
+    {
+        /// <summary>The six neighbours of the actor's space, which is every space a Clear can reach.</summary>
+        public const int MaximumCandidates = 6;
+
+        public ClearOptionProjection(
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<PlacedToken> adjacentTokens)
+        {
+            if (replacementOffer.InvocationContext != ActionInvocationContext.Replacement ||
+                !replacedAttackActionDefinitionId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "Clear projection requires replacement and replaced-action identities.");
+            }
+
+            ReplacementOffer = replacementOffer;
+            ReplacedAttackActionDefinitionId = replacedAttackActionDefinitionId;
+            AdjacentTokens = Array.AsReadOnly((adjacentTokens ??
+                throw new ArgumentNullException(nameof(adjacentTokens))).ToArray());
+            if (AdjacentTokens.Any(token => token == null) ||
+                AdjacentTokens.Select(token => token.Id).Distinct().Count() != AdjacentTokens.Count)
+            {
+                throw new ArgumentException(
+                    "Clear projection requires distinct placed tokens.", nameof(adjacentTokens));
+            }
+
+            if (AdjacentTokens.Count > MaximumCandidates)
+            {
+                throw new ArgumentException(
+                    "A Clear can only reach the actor's six adjacent spaces.", nameof(adjacentTokens));
+            }
+
+            SubsetInvocations = Array.AsReadOnly(EnumerateSubsets(
+                replacedAttackActionDefinitionId,
+                AdjacentTokens.Select(token => token.Id).ToArray()));
+        }
+
+        public ActionOffer ReplacementOffer { get; }
+        public ActionDefinitionId ReplacedAttackActionDefinitionId { get; }
+
+        /// <summary>
+        /// The tokens this Clear may take, in the authority's own order. Each is the board's own
+        /// instance, so a caller reads the coordinate and the trusted definition off the piece rather
+        /// than looking either up.
+        /// </summary>
+        public IReadOnlyList<PlacedToken> AdjacentTokens { get; }
+
+        /// <summary>
+        /// One canonical <c>PerformClear</c> per confirmable subset, the empty one first. p.13 permits
+        /// any number, and milestone 6.3 already accepts none, so confirming nothing is an invocation
+        /// like any other rather than a case a surface has to special-case.
+        /// </summary>
+        public IReadOnlyList<DirectorCommand> SubsetInvocations { get; }
+
+        /// <summary>
+        /// The one invocation that clears exactly these tokens, or <c>null</c> when the set is not a
+        /// subset this option offers. Order and duplication do not matter: a subset is a set, and the
+        /// command orders its own ids.
+        /// </summary>
+        public DirectorCommand FindInvocation(IEnumerable<TokenInstanceId> selectedTokenIds)
+        {
+            if (selectedTokenIds == null)
+            {
+                throw new ArgumentNullException(nameof(selectedTokenIds));
+            }
+
+            var selected = new HashSet<TokenInstanceId>(selectedTokenIds);
+            return SubsetInvocations.SingleOrDefault(invocation =>
+                invocation.TokenInstanceIds.Count == selected.Count &&
+                invocation.TokenInstanceIds.All(selected.Contains));
+        }
+
+        private static DirectorCommand[] EnumerateSubsets(
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IReadOnlyList<TokenInstanceId> candidates)
+        {
+            var invocations = new DirectorCommand[1 << candidates.Count];
+            for (var mask = 0; mask < invocations.Length; mask++)
+            {
+                var subset = new List<TokenInstanceId>();
+                for (var index = 0; index < candidates.Count; index++)
+                {
+                    if ((mask & (1 << index)) != 0)
+                    {
+                        subset.Add(candidates[index]);
+                    }
+                }
+
+                invocations[mask] = DirectorCommand.PerformClear(
+                    replacedAttackActionDefinitionId, subset);
+            }
+
+            return invocations;
+        }
+    }
+
     public readonly struct MatchCommitmentProjection
     {
         public MatchCommitmentProjection(
@@ -246,7 +361,8 @@ namespace GuardsDigital.Application
             GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
                 pendingDisplacedMinionCorrection = null,
             IEnumerable<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>
-                pendingEffectChoicePreview = null)
+                pendingEffectChoicePreview = null,
+            IEnumerable<ClearOptionProjection> availableClearOptions = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -306,6 +422,15 @@ namespace GuardsDigital.Application
             PendingEffectChoicePreview = Array.AsReadOnly((pendingEffectChoicePreview ??
                 Enumerable.Empty<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>())
                 .ToArray());
+            AvailableClearOptions = Array.AsReadOnly((availableClearOptions ??
+                Enumerable.Empty<ClearOptionProjection>()).ToArray());
+            if (AvailableClearOptions.Select(option => option.ReplacedAttackActionDefinitionId)
+                    .Distinct().Count() != AvailableClearOptions.Count)
+            {
+                throw new ArgumentException(
+                    "One replaceable Attack carries at most one Clear option.",
+                    nameof(availableClearOptions));
+            }
         }
 
         public long Version { get; }
@@ -407,6 +532,17 @@ namespace GuardsDigital.Application
         /// </remarks>
         public bool IsHistoryAvailable { get; }
         public IReadOnlyList<FastTravelOptionProjection> AvailableFastTravelOptions { get; }
+
+        /// <summary>
+        /// Milestone 6.3a: the replaceable Attacks the current actor could take a Clear instead of,
+        /// each carrying the tokens it would offer and the command for every confirmable subset.
+        ///
+        /// Empty whenever the current card prints no available replaceable Attack, which is what makes
+        /// the absence of a Clear control a projected fact rather than a presentation decision. An
+        /// option with no adjacent token is still an option: p.13 permits clearing none, so a player
+        /// may take the replacement and resolve the card either way.
+        /// </summary>
+        public IReadOnlyList<ClearOptionProjection> AvailableClearOptions { get; }
         public PendingDefensePreviewProjection PendingDefensePreview { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }

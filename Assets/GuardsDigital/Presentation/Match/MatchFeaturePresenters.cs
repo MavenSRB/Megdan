@@ -82,6 +82,34 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
+    /// Milestone 6.3a: the same cue over the third kind of board object a prompt can name.
+    ///
+    /// A token is addressed by its stable <see cref="TokenInstanceId"/> rather than by the space it
+    /// stands on, which is what separates it from the hero and minion arms milestone 6.5c built. Those
+    /// two resolve a pointed-at effect-choice target by coordinate, because the effect definition
+    /// binds a target by space and whichever unit stands there is the one meant. A token control has a
+    /// piece to name directly, and reading occupancy back out of a coordinate would be presentation
+    /// deriving which object a space holds - the one thing a passive view must not do.
+    /// </summary>
+    public readonly struct TokenChoiceCueViewModel
+    {
+        public TokenChoiceCueViewModel(TokenInstanceId tokenId, MinionChoiceCueKind kind)
+        {
+            if (!tokenId.IsDefined || kind == MinionChoiceCueKind.None)
+            {
+                throw new ArgumentException(
+                    "A token choice cue requires a stable identity and a visible kind.");
+            }
+
+            TokenId = tokenId;
+            Kind = kind;
+        }
+
+        public TokenInstanceId TokenId { get; }
+        public MinionChoiceCueKind Kind { get; }
+    }
+
+    /// <summary>
     /// The one place the minion-choice prompt names a candidate. The ordinal is the candidate's
     /// position in the projection's own ordinal candidate order, so two candidates of the same team
     /// and type stay distinguishable by text rather than by color.
@@ -165,6 +193,31 @@ namespace GuardsDigital.Presentation.Match
                         : $"{displayName.ToUpperInvariant()} #{ordinal.Value}";
     }
 
+    /// <summary>
+    /// Milestone 6.3a: the one place the Clear surface names its controls.
+    ///
+    /// A candidate is named by <see cref="EffectChoiceLabels.TokenTargetLabel"/> rather than by a
+    /// label of its own, because a player choosing which Hazard to clear and a player choosing which
+    /// Hazard to Remove are looking at the same piece and must read the same words for it. The
+    /// disambiguating ordinal therefore follows the same rule too: it appears only where the offered
+    /// set repeats a name.
+    /// </summary>
+    public static class ClearLabels
+    {
+        /// <summary>
+        /// The offer states what it replaces. Clear is a secondary action that costs the card's
+        /// Attack (p.7, p.13), and a control saying only `CLEAR` would let a player spend the Attack
+        /// without being told they had.
+        /// </summary>
+        public const string OfferLabel = "CLEAR (REPLACES ATTACK)";
+
+        public const string ConfirmLabel = "CONFIRM CLEAR";
+        public const string CancelLabel = "CANCEL CLEAR";
+
+        public static string CandidateLabel(string displayName, int? ordinal) =>
+            EffectChoiceLabels.TokenTargetLabel(displayName, ordinal);
+    }
+
     public sealed class BoardInteractionViewModel
     {
         public BoardInteractionViewModel(
@@ -184,7 +237,8 @@ namespace GuardsDigital.Presentation.Match
             HexCoordinate? effectChoiceTargetSpace = null,
             HexCoordinate? effectChoiceResultingSpace = null,
             HexCoordinate? heroRespawnHighlight = null,
-            IEnumerable<HeroChoiceCueViewModel> heroChoiceCues = null)
+            IEnumerable<HeroChoiceCueViewModel> heroChoiceCues = null,
+            IEnumerable<TokenChoiceCueViewModel> tokenChoiceCues = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -206,12 +260,22 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<MinionChoiceCueViewModel>()).ToArray());
             HeroChoiceCues = Array.AsReadOnly((heroChoiceCues ??
                 Enumerable.Empty<HeroChoiceCueViewModel>()).ToArray());
+            TokenChoiceCues = Array.AsReadOnly((tokenChoiceCues ??
+                Enumerable.Empty<TokenChoiceCueViewModel>()).ToArray());
             if (MinionChoiceCues.Select(value => value.MinionId).Distinct().Count() !=
                 MinionChoiceCues.Count)
             {
                 throw new ArgumentException(
                     "One minion carries at most one choice cue.",
                     nameof(minionChoiceCues));
+            }
+
+            if (TokenChoiceCues.Select(value => value.TokenId).Distinct().Count() !=
+                TokenChoiceCues.Count)
+            {
+                throw new ArgumentException(
+                    "One token carries at most one choice cue.",
+                    nameof(tokenChoiceCues));
             }
 
             CorrectionDestination = correctionDestination;
@@ -254,6 +318,16 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
         public IReadOnlyList<MinionChoiceCueViewModel> MinionChoiceCues { get; }
         public IReadOnlyList<HeroChoiceCueViewModel> HeroChoiceCues { get; }
+
+        /// <summary>
+        /// Milestone 6.3a: which drawn tokens a control currently names, and how.
+        ///
+        /// Every entry is an identity this projection also lists in <see cref="PlacedTokens"/>, so a
+        /// cue can never outlive the piece it marks. That is the whole reason the presenter resolves a
+        /// reported identity against the projected list before it reaches here: a stale control naming
+        /// a token that has since moved, been replaced, or been removed marks nothing.
+        /// </summary>
+        public IReadOnlyList<TokenChoiceCueViewModel> TokenChoiceCues { get; }
 
         /// <summary>
         /// The pending correction's route endpoint or Place space that the player is currently
@@ -344,6 +418,9 @@ namespace GuardsDigital.Presentation.Match
         private HexCoordinate? highlightedEffectChoiceSpace;
         private MatchSessionProjection respawnHighlightProjection;
         private HexCoordinate? highlightedRespawnSpace;
+        private MatchSessionProjection tokenCueProjection;
+        private TokenInstanceId highlightedToken;
+        private IReadOnlyList<TokenInstanceId> selectedTokens = Array.Empty<TokenInstanceId>();
 
         public BoardInteractionPresenter(IMatchSession session, IBoardInteractionView view)
         {
@@ -386,6 +463,18 @@ namespace GuardsDigital.Presentation.Match
                 respawnHighlightProjection = null;
             }
 
+            // Milestone 6.3a: a token cue is anchored the same way, and the anchor carries the Clear
+            // selection with the pointed-at piece. A selection is local presenter state on the round
+            // presenter rather than authoritative state, so nothing else would drop it when the
+            // projection moves on, and a subset held across a command is a subset a player never
+            // chose for the position they are now in.
+            if (!ReferenceEquals(projection, tokenCueProjection))
+            {
+                highlightedToken = default;
+                selectedTokens = Array.Empty<TokenInstanceId>();
+                tokenCueProjection = null;
+            }
+
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
@@ -417,7 +506,8 @@ namespace GuardsDigital.Presentation.Match
                     highlightedRespawnSpace,
                     CreateHeroChoiceCues(
                         projection.PendingMinionBattleChoice,
-                        highlightedChoiceUnit));
+                        highlightedChoiceUnit),
+                    CreateTokenChoiceCues(projection, highlightedToken, selectedTokens));
             }
 
             view.Render(lastViewModel);
@@ -496,6 +586,61 @@ namespace GuardsDigital.Presentation.Match
 
             highlightedEffectChoiceSpace = resolved;
             effectChoiceHighlightProjection = resolved.HasValue ? projection : null;
+            lastProjection = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 6.3a: marks the token a hovered or keyboard-focused control names, so the board
+        /// says which piece the words on that control mean. Passing an undefined identity clears it.
+        ///
+        /// The identity is resolved against the projected token list and nothing else. That is what
+        /// makes a stale control harmless - a token that has since been replaced, removed or moved is
+        /// simply not there to mark - and it is why no display name and no coordinate is consulted:
+        /// two Hazards read alike and a space says nothing about which piece stands on it.
+        /// </summary>
+        public bool HighlightTokenChoiceCandidate(TokenInstanceId tokenId)
+        {
+            var projection = session.Projection;
+            var resolved = tokenId.IsDefined &&
+                projection.PlacedTokens.Any(token => token.Id.Equals(tokenId))
+                    ? tokenId
+                    : default;
+            return SetTokenCues(projection, resolved, selectedTokens);
+        }
+
+        /// <summary>
+        /// Milestone 6.3a: the tokens the player has currently selected for a Clear, so each keeps
+        /// saying so while the pointer moves across the other controls. Resolved against the projected
+        /// list on the same terms as the pointed-at one.
+        /// </summary>
+        public bool SetSelectedClearTokens(IEnumerable<TokenInstanceId> tokenIds)
+        {
+            var projection = session.Projection;
+            var resolved = (tokenIds ?? Enumerable.Empty<TokenInstanceId>())
+                .Where(tokenId => tokenId.IsDefined &&
+                    projection.PlacedTokens.Any(token => token.Id.Equals(tokenId)))
+                .Distinct()
+                .ToArray();
+            return SetTokenCues(projection, highlightedToken, resolved);
+        }
+
+        private bool SetTokenCues(
+            MatchSessionProjection projection,
+            TokenInstanceId highlighted,
+            IReadOnlyList<TokenInstanceId> selected)
+        {
+            var marksSomething = highlighted.IsDefined || selected.Count > 0;
+            if (highlighted.Equals(highlightedToken) &&
+                selected.SequenceEqual(selectedTokens) &&
+                (!marksSomething || ReferenceEquals(projection, tokenCueProjection)))
+            {
+                return false;
+            }
+
+            highlightedToken = highlighted;
+            selectedTokens = selected;
+            tokenCueProjection = marksSomething ? projection : null;
             lastProjection = null;
             return true;
         }
@@ -639,6 +784,35 @@ namespace GuardsDigital.Presentation.Match
                 .Where(value => value.Kind != MinionChoiceCueKind.None)
                 .Select(value => new HeroChoiceCueViewModel(value.HeroId, value.Kind))
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Milestone 6.3a: one cue per token a control currently names. `Selected` outranks
+        /// `Highlighted` on exactly the terms the minion prompt set - a piece already chosen keeps
+        /// saying so while the player points at the others - and a piece the projection no longer
+        /// carries gets nothing, which is what the two callers already guaranteed and this restates
+        /// because a view must never be handed an identity it cannot draw.
+        /// </summary>
+        private static IReadOnlyList<TokenChoiceCueViewModel> CreateTokenChoiceCues(
+            MatchSessionProjection projection,
+            TokenInstanceId highlightedTokenId,
+            IReadOnlyList<TokenInstanceId> selectedTokenIds)
+        {
+            var cues = new List<TokenChoiceCueViewModel>();
+            foreach (var token in projection.PlacedTokens)
+            {
+                var kind = selectedTokenIds.Contains(token.Id)
+                    ? MinionChoiceCueKind.Selected
+                    : token.Id.Equals(highlightedTokenId)
+                        ? MinionChoiceCueKind.Highlighted
+                        : MinionChoiceCueKind.None;
+                if (kind != MinionChoiceCueKind.None)
+                {
+                    cues.Add(new TokenChoiceCueViewModel(token.Id, kind));
+                }
+            }
+
+            return cues;
         }
 
         public bool ActivateFastTravel(ActionDefinitionId replacedMovementActionDefinitionId)
@@ -1087,7 +1261,8 @@ namespace GuardsDigital.Presentation.Match
             string label,
             HexCoordinate space,
             HexCoordinate? resultingSpace,
-            DirectorCommand command)
+            DirectorCommand command,
+            TokenInstanceId tokenId = default)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("An effect choice target requires a label.", nameof(label))
@@ -1095,6 +1270,7 @@ namespace GuardsDigital.Presentation.Match
             Space = space;
             ResultingSpace = resultingSpace;
             Command = command ?? throw new ArgumentNullException(nameof(command));
+            TokenId = tokenId;
         }
 
         public string Label { get; }
@@ -1103,6 +1279,149 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Where the authority projects this target would end up, when an operation moves it.</summary>
         public HexCoordinate? ResultingSpace { get; }
         public DirectorCommand Command { get; }
+
+        /// <summary>
+        /// Milestone 6.3a: the token this control names, or an undefined identity when it names a
+        /// hero, a minion, or an empty space.
+        ///
+        /// It rides beside <see cref="Space"/> rather than replacing it, because the two answer
+        /// different questions. The space is what the command carries and what a hero or minion cue is
+        /// resolved by; the identity is what lets the board mark the piece without reading occupancy
+        /// back out of a coordinate. Milestone 6.6a's finding was exactly this gap: the control read
+        /// `TEST - HAZARD` and the board marked nothing, because a token view had no cue to set and
+        /// the space alone could not say which piece was meant.
+        /// </summary>
+        public TokenInstanceId TokenId { get; }
+    }
+
+    /// <summary>
+    /// Milestone 6.3a: the control that starts a Clear, bound to the exact Attack it replaces.
+    ///
+    /// It carries the source card and the actor beside the replaced action, because a Clear is one
+    /// card's replacement rather than a general-purpose button: the presenter re-reads the offer off
+    /// the current projection before it starts anything, and these three are what it re-reads it by.
+    /// </summary>
+    public sealed class ClearOfferViewModel
+    {
+        public ClearOfferViewModel(
+            string label,
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            CardInstanceId sourceCardInstanceId,
+            HeroId actorId,
+            int candidateCount)
+        {
+            Label = string.IsNullOrWhiteSpace(label)
+                ? throw new ArgumentException("A Clear offer requires a label.", nameof(label))
+                : label;
+            if (!replacedAttackActionDefinitionId.IsDefined || !sourceCardInstanceId.IsDefined ||
+                !actorId.IsDefined || candidateCount < 0)
+            {
+                throw new ArgumentException(
+                    "A Clear offer requires its replaced Attack, source card, and actor.");
+            }
+
+            ReplacedAttackActionDefinitionId = replacedAttackActionDefinitionId;
+            SourceCardInstanceId = sourceCardInstanceId;
+            ActorId = actorId;
+            CandidateCount = candidateCount;
+        }
+
+        public string Label { get; }
+        public ActionDefinitionId ReplacedAttackActionDefinitionId { get; }
+        public CardInstanceId SourceCardInstanceId { get; }
+        public HeroId ActorId { get; }
+
+        /// <summary>
+        /// How many adjacent tokens this Clear would offer. Zero is a legal offer rather than a
+        /// hidden one: p.13 permits clearing none, so taking the replacement still resolves the card.
+        /// </summary>
+        public int CandidateCount { get; }
+    }
+
+    /// <summary>
+    /// Milestone 6.3a: one token the open Clear selection offers, and whether it is currently chosen.
+    /// The identity is the token's own, so pointing at this control and marking the piece agree
+    /// without presentation holding a second notion of which object a control means.
+    /// </summary>
+    public sealed class ClearTokenCandidateViewModel
+    {
+        public ClearTokenCandidateViewModel(
+            string label,
+            TokenInstanceId tokenId,
+            HexCoordinate space,
+            bool isSelected)
+        {
+            Label = string.IsNullOrWhiteSpace(label)
+                ? throw new ArgumentException("A Clear candidate requires a label.", nameof(label))
+                : label;
+            TokenId = tokenId.IsDefined
+                ? tokenId
+                : throw new ArgumentException(
+                    "A Clear candidate names the token it stands for.", nameof(tokenId));
+            Space = space;
+            IsSelected = isSelected;
+        }
+
+        public string Label { get; }
+        public TokenInstanceId TokenId { get; }
+        public HexCoordinate Space { get; }
+        public bool IsSelected { get; }
+    }
+
+    /// <summary>
+    /// Milestone 6.3a: the open Clear selection - every offered token, the exact command for the
+    /// subset currently chosen, and the way back out.
+    ///
+    /// Selection is local to presentation and reaches the session exactly once, on confirm. That is
+    /// the shape milestone 6.3 built for: it made Clear one atomic command with no pending
+    /// continuation, so there is no authoritative selection state to answer into and inventing one
+    /// would be a second Clear rule. <see cref="Cancel"/> is deliberately a label rather than a
+    /// <see cref="TypedInvocationViewModel"/> - it submits nothing at all, and a type that cannot
+    /// carry a command cannot be routed into one by mistake.
+    /// </summary>
+    public sealed class ClearSelectionViewModel
+    {
+        public ClearSelectionViewModel(
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<ClearTokenCandidateViewModel> candidates,
+            TypedInvocationViewModel confirm,
+            string cancelLabel)
+        {
+            ReplacedAttackActionDefinitionId = replacedAttackActionDefinitionId.IsDefined
+                ? replacedAttackActionDefinitionId
+                : throw new ArgumentException(
+                    "A Clear selection names the Attack it replaces.",
+                    nameof(replacedAttackActionDefinitionId));
+            Candidates = Array.AsReadOnly((candidates ??
+                throw new ArgumentNullException(nameof(candidates))).ToArray());
+            if (Candidates.Select(value => value.TokenId).Distinct().Count() != Candidates.Count)
+            {
+                throw new ArgumentException(
+                    "A Clear selection offers each token once.", nameof(candidates));
+            }
+
+            Confirm = confirm ?? throw new ArgumentNullException(nameof(confirm));
+            CancelLabel = string.IsNullOrWhiteSpace(cancelLabel)
+                ? throw new ArgumentException(
+                    "A Clear selection requires a cancel label.", nameof(cancelLabel))
+                : cancelLabel;
+            SelectedTokenIds = Array.AsReadOnly(Candidates
+                .Where(value => value.IsSelected)
+                .Select(value => value.TokenId)
+                .ToArray());
+        }
+
+        public ActionDefinitionId ReplacedAttackActionDefinitionId { get; }
+        public IReadOnlyList<ClearTokenCandidateViewModel> Candidates { get; }
+        public IReadOnlyList<TokenInstanceId> SelectedTokenIds { get; }
+
+        /// <summary>
+        /// The projected invocation for exactly the chosen subset. Always present, because p.13
+        /// permits any number and the empty subset is a confirmable answer rather than a decline.
+        /// </summary>
+        public TypedInvocationViewModel Confirm { get; }
+
+        public string CancelLabel { get; }
     }
 
     /// <summary>
@@ -1188,7 +1507,9 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HeroRespawnOptionViewModel> heroRespawnOptions = null,
             TypedInvocationViewModel resolveWithoutRespawn = null,
             IEnumerable<UnavailableEffectChoiceViewModel> unavailableEffectChoices = null,
-            IEnumerable<UnavailableActionViewModel> unavailableActions = null)
+            IEnumerable<UnavailableActionViewModel> unavailableActions = null,
+            IEnumerable<ClearOfferViewModel> clearOffers = null,
+            ClearSelectionViewModel clearSelection = null)
         {
             Version = version;
             RoundIndex = roundIndex;
@@ -1217,6 +1538,18 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<UnavailableEffectChoiceViewModel>()).ToArray());
             UnavailableActions = Array.AsReadOnly((unavailableActions ??
                 Enumerable.Empty<UnavailableActionViewModel>()).ToArray());
+            ClearOffers = Array.AsReadOnly((clearOffers ??
+                Enumerable.Empty<ClearOfferViewModel>()).ToArray());
+            ClearSelection = clearSelection;
+            if (clearSelection != null && !ClearOffers.Any(offer =>
+                    offer.ReplacedAttackActionDefinitionId.Equals(
+                        clearSelection.ReplacedAttackActionDefinitionId)))
+            {
+                throw new ArgumentException(
+                    "An open Clear selection belongs to an offer this model still carries.",
+                    nameof(clearSelection));
+            }
+
             HudHeader =$"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
                 $"TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound} - {phase.ToString().ToUpperInvariant()}";
         }
@@ -1269,6 +1602,20 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<HeroRespawnOptionViewModel> HeroRespawnOptions { get; }
         public TypedInvocationViewModel ResolveWithoutRespawn { get; }
 
+        /// <summary>
+        /// Milestone 6.3a: the Clear replacements the current card offers, one per available
+        /// replaceable Attack. Empty when the card prints none, which is how a player reads that this
+        /// card cannot Clear rather than reading nothing at all.
+        /// </summary>
+        public IReadOnlyList<ClearOfferViewModel> ClearOffers { get; }
+
+        /// <summary>
+        /// The Clear the player has opened, or <c>null</c>. It is presentation state and no command
+        /// has been submitted while it stands: the card is still unresolved, the authoritative action
+        /// choice is unchanged, and cancelling returns to exactly that.
+        /// </summary>
+        public ClearSelectionViewModel ClearSelection { get; }
+
         public string HudHeader { get; }
     }
 
@@ -1300,8 +1647,11 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchSession session;
         private readonly IRoundActionView view;
+        private readonly List<TokenInstanceId> clearSelection = new List<TokenInstanceId>();
         private MatchSessionProjection lastProjection;
         private RoundActionViewModel lastViewModel;
+        private MatchSessionProjection clearModeProjection;
+        private ActionDefinitionId clearModeActionDefinitionId;
 
         public RoundActionPresenter(IMatchSession session, IRoundActionView view)
         {
@@ -1311,6 +1661,12 @@ namespace GuardsDigital.Presentation.Match
 
         public event Action<MatchSessionProjection> SessionProjectionChanged;
         public event Action<FastTravelOfferViewModel> FastTravelSelectionRequested;
+
+        /// <summary>
+        /// Milestone 6.3a: the Clear selection as it now stands, or <c>null</c> once it is closed.
+        /// The board listens so the chosen pieces keep their cue; nothing authoritative rides on it.
+        /// </summary>
+        public event Action<ClearSelectionViewModel> ClearSelectionChanged;
 
         public void Refresh()
         {
@@ -1366,7 +1722,13 @@ namespace GuardsDigital.Presentation.Match
                     : Array.Empty<TypedInvocationViewModel>())
                 .Any(value => value.Command.Equals(invocation.Command)) ||
                 current.EffectChoiceTargets.Any(value => value.Command.Equals(invocation.Command)) ||
-                current.HeroRespawnOptions.Any(value => value.Command.Equals(invocation.Command));
+                current.HeroRespawnOptions.Any(value => value.Command.Equals(invocation.Command)) ||
+                // Milestone 6.3a: the open Clear's confirm joins the same legality decision, because
+                // this presenter refuses anything it did not project and a Clear confirm is projected
+                // like every other control here. What it refuses in practice is a confirm left over
+                // from a selection the current projection no longer offers.
+                current.ClearSelection != null &&
+                    current.ClearSelection.Confirm.Command.Equals(invocation.Command);
             if (!legal)
             {
                 return false;
@@ -1421,6 +1783,94 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
+        /// <summary>
+        /// Milestone 6.3a: opens the Clear selection for one projected offer. Nothing is submitted and
+        /// no authoritative state moves - the card stays unresolved and the action choice stands - so
+        /// this returns to exactly where it started if the player cancels.
+        /// </summary>
+        public bool SelectClear(ClearOfferViewModel offer)
+        {
+            if (offer == null)
+            {
+                return false;
+            }
+
+            var current = GetOrCreateViewModel(session.Projection);
+            var legal = current.ClearOffers.SingleOrDefault(value =>
+                value.ReplacedAttackActionDefinitionId.Equals(
+                    offer.ReplacedAttackActionDefinitionId) &&
+                value.SourceCardInstanceId.Equals(offer.SourceCardInstanceId) &&
+                value.ActorId.Equals(offer.ActorId));
+            if (legal == null)
+            {
+                return false;
+            }
+
+            clearModeProjection = session.Projection;
+            clearModeActionDefinitionId = legal.ReplacedAttackActionDefinitionId;
+            clearSelection.Clear();
+            return AfterClearSelectionChanged();
+        }
+
+        /// <summary>
+        /// Adds or removes one offered token from the subset. The presenter tracks nothing else about
+        /// it: which tokens may be chosen, and which command each subset means, are both projected.
+        /// </summary>
+        public bool ToggleClearToken(ClearTokenCandidateViewModel candidate)
+        {
+            if (candidate == null)
+            {
+                return false;
+            }
+
+            var current = GetOrCreateViewModel(session.Projection);
+            if (current.ClearSelection == null ||
+                !current.ClearSelection.Candidates.Any(value =>
+                    value.TokenId.Equals(candidate.TokenId)))
+            {
+                return false;
+            }
+
+            if (!clearSelection.Remove(candidate.TokenId))
+            {
+                clearSelection.Add(candidate.TokenId);
+            }
+
+            return AfterClearSelectionChanged();
+        }
+
+        /// <summary>Forwards the projected invocation for exactly the chosen subset, unchanged.</summary>
+        public bool ConfirmClear()
+        {
+            var current = GetOrCreateViewModel(session.Projection);
+            return current.ClearSelection != null && Submit(current.ClearSelection.Confirm);
+        }
+
+        /// <summary>
+        /// Closes the selection without submitting anything. The card is left unresolved and the
+        /// authoritative action choice is the one it always was.
+        /// </summary>
+        public bool CancelClear()
+        {
+            if (GetOrCreateViewModel(session.Projection).ClearSelection == null)
+            {
+                return false;
+            }
+
+            clearModeProjection = null;
+            clearModeActionDefinitionId = default;
+            clearSelection.Clear();
+            return AfterClearSelectionChanged();
+        }
+
+        private bool AfterClearSelectionChanged()
+        {
+            lastProjection = null;
+            ClearSelectionChanged?.Invoke(
+                GetOrCreateViewModel(session.Projection).ClearSelection);
+            return true;
+        }
+
         public bool SelectFastTravel(FastTravelOfferViewModel selection)
         {
             if (selection == null)
@@ -1442,7 +1892,13 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
-        public static RoundActionViewModel CreateViewModel(MatchSessionProjection projection)
+        public static RoundActionViewModel CreateViewModel(MatchSessionProjection projection) =>
+            CreateViewModel(projection, default, Array.Empty<TokenInstanceId>());
+
+        private static RoundActionViewModel CreateViewModel(
+            MatchSessionProjection projection,
+            ActionDefinitionId openClearActionDefinitionId,
+            IReadOnlyList<TokenInstanceId> selectedClearTokenIds)
         {
             if (projection == null)
             {
@@ -1496,6 +1952,22 @@ namespace GuardsDigital.Presentation.Match
                         option.ReplacedMovementActionDefinitionId,
                         option.LegalDestinations.Count))
                     .ToArray();
+            // Milestone 6.3a: a Clear is offered wherever the projection carries one, and the open
+            // selection is drawn from that same option, so a control and the command behind it can
+            // never come from different readings of the position.
+            var clearOptions = hasPendingResolution || !projection.IsTurnActive
+                ? Array.Empty<ClearOptionProjection>()
+                : projection.AvailableClearOptions.ToArray();
+            var clearOffers = clearOptions
+                .Select(option => new ClearOfferViewModel(
+                    ClearLabels.OfferLabel,
+                    option.ReplacedAttackActionDefinitionId,
+                    option.ReplacementOffer.SourceCardInstanceId,
+                    option.ReplacementOffer.ActorId,
+                    option.AdjacentTokens.Count))
+                .ToArray();
+            var clearSelection = CreateClearSelection(
+                clearOptions, openClearActionDefinitionId, selectedClearTokenIds);
             CreateEffectChoices(
                 projection,
                 out var effectChoiceControls,
@@ -1541,7 +2013,66 @@ namespace GuardsDigital.Presentation.Match
                         "RESOLVE WITHOUT ACTION",
                         DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation)),
                 unavailableEffectChoices,
-                unavailableActions);
+                unavailableActions,
+                clearOffers,
+                clearSelection);
+        }
+
+        /// <summary>
+        /// Milestone 6.3a: the open Clear's controls, or <c>null</c> when none is open.
+        ///
+        /// The subset the player has chosen is matched to one projected invocation rather than being
+        /// turned into a payload here - <see cref="ClearOptionProjection.FindInvocation"/> answers it,
+        /// and an answer of none closes the selection instead of composing a command the projection
+        /// never offered. A token the player had chosen and the projection no longer offers therefore
+        /// cannot survive into a confirm.
+        /// </summary>
+        private static ClearSelectionViewModel CreateClearSelection(
+            IReadOnlyList<ClearOptionProjection> options,
+            ActionDefinitionId openClearActionDefinitionId,
+            IReadOnlyList<TokenInstanceId> selectedTokenIds)
+        {
+            if (!openClearActionDefinitionId.IsDefined)
+            {
+                return null;
+            }
+
+            var option = options.SingleOrDefault(value =>
+                value.ReplacedAttackActionDefinitionId.Equals(openClearActionDefinitionId));
+            if (option == null)
+            {
+                return null;
+            }
+
+            var offered = new HashSet<TokenInstanceId>(option.AdjacentTokens.Select(token => token.Id));
+            var selected = selectedTokenIds.Where(offered.Contains).Distinct().ToArray();
+            var invocation = option.FindInvocation(selected);
+            if (invocation == null)
+            {
+                return null;
+            }
+
+            // The ordinal rule the token label has followed since milestone 6.2d, decided once over
+            // the whole offered set: a name that occurs twice keeps its ordinal, one that occurs once
+            // drops it.
+            var repeated = new HashSet<string>(option.AdjacentTokens
+                .GroupBy(token => token.Definition.DisplayName, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key), StringComparer.Ordinal);
+            var candidates = option.AdjacentTokens
+                .Select((token, index) => new ClearTokenCandidateViewModel(
+                    ClearLabels.CandidateLabel(
+                        token.Definition.DisplayName,
+                        repeated.Contains(token.Definition.DisplayName) ? index + 1 : (int?)null),
+                    token.Id,
+                    token.Coordinate,
+                    selected.Contains(token.Id)))
+                .ToArray();
+            return new ClearSelectionViewModel(
+                option.ReplacedAttackActionDefinitionId,
+                candidates,
+                new TypedInvocationViewModel(ClearLabels.ConfirmLabel, invocation),
+                ClearLabels.CancelLabel);
         }
 
         /// <summary>
@@ -1630,11 +2161,14 @@ namespace GuardsDigital.Presentation.Match
                     continue;
                 }
 
+                // Milestone 6.3a: a target that names a token carries that token's identity, so the
+                // board can mark the piece rather than reading occupancy back out of the space.
                 namedTargets.Add(new EffectChoiceTargetViewModel(
                     FormatTargetLabel(projection, preview, ordinals[candidate], repeatedTokenNames),
                     preview.Coordinate,
                     preview.ResultingCoordinate,
-                    command));
+                    command,
+                    FindToken(projection, preview)?.Id ?? default));
             }
 
             foreach (var invocation in choice.DeselectInvocations)
@@ -1716,17 +2250,21 @@ namespace GuardsDigital.Presentation.Match
         /// label rather than faulting, which is the same tolerance the hero and minion arms show.
         /// </summary>
         private static string FindTokenName(
-            MatchSessionProjection projection, EffectChoiceCandidatePreview preview)
-        {
-            if (preview.Occupant.Kind != BoardObjectKind.Token)
-            {
-                return null;
-            }
+            MatchSessionProjection projection, EffectChoiceCandidatePreview preview) =>
+            FindToken(projection, preview)?.Definition.DisplayName;
 
-            return projection.PlacedTokens
-                .SingleOrDefault(token => token.Id.Equals(preview.Occupant.TokenInstanceId))
-                ?.Definition.DisplayName;
-        }
+        /// <summary>
+        /// The projected token a preview names, or <c>null</c> when it names something else or the
+        /// projection no longer carries that instance. Milestone 6.3a made it the shared reading: the
+        /// label and the board cue must be talking about the same piece, and they are only guaranteed
+        /// to be when both come from one lookup against one list.
+        /// </summary>
+        private static PlacedToken FindToken(
+            MatchSessionProjection projection, EffectChoiceCandidatePreview preview) =>
+            preview.Occupant.Kind != BoardObjectKind.Token
+                ? null
+                : projection.PlacedTokens.SingleOrDefault(token =>
+                    token.Id.Equals(preview.Occupant.TokenInstanceId));
 
         /// <summary>
         /// Names a miniature a candidate would take from the supply. The board projection cannot
@@ -1747,10 +2285,23 @@ namespace GuardsDigital.Presentation.Match
 
         private RoundActionViewModel GetOrCreateViewModel(MatchSessionProjection projection)
         {
+            // Milestone 6.3a: an open Clear belongs to the projection it was opened against. A
+            // projection-version change - an accepted or refused command, End Turn, Undo, restart,
+            // restore, or replay - drops it, so a stale token control or subset can never be
+            // submitted and the surface is rebuilt from the position as it now is.
+            if (clearModeProjection != null && !ReferenceEquals(projection, clearModeProjection))
+            {
+                clearModeProjection = null;
+                clearModeActionDefinitionId = default;
+                clearSelection.Clear();
+                lastProjection = null;
+            }
+
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
-                lastViewModel = CreateViewModel(projection);
+                lastViewModel = CreateViewModel(
+                    projection, clearModeActionDefinitionId, clearSelection);
             }
 
             return lastViewModel;
