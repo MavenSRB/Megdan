@@ -15,7 +15,7 @@ namespace GuardsDigital.Core.Cards
             SyntheticCardProfile.WithModificationSkill("red-bulwark", "Red Bulwark", 11, 2, 3),
             new SyntheticCardProfile("red-lancer", "Red Lancer", 9, AttackRangeKind.Ranged, 2, 3, 3, 1),
             new SyntheticCardProfile("red-pursuit", "Red Pursuit", 7, AttackRangeKind.NonRanged, 4, 0, 3, 2),
-            new SyntheticCardProfile("red-bombard", "Red Bombard", 5, AttackRangeKind.Ranged, 3, 2, 2, 2)
+            SyntheticCardProfile.WithDirectMoveSpawnSkill("red-bombard", "Red Bombard", 5, 2, 2)
         };
 
         private static readonly SyntheticCardProfile[] BlueProfiles =
@@ -540,6 +540,8 @@ namespace GuardsDigital.Core.Cards
                     return CreateImmunityTimingSkillAction(profile);
                 case SyntheticPrintedPrimaryKind.PushPlaceSkill:
                     return CreatePushPlaceSkillAction(profile);
+                case SyntheticPrintedPrimaryKind.DirectMoveSpawnSkill:
+                    return CreateDirectMoveSpawnSkillAction(profile);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(profile),
@@ -795,6 +797,99 @@ namespace GuardsDigital.Core.Cards
                 effect);
         }
 
+        /// <summary>
+        /// Milestone 6.5b's conversion: the modal Skill `Choose one: directly Move another adjacent
+        /// unit up to 2 spaces; or Spawn one unit from your supply onto its own Spawn point`, replacing
+        /// this card's printed Primary Attack.
+        ///
+        /// The two branches differ in shape for the same reason 6.5a's do, and the difference is the
+        /// card text's rather than this table's. `another adjacent unit` is a decision, so the Move
+        /// branch is a Sequence opening milestone 6.8k's target selection at Radius 1 with the actor
+        /// excluded, and the direct Move binds the published space as its subject - the only legal way
+        /// to fill that coordinate parameter, since a role resolves without board access and the
+        /// definition validator refuses a role that tries. Which miniature Spawns is the Spawn
+        /// capability's own one decision and its destination is declared rather than chosen, so that
+        /// branch is a single node with nothing to sequence.
+        ///
+        /// The selection uses revision 1 of the target capability, not 6.5a's revision 2. Revision 2
+        /// exists so an offer can name the activity its consuming operation will ask immunity for, and
+        /// there card text Push asks `RuleActivity.ObjectPush`. Card-text direct Move has no activity
+        /// of its own - p.11 says it is expressly not a Movement action - so the capability asks the
+        /// enclosing action's activity, and revision 1 is bound to exactly that. Naming Skill through
+        /// revision 2 would state the same thing twice.
+        ///
+        /// Every value here is declaration rather than behaviour: Radius 1 with the actor excluded,
+        /// distance 2 under `up to` so every shorter destination is legal, and no `towards` bound,
+        /// which would need verified card text to read it from. None of it is official content, and
+        /// the card names no hero, no card and no space.
+        /// </summary>
+        private static ActionDefinition CreateDirectMoveSpawnSkillAction(SyntheticCardProfile profile)
+        {
+            var root = new EffectNodeId("bombard-root");
+            var moveBranch = new EffectNodeId("bombard-move-branch");
+            var selectTarget = new EffectNodeId("bombard-select-target");
+            var move = new EffectNodeId("bombard-direct-move");
+            var spawn = new EffectNodeId("bombard-spawn");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                profile.ContentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { moveBranch, spawn },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    new EffectNodeDefinition(
+                        moveBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { selectTarget, move }),
+                    new EffectNodeDefinition(
+                        selectTarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    // `up to` is p.11's own wording for an optional distance, and it is the policy the
+                    // capability reads to admit every destination at or below the bound rather than
+                    // only the exact one.
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                        SyntheticDisplacementCapabilities.DirectMoveV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "mover", selectTarget, "chosen", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
+                            EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                        },
+                        outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        spawn, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.SpawnV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("spawned", EffectValueKind.Minion),
+                            new EffectOutputBinding("at", EffectValueKind.Coordinate)
+                        })
+                });
+
+            return new ActionDefinition(
+                new ActionDefinitionId("primary-direct-move-spawn-skill"),
+                ActionKind.Skill,
+                ActionDefinitionOrigin.PrintedPrimary,
+                Array.Empty<PrintedValueDefinition>(),
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                AttackRangeKind.None,
+                default,
+                effect);
+        }
+
         private static ActionDefinition CreateDefenseAction(int value)
         {
             return new ActionDefinition(
@@ -816,7 +911,8 @@ namespace GuardsDigital.Core.Cards
             Attack = 0,
             ModificationSkill = 1,
             ImmunityTimingSkill = 2,
-            PushPlaceSkill = 3
+            PushPlaceSkill = 3,
+            DirectMoveSpawnSkill = 4
         }
 
         private sealed class SyntheticCardProfile
@@ -907,6 +1003,17 @@ namespace GuardsDigital.Core.Cards
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.PushPlaceSkill,
                     "phase-6-5aa-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+
+            /// <summary>Milestone 6.5b's converted card, on the same terms as the three before it.</summary>
+            public static SyntheticCardProfile WithDirectMoveSpawnSkill(
+                string id,
+                string displayName,
+                int initiative,
+                int movementValue,
+                int defenseValue) =>
+                new SyntheticCardProfile(
+                    id, displayName, initiative, SyntheticPrintedPrimaryKind.DirectMoveSpawnSkill,
+                    "phase-6-5b-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             public string Id { get; }
             public string DisplayName { get; }

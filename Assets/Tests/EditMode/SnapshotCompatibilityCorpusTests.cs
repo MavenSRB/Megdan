@@ -179,17 +179,28 @@ namespace GuardsDigital.Tests.EditMode
         /// activity; restoring the old revision as the corrected definition would silently change
         /// its offered choices, so the existing content-revision check rejects it rather than
         /// migrating it. All fixtures are therefore renamed and re-pinned as v11.
+        /// Milestone 6.5b re-pins every fixture for one cause and one only: Red Bombard's printed
+        /// Primary Attack becomes its showcase Skill, so its definition advances from
+        /// <c>phase-5-1a-rev-3</c> to <c>phase-6-5b-rev-1</c>. It registers no capability and changes
+        /// no schema, so the registration list and the version int are byte-identical. Measured in a
+        /// throwaway worktree at pre-change revision <c>82fc064</c> rather than assumed: both revision
+        /// strings are sixteen characters, so every authoritative payload keeps its exact decoded
+        /// length - 2609, 2804, 2984, 3014, 3655, 3704 and 3714 bytes - and differs in exactly eight
+        /// bytes, which is the four positions where the two strings differ, twice, in the definition
+        /// table's Red Bombard entry and in the <c>red-bombard-card</c> instance's definition
+        /// reference. The decision is reject rather than migrate, by the existing content-revision
+        /// check: the saved revision states a printed Attack the trusted catalog no longer supplies.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v11", "7d95324d7352b6f039463748a65aea83a6ff4eda87eae2092f255a4a28c9995d"),
-            new CompatibilityFixture("active-turn-v11", "2b83aeb52d6b28f6d97d7d17039dd1dc19926eb823db73c1b33f6fb67dac065f"),
-            new CompatibilityFixture("pending-choice-v11", "97819d3487fdc249e212b0fdd29528f517d88dbaf434697cdbea200e70638414"),
-            new CompatibilityFixture("end-of-round-v11", "b1bbd2cd2c5ca9bc15de260068c92175fcc98ed533707e4883508d179b860747"),
-            new CompatibilityFixture("pending-minion-battle-v11", "11b864c6f26fed119ba982d326d901c2e335ad469528fcf3c7ab02f99863ed78"),
-            new CompatibilityFixture("placed-token-v11", "ef796fb90fdc4f43019aca64f10752e319ab408b424e6067a6533709a116747e"),
-            new CompatibilityFixture("attached-marker-v11", "7d6df9890e2275dfc90934ce56f3cfbf4745c852b7110f9e0d8cbe59aef44057"),
-            new CompatibilityFixture("pending-correction-v11", "e4397f2bac031ceb66f8efc6a5b7327f1245d3cfa9c0dd18c86bed340a786f16")
+            new CompatibilityFixture("setup-v11", "bcb1582bec39dcc9869b543ac3ab12c63541493967c83b9dd80a5dc06f72025b"),
+            new CompatibilityFixture("active-turn-v11", "20a5542fab442f194bb1039f7e63eed6e9ea5ee0abdd965df868936ec11d28a4"),
+            new CompatibilityFixture("pending-choice-v11", "3964cde3bf6dc6314072a300655c72c740abb970e742f5c21ec854998906046e"),
+            new CompatibilityFixture("end-of-round-v11", "2bedfce466dbf5c5aa40ed47f40dffafb5bc4e895595ac056a81ffd1619798a9"),
+            new CompatibilityFixture("pending-minion-battle-v11", "5691851b9bbb6c4bbea35ad03a69f6b8ef1045bb0f4ad51c6a53ad53cf4ac758"),
+            new CompatibilityFixture("placed-token-v11", "5ade11803f83bb29707b990bf69837bb08501eb0edeae444ef52c791381adba3"),
+            new CompatibilityFixture("attached-marker-v11", "a0e2026b2d7bc88b89ef28338623a26e7aa24105e9c1ca7096e6fc3de8cab427"),
+            new CompatibilityFixture("pending-correction-v11", "6d006e8ca1618000ed7b1205d98d072ac5a8854eb8a0754193c0603afccab2cc")
         };
 
         [Test]

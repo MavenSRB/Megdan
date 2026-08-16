@@ -183,9 +183,23 @@ namespace GuardsDigital.Tests.PlayMode
             var redHeroId = new GuardsDigital.Core.Units.Heroes.HeroId(
                 PlaceholderOneVsOneParticipants.RedHeroIdValue);
 
+            // Reserved before the approach turns rather than looked for after them. Those turns spend
+            // Red's highest cards, and since milestone 6.5b converted Red Bombard the team prints
+            // exactly one Ranged Attack - so the card this case exists to play would otherwise be the
+            // third card the approach burns.
+            var attackCard = Hand(runtime, TeamSide.Red).Cards
+                .Where(card => runtime.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)).ActionDefinitions.Any(action =>
+                        action.Kind == GuardsDigital.Core.Cards.ActionKind.Attack &&
+                        action.AttackRange == AttackRangeKind.Ranged))
+                .OrderByDescending(card => runtime.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
+                .First();
+
             for (var approachTurn = 0; approachTurn < 3; approachTurn++)
             {
                 var red = Hand(runtime, TeamSide.Red).Cards
+                    .Where(card => !card.Id.Equals(attackCard.Id))
                     .OrderByDescending(card => runtime.Definitions.Single(definition =>
                         definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
                     .First();
@@ -235,14 +249,6 @@ namespace GuardsDigital.Tests.PlayMode
                 }
             }
 
-            var attackCard = Hand(runtime, TeamSide.Red).Cards
-                .Where(card => runtime.Definitions.Single(definition =>
-                    definition.Reference.Equals(card.DefinitionReference)).ActionDefinitions.Any(action =>
-                        action.Kind == GuardsDigital.Core.Cards.ActionKind.Attack &&
-                        action.AttackRange == AttackRangeKind.Ranged))
-                .OrderByDescending(card => runtime.Definitions.Single(definition =>
-                    definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
-                .First();
             var finalBlueCard = Hand(runtime, TeamSide.Blue).Cards
                 .OrderBy(card => runtime.Definitions.Single(definition =>
                     definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)

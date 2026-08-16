@@ -367,9 +367,9 @@ namespace GuardsDigital.Tests.EditMode
         public void TheOnlyOrdinaryCardExposingDisplacement_IsTheOneTheShowcaseConverted()
         {
             // Milestone 6.4's non-goals barred configured live exposure until the after-action
-            // correction existed. It does, and milestone 6.5a is the conversion that spends that
-            // permission - on exactly one card. The adjacency-derived batch and the direct Move stay
-            // behind the Skill fixture until 6.5b and 6.7a convert their own cards.
+            // correction existed. It does, and milestones 6.5a and 6.5b are the conversions that
+            // spend that permission - each on exactly one card. The adjacency-derived batch stays
+            // behind the Skill fixture, because no showcase card declares "every adjacent object".
             var ordinary = PlaceholderOneVsOneTestConfiguration.Create();
 
             var byCapability = ordinary.CardDefinitions
@@ -381,11 +381,16 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 byCapability.Where(entry => entry.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV2) ||
-                    entry.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.ObjectPushV1)),
+                    GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.ObjectPushV1)),
                 Is.Empty,
-                "Direct Move and the adjacency-derived batch reach a player through no configured card.");
+                "The adjacency-derived batch reaches a player through no configured card.");
+            Assert.That(
+                byCapability
+                    .Where(entry => entry.Capability.Equals(
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV2))
+                    .Select(entry => entry.Id.Value),
+                Is.EqualTo(new[] { "placeholder-red-bombard" }),
+                "Direct Move is exposed by exactly the card milestone 6.5b converted.");
             Assert.That(
                 byCapability
                     .Where(entry => entry.Capability.Equals(
@@ -398,6 +403,16 @@ namespace GuardsDigital.Tests.EditMode
                         GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV2))
                     .Select(entry => entry.Id.Value),
                 Is.EqualTo(new[] { "placeholder-red-needle" }));
+
+            // The two selection revisions are exposed by different cards, which is the visible half
+            // of the reason each branch picked the one it did: a Push names its own activity, and a
+            // card-text direct Move has none to name.
+            Assert.That(
+                byCapability
+                    .Where(entry => entry.Capability.Equals(
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV1))
+                    .Select(entry => entry.Id.Value),
+                Is.EqualTo(new[] { "placeholder-red-bombard" }));
         }
 
         // -------------------------------------------------------------------------------------------

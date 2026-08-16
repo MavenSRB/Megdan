@@ -228,14 +228,17 @@ namespace GuardsDigital.Tests.EditMode
                 maximumRangeEnemyId,
                 friendlyBlockerId,
                 beyondRangeEnemyId);
+            // The Red hand's Ranged Attack prints Range 3 since milestone 6.5b converted the Range 2
+            // card, so the maximum-range and beyond-range spaces are one further out and the board
+            // has to reach them.
             var board = new AdjacentMoveAuthority(
-                CreateRadiusThreeCoordinates(),
+                CreateRadiusCoordinates(4),
                 new[]
                 {
                     new HeroOccupancy(attackerId, new HexCoordinate(0, 0)),
                     new HeroOccupancy(friendlyBlockerId, new HexCoordinate(1, 0)),
-                    new HeroOccupancy(maximumRangeEnemyId, new HexCoordinate(2, 0)),
-                    new HeroOccupancy(beyondRangeEnemyId, new HexCoordinate(3, 0))
+                    new HeroOccupancy(maximumRangeEnemyId, new HexCoordinate(3, 0)),
+                    new HeroOccupancy(beyondRangeEnemyId, new HexCoordinate(4, 0))
                 });
             var authority = new CardActionResolutionAuthority(board);
             var rangedOffer = GetRangedAttackOffer(configuration, attackerId);
@@ -264,14 +267,14 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardInstances,
                 participants, RuleModificationSet.Empty);
 
-            Assert.That(HexDistanceQuery.Calculate(new HexCoordinate(0, 0), new HexCoordinate(2, 0)), Is.EqualTo(2));
+            Assert.That(HexDistanceQuery.Calculate(new HexCoordinate(0, 0), new HexCoordinate(3, 0)), Is.EqualTo(3));
             Assert.That(start.PendingTargetChoice.LegalTargetHeroIds, Is.EqualTo(new[] { maximumRangeEnemyId }));
             Assert.That(beyondRange.Accepted, Is.False);
             Assert.That(beyondRange.RejectionReason, Is.EqualTo(CardActionResolutionRejectionReason.TargetUnavailable));
             Assert.That(beyondRange.Events, Is.Empty);
             Assert.That(configuration.CardInstances.Select(instance => instance.State), Is.EqualTo(originalStates));
             Assert.That(accepted.Accepted, Is.True);
-            Assert.That(accepted.PendingResolution.AttackTotal, Is.EqualTo(3));
+            Assert.That(accepted.PendingResolution.AttackTotal, Is.EqualTo(2));
             Assert.That(accepted.PendingDefenseChoice.ChooserId, Is.EqualTo(maximumRangeEnemyId));
             Assert.That(accepted.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
             {
@@ -379,9 +382,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(restoredTargetChoice.LegalTargetHeroIds,
                 Is.EqualTo(new[] { defenderId }));
             Assert.That(answer.Accepted, Is.True);
-            Assert.That(answer.PendingResolution.AttackTotal, Is.EqualTo(3));
+            Assert.That(answer.PendingResolution.AttackTotal, Is.EqualTo(2));
             Assert.That(restoredDefense.PendingDefenseChoice.ChooserId, Is.EqualTo(defenderId));
-            Assert.That(restoredDefense.PendingDefenseChoice.AttackTotal, Is.EqualTo(3));
+            Assert.That(restoredDefense.PendingDefenseChoice.AttackTotal, Is.EqualTo(2));
         }
 
         [Test]
@@ -881,11 +884,11 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardInstances,
                 configuration.Participants, RuleModificationSet.Empty);
 
-            Assert.That(opened.PendingResolution.AttackTotal, Is.EqualTo(3));
+            Assert.That(opened.PendingResolution.AttackTotal, Is.EqualTo(2));
             Assert.That(outcome.Accepted, Is.True);
             Assert.That(outcome.Outcome, Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended));
             Assert.That(outcome.Events, Has.All.Matches<CardActionResolutionEvent>(ruleEvent =>
-                ruleEvent.AttackTotal == 3 &&
+                ruleEvent.AttackTotal == 2 &&
                 ruleEvent.DefenseTotal == 4 &&
                 ruleEvent.AttackOutcome == AttackResolutionOutcome.SuccessfullyDefended));
         }
@@ -1283,8 +1286,12 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     attackerId,
                     ActionOfferWindow.NormalPlay)
+                // Named by the action it prints rather than by the card that prints it. Milestone
+                // 6.5b converted Red Bombard, which used to be this offer's source, and the showcase
+                // route converts four more cards - so a fixture that needs "the Red hand's Ranged
+                // Attack" should say that. The scheduling amendment guarantees exactly one per team
+                // survives every conversion, which is what makes Single the right assertion here.
                 .Single(offer =>
-                    offer.SourceCardInstanceId.Value == "red-bombard-card" &&
                     offer.ActionDefinitionId.Equals(new ActionDefinitionId("primary-ranged-attack")));
         }
 
@@ -1322,9 +1329,11 @@ namespace GuardsDigital.Tests.EditMode
                 });
         }
 
-        private static IEnumerable<HexCoordinate> CreateRadiusThreeCoordinates()
+        private static IEnumerable<HexCoordinate> CreateRadiusThreeCoordinates() =>
+            CreateRadiusCoordinates(3);
+
+        private static IEnumerable<HexCoordinate> CreateRadiusCoordinates(int radius)
         {
-            const int radius = 3;
             for (var q = -radius; q <= radius; q++)
             {
                 var minimumR = Math.Max(-radius, -q - radius);

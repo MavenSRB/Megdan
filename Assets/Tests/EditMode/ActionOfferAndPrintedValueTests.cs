@@ -265,10 +265,11 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             // The showcase conversions replace one card's printed Primary Attack each - 6.8a Red
-            // Bulwark, 6.5a Red Needle - so the Red hand no longer offers five Attacks. Every card
-            // still offers exactly one printed Primary, which is what this fixture pins.
-            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Skill), Is.EqualTo(2));
-            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Attack), Is.EqualTo(3));
+            // Bulwark, 6.5a Red Needle, 6.5b Red Bombard - so the Red hand no longer offers five
+            // Attacks. Every card still offers exactly one printed Primary, which is what this
+            // fixture pins.
+            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Skill), Is.EqualTo(3));
+            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Attack), Is.EqualTo(2));
         }
 
         [Test]

@@ -237,7 +237,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheOnlyOrdinaryCardExposingPlacement_IsTheOneTheShowcaseConverted()
         {
-            // Milestone 6.5a converts exactly one card to Place; Spawn waits for 6.5b's Red Bombard.
+            // Milestone 6.5a converts exactly one card to Place and 6.5b exactly one to Spawn, which
+            // is what keeps p.18's two operations separable in the configured hand as well as in the
+            // model: no card offers both.
             var ordinary = PlaceholderOneVsOneTestConfiguration.Create();
 
             var byCapability = ordinary.CardDefinitions
@@ -247,22 +249,33 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(node => new { definition.Id, node.Capability }))
                 .ToArray();
 
-            Assert.That(
-                byCapability.Where(entry => entry.Capability.Equals(
-                    GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.SpawnV1)),
-                Is.Empty,
-                "Spawn reaches a player through no configured card until milestone 6.5b converts one.");
-            foreach (var exposed in new[]
+            foreach (var pair in new[]
             {
-                GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.PlaceV1,
-                GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.ActorSpaceV1
+                new
+                {
+                    Capability =
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.PlaceV1,
+                    Card = "placeholder-red-needle"
+                },
+                new
+                {
+                    Capability =
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.ActorSpaceV1,
+                    Card = "placeholder-red-needle"
+                },
+                new
+                {
+                    Capability =
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.SpawnV1,
+                    Card = "placeholder-red-bombard"
+                }
             })
             {
                 Assert.That(
-                    byCapability.Where(entry => entry.Capability.Equals(exposed))
+                    byCapability.Where(entry => entry.Capability.Equals(pair.Capability))
                         .Select(entry => entry.Id.Value),
-                    Is.EqualTo(new[] { "placeholder-red-needle" }),
-                    $"{exposed} is exposed by exactly the card the showcase converted.");
+                    Is.EqualTo(new[] { pair.Card }),
+                    $"{pair.Capability} is exposed by exactly the card the showcase converted.");
             }
         }
 

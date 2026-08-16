@@ -569,6 +569,74 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 6.5b. Red Bombard's `directly Move another adjacent unit up to 2 spaces` inherits
+        /// both 6.5c surfaces without adding presentation of its own: the unit is a named control, and
+        /// the destinations it then offers are empty spaces the board lights.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_GivesTheDirectMoveItsNamedTargetThenLeavesDestinationsToTheBoard()
+        {
+            var session = CreateNeedleSession(NeedleRedAt, NeedleBlueAt);
+            StartBombardTurn(session);
+            ChooseNeedleBranch(session, BombardMoveBranch);
+            var blueHero = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue);
+
+            var naming = RoundActionPresenter.CreateViewModel(session.Projection);
+            Assert.That(naming.EffectChoiceDestinations, Is.Empty);
+            Assert.That(naming.EffectChoiceTargets.Single().Label, Is.EqualTo(
+                EffectChoiceLabels.HeroTargetLabel(TeamSide.Blue, blueHero.DisplayName)),
+                "`another adjacent unit` is a control named after the unit, exactly as a Push target is.");
+            Assert.That(naming.EffectChoiceTargets.Single().ResultingSpace, Is.Null,
+                "An `up to` distance is an unanswered decision, so no landing space is projected.");
+
+            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(
+                naming.EffectChoiceTargets.Single().Command.EffectChoice)).Accepted, Is.True);
+
+            var moving = RoundActionPresenter.CreateViewModel(session.Projection);
+            Assert.That(moving.EffectChoiceTargets, Is.Empty,
+                "Every destination is an empty space, so none names an object.");
+            Assert.That(moving.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
+                Is.False,
+                "No anonymous OPTION #n button survives on either half of this branch.");
+            Assert.That(moving.EffectChoiceDestinations.Count,
+                Is.EqualTo(session.Projection.PendingEffectChoice.SelectInvocations.Count));
+        }
+
+        /// <summary>
+        /// Milestone 6.5b. A Spawn candidate names a miniature standing nowhere, which is a value kind
+        /// 6.5c's split had never met: it is not an option, and it is not a space the board can light.
+        /// It is a control named after the miniature, from the declared roster rather than the board.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_NamesEverySpawnCandidateAfterTheMiniatureItWouldTakeFromTheSupply()
+        {
+            var session = CreateBombardSpawnSession(out var removed);
+            ChooseNeedleBranch(session, BombardSpawn);
+            var declared = session.Projection.Setup.Minions.Single(value =>
+                value.MinionId.Equals(removed));
+
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+
+            Assert.That(model.EffectChoiceTargets, Is.Empty,
+                "A supply miniature stands on no space, so no board cue can point at it.");
+            Assert.That(model.EffectChoiceDestinations, Is.Empty,
+                "Its destination is declared by its own Spawn point rather than offered.");
+            var control = model.EffectChoices.Single(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+            Assert.That(control.Label, Is.EqualTo(
+                EffectChoiceLabels.MinionTargetLabel(declared.TeamSide, declared.MinionType, 1)),
+                "The control reads as the miniature it would put back, not as OPTION #1.");
+            Assert.That(control.Command.Kind, Is.EqualTo(DirectorCommandKind.AnswerEffectChoice));
+
+            Assert.That(session.Execute(control.Command).Accepted, Is.True);
+            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation)).Accepted, Is.True);
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "Passive forwarding of the projected command is the whole of the presenter's part.");
+        }
+
+        /// <summary>
         /// Milestone 6.5c. The board is the whole Place surface: every offered space is lit with the
         /// same highlight Movement, Fast Travel, and corrections use, and clicking one answers the
         /// choice outright, because an exactly-one selection leaves nothing further to confirm.
@@ -970,6 +1038,101 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly EffectNodeId NeedlePushBranch = new EffectNodeId("needle-push-branch");
         private static readonly EffectNodeId NeedlePlaceBranch = new EffectNodeId("needle-place-branch");
 
+        // Milestone 6.5b's card on the same geography, and the one space beside a minion Spawn point
+        // that the Spawn fixture needs.
+        private static readonly EffectNodeId BombardMoveBranch = new EffectNodeId("bombard-move-branch");
+        private static readonly EffectNodeId BombardSpawn = new EffectNodeId("bombard-spawn");
+
+        /// <summary>
+        /// Commits Red Bombard at Initiative 5 against Blue Longbow at 4, which is the only Blue card
+        /// below it, so the Red hero acts first and its converted Skill is the current actor's offer.
+        /// </summary>
+        private static void StartBombardTurn(MatchSession session)
+        {
+            var red = GetHandCards(session, TeamSide.Red)
+                .Single(card => card.Id.Value == "red-bombard-card");
+            var blue = GetHandCards(session, TeamSide.Blue)
+                .Single(card => card.Id.Value == "blue-longbow-card");
+            Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id));
+            var skill = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Skill);
+            Assert.That(session.Execute(DirectorCommand.StartAction(skill.ActionDefinitionId)).Accepted,
+                Is.True);
+        }
+
+        /// <summary>
+        /// A session whose Red side is one miniature short, played through its first Minion Battle so
+        /// the supply a Spawn draws from is not empty, with Red Bombard's Skill then started. p.8 has
+        /// the losing team remove one, which is how an ordinary match reaches a supply at all.
+        /// </summary>
+        private static MatchSession CreateBombardSpawnSession(out MinionId removed)
+        {
+            var session = CreateNeedleSession(NeedleRedAt, NeedleBlueAt, redOutnumbered: true);
+            removed = default;
+            for (var step = 0; step < 64 && !removed.IsDefined; step++)
+            {
+                var projection = session.Projection;
+                var battle = projection.PendingMinionBattleChoice;
+                if (battle != null)
+                {
+                    removed = battle.SelectInvocations[0].MinionId;
+                    Accept(session, DirectorCommand.SelectMinionBattleRemoval(battle.SelectInvocations[0]));
+                    Accept(session, DirectorCommand.ConfirmMinionBattleRemovals(
+                        session.Projection.PendingMinionBattleChoice.ConfirmInvocation));
+                    continue;
+                }
+
+                if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
+                {
+                    foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+                    {
+                        var card = GetHandCards(session, side)
+                            .Where(candidate => candidate.Id.Value != "red-bombard-card" &&
+                                candidate.Id.Value != "blue-longbow-card")
+                            .OrderBy(candidate => session.Projection.Definitions
+                                .Single(value => value.Reference.Equals(candidate.DefinitionReference))
+                                .Initiative.Value)
+                            .First();
+                        Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+                    }
+
+                    var tie = session.Projection.PendingInitiativeChoice;
+                    if (tie != null)
+                    {
+                        Accept(session, DirectorCommand.ChooseTiedActor(
+                            tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+                    }
+
+                    continue;
+                }
+
+                if (projection.Phase == RoundResolutionPhase.EndOfRound)
+                {
+                    Accept(session, DirectorCommand.AdvanceEndOfRound());
+                    continue;
+                }
+
+                Accept(session, DirectorCommand.PerformHold(projection.SelectedActor.CardInstanceId));
+            }
+
+            Assert.That(removed.IsDefined, Is.True, "The imbalance must reach a real removal choice.");
+            while (session.Projection.Phase != RoundResolutionPhase.AwaitingCommitments)
+            {
+                Accept(session, DirectorCommand.AdvanceEndOfRound());
+            }
+
+            StartBombardTurn(session);
+            return session;
+        }
+
+        private static void Accept(MatchSession session, DirectorCommand command)
+        {
+            var result = session.Execute(command);
+            Assert.That(result.Accepted, Is.True, result.Detail);
+        }
+
         private static HeroId BlueHeroId(MatchSession session) =>
             session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
 
@@ -1007,12 +1170,15 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.PendingEffectChoice.ConfirmInvocation)).Accepted, Is.True);
         }
 
-        private static MatchSession CreateNeedleSession(HexCoordinate redAt, HexCoordinate blueAt)
+        private static MatchSession CreateNeedleSession(
+            HexCoordinate redAt, HexCoordinate blueAt, bool redOutnumbered = false)
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
-                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                redOutnumbered
+                    ? RedOutnumberedSetup()
+                    : QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -1033,6 +1199,20 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 Array.Empty<ObstacleOccupancy>());
             return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        /// <summary>One fewer Red miniature, so p.8's Minion Battle removes a Red one and fills the supply.</summary>
+        private static QuickGameSetupConfiguration RedOutnumberedSetup()
+        {
+            var full = QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
+            var dropped = full.Minions.First(value =>
+                value.TeamSide == TeamSide.Red && value.MinionType == StandardMinionType.Ranged);
+            return new QuickGameSetupConfiguration(
+                full.RequiredMap,
+                full.WaveCount,
+                full.LifeCountPerTeam,
+                full.Heroes,
+                full.Minions.Where(value => !value.MinionId.Equals(dropped.MinionId)));
         }
 
         private static MatchSession CreateAdjacentSession()

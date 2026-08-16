@@ -87,8 +87,9 @@ namespace GuardsDigital.Tests.EditMode
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(blueHand.Definitions, Has.All.Property("ContentAuthority")
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
-            // Each showcase conversion advances exactly one card - 6.8a Red Bulwark, 6.8b Blue Feint -
-            // and the eight still at the 5.1a revision is what proves nothing else moved with it.
+            // Each showcase conversion advances exactly one card - 6.8a Red Bulwark, 6.8b Blue Feint,
+            // 6.5b Red Bombard - and the seven still at the 5.1a revision is what proves nothing else
+            // moved with it.
             Assert.That(
                 redHand.Definitions.Select(definition => definition.ContentRevision),
                 Is.EqualTo(new[]
@@ -97,7 +98,7 @@ namespace GuardsDigital.Tests.EditMode
                     "phase-6-8a-rev-1",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3",
-                    "phase-5-1a-rev-3"
+                    "phase-6-5b-rev-1"
                 }));
             Assert.That(
                 blueHand.Definitions.Select(definition => definition.ContentRevision),
@@ -122,17 +123,18 @@ namespace GuardsDigital.Tests.EditMode
                 redHand,
                 new[] { "Red Needle", "Red Bulwark", "Red Lancer", "Red Pursuit", "Red Bombard" },
                 new[] { 13, 11, 9, 7, 5 },
-                // Red Needle's and Red Bulwark's printed Primary Attacks became milestones 6.5a's and
-                // 6.8a's showcase Skills; the attack and range columns say nothing for a Skill, which
-                // prints no value channel. Red Pursuit remains the team's one printed non-Ranged Attack
-                // and Red Lancer its one Ranged Attack, which the showcase schedule requires.
+                // Red Needle's, Red Bulwark's and Red Bombard's printed Primary Attacks became
+                // milestones 6.5a's, 6.8a's and 6.5b's showcase Skills; the attack and range columns
+                // say nothing for a Skill, which prints no value channel. Red Pursuit remains the
+                // team's one printed non-Ranged Attack and Red Lancer its one Ranged Attack, which
+                // the showcase schedule requires.
                 new[]
                 {
                     ActionKind.Skill, ActionKind.Skill, ActionKind.Attack,
-                    ActionKind.Attack, ActionKind.Attack
+                    ActionKind.Attack, ActionKind.Skill
                 },
-                new[] { 0, 0, 2, 4, 3 },
-                new[] { 0, 0, 3, 0, 2 },
+                new[] { 0, 0, 2, 4, 0 },
+                new[] { 0, 0, 3, 0, 0 },
                 new[] { 2, 2, 3, 3, 2 },
                 new[] { 1, 3, 1, 2, 2 });
             AssertSyntheticMatrix(

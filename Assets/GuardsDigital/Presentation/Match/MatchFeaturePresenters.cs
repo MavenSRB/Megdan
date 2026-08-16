@@ -1413,6 +1413,20 @@ namespace GuardsDigital.Presentation.Match
             {
                 var candidate = invocation.Candidate;
                 var command = DirectorCommand.AnswerEffectChoice(invocation);
+
+                // Milestone 6.5b: a value candidate can also name a piece that is not on the board at
+                // all - a Spawn draws from the supply - and such a candidate is a control like a mode,
+                // because there is no space for the board to light and nothing standing for a cue to
+                // mark. What it is not is anonymous.
+                if (candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    candidate.Value.Kind == EffectValueKind.Minion)
+                {
+                    invocations.Add(new TypedInvocationViewModel(
+                        FormatSupplyMinionLabel(projection, candidate.Value.MinionId, ordinals[candidate]),
+                        command));
+                    continue;
+                }
+
                 if (candidate.Kind != EffectChoiceCandidateKind.Value ||
                     candidate.Value.Kind != EffectValueKind.Coordinate ||
                     !previews.TryGetValue(candidate.Value.Coordinate, out var preview))
@@ -1493,6 +1507,23 @@ namespace GuardsDigital.Presentation.Match
                 default:
                     return EffectChoiceLabels.TokenTargetLabel(ordinal);
             }
+        }
+
+        /// <summary>
+        /// Names a miniature a candidate would take from the supply. The board projection cannot
+        /// describe it, because it is standing nowhere; the declared setup roster carries the team and
+        /// the intrinsic type, which is the same pair a standing minion is named by, so a supply
+        /// candidate and a board candidate read alike rather than one of them reading as an ordinal.
+        /// </summary>
+        private static string FormatSupplyMinionLabel(
+            MatchSessionProjection projection, MinionId minionId, int ordinal)
+        {
+            var declared = projection.Setup.Minions.SingleOrDefault(value =>
+                value.MinionId.Equals(minionId));
+            return declared == null
+                ? EffectChoiceLabels.CandidateLabel(default, ordinal)
+                : EffectChoiceLabels.MinionTargetLabel(
+                    declared.TeamSide, declared.MinionType, ordinal);
         }
 
         private RoundActionViewModel GetOrCreateViewModel(MatchSessionProjection projection)
