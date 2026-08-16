@@ -143,17 +143,32 @@ namespace GuardsDigital.Tests.EditMode
         /// at the 6.8k revision states a branch set the trusted catalog no longer supplies, and reading
         /// it as the widened card would silently give a saved match Place and Spawn options it never
         /// recorded.
+        /// Milestone 6.8b keeps schema v10 and re-pins every fixture for one content cause, the same
+        /// shape 6.8a recorded: Blue Feint's printed Primary Attack became its showcase Skill, so that
+        /// card definition advanced from <c>phase-5-1a-rev-3</c> to <c>phase-6-8b-rev-1</c>. The
+        /// decision is reject rather than migrate, because a payload naming Blue Feint at the 5.1a
+        /// revision states a printed action set the trusted catalog no longer supplies, and reading it
+        /// as the converted card would silently give a saved match a Skill where it recorded an Attack.
+        /// Measured at the byte level either side of the change rather than assumed: both revision
+        /// strings are sixteen characters, so every payload keeps its exact decoded length and differs
+        /// in exactly eight bytes across exactly two regions - the definition table's Blue Feint entry
+        /// and the <c>blue-feint-card</c> instance's definition reference - which is the four positions
+        /// where the two strings differ, twice. <c>pending-choice-v10</c> differs in twelve bytes
+        /// across three regions rather than two, because the Blue hero is its acting hero and its
+        /// paused Movement continuation records the same source definition reference a third time. The
+        /// capability registration list is byte-identical, and the replaced action set never appears at
+        /// all, because the payload names definitions and the catalog supplies what they contain.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v10", "7fe4e494555a4fce4fc609604aae7fe8c7790625d79494e72b4e8a1a102d4e7c"),
-            new CompatibilityFixture("active-turn-v10", "50608b65290a6dba2b44d721cc35f14a67200df9b6b0cdb961fecd1e99e254dc"),
-            new CompatibilityFixture("pending-choice-v10", "0f3cbb39878d14c4d4393cc5f8b40dc86e246ff48c38fb7a03a6bfc236de20ae"),
-            new CompatibilityFixture("end-of-round-v10", "baccb00e06abb8b79ae5266da9a5054b8605c908bdbd3dea62868c43947131bb"),
-            new CompatibilityFixture("pending-minion-battle-v10", "7a120bb5571a8f703baaf819378aaf6fe4e247df4f69c7e96127c6c45dc00737"),
-            new CompatibilityFixture("placed-token-v10", "6b2258a1a687236f863adce55b15a54c42cb06304b8b1d1ee8e8ab42c71f0281"),
-            new CompatibilityFixture("attached-marker-v10", "bcc6d59f1783d13af38049c9e61fb3e9a8b40da0b4e868b7cc78bc7d103332fe"),
-            new CompatibilityFixture("pending-correction-v10", "b6bb06eab839ae773830c71337b0d1771d89b149fd1d40d253c75f4adbdbf067")
+            new CompatibilityFixture("setup-v10", "8b9b65899086af5ce3481204903fed81da5f1403060c40022f7cec2402102601"),
+            new CompatibilityFixture("active-turn-v10", "616103fe9c6f1323397544479f4eaaec51edc2e6cc8bc1bcac76aa3adc559d22"),
+            new CompatibilityFixture("pending-choice-v10", "6a16a9c9a0c1c53283c4f6bef9de3701f4a33c3622ec806076bef2f664144698"),
+            new CompatibilityFixture("end-of-round-v10", "ff475eea9ed39b69189dec810c42faa77bf4a03cc331de50fee12774e3d1427d"),
+            new CompatibilityFixture("pending-minion-battle-v10", "a3eec136e42365ed8f42cfa5c46b5ac106937153e3a2bef6471286256d0fc9b0"),
+            new CompatibilityFixture("placed-token-v10", "5e82ad6d1caacdd1b476bf5db232fa51d9e18271fa377a486b168e32c1d85c31"),
+            new CompatibilityFixture("attached-marker-v10", "aea44980398570aaa23492916f158d8ba3aea5923540057871896a543c35433c"),
+            new CompatibilityFixture("pending-correction-v10", "a325048393c59461962291a620debf507c1f321fb67cd1a1a864b4a2ec36934e")
         };
 
         [Test]

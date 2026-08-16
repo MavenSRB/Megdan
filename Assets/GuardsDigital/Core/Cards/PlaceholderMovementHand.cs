@@ -20,7 +20,7 @@ namespace GuardsDigital.Core.Cards
 
         private static readonly SyntheticCardProfile[] BlueProfiles =
         {
-            new SyntheticCardProfile("blue-feint", "Blue Feint", 12, AttackRangeKind.NonRanged, 2, 0, 3, 2),
+            SyntheticCardProfile.WithImmunityTimingSkill("blue-feint", "Blue Feint", 12, 3, 2),
             new SyntheticCardProfile("blue-sentinel", "Blue Sentinel", 11, AttackRangeKind.NonRanged, 3, 0, 2, 4),
             new SyntheticCardProfile("blue-scout-shot", "Blue Scout Shot", 8, AttackRangeKind.Ranged, 2, 2, 4, 1),
             new SyntheticCardProfile("blue-hammer", "Blue Hammer", 6, AttackRangeKind.NonRanged, 5, 0, 2, 1),
@@ -536,6 +536,8 @@ namespace GuardsDigital.Core.Cards
                     return CreateAttackAction(profile.AttackRange, profile.AttackValue, profile.RangeValue);
                 case SyntheticPrintedPrimaryKind.ModificationSkill:
                     return CreateModificationSkillAction(profile);
+                case SyntheticPrintedPrimaryKind.ImmunityTimingSkill:
+                    return CreateImmunityTimingSkillAction(profile);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(profile),
@@ -636,6 +638,62 @@ namespace GuardsDigital.Core.Cards
                 effect);
         }
 
+        /// <summary>
+        /// Milestone 6.8b's conversion: one two-mode Skill replacing this card's printed Primary
+        /// Attack. Like 6.8a's, each mode is a direct child of a `Choose` and names one capability
+        /// milestone 6.8 already registered, so the card supplies no rule of its own - it is the stable
+        /// source, and the affected object is whichever hero the action's authority reports as the
+        /// actor.
+        ///
+        /// The two families are deliberately the two 6.8a left out, and they are the two whose timing
+        /// questions are hardest: Push immunity under `Next Turn, After Playing Cards`, which p.17
+        /// applies "once next turn, after all players have played and revealed their cards" rather than
+        /// at the start of the turn, and a `Counts As` minion declaration for `This Round`, which p.17
+        /// makes a maximal replacement of the object's rules and qualities. Neither mode is a value
+        /// modifier, an action restriction, or a narrow permission; those stay with Red Bulwark.
+        ///
+        /// Board-neutral: it names no hero, no card and no space, and it carries no printed value,
+        /// because a Skill has no printed icon channel of its own. None of it is official content.
+        /// </summary>
+        private static ActionDefinition CreateImmunityTimingSkillAction(SyntheticCardProfile profile)
+        {
+            var root = new EffectNodeId("feint-root");
+            var pushImmunity = new EffectNodeId("feint-push-immunity");
+            var countsAsMinion = new EffectNodeId("feint-counts-as-minion");
+
+            EffectNodeDefinition Mode(EffectNodeId id, EffectCapabilityReference capability) =>
+                new EffectNodeDefinition(
+                    id, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    capability,
+                    outputs: new[] { new EffectOutputBinding("affected", EffectValueKind.Hero) });
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                profile.ContentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { pushImmunity, countsAsMinion },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    Mode(pushImmunity, SyntheticModificationCapabilities.GrantPushImmunityV1),
+                    Mode(countsAsMinion, SyntheticModificationCapabilities.CountAsMinionV1)
+                });
+
+            return new ActionDefinition(
+                new ActionDefinitionId("primary-immunity-skill"),
+                ActionKind.Skill,
+                ActionDefinitionOrigin.PrintedPrimary,
+                Array.Empty<PrintedValueDefinition>(),
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                AttackRangeKind.None,
+                default,
+                effect);
+        }
+
         private static ActionDefinition CreateDefenseAction(int value)
         {
             return new ActionDefinition(
@@ -655,7 +713,8 @@ namespace GuardsDigital.Core.Cards
         private enum SyntheticPrintedPrimaryKind
         {
             Attack = 0,
-            ModificationSkill = 1
+            ModificationSkill = 1,
+            ImmunityTimingSkill = 2
         }
 
         private sealed class SyntheticCardProfile
@@ -720,6 +779,21 @@ namespace GuardsDigital.Core.Cards
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.ModificationSkill,
                     "phase-6-8a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+
+            /// <summary>
+            /// Milestone 6.8b's converted card, on the same terms: identity, Initiative, printed
+            /// Secondary Movement and Defense reaction all stay, and it states no Attack values at all,
+            /// because its printed Primary Attack is replaced rather than suppressed.
+            /// </summary>
+            public static SyntheticCardProfile WithImmunityTimingSkill(
+                string id,
+                string displayName,
+                int initiative,
+                int movementValue,
+                int defenseValue) =>
+                new SyntheticCardProfile(
+                    id, displayName, initiative, SyntheticPrintedPrimaryKind.ImmunityTimingSkill,
+                    "phase-6-8b-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             public string Id { get; }
             public string DisplayName { get; }

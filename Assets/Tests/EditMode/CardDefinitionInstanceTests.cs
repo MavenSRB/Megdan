@@ -87,8 +87,8 @@ namespace GuardsDigital.Tests.EditMode
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(blueHand.Definitions, Has.All.Property("ContentAuthority")
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
-            // Milestone 6.8a advances exactly one card. Its conversion is what moves a pinned digest,
-            // and the other nine staying at the 5.1a revision is what proves nothing else moved.
+            // Each showcase conversion advances exactly one card - 6.8a Red Bulwark, 6.8b Blue Feint -
+            // and the eight still at the 5.1a revision is what proves nothing else moved with it.
             Assert.That(
                 redHand.Definitions.Select(definition => definition.ContentRevision),
                 Is.EqualTo(new[]
@@ -99,8 +99,16 @@ namespace GuardsDigital.Tests.EditMode
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3"
                 }));
-            Assert.That(blueHand.Definitions, Has.All.Property("ContentRevision")
-                .EqualTo("phase-5-1a-rev-3"));
+            Assert.That(
+                blueHand.Definitions.Select(definition => definition.ContentRevision),
+                Is.EqualTo(new[]
+                {
+                    "phase-6-8b-rev-1",
+                    "phase-5-1a-rev-3",
+                    "phase-5-1a-rev-3",
+                    "phase-5-1a-rev-3",
+                    "phase-5-1a-rev-3"
+                }));
             Assert.That(redHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
             Assert.That(blueHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
         }
@@ -129,12 +137,14 @@ namespace GuardsDigital.Tests.EditMode
                 blueHand,
                 new[] { "Blue Feint", "Blue Sentinel", "Blue Scout Shot", "Blue Hammer", "Blue Longbow" },
                 new[] { 12, 11, 8, 6, 4 },
+                // Blue Feint's printed Primary Attack became milestone 6.8b's showcase Skill; the
+                // attack and range columns say nothing for a Skill, which prints no value channel.
                 new[]
                 {
-                    ActionKind.Attack, ActionKind.Attack, ActionKind.Attack,
+                    ActionKind.Skill, ActionKind.Attack, ActionKind.Attack,
                     ActionKind.Attack, ActionKind.Attack
                 },
-                new[] { 2, 3, 2, 5, 3 },
+                new[] { 0, 3, 2, 5, 3 },
                 new[] { 0, 0, 2, 0, 3 },
                 new[] { 3, 2, 4, 2, 3 },
                 new[] { 2, 4, 1, 1, 2 });

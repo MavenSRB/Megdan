@@ -34,7 +34,7 @@ Non-goals: No immunity, `Counts As`, `Next Turn after Playing Cards`, Object Pus
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68a-convert-red-bulwark-into-the-modifierrestrictionpermission-showcase-skill-completion-evidence).
 
-### [~] 6.8b Convert Blue Feint into the immunity/effective-type timing showcase Skill
+### [x] 6.8b Convert Blue Feint into the immunity/effective-type timing showcase Skill
 
 Observable outcome: The configured Blue hand's existing Blue Feint card replaces its printed Primary Attack with one two-mode synthetic Skill whose source is the card and whose affected object is always the acting hero: that hero gains Push immunity under `Next Turn after Playing Cards`, or effectively `Counts As` a minion for `This Round`, separating defensive targeting and effective-type timing from Red Bulwark's action/value rules.
 
@@ -51,6 +51,8 @@ Acceptance checks:
 - Focused definition, lifecycle, target/presence, effective-type, Core/application, presentation, and saved-scene scenarios prove both modes without claiming the synthetic values or text are official content.
 
 Non-goals: No value modifier, action restriction, narrow permission, change to the Object Push effect 6.4 implements or to the intrinsic/effective choices 6.8g settles, Wasp definition, source-unverified official rule claim, runtime printed-text parsing, card-name/hero-name rule branch, production art, animation, or audio. Milestone 6.13 owns final retrieval/cancellation integration for the delayed sources.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68b-convert-blue-feint-into-the-immunityeffective-type-timing-showcase-skill-completion-evidence).
 
 ### [ ] 6.5a Convert Red Needle into the Push/Place showcase Skill
 
