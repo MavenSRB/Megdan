@@ -254,6 +254,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                     return Resume(frame, choice, EffectChoiceCommandKind.Decline, context);
 
+                case EffectChoiceCommandKind.Stop:
+                    if (choice.StopInvocation == null || !choice.StopInvocation.Equals(command))
+                    {
+                        return EffectResolutionStepResult.Reject(
+                            EffectResolutionRejectionReason.InvalidChoice, frame);
+                    }
+
+                    return Stop(frame, choice);
+
                 default:
                     return EffectResolutionStepResult.Reject(
                         EffectResolutionRejectionReason.InvalidChoice, frame);
@@ -267,6 +276,33 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 frame.With(frame.Continuation, frame.CompletedOutcomes, frame.AcceptedChoices, choice),
                 false,
                 null);
+
+        /// <summary>
+        /// Milestone 6.5ae: closes a <c>Choose</c> whose every option was refused, on the player's
+        /// own command.
+        ///
+        /// This is the stop milestone 6.5ac performed unasked at the node itself, moved rather than
+        /// rewritten, so accepting the invocation produces exactly what the unprompted stop produced:
+        /// the same node result, the same ordered facts, and therefore the same card resolution and
+        /// turn hand-off downstream. What changed is when the action ends, not what ending it means.
+        ///
+        /// It records no <see cref="EffectChoiceRecord"/>. That type closes on Confirm or Decline,
+        /// and the path this replaces recorded nothing either - a stop answers no question, so there
+        /// is no answer for a replay to reproduce.
+        /// </summary>
+        private static EffectResolutionStepResult Stop(
+            PendingResolution frame,
+            PendingEffectChoice choice)
+        {
+            var continuation = frame.Continuation.ToList();
+            var outcomes = frame.CompletedOutcomes.ToList();
+            var events = new List<EffectResolutionEvent>();
+
+            Record(outcomes, events, choice.NodeId, EffectExecutionResultKind.ImpossibleMandatory);
+            continuation.Clear();
+            return EffectResolutionStepResult.Accept(
+                Rebuild(frame, continuation, outcomes, frame.AcceptedChoices), true, events);
+        }
 
         private static EffectResolutionStepResult Resume(
             PendingResolution frame,
@@ -401,31 +437,29 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             // anything.
                             var unavailable = EffectOptionFeasibilityQuery.FindUnperformableOptions(
                                 node, frame, outcomes, context);
-                            if (unavailable.Count == node.ChildNodeIds.Count)
+                            var everyOptionRefused = unavailable.Count == node.ChildNodeIds.Count;
+                            if (everyOptionRefused &&
+                                node.FailurePolicy != EffectFailurePolicy.Mandatory)
                             {
-                                // Nothing here can be taken, so the node reports itself impossible and
-                                // its own policy decides what that means - the same reading a
-                                // capability's impossible result gets below.
+                                // `if able`, `may`, and `up to` treat a node they cannot take as
+                                // simply not taken, so there is nothing here for a player to close.
                                 Pop(continuation);
-                                if (node.FailurePolicy == EffectFailurePolicy.Mandatory)
-                                {
-                                    Record(outcomes, events, node.Id,
-                                        EffectExecutionResultKind.ImpossibleMandatory);
-                                    continuation.Clear();
-                                    return EffectResolutionStepResult.Accept(
-                                        Rebuild(frame, continuation, outcomes, choices), true, events);
-                                }
-
                                 Record(outcomes, events, node.Id,
                                     EffectExecutionResultKind.DeclinedOptional);
                                 continue;
                             }
 
+                            // Milestone 6.5ae: a mandatory node whose every option is refused pauses
+                            // with all of them greyed and offers p.10's stop, which the player takes.
+                            // Milestone 6.5ac stopped here without asking, because a mandatory Choose
+                            // has no decline and every other control is withheld while a choice
+                            // stands; the stop is the command that position was missing.
                             return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
                                 frame, node, context, EffectChoiceKind.SelectOption,
                                 node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray(),
                                 node.MinimumSelections, node.MaximumSelections,
-                                unavailableCandidates: unavailable));
+                                unavailableCandidates: unavailable,
+                                canStop: everyOptionRefused));
                         }
 
                         Pop(continuation);
@@ -544,7 +578,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             int minimumSelections,
             int maximumSelections,
             EffectChooserRole chooserOverride = EffectChooserRole.None,
-            IReadOnlyList<EffectChoiceCandidate> unavailableCandidates = null) =>
+            IReadOnlyList<EffectChoiceCandidate> unavailableCandidates = null,
+            bool canStop = false) =>
             new PendingEffectChoice(
                 frame.ResolutionId,
                 new EffectChoiceId($"node-{node.Id.Value}"),
@@ -558,7 +593,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 minimumSelections,
                 maximumSelections,
                 null,
-                unavailableCandidates);
+                unavailableCandidates,
+                canStop);
 
         private static HeroId ResolveChooser(
             EffectChooserRole role,

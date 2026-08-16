@@ -339,27 +339,119 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheMoveBranch_IsNotOfferedWhenNothingStandsAdjacent()
+        public void WhereNeitherModeCanBeTaken_TheChoicePausesGreyedWithOnlyAStopOffered()
         {
             // Milestone 6.5ac. `another adjacent unit` names nothing when the acting hero stands
-            // alone, so the branch can do nothing and is refused rather than offered. Here the Spawn
-            // mode cannot be performed either - every declared miniature still stands - so no option
-            // of this card can be taken at all and the node reports itself impossible without opening
-            // a prompt, which its mandatory policy then turns into p.10's stop.
+            // alone, so the Move branch can do nothing and is refused rather than offered. Here the
+            // Spawn mode cannot be performed either - every declared miniature still stands - so no
+            // option of this card can be taken at all.
+            //
+            // Milestone 6.5ae. 6.5ac stopped the action there without asking, so the player never saw
+            // the modes; the recorded reason was that a mandatory Choose has no decline and every
+            // other control is withheld while a choice stands, leaving no legal command. The stop is
+            // that command, and this is the position it was defined for.
             var session = StartBombardSkill(blueAt: new HexCoordinate(-3, 10));
 
-            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
-                "A choice nobody could answer is never opened: a mandatory Choose offers no decline, " +
-                "and every control is withheld while an effect choice stands, so pausing there would " +
-                "leave the turn with no legal command at all.");
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null, "The action pauses rather than ending unasked.");
+            Assert.That(choice.Candidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { MoveBranch, Spawn }));
+            Assert.That(choice.UnavailableCandidates, Is.EqualTo(choice.Candidates),
+                "Both modes are shown greyed: the player reads which ones exist and that neither " +
+                "can be taken.");
+            Assert.That(choice.SelectInvocations, Is.Empty);
+            Assert.That(choice.ConfirmInvocation, Is.Null);
+            Assert.That(choice.DeclineInvocation, Is.Null);
+            Assert.That(choice.StopInvocation, Is.Not.Null,
+                "And the one control offered is the stop.");
+            Assert.That(session.Projection.Cards.Single(card => card.Id.Equals(BombardCardId))
+                .State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved),
+                "Nothing stops the action until the player asks for it.");
+
+            Accept(session, DirectorCommand.AnswerEffectChoice(choice.StopInvocation));
+
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null);
             Assert.That(session.Projection.PendingSkillResolution, Is.Null);
-            Assert.That(
-                SkillFacts(session).Any(fact =>
-                    fact.Kind == CardActionResolutionEventKind.SkillChoiceRequested), Is.False,
-                "No mode was offered, so no player spent the card by picking one that could do nothing.");
             Assert.That(session.Projection.Cards.Single(card => card.Id.Equals(BombardCardId))
                 .State.ResolutionStatus, Is.Not.EqualTo(CardResolutionStatus.Unresolved),
-                "The action was started and stopped rather than refused outright.");
+                "Clicking it stops the action exactly as p.10's stop already did, and the card " +
+                "resolves rather than being left pending.");
+            Assert.That(
+                SkillFacts(session).Count(fact =>
+                    fact.Kind == CardActionResolutionEventKind.SkillEffectNodeStopped), Is.EqualTo(1),
+                "One stop, published once, whichever step of the action the player reached it from.");
+        }
+
+        [Test]
+        public void WhereNeitherModeCanBeTaken_EveryCommandButTheStop_IsRejectedAtomically()
+        {
+            var session = StartBombardSkill(blueAt: new HexCoordinate(-3, 10));
+            var before = session.Projection;
+            var choice = before.PendingEffectChoice;
+
+            foreach (var option in new[] { MoveBranch, Spawn })
+            {
+                var refused = session.Execute(DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
+                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Select,
+                    EffectChoiceCandidate.Option(option))));
+                Assert.That(refused.Accepted, Is.False, "A greyed mode cannot be selected.");
+            }
+
+            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
+                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Confirm))).Accepted,
+                Is.False);
+            Assert.That(session.Execute(DirectorCommand.StartAction(BombardSkill)).Accepted, Is.False,
+                "And no other action starts while the choice stands.");
+            Assert.That(session.Projection.AuthoritativeSnapshot, Is.EqualTo(before.AuthoritativeSnapshot),
+                "None of it touches card, occupancy, continuation, or events.");
+        }
+
+        [Test]
+        public void TheStopSurvivesSnapshotRestoreReplayAndRetainedPrefixUndo()
+        {
+            var session = StartBombardSkill(blueAt: new HexCoordinate(-3, 10));
+            var payload = session.CaptureSnapshot();
+            var revived = StartBombardSkill(blueAt: new HexCoordinate(-3, 10));
+            Assert.That(revived.RestoreSnapshot(payload).Accepted, Is.True);
+
+            var restored = revived.Projection.PendingEffectChoice;
+            Assert.That(restored.UnavailableCandidates, Is.EqualTo(restored.Candidates),
+                "The refusals are re-derived against the state this payload restored, never read " +
+                "from it.");
+            Assert.That(restored.StopInvocation, Is.Not.Null,
+                "And so is the stop, which follows from them and from the trusted node's own policy.");
+            Assert.That(restored.StopInvocation,
+                Is.EqualTo(session.Projection.PendingEffectChoice.StopInvocation));
+
+            var beforeStop = session.Projection.DiagnosticSnapshot;
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.StopInvocation));
+            var afterStop = session.Projection.DiagnosticSnapshot;
+
+            Assert.That(session.Undo().Accepted, Is.True);
+            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeStop));
+            Assert.That(session.Projection.PendingEffectChoice.StopInvocation, Is.Not.Null,
+                "Undo returns to the pause, and the stop is derived there again rather than replayed.");
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.StopInvocation));
+            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(afterStop),
+                "Replaying the same stop reproduces the same state and the same ordered facts.");
+        }
+
+        [Test]
+        public void AFrameRestoredAfterTheLastRefusalLifts_OffersTheModeAgainRatherThanTheStop()
+        {
+            // The reason the stop is derived rather than stored: a payload written while nothing could
+            // be taken, restored into a board where a miniature has left, must offer the mode again.
+            var session = StartBombardSkillAfterAMinionBattleRemoval(
+                out _, blueAt: new HexCoordinate(-3, 10));
+
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { MoveBranch }),
+                "The supply is no longer empty, so the Spawn mode can be taken.");
+            Assert.That(choice.StopInvocation, Is.Null,
+                "There is a decision to make again, so no stop is offered.");
         }
 
         [Test]

@@ -21,6 +21,11 @@ namespace GuardsDigital.Tests.EditMode
     /// is written - the branch's own declared contract, judged by the same walk for every definition -
     /// while the configured-card fixtures prove it where a player meets it.
     ///
+    /// Milestone 6.5ae then closed the one position 6.5ac left without a surface. Where no option can
+    /// be performed the node used to report itself impossible before any prompt opened, because a
+    /// mandatory `Choose` offers no decline and every other control is withheld while a choice stands.
+    /// It now pauses with every option greyed and offers p.10's stop, which the player takes.
+    ///
     /// The definitions here are the resolver's own synthetic vocabulary rather than cards, which is the
     /// point: nothing in the rule reads a card, a hero, or a node's name.
     /// </summary>
@@ -76,21 +81,151 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void AMandatoryChooseWithNoPerformableOption_ReportsItselfImpossible()
+        public void AMandatoryChooseWithNoPerformableOption_PausesWithEveryOptionGreyedAndOnlyAStop()
         {
-            var result = Start(Choose(
+            // Milestone 6.5ae. This used to report itself impossible before any prompt opened, so the
+            // player never saw the modes at all; the recorded reason was that pausing left the match
+            // with no legal command. The stop is that command.
+            var paused = Start(Choose(
                 EffectFailurePolicy.Mandatory, 1, 1,
                 Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
                 Leaf(Second, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory)));
 
-            Assert.That(result.IsComplete, Is.True);
-            Assert.That(result.Frame, Is.Null,
-                "A choice nobody could answer is never opened. A mandatory Choose offers no decline " +
-                "and every other control is withheld while a choice stands, so pausing there would " +
-                "leave the match with no legal command at all.");
-            Assert.That(Kinds(result), Is.EqualTo(new[] { "root=ImpossibleMandatory" }),
-                "The node reports itself impossible and its own policy decides what that means - " +
-                "which for a mandatory node is p.10's stop.");
+            Assert.That(paused.IsComplete, Is.False);
+            Assert.That(Kinds(paused), Is.Empty, "Nothing has happened yet; the action is waiting.");
+
+            var choice = paused.Frame.PendingChoice;
+            Assert.That(choice.Candidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { First, Second }),
+                "Every mode is projected, so the player reads which ones exist.");
+            Assert.That(choice.UnavailableCandidates, Is.EqualTo(choice.Candidates),
+                "And that none of them can be taken.");
+            Assert.That(choice.SelectInvocations, Is.Empty);
+            Assert.That(choice.DeselectInvocations, Is.Empty);
+            Assert.That(choice.ConfirmInvocation, Is.Null,
+                "A mandatory Choose requires at least one selection, so nothing is confirmable.");
+            Assert.That(choice.DeclineInvocation, Is.Null, "And a mandatory Choose offers no decline.");
+            Assert.That(choice.StopInvocation, Is.Not.Null,
+                "So the stop is the one legal command, exactly as a paused Movement's is.");
+            Assert.That(choice.StopInvocation.Kind, Is.EqualTo(EffectChoiceCommandKind.Stop));
+            Assert.That(choice.StopInvocation.ResolutionId, Is.EqualTo(choice.ResolutionId));
+            Assert.That(choice.StopInvocation.ChoiceId, Is.EqualTo(choice.ChoiceId));
+            Assert.That(choice.StopInvocation.Candidate.IsDefined, Is.False,
+                "A stop answers no question, so it names no candidate.");
+        }
+
+        [Test]
+        public void AChoiceWithOnePerformableOption_OffersNoStop()
+        {
+            // The control that keeps the stop measured rather than blanket: where a mode can still be
+            // taken there is a decision to make, and taking it is how the action goes on.
+            var paused = Start(Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                Leaf(Second, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory)));
+
+            Assert.That(paused.Frame.PendingChoice.StopInvocation, Is.Null);
+        }
+
+        [Test]
+        public void AcceptingTheStop_EndsTheActionExactlyAsTheUnpromptedStopDid()
+        {
+            var definition = Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                Leaf(Second, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory));
+            var paused = Start(definition);
+
+            var stopped = EffectResolutionSession.Answer(
+                paused.Frame, paused.Frame.PendingChoice.StopInvocation, Context(definition));
+
+            Assert.That(stopped.Accepted, Is.True);
+            Assert.That(stopped.IsComplete, Is.True);
+            Assert.That(stopped.Frame, Is.Null, "The action closes rather than being left pending.");
+            Assert.That(Kinds(stopped), Is.EqualTo(new[] { "root=ImpossibleMandatory" }),
+                "The same node result and the same ordered facts the silent stop produced: this " +
+                "milestone changes when the action ends, not what ending it means.");
+        }
+
+        [Test]
+        public void WhileTheStopStands_AnySelectNamingAGreyedOption_IsRejectedWithoutTouchingTheFrame()
+        {
+            var definition = Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                Leaf(Second, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory));
+            var paused = Start(definition);
+            var choice = paused.Frame.PendingChoice;
+
+            foreach (var option in new[] { First, Second })
+            {
+                var refused = EffectResolutionSession.Answer(
+                    paused.Frame,
+                    new EffectChoiceCommand(
+                        choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Select,
+                        EffectChoiceCandidate.Option(option)),
+                    Context(definition));
+
+                Assert.That(refused.Accepted, Is.False);
+                Assert.That(refused.RejectionReason,
+                    Is.EqualTo(EffectResolutionRejectionReason.InvalidChoice));
+                Assert.That(refused.Frame, Is.SameAs(paused.Frame),
+                    "No continuation, outcome, or accepted choice moves.");
+                Assert.That(refused.Events, Is.Empty);
+            }
+
+            var confirmed = EffectResolutionSession.Answer(
+                paused.Frame,
+                new EffectChoiceCommand(
+                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Confirm),
+                Context(definition));
+            Assert.That(confirmed.Accepted, Is.False,
+                "Nothing is selected and nothing may be, so there is nothing to confirm either.");
+        }
+
+        [Test]
+        public void AStopIsRefusedWhereTheAuthorityNeverOfferedOne()
+        {
+            var definition = Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                Leaf(Second, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory));
+            var paused = Start(definition);
+            var choice = paused.Frame.PendingChoice;
+
+            var forged = EffectResolutionSession.Answer(
+                paused.Frame,
+                new EffectChoiceCommand(
+                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Stop),
+                Context(definition));
+
+            Assert.That(forged.Accepted, Is.False,
+                "A stop composed by hand against a choice that offers one option is not a way out " +
+                "of taking it.");
+            Assert.That(forged.RejectionReason,
+                Is.EqualTo(EffectResolutionRejectionReason.InvalidChoice));
+            Assert.That(forged.Frame, Is.SameAs(paused.Frame));
+            Assert.That(forged.Events, Is.Empty);
+        }
+
+        [Test]
+        public void AStopCannotBeBuiltForAChoiceThatStillOffersSomething()
+        {
+            // The invariant stated once, where it is derived, rather than trusted at each call site.
+            Assert.That(
+                () => new PendingEffectChoice(
+                    new EffectResolutionId("stop-guard"),
+                    new EffectChoiceId("node-root"),
+                    Root,
+                    Actor,
+                    EffectChoiceKind.SelectOption,
+                    new[] { EffectChoiceCandidate.Option(First), EffectChoiceCandidate.Option(Second) },
+                    1,
+                    1,
+                    null,
+                    new[] { EffectChoiceCandidate.Option(First) },
+                    true),
+                Throws.ArgumentException);
         }
 
         [Test]
@@ -123,6 +258,9 @@ namespace GuardsDigital.Tests.EditMode
                 "An optional node that cannot be taken is not a failure.");
             Assert.That(Kinds(result), Does.Contain("after=Applied"),
                 "So the rest of the action still runs, exactly as an impossible optional step does.");
+            Assert.That(result.Frame, Is.Null,
+                "Milestone 6.5ae leaves this case alone: where a node's own policy already declines " +
+                "there is nothing for a player to close, so it never pauses and never offers a stop.");
         }
 
         [Test]

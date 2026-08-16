@@ -683,6 +683,49 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 6.5ae. Where no mode can be performed, both are greyed and the one control offered
+        /// is End Turn - the same contextual control a paused Movement has projected since Phase 1,
+        /// now on the decision family that lacked it. Presentation never submits it: the player does.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_OffersEndTurnAsTheOnlyControlWhereNoModeCanBePerformed()
+        {
+            var session = CreateNeedleSession(NeedleRedAt, new HexCoordinate(-3, 10));
+            StartBombardTurn(session);
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice.UnavailableCandidates, Is.EqualTo(choice.Candidates),
+                "Fixture precondition: nothing stands adjacent and the supply is empty, so neither " +
+                "mode of this card can be taken.");
+
+            var view = new CapturingRoundView();
+            var presenter = new RoundActionPresenter(session, view);
+            presenter.Refresh();
+            var model = view.Model;
+
+            Assert.That(
+                model.UnavailableEffectChoices.Select(value => value.Candidate.OptionNodeId),
+                Is.EqualTo(new[] { BombardMoveBranch, BombardSpawn }),
+                "Every mode is greyed, so the player reads which ones exist and that none can be taken.");
+            Assert.That(model.EffectChoices, Is.Empty);
+            Assert.That(model.EffectChoiceTargets, Is.Empty);
+            Assert.That(model.EffectChoiceDestinations, Is.Empty);
+            Assert.That(model.Actions, Is.Empty, "Every other control stays withheld.");
+            Assert.That(model.FastTravelOffers, Is.Empty);
+            Assert.That(model.EndTurnInvocation, Is.Not.Null);
+            Assert.That(model.EndTurnInvocation.Label, Is.EqualTo("END TURN"));
+            Assert.That(model.EndTurnInvocation.Command.Kind,
+                Is.EqualTo(DirectorCommandKind.AnswerEffectChoice));
+            Assert.That(model.EndTurnInvocation.Command.EffectChoice, Is.EqualTo(choice.StopInvocation),
+                "It is the invocation the authority projected, not one presentation composed.");
+            Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
+                "Rendering it submits nothing: nothing stops the action until the player asks.");
+
+            Assert.That(presenter.Submit(model.EndTurnInvocation), Is.True);
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "And forwarding it closes the action, exactly as the paused-Movement stop does.");
+        }
+
+        /// <summary>
         /// Milestone 6.5c. The board is the whole Place surface: every offered space is lit with the
         /// same highlight Movement, Fast Travel, and corrections use, and clicking one answers the
         /// choice outright, because an exactly-one selection leaves nothing further to confirm.

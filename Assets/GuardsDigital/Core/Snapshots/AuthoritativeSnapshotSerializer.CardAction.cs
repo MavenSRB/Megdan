@@ -429,13 +429,22 @@ namespace GuardsDigital.Core.Snapshots
                     $"Snapshot pending effect choice selects an option node '{nodeId}' cannot perform.");
             }
 
+            // Milestone 6.5ae: nor is the stop written. It follows from the refusals just re-derived
+            // and the trusted node's own failure policy, so a payload restored after the last refusal
+            // lifts offers the option again instead of a stop, and one restored into the position the
+            // pause was written in offers the stop again without having carried it.
+            var canStop = choiceKind == EffectChoiceKind.SelectOption &&
+                candidates.Length > 0 &&
+                unavailable.Count == candidates.Length &&
+                node.FailurePolicy == EffectFailurePolicy.Mandatory;
+
             return restored.With(
                 restored.Continuation,
                 restored.CompletedOutcomes,
                 restored.AcceptedChoices,
                 new PendingEffectChoice(
                     new EffectResolutionId(common.ResolutionId.Value), choiceId, nodeId, chooserId,
-                    choiceKind, candidates, minimum, maximum, selected, unavailable));
+                    choiceKind, candidates, minimum, maximum, selected, unavailable, canStop));
         }
 
         /// <summary>

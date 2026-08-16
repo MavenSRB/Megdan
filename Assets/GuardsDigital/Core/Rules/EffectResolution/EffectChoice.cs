@@ -93,7 +93,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         Select = 1,
         Deselect = 2,
         Confirm = 3,
-        Decline = 4
+        Decline = 4,
+
+        /// <summary>
+        /// Milestone 6.5ae: closes an action whose every option was refused. It is not a decline -
+        /// a mandatory <c>Choose</c> has nothing to decline - but p.10's stop, the same one a paused
+        /// Movement has offered since Phase 1, asked for by the player rather than taken for them.
+        /// </summary>
+        Stop = 5
     }
 
     /// <summary>
@@ -124,7 +131,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             if (carriesCandidate != candidate.IsDefined)
             {
                 throw new ArgumentException(
-                    "Select and Deselect carry exactly one candidate; Confirm and Decline carry none.");
+                    "Select and Deselect carry exactly one candidate; Confirm, Decline, and Stop " +
+                    "carry none.");
             }
 
             ResolutionId = resolutionId;
@@ -174,7 +182,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             int minimumSelections,
             int maximumSelections,
             IEnumerable<EffectChoiceCandidate> selected = null,
-            IEnumerable<EffectChoiceCandidate> unavailableCandidates = null)
+            IEnumerable<EffectChoiceCandidate> unavailableCandidates = null,
+            bool canStop = false)
         {
             if (!resolutionId.IsDefined || !choiceId.IsDefined || !nodeId.IsDefined)
             {
@@ -242,6 +251,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     "An unperformable option cannot be selected.", nameof(selected));
             }
 
+            if (canStop &&
+                (kind != EffectChoiceKind.SelectOption ||
+                    options.Length == 0 ||
+                    refused.Length != options.Length))
+            {
+                throw new ArgumentException(
+                    "A stop closes a mode selection whose every offered option was refused. Where " +
+                    "one can still be taken there is a decision to make, and taking it is how the " +
+                    "action goes on.",
+                    nameof(canStop));
+            }
+
             ResolutionId = resolutionId;
             ChoiceId = choiceId;
             NodeId = nodeId;
@@ -268,6 +289,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 : null;
             DeclineInvocation = kind == EffectChoiceKind.ConfirmOrDecline
                 ? new EffectChoiceCommand(resolutionId, choiceId, EffectChoiceCommandKind.Decline)
+                : null;
+            StopInvocation = canStop
+                ? new EffectChoiceCommand(resolutionId, choiceId, EffectChoiceCommandKind.Stop)
                 : null;
         }
 
@@ -303,14 +327,30 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public EffectChoiceCommand DeclineInvocation { get; }
 
         /// <summary>
+        /// Milestone 6.5ae: the one command left where no option can be performed, and null wherever
+        /// one still can. Accepting it stops the action exactly as p.10's stop already does, so the
+        /// player closes a decision that has nothing in it rather than the resolver closing it for
+        /// them - the same affordance <c>PendingMovementChoice.CanStop</c> has projected since
+        /// Phase 1, on the decision family that had lacked it.
+        ///
+        /// Never written to a snapshot, for the reason <see cref="UnavailableCandidates"/> is not:
+        /// it is derived from that refusal set and the node's own failure policy at every pause and
+        /// re-derived on restore, replay, and retained-prefix Undo, so a frame restored after the
+        /// last refusal lifts offers the option again rather than the stop.
+        /// </summary>
+        public EffectChoiceCommand StopInvocation { get; }
+
+        /// <summary>
         /// The same decision with a different selection. The refused options are carried rather than
         /// re-derived, because selecting and deselecting change nothing a feasibility question reads:
         /// a selection is recorded on the frame, and no board, supply, or timing state moves until the
-        /// choice is confirmed and the capability resumes.
+        /// choice is confirmed and the capability resumes. The stop rides with them for the same
+        /// reason, and a choice that carries one offers nothing to select in the first place.
         /// </summary>
         public PendingEffectChoice WithSelected(IEnumerable<EffectChoiceCandidate> selected) =>
             new PendingEffectChoice(
                 ResolutionId, ChoiceId, NodeId, ChooserId, Kind,
-                Candidates, MinimumSelections, MaximumSelections, selected, UnavailableCandidates);
+                Candidates, MinimumSelections, MaximumSelections, selected, UnavailableCandidates,
+                StopInvocation != null);
     }
 }

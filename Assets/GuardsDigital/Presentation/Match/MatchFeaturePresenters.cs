@@ -1619,6 +1619,18 @@ namespace GuardsDigital.Presentation.Match
                     DirectorCommand.StopMovement(movementChoice.ResolutionId, movementChoice.ChoiceId));
             }
 
+            // Milestone 6.5ae: the same contextual control on the decision family that had lacked it.
+            // A paused effect choice whose every option was refused projects a stop of its own, and it
+            // is offered exactly where the authority offers it - this branch reads the invocation and
+            // never decides that a choice is closable.
+            var effectChoice = projection.PendingEffectChoice;
+            if (effectChoice?.StopInvocation != null)
+            {
+                return new TypedInvocationViewModel(
+                    "END TURN",
+                    DirectorCommand.AnswerEffectChoice(effectChoice.StopInvocation));
+            }
+
             var hasMandatoryChoice = projection.PendingInitiativeChoice != null ||
                 projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
                 projection.PendingAttackResolution != null || projection.PendingMovementChoice != null ||
