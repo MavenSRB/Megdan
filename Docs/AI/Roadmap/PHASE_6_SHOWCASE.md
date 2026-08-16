@@ -34,7 +34,7 @@ Non-goals: No immunity, `Counts As`, `Next Turn after Playing Cards`, Object Pus
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68a-convert-red-bulwark-into-the-modifierrestrictionpermission-showcase-skill-completion-evidence).
 
-### [ ] 6.8b Convert Blue Feint into the immunity/effective-type timing showcase Skill
+### [~] 6.8b Convert Blue Feint into the immunity/effective-type timing showcase Skill
 
 Observable outcome: The configured Blue hand's existing Blue Feint card replaces its printed Primary Attack with one two-mode synthetic Skill whose source is the card and whose affected object is always the acting hero: that hero gains Push immunity under `Next Turn after Playing Cards`, or effectively `Counts As` a minion for `This Round`, separating defensive targeting and effective-type timing from Red Bulwark's action/value rules.
 
