@@ -304,7 +304,7 @@ Acceptance checks:
 
 Non-goals: No change to the Movement action's own reachability, allowance, or Fast Travel; no change to Push geometry, the simultaneous batch, or immunity; no new capability, revision, or parameter; no card text, content revision, or card-name branch; no schema change is expected, and one is not to be introduced to carry a distance.
 
-### [ ] 6.5ae Let the player close an action whose every option is refused
+### [~] 6.5ae Let the player close an action whose every option is refused
 
 **Corrective amendment (2026-08-16, user approved).** Milestone 6.5ac delivered every acceptance check but one, and recorded the gap rather than dropping it: the player does not see the options greyed when *no* option of a `Choose` can be performed, because the node reports itself impossible without opening a prompt. The reason was that pausing there left the match with no legal command - a mandatory `Choose` offers no decline, and the round presenter withholds every action, Fast-Travel offer, and End Turn while an effect choice stands - so the alternatives looked like a frame escapable only through Undo or a new prompt family that milestone's non-goals forbade. The user settled it on 2026-08-16: in that position End Turn is the one legal command, it is offered rather than performed, and the player clicks it. That is not a new prompt family; it is the stop affordance a paused Movement has carried since Phase 1, where `PendingMovementChoice.CanStop` projects the same End Turn control and `StopMovement` closes the action.
 

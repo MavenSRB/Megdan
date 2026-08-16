@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.1as**. The configured v
 ## Current authorization and next route
 
 - Current completed milestone: **6.1as**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.5ae**, in progress.
 - Next proposed milestone: **6.5ae**.
 
 Documentation milestone **6.1as** completed on 2026-08-16. [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) had been carried over its warning threshold by five consecutive milestones, each answering it by trimming its own newest sentences. Its largest subject - the registered operations that change the board: tokens and markers, direct Move and Object Push, Clear, and Place beside Spawn - moved verbatim into the new [Project/BOARD_OPERATIONS.md](Project/BOARD_OPERATIONS.md), which is also the subject every remaining showcase milestone grows. The inventory is back under its warning line with headroom, and the seam statement stays behind. No gameplay, rules, card, snapshot, test, or tooling change, and no route change: **6.5ae** remains proposed next. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
