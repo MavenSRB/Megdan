@@ -264,11 +264,11 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(CardTextApplicationPolicy.Suppressed));
             }
 
-            // Milestone 6.8a converted Red Bulwark's printed Primary Attack into its showcase Skill,
-            // so the hand no longer offers five Attacks. Every card still offers exactly one printed
-            // Primary, which is what this fixture pins.
-            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Skill), Is.EqualTo(1));
-            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Attack), Is.EqualTo(4));
+            // The showcase conversions replace one card's printed Primary Attack each - 6.8a Red
+            // Bulwark, 6.5a Red Needle - so the Red hand no longer offers five Attacks. Every card
+            // still offers exactly one printed Primary, which is what this fixture pins.
+            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Skill), Is.EqualTo(2));
+            Assert.That(primaryKinds.Count(kind => kind == ActionKind.Attack), Is.EqualTo(3));
         }
 
         [Test]

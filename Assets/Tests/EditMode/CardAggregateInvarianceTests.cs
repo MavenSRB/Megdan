@@ -169,17 +169,30 @@ namespace GuardsDigital.Tests.EditMode
         // the four positions where the two strings differ, twice. No scenario here commits Blue Feint's
         // Skill; the Blue cards these scenarios play are its Defense reaction, which the conversion
         // leaves at 2. The equality groups below are identical, which is the check for that.
+        //
+        // Re-pinned a twelfth time at milestone 6.5a, again without a schema change and for three
+        // causes this time. Two are the familiar pair, measured on the compatibility corpus: the
+        // capability list gains synthetic-push-target, costing every payload exactly 26 bytes in one
+        // contiguous region, and Red Needle's printed Primary Attack becomes its showcase Skill, moving
+        // its definition from phase-5-1a-rev-3 to phase-6-5a-rev-1 - both sixteen characters, so that
+        // cause shifts nothing. The third is this fixture's own: Red Needle used to be Red's
+        // highest-Initiative Attack card at 13, so the tied-attack scenarios committed it against
+        // Blue's highest; with Red's top remaining Attack now Red Lancer at 9, below Blue's own top
+        // card, the fixture commits Blue's lowest instead so the Red Attack card is still the acting
+        // one. That changes which Blue card these scenarios play and therefore what they hash, which
+        // is a fixture change rather than an engine one - and the equality groups below are still
+        // identical, which is the check that nothing about behaviour moved with it.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "196ee0037693209224653c231e2b07708979a70c0e73718f5252e5553dde2d6b", "5bfe2b43d243f231114286a93a04ccfd62199fc07d96dcfcd108f33c25783949"),
-            new ScenarioDigest("rejected", "196ee0037693209224653c231e2b07708979a70c0e73718f5252e5553dde2d6b", "5bfe2b43d243f231114286a93a04ccfd62199fc07d96dcfcd108f33c25783949"),
-            new ScenarioDigest("stale", "196ee0037693209224653c231e2b07708979a70c0e73718f5252e5553dde2d6b", "5bfe2b43d243f231114286a93a04ccfd62199fc07d96dcfcd108f33c25783949"),
-            new ScenarioDigest("restored", "196ee0037693209224653c231e2b07708979a70c0e73718f5252e5553dde2d6b", "5bfe2b43d243f231114286a93a04ccfd62199fc07d96dcfcd108f33c25783949"),
-            new ScenarioDigest("replayed", "196ee0037693209224653c231e2b07708979a70c0e73718f5252e5553dde2d6b", "5bfe2b43d243f231114286a93a04ccfd62199fc07d96dcfcd108f33c25783949"),
-            new ScenarioDigest("undo-truncated", "44c7618fef885dfdb536d2b26f0c81b9293a15ade295f9b1a2afeeab60f38db3", "79efa943e5d7871317e9325e37e6d0ac9b186484b27c5cba7c8b7c75c81d63e0"),
-            new ScenarioDigest("defense-discarded", "beebd20cea053850ba017ae683ac728784dc90d146537864675ace7ffd3b3fc6", "1d33ebcff91216990144f0ab3c0b549c29b36cb2ac16f0c21695998dfb5afcc4"),
-            new ScenarioDigest("defense-discarded-restored", "beebd20cea053850ba017ae683ac728784dc90d146537864675ace7ffd3b3fc6", "1d33ebcff91216990144f0ab3c0b549c29b36cb2ac16f0c21695998dfb5afcc4"),
-            new ScenarioDigest("defense-discarded-replayed", "beebd20cea053850ba017ae683ac728784dc90d146537864675ace7ffd3b3fc6", "1d33ebcff91216990144f0ab3c0b549c29b36cb2ac16f0c21695998dfb5afcc4")
+            new ScenarioDigest("accepted", "dbaab929f0ff3a86e30ac7e1b18b66072029a896be1ce9e23b5402ca5e45857f", "e8f1a622c26d551231f39740c7d15c0d7c85afb7a7b54e77feba4648e46b66bf"),
+            new ScenarioDigest("rejected", "dbaab929f0ff3a86e30ac7e1b18b66072029a896be1ce9e23b5402ca5e45857f", "e8f1a622c26d551231f39740c7d15c0d7c85afb7a7b54e77feba4648e46b66bf"),
+            new ScenarioDigest("stale", "dbaab929f0ff3a86e30ac7e1b18b66072029a896be1ce9e23b5402ca5e45857f", "e8f1a622c26d551231f39740c7d15c0d7c85afb7a7b54e77feba4648e46b66bf"),
+            new ScenarioDigest("restored", "dbaab929f0ff3a86e30ac7e1b18b66072029a896be1ce9e23b5402ca5e45857f", "e8f1a622c26d551231f39740c7d15c0d7c85afb7a7b54e77feba4648e46b66bf"),
+            new ScenarioDigest("replayed", "dbaab929f0ff3a86e30ac7e1b18b66072029a896be1ce9e23b5402ca5e45857f", "e8f1a622c26d551231f39740c7d15c0d7c85afb7a7b54e77feba4648e46b66bf"),
+            new ScenarioDigest("undo-truncated", "0372b95f5811b0aebf066ca1e275be35173a23cdf0d614d5ffd83f19f5608161", "75cfe8d38567c8ce79d2032045d85477263f526f4b13c0eb5590f9f6299a8222"),
+            new ScenarioDigest("defense-discarded", "1c24ad5754401f76e0c0ff5040209d872b776244aaf86195ccb66e5d08210ba0", "feabc05695780c64dd2db0d5e770761a22e3436f61084e325a2bcb3733d6c318"),
+            new ScenarioDigest("defense-discarded-restored", "1c24ad5754401f76e0c0ff5040209d872b776244aaf86195ccb66e5d08210ba0", "feabc05695780c64dd2db0d5e770761a22e3436f61084e325a2bcb3733d6c318"),
+            new ScenarioDigest("defense-discarded-replayed", "1c24ad5754401f76e0c0ff5040209d872b776244aaf86195ccb66e5d08210ba0", "feabc05695780c64dd2db0d5e770761a22e3436f61084e325a2bcb3733d6c318")
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:
@@ -310,8 +323,14 @@ namespace GuardsDigital.Tests.EditMode
                     action.Kind == ActionKind.Attack))
                 .OrderByDescending(card => DefinitionOf(session, card).Initiative.Value)
                 .First();
+
+            // Blue's lowest Initiative, so the Red Attack card is the acting one whatever the showcase
+            // conversions have done to the top of either band. Red's highest remaining Attack was
+            // Red Needle at 13 until milestone 6.5a converted it and Red Lancer at 9 took over, which
+            // is below Blue's own top card - taking Blue's lowest keeps the fixture's actor fixed
+            // without steering Initiative.
             var blue = HandCards(session, TeamSide.Blue)
-                .OrderByDescending(card => DefinitionOf(session, card).Initiative.Value)
+                .OrderBy(card => DefinitionOf(session, card).Initiative.Value)
                 .First();
 
             Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);

@@ -459,10 +459,15 @@ namespace GuardsDigital.Tests.EditMode
             return new SnapshotFixture(configuration, board, round);
         }
 
+        /// <summary>
+        /// Commits Red Pursuit at Initiative 7 against Blue Hammer at 6, so the Red hero acts first
+        /// with a printed non-Ranged Attack. The showcase conversions took the Attack off the cards
+        /// that used to sit at index 0 of each hand; these two are the pair that still carries one.
+        /// </summary>
         private static void CommitFirstCards(SnapshotFixture fixture)
         {
-            var red = fixture.Configuration.RedHand.Instances[0];
-            var blue = fixture.Configuration.BlueHand.Instances[0];
+            var red = fixture.Configuration.RedHand.Instances[3];
+            var blue = fixture.Configuration.BlueHand.Instances[3];
             Assert.That(fixture.Round.TryCommitCard(red.OwnerId, red.Id).Accepted, Is.True);
             Assert.That(fixture.Round.TryCommitCard(blue.OwnerId, blue.Id).Accepted, Is.True);
             Assert.That(fixture.Round.Phase, Is.EqualTo(RoundResolutionPhase.ResolvingTurn));

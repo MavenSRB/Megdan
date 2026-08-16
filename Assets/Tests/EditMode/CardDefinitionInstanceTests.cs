@@ -93,7 +93,7 @@ namespace GuardsDigital.Tests.EditMode
                 redHand.Definitions.Select(definition => definition.ContentRevision),
                 Is.EqualTo(new[]
                 {
-                    "phase-5-1a-rev-3",
+                    "phase-6-5a-rev-1",
                     "phase-6-8a-rev-1",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3",
@@ -122,14 +122,16 @@ namespace GuardsDigital.Tests.EditMode
                 redHand,
                 new[] { "Red Needle", "Red Bulwark", "Red Lancer", "Red Pursuit", "Red Bombard" },
                 new[] { 13, 11, 9, 7, 5 },
-                // Red Bulwark's printed Primary Attack became milestone 6.8a's showcase Skill; the
-                // attack and range columns say nothing for a Skill, which prints no value channel.
+                // Red Needle's and Red Bulwark's printed Primary Attacks became milestones 6.5a's and
+                // 6.8a's showcase Skills; the attack and range columns say nothing for a Skill, which
+                // prints no value channel. Red Pursuit remains the team's one printed non-Ranged Attack
+                // and Red Lancer its one Ranged Attack, which the showcase schedule requires.
                 new[]
                 {
-                    ActionKind.Attack, ActionKind.Skill, ActionKind.Attack,
+                    ActionKind.Skill, ActionKind.Skill, ActionKind.Attack,
                     ActionKind.Attack, ActionKind.Attack
                 },
-                new[] { 2, 0, 2, 4, 3 },
+                new[] { 0, 0, 2, 4, 3 },
                 new[] { 0, 0, 3, 0, 2 },
                 new[] { 2, 2, 3, 3, 2 },
                 new[] { 1, 3, 1, 2, 2 });

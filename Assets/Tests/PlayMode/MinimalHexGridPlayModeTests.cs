@@ -451,7 +451,7 @@ namespace GuardsDigital.Tests.PlayMode
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
-            CommitNextTurn(runtime);
+            CommitNextAttackTurn(runtime);
             var attack = runtime.RoundView.Model.Actions.Single(value =>
                 ActionKind(runtime, value.Command.ActionDefinitionId) ==
                 GuardsDigital.Core.Cards.ActionKind.Attack);
@@ -971,6 +971,37 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
             ResolveInitiativeChoice(runtime);
             Assert.That(runtime.IsTurnActive, Is.True);
+        }
+
+        /// <summary>
+        /// Commits the Red hand's highest-Initiative card that still prints an Attack, against the Blue
+        /// hand's lowest, so the acting card offers an Attack. The showcase conversions took the printed
+        /// Attack off both hands' first card - Red Bulwark at 6.8a, Blue Feint at 6.8b, Red Needle at
+        /// 6.5a - so the ordinary <see cref="CommitNextTurn"/> pair no longer offers one.
+        /// </summary>
+        private static void CommitNextAttackTurn(ConfiguredMatchSceneRuntime runtime)
+        {
+            var red = Hand(runtime, TeamSide.Red).Cards
+                .Where(card => runtime.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .ActionDefinitions.Any(action =>
+                        action.Kind == GuardsDigital.Core.Cards.ActionKind.Attack))
+                .OrderByDescending(card => runtime.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .Initiative.Value)
+                .First();
+            var blue = Hand(runtime, TeamSide.Blue).Cards
+                .OrderBy(card => runtime.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .Initiative.Value)
+                .First();
+            Assert.That(runtime.SelectCommitmentCard(red.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            Assert.That(runtime.SelectCommitmentCard(blue.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            ResolveInitiativeChoice(runtime);
+            Assert.That(runtime.IsTurnActive, Is.True);
+            Assert.That(runtime.SelectedActor.CardInstanceId, Is.EqualTo(red.Id));
         }
 
         private static void ResolveInitiativeChoice(ConfiguredMatchSceneRuntime runtime)

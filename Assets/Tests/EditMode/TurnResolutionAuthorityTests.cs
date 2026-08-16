@@ -862,8 +862,12 @@ namespace GuardsDigital.Tests.EditMode
             // only which hero performs the Attack moved.
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(
                 tiedInitiative ? TeamSide.Blue : TeamSide.Red);
-            var redPlayed = configuration.RedHand.Instances[rangedAttack ? 2 : tiedInitiative ? 1 : 0];
-            var bluePlayed = configuration.BlueHand.Instances[rangedAttack ? 4 : 1];
+            // Milestone 6.5a replaced Red Needle's printed Attack too, so the untied non-Ranged
+            // fixture performs its Attack with Red Pursuit at Initiative 7 against Blue Hammer at 6 -
+            // Red still acts first, and Red Pursuit is the team's one remaining printed non-Ranged
+            // Attack, which the showcase schedule requires it to stay.
+            var redPlayed = configuration.RedHand.Instances[rangedAttack ? 2 : tiedInitiative ? 1 : 3];
+            var bluePlayed = configuration.BlueHand.Instances[rangedAttack ? 4 : tiedInitiative ? 1 : 3];
             var blueDefense = configuration.BlueHand.Instances[rangedAttack ? 0 : 2];
             Assert.That(CardLifecycleAuthority.TryPlayFacedown(redPlayed), Is.True);
             Assert.That(CardLifecycleAuthority.TryReveal(redPlayed), Is.True);

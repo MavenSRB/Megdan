@@ -201,8 +201,10 @@ namespace GuardsDigital.Tests.EditMode
         public void SnapshotRoundTrip_RebindsExistingMinionsAndPreservesDefenseContributionSources()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var red = configuration.RedHand.Instances[0];
-            var blue = configuration.BlueHand.Instances[0];
+            // Red Pursuit at Initiative 7 against Blue Hammer at 6: the Red hero acts first with a
+            // printed non-Ranged Attack, which the showcase conversions took off both hands' first card.
+            var red = configuration.RedHand.Instances[3];
+            var blue = configuration.BlueHand.Instances[3];
             var minions = new[]
             {
                 CreateMinion("blue-snapshot-melee", TeamSide.Blue, StandardMinionType.Melee, new HexCoordinate(2, 0))

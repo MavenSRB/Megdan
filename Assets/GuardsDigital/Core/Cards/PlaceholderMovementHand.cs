@@ -11,7 +11,7 @@ namespace GuardsDigital.Core.Cards
     {
         private static readonly SyntheticCardProfile[] RedProfiles =
         {
-            new SyntheticCardProfile("red-needle", "Red Needle", 13, AttackRangeKind.NonRanged, 2, 0, 2, 1),
+            SyntheticCardProfile.WithPushPlaceSkill("red-needle", "Red Needle", 13, 2, 1),
             SyntheticCardProfile.WithModificationSkill("red-bulwark", "Red Bulwark", 11, 2, 3),
             new SyntheticCardProfile("red-lancer", "Red Lancer", 9, AttackRangeKind.Ranged, 2, 3, 3, 1),
             new SyntheticCardProfile("red-pursuit", "Red Pursuit", 7, AttackRangeKind.NonRanged, 4, 0, 3, 2),
@@ -538,6 +538,8 @@ namespace GuardsDigital.Core.Cards
                     return CreateModificationSkillAction(profile);
                 case SyntheticPrintedPrimaryKind.ImmunityTimingSkill:
                     return CreateImmunityTimingSkillAction(profile);
+                case SyntheticPrintedPrimaryKind.PushPlaceSkill:
+                    return CreatePushPlaceSkillAction(profile);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(profile),
@@ -694,6 +696,103 @@ namespace GuardsDigital.Core.Cards
                 effect);
         }
 
+        /// <summary>
+        /// Milestone 6.5a's conversion: the exact modal Skill `Choose one: choose another adjacent unit
+        /// and Push it 3 spaces; or Place your hero in a different empty space within Radius 4`,
+        /// replacing this card's printed Primary Attack.
+        ///
+        /// Each branch is a Sequence rather than a single node, because both operations name a board
+        /// object and a coordinate can only reach a capability through a prior node's published output.
+        /// The two branches differ in what that prior node is, and that difference is the card text's:
+        /// `choose another adjacent unit` is a decision, so the Push branch opens milestone 6.8k's
+        /// target selection bounded to Radius 1 with the actor excluded, while `your hero` is not a
+        /// decision, so the Place branch reads the actor's own space as a fact and invents no prompt.
+        ///
+        /// Every value here is declaration rather than behaviour: distance 3 under a mandatory policy,
+        /// so the Push opens no distance choice and travels as far as it can including zero; obstacles
+        /// not ignored, so p.18's ordinary transit and endpoint rules apply; Radius 4 inclusive, which
+        /// the Place capability measures as rulebook distance rather than a route. None of it is
+        /// official content, and the card names no hero, no card and no space.
+        /// </summary>
+        private static ActionDefinition CreatePushPlaceSkillAction(SyntheticCardProfile profile)
+        {
+            var root = new EffectNodeId("needle-root");
+            var pushBranch = new EffectNodeId("needle-push-branch");
+            var selectTarget = new EffectNodeId("needle-select-target");
+            var push = new EffectNodeId("needle-push");
+            var placeBranch = new EffectNodeId("needle-place-branch");
+            var actorSpace = new EffectNodeId("needle-actor-space");
+            var place = new EffectNodeId("needle-place");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                profile.ContentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { pushBranch, placeBranch },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    new EffectNodeDefinition(
+                        pushBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { selectTarget, push }),
+                    new EffectNodeDefinition(
+                        selectTarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.ChooseTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.PushTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "target", selectTarget, "chosen", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
+                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("distance", EffectValueKind.Integer),
+                            new EffectOutputBinding("moved", EffectValueKind.Integer)
+                        }),
+                    new EffectNodeDefinition(
+                        placeBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { actorSpace, place }),
+                    new EffectNodeDefinition(
+                        actorSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[] { new EffectOutputBinding("space", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        place, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.PlaceV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "subject", actorSpace, "space", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("radius", EffectValue.Integer(4))
+                        },
+                        outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) })
+                });
+
+            return new ActionDefinition(
+                new ActionDefinitionId("primary-push-place-skill"),
+                ActionKind.Skill,
+                ActionDefinitionOrigin.PrintedPrimary,
+                Array.Empty<PrintedValueDefinition>(),
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                AttackRangeKind.None,
+                default,
+                effect);
+        }
+
         private static ActionDefinition CreateDefenseAction(int value)
         {
             return new ActionDefinition(
@@ -714,7 +813,8 @@ namespace GuardsDigital.Core.Cards
         {
             Attack = 0,
             ModificationSkill = 1,
-            ImmunityTimingSkill = 2
+            ImmunityTimingSkill = 2,
+            PushPlaceSkill = 3
         }
 
         private sealed class SyntheticCardProfile
@@ -794,6 +894,17 @@ namespace GuardsDigital.Core.Cards
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.ImmunityTimingSkill,
                     "phase-6-8b-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+
+            /// <summary>Milestone 6.5a's converted card, on the same terms as the two before it.</summary>
+            public static SyntheticCardProfile WithPushPlaceSkill(
+                string id,
+                string displayName,
+                int initiative,
+                int movementValue,
+                int defenseValue) =>
+                new SyntheticCardProfile(
+                    id, displayName, initiative, SyntheticPrintedPrimaryKind.PushPlaceSkill,
+                    "phase-6-5a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             public string Id { get; }
             public string DisplayName { get; }

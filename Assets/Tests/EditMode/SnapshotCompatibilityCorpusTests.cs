@@ -158,17 +158,29 @@ namespace GuardsDigital.Tests.EditMode
         /// paused Movement continuation records the same source definition reference a third time. The
         /// capability registration list is byte-identical, and the replaced action set never appears at
         /// all, because the payload names definitions and the catalog supplies what they contain.
+        /// Milestone 6.5a keeps schema v10 and re-pins every fixture for two separable causes, both
+        /// already familiar. The registration list gains <c>synthetic-push-target</c>, p.18's Push with
+        /// the target the definition names beside the adjacency-derived declaration 6.4 registered, and
+        /// that costs every payload exactly 26 bytes - a 7-bit length-prefixed 21-character id plus an
+        /// int32 revision - in one contiguous region. The content cause is Red Needle's printed Primary
+        /// Attack becoming its showcase Skill, so its definition advances from
+        /// <c>phase-5-1a-rev-3</c> to <c>phase-6-5a-rev-1</c>; both strings are sixteen characters, so
+        /// that cause shifts nothing and the string appears twice per payload, in the definition table
+        /// and in the <c>red-needle-card</c> instance's definition reference. Measured rather than
+        /// assumed: every payload grows by exactly 26 bytes and every occurrence count moves as stated.
+        /// Both decisions are reject rather than migrate, by the existing capability-sequence and
+        /// content-revision checks.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v10", "8b9b65899086af5ce3481204903fed81da5f1403060c40022f7cec2402102601"),
-            new CompatibilityFixture("active-turn-v10", "616103fe9c6f1323397544479f4eaaec51edc2e6cc8bc1bcac76aa3adc559d22"),
-            new CompatibilityFixture("pending-choice-v10", "6a16a9c9a0c1c53283c4f6bef9de3701f4a33c3622ec806076bef2f664144698"),
-            new CompatibilityFixture("end-of-round-v10", "ff475eea9ed39b69189dec810c42faa77bf4a03cc331de50fee12774e3d1427d"),
-            new CompatibilityFixture("pending-minion-battle-v10", "a3eec136e42365ed8f42cfa5c46b5ac106937153e3a2bef6471286256d0fc9b0"),
-            new CompatibilityFixture("placed-token-v10", "5e82ad6d1caacdd1b476bf5db232fa51d9e18271fa377a486b168e32c1d85c31"),
-            new CompatibilityFixture("attached-marker-v10", "aea44980398570aaa23492916f158d8ba3aea5923540057871896a543c35433c"),
-            new CompatibilityFixture("pending-correction-v10", "a325048393c59461962291a620debf507c1f321fb67cd1a1a864b4a2ec36934e")
+            new CompatibilityFixture("setup-v10", "8aaf4985e5fef0e6315f4eeaad890d44ac4cf4fdf363ad4910aa722b9660025f"),
+            new CompatibilityFixture("active-turn-v10", "22230c6b9e05ac957c77da21180fe5837db9461aeb8a9f51e43764d8fd1c57a6"),
+            new CompatibilityFixture("pending-choice-v10", "dbf70d44fc62327a9807f8b69dd3cb8386ec4d623c35ecf1ac2d9247de7c7346"),
+            new CompatibilityFixture("end-of-round-v10", "c7df4e69f07b46b45f74310313d69a788c79b5ee0a5e30c2525e68567f47b2c9"),
+            new CompatibilityFixture("pending-minion-battle-v10", "7c9211671c72341ec7b4a97368d953705172fe5e7bc0f19fcdfc556b2c8366dd"),
+            new CompatibilityFixture("placed-token-v10", "db3de0e13c96ff5c3d20083ecd9f9bf7ec8fc66b84529e5f112826061bc9b5c3"),
+            new CompatibilityFixture("attached-marker-v10", "53a5626d365b1f29efb61df01b53f3fa16c1ee29f4a9bb1e539e88f91adfc1fb"),
+            new CompatibilityFixture("pending-correction-v10", "8bddff091ff4844e84cc9f886b0a07368fa0e1b2c833eef1470e93a6a95e2f7b")
         };
 
         [Test]

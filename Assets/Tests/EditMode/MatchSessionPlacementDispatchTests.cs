@@ -235,26 +235,35 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void NoOrdinaryConfiguredCard_ExposesAPlacementCapability()
+        public void TheOnlyOrdinaryCardExposingPlacement_IsTheOneTheShowcaseConverted()
         {
-            // The showcase conversions expose Place from a card a player holds at milestone 6.5a; until
-            // then the ordinary hand must not reach these capabilities at all.
+            // Milestone 6.5a converts exactly one card to Place; Spawn waits for 6.5b's Red Bombard.
             var ordinary = PlaceholderOneVsOneTestConfiguration.Create();
 
-            var placementNodes = ordinary.CardDefinitions
-                .SelectMany(definition => definition.ActionDefinitions)
-                .Where(action => action.EffectRoot != null)
-                .SelectMany(action => action.EffectRoot.Nodes)
-                .Where(node =>
-                    node.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.PlaceV1) ||
-                    node.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.SpawnV1) ||
-                    node.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.ActorSpaceV1))
+            var byCapability = ordinary.CardDefinitions
+                .SelectMany(definition => definition.ActionDefinitions
+                    .Where(action => action.EffectRoot != null)
+                    .SelectMany(action => action.EffectRoot.Nodes)
+                    .Select(node => new { definition.Id, node.Capability }))
                 .ToArray();
 
-            Assert.That(placementNodes, Is.Empty);
+            Assert.That(
+                byCapability.Where(entry => entry.Capability.Equals(
+                    GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.SpawnV1)),
+                Is.Empty,
+                "Spawn reaches a player through no configured card until milestone 6.5b converts one.");
+            foreach (var exposed in new[]
+            {
+                GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.PlaceV1,
+                GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.ActorSpaceV1
+            })
+            {
+                Assert.That(
+                    byCapability.Where(entry => entry.Capability.Equals(exposed))
+                        .Select(entry => entry.Id.Value),
+                    Is.EqualTo(new[] { "placeholder-red-needle" }),
+                    $"{exposed} is exposed by exactly the card the showcase converted.");
+            }
         }
 
         // -------------------------------------------------------------------------------------------

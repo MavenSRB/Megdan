@@ -364,29 +364,40 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void NoOrdinaryConfiguredCard_ExposesADisplacementCapability()
+        public void TheOnlyOrdinaryCardExposingDisplacement_IsTheOneTheShowcaseConverted()
         {
-            // Milestone 6.4's non-goals bar configured live exposure before 6.4a, and its fifth
-            // acceptance check requires that no live action expose an uncorrected displaced-minion
-            // endpoint. The ordinary hand is the one a player holds outside this fixture.
+            // Milestone 6.4's non-goals barred configured live exposure until the after-action
+            // correction existed. It does, and milestone 6.5a is the conversion that spends that
+            // permission - on exactly one card. The adjacency-derived batch and the direct Move stay
+            // behind the Skill fixture until 6.5b and 6.7a convert their own cards.
             var ordinary = PlaceholderOneVsOneTestConfiguration.Create();
 
-            var displacementNodes = ordinary.CardDefinitions
-                .SelectMany(definition => definition.ActionDefinitions)
-                .Where(action => action.EffectRoot != null)
-                .SelectMany(action => action.EffectRoot.Nodes)
-                .Where(node =>
-                    node.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV2) ||
-                    node.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.ObjectPushV1) ||
-                    node.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV1))
+            var byCapability = ordinary.CardDefinitions
+                .SelectMany(definition => definition.ActionDefinitions
+                    .Where(action => action.EffectRoot != null)
+                    .SelectMany(action => action.EffectRoot.Nodes)
+                    .Select(node => new { definition.Id, node.Capability }))
                 .ToArray();
 
-            Assert.That(displacementNodes, Is.Empty,
-                "Direct Move, Object Push, and the target selection reach a player only through the " +
-                "Skill fixture until milestone 6.4a's after-action correction exists.");
+            Assert.That(
+                byCapability.Where(entry => entry.Capability.Equals(
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV2) ||
+                    entry.Capability.Equals(
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.ObjectPushV1)),
+                Is.Empty,
+                "Direct Move and the adjacency-derived batch reach a player through no configured card.");
+            Assert.That(
+                byCapability
+                    .Where(entry => entry.Capability.Equals(
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.PushTargetV1))
+                    .Select(entry => entry.Id.Value),
+                Is.EqualTo(new[] { "placeholder-red-needle" }));
+            Assert.That(
+                byCapability
+                    .Where(entry => entry.Capability.Equals(
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV1))
+                    .Select(entry => entry.Id.Value),
+                Is.EqualTo(new[] { "placeholder-red-needle" }));
         }
 
         // -------------------------------------------------------------------------------------------

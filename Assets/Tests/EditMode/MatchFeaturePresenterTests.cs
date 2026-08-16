@@ -976,8 +976,12 @@ namespace GuardsDigital.Tests.EditMode
                     action.Kind == requiredAction))
                 .OrderByDescending(card => GetDefinition(session, card).Initiative.Value)
                 .First();
+            // Blue's lowest Initiative, so the Red card carrying the required action is the acting one
+            // whatever the showcase conversions have done to the top of either band. Red's highest
+            // Attack was Red Needle at 13 until milestone 6.5a converted it and Red Lancer at 9 took
+            // over, which is below Blue's own top card.
             var blue = GetHandCards(session, TeamSide.Blue)
-                .OrderByDescending(card => GetDefinition(session, card).Initiative.Value)
+                .OrderBy(card => GetDefinition(session, card).Initiative.Value)
                 .First();
             Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
             Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);

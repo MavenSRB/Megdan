@@ -39,6 +39,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityId("synthetic-object-push");
 
         /// <summary>
+        /// Milestone 6.5a. p.18's Push with the target the definition names rather than the adjacency
+        /// set <see cref="ObjectPush"/> derives.
+        ///
+        /// A second capability ID rather than a second revision, because the two are not versions of
+        /// one declaration - both are live, and a card that pushes "multiple targets up to X spaces"
+        /// and a card that pushes one named unit are different declarations of the same rule. It is
+        /// not a second implementation of that rule either: the geometry, the immunity filter, the
+        /// one-pre-effect-state resolution, the farthest-first commit, and p.18's zero-space result all
+        /// live in the shared routine below, and these two handlers differ only in how their target set
+        /// is produced. <c>CARD_EFFECT_CAPABILITIES.md</c> names this move for exactly this case: when
+        /// existing parameters cannot express an effect, add a capability rather than overload a term.
+        /// They could not - a coordinate cannot say "every adjacent object", and a boolean beside it
+        /// would leave one parameter meaningless, which the definition validator refuses as ambiguous.
+        /// </summary>
+        public static EffectCapabilityId PushTarget { get; } =
+            new EffectCapabilityId("synthetic-push-target");
+
+        /// <summary>
         /// Revision 2, minted at milestone 6.8k: the subject parameter widened from a typed hero to a
         /// typed coordinate. A revision rather than a second capability because the rule did not change
         /// - the same direct Move now merely names any displaceable subject - and the registration list
@@ -50,11 +68,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference ObjectPushV1 =>
             new EffectCapabilityReference(ObjectPush, 1);
 
+        public static EffectCapabilityReference PushTargetV1 =>
+            new EffectCapabilityReference(PushTarget, 1);
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
                 new DirectMoveHandler(),
-                new ObjectPushHandler()
+                new ObjectPushHandler(),
+                new PushTargetHandler()
             };
 
         /// <summary>
@@ -250,179 +272,276 @@ namespace GuardsDigital.Core.Effects.Synthetic
         {
             public EffectCapabilityReference Reference => ObjectPushV1;
 
-            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                new[]
-                {
-                    new EffectCapabilityParameter("distance", EffectValueKind.Integer),
-                    new EffectCapabilityParameter("ignoresObstacles", EffectValueKind.Boolean)
-                },
+            public EffectCapabilityParameterSchema Schema { get; } = PushSchema(named: false);
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
+                ExecutePush(context, TryFindAdjacentTargets);
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                ResumePush(context, selected, TryFindAdjacentTargets);
+        }
+
+        /// <summary>
+        /// Milestone 6.5a's Push over the one object a definition names, for card text of the shape
+        /// `choose another adjacent unit and Push it 3 spaces`.
+        ///
+        /// The subject arrives as a coordinate from an earlier target-selection node, the same
+        /// space-as-identity direct Move and Place use. Which objects are offerable - adjacency,
+        /// self-exclusion, immunity - is that node's declaration through the reusable targeting
+        /// contract, so this capability states no target bound of its own; what it does state, and
+        /// re-derives on every call, is that the named space still holds an object this actor may push.
+        /// </summary>
+        private sealed class PushTargetHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => PushTargetV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = PushSchema(named: true);
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
+                ExecutePush(context, TryFindNamedTarget);
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                ResumePush(context, selected, TryFindNamedTarget);
+        }
+
+        /// <summary>How a Push handler produces its target set. The only thing the two differ in.</summary>
+        private delegate bool PushTargetFinder(
+            EffectCapabilityContext context,
+            out HexCoordinate pusherAt,
+            out IReadOnlyList<BoardObjectReference> targets);
+
+        private static EffectCapabilityParameterSchema PushSchema(bool named)
+        {
+            var parameters = new List<EffectCapabilityParameter>();
+            if (named)
+            {
+                parameters.Add(new EffectCapabilityParameter("target", EffectValueKind.Coordinate));
+            }
+
+            parameters.Add(new EffectCapabilityParameter("distance", EffectValueKind.Integer));
+            parameters.Add(new EffectCapabilityParameter("ignoresObstacles", EffectValueKind.Boolean));
+            return new EffectCapabilityParameterSchema(
+                parameters,
                 new[]
                 {
                     new EffectOutputBinding("distance", EffectValueKind.Integer),
                     new EffectOutputBinding("moved", EffectValueKind.Integer)
                 });
+        }
 
-            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
-                Array.Empty<ActiveEffectDefinition>();
-
-            public EffectExecutionResult Execute(EffectCapabilityContext context)
+        private static EffectExecutionResult ExecutePush(
+            EffectCapabilityContext context, PushTargetFinder finder)
+        {
+            var distance = context.Input("distance").IntegerValue;
+            if (distance < 0 || !finder(context, out _, out _))
             {
-                var distance = context.Input("distance").IntegerValue;
-                if (distance < 0 || !TryFindTargets(context, out _, out _))
-                {
-                    return EffectExecutionResult.ImpossibleMandatory();
-                }
-
-                if (context.FailurePolicy != EffectFailurePolicy.UpTo)
-                {
-                    return Push(context, distance);
-                }
-
-                // "If a card allows you to push multiple targets up to X spaces, you choose the
-                // distance": zero is a legal choice, so the candidate range starts there.
-                var candidates = Enumerable.Range(0, distance + 1)
-                    .Select(EffectValue.Integer)
-                    .ToArray();
-                return EffectExecutionResult.NeedsChoice(
-                    new EffectChoiceRequest(EffectChooserRole.Actor, candidates, 1, 1));
+                return EffectExecutionResult.ImpossibleMandatory();
             }
 
-            public EffectExecutionResult Resume(
-                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            if (context.FailurePolicy != EffectFailurePolicy.UpTo)
             {
-                if (selected == null || selected.Count != 1 ||
-                    selected[0].Kind != EffectValueKind.Integer)
-                {
-                    return EffectExecutionResult.ImpossibleMandatory();
-                }
-
-                var chosen = selected[0].IntegerValue;
-                if (chosen < 0 || chosen > context.Input("distance").IntegerValue)
-                {
-                    return EffectExecutionResult.ImpossibleMandatory();
-                }
-
-                return Push(context, chosen);
+                return Push(context, distance, finder);
             }
 
-            /// <summary>
-            /// One chosen distance applied to every target at once: each is resolved against the state as
-            /// it stands before anything moves, and only then is anything committed.
-            /// </summary>
-            private static EffectExecutionResult Push(EffectCapabilityContext context, int distance)
+            // "If a card allows you to push multiple targets up to X spaces, you choose the
+            // distance": zero is a legal choice, so the candidate range starts there.
+            var candidates = Enumerable.Range(0, distance + 1)
+                .Select(EffectValue.Integer)
+                .ToArray();
+            return EffectExecutionResult.NeedsChoice(
+                new EffectChoiceRequest(EffectChooserRole.Actor, candidates, 1, 1));
+        }
+
+        private static EffectExecutionResult ResumePush(
+            EffectCapabilityContext context,
+            IReadOnlyList<EffectValue> selected,
+            PushTargetFinder finder)
+        {
+            if (selected == null || selected.Count != 1 ||
+                selected[0].Kind != EffectValueKind.Integer)
             {
-                if (!TryFindTargets(context, out var pusherAt, out var targets))
-                {
-                    return EffectExecutionResult.ImpossibleMandatory();
-                }
-
-                var ignoresObstacles = context.Input("ignoresObstacles").BooleanValue;
-                var board = context.Components.Board;
-
-                // Phase one: resolve every path against one pre-effect state. Nothing is committed
-                // here, so no target's outcome can depend on another target having already moved -
-                // which is what p.18's "at the same time" forbids.
-                var resolved = new List<KeyValuePair<BoardObjectReference, PushPathResult>>();
-                foreach (var target in targets)
-                {
-                    if (!board.TryGetObjectCoordinate(target, out var targetAt))
-                    {
-                        continue;
-                    }
-
-                    var path = board.ResolvePush(
-                        pusherAt, targetAt, distance, target.AsRuleObject(), ignoresObstacles,
-                        context.Modifications);
-                    if (path.HasDirection)
-                    {
-                        resolved.Add(new KeyValuePair<BoardObjectReference, PushPathResult>(target, path));
-                    }
-                }
-
-                // Phase two: commit farthest-from-the-pusher first. Every target travels directly away
-                // along its own file, so working outwards means a space is always vacated before
-                // anything is asked to enter it, and the batch never refuses itself.
-                var moved = 0;
-                foreach (var entry in resolved
-                    .OrderByDescending(entry => entry.Value.ActualDistance)
-                    .ThenBy(entry => entry.Value.Origin.Q)
-                    .ThenBy(entry => entry.Value.Origin.R))
-                {
-                    if (!entry.Value.Moves)
-                    {
-                        // p.18's zero-space push: a legal result that relocates nothing.
-                        continue;
-                    }
-
-                    var committed = board.CommitValidatedDisplacement(entry.Key, entry.Value.Endpoint);
-                    if (committed.Accepted)
-                    {
-                        moved++;
-                    }
-                }
-
-                return EffectExecutionResult.Applied(new[]
-                {
-                    new EffectOutcomeFact("distance", EffectValue.Integer(distance)),
-                    new EffectOutcomeFact("moved", EffectValue.Integer(moved))
-                });
+                return EffectExecutionResult.ImpossibleMandatory();
             }
 
-            /// <summary>
-            /// The acting hero's space and every object it may push out of the six adjacent spaces.
-            ///
-            /// Immunity filters here rather than later, because p.18 makes it a targeting rule: "If a
-            /// unit is immune, you cannot target that unit". The same page keeps presence separate -
-            /// "effects that check for unit presence will count immune units" - so a presence query over
-            /// these spaces would still see what this list drops. A token is never filtered: p.19 states
-            /// tokens are not units, so no immunity is addressed to one.
-            /// </summary>
-            private static bool TryFindTargets(
-                EffectCapabilityContext context,
-                out HexCoordinate pusherAt,
-                out IReadOnlyList<BoardObjectReference> targets)
+            var chosen = selected[0].IntegerValue;
+            if (chosen < 0 || chosen > context.Input("distance").IntegerValue)
             {
-                pusherAt = default;
-                targets = Array.Empty<BoardObjectReference>();
+                return EffectExecutionResult.ImpossibleMandatory();
+            }
 
-                var components = context.Components;
-                if (components == null || !components.CanDisplace)
+            return Push(context, chosen, finder);
+        }
+
+        /// <summary>
+        /// One chosen distance applied to every target at once: each is resolved against the state as
+        /// it stands before anything moves, and only then is anything committed. p.18's geometry lives
+        /// here alone, whichever declaration produced the target set.
+        /// </summary>
+        private static EffectExecutionResult Push(
+            EffectCapabilityContext context, int distance, PushTargetFinder finder)
+        {
+            if (!finder(context, out var pusherAt, out var targets))
+            {
+                return EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            var ignoresObstacles = context.Input("ignoresObstacles").BooleanValue;
+            var board = context.Components.Board;
+
+            // Phase one: resolve every path against one pre-effect state. Nothing is committed
+            // here, so no target's outcome can depend on another target having already moved -
+            // which is what p.18's "at the same time" forbids.
+            var resolved = new List<KeyValuePair<BoardObjectReference, PushPathResult>>();
+            foreach (var target in targets)
+            {
+                if (!board.TryGetObjectCoordinate(target, out var targetAt))
                 {
-                    return false;
+                    continue;
                 }
 
-                var board = components.Board;
-                var pusher = BoardObjectReference.ForHero(context.ActorId);
-                if (!board.TryGetObjectCoordinate(pusher, out pusherAt))
+                var path = board.ResolvePush(
+                    pusherAt, targetAt, distance, target.AsRuleObject(), ignoresObstacles,
+                    context.Modifications);
+                if (path.HasDirection)
                 {
-                    return false;
+                    resolved.Add(new KeyValuePair<BoardObjectReference, PushPathResult>(target, path));
+                }
+            }
+
+            // Phase two: commit farthest-from-the-pusher first. Every target travels directly away
+            // along its own file, so working outwards means a space is always vacated before
+            // anything is asked to enter it, and the batch never refuses itself.
+            var moved = 0;
+            foreach (var entry in resolved
+                .OrderByDescending(entry => entry.Value.ActualDistance)
+                .ThenBy(entry => entry.Value.Origin.Q)
+                .ThenBy(entry => entry.Value.Origin.R))
+            {
+                if (!entry.Value.Moves)
+                {
+                    // p.18's zero-space push: a legal result that relocates nothing.
+                    continue;
                 }
 
-                var pushingUnit = pusher.AsRuleObject();
-                var found = new List<BoardObjectReference>();
-                foreach (var neighbor in pusherAt.GetNeighbors()
-                    .OrderBy(coordinate => coordinate.Q)
-                    .ThenBy(coordinate => coordinate.R))
+                var committed = board.CommitValidatedDisplacement(entry.Key, entry.Value.Endpoint);
+                if (committed.Accepted)
                 {
-                    if (!board.TryGetObjectAt(neighbor, out var occupant))
-                    {
-                        continue;
-                    }
+                    moved++;
+                }
+            }
 
-                    var asRuleObject = occupant.AsRuleObject();
-                    if (asRuleObject.IsDefined &&
-                        context.Modifications.IsImmuneTo(
-                            asRuleObject, RuleActivity.ObjectPush, pushingUnit))
-                    {
-                        continue;
-                    }
+            return EffectExecutionResult.Applied(new[]
+            {
+                new EffectOutcomeFact("distance", EffectValue.Integer(distance)),
+                new EffectOutcomeFact("moved", EffectValue.Integer(moved))
+            });
+        }
 
+        /// <summary>
+        /// The acting hero's space and every object it may push out of the six adjacent spaces.
+        ///
+        /// Immunity filters here rather than later, because p.18 makes it a targeting rule: "If a
+        /// unit is immune, you cannot target that unit". The same page keeps presence separate -
+        /// "effects that check for unit presence will count immune units" - so a presence query over
+        /// these spaces would still see what this list drops. A token is never filtered: p.19 states
+        /// tokens are not units, so no immunity is addressed to one.
+        /// </summary>
+        private static bool TryFindAdjacentTargets(
+            EffectCapabilityContext context,
+            out HexCoordinate pusherAt,
+            out IReadOnlyList<BoardObjectReference> targets)
+        {
+            targets = Array.Empty<BoardObjectReference>();
+            if (!TryFindPusher(context, out pusherAt, out var pushingUnit))
+            {
+                return false;
+            }
+
+            var board = context.Components.Board;
+            var found = new List<BoardObjectReference>();
+            foreach (var neighbor in pusherAt.GetNeighbors()
+                .OrderBy(coordinate => coordinate.Q)
+                .ThenBy(coordinate => coordinate.R))
+            {
+                if (board.TryGetObjectAt(neighbor, out var occupant) &&
+                    !IsImmuneToThisPush(context, occupant, pushingUnit))
+                {
                     found.Add(occupant);
                 }
-
-                targets = found;
-                return found.Count > 0;
             }
+
+            targets = found;
+            return found.Count > 0;
+        }
+
+        /// <summary>
+        /// The acting hero's space and the one object standing where the definition points.
+        ///
+        /// The bound space is re-read rather than remembered: a target chosen when the selection opened
+        /// may have moved, been removed, or become immune before this node runs, and an empty space
+        /// names nothing at all. Immunity is asked here for the same p.18 reason as above, so a target
+        /// selected under one activity's rules cannot slip past this one's.
+        /// </summary>
+        private static bool TryFindNamedTarget(
+            EffectCapabilityContext context,
+            out HexCoordinate pusherAt,
+            out IReadOnlyList<BoardObjectReference> targets)
+        {
+            targets = Array.Empty<BoardObjectReference>();
+            if (!TryFindPusher(context, out pusherAt, out var pushingUnit))
+            {
+                return false;
+            }
+
+            var named = context.Input("target");
+            if (named.Kind != EffectValueKind.Coordinate || named.Coordinate.Equals(pusherAt) ||
+                !context.Components.Board.TryGetObjectAt(named.Coordinate, out var occupant) ||
+                IsImmuneToThisPush(context, occupant, pushingUnit))
+            {
+                return false;
+            }
+
+            targets = new[] { occupant };
+            return true;
+        }
+
+        /// <summary>The pushing unit and where it stands - p.18 measures every direction from it.</summary>
+        private static bool TryFindPusher(
+            EffectCapabilityContext context, out HexCoordinate pusherAt, out RuleObject pushingUnit)
+        {
+            pusherAt = default;
+            pushingUnit = RuleObject.None;
+
+            var components = context.Components;
+            if (components == null || !components.CanDisplace)
+            {
+                return false;
+            }
+
+            var pusher = BoardObjectReference.ForHero(context.ActorId);
+            if (!components.Board.TryGetObjectCoordinate(pusher, out pusherAt))
+            {
+                return false;
+            }
+
+            pushingUnit = pusher.AsRuleObject();
+            return true;
+        }
+
+        private static bool IsImmuneToThisPush(
+            EffectCapabilityContext context, BoardObjectReference occupant, RuleObject pushingUnit)
+        {
+            var asRuleObject = occupant.AsRuleObject();
+            return asRuleObject.IsDefined &&
+                context.Modifications.IsImmuneTo(asRuleObject, RuleActivity.ObjectPush, pushingUnit);
         }
     }
 }

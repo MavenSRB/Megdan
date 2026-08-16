@@ -796,10 +796,10 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OutcomeComparison_EqualDefenseSuccessfullyDefendsAndCompletesSameAttack()
         {
-            var fixture = CreateFixture("red-needle-card");
+            var fixture = CreateFixture("red-pursuit-card");
             var opened = OpenDefenseResponse(fixture);
             var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
-                offer.SourceCardInstanceId.Value == "blue-feint-card");
+                offer.SourceCardInstanceId.Value == "blue-sentinel-card");
             var response = fixture.Authority.AnswerDefenseResponse(
                 DefenseResponseChoiceCommand.SelectCards(
                     opened.PendingDefenseChoice.ResolutionId,
@@ -815,8 +815,8 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Configuration.Participants, RuleModificationSet.Empty);
 
             Assert.That(response.PendingResolution.ResolutionId, Is.EqualTo(opened.PendingResolution.ResolutionId));
-            Assert.That(response.PendingResolution.AttackTotal, Is.EqualTo(2));
-            Assert.That(response.PendingResolution.DefenseTotal, Is.EqualTo(2));
+            Assert.That(response.PendingResolution.AttackTotal, Is.EqualTo(4));
+            Assert.That(response.PendingResolution.DefenseTotal, Is.EqualTo(4));
             Assert.That(outcome.Accepted, Is.True);
             Assert.That(outcome.Outcome, Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended));
             Assert.That(outcome.PendingResolution, Is.Null);
@@ -830,8 +830,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(outcome.Events.All(ruleEvent =>
                 ruleEvent.ResolutionId.Equals(opened.PendingResolution.ResolutionId) &&
                 ruleEvent.TargetHeroId.Equals(fixture.DefenderId) &&
-                ruleEvent.AttackTotal == 2 &&
-                ruleEvent.DefenseTotal == 2 &&
+                ruleEvent.AttackTotal == 4 &&
+                ruleEvent.DefenseTotal == 4 &&
                 ruleEvent.AttackOutcome == AttackResolutionOutcome.SuccessfullyDefended), Is.True);
         }
 
@@ -1201,10 +1201,10 @@ namespace GuardsDigital.Tests.EditMode
 
         private static AttackActionResolutionResult RunOutcomeReplay()
         {
-            var fixture = CreateFixture("red-needle-card");
+            var fixture = CreateFixture("red-pursuit-card");
             var opened = OpenDefenseResponse(fixture);
             var defenseOffer = opened.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
-                offer.SourceCardInstanceId.Value == "blue-feint-card");
+                offer.SourceCardInstanceId.Value == "blue-sentinel-card");
             fixture.Authority.AnswerDefenseResponse(
                 DefenseResponseChoiceCommand.SelectCards(
                     opened.PendingDefenseChoice.ResolutionId,
