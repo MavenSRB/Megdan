@@ -10,6 +10,7 @@ using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
@@ -120,7 +121,8 @@ namespace GuardsDigital.Presentation.Match
             HeroId focusedHeroId,
             IEnumerable<HexCoordinate> fastTravelDestinations = null,
             IEnumerable<MinionDefenseCueViewModel> minionDefenseCues = null,
-            IEnumerable<MinionChoiceCueViewModel> minionChoiceCues = null)
+            IEnumerable<MinionChoiceCueViewModel> minionChoiceCues = null,
+            IEnumerable<HexCoordinate> correctionDestinations = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -145,6 +147,9 @@ namespace GuardsDigital.Presentation.Match
                     "One minion carries at most one choice cue.",
                     nameof(minionChoiceCues));
             }
+
+            CorrectionDestinations = Array.AsReadOnly((correctionDestinations ??
+                Enumerable.Empty<HexCoordinate>()).ToArray());
         }
 
         public long Version { get; }
@@ -157,6 +162,9 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
         public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
         public IReadOnlyList<MinionChoiceCueViewModel> MinionChoiceCues { get; }
+
+        /// <summary>Milestone 6.4b: the pending correction's legal route endpoints or Place spaces.</summary>
+        public IReadOnlyList<HexCoordinate> CorrectionDestinations { get; }
     }
 
     public interface IBoardInteractionView
@@ -220,7 +228,13 @@ namespace GuardsDigital.Presentation.Match
                         Enumerable.Empty<MinionDefenseCueViewModel>(),
                     CreateMinionChoiceCues(
                         projection.PendingMinionBattleChoice,
-                        highlightedChoiceMinionId));
+                        projection.PendingDisplacedMinionCorrection,
+                        highlightedChoiceMinionId),
+                    projection.PendingDisplacedMinionCorrection?.Stage ==
+                        DisplacedMinionCorrectionStage.SelectDestination
+                            ? projection.PendingDisplacedMinionCorrection.DestinationCandidates
+                                .Select(value => value.Destination)
+                            : Enumerable.Empty<HexCoordinate>());
             }
 
             view.Render(lastViewModel);
@@ -235,8 +249,12 @@ namespace GuardsDigital.Presentation.Match
         {
             var projection = session.Projection;
             var choice = projection.PendingMinionBattleChoice;
-            var resolved = choice != null && minionId.IsDefined &&
-                choice.Candidates.Any(candidate => candidate.MinionId.Equals(minionId))
+            var correction = projection.PendingDisplacedMinionCorrection;
+            var resolved = minionId.IsDefined &&
+                (choice != null &&
+                        choice.Candidates.Any(candidate => candidate.MinionId.Equals(minionId)) ||
+                    correction?.Stage == DisplacedMinionCorrectionStage.SelectSubject &&
+                        correction.SubjectCandidates.Any(subject => subject.MinionId.Equals(minionId)))
                     ? minionId
                     : default;
             if (resolved.Equals(highlightedChoiceMinionId) &&
@@ -253,30 +271,52 @@ namespace GuardsDigital.Presentation.Match
 
         private static IReadOnlyList<MinionChoiceCueViewModel> CreateMinionChoiceCues(
             PendingMinionBattleChoice choice,
+            PendingDisplacedMinionCorrection correction,
             MinionId highlightedMinionId)
         {
-            if (choice == null)
+            if (choice != null)
+            {
+                var cues = new List<MinionChoiceCueViewModel>();
+                foreach (var candidate in choice.Candidates)
+                {
+                    var kind = choice.SelectedMinionIds.Contains(candidate.MinionId)
+                        ? MinionChoiceCueKind.Selected
+                        : candidate.MinionId.Equals(highlightedMinionId)
+                            ? MinionChoiceCueKind.Highlighted
+                            : MinionChoiceCueKind.None;
+                    if (kind == MinionChoiceCueKind.None)
+                    {
+                        continue;
+                    }
+
+                    cues.Add(new MinionChoiceCueViewModel(candidate.MinionId, kind));
+                }
+
+                return cues;
+            }
+
+            // Milestone 6.4b: the correction's board cues ride the same vocabulary. During a subject
+            // choice the pointed-at candidate is highlighted; during a destination choice the one
+            // displaced subject is marked selected, so the board says which minion the offered
+            // destinations would receive.
+            if (correction == null)
             {
                 return Array.Empty<MinionChoiceCueViewModel>();
             }
 
-            var cues = new List<MinionChoiceCueViewModel>();
-            foreach (var candidate in choice.Candidates)
+            if (correction.Stage == DisplacedMinionCorrectionStage.SelectSubject)
             {
-                var kind = choice.SelectedMinionIds.Contains(candidate.MinionId)
-                    ? MinionChoiceCueKind.Selected
-                    : candidate.MinionId.Equals(highlightedMinionId)
-                        ? MinionChoiceCueKind.Highlighted
-                        : MinionChoiceCueKind.None;
-                if (kind == MinionChoiceCueKind.None)
-                {
-                    continue;
-                }
-
-                cues.Add(new MinionChoiceCueViewModel(candidate.MinionId, kind));
+                return correction.SubjectCandidates
+                    .Where(subject => subject.MinionId.Equals(highlightedMinionId))
+                    .Select(subject => new MinionChoiceCueViewModel(
+                        subject.MinionId, MinionChoiceCueKind.Highlighted))
+                    .ToArray();
             }
 
-            return cues;
+            return new[]
+            {
+                new MinionChoiceCueViewModel(correction.SubjectMinionId, MinionChoiceCueKind.Selected)
+            };
         }
 
         public bool ActivateFastTravel(ActionDefinitionId replacedMovementActionDefinitionId)
@@ -299,6 +339,18 @@ namespace GuardsDigital.Presentation.Match
 
         public bool SubmitDestination(HexCoordinate destination)
         {
+            // Milestone 6.4b: a correction destination is selectable straight off the board. The
+            // families are mutually exclusive - a correction pauses mid-action, when no movement
+            // choice or fast-travel activation can be live - so this is a route, not a priority.
+            var correction = session.Projection.PendingDisplacedMinionCorrection;
+            if (correction?.Stage == DisplacedMinionCorrectionStage.SelectDestination)
+            {
+                var invocation = correction.SelectInvocations.SingleOrDefault(value =>
+                    value.Destination.Equals(destination));
+                return invocation != null &&
+                    Execute(DirectorCommand.ChooseCorrectionDestination(invocation));
+            }
+
             var choice = session.Projection.PendingMovementChoice;
             if (choice == null || choice.LegalDestinations.Count(value => value.Destination.Equals(destination)) != 1)
             {
@@ -810,7 +862,8 @@ namespace GuardsDigital.Presentation.Match
                 projection.PendingMovementChoice != null || projection.PendingMovementResolution != null ||
                 projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
                 projection.PendingAttackResolution != null ||
-                projection.PendingSkillResolution != null || projection.PendingEffectChoice != null;
+                projection.PendingSkillResolution != null || projection.PendingEffectChoice != null ||
+                projection.PendingDisplacedMinionCorrection != null;
             var actions = (projection.IsTurnActive && !hasPendingResolution
                     ? projection.AvailableTurnActions
                     : Array.Empty<ActionOffer>())
@@ -937,7 +990,8 @@ namespace GuardsDigital.Presentation.Match
                 projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
                 projection.PendingAttackResolution != null || projection.PendingMovementChoice != null ||
                 projection.PendingMovementResolution != null ||
-                projection.PendingSkillResolution != null || projection.PendingEffectChoice != null;
+                projection.PendingSkillResolution != null || projection.PendingEffectChoice != null ||
+                projection.PendingDisplacedMinionCorrection != null;
             if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined || hasMandatoryChoice)
             {
                 return null;
@@ -1115,10 +1169,31 @@ namespace GuardsDigital.Presentation.Match
                 return $"Movement has {projection.PendingMovementChoice.RemainingAllowance} remaining.";
             }
 
+            if (projection.PendingDisplacedMinionCorrection != null)
+            {
+                return "Displaced-minion correction: " +
+                    $"{MinionChoiceLabels.TeamLabel(projection.PendingDisplacedMinionCorrection.ChoosingSide)} decides.";
+            }
+
             return projection.SelectedActor.IsDefined
                 ? $"Initiative {projection.SelectedActor.InitiativeTotal}: choose an action or End Turn."
                 : "Awaiting the next authoritative choice.";
         }
+    }
+
+    /// <summary>
+    /// Which authoritative minion-choice family the one shared prompt is presenting. Milestone 6.1a
+    /// built the interface for the Minion Battle removal; milestone 6.4b widened it by prompt kind for
+    /// the displaced-minion correction rather than adding a second correction-only framework, so the
+    /// presenter's submit, confirm, and stale-refresh paths never branch on this value - only labels
+    /// and candidate identity do.
+    /// </summary>
+    public enum MinionChoicePromptKind
+    {
+        MinionBattleRemoval = 0,
+        CorrectionSubject = 1,
+        CorrectionMove = 2,
+        CorrectionPlace = 3
     }
 
     public sealed class MinionChoiceCandidateViewModel
@@ -1129,6 +1204,22 @@ namespace GuardsDigital.Presentation.Match
             int ordinal,
             bool isSelected,
             DirectorCommand command)
+            : this(minionId, label, ordinal, isSelected, command, null)
+        {
+        }
+
+        /// <summary>
+        /// Milestone 6.4b's destination-bearing form: a correction route endpoint or Place space. The
+        /// minion is the displaced subject the destination would receive, so every candidate of one
+        /// destination prompt shares it; the destination is what distinguishes them.
+        /// </summary>
+        public MinionChoiceCandidateViewModel(
+            MinionId minionId,
+            string label,
+            int ordinal,
+            bool isSelected,
+            DirectorCommand command,
+            HexCoordinate? destination)
         {
             if (!minionId.IsDefined || ordinal < 1)
             {
@@ -1143,6 +1234,7 @@ namespace GuardsDigital.Presentation.Match
             Ordinal = ordinal;
             IsSelected = isSelected;
             Command = command ?? throw new ArgumentNullException(nameof(command));
+            Destination = destination;
         }
 
         public MinionId MinionId { get; }
@@ -1155,6 +1247,9 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public bool IsSelected { get; }
         public DirectorCommand Command { get; }
+
+        /// <summary>The correction destination this control selects, or <c>null</c> for a minion control.</summary>
+        public HexCoordinate? Destination { get; }
     }
 
     /// <summary>
@@ -1175,11 +1270,77 @@ namespace GuardsDigital.Presentation.Match
             int selectedCount,
             IEnumerable<MinionChoiceCandidateViewModel> candidates,
             TypedInvocationViewModel confirmInvocation)
+            : this(
+                version, MinionChoicePromptKind.MinionBattleRemoval, resolutionId, choiceId,
+                default, default, default, choosingTeamId, choosingSide, requiredRemovalCount,
+                selectedCount, candidates, confirmInvocation)
         {
-            if (!resolutionId.IsDefined || !choiceId.IsDefined || !choosingTeamId.IsDefined)
+            if (!resolutionId.IsDefined || !choiceId.IsDefined)
             {
                 throw new ArgumentException(
-                    "A minion choice prompt requires the authoritative resolution, choice, and team identities.");
+                    "A Minion Battle prompt requires the authoritative resolution and choice identities.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 6.4b's correction form of the same prompt: the displaced subject, the correction
+        /// kind, and destination- or subject-valued candidates, addressed by the owning action's
+        /// identity rather than an end-of-round one. Selection is the advance for a correction, so it
+        /// carries no confirm invocation - the shared contract's confirm/advance slot is satisfied by
+        /// each candidate's one-shot command.
+        /// </summary>
+        public static MinionChoiceViewModel ForCorrection(
+            long version,
+            MinionChoicePromptKind kind,
+            ActionResolutionId actionResolutionId,
+            ActionResolutionStepId actionChoiceId,
+            MinionId subjectMinionId,
+            TeamId choosingTeamId,
+            TeamSide choosingSide,
+            IEnumerable<MinionChoiceCandidateViewModel> candidates)
+        {
+            if (kind == MinionChoicePromptKind.MinionBattleRemoval)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(kind), kind, "The correction form presents correction prompt kinds only.");
+            }
+
+            if (!actionResolutionId.IsDefined || !actionChoiceId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A correction prompt requires the owning action's resolution and choice identities.");
+            }
+
+            if (kind != MinionChoicePromptKind.CorrectionSubject && !subjectMinionId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A correction destination prompt names its displaced subject.", nameof(subjectMinionId));
+            }
+
+            return new MinionChoiceViewModel(
+                version, kind, default, default, actionResolutionId, actionChoiceId,
+                subjectMinionId, choosingTeamId, choosingSide, 1, 0, candidates, null);
+        }
+
+        private MinionChoiceViewModel(
+            long version,
+            MinionChoicePromptKind kind,
+            EndOfRoundResolutionId resolutionId,
+            EndOfRoundChoiceId choiceId,
+            ActionResolutionId actionResolutionId,
+            ActionResolutionStepId actionChoiceId,
+            MinionId subjectMinionId,
+            TeamId choosingTeamId,
+            TeamSide choosingSide,
+            int requiredRemovalCount,
+            int selectedCount,
+            IEnumerable<MinionChoiceCandidateViewModel> candidates,
+            TypedInvocationViewModel confirmInvocation)
+        {
+            if (!choosingTeamId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A minion choice prompt requires the authoritative team identity.");
             }
 
             if (choosingSide != TeamSide.Red && choosingSide != TeamSide.Blue)
@@ -1198,30 +1359,70 @@ namespace GuardsDigital.Presentation.Match
             }
 
             Version = version;
+            Kind = kind;
             ResolutionId = resolutionId;
             ChoiceId = choiceId;
+            ActionResolutionId = actionResolutionId;
+            ActionChoiceId = actionChoiceId;
+            SubjectMinionId = subjectMinionId;
             ChoosingTeamId = choosingTeamId;
             ChoosingSide = choosingSide;
             RequiredRemovalCount = requiredRemovalCount;
             SelectedCount = selectedCount;
             Candidates = Array.AsReadOnly((candidates ??
                 throw new ArgumentNullException(nameof(candidates))).ToArray());
-            if (Candidates.Select(value => value.MinionId).Distinct().Count() != Candidates.Count)
+
+            // One control per distinguishing identity: minions for the battle and subject prompts,
+            // destinations for a correction destination prompt, whose candidates all share the one
+            // displaced subject.
+            var distinct = kind == MinionChoicePromptKind.CorrectionMove ||
+                kind == MinionChoicePromptKind.CorrectionPlace
+                    ? Candidates.Select(value => (object)value.Destination).Distinct().Count()
+                    : Candidates.Select(value => (object)value.MinionId).Distinct().Count();
+            if (distinct != Candidates.Count)
             {
                 throw new ArgumentException(
-                    "A minion choice prompt offers at most one control per minion.",
+                    "A minion choice prompt offers at most one control per candidate identity.",
                     nameof(candidates));
             }
 
             ConfirmInvocation = confirmInvocation;
-            PromptLabel = $"MINION BATTLE - {MinionChoiceLabels.TeamLabel(choosingSide)} REMOVES " +
-                $"{requiredRemovalCount} {(requiredRemovalCount == 1 ? "MINION" : "MINIONS")}";
+            var team = MinionChoiceLabels.TeamLabel(choosingSide);
+            switch (kind)
+            {
+                case MinionChoicePromptKind.CorrectionSubject:
+                    SectionLabel = "Correction";
+                    PromptLabel = $"CORRECTION - {team} RETURNS A DISPLACED MINION";
+                    break;
+                case MinionChoicePromptKind.CorrectionMove:
+                    SectionLabel = "Correction";
+                    PromptLabel = $"CORRECTION (MOVE) - {team} CHOOSES THE RETURN SPACE";
+                    break;
+                case MinionChoicePromptKind.CorrectionPlace:
+                    SectionLabel = "Correction";
+                    PromptLabel = $"CORRECTION (PLACE) - {team} CHOOSES THE PLACE SPACE";
+                    break;
+                default:
+                    SectionLabel = "Minion Battle";
+                    PromptLabel = $"MINION BATTLE - {team} REMOVES " +
+                        $"{requiredRemovalCount} {(requiredRemovalCount == 1 ? "MINION" : "MINIONS")}";
+                    break;
+            }
+
             StatusLabel = $"SELECTED {selectedCount} OF {requiredRemovalCount}";
         }
 
         public long Version { get; }
+        public MinionChoicePromptKind Kind { get; }
         public EndOfRoundResolutionId ResolutionId { get; }
         public EndOfRoundChoiceId ChoiceId { get; }
+
+        /// <summary>The owning action's identity when <see cref="Kind"/> is a correction prompt.</summary>
+        public ActionResolutionId ActionResolutionId { get; }
+        public ActionResolutionStepId ActionChoiceId { get; }
+
+        /// <summary>The displaced subject of a correction destination prompt; undefined otherwise.</summary>
+        public MinionId SubjectMinionId { get; }
         public TeamId ChoosingTeamId { get; }
         public TeamSide ChoosingSide { get; }
         public int RequiredRemovalCount { get; }
@@ -1232,6 +1433,9 @@ namespace GuardsDigital.Presentation.Match
         public TypedInvocationViewModel ConfirmInvocation { get; }
         public string PromptLabel { get; }
         public string StatusLabel { get; }
+
+        /// <summary>The prompt family's short gutter label, so the view carries no literal of its own.</summary>
+        public string SectionLabel { get; }
     }
 
     /// <summary>
@@ -1310,7 +1514,9 @@ namespace GuardsDigital.Presentation.Match
             var choice = projection.PendingMinionBattleChoice;
             if (choice == null)
             {
-                return null;
+                // At most one minion-choice family is ever pending: the battle is end-of-round state
+                // and the correction pauses mid-turn, so this is a route rather than a priority.
+                return CreateCorrectionViewModel(projection);
             }
 
             var candidates = new List<MinionChoiceCandidateViewModel>();
@@ -1356,6 +1562,82 @@ namespace GuardsDigital.Presentation.Match
                         choice.RequiredRemovalCount == 1 ? "CONFIRM REMOVAL" : "CONFIRM REMOVALS",
                         DirectorCommand.ConfirmMinionBattleRemovals(choice.ConfirmInvocation))
                     : null);
+        }
+
+        /// <summary>
+        /// Milestone 6.4b: the displaced-minion correction rides the same prompt. Everything shown is
+        /// read off the projected pending choice - candidates, kinds, invocations - so presentation
+        /// calculates no path, distance, Battle-Zone membership, occupancy, or Tie-Breaker ordering.
+        /// A subject label joins the projection's minion occupancy for team and intrinsic type, which
+        /// is a lookup of projected state, not a rules answer.
+        /// </summary>
+        private static MinionChoiceViewModel CreateCorrectionViewModel(MatchSessionProjection projection)
+        {
+            var pending = projection.PendingDisplacedMinionCorrection;
+            if (pending == null)
+            {
+                return null;
+            }
+
+            if (pending.Stage == DisplacedMinionCorrectionStage.SelectSubject)
+            {
+                var subjects = new List<MinionChoiceCandidateViewModel>();
+                for (var index = 0; index < pending.SubjectCandidates.Count; index++)
+                {
+                    var subject = pending.SubjectCandidates[index];
+                    var occupancy = projection.Minions.Single(minion =>
+                        minion.MinionId.Equals(subject.MinionId));
+                    var invocation = pending.SelectInvocations.Single(value =>
+                        value.MinionId.Equals(subject.MinionId));
+                    var ordinal = index + 1;
+                    subjects.Add(new MinionChoiceCandidateViewModel(
+                        subject.MinionId,
+                        $"RETURN {MinionChoiceLabels.CandidateLabel(occupancy.TeamSide, occupancy.MinionType, ordinal)}",
+                        ordinal,
+                        false,
+                        DirectorCommand.ChooseCorrectionSubject(invocation)));
+                }
+
+                return MinionChoiceViewModel.ForCorrection(
+                    projection.Version,
+                    MinionChoicePromptKind.CorrectionSubject,
+                    pending.ResolutionId,
+                    pending.ChoiceId,
+                    default,
+                    pending.ChoosingTeamId,
+                    pending.ChoosingSide,
+                    subjects);
+            }
+
+            var kind = pending.Kind == DisplacedMinionCorrectionKind.Place
+                ? MinionChoicePromptKind.CorrectionPlace
+                : MinionChoicePromptKind.CorrectionMove;
+            var verb = kind == MinionChoicePromptKind.CorrectionPlace ? "PLACE AT" : "MOVE TO";
+            var destinations = new List<MinionChoiceCandidateViewModel>();
+            for (var index = 0; index < pending.DestinationCandidates.Count; index++)
+            {
+                var candidate = pending.DestinationCandidates[index];
+                var invocation = pending.SelectInvocations.Single(value =>
+                    value.Destination.Equals(candidate.Destination));
+                var ordinal = index + 1;
+                destinations.Add(new MinionChoiceCandidateViewModel(
+                    pending.SubjectMinionId,
+                    $"{verb} ({candidate.Destination.Q},{candidate.Destination.R})",
+                    ordinal,
+                    false,
+                    DirectorCommand.ChooseCorrectionDestination(invocation),
+                    candidate.Destination));
+            }
+
+            return MinionChoiceViewModel.ForCorrection(
+                projection.Version,
+                kind,
+                pending.ResolutionId,
+                pending.ChoiceId,
+                pending.SubjectMinionId,
+                pending.ChoosingTeamId,
+                pending.ChoosingSide,
+                destinations);
         }
 
         private MinionChoiceViewModel GetOrCreateViewModel(MatchSessionProjection projection)

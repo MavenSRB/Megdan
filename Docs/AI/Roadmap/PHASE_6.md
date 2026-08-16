@@ -553,7 +553,7 @@ Non-goals: No new displacement operation, Wasp definition, card-name/hero-name b
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64a-integrate-after-action-displaced-minion-correction-with-core-push-completion-evidence).
 
-### [~] 6.4b Add player-facing displaced-minion correction choices
+### [x] 6.4b Add player-facing displaced-minion correction choices
 
 Observable outcome: When milestone 6.4a's authority pauses for a displaced-minion route or fallback-Place choice, the configured passive presentation reuses milestone 6.1a's general authority-owned minion-choice interface so the authorized team can choose among the exact legal candidates and resume the same authoritative after-action continuation.
 
@@ -569,6 +569,8 @@ Acceptance checks:
 - Focused application/presenter tests prove both 6.1a removal and 6.4b correction use the same interface without mode leakage; a configured-scene Play Mode check covers removal-to-correction prompt replacement plus route choice, fallback Place choice, no-choice auto-continuation, stale rejection, multi-minion progression, and passive-view authority boundaries.
 
 Non-goals: No correction-rule change, redesign of 6.1a's removal authority, one universal rules-choice framework beyond this minion-choice family, pathfinding or nearest-space calculation in presentation, optional decline, new displacement operation, Wasp definition, production art, animation, or audio.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64b-add-player-facing-displaced-minion-correction-choices-completion-evidence).
 
 ### [ ] 6.5 Complete reusable Place and Spawn effects
 

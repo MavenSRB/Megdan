@@ -78,6 +78,9 @@ namespace GuardsDigital.Presentation.Match
 
             var targetCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(model.MovementDestinations);
             targetCoordinates.UnionWith(model.FastTravelDestinations);
+            // Milestone 6.4b: correction route endpoints and Place spaces highlight exactly like
+            // every other projected destination, and clicking one submits its projected invocation.
+            targetCoordinates.UnionWith(model.CorrectionDestinations);
             foreach (var targetId in model.AttackTargets)
             {
                 var target = model.Heroes.Single(value => value.HeroId.Equals(targetId));
@@ -648,7 +651,9 @@ namespace GuardsDigital.Presentation.Match
             }
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Minion Battle", GUILayout.Width(84f));
+            // Milestone 6.4b: the gutter names the prompt family from the model - "Minion Battle" or
+            // "Correction" - so the one shared view carries no family literal of its own.
+            GUILayout.Label(model.SectionLabel, GUILayout.Width(84f));
             GUILayout.Label($"{model.PromptLabel}   {model.StatusLabel}");
             GUILayout.EndHorizontal();
 

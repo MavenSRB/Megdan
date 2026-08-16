@@ -261,6 +261,40 @@ namespace GuardsDigital.Presentation.Match
 
         public bool ConfirmMinionChoice() => MinionChoicePresenter.Confirm();
 
+        /// <summary>
+        /// Milestone 6.4b: the projected invocation for one value-shaped candidate of a paused effect
+        /// frame, addressed by its coordinate - the addressing 6.8k deliberately deferred until this
+        /// consumer existed, because a value candidate carries no option node to name.
+        /// </summary>
+        public bool SubmitEffectChoiceValue(GuardsDigital.Core.Board.HexCoordinate coordinate)
+        {
+            var invocation = RoundView.Model?.EffectChoices.SingleOrDefault(value =>
+                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                value.Command.EffectChoice.Candidate.Kind == EffectChoiceCandidateKind.Value &&
+                value.Command.EffectChoice.Candidate.Value.Coordinate.Equals(coordinate));
+            return RoundPresenter.Submit(invocation);
+        }
+
+        public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
+            PendingDisplacedMinionCorrection => session.Projection.PendingDisplacedMinionCorrection;
+
+        /// <summary>Forwards the rendered subject control of a paused correction, addressed by minion.</summary>
+        public bool SubmitCorrectionSubject(MinionId minionId)
+        {
+            var candidate = MinionChoiceView.Model?.Candidates.SingleOrDefault(value =>
+                value.Destination == null && value.MinionId.Equals(minionId));
+            return MinionChoicePresenter.Submit(candidate);
+        }
+
+        /// <summary>Forwards the rendered destination control of a paused correction, addressed by space.</summary>
+        public bool SubmitCorrectionDestination(GuardsDigital.Core.Board.HexCoordinate destination)
+        {
+            var candidate = MinionChoiceView.Model?.Candidates.SingleOrDefault(value =>
+                value.Destination != null && value.Destination.Value.Equals(destination));
+            return MinionChoicePresenter.Submit(candidate);
+        }
+
         public bool Undo() => UndoRestartPresenter.Undo();
 
         public bool Restart() => UndoRestartPresenter.Restart();

@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
@@ -376,6 +378,350 @@ namespace GuardsDigital.Tests.EditMode
         private static int Initiative(MatchSession session, CardInstance card) =>
             session.Projection.Definitions.Single(value =>
                 value.Reference.Equals(card.DefinitionReference)).Initiative.Value;
+
+        // ---------------------------------------------------------------------------------------
+        // Milestone 6.4b: the displaced-minion correction rides the same interface. The fixtures are
+        // the 6.4a authority scenarios - a push that displaces red-melee-01 to (-3,-1) with two
+        // equal-shortest returns, driven through the Skill-fixture hands - and every case below runs
+        // through the one presenter the removal cases above use, which is the no-mode-leakage claim
+        // made executable.
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void CorrectionPrompt_NamesTheChooserAndOffersExactlyTheProjectedDestinations()
+        {
+            var session = CreatePendingCorrectionSession();
+            var view = new CapturingMinionChoiceView();
+            var presenter = new MinionChoicePresenter(session, view);
+
+            presenter.Refresh();
+
+            var pending = session.Projection.PendingDisplacedMinionCorrection;
+            var model = view.Model;
+            Assert.That(model, Is.Not.Null);
+            Assert.That(model.Kind, Is.EqualTo(MinionChoicePromptKind.CorrectionMove));
+            Assert.That(model.SectionLabel, Is.EqualTo("Correction"));
+            Assert.That(model.PromptLabel,
+                Is.EqualTo("CORRECTION (MOVE) - [R] RED CHOOSES THE RETURN SPACE"));
+            Assert.That(model.ChoosingTeamId, Is.EqualTo(pending.ChoosingTeamId));
+            Assert.That(model.ChoosingSide, Is.EqualTo(TeamSide.Red));
+            Assert.That(model.ActionResolutionId, Is.EqualTo(pending.ResolutionId));
+            Assert.That(model.ActionChoiceId, Is.EqualTo(pending.ChoiceId));
+            Assert.That(model.SubjectMinionId, Is.EqualTo(pending.SubjectMinionId),
+                "The prompt names the displaced stable minion identity.");
+            Assert.That(model.ConfirmInvocation, Is.Null,
+                "Selection is the advance for a correction; there is nothing separate to confirm.");
+            Assert.That(
+                model.Candidates.Select(value => value.Destination.Value),
+                Is.EqualTo(pending.DestinationCandidates.Select(value => value.Destination)),
+                "Exactly the projected route endpoints, in the projection's own order.");
+            foreach (var candidate in model.Candidates)
+            {
+                Assert.That(candidate.MinionId, Is.EqualTo(pending.SubjectMinionId));
+                Assert.That(candidate.Label,
+                    Does.StartWith("MOVE TO").And.Contain(
+                        $"({candidate.Destination.Value.Q},{candidate.Destination.Value.R})"));
+                Assert.That(candidate.Command, Is.EqualTo(DirectorCommand.ChooseCorrectionDestination(
+                    pending.SelectInvocations.Single(value =>
+                        value.Destination.Equals(candidate.Destination.Value)))));
+            }
+        }
+
+        [Test]
+        public void CorrectionPrompt_SubmitsThroughTheSharedPresenterAndCompletesTheAction()
+        {
+            var session = CreatePendingCorrectionSession();
+            var view = new CapturingMinionChoiceView();
+            var presenter = new MinionChoicePresenter(session, view);
+            presenter.Refresh();
+            var chosen = view.Model.Candidates[0];
+
+            Assert.That(presenter.Submit(chosen), Is.True,
+                "The same Submit path the removal uses forwards the correction invocation.");
+
+            Assert.That(session.Projection.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.ChooseCorrectionDestination));
+            Assert.That(session.Projection.PendingDisplacedMinionCorrection, Is.Null);
+            Assert.That(
+                session.Projection.Minions.Single(value => value.MinionId.Equals(chosen.MinionId))
+                    .Coordinate,
+                Is.EqualTo(chosen.Destination.Value));
+            Assert.That(
+                session.Projection.Cards.Single(card => card.Id.Value.Contains("red-shove"))
+                    .State.ResolutionStatus,
+                Is.Not.EqualTo(CardResolutionStatus.Unresolved),
+                "Answering resumes the same authoritative continuation: the source card resolves.");
+            presenter.Refresh();
+            Assert.That(view.Model, Is.Null, "A completed correction leaves no prompt behind.");
+        }
+
+        [Test]
+        public void CorrectionPrompt_RefusesAStaleControlAndPreservesThePendingChoice()
+        {
+            var session = CreatePendingCorrectionSession();
+            var view = new CapturingMinionChoiceView();
+            var presenter = new MinionChoicePresenter(session, view);
+            presenter.Refresh();
+            var stale = new MinionChoiceCandidateViewModel(
+                view.Model.SubjectMinionId,
+                "MOVE TO (99,99)",
+                1,
+                false,
+                DirectorCommand.ChooseCorrectionDestination(
+                    new GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionCommand(
+                        GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionCommandKind.SelectDestination,
+                        session.Projection.PendingDisplacedMinionCorrection.ResolutionId,
+                        session.Projection.PendingDisplacedMinionCorrection.ChoiceId,
+                        TeamSide.Red,
+                        view.Model.SubjectMinionId,
+                        new GuardsDigital.Core.Board.HexCoordinate(99, 99))),
+                new GuardsDigital.Core.Board.HexCoordinate(99, 99));
+            var snapshotBefore = session.Projection.AuthoritativeSnapshot;
+            var acceptedBefore = session.Projection.AcceptedCommands.Count;
+
+            Assert.That(presenter.Submit(stale), Is.False,
+                "A control the current model does not carry submits nothing.");
+
+            Assert.That(session.Projection.AuthoritativeSnapshot, Is.EqualTo(snapshotBefore));
+            Assert.That(session.Projection.AcceptedCommands, Has.Count.EqualTo(acceptedBefore));
+            Assert.That(session.Projection.PendingDisplacedMinionCorrection, Is.Not.Null,
+                "The authoritative pending choice survives untouched.");
+            Assert.That(view.Model, Is.Not.Null,
+                "The refusal rebuilt the visible prompt from authority.");
+        }
+
+        [Test]
+        public void CorrectionSubjectPrompt_OffersTheTeamsMinionsAndProgressesThroughBoth()
+        {
+            var session = CreateTwoSubjectCorrectionSession();
+            var view = new CapturingMinionChoiceView();
+            var presenter = new MinionChoicePresenter(session, view);
+            presenter.Refresh();
+
+            var model = view.Model;
+            Assert.That(model, Is.Not.Null);
+            Assert.That(model.Kind, Is.EqualTo(MinionChoicePromptKind.CorrectionSubject));
+            Assert.That(model.PromptLabel,
+                Is.EqualTo("CORRECTION - [R] RED RETURNS A DISPLACED MINION"));
+            Assert.That(model.Candidates.Select(value => value.MinionId.Value),
+                Is.EqualTo(new[] { "red-melee-01", "red-melee-02" }),
+                "Both correctable displaced minions, in the projection's canonical order.");
+            Assert.That(model.Candidates.Select(value => value.Label),
+                Has.All.StartWith("RETURN [R] RED"),
+                "Subject candidates stay distinguishable by team and intrinsic type as text.");
+
+            Assert.That(presenter.Submit(model.Candidates.Single(value =>
+                value.MinionId.Value == "red-melee-02")), Is.True);
+
+            Assert.That(session.Projection.PendingDisplacedMinionCorrection, Is.Null,
+                "Each remaining subject had one shortest return, so the rest auto-continued.");
+            presenter.Refresh();
+            Assert.That(view.Model, Is.Null,
+                "Deterministic no-choice corrections expose no prompt.");
+        }
+
+        [Test]
+        public void CorrectionPrompt_ReconstructsItselfAfterRestore()
+        {
+            var session = CreatePendingCorrectionSession();
+            var live = MinionChoicePresenter.CreateViewModel(session.Projection);
+            var payload = session.CaptureSnapshot();
+
+            var restored = CreatePendingCorrectionSession();
+            Assert.That(restored.RestoreSnapshot(payload).Accepted, Is.True);
+            var revived = MinionChoicePresenter.CreateViewModel(restored.Projection);
+
+            Assert.That(revived, Is.Not.Null);
+            Assert.That(revived.Kind, Is.EqualTo(live.Kind));
+            Assert.That(revived.PromptLabel, Is.EqualTo(live.PromptLabel));
+            Assert.That(revived.SubjectMinionId, Is.EqualTo(live.SubjectMinionId));
+            Assert.That(revived.Candidates.Select(value => value.Label),
+                Is.EqualTo(live.Candidates.Select(value => value.Label)),
+                "The prompt is rebuilt from authoritative pending state, never from a local copy.");
+            Assert.That(revived.Candidates.Select(value => value.Command),
+                Is.EqualTo(live.Candidates.Select(value => value.Command)));
+        }
+
+        [Test]
+        public void CorrectionBoardAdapter_LightsTheProjectedDestinationsAndMarksTheSubject()
+        {
+            var session = CreatePendingCorrectionSession();
+            var boardView = new CapturingBoardView();
+            var boardPresenter = new BoardInteractionPresenter(session, boardView);
+
+            boardPresenter.Refresh();
+
+            var pending = session.Projection.PendingDisplacedMinionCorrection;
+            Assert.That(boardView.Model.CorrectionDestinations,
+                Is.EqualTo(pending.DestinationCandidates.Select(value => value.Destination)),
+                "Every legal route endpoint is selectable off the board without presentation " +
+                "calculating paths, distances, zones, or occupancy.");
+            Assert.That(boardView.Model.MinionChoiceCues.Single().MinionId,
+                Is.EqualTo(pending.SubjectMinionId),
+                "The board marks which minion the offered destinations would receive.");
+            Assert.That(boardView.Model.MinionChoiceCues.Single().Kind,
+                Is.EqualTo(MinionChoiceCueKind.Selected));
+
+            var destination = pending.DestinationCandidates[0].Destination;
+            Assert.That(boardPresenter.SubmitDestination(destination), Is.True,
+                "Clicking a lit space forwards only the projected invocation.");
+            Assert.That(session.Projection.PendingDisplacedMinionCorrection, Is.Null);
+            Assert.That(
+                session.Projection.Minions.Single(value =>
+                    value.MinionId.Equals(pending.SubjectMinionId)).Coordinate,
+                Is.EqualTo(destination));
+
+            boardPresenter.Refresh();
+            Assert.That(boardView.Model.CorrectionDestinations, Is.Empty);
+            Assert.That(boardView.Model.MinionChoiceCues, Is.Empty);
+        }
+
+        [Test]
+        public void RoundControls_AreWithheldWhileACorrectionIsPending()
+        {
+            var session = CreatePendingCorrectionSession();
+
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+
+            Assert.That(model.Actions, Is.Empty,
+                "No new action can start while the correction holds the current one open.");
+            Assert.That(model.FastTravelOffers, Is.Empty);
+            Assert.That(model.EndTurnInvocation, Is.Null,
+                "End Turn is suppressed during the mandatory correction choice.");
+            Assert.That(model.Status, Does.Contain("correction").IgnoreCase,
+                "The status line names what the match is waiting on.");
+        }
+
+        /// <summary>
+        /// The 6.4a push fixture: the Red hero at (0,-1) pushes red-melee-01 out of the Battle Zone to
+        /// (-3,-1), whose two equal-shortest returns pause the correction on Red's route choice.
+        /// </summary>
+        private static MatchSession CreatePendingCorrectionSession()
+        {
+            var session = StartDisplacementSkill(CreateDisplacementSession(
+                new GuardsDigital.Core.Board.HexCoordinate(0, -1), null, null));
+            ChooseEffectOption(session, new EffectNodeId("displacement-object-push"));
+            Assert.That(session.Projection.PendingDisplacedMinionCorrection, Is.Not.Null,
+                "The fixture must pause on the route choice, or these cases prove nothing.");
+            return session;
+        }
+
+        /// <summary>
+        /// Two Red minions displaced by one action: red-melee-01 out at (-3,-1) with its second return
+        /// walled, red-melee-02 out at (-1,-3); the correction pauses on Red's subject choice, and each
+        /// chosen subject then has exactly one shortest return.
+        /// </summary>
+        private static MatchSession CreateTwoSubjectCorrectionSession()
+        {
+            var session = StartDisplacementSkill(CreateDisplacementSession(
+                new GuardsDigital.Core.Board.HexCoordinate(-2, -5),
+                new[]
+                {
+                    ("red-melee-01", new GuardsDigital.Core.Board.HexCoordinate(-3, -1)),
+                    ("red-melee-02", new GuardsDigital.Core.Board.HexCoordinate(-1, -3))
+                },
+                new[] { new GuardsDigital.Core.Board.HexCoordinate(-3, 0) }));
+            ChooseEffectOption(session, new EffectNodeId("displacement-move-branch"));
+            AcceptCommand(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.DeclineInvocation));
+            Assert.That(session.Projection.PendingDisplacedMinionCorrection, Is.Not.Null);
+            return session;
+        }
+
+        private static void ChooseEffectOption(MatchSession session, EffectNodeId option)
+        {
+            var choice = session.Projection.PendingEffectChoice;
+            var invocation = choice.SelectInvocations.Single(candidate =>
+                candidate.Candidate.OptionNodeId.Equals(option));
+            AcceptCommand(session, DirectorCommand.AnswerEffectChoice(invocation));
+            AcceptCommand(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+        }
+
+        private static void AcceptCommand(MatchSession session, DirectorCommand command)
+        {
+            var result = session.Execute(command);
+            Assert.That(result.Accepted, Is.True, result.Detail);
+        }
+
+        private static MatchSession StartDisplacementSkill(MatchSession session)
+        {
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.Single(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.Id.Value.Contains("shove") &&
+                    candidate.State.Location == CardLocation.Hand);
+                AcceptCommand(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                AcceptCommand(session, DirectorCommand.ChooseTiedActor(
+                    tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+            }
+
+            var offer = session.Projection.AvailableTurnActions.Single(candidate =>
+                candidate.ActionDefinitionId.Equals(new ActionDefinitionId("primary-displacement-skill")));
+            AcceptCommand(session, DirectorCommand.StartAction(offer.ActionDefinitionId));
+            return session;
+        }
+
+        private static MatchSession CreateDisplacementSession(
+            GuardsDigital.Core.Board.HexCoordinate redAt,
+            (string, GuardsDigital.Core.Board.HexCoordinate)[] minionMoves,
+            IEnumerable<GuardsDigital.Core.Board.HexCoordinate> obstacleCoordinates)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var fullSetup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var moves = (minionMoves ?? System.Array.Empty<(string, GuardsDigital.Core.Board.HexCoordinate)>())
+                .ToDictionary(move => move.Item1, move => move.Item2, StringComparer.Ordinal);
+            var minions = fullSetup.Minions.Select(minion =>
+                moves.TryGetValue(minion.MinionId.Value, out var at)
+                    ? new QuickGameMinionSetupState(
+                        minion.MinionId, minion.TeamId, minion.TeamSide, minion.MinionType,
+                        minion.SpawnPoint,
+                        new ConfiguredSpaceReference(
+                            minion.OccupiedSpace.MapId, new SpaceId($"q{at.Q}_r{at.R}")),
+                        at)
+                    : minion).ToArray();
+            var setup = new QuickGameSetupState(
+                fullSetup.SelectedMap,
+                fullSetup.WaveCount,
+                fullSetup.TieBreakerState,
+                fullSetup.Teams,
+                fullSetup.Heroes,
+                minions);
+            var occupied = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
+                minions.Select(minion => minion.Coordinate));
+            var walls = (obstacleCoordinates ?? Enumerable.Empty<GuardsDigital.Core.Board.HexCoordinate>())
+                .Where(coordinate => !occupied.Contains(coordinate))
+                .Select((coordinate, index) => new ObstacleOccupancy(
+                    new ObstacleId($"correction-presentation-wall-{index}"), coordinate));
+            var redHeroId = configuration.Participants.Heroes
+                .Single(hero => configuration.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            var blueHeroId = configuration.Participants.Heroes
+                .Single(hero => configuration.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue).Id;
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                new[]
+                {
+                    new HeroOccupancy(redHeroId, redAt),
+                    new HeroOccupancy(blueHeroId, new GuardsDigital.Core.Board.HexCoordinate(-1, -5))
+                },
+                walls);
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
 
         private sealed class CapturingMinionChoiceView : IMinionChoiceView
         {
