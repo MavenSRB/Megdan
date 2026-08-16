@@ -88,10 +88,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(blueHand.Definitions, Has.All.Property("ContentAuthority")
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
             // Each showcase conversion advances exactly one card - 6.8a Red Bulwark, 6.8b Blue Feint,
-            // 6.5b Red Bombard - and the seven still at the 5.1a revision is what proves nothing else
-            // moved with it. Milestone 6.8l is the first non-conversion to advance a card revision,
-            // and it advances exactly the two whose Skill opens a target selection: what changed is
-            // the declaration those selections carry, not what either card does.
+            // 6.5b Red Bombard, 6.6a Blue Sentinel - and the six still at the 5.1a revision is what
+            // proves nothing else moved with it. Milestone 6.8l is the first non-conversion to
+            // advance a card revision, and it advances exactly the two whose Skill opens a target
+            // selection: what changed is the declaration those selections carry, not what either
+            // card does.
             Assert.That(
                 redHand.Definitions.Select(definition => definition.ContentRevision),
                 Is.EqualTo(new[]
@@ -107,7 +108,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     "phase-6-8b-rev-1",
-                    "phase-5-1a-rev-3",
+                    "phase-6-6a-rev-1",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3"
@@ -143,14 +144,17 @@ namespace GuardsDigital.Tests.EditMode
                 blueHand,
                 new[] { "Blue Feint", "Blue Sentinel", "Blue Scout Shot", "Blue Hammer", "Blue Longbow" },
                 new[] { 12, 11, 8, 6, 4 },
-                // Blue Feint's printed Primary Attack became milestone 6.8b's showcase Skill; the
-                // attack and range columns say nothing for a Skill, which prints no value channel.
+                // Blue Feint's and Blue Sentinel's printed Primary Attacks became milestones 6.8b's
+                // and 6.6a's showcase Skills; the attack and range columns say nothing for a Skill,
+                // which prints no value channel. Blue Hammer remains the team's one printed
+                // non-Ranged Attack, and Blue Scout Shot and Blue Longbow its Ranged pair until
+                // 6.7a converts the second of them.
                 new[]
                 {
-                    ActionKind.Skill, ActionKind.Attack, ActionKind.Attack,
+                    ActionKind.Skill, ActionKind.Skill, ActionKind.Attack,
                     ActionKind.Attack, ActionKind.Attack
                 },
-                new[] { 0, 3, 2, 5, 3 },
+                new[] { 0, 0, 2, 5, 3 },
                 new[] { 0, 0, 2, 0, 3 },
                 new[] { 3, 2, 4, 2, 3 },
                 new[] { 2, 4, 1, 1, 2 });

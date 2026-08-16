@@ -92,7 +92,7 @@ Non-goals: No hero/minion Respawn specialization, Swap, Replace, Remove, Repeat,
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65b-convert-red-bombard-into-the-direct-movespawn-showcase-skill-completion-evidence).
 
-### [~] 6.6a Convert Blue Sentinel into the Swap/Replace/Remove showcase Skill
+### [x] 6.6a Convert Blue Sentinel into the Swap/Replace/Remove showcase Skill
 
 Observable outcome: The configured Blue hand's existing Blue Sentinel card replaces its printed Primary Attack with a synthetic `Choose one` Skill that atomically Swaps the acting hero with another adjacent unit, Replaces an adjacent synthetic Hazard token with a declared alternate synthetic token from supply, or Removes an adjacent token to its declared supply destination.
 
@@ -108,6 +108,8 @@ Acceptance checks:
 - Focused definition, component catalog/supply, occupancy, Core/application, presentation, and saved-scene scenarios exercise all three modes, correction, prevention, occupied/conflicting state, stale input, and passive UI forwarding.
 
 Non-goals: No minion-targeting configured Remove before 6.9, card-state Swap, card upgrade replacement, Defeat reward, Wasp definition, official token claim, card-name/hero-name rule branch, production art, animation, or audio.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-66a-convert-blue-sentinel-into-the-swapreplaceremove-showcase-skill-completion-evidence).
 
 ### [ ] 6.7a Convert Blue Longbow into the bounded-Repeat showcase Skill
 

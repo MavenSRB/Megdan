@@ -442,20 +442,25 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void AttackDefenseReaction_RejectsStaleCommandsAndRequeriesAfterDeferredFlip()
+        public void AttackDefenseReaction_RejectsStaleTargetAndDefenseCommandsWithoutMutatingEither()
         {
-            var fixture = CreateAttackFixture(true);
+            // Until milestone 6.6a this ran on the tied fixture, where it also proved the flip was
+            // deferred past an Attack. Red Bulwark and Blue Sentinel are the hands' one cross-hero
+            // Initiative tie and both are now showcase Skills, so a tied turn from this hand can no
+            // longer perform an Attack at all; the stale-command half runs on the untied fixture and
+            // the deferred-flip half on the tied one beside it.
+            var fixture = CreateAttackFixture(false);
             Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
-            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.RedPlayed.Id));
             var attackOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
                     fixture.Configuration.CardDefinitions,
                     fixture.Configuration.CardInstances,
-                    fixture.BluePlayed.OwnerId,
-                    fixture.BluePlayed.Id)
+                    fixture.RedPlayed.OwnerId,
+                    fixture.RedPlayed.Id)
                 .Single(offer => offer.ActionDefinitionId.Equals(
                     new ActionDefinitionId("primary-attack")));
             Assert.That(fixture.Authority.TryStartAttack(
-                new ActionResolutionId("turn-tied-attack"),
+                new ActionResolutionId("turn-stale-attack"),
                 attackOffer).Accepted, Is.True);
 
             var targetChoice = fixture.Authority.PendingAttackTargetChoice;
@@ -463,16 +468,16 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Authority.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
                     targetChoice.ResolutionId,
                     new ActionResolutionStepId("stale-target"),
-                    fixture.RedPlayed.OwnerId)),
+                    fixture.BluePlayed.OwnerId)),
                 TurnResolutionRejectionReason.AttackCommandRejected);
             Assert.That(fixture.Authority.PendingAttackTargetChoice, Is.SameAs(targetChoice));
-            Assert.That(fixture.BluePlayed.State.ResolutionStatus,
+            Assert.That(fixture.RedPlayed.State.ResolutionStatus,
                 Is.EqualTo(CardResolutionStatus.Unresolved));
 
             Assert.That(fixture.Authority.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
                 targetChoice.ResolutionId,
                 targetChoice.ChoiceId,
-                fixture.RedPlayed.OwnerId)).Accepted, Is.True);
+                fixture.BluePlayed.OwnerId)).Accepted, Is.True);
             var defenseChoice = fixture.Authority.PendingDefenseChoice;
             AssertRejected(
                 fixture.Authority.TryAnswerDefenseResponse(DefenseResponseChoiceCommand.Decline(
@@ -480,12 +485,33 @@ namespace GuardsDigital.Tests.EditMode
                     new ActionResolutionStepId("stale-defense"))),
                 TurnResolutionRejectionReason.AttackCommandRejected);
             Assert.That(fixture.Authority.PendingDefenseChoice, Is.SameAs(defenseChoice));
-            Assert.That(fixture.Authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
 
             var completed = fixture.Authority.TryAnswerDefenseResponse(
                 DefenseResponseChoiceCommand.Decline(
                     defenseChoice.ResolutionId,
                     defenseChoice.ChoiceId));
+
+            Assert.That(completed.Accepted, Is.True);
+            Assert.That(fixture.RedPlayed.State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved),
+                "A rejected command changed nothing, and the real one still completes the Attack.");
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
+        }
+
+        [Test]
+        public void TiedTurn_DefersTheTieBreakerFlipPastItsResolvingCardAndThenSelectsTheNextActor()
+        {
+            // The tie is between two showcase Skills since milestone 6.6a, so p.12's Hold is what
+            // resolves the acting card here. What the case is about is unchanged and does not depend
+            // on the action: the flip belongs to the tied card resolving, and the next actor is
+            // selected only after it.
+            var fixture = CreateAttackFixture(true);
+            Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id),
+                "The revealed side acts first on a tie.");
+            Assert.That(fixture.Authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
+
+            var completed = fixture.Authority.TryPerformHold(fixture.BluePlayed.Id);
 
             Assert.That(completed.Accepted, Is.True);
             Assert.That(fixture.Authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Red));
@@ -498,6 +524,7 @@ namespace GuardsDigital.Tests.EditMode
             var nextActorIndex = completed.Events.ToList().FindIndex(ruleEvent =>
                 ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
                 ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.NextActorSelected);
+            Assert.That(cardResolvedIndex, Is.GreaterThanOrEqualTo(0));
             Assert.That(flipIndex, Is.GreaterThan(cardResolvedIndex));
             Assert.That(nextActorIndex, Is.GreaterThan(flipIndex));
         }
@@ -855,11 +882,11 @@ namespace GuardsDigital.Tests.EditMode
             bool minionTarget = false,
             ActiveEffectLifecycle timing = null)
         {
-            // Red Bulwark and Blue Sentinel are the hands' one cross-hero Initiative tie, at 11. Since
-            // milestone 6.8a replaced Red Bulwark's printed Attack with its showcase Skill, only the
-            // Blue card of that pair still supplies a printed Attack, so the tied fixture reveals Blue
-            // and the Blue hero acts first. The tie, the deferred flip, and the Attack all survive;
-            // only which hero performs the Attack moved.
+            // Red Bulwark and Blue Sentinel are the hands' one cross-hero Initiative tie, at 11.
+            // Milestone 6.8a replaced Red Bulwark's printed Attack with its showcase Skill and 6.6a
+            // replaced Blue Sentinel's, so neither card of that pair prints an Attack any more and a
+            // tied turn from this hand performs none: the tied fixture reveals Blue, the Blue hero
+            // acts first, and what it proves is the deferred flip rather than an Attack across one.
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(
                 tiedInitiative ? TeamSide.Blue : TeamSide.Red);
             // Milestone 6.5a replaced Red Needle's printed Attack too, so the untied non-Ranged

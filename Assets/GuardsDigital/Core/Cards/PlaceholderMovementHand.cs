@@ -21,7 +21,7 @@ namespace GuardsDigital.Core.Cards
         private static readonly SyntheticCardProfile[] BlueProfiles =
         {
             SyntheticCardProfile.WithImmunityTimingSkill("blue-feint", "Blue Feint", 12, 3, 2),
-            new SyntheticCardProfile("blue-sentinel", "Blue Sentinel", 11, AttackRangeKind.NonRanged, 3, 0, 2, 4),
+            SyntheticCardProfile.WithExchangeSkill("blue-sentinel", "Blue Sentinel", 11, 2, 4),
             new SyntheticCardProfile("blue-scout-shot", "Blue Scout Shot", 8, AttackRangeKind.Ranged, 2, 2, 4, 1),
             new SyntheticCardProfile("blue-hammer", "Blue Hammer", 6, AttackRangeKind.NonRanged, 5, 0, 2, 1),
             new SyntheticCardProfile("blue-longbow", "Blue Longbow", 4, AttackRangeKind.Ranged, 3, 3, 3, 2)
@@ -387,6 +387,11 @@ namespace GuardsDigital.Core.Cards
         /// the selection, and a consumer missing an input a later step publishes is left alone. That is
         /// the conservative case rather than a gap in the coverage.
         ///
+        /// Milestone 6.6a adds no branch either. The Swap and the Remove now declare which kind of
+        /// piece they may take, and this card declares p.19's own unrestricted breadth on both, which
+        /// is what it has always done - the operations simply say so now instead of assuming it. Blue
+        /// Sentinel is the card that declares something narrower.
+        ///
         /// Board-neutral in the same sense as the others: it names no hero, no card, and no space.
         /// </summary>
         private static CardDefinition CreateDisplacementSkillDefinition(SyntheticSkillProfile profile)
@@ -414,7 +419,7 @@ namespace GuardsDigital.Core.Cards
 
             var effect = new EffectDefinition(
                 new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
-                "phase-6-8l-rev-1",
+                "phase-6-6a-rev-1",
                 root,
                 new[]
                 {
@@ -520,13 +525,17 @@ namespace GuardsDigital.Core.Cards
                         outputs: new[] { new EffectOutputBinding("space", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         swap, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticExchangeCapabilities.SwapV1,
+                        SyntheticExchangeCapabilities.SwapV2,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "first", swapActorSpace, "space", EffectValueKind.Coordinate),
                             EffectInputBinding.FromNodeOutput(
-                                "second", swapSelect, "chosen", EffectValueKind.Coordinate)
+                                "second", swapSelect, "chosen", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.BoardObjects.SwapEligiblePieceKind.GamePiece))
                         },
                         outputs: new[]
                         {
@@ -574,11 +583,15 @@ namespace GuardsDigital.Core.Cards
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         remove, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticExchangeCapabilities.RemoveV1,
+                        SyntheticExchangeCapabilities.RemoveV2,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
-                                "subject", removeSelect, "chosen", EffectValueKind.Coordinate)
+                                "subject", removeSelect, "chosen", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.BoardObjects.RemoveEligiblePieceKind.GamePiece))
                         },
                         outputs: new[]
                         {
@@ -589,7 +602,7 @@ namespace GuardsDigital.Core.Cards
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
-                "phase-6-8l-rev-1",
+                "phase-6-6a-rev-1",
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
@@ -659,6 +672,8 @@ namespace GuardsDigital.Core.Cards
                     return CreatePushPlaceSkillAction(profile);
                 case SyntheticPrintedPrimaryKind.DirectMoveSpawnSkill:
                     return CreateDirectMoveSpawnSkillAction(profile);
+                case SyntheticPrintedPrimaryKind.ExchangeSkill:
+                    return CreateExchangeSkillAction(profile);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(profile),
@@ -1013,6 +1028,147 @@ namespace GuardsDigital.Core.Cards
                 effect);
         }
 
+        /// <summary>
+        /// Milestone 6.6a's conversion: the modal Skill `Choose one: Swap your hero with another
+        /// adjacent unit; or Replace an adjacent Hazard token with a Ward from your supply; or Remove
+        /// an adjacent token to its supply`, replacing this card's printed Primary Attack.
+        ///
+        /// All three branches are Sequences behind milestone 6.8k's target selection, because each
+        /// operation names the piece it works on by space and a role cannot supply a coordinate. What
+        /// differs between them is what each names, and that is the card text's difference rather than
+        /// this table's: p.19 lets a Swap exchange any two objects, lets a Remove take any game piece,
+        /// and this card says unit and token. Each branch declares its own narrowing on the operation
+        /// that performs it, so milestone 6.8l offers only the pieces that mode can act on - the Swap
+        /// never names the adjacent Hazard, and the Remove never names the adjacent minion.
+        ///
+        /// The Swap names the acting hero through the declaration whose first object is the actor,
+        /// rather than through the actor's-space bridge the fixture hand's board-object Skill uses.
+        /// `your hero` is not a decision, and it is not a step either: a bridge node would have to run
+        /// before the selection for the consumer to be readable, and a walk judging an option has run
+        /// nothing yet, so the branch would be offered whenever anything at all stood beside the actor
+        /// and choosing a piece the Swap cannot take would spend the action on a stop. The fixture
+        /// hand's card keeps the bridge and its unnarrowed selection, which is the conservative case
+        /// milestone 6.8l's coverage rests on.
+        ///
+        /// The Replace names no substitute and no supply: which token comes in, where the outgoing one
+        /// goes, that nothing transfers, and that observers see one replacement are all the capability's
+        /// own declaration, and a card that restated them would be stating a rule of its own. None of
+        /// it is official content, and the card names no hero, no card and no space.
+        /// </summary>
+        private static ActionDefinition CreateExchangeSkillAction(SyntheticCardProfile profile)
+        {
+            var root = new EffectNodeId("sentinel-root");
+            var swapBranch = new EffectNodeId("sentinel-swap-branch");
+            var swapSelect = new EffectNodeId("sentinel-swap-select");
+            var swap = new EffectNodeId("sentinel-swap");
+            var replaceBranch = new EffectNodeId("sentinel-replace-branch");
+            var replaceSelect = new EffectNodeId("sentinel-replace-select");
+            var replace = new EffectNodeId("sentinel-replace");
+            var removeBranch = new EffectNodeId("sentinel-remove-branch");
+            var removeSelect = new EffectNodeId("sentinel-remove-select");
+            var remove = new EffectNodeId("sentinel-remove");
+
+            // `another adjacent` is Radius 1 with the acting hero excluded, in all three branches.
+            EffectNodeDefinition Selection(EffectNodeId id, EffectNodeId consumer) =>
+                new EffectNodeDefinition(
+                    id, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticTargetingCapabilities.ChooseTargetV3,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                        EffectInputBinding.FromLiteral(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValue.Node(consumer))
+                    },
+                    outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                profile.ContentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { swapBranch, replaceBranch, removeBranch },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    new EffectNodeDefinition(
+                        swapBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { swapSelect, swap }),
+                    Selection(swapSelect, swap),
+                    new EffectNodeDefinition(
+                        swap, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticExchangeCapabilities.SwapWithActorV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "subject", swapSelect, "chosen", EffectValueKind.Coordinate),
+                            // `unit` rather than p.19's general object, which is why an adjacent
+                            // token is never among this branch's candidates.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.BoardObjects.SwapEligiblePieceKind.Unit))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("actorAt", EffectValueKind.Coordinate),
+                            new EffectOutputBinding("subjectAt", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        replaceBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { replaceSelect, replace }),
+                    Selection(replaceSelect, replace),
+                    new EffectNodeDefinition(
+                        replace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticExchangeCapabilities.ReplaceTokenV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "subject", replaceSelect, "chosen", EffectValueKind.Coordinate)
+                        },
+                        outputs: new[] { new EffectOutputBinding("replaced", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        removeBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { removeSelect, remove }),
+                    Selection(removeSelect, remove),
+                    new EffectNodeDefinition(
+                        remove, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticExchangeCapabilities.RemoveV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "subject", removeSelect, "chosen", EffectValueKind.Coordinate),
+                            // `token` rather than p.19's general game piece. A turn-time Remove of
+                            // the last minion of a side out of the Battle Zone is one of p.8's two
+                            // recognized causes, and nothing can emit that push until milestone 6.9,
+                            // so no configured card may reach it.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.BoardObjects.RemoveEligiblePieceKind.Token))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("removed", EffectValueKind.Coordinate),
+                            new EffectOutputBinding("lanePush", EffectValueKind.Boolean)
+                        })
+                });
+
+            return new ActionDefinition(
+                new ActionDefinitionId("primary-exchange-skill"),
+                ActionKind.Skill,
+                ActionDefinitionOrigin.PrintedPrimary,
+                Array.Empty<PrintedValueDefinition>(),
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                AttackRangeKind.None,
+                default,
+                effect);
+        }
+
         private static ActionDefinition CreateDefenseAction(int value)
         {
             return new ActionDefinition(
@@ -1035,7 +1191,8 @@ namespace GuardsDigital.Core.Cards
             ModificationSkill = 1,
             ImmunityTimingSkill = 2,
             PushPlaceSkill = 3,
-            DirectMoveSpawnSkill = 4
+            DirectMoveSpawnSkill = 4,
+            ExchangeSkill = 5
         }
 
         private sealed class SyntheticCardProfile
@@ -1137,6 +1294,22 @@ namespace GuardsDigital.Core.Cards
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.DirectMoveSpawnSkill,
                     "phase-6-8l-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+
+            /// <summary>
+            /// Milestone 6.6a's converted card, on the same terms as the four before it. It is the
+            /// first Blue conversion since 6.8b, and with it the hands' one cross-hero Initiative tie
+            /// - Red Bulwark and this card, both at 11 - is a tie between two Skills, so a tied turn
+            /// can no longer perform an Attack.
+            /// </summary>
+            public static SyntheticCardProfile WithExchangeSkill(
+                string id,
+                string displayName,
+                int initiative,
+                int movementValue,
+                int defenseValue) =>
+                new SyntheticCardProfile(
+                    id, displayName, initiative, SyntheticPrintedPrimaryKind.ExchangeSkill,
+                    "phase-6-6a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             public string Id { get; }
             public string DisplayName { get; }

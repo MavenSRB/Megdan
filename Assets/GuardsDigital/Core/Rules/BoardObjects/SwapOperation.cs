@@ -4,6 +4,34 @@ using GuardsDigital.Core.Components;
 
 namespace GuardsDigital.Core.Rules.BoardObjects
 {
+    /// <summary>
+    /// What kind of piece a Swap may exchange.
+    ///
+    /// p.19's own answer is any object - "Two objects on the board swap places with each other" - and
+    /// a narrower rule states its own narrower kind, which is the same division
+    /// <see cref="RemoveEligiblePieceKind"/> draws for a Remove. It is an intrinsic representation
+    /// question: it asks what is being picked up and put down, so no <c>Counts As</c> is consulted
+    /// anywhere it is used, and a hero counting as a minion is still a hero here.
+    ///
+    /// Both objects are judged by it rather than only the one a definition happens to name second,
+    /// for the reason the calling capability asks immunity about both: a Swap affects each object as
+    /// much as the other.
+    /// </summary>
+    public enum SwapEligiblePieceKind
+    {
+        None = 0,
+
+        /// <summary>p.19's unrestricted "two objects on the board".</summary>
+        GamePiece = 1,
+
+        /// <summary>
+        /// A unit only - a hero or a minion miniature. p.19 states that tokens are not units, which
+        /// is the same sentence that leaves a token unnameable as a rules object, so this is the kind
+        /// card text means when it says unit rather than object.
+        /// </summary>
+        Unit = 2
+    }
+
     /// <summary>Why a Swap was refused. A refusal is a rules answer, never an engine fault.</summary>
     public enum SwapRejectionReason
     {
@@ -16,7 +44,10 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         SameObject = 2,
 
         /// <summary>The board refused the exchange between derivation and commit.</summary>
-        ExchangeUnavailable = 3
+        ExchangeUnavailable = 3,
+
+        /// <summary>One of the two objects is not the kind of piece this Swap declared it may exchange.</summary>
+        IneligiblePiece = 4
     }
 
     /// <summary>
@@ -99,6 +130,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
     public static class SwapOperation
     {
         public static SwapOutcome Swap(
+            SwapEligiblePieceKind eligiblePiece,
             IBoardObjectExchangeAuthority exchange,
             IBoardDisplacementAuthority board,
             BoardObjectReference first,
@@ -106,6 +138,16 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         {
             if (exchange == null) throw new ArgumentNullException(nameof(exchange));
             if (board == null) throw new ArgumentNullException(nameof(board));
+            if (eligiblePiece == SwapEligiblePieceKind.None)
+            {
+                throw new ArgumentException(
+                    "A Swap declares which kind of piece it may exchange.", nameof(eligiblePiece));
+            }
+
+            if (!Admits(eligiblePiece, first.Kind) || !Admits(eligiblePiece, second.Kind))
+            {
+                return SwapOutcome.Reject(SwapRejectionReason.IneligiblePiece);
+            }
 
             if (first.Equals(second))
             {
@@ -123,6 +165,26 @@ namespace GuardsDigital.Core.Rules.BoardObjects
             return committed.Accepted
                 ? SwapOutcome.Accept(first, second, firstOrigin, secondOrigin)
                 : SwapOutcome.Reject(SwapRejectionReason.ExchangeUnavailable);
+        }
+
+        /// <summary>
+        /// Whether the declared eligible kind admits this piece. Public because the calling capability
+        /// has to reach the same answer without exchanging anything: a probe that read eligibility
+        /// differently from the operation would report a piece exchangeable and then refuse it, which
+        /// is exactly the disagreement milestone 6.8l's narrowing reads as an offer.
+        /// </summary>
+        public static bool Admits(SwapEligiblePieceKind eligiblePiece, BoardObjectKind kind)
+        {
+            switch (eligiblePiece)
+            {
+                case SwapEligiblePieceKind.GamePiece:
+                    return kind == BoardObjectKind.Hero || kind == BoardObjectKind.Minion ||
+                        kind == BoardObjectKind.Token;
+                case SwapEligiblePieceKind.Unit:
+                    return kind == BoardObjectKind.Hero || kind == BoardObjectKind.Minion;
+                default:
+                    return false;
+            }
         }
     }
 }

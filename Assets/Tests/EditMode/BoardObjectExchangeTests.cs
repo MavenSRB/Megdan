@@ -53,7 +53,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateLineBoard();
             var minion = PlaceMinion(board, NextTo);
 
-            var applied = Handler(SyntheticExchangeCapabilities.SwapV1)
+            var applied = Handler(SyntheticExchangeCapabilities.SwapV2)
                 .Execute(Context(board, RedActor, SwapInputs(ActorAt, NextTo)));
 
             Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
@@ -70,7 +70,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateLineBoard();
             PlaceMinion(board, NextTo);
 
-            var applied = Handler(SyntheticExchangeCapabilities.SwapV1)
+            var applied = Handler(SyntheticExchangeCapabilities.SwapV2)
                 .Execute(Context(board, RedActor, SwapInputs(ActorAt, NextTo)));
 
             Assert.That(
@@ -91,7 +91,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateLineBoard();
 
-            var refused = Handler(SyntheticExchangeCapabilities.SwapV1)
+            var refused = Handler(SyntheticExchangeCapabilities.SwapV2)
                 .Execute(Context(board, RedActor, SwapInputs(ActorAt, ActorAt)));
 
             Assert.That(refused.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
@@ -111,7 +111,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateLineBoard();
 
-            var refused = Handler(SyntheticExchangeCapabilities.SwapV1)
+            var refused = Handler(SyntheticExchangeCapabilities.SwapV2)
                 .Execute(Context(board, RedActor, SwapInputs(ActorAt, NextTo)));
 
             Assert.That(refused.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
@@ -133,7 +133,7 @@ namespace GuardsDigital.Tests.EditMode
             var heavy = ProtectedHeavyMinion(board);
             var actor = HeroBesideCoordinate(board, MinionAt(board, heavy));
 
-            var refused = Handler(SyntheticExchangeCapabilities.SwapV1).Execute(
+            var refused = Handler(SyntheticExchangeCapabilities.SwapV2).Execute(
                 Context(board, actor, SwapInputs(HeroAt(board, actor), MinionAt(board, heavy))));
 
             Assert.That(refused.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
@@ -143,12 +143,56 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void Swap_AdmitsOnlyTheKindOfPieceItsNodeDeclares()
+        {
+            // Milestone 6.6a. p.19 exchanges two objects and Blue Sentinel's card text says unit, so
+            // the narrowing is the node's declaration rather than a rule this operation invented. The
+            // same board answers both ways, which is what makes it the declaration doing the work.
+            var board = CreateLineBoard();
+            PlaceHazard(board, NextTo);
+
+            var asObject = Handler(SyntheticExchangeCapabilities.SwapV2).Anticipate(
+                Context(board, RedActor, SwapInputs(ActorAt, NextTo, SwapEligiblePieceKind.GamePiece)));
+            var asUnit = Handler(SyntheticExchangeCapabilities.SwapV2).Execute(
+                Context(board, RedActor, SwapInputs(ActorAt, NextTo, SwapEligiblePieceKind.Unit)));
+
+            Assert.That(asObject, Is.EqualTo(EffectExecutionResultKind.Applied),
+                "p.19's own breadth exchanges a hero with a token.");
+            Assert.That(asUnit.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                "p.19 states that tokens are not units, so a Swap declaring unit names no token.");
+            Assert.That(HeroAt(board, RedActor), Is.EqualTo(ActorAt), "And it exchanged nothing.");
+            Assert.That(board.PlacedTokens.Single().Coordinate, Is.EqualTo(NextTo));
+        }
+
+        [Test]
+        public void Swap_RefusesADeclarationItCannotRead()
+        {
+            var board = CreateLineBoard();
+            PlaceMinion(board, NextTo);
+
+            var refused = Handler(SyntheticExchangeCapabilities.SwapV2).Execute(
+                Context(board, RedActor, SwapInputs(ActorAt, NextTo, (SwapEligiblePieceKind)99)));
+
+            Assert.That(refused.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                "A definition that says nothing legible about what it may exchange exchanges nothing, " +
+                "rather than quietly falling back to the widest reading.");
+            Assert.That(HeroAt(board, RedActor), Is.EqualTo(ActorAt));
+            Assert.Throws<ArgumentException>(() => SwapOperation.Swap(
+                SwapEligiblePieceKind.None,
+                board,
+                board,
+                BoardObjectReference.ForHero(RedActor),
+                BoardObjectReference.ForHero(BlueActor)),
+                "The operation refuses to run without the declaration at all.");
+        }
+
+        [Test]
         public void Swap_ProbesWithoutExchangingAnything()
         {
             var board = CreateLineBoard();
             PlaceMinion(board, NextTo);
 
-            var verdict = Handler(SyntheticExchangeCapabilities.SwapV1)
+            var verdict = Handler(SyntheticExchangeCapabilities.SwapV2)
                 .Anticipate(Context(board, RedActor, SwapInputs(ActorAt, NextTo)));
 
             Assert.That(verdict, Is.EqualTo(EffectExecutionResultKind.Applied));
@@ -355,8 +399,8 @@ namespace GuardsDigital.Tests.EditMode
             PlaceHazard(board, NextTo);
             var catalog = SyntheticComponentDefinitions.CreateCatalog();
 
-            var applied = Handler(SyntheticExchangeCapabilities.RemoveV1)
-                .Execute(Context(board, RedActor, SubjectInput(NextTo)));
+            var applied = Handler(SyntheticExchangeCapabilities.RemoveV2)
+                .Execute(Context(board, RedActor, RemoveInputs(NextTo)));
 
             Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
             Assert.That(board.PlacedTokens, Is.Empty);
@@ -373,8 +417,8 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateLineBoard();
             var minion = PlaceMinion(board, NextTo);
 
-            var applied = Handler(SyntheticExchangeCapabilities.RemoveV1)
-                .Execute(Context(board, RedActor, SubjectInput(NextTo)));
+            var applied = Handler(SyntheticExchangeCapabilities.RemoveV2)
+                .Execute(Context(board, RedActor, RemoveInputs(NextTo)));
 
             Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
             Assert.That(board.Minions, Is.Empty);
@@ -392,8 +436,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateLineBoard();
 
-            var refused = Handler(SyntheticExchangeCapabilities.RemoveV1)
-                .Execute(Context(board, RedActor, SubjectInput(ActorAt)));
+            var refused = Handler(SyntheticExchangeCapabilities.RemoveV2)
+                .Execute(Context(board, RedActor, RemoveInputs(ActorAt)));
 
             Assert.That(refused.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
             Assert.That(
@@ -439,8 +483,8 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateLineBoard();
             PlaceHazard(board, NextTo);
 
-            var verdict = Handler(SyntheticExchangeCapabilities.RemoveV1)
-                .Anticipate(Context(board, RedActor, SubjectInput(NextTo)));
+            var verdict = Handler(SyntheticExchangeCapabilities.RemoveV2)
+                .Anticipate(Context(board, RedActor, RemoveInputs(NextTo)));
 
             Assert.That(verdict, Is.EqualTo(EffectExecutionResultKind.Applied));
             Assert.That(board.PlacedTokens.Count, Is.EqualTo(1),
@@ -454,6 +498,49 @@ namespace GuardsDigital.Tests.EditMode
                 new RemovePolicy(RemoveEligiblePieceKind.None, RemoveDestination.Supply));
             Assert.Throws<ArgumentException>(() =>
                 new RemovePolicy(RemoveEligiblePieceKind.Token, RemoveDestination.None));
+        }
+
+        [Test]
+        public void Remove_ReadsItsDeclaredKindTheSameWayWhenItProbesAsWhenItRemoves()
+        {
+            // Milestone 6.6a's closing check for the reading that had two homes. The handler resolved
+            // its subject by refusing a hero, which agrees with the operation only while the declared
+            // kind is p.19's widest; a Remove declaring token would have reported an adjacent minion
+            // removable and then refused it, and milestone 6.8l reads that probe as the offer a player
+            // is shown.
+            var board = CreateLineBoard();
+            PlaceMinion(board, NextTo);
+            var inputs = RemoveInputs(NextTo, RemoveEligiblePieceKind.Token);
+
+            var probed = Handler(SyntheticExchangeCapabilities.RemoveV2)
+                .Anticipate(Context(board, RedActor, inputs));
+            var executed = Handler(SyntheticExchangeCapabilities.RemoveV2)
+                .Execute(Context(board, RedActor, inputs));
+
+            Assert.That(probed, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(executed.Kind, Is.EqualTo(probed),
+                "One declaration, one reading: what the probe answers is what the removal does.");
+            Assert.That(board.Minions.Count, Is.EqualTo(1), "And the miniature is still standing.");
+
+            var token = RemoveInputs(NextTo, RemoveEligiblePieceKind.GamePiece);
+            Assert.That(
+                Handler(SyntheticExchangeCapabilities.RemoveV2).Anticipate(Context(board, RedActor, token)),
+                Is.EqualTo(EffectExecutionResultKind.Applied),
+                "The same board and the same space, under the declaration that admits a miniature.");
+        }
+
+        [Test]
+        public void Remove_RefusesADeclarationItCannotRead()
+        {
+            var board = CreateLineBoard();
+            PlaceHazard(board, NextTo);
+
+            var refused = Handler(SyntheticExchangeCapabilities.RemoveV2).Execute(
+                Context(board, RedActor, RemoveInputs(NextTo, (RemoveEligiblePieceKind)99)));
+
+            Assert.That(refused.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(board.PlacedTokens.Count, Is.EqualTo(1),
+                "An unreadable declaration takes nothing off the board rather than taking anything.");
         }
 
         [Test]
@@ -620,16 +707,36 @@ namespace GuardsDigital.Tests.EditMode
         private static IEffectCapabilityHandler Handler(EffectCapabilityReference reference) =>
             SyntheticEffectCapabilities.CreateCatalog().Load(reference);
 
+        /// <summary>
+        /// A Swap node's inputs. The eligible kind defaults to p.19's own unrestricted breadth, so a
+        /// case that is not about the narrowing reads exactly as it did before milestone 6.6a made the
+        /// declaration explicit.
+        /// </summary>
         private static Dictionary<string, EffectValue> SwapInputs(
-            HexCoordinate first, HexCoordinate second) =>
+            HexCoordinate first,
+            HexCoordinate second,
+            SwapEligiblePieceKind eligible = SwapEligiblePieceKind.GamePiece) =>
             new Dictionary<string, EffectValue>
             {
                 ["first"] = EffectValue.Space(first),
-                ["second"] = EffectValue.Space(second)
+                ["second"] = EffectValue.Space(second),
+                [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
+                    EffectValue.Integer((int)eligible)
             };
 
         private static Dictionary<string, EffectValue> SubjectInput(HexCoordinate subject) =>
             new Dictionary<string, EffectValue> { ["subject"] = EffectValue.Space(subject) };
+
+        /// <summary>A Remove node's inputs, on the same terms as <see cref="SwapInputs"/>.</summary>
+        private static Dictionary<string, EffectValue> RemoveInputs(
+            HexCoordinate subject,
+            RemoveEligiblePieceKind eligible = RemoveEligiblePieceKind.GamePiece) =>
+            new Dictionary<string, EffectValue>
+            {
+                ["subject"] = EffectValue.Space(subject),
+                [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
+                    EffectValue.Integer((int)eligible)
+            };
 
         private static EffectCapabilityContext Context(
             AdjacentMoveAuthority board,

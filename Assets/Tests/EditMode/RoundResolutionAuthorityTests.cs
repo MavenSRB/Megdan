@@ -266,47 +266,63 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.TurnIndex, Is.EqualTo(2));
 
             // Turn 2 is the hands' one cross-hero Initiative tie, Red Bulwark against Blue Sentinel at
-            // 11. Milestone 6.8a replaced Red Bulwark's printed Attack with its showcase Skill, so the
-            // Red hero resolves that card by Hold and the Blue hero performs the turn's Attack from
-            // the card that still supplies one. The tie, the deferred flip after the resolving card,
-            // and an Attack inside turn 2 all still hold.
+            // 11. Milestone 6.8a replaced Red Bulwark's printed Attack with its showcase Skill and
+            // 6.6a replaced Blue Sentinel's, so neither card of that pair prints an Attack and the
+            // tied turn resolves through p.12's Hold on both sides. What turn 2 is here for survives
+            // that unchanged: the tie, and the deferred flip after the resolving card.
             var redTiedCard = configuration.RedHand.Instances[1];
-            var blueAttackCard = configuration.BlueHand.Instances[1];
+            var blueTiedCard = configuration.BlueHand.Instances[1];
             Assert.That(authority.TryCommitCard(redTiedCard.OwnerId, redTiedCard.Id).Accepted, Is.True);
-            Assert.That(authority.TryCommitCard(blueAttackCard.OwnerId, blueAttackCard.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(blueTiedCard.OwnerId, blueTiedCard.Id).Accepted, Is.True);
             Assert.That(authority.CurrentTurnAuthority.SelectedActor.CardInstanceId,
                 Is.EqualTo(redTiedCard.Id),
                 "The revealed side acts first on a tie.");
             Assert.That(authority.TryPerformHold(redTiedCard.Id).Accepted, Is.True);
             Assert.That(authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue),
                 "Resolving the tied card flips the Tie Breaker before the next actor is selected.");
+            Assert.That(authority.CurrentTurnAuthority.SelectedActor.CardInstanceId,
+                Is.EqualTo(blueTiedCard.Id));
+            Assert.That(authority.TryPerformHold(blueTiedCard.Id).Accepted, Is.True);
+            Assert.That(authority.TurnIndex, Is.EqualTo(3));
 
+            // Turn 3 carries the Attack that used to sit inside turn 2, from the untied pair that
+            // still prints one: Red Pursuit at Initiative 7 against Blue Hammer at 6, so the Red hero
+            // acts first and the Blue hero closes the turn by Holding.
+            var redAttackCard = configuration.RedHand.Instances[3];
+            var blueSecondCard = configuration.BlueHand.Instances[3];
+            Assert.That(authority.TryCommitCard(redAttackCard.OwnerId, redAttackCard.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(blueSecondCard.OwnerId, blueSecondCard.Id).Accepted, Is.True);
+            Assert.That(authority.CurrentTurnAuthority.SelectedActor.CardInstanceId,
+                Is.EqualTo(redAttackCard.Id));
             var attackOffer = ActionOfferQuery.GetAvailableTurnActionOffers(
                     configuration.CardDefinitions,
                 configuration.CardInstances,
-                blueAttackCard.OwnerId,
-                blueAttackCard.Id)
+                redAttackCard.OwnerId,
+                redAttackCard.Id)
                 .Single(offer => offer.ActionDefinitionId.Equals(
                     new ActionDefinitionId("primary-attack")));
             Assert.That(authority.TryStartAttack(
-                new ActionResolutionId("round-turn-2-attack"),
+                new ActionResolutionId("round-turn-3-attack"),
                 attackOffer).Accepted, Is.True);
             var targetChoice = authority.CurrentTurnAuthority.PendingAttackTargetChoice;
             Assert.That(authority.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
                 targetChoice.ResolutionId,
                 targetChoice.ChoiceId,
-                redTiedCard.OwnerId)).Accepted, Is.True);
+                blueSecondCard.OwnerId)).Accepted, Is.True);
             var defenseChoice = authority.CurrentTurnAuthority.PendingDefenseChoice;
             Assert.That(authority.TryAnswerDefenseResponse(DefenseResponseChoiceCommand.Decline(
                 defenseChoice.ResolutionId,
                 defenseChoice.ChoiceId)).Accepted, Is.True);
+            Assert.That(authority.TryPerformHold(blueSecondCard.Id).Accepted, Is.True);
 
-            Assert.That(authority.TurnIndex, Is.EqualTo(3));
+            Assert.That(authority.TurnIndex, Is.EqualTo(4));
             Assert.That(authority.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
-            Assert.That(authority.TurnSlots, Has.Count.EqualTo(2));
+            Assert.That(authority.TurnSlots, Has.Count.EqualTo(3));
             Assert.That(redMovementCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(redTiedCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
-            Assert.That(blueAttackCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(blueTiedCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(redAttackCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(blueSecondCard.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
         }
 
         [Test]

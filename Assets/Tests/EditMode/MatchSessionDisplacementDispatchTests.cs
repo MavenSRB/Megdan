@@ -425,13 +425,16 @@ namespace GuardsDigital.Tests.EditMode
 
             // The two selection revisions are exposed by different cards, which is the visible half
             // of the reason each branch picked the one it did: a Push names its own activity, and a
-            // card-text direct Move has none to name.
+            // card-text direct Move has none to name. Blue Sentinel joined the second group at
+            // milestone 6.6a with three selections of its own, and p.19 gives a Swap, a Replace and a
+            // Remove no activity either.
             Assert.That(
                 byCapability
                     .Where(entry => entry.Capability.Equals(
                         GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV3))
-                    .Select(entry => entry.Id.Value),
-                Is.EqualTo(new[] { "placeholder-red-bombard" }));
+                    .Select(entry => entry.Id.Value)
+                    .Distinct(),
+                Is.EqualTo(new[] { "placeholder-red-bombard", "placeholder-blue-sentinel" }));
         }
 
         // -------------------------------------------------------------------------------------------

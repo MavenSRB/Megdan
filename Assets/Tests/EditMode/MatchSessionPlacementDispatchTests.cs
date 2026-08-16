@@ -260,27 +260,28 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     Capability =
                         GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.PlaceV1,
-                    Card = "placeholder-red-needle"
+                    Cards = new[] { "placeholder-red-needle" }
                 },
                 new
                 {
                     Capability =
                         GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.ActorSpaceV1,
-                    Card = "placeholder-red-needle"
+                    Cards = new[] { "placeholder-red-needle" }
                 },
                 new
                 {
                     Capability =
                         GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.SpawnV1,
-                    Card = "placeholder-red-bombard"
+                    Cards = new[] { "placeholder-red-bombard" }
                 }
             })
             {
                 Assert.That(
                     byCapability.Where(entry => entry.Capability.Equals(pair.Capability))
-                        .Select(entry => entry.Id.Value),
-                    Is.EqualTo(new[] { pair.Card }),
-                    $"{pair.Capability} is exposed by exactly the card the showcase converted.");
+                        .Select(entry => entry.Id.Value)
+                        .Distinct(),
+                    Is.EqualTo(pair.Cards),
+                    $"{pair.Capability} is exposed by exactly the cards the showcase converted.");
             }
         }
 

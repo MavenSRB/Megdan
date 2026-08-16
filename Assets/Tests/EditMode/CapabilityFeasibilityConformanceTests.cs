@@ -91,7 +91,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(PerformingMembers(), Has.Length.EqualTo(17),
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(22),
+            // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
+            // object, so the count moves by one.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(23),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

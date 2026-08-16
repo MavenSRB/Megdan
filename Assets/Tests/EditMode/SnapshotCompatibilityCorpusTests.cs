@@ -221,17 +221,41 @@ namespace GuardsDigital.Tests.EditMode
         /// either side. Every decision is reject rather than migrate, by the existing
         /// capability-sequence and content-revision checks: a payload naming revision 1 or 2 of the
         /// selection describes an offer that no longer knows what it is for.
+        /// Milestone 6.6a keeps schema v11 and re-pins every fixture for three causes, all of them
+        /// registration or content rather than persistence: nothing about a declared eligible piece
+        /// kind is stored. The capability list gains <c>synthetic-swap-actor</c>, p.19's Swap declared
+        /// a second time with the acting hero as its first object; <c>synthetic-swap</c> and
+        /// <c>synthetic-remove</c> move to revision 2, each declaring the kind of piece it may take;
+        /// and two card revisions move, Blue Sentinel from <c>phase-5-1a-rev-3</c> because its printed
+        /// Primary Attack became this showcase Skill, and the two shove Skill cards from
+        /// <c>phase-6-8l-rev-1</c> because their Remove branch now declares p.19's own breadth, both to
+        /// <c>phase-6-6a-rev-1</c>. Every decision is reject rather than migrate, by the existing
+        /// capability-sequence and content-revision checks: a payload naming the twenty-two-capability
+        /// set, or either operation at revision 1, states a contract set that no longer describes this
+        /// build, and one naming Blue Sentinel at the 5.1a revision states a printed Attack the trusted
+        /// catalog no longer supplies. Measured in a throwaway worktree at pre-change revision
+        /// <c>c64e928</c> rather than assumed: every one of the eight payloads grows by exactly 25
+        /// bytes, which is the one new registration entry as a 7-bit length-prefixed twenty-character
+        /// id plus an int32 revision, and nothing else changes length - both revision ints are
+        /// fixed-width and all three content revisions are the same sixteen characters, which is why
+        /// the total growth is exactly the entry's own size. The first difference in each payload is
+        /// Blue Sentinel's revision in the sorted definition table, after a 239-byte common prefix in
+        /// the five ordinary fixtures and a 318-byte one in the three Skill-fixture payloads; the new
+        /// registration entry appears immediately after <c>synthetic-swap</c> in the sorted list. The
+        /// converted card's revision appears twice per payload - the definition table entry and the
+        /// <c>blue-sentinel-card</c> instance's definition reference - and the two shove cards' twice
+        /// each again in the three Skill-fixture payloads, which is the whole of the content cause.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v11", "2f097b5bc50da4c8e7a204ddb3fc0bf22bb5146998990f6599f761507ec3d018"),
-            new CompatibilityFixture("active-turn-v11", "cb51d949dab880f4afcc49d4f7215f82c20334aecb794d9a697d3f03ce0079fb"),
-            new CompatibilityFixture("pending-choice-v11", "abfc15f71ac1e438a8be7aeaab1180877e070f8c0c85a45caa6c18fef9515ec8"),
-            new CompatibilityFixture("end-of-round-v11", "e9a93f6a4df19ab7dd6141a4b397df7e36a1df8c5e0a095f91e91454984f18d2"),
-            new CompatibilityFixture("pending-minion-battle-v11", "6950ea86a7edb197785cf7f4f10239867d8859d1a3793838a33232308b3a633e"),
-            new CompatibilityFixture("placed-token-v11", "b6ad64249d98fe9c7691906e135c007d2716f5891d4c1d81a9473527e40e3528"),
-            new CompatibilityFixture("attached-marker-v11", "3e69211a27c271e0e680f6c0560131a4f66e86b2b452ff9e124e6613fd7f8fe7"),
-            new CompatibilityFixture("pending-correction-v11", "1984dce87c24ff964f92c5d274978db6e4e7395cdf2a2871d0b8269fe967c589")
+            new CompatibilityFixture("setup-v11", "e9138f20bed45436f67050f96631f36ec10a3659661b7ccfcbac79b22db43745"),
+            new CompatibilityFixture("active-turn-v11", "8612c348301846f358ba5403c2e0336fa2ccc2e1bd941a173103656e4def230e"),
+            new CompatibilityFixture("pending-choice-v11", "ff82c40bb48df6e0f9a7c5aba5c8d3aab45f3ae0bf15056a7cfd41783c8b9bf0"),
+            new CompatibilityFixture("end-of-round-v11", "05ecc3793ef964720203b7a35c11d910e4e0118ca4350bb1f56ad2d668b25e95"),
+            new CompatibilityFixture("pending-minion-battle-v11", "57eea96b83617010e5a0626d7708966ed0607ad1f27036b5c53042d129cffc3a"),
+            new CompatibilityFixture("placed-token-v11", "b248551912224d7495f034f4eae7bb1633202a6770dfc419de741a1804df6e28"),
+            new CompatibilityFixture("attached-marker-v11", "36032680876db2a7772cde7071ee1714e5ef595a6ab430fa4b0c20764bfb7371"),
+            new CompatibilityFixture("pending-correction-v11", "245c6360167531c9b17ad994b79786f6e7431b9ad2933e3b8d0e7767f1ccad45")
         };
 
         [Test]

@@ -1,4 +1,5 @@
 using System;
+using GuardsDigital.Core.Components;
 
 namespace GuardsDigital.Core.Rules.BoardObjects
 {
@@ -79,6 +80,33 @@ namespace GuardsDigital.Core.Rules.BoardObjects
 
         public RemoveEligiblePieceKind EligiblePiece { get; }
         public RemoveDestination Destination { get; }
+
+        /// <summary>
+        /// Whether the declared eligible kind admits this piece. Intrinsic representation only: the
+        /// question is which miniature is being picked up, so no <c>Counts As</c> is consulted. A hero
+        /// is admitted by no declared kind, which is why <see cref="RemoveEligiblePieceKind.GamePiece"/>
+        /// stops short of p.19's literal breadth - a hero leaving the board is p.13's Defeat with its
+        /// consequences, and the exchange port refuses one as well.
+        ///
+        /// It lives on the declaration rather than inside the operation because the operation is not
+        /// its only reader: the calling capability's probe has to reach the same answer without
+        /// removing anything, and two readings of one declaration is how a probe comes to report a
+        /// piece removable that the operation then refuses.
+        /// </summary>
+        public bool Admits(BoardObjectKind kind)
+        {
+            switch (EligiblePiece)
+            {
+                case RemoveEligiblePieceKind.GamePiece:
+                    return kind == BoardObjectKind.Minion || kind == BoardObjectKind.Token;
+                case RemoveEligiblePieceKind.MinionMiniature:
+                    return kind == BoardObjectKind.Minion;
+                case RemoveEligiblePieceKind.Token:
+                    return kind == BoardObjectKind.Token;
+                default:
+                    return false;
+            }
+        }
 
         public override string ToString() => $"Remove {EligiblePiece} to {Destination}";
     }

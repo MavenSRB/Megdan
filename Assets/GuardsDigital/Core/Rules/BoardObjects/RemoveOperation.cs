@@ -162,7 +162,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
             if (board == null) throw new ArgumentNullException(nameof(board));
             if (removalStage == null) throw new ArgumentNullException(nameof(removalStage));
 
-            if (!IsEligible(policy.EligiblePiece, subject.Kind))
+            if (!policy.Admits(subject.Kind))
             {
                 return RemoveOutcome.Reject(policy.Destination, RemoveRejectionReason.IneligiblePiece);
             }
@@ -185,28 +185,6 @@ namespace GuardsDigital.Core.Rules.BoardObjects
 
             return RemoveOutcome.Removed(
                 policy.Destination, subject, origin, removalStage.QualifyLanePush(subject, origin));
-        }
-
-        /// <summary>
-        /// Whether the declared eligible kind admits this piece. Intrinsic representation only: the
-        /// question is which miniature is being picked up, so no <c>Counts As</c> is consulted. A hero
-        /// is admitted by no declared kind, which is why <see cref="RemoveEligiblePieceKind.GamePiece"/>
-        /// stops short of p.19's literal breadth - a hero leaving the board is p.13's Defeat with its
-        /// consequences, and the exchange port refuses one as well.
-        /// </summary>
-        private static bool IsEligible(RemoveEligiblePieceKind eligible, BoardObjectKind kind)
-        {
-            switch (eligible)
-            {
-                case RemoveEligiblePieceKind.GamePiece:
-                    return kind == BoardObjectKind.Minion || kind == BoardObjectKind.Token;
-                case RemoveEligiblePieceKind.MinionMiniature:
-                    return kind == BoardObjectKind.Minion;
-                case RemoveEligiblePieceKind.Token:
-                    return kind == BoardObjectKind.Token;
-                default:
-                    return false;
-            }
         }
     }
 
