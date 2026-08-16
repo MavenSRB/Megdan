@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.5b**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.5b**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.5ac**, in progress.
 - Next proposed milestone: **6.5ac**.
 
 Milestone **6.5b** completed on 2026-08-16. Red Bombard's printed Primary Attack is replaced by a two-branch Skill at `phase-6-5b-rev-1`: directly Move another adjacent unit up to 2 spaces, or Spawn one supply miniature onto its own Spawn point. Both are consumers 6.4 and 6.5 had implemented and no configured card reached, so direct Move and general unit Spawn are now exposed to a player, on separate cards from Place and the adjacency-derived Push. Presentation gained the one thing the split did not yet cover - a value candidate naming a piece that stands nowhere is a control named after the miniature, not an ordinal. Schema stayed v11 and the only compatibility cause is the card's own content revision. **6.5ac** is proposed next. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
