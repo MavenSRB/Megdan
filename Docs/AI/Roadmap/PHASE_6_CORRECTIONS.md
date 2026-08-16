@@ -351,3 +351,52 @@ Acceptance checks:
 Non-goals: No change to Movement, Attack, Defense, Fast Travel, Clear, or Hold availability, or to any general-rule or reaction offer; no change to what feasibility means or to which options milestone 6.5ac refuses; no per-offer reason text, tooltip, or explanation, by the same 2026-08-16 user decision that governs a greyed option; no automatic Hold, automatic action selection, or automatic End Turn anywhere; no new pending-choice family, prompt framework, or director command kind; no card text, content revision, or card-name branch; no schema change, and one is not to be introduced to carry a judgement that is derived.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65af-refuse-a-skill-that-can-do-nothing-before-the-turn-is-spent-on-it-completion-evidence).
+
+### [ ] 6.8l Let a target selection know what it selects for
+
+**Corrective amendment (2026-08-16, user approved).** Milestone 6.5ac's walk refuses an option it can prove applies nothing, and treats one it cannot read as performable - the direction it deliberately errs in. Milestone 6.8k then made every subject arrive through a target-selection node, because a role cannot supply a coordinate. Together those two decisions leave a blind spot that has widened with each milestone: the walk reaches the selection, sees that a selection can always pause, and offers the branch without ever judging the step that consumes the chosen object.
+
+It is no longer a corner. On the synthetic Skill four of seven branches now sit behind a selection - direct Move, Swap, Replace, and Remove - and they are not equally exposed. A Swap fails only against an immune object and a Remove only in a neighbourhood of heroes, but the Replace branch requires an adjacent Hazard token, which is absent for most of a match. Milestone 6.6a prints that exact shape onto Blue Sentinel, so the first card to carry it will offer a mode that usually does nothing, spends the action, and spends the card. That is the defect milestones 6.8c, 6.5c, 6.5b, and 6.5ac each corrected in another form, and this is the last place it can still occur.
+
+The selection node is where the missing information lives. It declares a range and whether the actor is included, but not what the chosen object is *for*, so neither the walk nor the runtime can tell a legal target from a useful one. A player offered a target the effect cannot act on has been misinformed by the prompt, not only by the option above it.
+
+Observable outcome: A target selection offers only the objects the effect consuming them can act on, and a branch behind one is refused before it is chosen when none of them can be.
+
+Prerequisites: Milestone 6.8k, which owns the target-selection node, and 6.5ac, which owns the feasibility walk and its `Anticipate` contract. This milestone must precede 6.6a.
+
+Acceptance checks:
+
+- A selection declares the node whose eligibility it selects for as a typed binding validated at content load, exactly as an input binding is. It is not a capability name, a display name, a string, or a predicate expression, and the definition validator rejects one naming an unknown node, a node that does not consume the selection's output, or a node in another action.
+- Candidate derivation asks that consumer the question it already answers, through the same `Anticipate` contract and the same conformance rules, so a candidate the consumer would refuse is not offered and nothing is performed to find that out.
+- The feasibility walk becomes decidable for such a branch: the selection is performable when at least one candidate leaves its consumer performable, and the branch is refused, projected greyed, and carries no invocation when none does.
+- The conservative default is preserved exactly where it still applies: a selection that declares no consumer, and any node whose required input a later step publishes, stay performable. This milestone narrows what cannot be read; it does not start disabling what merely might fail.
+- A stale or forged answer naming a candidate the consumer would now refuse is rejected atomically, and the pending choice survives untouched, because eligibility is re-derived on the answer rather than trusted from the offer.
+- Snapshot restore, replay, and retained-prefix Undo re-derive the filtered candidate set rather than carrying it, for the reason every other candidate list is re-derived.
+- The compatibility cost is measured rather than assumed: the selection capability's declared schema changes, so its revision and the registered contract set move, and every pinned digest is re-pinned with its equality groups shown unchanged.
+- The regression is observed failing before the production change and passing afterward, on the position this was found in: the Replace branch offered while no token it can replace stands anywhere on the board.
+
+Non-goals: No new pending-choice family, prompt framework, or director command kind; no change to what feasibility means for a node that is already decidable; no expression language, predicate script, or general eligibility DSL; no card conversion, card text, or card-name branch; no schema change, since eligibility is derived and nothing about it may reach a payload; no presentation change beyond the greying and candidate lists that already exist.
+
+### [ ] 6.6b Give the Defeat removal stage its prevention consumer
+
+**Corrective amendment (2026-08-16, user approved).** Milestone 5.6 declared `DefeatRemovalResultKind.RemovalPrevented` and never produced it. The Attack backend records a removal attempt and then hard-codes the removed result, and `MinionDefeatResolution` refuses to be constructed with anything else, so the prevented arm has had no production producer for the whole of its existence.
+
+Milestone 6.6 then gave the standalone Remove a staged removal that reports removed or removal-prevented against live state. The two paths that take a minion off the board now disagree about whether a removal can be stopped at all, and that disagreement is the dangerous shape: a protected minion that survives a Skill's Remove and dies to an Attack's Defeat is a half-true rule, which is harder to find than a missing one.
+
+The rulebook states the intended behaviour outright rather than leaving it to be inferred. Its p.13 worked example has Bolster prevent the removal of a minion and notes in the same breath that the attacking hero still collects the coins for defeating it. Reward and removal are therefore separate stages with separate outcomes, which is what this catalog's Defeat contract already says and what the code has never been able to express.
+
+Observable outcome: One shared decision governs whether a removal happens, so a minion whose removal is prevented stays on the board with its Defeat recorded and its reward already collected, whichever operation attempted it.
+
+Prerequisites: Milestone 6.6, which owns the shared removal stage and its typed outcome.
+
+Acceptance checks:
+
+- The Defeat removal stage and the standalone Remove ask one shared decision rather than two readings of it, and a conformance rule holds the Defeat path to reaching it, in the shape milestone 6.6 used to hold the Lane-Push cause to a single caller.
+- `MinionDefeatResolution` represents a prevented removal: the Defeat outcome and the reward stay recorded and accepted, the removal attempt is recorded, the result is the prevented one, no removed occupancy is required, and its ordered facts state that outcome distinctly rather than omitting a fact.
+- p.13's ordering is preserved and tested in both directions: the reward is awarded before the removal stage, and a prevented removal neither withdraws it nor re-awards it on a later attempt.
+- A prevented Defeat removal records no Lane-Push qualifying cause, matching milestone 6.6's rule for a prevented Remove, and a successful one remains the second cause p.8 recognizes for a later milestone to consume.
+- Board occupancy, the minion reserve, and the Attack's own completion are untouched by a prevented removal, and snapshot, replay, and retained-prefix Undo reproduce the same state and the same ordered facts.
+- The transition is observed failing before the production change and passing afterward, on a state constructed directly, since a source that makes the arm reachable through ordinary play does not exist yet.
+- What is still owed is recorded rather than implied: the general prevent-removal source family remains unimplemented, and this milestone is what guarantees both removal paths will honour it on the day one exists.
+
+Non-goals: No prevention source, and no widening of the modification vocabulary or the Active-effect affected scope to carry one; no schema change; no hero Defeat consequence, reward derivation, Life, or respawn work; no Lane-Push emission or consumption; no change to Attack targeting, Defense, or the Clear replacement; no card text or card-name branch.
