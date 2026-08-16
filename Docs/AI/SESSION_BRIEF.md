@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-08-16
+Last updated: 2026-08-17
 
 ## Purpose and authority
 
@@ -14,9 +14,11 @@ The project has completed roadmap milestones through **6.2d**. The configured ve
 
 - Current completed milestone: **6.2d**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **6.7**.
+- Next proposed milestone: **6.3a**.
 
-Corrective milestone **6.2d** completed on 2026-08-16: a token a player places is drawn on the board, and milestone 6.2's decision that presentation receives no token projection is retired rather than reinterpreted. Three layers were empty and closing any one alone would have shown nothing, so all three moved together - the projection carries the board authority's own placed-token instances, the configured scene deals milestone 6.2's Cache card so a player can put one there at all, and a retained-view pool draws it. The same milestone generalized milestone 6.5c's line to a family that predated it: where a destination carries its own control, the board lights the one being pointed at rather than every endpoint at once. The route is now **6.7 -> 6.7a -> 6.9 onward**; 6.7 is proposed next, and scheduling is not authorization. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
+Corrective milestone **6.2d** completed on 2026-08-16: a token a player places is drawn on the board, and milestone 6.2's decision that presentation receives no token projection is retired rather than reinterpreted. Three layers were empty and closing any one alone would have shown nothing, so all three moved together - the projection carries the board authority's own placed-token instances, the configured scene deals milestone 6.2's Cache card so a player can put one there at all, and a retained-view pool draws it. The same milestone generalized milestone 6.5c's line to a family that predated it: where a destination carries its own control, the board lights the one being pointed at rather than every endpoint at once. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
+
+**Corrective scheduling amendment (2026-08-17, user approved).** Hands-on validation of that token surface showed that milestone 6.3's implemented Clear has no configured action or selection UI, and that pointing at Blue Sentinel's readable `TEST - HAZARD` target gives no indication which visible board piece it names. Proposed milestone **6.3a** adds the Clear button and projected subset-selection surface, and routes every token-naming control through the same hover/focus and selected board cue used for minion removal. The remaining route is now **6.3a -> 6.7 -> 6.7a -> 6.9 onward**. Scheduling is not implementation authorization; 6.3a is proposed next and still requires exact approval to execute.
 
 The user-approved mechanics-showcase amendment converts six configured cards only after their reusable dependencies, and five are done: Red Bulwark at 6.8a, Blue Feint at 6.8b, Red Needle at 6.5a, Red Bombard at 6.5b, and Blue Sentinel at 6.6a. Blue Longbow's bounded Repeat at 6.7a is the last. Each conversion's exact modes and rationale live in [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md). The durable constraints hold throughout: the hero whose Skill is resolving is the affected rules object and the card is only the stable source; Red Lancer, Red Pursuit, Blue Scout Shot, and Blue Hammer retain the printed Attacks that keep one non-Ranged and one Ranged per team; every conversion preserves its card's Initiative, Secondary Movement, Defense, and stable identity under a new content revision; 6.13 closes delayed-effect retrieval/cancellation; and 7.9 gates the complete ten-card matrix. Scheduling is not authorization; each new milestone still requires exact approval.
 
