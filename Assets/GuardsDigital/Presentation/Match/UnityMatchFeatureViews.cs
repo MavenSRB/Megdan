@@ -488,6 +488,15 @@ namespace GuardsDigital.Presentation.Match
                 DrawInvocation(effectChoice, 170f);
             }
 
+            // Milestone 6.5ac: an option the actor cannot perform is drawn beside the ones they can,
+            // disabled. Showing it is the point - a player reads that the mode exists and that it
+            // cannot be taken - and there is nothing to forward if it is clicked, because the view
+            // model carries no command for it at all.
+            foreach (var unavailable in Model.UnavailableEffectChoices)
+            {
+                DrawUnavailableEffectChoice(unavailable);
+            }
+
             var hoveredRespawn = default(HeroRespawnOptionViewModel);
             for (var index = 0; index < Model.HeroRespawnOptions.Count; index++)
             {
@@ -592,6 +601,27 @@ namespace GuardsDigital.Presentation.Match
             {
                 ForwardInvocation(invocation);
             }
+        }
+
+        /// <summary>
+        /// One refused option, drawn as a disabled control. <c>GUI.enabled</c> is restored rather than
+        /// assigned back to true, so this cannot silently re-enable a row an enclosing scope had
+        /// already disabled.
+        /// </summary>
+        private void DrawUnavailableEffectChoice(UnavailableEffectChoiceViewModel option)
+        {
+            if (option == null)
+            {
+                return;
+            }
+
+            var wasEnabled = GUI.enabled;
+            GUI.enabled = false;
+            GUILayout.Button(
+                option.Label,
+                GUILayout.MinWidth(CalculateContentWidth(option.Label, GUI.skin.button)),
+                GUILayout.Height(46f));
+            GUI.enabled = wasEnabled;
         }
 
         private bool DrawContentSizedDefenseInvocation(TypedInvocationViewModel invocation, int index)

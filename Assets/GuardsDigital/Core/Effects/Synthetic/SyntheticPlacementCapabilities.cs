@@ -94,6 +94,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            /// <summary>
+            /// Applies whenever the actor stands somewhere. Publishing a space is applying, so a branch
+            /// beginning here is judged performable by this node and never by what consumes the space -
+            /// the declared conservative boundary of milestone 6.5ac's walk.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                return components != null && components.CanDisplace &&
+                    components.Board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out _)
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+            }
         }
 
         /// <summary>
@@ -175,6 +190,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new EffectOutcomeFact("placed", EffectValue.Space(outcome.Destination))
                     })
                     : EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            /// <summary>
+            /// The same declaration and destination question <see cref="Execute"/> asks, without the
+            /// choice. The no-destination answer follows the node's own policy exactly as the
+            /// execution's does, so a Place that would decline is reported declining rather than
+            /// impossible.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                if (!TryDeclare(context, out var policy, out _, out var origin))
+                {
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                }
+
+                var destinations = PlaceDestinationQuery.FindDestinations(
+                    policy, context.Components.Tokens, origin, Array.Empty<HexCoordinate>());
+                if (destinations.Count > 0)
+                {
+                    return EffectExecutionResultKind.NeedsChoice;
+                }
+
+                return policy.NoDestinationPolicy == PlaceNoDestinationPolicy.Decline
+                    ? EffectExecutionResultKind.DeclinedOptional
+                    : EffectExecutionResultKind.ImpossibleMandatory;
             }
 
             /// <summary>
@@ -312,6 +352,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectOutcomeFact("at", EffectValue.Space(committed.Destination))
                 });
             }
+
+            /// <summary>
+            /// Whether the supply holds a miniature this actor could Spawn onto an eligible point. This
+            /// is the reading milestone 6.5ac exists for: on the first round every declared miniature
+            /// stands, so the supply is empty, and a player who chose this mode before spent the card
+            /// on nothing.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Candidates(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
 
             /// <summary>
             /// The supply miniatures this Spawn may take: the acting hero's own team, whose declared

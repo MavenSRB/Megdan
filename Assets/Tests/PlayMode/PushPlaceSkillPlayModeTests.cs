@@ -27,7 +27,10 @@ namespace GuardsDigital.Tests.PlayMode
     /// projection never offered forwards nothing at all.
     ///
     /// Milestone 6.5c changed what "rendered" means for the Place branch: its destinations are lit on
-    /// the board and carry no controls, and one click answers the choice outright.
+    /// the board and carry no controls, and one click answers the choice outright. Milestone 6.5ac
+    /// changed what it means for the Push branch: with nothing adjacent it can do nothing, so it is
+    /// drawn greyed and carries no invocation, which makes this scene position the one that shows both
+    /// halves of the option surface at once.
     /// </summary>
     public sealed class PushPlaceSkillPlayModeTests
     {
@@ -49,12 +52,23 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SubmitAction(NeedleSkill), Is.True);
             yield return null;
 
+            // Milestone 6.5ac: this is the scene position where both readings show at once. Nothing
+            // stands adjacent, so the Push branch can do nothing and is greyed; the Place branch has
+            // empty spaces within Radius 4 and stays a control.
             var modes = runtime.RoundView.Model.EffectChoices
                 .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                 .Select(value => value.Command.EffectChoice.Candidate.OptionNodeId)
                 .ToArray();
-            Assert.That(modes, Is.EqualTo(new[] { PushBranch, PlaceBranch }),
-                "Both branches are rendered as controls in the definition's own order.");
+            Assert.That(modes, Is.EqualTo(new[] { PlaceBranch }),
+                "Only the branch the actor can perform is rendered as a control.");
+            Assert.That(
+                runtime.RoundView.Model.UnavailableEffectChoices
+                    .Select(value => value.Candidate.OptionNodeId),
+                Is.EqualTo(new[] { PushBranch }),
+                "The other is still rendered, greyed, so the player sees the mode exists and that it " +
+                "cannot be taken here.");
+            Assert.That(runtime.SubmitEffectChoiceOption(PushBranch), Is.False,
+                "A greyed control carries no command, so nothing about it can reach the session.");
 
             Assert.That(runtime.SubmitEffectChoiceOption(PlaceBranch), Is.True);
             Assert.That(runtime.ConfirmEffectChoice(), Is.True);

@@ -141,6 +141,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            /// <summary>
+            /// Always applies: creating a mark that already exists is the lifecycle's own no-op, and a
+            /// context without a lifecycle is a legal no-op too, so there is no state this could read
+            /// that would change the answer.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
         }
 
         /// <summary>Applies unconditionally and publishes the actor, so a later node can bind it.</summary>
@@ -163,6 +171,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
         }
 
         /// <summary>Requests a chooser-owned selection between the actor and the controller.</summary>
@@ -178,12 +189,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
-                var candidates = new[] { context.ActorId, context.ControllerId }
-                    .Where(hero => hero.IsDefined)
-                    .Distinct()
-                    .OrderBy(hero => hero.Value, StringComparer.Ordinal)
-                    .Select(EffectValue.Hero)
-                    .ToArray();
+                var candidates = Candidates(context);
 
                 return candidates.Length == 0
                     ? EffectExecutionResult.ImpossibleMandatory()
@@ -202,6 +208,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return EffectExecutionResult.Applied(
                     new[] { new EffectOutcomeFact("chosen", selected[0]) });
             }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Candidates(context).Length == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// The heroes this selection offers. Extracted so the probe reads the same derivation the
+            /// execution does rather than restating the condition beside it.
+            /// </summary>
+            private static EffectValue[] Candidates(EffectCapabilityContext context) =>
+                new[] { context.ActorId, context.ControllerId }
+                    .Where(hero => hero.IsDefined)
+                    .Distinct()
+                    .OrderBy(hero => hero.Value, StringComparer.Ordinal)
+                    .Select(EffectValue.Hero)
+                    .ToArray();
         }
 
         /// <summary>A pure predicate over one Boolean input, for Conditional branching.</summary>
@@ -226,6 +249,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            /// <summary>A pure predicate always applies; what it publishes is the branch's business.</summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
         }
 
         /// <summary>
@@ -255,6 +282,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                context.Input("hero").IsDefined
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
         }
 
         /// <summary>Never possible, so the four failure policies can each be observed distinctly.</summary>
@@ -273,6 +305,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.ImpossibleMandatory;
         }
 
         /// <summary>
@@ -294,6 +329,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            /// <summary>
+            /// Declining applies nothing, and unlike an impossible step it stops nothing either, so an
+            /// enclosing option is carried by whatever stands after this node rather than by it.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.DeclinedOptional;
         }
     }
 }

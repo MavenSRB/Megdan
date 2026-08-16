@@ -281,19 +281,71 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheMoveBranch_StopsTheActionWhenNothingStandsAdjacent()
+        public void TheMoveBranch_IsNotOfferedWhenNothingStandsAdjacent()
         {
-            // p.10: a mandatory step that cannot be performed stops the action there. `another
-            // adjacent unit` names nothing when the acting hero stands alone, so no prompt opens.
+            // Milestone 6.5ac. `another adjacent unit` names nothing when the acting hero stands
+            // alone, so the branch can do nothing and is refused rather than offered. Here the Spawn
+            // mode cannot be performed either - every declared miniature still stands - so no option
+            // of this card can be taken at all and the node reports itself impossible without opening
+            // a prompt, which its mandatory policy then turns into p.10's stop.
             var session = StartBombardSkill(blueAt: new HexCoordinate(-3, 10));
 
-            ChooseBranch(session, MoveBranch);
-
-            Assert.That(session.Projection.PendingEffectChoice, Is.Null);
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "A choice nobody could answer is never opened: a mandatory Choose offers no decline, " +
+                "and every control is withheld while an effect choice stands, so pausing there would " +
+                "leave the turn with no legal command at all.");
             Assert.That(session.Projection.PendingSkillResolution, Is.Null);
+            Assert.That(
+                SkillFacts(session).Any(fact =>
+                    fact.Kind == CardActionResolutionEventKind.SkillChoiceRequested), Is.False,
+                "No mode was offered, so no player spent the card by picking one that could do nothing.");
             Assert.That(session.Projection.Cards.Single(card => card.Id.Equals(BombardCardId))
                 .State.ResolutionStatus, Is.Not.EqualTo(CardResolutionStatus.Unresolved),
                 "The action was started and stopped rather than refused outright.");
+        }
+
+        [Test]
+        public void TheMoveBranch_IsProjectedGreyedWhileTheSpawnModeStaysSelectable()
+        {
+            // The surface this milestone owes, in the one state where both readings are visible at
+            // once: a miniature has left the board, so Spawn can be performed, and nothing stands
+            // beside the acting hero, so the Move cannot. The unperformable mode stays in the
+            // projected candidate set - a player sees the mode exists - and carries no invocation.
+            var session = StartBombardSkillAfterAMinionBattleRemoval(
+                out _, blueAt: new HexCoordinate(-3, 10));
+
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(
+                choice.Candidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { MoveBranch, Spawn }),
+                "Both modes are still projected; refusing one is not hiding it.");
+            Assert.That(
+                choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { MoveBranch }));
+            Assert.That(
+                choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Is.EqualTo(new[] { Spawn }),
+                "The mode that can do nothing carries no way to select it.");
+        }
+
+        [Test]
+        public void SelectingAGreyedMode_IsRefusedWithoutTouchingTheFrameOrTheCard()
+        {
+            var session = StartBombardSkillAfterAMinionBattleRemoval(
+                out _, blueAt: new HexCoordinate(-3, 10));
+
+            var before = session.Projection;
+            var refused = session.Execute(DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
+                before.PendingEffectChoice.ResolutionId,
+                before.PendingEffectChoice.ChoiceId,
+                EffectChoiceCommandKind.Select,
+                EffectChoiceCandidate.Option(MoveBranch))));
+
+            Assert.That(refused.Accepted, Is.False);
+            Assert.That(session.Projection.AuthoritativeSnapshot, Is.EqualTo(before.AuthoritativeSnapshot),
+                "The refusal touches no card, occupancy, continuation, or event.");
+            Assert.That(session.Projection.Cards.Single(card => card.Id.Equals(BombardCardId))
+                .State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
         }
 
         [Test]
@@ -351,21 +403,42 @@ namespace GuardsDigital.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         [Test]
-        public void TheSpawnBranch_StopsTheActionWhileEveryDeclaredMiniatureStands()
+        public void TheSpawnBranch_IsNotOfferedWhileEveryDeclaredMiniatureStands()
         {
             // p.18's Spawn takes only from the supply, and at setup the supply is empty because every
-            // declared miniature is on the board. A mandatory step that cannot be performed stops the
-            // action at that step (p.10) rather than inventing a piece.
+            // declared miniature is on the board. Milestone 6.5ac: the mode is therefore refused
+            // rather than offered, which is the defect this fixture used to pin - choosing it spent
+            // the card, ended the turn, and changed nothing.
             var session = StartBombardSkill();
             Assert.That(RestoreBoard(session).FindUnitSupply(), Is.Empty,
                 "Fixture precondition: nothing is in the supply yet.");
 
-            ChooseBranch(session, Spawn);
-
-            Assert.That(session.Projection.PendingEffectChoice, Is.Null);
-            Assert.That(session.Projection.PendingSkillResolution, Is.Null);
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(
+                choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { Spawn }),
+                "An empty supply is exactly what makes this mode unperformable; the Move mode beside " +
+                "it stays selectable, so the refusal is measured rather than blanket.");
+            Assert.That(
+                choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Is.EqualTo(new[] { MoveBranch }));
             Assert.That(RestoreBoard(session).Minions, Has.Count.EqualTo(12),
                 "Nothing was spawned, and every declared miniature is still exactly where it was.");
+        }
+
+        [Test]
+        public void TheSpawnBranch_BecomesSelectableOnceAMiniatureLeavesTheBoard()
+        {
+            // The same card in the same session, judged again against the state as it now stands:
+            // feasibility is never written down, so a mode that becomes performable becomes
+            // selectable.
+            var session = StartBombardSkillAfterAMinionBattleRemoval(out var removed);
+
+            Assert.That(
+                RestoreBoard(session).FindUnitSupply().Select(unit => unit.MinionId),
+                Is.EqualTo(new[] { removed }));
+            Assert.That(session.Projection.PendingEffectChoice.UnavailableCandidates, Is.Empty,
+                "A supply miniature and an adjacent unit make both modes performable at once.");
         }
 
         [Test]
@@ -611,9 +684,10 @@ namespace GuardsDigital.Tests.EditMode
         /// setup declares one fewer miniature - because p.8 has the losing team remove theirs, and the
         /// Red hero is the one whose Skill this fixture reaches.
         /// </summary>
-        private static MatchSession StartBombardSkillAfterAMinionBattleRemoval(out MinionId removed)
+        private static MatchSession StartBombardSkillAfterAMinionBattleRemoval(
+            out MinionId removed, HexCoordinate? blueAt = null)
         {
-            var session = CreateBombardSession(RedOutnumberedSetup(), RedAt, BlueAt);
+            var session = CreateBombardSession(RedOutnumberedSetup(), RedAt, blueAt ?? BlueAt);
             removed = PlayFillerRoundAndRemove(session, RemovedMinion);
             CommitCards(session, "bombard", "longbow");
             StartTheSkill(session);

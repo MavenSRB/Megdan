@@ -259,7 +259,9 @@ Acceptance checks:
 
 Non-goals: No Minion-Battle count, selection, removal, timing, event, snapshot, or respawn-rule change; no minion presentation change; no new scene object, prefab, identity, pointer framework, art, animation, or audio.
 
-### [~] 6.5ac Refuse an effect option the actor cannot perform, and say why
+### [x] 6.5ac Refuse an effect option the actor cannot perform, and say why
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65ac-refuse-an-effect-option-the-actor-cannot-perform-and-say-why-completion-evidence).
 
 **Corrective amendment (2026-08-16, user approved).** Hands-on validation of 6.5b found that Red Bombard's Spawn mode does nothing when chosen, and the cause is general rather than card-specific: a `Choose` node offers every child unconditionally, so a mode that can do nothing is selectable, and choosing it runs the branch to a mandatory stop that spends the card, ends the turn, changes nothing on the board, and explains nothing. The only record is a `SkillEffectNodeStopped` fact in the diagnostic log. This is the third appearance of the shape 6.8c and 6.5c already corrected - a rule printed onto a configured card that a player can select and observe nothing from - and 6.5b's own commit body wrongly recorded the silence as a Play Mode fixture limitation and pinned it as correct. The user settled the rules question this raises, recorded as open question 11 in [RULES_LEDGER.md](../RULES_LEDGER.md#open-source-and-rules-questions): an option the actor cannot perform is refused rather than offered, and the player is told it cannot be done. Correcting it on the option contract rather than on Red Bombard is what makes 6.6a and 6.7a inherit it.
 

@@ -57,6 +57,7 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly EffectNodeId CountsAsMode = new EffectNodeId("feint-counts-as-minion");
         private static readonly EffectNodeId PushBranch = new EffectNodeId("displacement-object-push");
         private static readonly EffectNodeId NeedlePushBranch = new EffectNodeId("needle-push-branch");
+        private static readonly EffectNodeId NeedlePlaceBranch = new EffectNodeId("needle-place-branch");
 
         private static readonly HexCoordinate RedAt = new HexCoordinate(-2, -5);
         private static readonly HexCoordinate BlueAt = new HexCoordinate(-1, -5);
@@ -296,7 +297,7 @@ namespace GuardsDigital.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         [Test]
-        public void TheImmuneHero_IsNotAPushTargetAndTheEnemyPushStopsWithNothingToPush()
+        public void TheImmuneHero_IsNotAPushTargetAndTheEnemyPushModeIsNotOffered()
         {
             var session = StartFeintSkill(out var blueId);
             ChooseMode(session, ImmunityMode);
@@ -304,13 +305,20 @@ namespace GuardsDigital.Tests.EditMode
             CommitCards(session, redCardFragment: "shove", blueCardFragment: "sentinel");
 
             StartDisplacementSkill(session);
-            ChooseMode(session, PushBranch);
+
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(
+                choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Has.Member(PushBranch),
+                "p.18: an immune unit cannot be targeted, so the only adjacent object is no target at " +
+                "all, and milestone 6.5ac refuses the mode rather than letting a player spend the " +
+                "card discovering it.");
+            Assert.That(
+                choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Has.No.Member(PushBranch));
 
             var board = RestoreBoard(session);
-            Assert.That(Coordinate(board, blueId), Is.EqualTo(BlueAt),
-                "p.18: an immune unit cannot be targeted, so the only adjacent object is not pushed.");
-            Assert.That(session.Projection.PendingSkillResolution, Is.Null,
-                "A mandatory Push with no legal target stops the action, which is p.10's answer.");
+            Assert.That(Coordinate(board, blueId), Is.EqualTo(BlueAt), "Nothing moved.");
             Assert.That(RestoreTiming(session).Effects.Single().SourceCardInstanceId,
                 Is.EqualTo(FeintCardId),
                 "The source of the immunity is still Blue Feint's resolved card definition.");
@@ -327,13 +335,18 @@ namespace GuardsDigital.Tests.EditMode
             var offer = session.Projection.AvailableTurnActions
                 .Single(candidate => candidate.ActionDefinitionId.Equals(NeedleSkill));
             Accept(session, DirectorCommand.StartAction(offer.ActionDefinitionId));
-            ChooseMode(session, NeedlePushBranch);
 
-            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
-                "The exact Push immunity is applied while candidates are derived, so the opposing " +
-                "player is never shown an illegal target button or board cue.");
-            Assert.That(session.Projection.PendingSkillResolution, Is.Null,
-                "With no legal adjacent target, the mandatory branch stops normally.");
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(
+                choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { NeedlePushBranch }),
+                "The exact Push immunity is applied while candidates are derived, so the branch that " +
+                "would consume them can do nothing and is refused - while the Place branch beside it " +
+                "stays selectable, which is what shows the refusal measures feasibility rather than " +
+                "disabling the whole card.");
+            Assert.That(
+                choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Is.EqualTo(new[] { NeedlePlaceBranch }));
         }
 
         [Test]

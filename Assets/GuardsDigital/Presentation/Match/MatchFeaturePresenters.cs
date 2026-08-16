@@ -1054,6 +1054,41 @@ namespace GuardsDigital.Presentation.Match
         public DirectorCommand Command { get; }
     }
 
+    /// <summary>
+    /// Milestone 6.5ac: one option of a pending effect choice the acting player cannot perform.
+    ///
+    /// It carries a label and the candidate it stands for, and deliberately no
+    /// <see cref="DirectorCommand"/> at all - which is why it is a type of its own rather than a
+    /// <see cref="TypedInvocationViewModel"/> with a flag beside it. A control with no command cannot
+    /// be submitted through any route a view has, so "greyed" is a structural fact here rather than a
+    /// rendering convention a later view could forget.
+    ///
+    /// There is no reason text. The 2026-08-16 user decision recorded as open rules question 11 is
+    /// that greying alone is the surface this owes.
+    /// </summary>
+    public sealed class UnavailableEffectChoiceViewModel
+    {
+        public UnavailableEffectChoiceViewModel(string label, EffectChoiceCandidate candidate)
+        {
+            Label = string.IsNullOrWhiteSpace(label)
+                ? throw new ArgumentException(
+                    "An unavailable effect choice requires a label.", nameof(label))
+                : label;
+            Candidate = candidate.IsDefined
+                ? candidate
+                : throw new ArgumentException(
+                    "An unavailable effect choice names the candidate it stands for.", nameof(candidate));
+        }
+
+        public string Label { get; }
+
+        /// <summary>
+        /// The option this control would have answered. Presentation holds it so the presenter can
+        /// refuse a command naming it rather than only failing to offer one.
+        /// </summary>
+        public EffectChoiceCandidate Candidate { get; }
+    }
+
     public sealed class RoundActionViewModel
     {
         public RoundActionViewModel(
@@ -1072,7 +1107,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<EffectChoiceTargetViewModel> effectChoiceTargets = null,
             IEnumerable<TypedInvocationViewModel> effectChoiceDestinations = null,
             IEnumerable<HeroRespawnOptionViewModel> heroRespawnOptions = null,
-            TypedInvocationViewModel resolveWithoutRespawn = null)
+            TypedInvocationViewModel resolveWithoutRespawn = null,
+            IEnumerable<UnavailableEffectChoiceViewModel> unavailableEffectChoices = null)
         {
             Version = version;
             RoundIndex = roundIndex;
@@ -1097,6 +1133,8 @@ namespace GuardsDigital.Presentation.Match
             HeroRespawnOptions = Array.AsReadOnly((heroRespawnOptions ??
                 Enumerable.Empty<HeroRespawnOptionViewModel>()).ToArray());
             ResolveWithoutRespawn = resolveWithoutRespawn;
+            UnavailableEffectChoices = Array.AsReadOnly((unavailableEffectChoices ??
+                Enumerable.Empty<UnavailableEffectChoiceViewModel>()).ToArray());
             HudHeader =$"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
                 $"TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound} - {phase.ToString().ToUpperInvariant()}";
         }
@@ -1130,6 +1168,14 @@ namespace GuardsDigital.Presentation.Match
         /// board lights them, and clicking a lit space is how they are answered.
         /// </summary>
         public IReadOnlyList<TypedInvocationViewModel> EffectChoiceDestinations { get; }
+
+        /// <summary>
+        /// Milestone 6.5ac: the options of that decision the acting player cannot perform. They are
+        /// shown greyed rather than hidden, so a player sees the mode exists and that it cannot be
+        /// taken, and none of them carries a command.
+        /// </summary>
+        public IReadOnlyList<UnavailableEffectChoiceViewModel> UnavailableEffectChoices { get; }
+
         public IReadOnlyList<HeroRespawnOptionViewModel> HeroRespawnOptions { get; }
         public TypedInvocationViewModel ResolveWithoutRespawn { get; }
 
@@ -1189,6 +1235,19 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var current = GetOrCreateViewModel(session.Projection);
+
+            // Milestone 6.5ac: the unavailable list joins this legality decision rather than sitting
+            // outside it. Its own entries carry no command, so nothing a view holds can reach here
+            // through them; what this refuses is a command left over from an older model naming an
+            // option the authority has since refused - the presenter's half of the same atomicity the
+            // session enforces on a stale or forged select.
+            if (current.UnavailableEffectChoices.Any(option =>
+                    invocation.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    invocation.Command.EffectChoice.Candidate.Equals(option.Candidate)))
+            {
+                return false;
+            }
+
             var legal = current.Actions
                 .Concat(current.InitiativeChoices)
                 .Concat(current.DefenseChoices)
@@ -1330,7 +1389,8 @@ namespace GuardsDigital.Presentation.Match
                 projection,
                 out var effectChoiceControls,
                 out var effectChoiceTargets,
-                out var effectChoiceDestinations);
+                out var effectChoiceDestinations,
+                out var unavailableEffectChoices);
             var respawn = projection.PendingHeroRespawnChoice;
             var respawnOptions = respawn == null
                 ? Array.Empty<HeroRespawnOptionViewModel>()
@@ -1368,7 +1428,8 @@ namespace GuardsDigital.Presentation.Match
                     ? null
                     : new TypedInvocationViewModel(
                         "RESOLVE WITHOUT ACTION",
-                        DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation)));
+                        DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation)),
+                unavailableEffectChoices);
         }
 
         /// <summary>
@@ -1387,11 +1448,13 @@ namespace GuardsDigital.Presentation.Match
             MatchSessionProjection projection,
             out IReadOnlyList<TypedInvocationViewModel> controls,
             out IReadOnlyList<EffectChoiceTargetViewModel> targets,
-            out IReadOnlyList<TypedInvocationViewModel> destinations)
+            out IReadOnlyList<TypedInvocationViewModel> destinations,
+            out IReadOnlyList<UnavailableEffectChoiceViewModel> unavailable)
         {
             controls = Array.Empty<TypedInvocationViewModel>();
             targets = Array.Empty<EffectChoiceTargetViewModel>();
             destinations = Array.Empty<TypedInvocationViewModel>();
+            unavailable = Array.Empty<UnavailableEffectChoiceViewModel>();
             var choice = projection.PendingEffectChoice;
             if (choice == null)
             {
@@ -1477,6 +1540,15 @@ namespace GuardsDigital.Presentation.Match
             controls = invocations;
             targets = namedTargets;
             destinations = boardDestinations;
+
+            // Milestone 6.5ac: an option the authority refused keeps its label and its place in the
+            // ordering, and gains no command. Presentation decides nothing here - which options are
+            // unperformable is projected, exactly as which candidates are legal always has been.
+            unavailable = choice.UnavailableCandidates
+                .Select(candidate => new UnavailableEffectChoiceViewModel(
+                    EffectChoiceLabels.CandidateLabel(candidate.OptionNodeId, ordinals[candidate]),
+                    candidate))
+                .ToArray();
         }
 
         /// <summary>

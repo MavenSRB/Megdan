@@ -637,6 +637,52 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 6.5ac. Red Bombard's Spawn mode can do nothing while every declared miniature
+        /// stands, so the authority refuses it. Presentation shows it greyed rather than hiding it -
+        /// the player reads that the mode exists and cannot be taken - and it carries no command at
+        /// all, so a click on it cannot reach the session by any route.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_GreysTheModeTheActorCannotPerformAndRefusesToSubmitIt()
+        {
+            var session = CreateNeedleSession(NeedleRedAt, NeedleBlueAt);
+            StartBombardTurn(session);
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { BombardSpawn }),
+                "Fixture precondition: the supply is empty and a unit stands adjacent, so exactly one " +
+                "of the two modes can be performed.");
+
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+
+            var greyed = model.UnavailableEffectChoices.Single();
+            Assert.That(greyed.Candidate, Is.EqualTo(EffectChoiceCandidate.Option(BombardSpawn)));
+            Assert.That(greyed.Label, Is.EqualTo(EffectChoiceLabels.CandidateLabel(BombardSpawn, 2)),
+                "It keeps the label and the ordinal it would have had, so the refusal reads as the " +
+                "same mode rather than as a different control.");
+            Assert.That(
+                model.EffectChoices
+                    .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+                    .Select(value => value.Command.EffectChoice.Candidate.OptionNodeId),
+                Is.EqualTo(new[] { BombardMoveBranch }),
+                "Only the performable mode carries an invocation.");
+
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            var forged = new TypedInvocationViewModel(
+                greyed.Label,
+                DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
+                    choice.ResolutionId,
+                    choice.ChoiceId,
+                    EffectChoiceCommandKind.Select,
+                    EffectChoiceCandidate.Option(BombardSpawn))));
+            Assert.That(presenter.Submit(forged), Is.False,
+                "The unavailable list joins the presenter's legality decision rather than sitting " +
+                "outside it, so a command left over from an older model is refused here too.");
+            Assert.That(session.Projection.PendingEffectChoice.SelectedCandidates, Is.Empty,
+                "Nothing about the paused decision moved.");
+        }
+
+        /// <summary>
         /// Milestone 6.5c. The board is the whole Place surface: every offered space is lit with the
         /// same highlight Movement, Fast Travel, and corrections use, and clicking one answers the
         /// choice outright, because an exactly-one selection leaves nothing further to confirm.

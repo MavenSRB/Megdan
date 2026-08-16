@@ -89,6 +89,9 @@ namespace GuardsDigital.Tests.EditMode
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 EffectExecutionResult.Applied();
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
         }
 
         private sealed class SchemalessHandler : IEffectCapabilityHandler
@@ -107,6 +110,9 @@ namespace GuardsDigital.Tests.EditMode
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 EffectExecutionResult.Applied();
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
         }
     }
 }

@@ -127,6 +127,30 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 });
             }
 
+            /// <summary>
+            /// The same three readings <see cref="Execute"/> makes, in the same order and without the
+            /// choice it would open: no live components, a supply that already covers a placement, and
+            /// then whether any same-type token stands on the board to take back.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components == null || !components.IsLive)
+                {
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                }
+
+                var reference = SyntheticComponentDefinitions.HazardV3;
+                if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) > 0)
+                {
+                    return EffectExecutionResultKind.DeclinedOptional;
+                }
+
+                return SameTypeTokens(components, reference).Any()
+                    ? EffectExecutionResultKind.NeedsChoice
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+            }
+
             private static IEnumerable<PlacedToken> SameTypeTokens(
                 MatchComponents components,
                 TokenDefinitionReference reference) =>
@@ -248,6 +272,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 });
             }
 
+            /// <summary>
+            /// The supply reading and the destination question <see cref="Execute"/> asks, without the
+            /// choice it would open. The destination query reads the board and commits nothing.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components == null || !components.IsLive)
+                {
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                }
+
+                var reference = SyntheticComponentDefinitions.HazardV3;
+                if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) < 1)
+                {
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                }
+
+                return LegalSpaces(context, components).Any()
+                    ? EffectExecutionResultKind.NeedsChoice
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+            }
+
             private static IEnumerable<HexCoordinate> LegalSpaces(
                 EffectCapabilityContext context,
                 MatchComponents components) =>
@@ -280,28 +327,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
-                var components = context.Components;
-                if (components == null || !components.IsLive || context.Participants == null)
+                if (!CanGive(context, out var candidates))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.FocusV1;
-                if (components.Catalog.CountAvailableMarkers(
-                        reference, components.Markers.Attachments) < 1)
-                {
-                    return EffectExecutionResult.ImpossibleMandatory();
-                }
-
-                var candidates = context.Participants.Heroes
-                    .Select(hero => hero.Id)
-                    .OrderBy(hero => hero.Value, StringComparer.Ordinal)
-                    .Select(EffectValue.Hero)
-                    .ToArray();
-                return candidates.Length == 0
-                    ? EffectExecutionResult.ImpossibleMandatory()
-                    : EffectExecutionResult.NeedsChoice(
-                        new EffectChoiceRequest(EffectChooserRole.Actor, candidates, 1, 1));
+                return EffectExecutionResult.NeedsChoice(
+                    new EffectChoiceRequest(EffectChooserRole.Actor, candidates, 1, 1));
             }
 
             public EffectExecutionResult Resume(
@@ -348,6 +380,39 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 return EffectExecutionResult.Applied(given);
             }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                CanGive(context, out _)
+                    ? EffectExecutionResultKind.NeedsChoice
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+
+            /// <summary>
+            /// Whether a marker can be given at all, and to whom. Extracted so the probe reads the
+            /// supply and the hero set exactly as the execution does; neither reading mints an
+            /// attachment identity, which is what the give itself does on resume.
+            /// </summary>
+            private static bool CanGive(EffectCapabilityContext context, out EffectValue[] candidates)
+            {
+                candidates = Array.Empty<EffectValue>();
+                var components = context.Components;
+                if (components == null || !components.IsLive || context.Participants == null)
+                {
+                    return false;
+                }
+
+                if (components.Catalog.CountAvailableMarkers(
+                        SyntheticComponentDefinitions.FocusV1, components.Markers.Attachments) < 1)
+                {
+                    return false;
+                }
+
+                candidates = context.Participants.Heroes
+                    .Select(hero => hero.Id)
+                    .OrderBy(hero => hero.Value, StringComparer.Ordinal)
+                    .Select(EffectValue.Hero)
+                    .ToArray();
+                return candidates.Length > 0;
+            }
         }
 
         /// <summary>
@@ -373,22 +438,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
-                var components = context.Components;
-                if (components == null || !components.IsLive)
-                {
-                    return EffectExecutionResult.ImpossibleMandatory();
-                }
-
-                var attachment = components.Markers
-                    .GivenBy(context.SourceCardInstanceId)
-                    .OrderBy(candidate => candidate.Id.Value, StringComparer.Ordinal)
-                    .FirstOrDefault();
+                var attachment = FindAttachment(context);
                 if (attachment == null)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var returned = components.Markers.Return(attachment.Id);
+                var returned = context.Components.Markers.Return(attachment.Id);
                 return EffectExecutionResult.Applied(new[]
                 {
                     new EffectOutcomeFact("returned", EffectValue.Hero(returned.HolderHeroId))
@@ -398,6 +454,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            /// <summary>
+            /// This is the capability the probe exists for. Its execution applies rather than pausing,
+            /// and applying detaches a marker, so asking whether the node can do anything by running it
+            /// would return the very marker the question was about.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                FindAttachment(context) == null
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.Applied;
+
+            /// <summary>The attachment this card would take back, or null when it gave none.</summary>
+            private static MarkerAttachment FindAttachment(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components == null || !components.IsLive)
+                {
+                    return null;
+                }
+
+                return components.Markers
+                    .GivenBy(context.SourceCardInstanceId)
+                    .OrderBy(candidate => candidate.Id.Value, StringComparer.Ordinal)
+                    .FirstOrDefault();
+            }
         }
     }
 }

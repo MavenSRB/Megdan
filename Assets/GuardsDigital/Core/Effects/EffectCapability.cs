@@ -313,5 +313,23 @@ namespace GuardsDigital.Core.Effects
         EffectExecutionResult Execute(EffectCapabilityContext context);
 
         EffectExecutionResult Resume(EffectCapabilityContext context, IReadOnlyList<EffectValue> selected);
+
+        /// <summary>
+        /// Which of the four results <see cref="Execute"/> would report in this context, answered
+        /// without performing anything.
+        ///
+        /// Milestone 6.5ac asks this so a control node can refuse an option the actor cannot perform
+        /// instead of spending a card on it. Probing by calling <see cref="Execute"/> is exactly what
+        /// this member exists to avoid: a handler may apply rather than pause - marking an actor,
+        /// creating an Active effect, returning a marker, pushing every adjacent object at a fixed
+        /// distance - so asking that way would perform the effect it was asked about.
+        ///
+        /// The answer is the candidate derivation the handler already owns, without the commit that
+        /// follows it. It reports the kind alone rather than an <see cref="EffectExecutionResult"/>,
+        /// because a result carries published facts and declared checkpoints, and a probe has neither:
+        /// it is a reading of the state, not a step in the resolution. Nothing here may mutate board,
+        /// card, effect, component, supply, timing, or identity state, and nothing may mint.
+        /// </summary>
+        EffectExecutionResultKind Anticipate(EffectCapabilityContext context);
     }
 }

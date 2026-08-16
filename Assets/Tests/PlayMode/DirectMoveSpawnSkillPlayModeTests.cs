@@ -14,17 +14,23 @@ using UnityEngine.TestTools;
 namespace GuardsDigital.Tests.PlayMode
 {
     /// <summary>
-    /// Milestone 6.5b in the saved configured scene.
+    /// Milestone 6.5b in the saved configured scene, corrected by milestone 6.5ac.
     ///
     /// The scene's own geography decides what is reachable, and here it decides both branches are
     /// empty-handed: the two heroes start on their configured spawn points far from everything, so
     /// nothing is adjacent for the direct Move to name, and every declared miniature is standing, so
-    /// p.18's Spawn has no supply to draw from. That is the case worth rendering here rather than a
-    /// limitation to work around - a player really can choose either mode in this position, and what
-    /// they must see is p.10's stop rather than a fault or a silent nothing.
+    /// p.18's Spawn has no supply to draw from.
+    ///
+    /// 6.5b read that as the case worth rendering and pinned it: a player could choose either mode and
+    /// what they saw was p.10's stop. That was the defect, not the fixture's limitation - choosing a
+    /// mode that was never going to do anything spent the card, ended the turn, changed nothing on the
+    /// board, and explained nothing. Neither mode is offered now. The node reports itself impossible
+    /// before any prompt opens, and its mandatory policy is what stops the action.
     ///
     /// The player-facing paths where each branch has something to work with run through the
-    /// application boundary in `ConfiguredDirectMoveSpawnSkillTests`.
+    /// application boundary in `ConfiguredDirectMoveSpawnSkillTests`, and the greyed surface - one
+    /// mode refused beside one that can be taken - is reached in this scene by Red Needle, in
+    /// `PushPlaceSkillPlayModeTests`.
     /// </summary>
     public sealed class DirectMoveSpawnSkillPlayModeTests
     {
@@ -35,7 +41,7 @@ namespace GuardsDigital.Tests.PlayMode
         private static readonly EffectNodeId Spawn = new EffectNodeId("bombard-spawn");
 
         [UnityTest]
-        public IEnumerator Scene_RendersBothBranchesAndStopsTheActionWhenTheChosenOneHasNothingToTake()
+        public IEnumerator Scene_OffersNeitherBranchWhenNeitherCanBePerformed()
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
@@ -46,52 +52,40 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SubmitAction(BombardSkill), Is.True);
             yield return null;
 
-            var modes = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .Select(value => value.Command.EffectChoice.Candidate.OptionNodeId)
-                .ToArray();
-            Assert.That(modes, Is.EqualTo(new[] { MoveBranch, Spawn }),
-                "Both branches are rendered as controls in the definition's own order.");
-
-            Assert.That(runtime.SubmitEffectChoiceOption(Spawn), Is.True);
-            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
-            yield return null;
-
             Assert.That(runtime.PendingEffectChoice, Is.Null,
-                "There is no supply to choose from, so no second decision is opened.");
+                "A choice nobody could answer is never opened: a mandatory Choose offers no decline, " +
+                "and every other control is withheld while an effect choice stands.");
+            Assert.That(runtime.RoundView.Model.EffectChoices, Is.Empty);
+            Assert.That(runtime.SubmitEffectChoiceOption(MoveBranch), Is.False,
+                "Neither mode can be chosen, so neither can be spent on.");
+            Assert.That(runtime.SubmitEffectChoiceOption(Spawn), Is.False);
             Assert.That(
                 runtime.Cards.Single(card => card.Id.Equals(cardId)).State.ResolutionStatus,
                 Is.Not.EqualTo(CardResolutionStatus.Unresolved),
                 "p.10: a mandatory step that cannot be performed stops the action there, and the " +
                 "action closes rather than being left pending.");
             Assert.That(runtime.BoardView.Model.Minions, Has.Count.EqualTo(minionsBefore),
-                "Nothing was invented to satisfy the mode the player picked.");
-            Assert.That(runtime.RoundView.Model.EffectChoices, Is.Empty,
-                "The stopped action leaves no decision on screen.");
+                "Nothing was invented, and nothing was quietly taken away either.");
         }
 
         [UnityTest]
-        public IEnumerator Scene_TheDirectMoveBranchOffersNoTargetWhereNothingStandsAdjacent()
+        public IEnumerator Scene_LightsNoBoardCueForTheModesItRefused()
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
             CommitBombardTurn(runtime);
-            var cardId = runtime.SelectedActor.CardInstanceId;
 
             Assert.That(runtime.SubmitAction(BombardSkill), Is.True);
-            Assert.That(runtime.SubmitEffectChoiceOption(MoveBranch), Is.True);
-            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
             yield return null;
 
-            Assert.That(runtime.PendingEffectChoice, Is.Null,
-                "`another adjacent unit` names nothing here, so the selection opens no prompt.");
-            Assert.That(runtime.RoundView.Model.EffectChoiceTargets, Is.Empty);
+            Assert.That(runtime.RoundView.Model.EffectChoiceTargets, Is.Empty,
+                "`another adjacent unit` names nothing here, so no unit is drawn as a target.");
+            Assert.That(runtime.RoundView.Model.EffectChoiceDestinations, Is.Empty);
             Assert.That(runtime.BoardView.Model.EffectChoiceDestinations, Is.Empty,
                 "And the board lights nothing, because no destination was ever offered.");
-            Assert.That(
-                runtime.Cards.Single(card => card.Id.Equals(cardId)).State.ResolutionStatus,
-                Is.Not.EqualTo(CardResolutionStatus.Unresolved),
-                "The action really was started and stopped rather than refused outright.");
+            Assert.That(runtime.RoundView.Model.UnavailableEffectChoices, Is.Empty,
+                "A refused option is greyed inside a decision the player is being asked; there is no " +
+                "decision here to grey anything in.");
         }
 
         /// <summary>

@@ -224,6 +224,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            /// <summary>
+            /// Always applies, so the answer needs to read nothing - which is the point of asking here
+            /// rather than executing: this handler's own execution creates the effect and mints its
+            /// instance identity, and a probe that ran it would grant the modification it was asked
+            /// whether the actor could grant.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
         }
     }
 }

@@ -131,6 +131,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             /// <summary>
+            /// The same targeting question <see cref="Execute"/> asks, without opening the selection.
+            /// Selecting mutates nothing even when it runs, so what this avoids is not a side effect
+            /// but a pause: a probe that executed would leave a pending choice nobody asked for.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Candidates(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
             /// The spaces of every object the acting hero may target, in canonical axial order. Nothing
             /// here walks the board or invents geometry: the reusable targeting contract owns both.
             /// </summary>

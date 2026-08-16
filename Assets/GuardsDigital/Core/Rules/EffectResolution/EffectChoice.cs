@@ -173,7 +173,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<EffectChoiceCandidate> candidates,
             int minimumSelections,
             int maximumSelections,
-            IEnumerable<EffectChoiceCandidate> selected = null)
+            IEnumerable<EffectChoiceCandidate> selected = null,
+            IEnumerable<EffectChoiceCandidate> unavailableCandidates = null)
         {
             if (!resolutionId.IsDefined || !choiceId.IsDefined || !nodeId.IsDefined)
             {
@@ -218,6 +219,29 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 throw new ArgumentException("Effect choice bounds must be a range within the candidates.");
             }
 
+            var refused = (unavailableCandidates ?? Enumerable.Empty<EffectChoiceCandidate>()).ToArray();
+            if (refused.Any(candidate => !options.Contains(candidate)) ||
+                refused.Distinct().Count() != refused.Length)
+            {
+                throw new ArgumentException(
+                    "Unperformable effect choice candidates must be distinct offered candidates.",
+                    nameof(unavailableCandidates));
+            }
+
+            if (refused.Any(candidate => candidate.Kind != EffectChoiceCandidateKind.Option))
+            {
+                throw new ArgumentException(
+                    "Only an option can be unperformable. A capability's value candidates are already " +
+                    "the set it derived, so one it offered is one it can act on.",
+                    nameof(unavailableCandidates));
+            }
+
+            if (chosen.Any(candidate => refused.Contains(candidate)))
+            {
+                throw new ArgumentException(
+                    "An unperformable option cannot be selected.", nameof(selected));
+            }
+
             ResolutionId = resolutionId;
             ChoiceId = choiceId;
             NodeId = nodeId;
@@ -225,10 +249,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             Kind = kind;
             Candidates = new ReadOnlyCollection<EffectChoiceCandidate>(options);
             SelectedCandidates = new ReadOnlyCollection<EffectChoiceCandidate>(chosen);
+            UnavailableCandidates = new ReadOnlyCollection<EffectChoiceCandidate>(refused);
             MinimumSelections = minimumSelections;
             MaximumSelections = maximumSelections;
 
             SelectInvocations = new ReadOnlyCollection<EffectChoiceCommand>(options
+                .Where(candidate => !refused.Contains(candidate))
                 .Where(candidate => !chosen.Contains(candidate) && chosen.Length < maximumSelections)
                 .Select(candidate => new EffectChoiceCommand(
                     resolutionId, choiceId, EffectChoiceCommandKind.Select, candidate))
@@ -252,6 +278,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public EffectChoiceKind Kind { get; }
         public IReadOnlyList<EffectChoiceCandidate> Candidates { get; }
         public IReadOnlyList<EffectChoiceCandidate> SelectedCandidates { get; }
+
+        /// <summary>
+        /// Milestone 6.5ac: the offered options the chooser cannot perform. They stay in
+        /// <see cref="Candidates"/> and carry no <see cref="SelectInvocations"/> entry, so a player
+        /// still sees that the mode exists and cannot spend a card on it.
+        ///
+        /// Never written to a snapshot. It is derived beside the candidate set at every pause and
+        /// re-derived on restore, replay, and retained-prefix Undo, so a payload can neither carry a
+        /// stale refusal nor invent one.
+        /// </summary>
+        public IReadOnlyList<EffectChoiceCandidate> UnavailableCandidates { get; }
+
         public int MinimumSelections { get; }
         public int MaximumSelections { get; }
 
@@ -264,9 +302,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// <summary>Null unless the decision is one a chooser is allowed to decline outright.</summary>
         public EffectChoiceCommand DeclineInvocation { get; }
 
+        /// <summary>
+        /// The same decision with a different selection. The refused options are carried rather than
+        /// re-derived, because selecting and deselecting change nothing a feasibility question reads:
+        /// a selection is recorded on the frame, and no board, supply, or timing state moves until the
+        /// choice is confirmed and the capability resumes.
+        /// </summary>
         public PendingEffectChoice WithSelected(IEnumerable<EffectChoiceCandidate> selected) =>
             new PendingEffectChoice(
                 ResolutionId, ChoiceId, NodeId, ChooserId, Kind,
-                Candidates, MinimumSelections, MaximumSelections, selected);
+                Candidates, MinimumSelections, MaximumSelections, selected, UnavailableCandidates);
     }
 }

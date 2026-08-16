@@ -222,6 +222,9 @@ namespace GuardsDigital.Tests.EditMode
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
         }
 
         private static MatchSession CreateSkillSession()

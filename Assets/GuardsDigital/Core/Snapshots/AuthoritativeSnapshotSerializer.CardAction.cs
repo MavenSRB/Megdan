@@ -410,13 +410,32 @@ namespace GuardsDigital.Core.Snapshots
                     $"Snapshot pending effect choice selects a candidate node '{nodeId}' does not offer.");
             }
 
+            // Milestone 6.5ac: which options are unperformable is never written either. It is asked
+            // again here, against the state this same payload has just restored, for the reason the
+            // candidate set is: a refusal is a reading of the board, the supply, and the timing as they
+            // now stand, so carrying one in the payload could only carry a stale one.
+            var unavailable = choiceKind == EffectChoiceKind.SelectOption
+                ? EffectOptionFeasibilityQuery.FindUnperformableOptions(
+                    node,
+                    restored,
+                    restored.CompletedOutcomes,
+                    new EffectResolutionContext(
+                        trusted, capabilities, participants, null, 1, 1, modifications,
+                        components: components))
+                : Array.Empty<EffectChoiceCandidate>();
+            if (selected.Any(candidate => unavailable.Contains(candidate)))
+            {
+                throw Malformed(
+                    $"Snapshot pending effect choice selects an option node '{nodeId}' cannot perform.");
+            }
+
             return restored.With(
                 restored.Continuation,
                 restored.CompletedOutcomes,
                 restored.AcceptedChoices,
                 new PendingEffectChoice(
                     new EffectResolutionId(common.ResolutionId.Value), choiceId, nodeId, chooserId,
-                    choiceKind, candidates, minimum, maximum, selected));
+                    choiceKind, candidates, minimum, maximum, selected, unavailable));
         }
 
         /// <summary>

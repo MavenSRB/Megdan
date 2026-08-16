@@ -405,6 +405,9 @@ namespace GuardsDigital.Tests.EditMode
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
         }
 
         /// <summary>
@@ -437,6 +440,9 @@ namespace GuardsDigital.Tests.EditMode
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 EffectExecutionResult.Applied(
                     new[] { new EffectOutcomeFact("chosen", selected[0]) });
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.NeedsChoice;
         }
 
         private static SnapshotFixture CreateFixture()

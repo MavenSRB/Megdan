@@ -109,15 +109,25 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void APushWithNothingAdjacent_StopsTheActionRatherThanMovingNothingSilently()
+        public void APushWithNothingAdjacent_IsRefusedRatherThanOfferedAndSpentSilently()
         {
-            // p.18's zero-space push is a target that cannot travel. No target at all is a different
-            // thing, and a mandatory step that cannot happen stops the action (p.10).
+            // p.18's zero-space push is a target that cannot travel, and that stays a legal push. No
+            // target at all is a different thing: the mode can do nothing, so milestone 6.5ac refuses
+            // it instead of letting the actor spend the card on a step that stops (p.10).
             var session = StartDisplacementSkill(blueAt: new HexCoordinate(-3, 10));
 
-            ChooseOption(session, PushBranch);
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(
+                choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Has.Member(PushBranch));
+            Assert.That(
+                choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Has.No.Member(PushBranch),
+                "A refused option carries no way to select it.");
+            Assert.That(choice.Candidates.Select(candidate => candidate.OptionNodeId),
+                Has.Member(PushBranch),
+                "It is still projected: a player sees the mode exists and that it cannot be taken.");
 
-            Assert.That(session.Projection.PendingSkillResolution, Is.Null);
             var board = RestoreBoard(session);
             Assert.That(Coordinate(board, BlueHero(session)), Is.EqualTo(new HexCoordinate(-3, 10)),
                 "Nothing moved.");

@@ -167,6 +167,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             /// <summary>
+            /// The same reachability question <see cref="Execute"/> asks, without opening the choice.
+            /// An unbound subject leaves the mover unresolvable and the node impossible, which is what
+            /// the enclosing walk reads as "not decidable here" when the space comes from a later node.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Candidates(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
             /// The destinations this move may use, from the Movement action's own reachability plus the
             /// node's distance policy and the source-relative policy. Nothing here walks the board.
             /// </summary>
@@ -295,6 +305,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 ResumePush(context, selected, TryFindAdjacentTargets);
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                AnticipatePush(context, TryFindAdjacentTargets);
         }
 
         /// <summary>
@@ -322,6 +335,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 ResumePush(context, selected, TryFindNamedTarget);
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                AnticipatePush(context, TryFindNamedTarget);
         }
 
         /// <summary>How a Push handler produces its target set. The only thing the two differ in.</summary>
@@ -370,6 +386,30 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .ToArray();
             return EffectExecutionResult.NeedsChoice(
                 new EffectChoiceRequest(EffectChooserRole.Actor, candidates, 1, 1));
+        }
+
+        /// <summary>
+        /// Whether a push would do anything, asked without pushing. Both declarations need it and both
+        /// need it for the same reason: under any policy but `up to` the execution above resolves and
+        /// commits the batch in the same call, so this is the one shape where probing by executing
+        /// would move every adjacent object across the board.
+        ///
+        /// It stops at the target question, which is the whole of what "can this be done" means here.
+        /// p.18 admits a zero-space push as a legal result, so a target that cannot travel is still a
+        /// target and this reports the push performable - the rule that a blocked push resolves to
+        /// zero is the same rule whether or not anyone asked first.
+        /// </summary>
+        private static EffectExecutionResultKind AnticipatePush(
+            EffectCapabilityContext context, PushTargetFinder finder)
+        {
+            if (context.Input("distance").IntegerValue < 0 || !finder(context, out _, out _))
+            {
+                return EffectExecutionResultKind.ImpossibleMandatory;
+            }
+
+            return context.FailurePolicy == EffectFailurePolicy.UpTo
+                ? EffectExecutionResultKind.NeedsChoice
+                : EffectExecutionResultKind.Applied;
         }
 
         private static EffectExecutionResult ResumePush(

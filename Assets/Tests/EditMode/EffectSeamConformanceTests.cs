@@ -102,12 +102,17 @@ namespace GuardsDigital.Tests.EditMode
                     ILConformanceScanner.Method(
                         typeof(IEffectCapabilityHandler), nameof(IEffectCapabilityHandler.Execute)),
                     ILConformanceScanner.Method(
-                        typeof(IEffectCapabilityHandler), nameof(IEffectCapabilityHandler.Resume))
+                        typeof(IEffectCapabilityHandler), nameof(IEffectCapabilityHandler.Resume)),
+                    // Milestone 6.5ac's probe joins the same rule as the two it sits beside. Asking a
+                    // capability what it could do is still asking a capability, and the seams route
+                    // and materialise rather than judge.
+                    ILConformanceScanner.Method(
+                        typeof(IEffectCapabilityHandler), nameof(IEffectCapabilityHandler.Anticipate))
                 }
                 .Where(member => member != null)
                 .ToArray();
 
-            Assert.That(members, Has.Length.EqualTo(6),
+            Assert.That(members, Has.Length.EqualTo(7),
                 "A forbidden member no longer resolves. Correct the rule rather than deleting it; a " +
                 "rule that names nothing protects nothing.");
             return members;

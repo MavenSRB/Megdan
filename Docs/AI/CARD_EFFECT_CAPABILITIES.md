@@ -42,6 +42,7 @@ Each registered capability has an immutable definition contract and a pure rules
 - Invocation contexts in which it may appear.
 - Preconditions and effective-characteristic queries.
 - Choice schema and choice owner, if input is required.
+- A feasibility answer that reports which result the executor would return here without performing anything, derived from the same candidate derivation the executor uses. A control node asks it to refuse an option the actor cannot perform; it never mutates board, card, effect, component, supply, timing, or identity state, and mints nothing.
 - Exact versus `up to`, `may`, and `if able` failure behavior.
 - Atomicity: single target, ordered multi-target, or simultaneous batch.
 - State read set and state changes.
@@ -85,6 +86,7 @@ If a later mandatory node returns `ImpossibleMandatory`, earlier `Applied` nodes
 9. System checkpoints run at their rulebook boundary even if presentation is still animating prior events.
 10. Adding a card never authorizes a display-name, hero-name, or image-name switch. The definition references capability IDs and typed parameters.
 11. If existing parameters cannot express a verified effect exactly, add a new versioned capability or a controlled custom handler. Do not overload a similar term with different semantics.
+12. A control node offers only the options the chooser can perform. An option is judged by walking its own branch in execution order and asking each capability what it would report; an option proven to apply nothing is projected, refused, and shown greyed rather than hidden, and one that cannot be judged - a required input a later step publishes, or a predicate that would have to be executed - is offered. When no option can be performed the node reports itself impossible and its own failure policy decides what that means.
 
 ## Core mutation identity matrix
 
@@ -145,6 +147,7 @@ Minimum regression pairs include:
 - Immunity for both chosen and automatically affected targets by originating action/effect type, presence checks, self-action exception, and verified explicit overrides.
 - `Counts As` effective type versus intrinsic representation exceptions.
 - Every handler result (`Applied`, legal no-op, `NeedsChoice`, `ImpossibleMandatory`, `DeclinedOptional`) and typed result binding used by a later node.
+- The feasibility answer against each result the executor can reach, that it performs nothing, and that a refused option is projected, unselectable, and rejected atomically when a stale or forged selection names it.
 - Pending choice/resolution serialization, stale-choice rejection, determinism, and ordered semantic events/checkpoint facts.
 
 ## General rulebook coverage index

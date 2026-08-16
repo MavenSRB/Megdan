@@ -314,7 +314,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 case EffectNodeKind.Capability:
                     var handler = context.Catalog.Load(node.Capability);
                     var resumed = handler.Resume(
-                        BuildContext(frame, node, outcomes, context),
+                        BuildCapabilityContext(frame, node, outcomes, context),
                         choice.SelectedCandidates.Select(candidate => candidate.Value).ToArray());
                     var terminal = ApplyCapabilityResult(
                         frame, node, resumed, continuation, outcomes, choices, events, context);
@@ -396,10 +396,36 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     case EffectNodeKind.Choose:
                         if (top.ChildIndex == 0)
                         {
+                            // Milestone 6.5ac: an option the chooser cannot perform is refused rather
+                            // than offered, so no card is spent on a mode that was never going to do
+                            // anything.
+                            var unavailable = EffectOptionFeasibilityQuery.FindUnperformableOptions(
+                                node, frame, outcomes, context);
+                            if (unavailable.Count == node.ChildNodeIds.Count)
+                            {
+                                // Nothing here can be taken, so the node reports itself impossible and
+                                // its own policy decides what that means - the same reading a
+                                // capability's impossible result gets below.
+                                Pop(continuation);
+                                if (node.FailurePolicy == EffectFailurePolicy.Mandatory)
+                                {
+                                    Record(outcomes, events, node.Id,
+                                        EffectExecutionResultKind.ImpossibleMandatory);
+                                    continuation.Clear();
+                                    return EffectResolutionStepResult.Accept(
+                                        Rebuild(frame, continuation, outcomes, choices), true, events);
+                                }
+
+                                Record(outcomes, events, node.Id,
+                                    EffectExecutionResultKind.DeclinedOptional);
+                                continue;
+                            }
+
                             return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
                                 frame, node, context, EffectChoiceKind.SelectOption,
                                 node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray(),
-                                node.MinimumSelections, node.MaximumSelections));
+                                node.MinimumSelections, node.MaximumSelections,
+                                unavailableCandidates: unavailable));
                         }
 
                         Pop(continuation);
@@ -428,7 +454,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                     case EffectNodeKind.Capability:
                         var handler = context.Catalog.Load(node.Capability);
-                        var result = handler.Execute(BuildContext(frame, node, outcomes, context));
+                        var result = handler.Execute(BuildCapabilityContext(frame, node, outcomes, context));
                         var applied = ApplyCapabilityResult(
                             frame, node, result, continuation, outcomes, choices, events, context);
                         if (applied != null)
@@ -517,7 +543,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<EffectChoiceCandidate> candidates,
             int minimumSelections,
             int maximumSelections,
-            EffectChooserRole chooserOverride = EffectChooserRole.None) =>
+            EffectChooserRole chooserOverride = EffectChooserRole.None,
+            IReadOnlyList<EffectChoiceCandidate> unavailableCandidates = null) =>
             new PendingEffectChoice(
                 frame.ResolutionId,
                 new EffectChoiceId($"node-{node.Id.Value}"),
@@ -529,7 +556,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 kind,
                 candidates,
                 minimumSelections,
-                maximumSelections);
+                maximumSelections,
+                null,
+                unavailableCandidates);
 
         private static HeroId ResolveChooser(
             EffectChooserRole role,
@@ -560,12 +589,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectResolutionContext context)
         {
             var handler = context.Catalog.Load(node.Capability);
-            var result = handler.Execute(BuildContext(frame, node, outcomes, context));
+            var result = handler.Execute(BuildCapabilityContext(frame, node, outcomes, context));
             return result.Outcomes.Any(outcome =>
                 outcome.Value.Kind == EffectValueKind.Boolean && outcome.Value.BooleanValue);
         }
 
-        private static EffectCapabilityContext BuildContext(
+        internal static EffectCapabilityContext BuildCapabilityContext(
             PendingResolution frame,
             EffectNodeDefinition node,
             IReadOnlyList<EffectNodeOutcome> outcomes,

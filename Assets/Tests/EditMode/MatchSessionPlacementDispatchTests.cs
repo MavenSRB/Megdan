@@ -154,15 +154,20 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheSpawnBranch_StopsTheActionWhileEveryDeclaredMiniatureStands()
+        public void TheSpawnBranch_IsNotOfferedWhileEveryDeclaredMiniatureStands()
         {
             // p.18's Spawn takes only from the supply, and at setup the supply is empty because every
-            // declared miniature is on the board. A mandatory step that cannot happen stops the action.
+            // declared miniature is on the board. Milestone 6.5ac refuses the mode on exactly that
+            // reading rather than letting the actor choose it and watch nothing happen.
             var session = StartPlacementSkill();
 
-            ChooseBranch(session, SpawnBranch);
-
-            Assert.That(session.Projection.PendingSkillResolution, Is.Null);
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(
+                choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Has.Member(SpawnBranch));
+            Assert.That(
+                choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Has.No.Member(SpawnBranch));
             Assert.That(RestoreBoard(session).Minions.Count, Is.EqualTo(12), "Nothing entered the board.");
         }
 
