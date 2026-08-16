@@ -83,10 +83,21 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(cue.characterSize, Is.EqualTo(BoardChoiceCue.MarkerCharacterSize).Within(Tolerance));
                 AssertColor(cue.color, BoardChoiceCue.HighlightedColor);
                 Assert.That(cue.gameObject.activeSelf, Is.True);
-                Assert.That(cue.transform.localPosition.y, Is.GreaterThan(PrimitiveHeroView.DefaultHeight),
-                    "The marker hangs above the prism rather than inside it.");
-                Assert.That(cue.transform.localScale.x, Is.EqualTo(1f).Within(Tolerance),
-                    "An upright mesh needs none of the minion sprite's horizontal inversion.");
+
+                // The regression this fixture exists for. The board is the XZ plane and the camera
+                // looks down it, so a cue is visible only when it lies flat facing up; parented
+                // straight to this upright view it faced sideways and rendered as an invisible
+                // sliver. Asserting the facing rather than a local offset is what makes that
+                // observable at all - the first version was in the right place and unseeable.
+                Assert.That(Vector3.Distance(cue.transform.forward, Vector3.up), Is.LessThan(0.001f),
+                    "The marker faces the camera that looks down the board plane.");
+                Assert.That(Vector3.Distance(cue.transform.up, Vector3.forward), Is.LessThan(0.001f),
+                    "And its own up points up-screen, so the marker is not upside down.");
+                Assert.That(cue.transform.position.z,
+                    Is.GreaterThan(view.transform.position.z + 0.5f),
+                    "It sits above the hero on screen, which is +Z on this board.");
+                Assert.That(cue.transform.position.y, Is.GreaterThan(0f),
+                    "And above the board plane, so no tile draws over it.");
 
                 view.SetChoiceCue(MinionChoiceCueKind.Selected);
                 AssertColor(cue.color, BoardChoiceCue.SelectedColor);

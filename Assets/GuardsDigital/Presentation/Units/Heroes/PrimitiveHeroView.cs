@@ -55,14 +55,24 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private float verticalOffset = DefaultVerticalOffset;
 
         /// <summary>
-        /// Milestone 6.5c: where the choice marker hangs above the prism. It sits clear of the top
-        /// face rather than at the minion's sprite offset, and needs no mirroring, because this view
-        /// is an upright mesh instead of an inherited-orientation token.
+        /// Milestone 6.5c: the choice cue hangs from a board-facing anchor rather than from this
+        /// transform directly.
+        ///
+        /// The board is the XZ plane and the camera looks down it, so a cue is only visible when it
+        /// lies flat. `StandardMinionView` gets that for free - its whole token is rotated flat and
+        /// the cue inherits it - but this view is an upright prism at identity rotation, so a cue
+        /// parented straight to it faces sideways and renders as an invisible sliver, which is what
+        /// the first attempt did. The anchor carries exactly the minion's own orientation, so the
+        /// shared construction, the reviewed proportions, and the marker's screen position and size
+        /// are one thing for both unit kinds instead of two that have to be kept in step.
         /// </summary>
-        private static readonly Vector3 ChoiceCueLocalPosition = new Vector3(0f, DefaultHeight + 0.28f, -0.15f);
+        private static readonly Vector3 ChoiceCueAnchorLocalPosition = new Vector3(0f, 0.3f, 0f);
+
+        private static readonly Vector3 ChoiceCueLocalPosition = new Vector3(0f, 0.85f, -0.15f);
 
         private Mesh ownedMesh;
         private Material ownedMaterial;
+        private Transform choiceCueAnchor;
         private TextMesh choiceCue;
         private TextMesh choiceCueBackground;
 
@@ -186,11 +196,16 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
             if (choiceCue == null)
             {
+                var anchor = new GameObject("Hero Choice Cue Anchor");
+                anchor.transform.SetParent(transform, false);
+                anchor.transform.localPosition = ChoiceCueAnchorLocalPosition;
+                anchor.transform.localRotation = BoardChoiceCue.BoardFacingRotation;
+                choiceCueAnchor = anchor.transform;
                 BoardChoiceCue.CreatePair(
-                    transform,
+                    choiceCueAnchor,
                     "Hero Choice Cue",
                     ChoiceCueLocalPosition,
-                    mirrored: false,
+                    mirrored: true,
                     out choiceCue,
                     out choiceCueBackground);
                 choiceCue.characterSize = BoardChoiceCue.MarkerCharacterSize;
@@ -202,7 +217,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
             choiceCue.color = kind == MinionChoiceCueKind.Selected
                 ? BoardChoiceCue.SelectedColor
                 : BoardChoiceCue.HighlightedColor;
-            BoardChoiceCue.Center(transform, choiceCue, choiceCueBackground, ChoiceCueLocalPosition);
+            BoardChoiceCue.Center(
+                choiceCueAnchor, choiceCue, choiceCueBackground, ChoiceCueLocalPosition);
         }
 
         public void EnsurePrimitiveVisual()

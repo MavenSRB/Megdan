@@ -114,6 +114,46 @@ namespace GuardsDigital.Tests.PlayMode
                 hero.GetComponent<MeshFilter>().sharedMesh != null));
         }
 
+        /// <summary>
+        /// Milestone 6.5c, corrected after review. The hero choice cue, checked against the scene's
+        /// own camera rather than against an assumption about which axis is up.
+        ///
+        /// This is the check the milestone should have carried. It asserted where the marker sat in
+        /// the hero's local space, which stayed true while the marker was edge-on to a camera that
+        /// looks straight down the board and therefore invisible - the defect a player saw
+        /// immediately and no automated check did. Milestone 6.1a already had the honest form for a
+        /// minion, projecting through the configured camera, and this is that form for the hero,
+        /// which the two views now share one cue construction for.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_ShowsTheHeroChoiceCueFacingTheConfiguredCamera()
+        {
+            yield return LoadScene();
+            var hero = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(value => value.Occupancy.HeroId.Value ==
+                    PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var camera = Object.FindAnyObjectByType<Camera>();
+
+            hero.SetChoiceCue(MinionChoiceCueKind.Highlighted);
+            yield return null;
+
+            var cue = hero.GetComponentsInChildren<TextMesh>(true)
+                .Single(value => value.gameObject.name == "Hero Choice Cue");
+            Assert.That(cue.text, Is.EqualTo(BoardChoiceCue.Marker));
+            Assert.That(cue.gameObject.activeInHierarchy, Is.True);
+
+            var toCamera = (camera.transform.position - cue.transform.position).normalized;
+            Assert.That(Vector3.Dot(cue.transform.forward, toCamera), Is.GreaterThan(0.9f),
+                "The marker faces the camera instead of standing edge-on to it.");
+            Assert.That(camera.WorldToViewportPoint(cue.transform.position).y,
+                Is.GreaterThan(camera.WorldToViewportPoint(hero.transform.position).y),
+                "And it reads above its hero, exactly as the minion cue reads above its minion.");
+
+            hero.SetChoiceCue(MinionChoiceCueKind.None);
+            yield return null;
+            Assert.That(cue.gameObject.activeInHierarchy, Is.False);
+        }
+
         [UnityTest]
         public IEnumerator Scene_RoutesConfiguredMinionAttackCuePointerAndRemovalThroughFeatureBoundary()
         {

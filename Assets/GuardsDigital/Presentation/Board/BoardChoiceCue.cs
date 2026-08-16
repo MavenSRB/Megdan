@@ -14,6 +14,15 @@ namespace GuardsDigital.Presentation.Board
     /// </summary>
     public static class BoardChoiceCue
     {
+        /// <summary>
+        /// The orientation that lays a cue flat on the board, facing the camera that looks down the
+        /// XZ plane, with its own up pointing up-screen. `StandardMinionView` already carries it on
+        /// the token itself; a view whose transform is upright hangs its cue from an anchor holding
+        /// this, because a cue at identity rotation on such a view is edge-on and invisible.
+        /// </summary>
+        public static Quaternion BoardFacingRotation =>
+            Quaternion.Euler(-90f, 0f, 0f) * Quaternion.AngleAxis(180f, Vector3.forward);
+
         public const string Marker = "▼";
         public const float MarkerCharacterSize = 0.09f;
         public const float ValueCharacterSize = 0.06f;
