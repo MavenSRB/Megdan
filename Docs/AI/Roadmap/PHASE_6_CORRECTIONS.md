@@ -290,7 +290,7 @@ Non-goals: No change to Clear eligibility, adjacency, empty-subset legality, rem
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-63a-let-a-player-choose-clear-and-point-token-controls-back-to-the-board-completion-evidence).
 
-### [ ] 6.4c Let a Push declare which kind of piece its card text may move
+### [~] 6.4c Let a Push declare which kind of piece its card text may move
 
 **Corrective amendment (2026-08-17, user approved).** Milestone 6.7a's handoff reported a defect it inherited rather than introduced, and the user scheduled this correction for it. Rulebook p.18 defines Push over "a unit or a token", so the general rule admits both; two configured cards narrow it in their own text and neither narrowing is enforced. Red Needle's Skill says `choose another adjacent unit and Push it 3 spaces` and Blue Longbow's says `Choose another adjacent unit and Push it 1 space`, but `synthetic-push-target` declares no eligible piece kind, so an adjacent Hazard is offered to both and would be pushed by either. p.19's own sentence that tokens are not units is what makes that wrong, and it is the same sentence milestone 6.6a already acted on for the Swap and the Remove.
 

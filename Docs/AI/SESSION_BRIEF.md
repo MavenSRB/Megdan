@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.7a**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.7a**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.4c**.
 - Next proposed milestone: **6.4c**.
 
 Milestone **6.7a** completed on 2026-08-17: Blue Longbow's printed Primary Attack becomes `Choose another adjacent unit and Push it 1 space; you may Repeat this action once`, the last of the six showcase conversions. It adds no rule, and what it makes visible is the boundary between two instances: a push of one space carries the subject out of reach, so the repeated instance must name a different unit or find none, and where the push leaves the Battle Zone the owning team's correction decides which. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
