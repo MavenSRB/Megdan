@@ -410,18 +410,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 LanePushCauseKind.Defeat);
 
+            var origin = adjacentMoveAuthority.Minions
+                .Single(minion => minion.MinionId.Equals(targetMinionId)).Coordinate;
             if (removalStage.IsPrevented(subject))
             {
+                // Milestone 6.9: p.8's first sentence is answered by the Defeat, so a prevented removal
+                // still records the cause. The stage is asked from where the miniature still stands,
+                // and it discounts that miniature itself, which is why "the last remaining enemy
+                // minion" can have been defeated while its piece is still on the board.
                 return MinionDefeatResolution.Prevented(
                     outcome,
                     reward,
                     removalAttempt,
                     new DefeatRemovalResult(
-                        outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented));
+                        outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented),
+                    removalStage.QualifyLanePush(subject, origin));
             }
 
-            var origin = adjacentMoveAuthority.Minions
-                .Single(minion => minion.MinionId.Equals(targetMinionId)).Coordinate;
             var removed = adjacentMoveAuthority.CommitValidatedMinionRemoval(targetMinionId);
             return MinionDefeatResolution.Removed(
                 outcome,

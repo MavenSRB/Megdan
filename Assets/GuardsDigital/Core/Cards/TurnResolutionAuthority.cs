@@ -47,7 +47,16 @@ namespace GuardsDigital.Core.Cards
         /// Milestone 6.5af: the Skill can apply nothing, so starting it would spend the turn on an
         /// action p.12 says the player is never forced to perform.
         /// </summary>
-        SkillCannotApplyAnything = 26
+        SkillCannotApplyAnything = 26,
+
+        /// <summary>
+        /// Milestone 6.9: rulebook p.8's mid-turn Lane Push was requested and nothing consumes it yet.
+        /// The turn is stopped at that checkpoint, which is the same statement the end-of-round path
+        /// makes with <c>RoundResolutionRejectionReason.UnimplementedLanePushConsumption</c>. Milestones
+        /// 6.10 and 6.11 own the transition; saying so is better than a rejection that blames a missing
+        /// actor or a resolved card.
+        /// </summary>
+        UnimplementedLanePushConsumption = 27
     }
 
     public enum TurnResolutionEventKind
@@ -65,7 +74,14 @@ namespace GuardsDigital.Core.Cards
         SkillActionProgressed = 10,
         ClearActionProgressed = 11,
         HeroRespawned = 12,
-        CardResolvedWithoutAction = 13
+        CardResolvedWithoutAction = 13,
+
+        /// <summary>
+        /// Milestone 6.9: rulebook p.8's mid-turn Lane Push has been requested at the checkpoint that
+        /// precedes the next Initiative action. It is a turn checkpoint rather than a card-action fact,
+        /// because the request outlives the action that caused it and is what the turn stops on.
+        /// </summary>
+        ImmediateLanePushRequested = 14
     }
 
     public readonly struct TurnResolutionEvent
@@ -242,7 +258,8 @@ namespace GuardsDigital.Core.Cards
         public static TurnResolutionEvent TurnCheckpoint(TurnResolutionEventKind kind)
         {
             if (kind != TurnResolutionEventKind.TurnOnlyEffectsCancellationCheckpoint &&
-                kind != TurnResolutionEventKind.TurnEnded)
+                kind != TurnResolutionEventKind.TurnEnded &&
+                kind != TurnResolutionEventKind.ImmediateLanePushRequested)
             {
                 throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -476,9 +493,16 @@ namespace GuardsDigital.Core.Cards
                     state.TieBreakerState,
                     state.Initiative)
             };
+            // A started turn that has not ended normally has either an actor or a choice deciding who
+            // acts next. Milestone 6.9 adds the third state it can legitimately be in: rulebook p.8's
+            // mid-turn Lane Push has been requested, the acting hero's card has resolved, and Initiative
+            // is deliberately not handed on until the push resolves. A snapshot taken there has to
+            // restore a turn that is stopped too, so this is a state to admit rather than a payload to
+            // refuse.
             if (!state.IsStarted ||
                 (!state.IsEnded && state.Initiative.PendingChoice == null &&
-                    !state.Initiative.SelectedActor.IsDefined))
+                    !state.Initiative.SelectedActor.IsDefined &&
+                    cardActions?.PendingImmediateLanePush == null))
             {
                 throw new ArgumentException("Restored active turn state is incomplete.", nameof(state));
             }
@@ -1030,6 +1054,14 @@ namespace GuardsDigital.Core.Cards
             PendingDisplacedMinionCorrection => cardActions?.PendingDisplacedMinionCorrection;
 
         /// <summary>
+        /// Milestone 6.9's mid-turn Lane-Push request, or <c>null</c>. The turn reads it rather than
+        /// owning it, the way it reads the pending correction: the dispatcher records it, and what the
+        /// turn adds is the checkpoint no later Initiative action gets past while it is set.
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.PendingImmediateLanePushRequest
+            PendingImmediateLanePush => cardActions?.PendingImmediateLanePush;
+
+        /// <summary>
         /// Answers milestone 6.4a's paused after-action correction. The gate is the pending choice's
         /// own choosing side rather than the selected actor, because p.18 hands the decision to the
         /// displaced minion's team - which can be the acting hero's opponent - while the correction
@@ -1245,6 +1277,23 @@ namespace GuardsDigital.Core.Cards
         private TurnResolutionResult AdvanceInitiative(IEnumerable<TurnResolutionEvent> priorEvents)
         {
             var events = new List<TurnResolutionEvent>(priorEvents);
+
+            // Milestone 6.9's immediate checkpoint. Rulebook p.8 pushes the Lane in the middle of the
+            // turn and only then does "the turn continue in the Initiative order as normal", so the
+            // request is reached here rather than after the next actor is selected. It stops the turn
+            // because milestones 6.10 and 6.11 own the transition and this milestone may not expose a
+            // partial one - the same stop the end-of-round path makes at its own checkpoint.
+            //
+            // It also has to be here rather than in the round dispatcher: this same advance ends the
+            // turn when no unresolved cards remain, so a stop placed after it would let a mid-turn
+            // request fall through into end-of-round resolution.
+            if (cardActions?.PendingImmediateLanePush != null)
+            {
+                events.Add(TurnResolutionEvent.TurnCheckpoint(
+                    TurnResolutionEventKind.ImmediateLanePushRequested));
+                return TurnResolutionResult.Accept(events);
+            }
+
             var result = initiative.TrySelectNextActor(definitions, instances, participants);
             if (!result.Accepted)
             {
@@ -1345,6 +1394,16 @@ namespace GuardsDigital.Core.Cards
             if (PendingHeroRespawnChoice != null)
             {
                 return TurnResolutionRejectionReason.HeroRespawnChoicePending;
+            }
+
+            // Milestone 6.9. The gate is "a request is held and the action that caused it has closed",
+            // not simply "a request is held": a Skill can record p.8's cause at one node and still owe
+            // a choice or an after-action correction, and refusing the command that finishes it would
+            // stop the match one step short of the checkpoint rather than at it.
+            if (cardActions != null && cardActions.PendingImmediateLanePush != null &&
+                !cardActions.HasPendingResolution)
+            {
+                return TurnResolutionRejectionReason.UnimplementedLanePushConsumption;
             }
 
             return IsEnded

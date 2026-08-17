@@ -163,7 +163,8 @@ namespace GuardsDigital.Tests.EditMode
                         reward,
                         attempt,
                         new DefeatRemovalResult(
-                            outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented));
+                            outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented),
+                        LanePushQualification.None);
                 }
 
                 throw new InvalidOperationException("The sample exists for its instructions, not its behaviour.");

@@ -597,7 +597,7 @@ Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#mile
 
 **Reordering amendment (2026-08-15, user approved).** Milestone 6.8b moves behind 6.4 to the slot immediately before 6.5a, and corrective milestone 6.8g is added ahead of it, because neither of Blue Feint's modes had a consumer where the card was scheduled: this milestone's `Counts As` contract reaches no production caller, and its immunity contract is consumed only for Attack while Object Push arrives at 6.4. The reordering and its reasoning are authoritative in the [mechanics-showcase subshard](PHASE_6_SHOWCASE.md); 6.8g's block is authoritative in the [corrections subshard](PHASE_6_CORRECTIONS.md). Scheduling still authorizes nothing.
 
-### [~] 6.9 Emit an immediate Lane-Push request during a turn
+### [x] 6.9 Emit an immediate Lane-Push request during a turn
 
 Acceptance checks:
 
@@ -606,6 +606,8 @@ Acceptance checks:
 - A Defeat still emits the request when its later removal is prevented.
 - The request reaches the immediate checkpoint before a later Initiative action can continue.
 - This milestone does not expose a partial Lane transition.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-69-emit-an-immediate-lane-push-request-during-a-turn-completion-evidence).
 
 ### [ ] 6.10 Resolve Lane Push Wave and Battle-Zone stages
 

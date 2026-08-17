@@ -5,6 +5,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
@@ -69,9 +70,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchComponents components,
             int roundIndex,
             int turnIndex,
-            out PendingRepeatedAction repeat)
+            out PendingRepeatedAction repeat,
+            out LanePushCauseKind lanePushCause)
         {
             repeat = null;
+            lanePushCause = LanePushCauseKind.None;
             if (!resolutionId.IsDefined)
             {
                 throw new ArgumentException("A Skill requires a resolution ID.", nameof(resolutionId));
@@ -109,6 +112,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     offer.ActionDefinitionId, action.EffectRoot.Reference, offer.ActorId, offer.ActorId);
             }
 
+            lanePushCause = step.LanePushCause;
             return Complete(
                 step, resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId,
                 offer.ActorId, true);
@@ -138,8 +142,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             MatchComponents components,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            out LanePushCauseKind lanePushCause)
         {
+            lanePushCause = LanePushCauseKind.None;
             if (repeat == null) throw new ArgumentNullException(nameof(repeat));
             if (!resolutionId.IsDefined)
             {
@@ -171,6 +177,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ActionInvocationContext.Repeated,
                 context);
 
+            lanePushCause = step.LanePushCause;
             return Complete(
                 step, resolutionId, repeat.SourceCardInstanceId, repeat.ActionDefinitionId,
                 repeat.ActorId, true);
@@ -262,9 +269,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchComponents components,
             int roundIndex,
             int turnIndex,
-            out PendingRepeatedAction repeat)
+            out PendingRepeatedAction repeat,
+            out LanePushCauseKind lanePushCause)
         {
             repeat = null;
+            lanePushCause = LanePushCauseKind.None;
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (pendingResolution == null)
             {
@@ -301,6 +310,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingResolution.ControllerId);
             }
 
+            lanePushCause = step.LanePushCause;
             return Complete(step, default, default, default, default, false);
         }
 

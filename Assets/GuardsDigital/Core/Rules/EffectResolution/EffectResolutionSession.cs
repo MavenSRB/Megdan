@@ -64,7 +64,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             PendingResolution frame,
             bool isComplete,
             IEnumerable<EffectResolutionEvent> events,
-            bool repeatRequested)
+            bool repeatRequested,
+            GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause)
         {
             Accepted = accepted;
             RejectionReason = rejectionReason;
@@ -73,6 +74,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             Events = new ReadOnlyCollection<EffectResolutionEvent>(
                 (events ?? Enumerable.Empty<EffectResolutionEvent>()).ToArray());
             RepeatRequested = repeatRequested;
+            LanePushCause = lanePushCause;
         }
 
         public bool Accepted { get; }
@@ -95,14 +97,27 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public bool RepeatRequested { get; }
 
+        /// <summary>
+        /// Milestone 6.9: which of rulebook p.8's two sentences this completed instance answered, or
+        /// the named absence. Meaningful only alongside <see cref="IsComplete"/>, for the reason
+        /// <see cref="RepeatRequested"/> is: the completing frame is the last thing that carries the
+        /// outcome the recorded cause lives on.
+        ///
+        /// It says nothing about whether a push is owed. That question needs the board, and the card
+        /// action asks it.
+        /// </summary>
+        public GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind LanePushCause { get; }
+
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
             bool isComplete,
             IEnumerable<EffectResolutionEvent> events,
-            bool repeatRequested = false) =>
+            bool repeatRequested = false,
+            GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause =
+                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
-                repeatRequested);
+                repeatRequested, lanePushCause);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -113,7 +128,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 throw new ArgumentException("A rejected effect step requires a reason.", nameof(reason));
             }
 
-            return new EffectResolutionStepResult(false, reason, frame, false, null, false);
+            return new EffectResolutionStepResult(
+                false, reason, frame, false, null, false,
+                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None);
         }
     }
 
@@ -349,7 +366,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             continuation.Clear();
             return EffectResolutionStepResult.Accept(
                 Rebuild(frame, continuation, outcomes, frame.AcceptedChoices), true, events,
-                RepeatedActionQuery.WasRequested(context.Definition, outcomes));
+                RepeatedActionQuery.WasRequested(context.Definition, outcomes),
+                RecordedLanePushQuery.Recorded(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult Resume(
@@ -457,7 +475,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 {
                     return EffectResolutionStepResult.Accept(
                         Rebuild(frame, continuation, outcomes, choices), true, events,
-                        RepeatedActionQuery.WasRequested(context.Definition, outcomes));
+                        RepeatedActionQuery.WasRequested(context.Definition, outcomes),
+                        RecordedLanePushQuery.Recorded(context.Definition, outcomes));
                 }
 
                 var top = continuation[continuation.Count - 1];
@@ -688,7 +707,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             continuation.Clear();
             return EffectResolutionStepResult.Accept(
                 Rebuild(frame, continuation, outcomes, choices), true, events,
-                RepeatedActionQuery.WasRequested(context.Definition, outcomes));
+                RepeatedActionQuery.WasRequested(context.Definition, outcomes),
+                RecordedLanePushQuery.Recorded(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult PauseOn(

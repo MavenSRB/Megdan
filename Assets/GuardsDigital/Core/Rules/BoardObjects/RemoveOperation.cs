@@ -287,11 +287,24 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         }
 
         /// <summary>
-        /// A removed miniature is no longer among the board's minions, so its side is read from the
-        /// reserve it just joined rather than from an occupancy that no longer exists.
+        /// The side a miniature belongs to, read from wherever that miniature currently is.
+        ///
+        /// A removed one is no longer among the board's minions, so its side comes from the reserve it
+        /// just joined rather than from an occupancy that no longer exists. Since milestone 6.9 the
+        /// board is consulted first, because p.13's Defeat asks this question with its target still
+        /// standing when the removal was prevented: the side is the same fact either way, and looking
+        /// in only one of the two places would make the answer depend on the removal succeeding.
         /// </summary>
         private TeamSide SideOfRemovedMinion(BoardObjectReference subject)
         {
+            foreach (var standing in board.Minions)
+            {
+                if (standing.MinionId.Equals(subject.MinionId))
+                {
+                    return standing.TeamSide;
+                }
+            }
+
             foreach (var reserved in units.FindUnitSupply())
             {
                 if (reserved.MinionId.Equals(subject.MinionId))

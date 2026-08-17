@@ -8,6 +8,7 @@ using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Consequences;
@@ -73,6 +74,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         private PendingDisplacedMinionCorrection pendingCorrection;
         private PendingRepeatedAction pendingRepeat;
+        private PendingImmediateLanePushRequest pendingLanePush;
 
         private CardActionResolutionAuthority(
             MovementCardActionStrategyBackend movementBackend,
@@ -191,6 +193,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public PendingRepeatedAction PendingRepeatedAction => pendingRepeat;
 
         /// <summary>
+        /// Milestone 6.9's mid-turn Lane-Push request, or <c>null</c>. It is dispatcher-owned for the
+        /// reason the correction is: p.8's push is a consequence of the action boundary rather than of
+        /// any one backend, and both operations the rulebook allows to cause one - p.19's standalone
+        /// Remove inside a Skill and p.13's Defeat inside an Attack - reach this object.
+        ///
+        /// Nothing here consumes it. The turn refuses to hand Initiative on while it is set, which is
+        /// the whole of this milestone's stop; milestones 6.10 and 6.11 own the transition that clears
+        /// it.
+        /// </summary>
+        public PendingImmediateLanePushRequest PendingImmediateLanePush => pendingLanePush;
+
+        /// <summary>
         /// The modifications in effect right now, derived from the supplied timing state and this
         /// authority's board. Built per command rather than cached: an Active effect can expire and a
         /// token can be removed between two commands, and a cached set would answer for the wrong moment.
@@ -234,10 +248,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var result = skillBackend.StartTurnSkill(
                 resolutionId, offer, prepared.Definitions, prepared.Instances, participants,
-                timing, modifications, components, roundIndex, turnIndex, out var repeat);
+                timing, modifications, components, roundIndex, turnIndex, out var repeat,
+                out var lanePushCause);
             return CloseActionBoundary(
-                result, repeat, resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId,
-                offer.ActorId,
+                result, repeat, lanePushCause, resolutionId, offer.SourceCardInstanceId,
+                offer.ActionDefinitionId, offer.ActorId,
                 new ActionBoundaryContext(
                     prepared.Definitions, participants, timing, tieBreaker, roundIndex, turnIndex));
         }
@@ -276,14 +291,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentNullException(nameof(definitions));
             var result = skillBackend.AnswerEffectChoice(
                 command, materializedDefinitions, participants, timing, modifications, components,
-                roundIndex, turnIndex, out var repeat);
+                roundIndex, turnIndex, out var repeat, out var lanePushCause);
             if (frame == null)
             {
                 return result;
             }
 
             return CloseActionBoundary(
-                result, repeat, new ActionResolutionId(frame.ResolutionId.Value),
+                result, repeat, lanePushCause, new ActionResolutionId(frame.ResolutionId.Value),
                 frame.SourceCardInstanceId, frame.ActionDefinitionId, frame.ActorId,
                 new ActionBoundaryContext(
                     materializedDefinitions, participants, timing, tieBreaker, roundIndex, turnIndex));
@@ -411,6 +426,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private CardActionResolutionResult CloseActionBoundary(
             CardActionResolutionResult result,
             PendingRepeatedAction repeat,
+            LanePushCauseKind lanePushCause,
             ActionResolutionId resolutionId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
@@ -421,6 +437,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 return result;
             }
+
+            // Milestone 6.9: p.8 pushes the Lane immediately, so the request is minted here - before
+            // p.18's after-action correction runs - rather than once the boundary is finally clean. A
+            // minion the correction returns to the Battle Zone was not standing there when the last one
+            // was removed, and reading the board after it would answer a question about a later moment.
+            RecordImmediateLanePush(
+                lanePushCause, resolutionId, boundary.Participants,
+                CurrentModifications(boundary.Timing, boundary.Participants, boundary.TieBreaker));
 
             pendingRepeat = repeat;
             var steps = new List<ResolutionStep>(result.Steps);
@@ -470,7 +494,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CurrentModifications(boundary.Timing, boundary.Participants, boundary.TieBreaker),
                 components,
                 boundary.RoundIndex,
-                boundary.TurnIndex);
+                boundary.TurnIndex,
+                out var repeatedLanePushCause);
             if (!repeated.Accepted)
             {
                 throw new InvalidOperationException(
@@ -482,6 +507,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return CloseActionBoundary(
                 CardActionResolutionResult.Accept(repeated.IsComplete, null, null, steps),
                 null,
+                repeatedLanePushCause,
                 repeat.ResolutionId,
                 repeat.SourceCardInstanceId,
                 repeat.ActionDefinitionId,
@@ -631,23 +657,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 : DefeatRewardRestoreStateHolder.Present(DefeatRewards.CaptureRestoreState());
             if (PendingResolution != null)
             {
-                return CardActionResolutionRestoreState.WithPendingMovement(PendingResolution, rewards);
+                return CardActionResolutionRestoreState.WithPendingMovement(
+                    PendingResolution, rewards, pendingLanePush);
             }
 
             if (PendingAttackResolution != null)
             {
-                return CardActionResolutionRestoreState.WithPendingAttack(PendingAttackResolution, rewards);
+                return CardActionResolutionRestoreState.WithPendingAttack(
+                    PendingAttackResolution, rewards, pendingLanePush);
             }
 
             if (PendingSkillResolution != null)
             {
-                return CardActionResolutionRestoreState.WithPendingSkill(PendingSkillResolution, rewards);
+                return CardActionResolutionRestoreState.WithPendingSkill(
+                    PendingSkillResolution, rewards, pendingLanePush);
             }
 
             return pendingCorrection != null
                 ? CardActionResolutionRestoreState.WithPendingCorrection(
-                    pendingCorrection, rewards, pendingRepeat)
-                : CardActionResolutionRestoreState.WithoutPendingAction(rewards);
+                    pendingCorrection, rewards, pendingRepeat, pendingLanePush)
+                : CardActionResolutionRestoreState.WithoutPendingAction(rewards, pendingLanePush);
         }
 
         /// <summary>
@@ -682,6 +711,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
+
+            // Milestone 6.9. Restored outside the continuation switch because a mid-turn Lane-Push
+            // request is not one of the continuations: it accompanies whichever one the action left
+            // behind, including none at all.
+            var restoredAuthority = RestoreContinuation(
+                adjacentMoveAuthority, state, verifiedMovementChoice, verifiedTargetChoice,
+                verifiedDefenseChoice, definitions, instances, participants, markers, modifications);
+            restoredAuthority.pendingLanePush = state.PendingImmediateLanePush;
+            return restoredAuthority;
+        }
+
+        private static CardActionResolutionAuthority RestoreContinuation(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            CardActionResolutionRestoreState state,
+            PendingMovementChoice verifiedMovementChoice,
+            PendingAttackTargetChoice verifiedTargetChoice,
+            PendingDefenseResponseChoice verifiedDefenseChoice,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            MarkerAttachmentRegister markers,
+            RuleModificationSet modifications)
+        {
             var defeatRewards = state.DefeatRewards.IsPresent
                 ? DefeatRewardAccounting.Restore(participants, state.DefeatRewards.State)
                 : null;
@@ -950,9 +1002,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications) =>
-            attackDefenseBackend.AnswerAttackTarget(
+            RuleModificationSet modifications)
+        {
+            // Read the identity before the answer: an answer that resolves the Attack clears the
+            // pending resolution, and the request has to name the action instance that caused it.
+            var resolutionId = attackDefenseBackend.PendingResolution?.ResolutionId ?? default;
+            var result = attackDefenseBackend.AnswerAttackTarget(
                 command, definitions, instances, participants, modifications);
+            return RecordAttackLanePush(result, resolutionId, participants, modifications);
+        }
 
         public AttackActionResolutionResult AnswerDefenseResponse(
             DefenseResponseChoiceCommand command,
@@ -967,8 +1025,63 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications) =>
-            attackDefenseBackend.ResolveOutcome(definitions, instances, participants, modifications);
+            RuleModificationSet modifications)
+        {
+            var resolutionId = attackDefenseBackend.PendingResolution?.ResolutionId ?? default;
+            var result = attackDefenseBackend.ResolveOutcome(
+                definitions, instances, participants, modifications);
+            return RecordAttackLanePush(result, resolutionId, participants, modifications);
+        }
+
+        /// <summary>
+        /// Milestone 6.9: records the cause a completed Attack's Defeat stage reported.
+        ///
+        /// p.13's Defeat is not an effect node, so it cannot publish its answer into an effect frame the
+        /// way p.19's Remove does; it carries a whole <c>LanePushQualification</c> on its resolution
+        /// instead, and this is where that record becomes p.8's request. An Attack has no after-action
+        /// correction boundary of its own - nothing it does displaces a minion - so the completion of
+        /// its outcome is the boundary.
+        /// </summary>
+        private AttackActionResolutionResult RecordAttackLanePush(
+            AttackActionResolutionResult result,
+            ActionResolutionId resolutionId,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (result.Accepted && result.MinionDefeat != null)
+            {
+                RecordImmediateLanePush(
+                    result.MinionDefeat.LanePush.Cause, resolutionId, participants, modifications);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// The one place a mid-turn Lane-Push request is produced.
+        ///
+        /// A conformance rule holds it to being the only one, in the shape milestone 6.6 used for p.8's
+        /// question itself: moving, pushing, swapping, placing, spawning and replacing record no cause,
+        /// so they cannot reach this, and nothing else can build a request.
+        ///
+        /// A request already held is never replaced. The turn is stopped from the moment the first one
+        /// is recorded, so a second cause could only arise inside the same action instance, and p.8
+        /// describes one push per emptied side rather than one per piece taken.
+        /// </summary>
+        private void RecordImmediateLanePush(
+            LanePushCauseKind cause,
+            ActionResolutionId resolutionId,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (cause == LanePushCauseKind.None || pendingLanePush != null || !resolutionId.IsDefined)
+            {
+                return;
+            }
+
+            pendingLanePush = ImmediateLanePushQuery.From(
+                cause, resolutionId, board, participants, modifications);
+        }
 
         private PreparedStart PrepareStart(
             ActionResolutionId resolutionId,

@@ -130,7 +130,9 @@ namespace GuardsDigital.Core.Rules.BoardObjects
     /// in adjacent rules - the defect milestone 6.5ad corrected for optional distances.
     ///
     /// It is asked <em>after</em> the removal has committed, because the question p.8 poses is about
-    /// what remains, not about what left.
+    /// what remains, not about what left. Since milestone 6.9 the operation's own subject is excluded
+    /// from what remains, which changes nothing for a piece that actually left and is what lets a
+    /// Defeat whose removal was prevented answer p.8's first sentence.
     /// </summary>
     public static class LanePushQualificationQuery
     {
@@ -170,9 +172,16 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                 return LanePushQualification.None;
             }
 
+            // The operation's own subject never counts towards what remains. For a completed removal
+            // that is a no-op - the piece has already left the board - and for p.13's Defeat whose
+            // removal was prevented it is the whole of milestone 6.9's third acceptance check: p.8
+            // names two independent triggers, "It must be either defeated, or removed", and p.13's own
+            // Bolster example makes a Defeat whose removal is prevented a complete Defeat that still
+            // collects its coins. So the Defeat sentence is answered by the Defeat, and the miniature
+            // still standing there is the one this rule just accounted for.
             var remaining = BattleZoneQuery
                 .FindEffectiveMinionsInside(board, participants, modifications)
-                .Any(minion => minion.TeamSide == removedSide);
+                .Any(minion => minion.TeamSide == removedSide && !minion.Unit.Equals(removedUnit));
             return remaining
                 ? LanePushQualification.None
                 : LanePushQualification.For(cause, removedSide, battleZone.Id);

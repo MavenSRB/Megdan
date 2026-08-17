@@ -49,7 +49,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingResolution pendingSkillResolution,
             DefeatRewardRestoreStateHolder defeatRewards,
             PendingDisplacedMinionCorrection pendingCorrection = null,
-            PendingRepeatedAction pendingRepeat = null)
+            PendingRepeatedAction pendingRepeat = null,
+            PendingImmediateLanePushRequest pendingLanePush = null)
         {
             ContinuationKind = continuationKind;
             PendingSkillResolution = pendingSkillResolution;
@@ -58,6 +59,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefeatRewards = defeatRewards;
             PendingCorrection = pendingCorrection;
             PendingRepeat = pendingRepeat;
+            PendingImmediateLanePush = pendingLanePush;
         }
 
         public CardActionContinuationKind ContinuationKind { get; }
@@ -83,6 +85,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public PendingRepeatedAction PendingRepeat { get; }
 
         /// <summary>
+        /// Milestone 6.9's mid-turn Lane-Push request, or <c>null</c>. It rides every continuation kind
+        /// rather than becoming one of its own, for the reason the repeat rides the correction: it is
+        /// not a kind of pause but a fact about the board the action left behind, and a Skill can record
+        /// p.8's cause at a node and then stop on a later choice, so the two genuinely coexist.
+        ///
+        /// It is also the only one of these that outlives its action. A turn holding one is stopped at
+        /// the mid-turn checkpoint, so a snapshot taken there must restore a turn that is stopped too -
+        /// which is why it is persisted rather than re-derived: nothing about the restored board says
+        /// whether the side was emptied by a Defeat, a Remove, or a push p.8 excludes.
+        /// </summary>
+        public PendingImmediateLanePushRequest PendingImmediateLanePush { get; }
+
+        /// <summary>
         /// The Defeat-reward accounting to restore. Never omitted: an authority with no
         /// recorded rewards carries an explicitly absent holder rather than a missing
         /// argument.
@@ -90,33 +105,45 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public DefeatRewardRestoreStateHolder DefeatRewards { get; }
 
         public static CardActionResolutionRestoreState WithoutPendingAction(
-            DefeatRewardRestoreStateHolder defeatRewards) =>
+            DefeatRewardRestoreStateHolder defeatRewards,
+            PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.None,
                 null,
                 null,
                 null,
-                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)));
+                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                null,
+                null,
+                pendingLanePush);
 
         public static CardActionResolutionRestoreState WithPendingMovement(
             PendingCardActionResolution pendingResolution,
-            DefeatRewardRestoreStateHolder defeatRewards) =>
+            DefeatRewardRestoreStateHolder defeatRewards,
+            PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.Movement,
                 pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
                 null,
                 null,
-                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)));
+                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                null,
+                null,
+                pendingLanePush);
 
         public static CardActionResolutionRestoreState WithPendingAttack(
             PendingAttackResolution pendingResolution,
-            DefeatRewardRestoreStateHolder defeatRewards) =>
+            DefeatRewardRestoreStateHolder defeatRewards,
+            PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.Attack,
                 null,
                 pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
                 null,
-                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)));
+                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                null,
+                null,
+                pendingLanePush);
 
         public void Deconstruct(
             out CardActionContinuationKind continuationKind,
@@ -134,18 +161,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public static CardActionResolutionRestoreState WithPendingSkill(
             PendingResolution pendingResolution,
-            DefeatRewardRestoreStateHolder defeatRewards) =>
+            DefeatRewardRestoreStateHolder defeatRewards,
+            PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.Skill,
                 null,
                 null,
                 pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
-                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)));
+                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                null,
+                null,
+                pendingLanePush);
 
         public static CardActionResolutionRestoreState WithPendingCorrection(
             PendingDisplacedMinionCorrection pendingCorrection,
             DefeatRewardRestoreStateHolder defeatRewards,
-            PendingRepeatedAction pendingRepeat = null) =>
+            PendingRepeatedAction pendingRepeat = null,
+            PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.Correction,
                 null,
@@ -153,6 +185,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 null,
                 defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
                 pendingCorrection ?? throw new ArgumentNullException(nameof(pendingCorrection)),
-                pendingRepeat);
+                pendingRepeat,
+                pendingLanePush);
     }
 }

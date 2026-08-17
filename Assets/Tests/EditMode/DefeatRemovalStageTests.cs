@@ -50,7 +50,8 @@ namespace GuardsDigital.Tests.EditMode
                 reward,
                 new DefeatRemovalAttempt(outcome.Id, outcome.TargetId),
                 new DefeatRemovalResult(
-                    outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented));
+                    outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented),
+                LanePushQualification.None);
 
             Assert.That(defeat.Reward.Accepted, Is.True,
                 "p.13's Bolster example prevents the removal and still collects the coins, so the " +
@@ -103,7 +104,8 @@ namespace GuardsDigital.Tests.EditMode
             var prevented = new DefeatRemovalResult(
                 outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented);
 
-            var first = MinionDefeatResolution.Prevented(outcome, reward, attempt, prevented);
+            var first = MinionDefeatResolution.Prevented(
+                outcome, reward, attempt, prevented, LanePushQualification.None);
             Assert.That(accounting.GetCoins(fixture.AttackerId), Is.EqualTo(2),
                 "p.13 awards the coins at the reward stage, which runs before the removal stage decides " +
                 "anything, so a prevented removal cannot withdraw them.");
@@ -262,10 +264,12 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(12),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(13),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved once, at milestone 6.7, for a repeated action " +
-                "instance owed across a paused correction - which this decision has no part in.");
+                "own. The version has since moved twice, neither time for it: milestone 6.7 for a " +
+                "repeated action instance owed across a paused correction, and milestone 6.9 for the " +
+                "mid-turn Lane-Push request a completed action can leave behind. The decision itself " +
+                "is still re-derived from the state as it then stands.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
                 Is.EqualTo(payload),
@@ -296,7 +300,8 @@ namespace GuardsDigital.Tests.EditMode
                 accounting.Award(outcome),
                 new DefeatRemovalAttempt(outcome.Id, outcome.TargetId),
                 new DefeatRemovalResult(
-                    outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented));
+                    outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented),
+                LanePushQualification.None);
         }
 
         private static DefeatOutcome MinionDefeatOutcome(Fixture fixture, string minionId, int coins) =>

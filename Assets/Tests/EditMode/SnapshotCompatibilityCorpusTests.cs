@@ -299,17 +299,39 @@ namespace GuardsDigital.Tests.EditMode
         /// runs, which is the same two registration ints plus four cards instead of two. Nothing else
         /// moved, and the new parameter itself never appears: a payload records the capability contract
         /// set and the card definitions, and the catalog supplies what those contain.
+        /// Milestone 6.9 moves every fixture from v12 to v13 for one persistence cause and one only:
+        /// rulebook p.8's mid-turn Lane Push can now be requested, and a turn holding a request is
+        /// stopped at that checkpoint until milestones 6.10 and 6.11 resolve it. That stop has to be a
+        /// property of the match rather than of the running process, so the request is persisted beside
+        /// whatever continuation the causing action left behind. The decision is reject rather than
+        /// migrate, and the reason is the same shape 6.7's was: a v12 payload has no field for the
+        /// request, reading one as "no push is owed" would let a saved match carry on past a push the
+        /// rules made immediate, and there is nothing in a restored board that could tell a side emptied
+        /// by a Defeat or a Remove from one emptied by a move p.8 excludes. The engine keeps one reader
+        /// per version and no persisted state exists outside this corpus. No capability is registered or
+        /// revised and no card revision moves, so the contract set and the definition table are untouched.
+        /// Measured in a throwaway worktree at pre-change revision <c>8ccacca</c> rather than assumed.
+        /// Every payload differs at byte 31, <c>0c</c> to <c>0d</c>, which is the fixed-width schema
+        /// version int. <c>setup</c> keeps its exact decoded length of 2725 bytes, because a match that
+        /// has not started a turn writes no card-action authority at all and therefore no request field;
+        /// the other seven each grow by exactly one byte - 2920 to 2921, 3100 to 3101, 3130 to 3131,
+        /// 3335 to 3336, 3775 to 3776, 3824 to 3825 and 3835 to 3836 - the trailing <c>00</c> saying
+        /// this action owes no push. In the five fixtures whose card-action block ends the payload that
+        /// byte is appended; in <c>pending-choice</c> and <c>pending-correction</c> it is inserted at
+        /// offsets 2921 and 3647 and shifts the rest unchanged. One byte per fixture is the whole
+        /// persistence cost of the milestone, and the fixture that does not grow is the corpus's own
+        /// proof that the field belongs to the action boundary rather than to the match.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v12", "70a8115e918dc6d045926d247ec2f2ee8928d0dd9f8ce451f234534dc775b362"),
-            new CompatibilityFixture("active-turn-v12", "05603c9f1bf464cb23bd3c1489b31d2f94bdccc3ab8c7de19e9d1adf9e353def"),
-            new CompatibilityFixture("pending-choice-v12", "79ac3966a9b1197ef587e3df145433f04a061f2206677a6bf3327761be4ab009"),
-            new CompatibilityFixture("end-of-round-v12", "52af31d4ba2d4332a19ac99f6d3673cd71ce7398c330093f3ba327b7e23f3a76"),
-            new CompatibilityFixture("pending-minion-battle-v12", "fff926d192f001ec253c98000b9cc0f15ead8574ceb2d0dc5c2ef4c59a7af65e"),
-            new CompatibilityFixture("placed-token-v12", "92ad1e92bc32085307337ba5cd5b4b38b905d120d21431bbf6e3a3481d742f04"),
-            new CompatibilityFixture("attached-marker-v12", "64c0621617a0f563857565af2076bf40d66b6d3e6c8e14d78c593ac0110ef1ad"),
-            new CompatibilityFixture("pending-correction-v12", "9c2d6adb4e1ad1d4a67da50865efdb17d8f3be48e48ab4cfcaf7b06e177701fc")
+            new CompatibilityFixture("setup-v13", "57188017db2afe45e13920959122741960c6f80061890d1804f67f61d7bd3408"),
+            new CompatibilityFixture("active-turn-v13", "d82b949b78d725d41097864ebbd68605166c40d95a19a3199cd3dd2fd44eff0f"),
+            new CompatibilityFixture("pending-choice-v13", "96c7a32014c958e04823b0918b7332a1f44e88e89b1b4b7816e45862d958a78b"),
+            new CompatibilityFixture("end-of-round-v13", "f42839b00f96bcfaacc6e1d1be959c2da80c99a29e7db8c55f99afd51d0cbf9e"),
+            new CompatibilityFixture("pending-minion-battle-v13", "486811d9580c12e93096a4fcfc49a8e2693088124037680c4d033b9c786ccce8"),
+            new CompatibilityFixture("placed-token-v13", "e3e00637bcffe5a70187968ad70d84d94239630ffedf09c5d005631c0506eb2a"),
+            new CompatibilityFixture("attached-marker-v13", "00882b8d1d4f9dc53d713c0ccce00819dbcc5d0b82882cc1a3aac9aead6e454b"),
+            new CompatibilityFixture("pending-correction-v13", "fd08e0c661f4359aa8743cd0aac41fa53f8252408c2a684c2668cd53b9cbc606")
         };
 
         [Test]
@@ -392,16 +414,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v12", session.CaptureSnapshot());
+            values.Add("setup-v13", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v12", session.CaptureSnapshot());
+            values.Add("active-turn-v13", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v12", session.CaptureSnapshot());
+            values.Add("pending-choice-v13", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -417,7 +439,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v12", session.CaptureSnapshot());
+            values.Add("end-of-round-v13", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -426,17 +448,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v12", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v13", session.CaptureSnapshot());
 
             // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
             // carry zero components would leave the sections it exists to protect untested, so one
             // payload holds a token on the board and one holds a marker on a hero.
-            values.Add("placed-token-v12", CaptureComponentSnapshot("component-place-branch"));
-            values.Add("attached-marker-v12", CaptureComponentSnapshot("component-give-marker"));
+            values.Add("placed-token-v13", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v13", CaptureComponentSnapshot("component-give-marker"));
 
             // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
             // so the paused after-action correction gets the eighth.
-            values.Add("pending-correction-v12", CapturePendingCorrectionSnapshot());
+            values.Add("pending-correction-v13", CapturePendingCorrectionSnapshot());
             return values;
         }
 

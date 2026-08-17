@@ -90,10 +90,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public MinionOccupancy RemovedMinion { get; }
 
         /// <summary>
-        /// p.8's recorded cause, or its named absence. A prevented removal always carries the absence,
-        /// for the reason a prevented Remove does - the rule qualifies defeating or removing the last
-        /// remaining enemy minion, and nothing left the Battle Zone. It is a cause and never a request:
-        /// milestone 6.9 owns emitting and resolving the mid-turn push.
+        /// p.8's recorded cause, or its named absence.
+        ///
+        /// A prevented removal carries it too, since milestone 6.9. p.8 names two independent triggers
+        /// - "If you defeat, or remove, the last remaining enemy minion in the Battle Zone ... It must
+        /// be either defeated, or removed" - and p.13's Bolster example makes a Defeat whose removal is
+        /// prevented a complete Defeat that still collects its coins, so the first sentence is answered
+        /// by the Defeat rather than by the miniature leaving. That is the asymmetry against p.19's
+        /// standalone Remove, which never reaches the question when it is prevented because nothing was
+        /// removed; it is also why milestone 6.6 gave <see cref="LanePushCauseKind"/> two members rather
+        /// than one.
+        ///
+        /// It is a cause and never a request: <see cref="ImmediateLanePushQuery"/> turns it into one.
         /// </summary>
         public LanePushQualification LanePush { get; }
 
@@ -133,7 +141,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefeatOutcome defeat,
             DefeatRewardResult reward,
             DefeatRemovalAttempt removalAttempt,
-            DefeatRemovalResult removalResult)
+            DefeatRemovalResult removalResult,
+            LanePushQualification lanePush)
         {
             if (removalResult.Kind != DefeatRemovalResultKind.RemovalPrevented)
             {
@@ -141,8 +150,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "A prevented Defeat stage records the prevented result.", nameof(removalResult));
             }
 
+            if (lanePush.Qualifies && lanePush.Cause != LanePushCauseKind.Defeat)
+            {
+                throw new ArgumentException(
+                    "p.8 recognizes a Defeat and a removal separately; a Defeat records its own cause.",
+                    nameof(lanePush));
+            }
+
             return new MinionDefeatResolution(
-                defeat, reward, removalAttempt, removalResult, null, LanePushQualification.None,
+                defeat, reward, removalAttempt, removalResult, null, lanePush,
                 MinionDefeatFactKind.RemovalPrevented);
         }
     }

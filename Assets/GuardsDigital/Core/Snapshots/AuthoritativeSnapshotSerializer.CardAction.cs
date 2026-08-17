@@ -8,6 +8,7 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
@@ -35,6 +36,7 @@ namespace GuardsDigital.Core.Snapshots
             var (continuationKind, pendingMovement, pendingAttack, pendingSkill, defeatRewards) = state;
             writer.Write((int)continuationKind);
             WriteDefeatRewards(writer, defeatRewards);
+            WriteImmediateLanePush(writer, state.PendingImmediateLanePush);
             if (continuationKind == CardActionContinuationKind.Movement)
             {
                 WriteMovementResolution(writer, pendingMovement);
@@ -55,6 +57,57 @@ namespace GuardsDigital.Core.Snapshots
                 WriteCorrectionResolution(writer, state.PendingCorrection);
                 WriteRepeatedAction(writer, state.PendingRepeat);
             }
+        }
+
+        /// <summary>
+        /// Milestone 6.9. Rulebook p.8's mid-turn Lane Push, requested and not yet resolved.
+        ///
+        /// It is written outside the continuation discriminator because it accompanies whichever
+        /// continuation the action left behind, including none: a Skill can record the cause at one node
+        /// and still owe a choice, and an Attack that caused one leaves no continuation at all.
+        ///
+        /// Everything it carries is identity - the cause, the zone, and the two teams - and nothing is
+        /// re-derived on the way back, because nothing about the restored board could say whether a side
+        /// was emptied by a Defeat, by a Remove, or by a push p.8 excludes. What restore does check is
+        /// that the identities describe this match: an unknown team or an enum outside its declared
+        /// range is refused atomically rather than reconstructed.
+        /// </summary>
+        private static void WriteImmediateLanePush(
+            BinaryWriter writer,
+            PendingImmediateLanePushRequest request)
+        {
+            writer.Write(request != null);
+            if (request == null)
+            {
+                return;
+            }
+
+            writer.Write(request.RequestId.Value);
+            writer.Write((int)request.Cause);
+            writer.Write(request.BattleZoneId.Value);
+            writer.Write(request.WinningTeamId.Value);
+            writer.Write((int)request.WinningSide);
+            writer.Write(request.LosingTeamId.Value);
+            writer.Write((int)request.LosingSide);
+            writer.Write(request.CauseResolutionId.Value);
+        }
+
+        private static PendingImmediateLanePushRequest ReadImmediateLanePush(BinaryReader reader)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            return new PendingImmediateLanePushRequest(
+                new LanePushRequestId(reader.ReadString()),
+                SnapshotEnumReader.Read<LanePushCauseKind>(reader, "mid-turn Lane-Push cause"),
+                new ZoneId(reader.ReadString()),
+                new TeamId(reader.ReadString()),
+                SnapshotEnumReader.Read<TeamSide>(reader, "mid-turn Lane Push winning side"),
+                new TeamId(reader.ReadString()),
+                SnapshotEnumReader.Read<TeamSide>(reader, "mid-turn Lane Push losing side"),
+                new ActionResolutionId(reader.ReadString()));
         }
 
         /// <summary>
@@ -131,20 +184,21 @@ namespace GuardsDigital.Core.Snapshots
             var kind = reader.ReadInt32();
             var defeatRewards = ReadDefeatRewards(reader);
             if (kind == NoCardActionAuthorityKind) return null;
+            var lanePush = ReadImmediateLanePush(reader);
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
             {
                 case CardActionContinuationKind.None:
-                    state = CardActionResolutionRestoreState.WithoutPendingAction(defeatRewards);
+                    state = CardActionResolutionRestoreState.WithoutPendingAction(defeatRewards, lanePush);
                     break;
                 case CardActionContinuationKind.Movement:
                     state = CardActionResolutionRestoreState.WithPendingMovement(
-                        ReadMovementResolution(reader), defeatRewards);
+                        ReadMovementResolution(reader), defeatRewards, lanePush);
                     break;
                 case CardActionContinuationKind.Attack:
                     state = CardActionResolutionRestoreState.WithPendingAttack(
-                        ReadAttackResolution(reader), defeatRewards);
+                        ReadAttackResolution(reader), defeatRewards, lanePush);
                     break;
                 case CardActionContinuationKind.Skill:
                     state = CardActionResolutionRestoreState.WithPendingSkill(
@@ -152,12 +206,13 @@ namespace GuardsDigital.Core.Snapshots
                             reader, definitions, capabilities, participants,
                             CardActionResolutionAuthority.CreateRestoredComponents(board, markers),
                             modifications),
-                        defeatRewards);
+                        defeatRewards,
+                        lanePush);
                     break;
                 case CardActionContinuationKind.Correction:
                     var correction = ReadCorrectionResolution(reader, board, participants, tieBreaker);
                     state = CardActionResolutionRestoreState.WithPendingCorrection(
-                        correction, defeatRewards, ReadRepeatedAction(reader, definitions));
+                        correction, defeatRewards, ReadRepeatedAction(reader, definitions), lanePush);
                     break;
                 default:
                     throw Malformed("Unknown pending card-action kind.");

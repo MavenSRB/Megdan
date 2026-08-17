@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Rules.BoardObjects;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 
@@ -496,7 +497,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new[]
                 {
                     new EffectOutputBinding("removed", EffectValueKind.Coordinate),
-                    new EffectOutputBinding("lanePush", EffectValueKind.Boolean)
+                    new EffectOutputBinding(RecordedLanePushQuery.OutcomeFactName, EffectValueKind.Boolean)
                 });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
@@ -525,7 +526,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return EffectExecutionResult.Applied(new[]
                 {
                     new EffectOutcomeFact("removed", EffectValue.Space(outcome.Origin)),
-                    new EffectOutcomeFact("lanePush", EffectValue.Boolean(outcome.LanePush.Qualifies))
+                    new EffectOutcomeFact(
+                        RecordedLanePushQuery.OutcomeFactName,
+                        EffectValue.Boolean(outcome.LanePush.Qualifies))
                 });
             }
 

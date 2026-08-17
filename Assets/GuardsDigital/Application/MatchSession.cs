@@ -719,7 +719,8 @@ namespace GuardsDigital.Application
                 turn?.PendingEffectChoice,
                 round.PendingDisplacedMinionCorrection,
                 turn?.DescribePendingEffectChoice(configuration.CardDefinitions, turnModifications),
-                availableClearOptions);
+                availableClearOptions,
+                turn?.PendingImmediateLanePush);
         }
 
         private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn,

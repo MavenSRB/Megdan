@@ -362,7 +362,9 @@ namespace GuardsDigital.Application
                 pendingDisplacedMinionCorrection = null,
             IEnumerable<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>
                 pendingEffectChoicePreview = null,
-            IEnumerable<ClearOptionProjection> availableClearOptions = null)
+            IEnumerable<ClearOptionProjection> availableClearOptions = null,
+            GuardsDigital.Core.Rules.CardResolution.PendingImmediateLanePushRequest
+                pendingImmediateLanePush = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -418,6 +420,7 @@ namespace GuardsDigital.Application
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingHeroRespawnChoice = pendingHeroRespawnChoice;
             PendingLanePushRequest = pendingLanePushRequest;
+            PendingImmediateLanePush = pendingImmediateLanePush;
             PendingDisplacedMinionCorrection = pendingDisplacedMinionCorrection;
             PendingEffectChoicePreview = Array.AsReadOnly((pendingEffectChoicePreview ??
                 Enumerable.Empty<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>())
@@ -547,6 +550,15 @@ namespace GuardsDigital.Application
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
         public PendingLanePushRequest PendingLanePushRequest { get; }
+
+        /// <summary>
+        /// Milestone 6.9: rulebook p.8's mid-turn Lane-Push request, or <c>null</c>. Projected beside its
+        /// end-of-round sibling so a reader can tell a turn stopped at the immediate checkpoint from a
+        /// turn stopped for any other reason. Nothing draws it - this milestone adds no control, because
+        /// there is no decision for a player to make until milestones 6.10 and 6.11 resolve the push.
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.PendingImmediateLanePushRequest
+            PendingImmediateLanePush { get; }
 
         public bool IsTurnActive =>
             Phase == RoundResolutionPhase.ResolvingTurn && IsTurnStarted && !IsTurnEnded;
