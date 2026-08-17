@@ -386,9 +386,10 @@ namespace GuardsDigital.Tests.EditMode
         public void TheOnlyOrdinaryCardExposingDisplacement_IsTheOneTheShowcaseConverted()
         {
             // Milestone 6.4's non-goals barred configured live exposure until the after-action
-            // correction existed. It does, and milestones 6.5a and 6.5b are the conversions that
-            // spend that permission - each on exactly one card. The adjacency-derived batch stays
-            // behind the Skill fixture, because no showcase card declares "every adjacent object".
+            // correction existed. It does, and milestones 6.5a, 6.5b and 6.7a are the conversions
+            // that spend that permission - each on exactly one card. The adjacency-derived batch
+            // stays behind the Skill fixture, because no showcase card declares "every adjacent
+            // object".
             var ordinary = PlaceholderOneVsOneTestConfiguration.Create();
 
             var byCapability = ordinary.CardDefinitions
@@ -415,13 +416,15 @@ namespace GuardsDigital.Tests.EditMode
                     .Where(entry => entry.Capability.Equals(
                         GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.PushTargetV1))
                     .Select(entry => entry.Id.Value),
-                Is.EqualTo(new[] { "placeholder-red-needle" }));
+                Is.EqualTo(new[] { "placeholder-red-needle", "placeholder-blue-longbow" }),
+                "Card-text Push is exposed by 6.5a's conversion at distance 3 and 6.7a's at 1.");
             Assert.That(
                 byCapability
                     .Where(entry => entry.Capability.Equals(
                         GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChooseTargetV4))
                     .Select(entry => entry.Id.Value),
-                Is.EqualTo(new[] { "placeholder-red-needle" }));
+                Is.EqualTo(new[] { "placeholder-red-needle", "placeholder-blue-longbow" }),
+                "Both are card-text Push, so both name the activity their consumer asks immunity for.");
 
             // The two selection revisions are exposed by different cards, which is the visible half
             // of the reason each branch picked the one it did: a Push names its own activity, and a

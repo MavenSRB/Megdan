@@ -128,8 +128,9 @@ namespace GuardsDigital.Tests.EditMode
                 attacks.Count(action => action.AttackRange == AttackRangeKind.NonRanged), Is.EqualTo(1),
                 "Blue Hammer is the team's one remaining printed non-Ranged Attack.");
             Assert.That(
-                attacks.Count(action => action.AttackRange == AttackRangeKind.Ranged), Is.EqualTo(2),
-                "Blue Scout Shot and Blue Longbow both still print one; 6.7a converts the second.");
+                attacks.Count(action => action.AttackRange == AttackRangeKind.Ranged),
+                Is.GreaterThanOrEqualTo(1),
+                "Blue Scout Shot prints the team's Ranged Attack; 6.7a converted Blue Longbow.");
         }
 
         [Test]

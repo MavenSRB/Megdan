@@ -24,7 +24,7 @@ namespace GuardsDigital.Core.Cards
             SyntheticCardProfile.WithExchangeSkill("blue-sentinel", "Blue Sentinel", 11, 2, 4),
             new SyntheticCardProfile("blue-scout-shot", "Blue Scout Shot", 8, AttackRangeKind.Ranged, 2, 2, 4, 1),
             new SyntheticCardProfile("blue-hammer", "Blue Hammer", 6, AttackRangeKind.NonRanged, 5, 0, 2, 1),
-            new SyntheticCardProfile("blue-longbow", "Blue Longbow", 4, AttackRangeKind.Ranged, 3, 3, 3, 2)
+            SyntheticCardProfile.WithPushRepeatSkill("blue-longbow", "Blue Longbow", 4, 3, 2)
         };
 
         /// <summary>
@@ -846,6 +846,8 @@ namespace GuardsDigital.Core.Cards
                     return CreateDirectMoveSpawnSkillAction(profile);
                 case SyntheticPrintedPrimaryKind.ExchangeSkill:
                     return CreateExchangeSkillAction(profile);
+                case SyntheticPrintedPrimaryKind.PushRepeatSkill:
+                    return CreatePushRepeatSkillAction(profile);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(profile),
@@ -1341,6 +1343,95 @@ namespace GuardsDigital.Core.Cards
                 effect);
         }
 
+        /// <summary>
+        /// Milestone 6.7a's conversion: the Skill `Choose another adjacent unit and Push it 1 space;
+        /// you may Repeat this action once`, replacing this card's printed Primary Attack.
+        ///
+        /// The root is a plain Sequence rather than a `Choose`, because this card text names one thing
+        /// to do rather than alternatives, and the Repeat is its last child, which is where p.10 puts
+        /// it: after you perform this action, you may perform the entire action again. The `may` is the
+        /// node's failure policy rather than an `Optional` wrapper around it, because there is no step
+        /// to wrap - the Repeat performs nothing itself and the decision is the node's own.
+        ///
+        /// Both leaves before it are milestone 6.5a's push branch at a different distance, which is the
+        /// point of scheduling this card last: everything it does is already registered and already has
+        /// a production consumer, so what the conversion adds is the repeat and nothing else. `another
+        /// adjacent unit` is Radius 1 with the acting hero excluded, and the selection names the Push as
+        /// the node it selects for, so milestone 6.8l offers only the objects that Push can actually
+        /// take. The activity is `ObjectPush` because this is card-text Push, which p.18 gives an
+        /// activity of its own - unlike card-text direct Move, which has none and reads its enclosing
+        /// action's.
+        ///
+        /// Distance 1 under a mandatory policy is declaration rather than behaviour, and it is the
+        /// distance that makes the second instance say something: a push of 1 directly away leaves the
+        /// subject two spaces off, so a repeated instance has to find a different unit or find none,
+        /// while a blocked push leaves it adjacent and legally nameable again. None of it is official
+        /// content, and the card names no hero, no card and no space.
+        /// </summary>
+        private static ActionDefinition CreatePushRepeatSkillAction(SyntheticCardProfile profile)
+        {
+            var root = new EffectNodeId("longbow-root");
+            var selectTarget = new EffectNodeId("longbow-select-target");
+            var push = new EffectNodeId("longbow-push");
+            var repeat = new EffectNodeId("longbow-repeat");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                profile.ContentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { selectTarget, push, repeat }),
+                    new EffectNodeDefinition(
+                        selectTarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.ChooseTargetV4,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                "activity", EffectValue.Integer((int)Rules.Modifications.RuleActivity.ObjectPush)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(push))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.PushTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "target", selectTarget, "chosen", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("distance", EffectValueKind.Integer),
+                            new EffectOutputBinding("moved", EffectValueKind.Integer)
+                        }),
+                    // `once` is the node kind's own bound rather than a count: a Repeat refuses to be
+                    // mandatory, and the instance it starts runs under a repeated context in which this
+                    // node is ineligible and silently skipped.
+                    new EffectNodeDefinition(
+                        repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
+                        chooser: EffectChooserRole.Actor)
+                });
+
+            return new ActionDefinition(
+                new ActionDefinitionId("primary-push-repeat-skill"),
+                ActionKind.Skill,
+                ActionDefinitionOrigin.PrintedPrimary,
+                Array.Empty<PrintedValueDefinition>(),
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                AttackRangeKind.None,
+                default,
+                effect);
+        }
+
         private static ActionDefinition CreateDefenseAction(int value)
         {
             return new ActionDefinition(
@@ -1364,7 +1455,8 @@ namespace GuardsDigital.Core.Cards
             ImmunityTimingSkill = 2,
             PushPlaceSkill = 3,
             DirectMoveSpawnSkill = 4,
-            ExchangeSkill = 5
+            ExchangeSkill = 5,
+            PushRepeatSkill = 6
         }
 
         private sealed class SyntheticCardProfile
@@ -1482,6 +1574,25 @@ namespace GuardsDigital.Core.Cards
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.ExchangeSkill,
                     "phase-6-6a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+
+            /// <summary>
+            /// Milestone 6.7a's converted card, the last of the showcase six and on the same terms as
+            /// the five before it. It takes both hands to the schedule's floor of exactly one printed
+            /// non-Ranged and one printed Ranged Attack each - Blue Hammer and Blue Scout Shot on this
+            /// side - and it takes the lowest Initiative in either hand off the printed-Attack list, so
+            /// no card below Initiative 5 prints an Attack any more. Its Defense reaction, Secondary
+            /// Movement and Initiative are untouched, which is why a fixture that commits it to lose
+            /// the turn or to react on Defense is unaffected by the conversion.
+            /// </summary>
+            public static SyntheticCardProfile WithPushRepeatSkill(
+                string id,
+                string displayName,
+                int initiative,
+                int movementValue,
+                int defenseValue) =>
+                new SyntheticCardProfile(
+                    id, displayName, initiative, SyntheticPrintedPrimaryKind.PushRepeatSkill,
+                    "phase-6-7a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             public string Id { get; }
             public string DisplayName { get; }

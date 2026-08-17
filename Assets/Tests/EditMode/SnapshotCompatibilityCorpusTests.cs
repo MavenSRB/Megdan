@@ -263,17 +263,33 @@ namespace GuardsDigital.Tests.EditMode
         /// one trailing <c>00</c>: the boolean saying this correction owes no repeat. That single byte
         /// is the whole persistence cost of the milestone, and the fixture that grows is the one whose
         /// section grew, which is the corpus's own proof that nothing else did.
+        /// Milestone 6.7a keeps schema v12 and re-pins every fixture for one content cause: Blue
+        /// Longbow's printed Primary Attack became its showcase Skill, so that card definition advanced
+        /// from <c>phase-5-1a-rev-3</c> to <c>phase-6-7a-rev-1</c>. The decision is reject rather than
+        /// migrate, the same one 6.8a's identical cause took: a v12 payload naming Blue Longbow at the
+        /// 5.1a revision states a printed action set the trusted catalog no longer supplies, and reading
+        /// it as the converted card would silently give a saved match a Skill where it recorded a Ranged
+        /// Attack. The existing content-revision check already refuses it, so no reader changed.
+        /// Measured in a throwaway worktree at pre-change revision <c>5c360a8</c> rather than assumed.
+        /// All eight payloads keep their exact decoded lengths - 2725, 2920, 3100, 3130, 3335, 3775,
+        /// 3824 and 3835 bytes - and each differs in exactly six bytes across exactly two regions: the
+        /// definition table's Blue Longbow entry and the <c>blue-longbow-card</c> instance's definition
+        /// reference. Both are the same sixteen-character revision string, whose three moving characters
+        /// sit at offsets 6, 8 and 15, so nothing shifted and every other section is byte-identical. The
+        /// capability registration list is untouched, because this conversion registers and revises
+        /// nothing, and the replaced action set never appears at all - the payload names definitions and
+        /// the catalog supplies what they contain.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v12", "670717a9bd5075355fbe14a20318a1879d9f04a81725faaf8f2a00369ce99bf7"),
-            new CompatibilityFixture("active-turn-v12", "2e63162d54559ba12f950d5b0141087c0f36550e033e71950fd65793761005b4"),
-            new CompatibilityFixture("pending-choice-v12", "47d67fbe7599d52ac0c40ebaa8ec3e2eb7e6bfc29d9b0220f09367ecf1d4c5d5"),
-            new CompatibilityFixture("end-of-round-v12", "be5d1f265abb60a160d434dd15f6c3f0142525185a15644d038a80fc1e6eb1b8"),
-            new CompatibilityFixture("pending-minion-battle-v12", "7f6cd089253d6d03aea0968b4f2447b72ab0b5098c1ea52e602640da58338775"),
-            new CompatibilityFixture("placed-token-v12", "b2cc0664567cb1cd5cb38f3eeacbd72b26b08e6cafd8f09af2194f73e42872fd"),
-            new CompatibilityFixture("attached-marker-v12", "75c07239d89d93ce89aec730ca467ecd783f64059ad3d94f58920b9563fdde43"),
-            new CompatibilityFixture("pending-correction-v12", "d8dddf73bf8c10bfb7e787c9a24781112033c79a046a4f65c1d84046e8570e32")
+            new CompatibilityFixture("setup-v12", "d8221deedb0f44d48818f280559b114b7b0eee825ce44697be644b6f9fcdc10d"),
+            new CompatibilityFixture("active-turn-v12", "6640d053fcba9e4f71b5f1b935412114923e5076992ffe6ce4ba171c05befa82"),
+            new CompatibilityFixture("pending-choice-v12", "7811f76a083a6b4500957e3365cf455c8a386a944e60ac5c748cda086d34285c"),
+            new CompatibilityFixture("end-of-round-v12", "3d09b7414351adf1a88eaa300199621ec253412af6807b41608b0e62e37db2d5"),
+            new CompatibilityFixture("pending-minion-battle-v12", "6df05fc3ae2a6b8821884b5ed51edece8cee7acac0ab0266af1ce0315842fa1c"),
+            new CompatibilityFixture("placed-token-v12", "20f5bf52b23c5e2cfcca3e58ea39b8f72246aefee2336c5b8793084ceacadd29"),
+            new CompatibilityFixture("attached-marker-v12", "d39ad8be4adc05e9afa94b320878599838c4e15cd029ee9bf43a6ee7e8873be0"),
+            new CompatibilityFixture("pending-correction-v12", "9dbade703e15d29ce3cf701abd55aa24d369e1ef40c64745c760f368cd95a626")
         };
 
         [Test]

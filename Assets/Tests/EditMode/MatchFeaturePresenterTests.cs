@@ -1165,6 +1165,84 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly EffectNodeId BombardMoveBranch = new EffectNodeId("bombard-move-branch");
         private static readonly EffectNodeId BombardSpawn = new EffectNodeId("bombard-spawn");
 
+        // Milestone 6.7a's card. The Blue hero stands at `q0_r-1` beside two Red minions, which is
+        // where its Push has a real choice and where its repeat prompt is reachable in one turn.
+        private static readonly ActionDefinitionId LongbowSkill =
+            new ActionDefinitionId("primary-push-repeat-skill");
+        private static readonly EffectNodeId LongbowRepeat = new EffectNodeId("longbow-repeat");
+        private static readonly HexCoordinate LongbowBlueAt = new HexCoordinate(0, -1);
+        private static readonly HexCoordinate LongbowSubjectAt = new HexCoordinate(-1, -1);
+
+        /// <summary>
+        /// Milestone 6.7a. `you may Repeat this action once` reaches the player as the confirm and the
+        /// decline p.10's `may` has always projected, and this asserts that rather than assuming it:
+        /// the milestone's claim is that a bounded Repeat needs no surface of its own, and a claim
+        /// about presentation is measured through the presenter.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_ForwardsARepeatPromptAsAnOrdinaryConfirmOrDecline()
+        {
+            var session = CreateNeedleSession(NeedleRedAt, LongbowBlueAt);
+            StartLongbowTurn(session);
+
+            // The one named target this geography offers the Push, answered through the presenter so
+            // the forwarded control has to be one the presenter currently projects.
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            var target = RoundActionPresenter.CreateViewModel(session.Projection).EffectChoiceTargets
+                .Single(value => value.Space.Equals(LongbowSubjectAt));
+            Assert.That(presenter.SubmitTarget(target), Is.True);
+
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice.NodeId, Is.EqualTo(LongbowRepeat));
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+
+            Assert.That(model.EffectChoiceTargets, Is.Empty, "A `may` names no object.");
+            Assert.That(model.EffectChoiceDestinations, Is.Empty, "and no space.");
+            Assert.That(model.Actions, Is.Empty,
+                "A paused frame withholds the offers Core would refuse, repeat prompt included.");
+            Assert.That(
+                model.EffectChoices.Select(value => value.Label),
+                Is.EqualTo(new[] { EffectChoiceLabels.ConfirmLabel, EffectChoiceLabels.DeclineLabel }),
+                "Exactly the two controls the projection carries, in its order and under the labels " +
+                "milestone 6.2a's `may` has used since it shipped - this conversion invents none.");
+            Assert.That(
+                model.EffectChoices.Select(value => value.Command.EffectChoice.Kind),
+                Is.EqualTo(new[] { EffectChoiceCommandKind.Confirm, EffectChoiceCommandKind.Decline }));
+            Assert.That(model.EffectChoices.All(value =>
+                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                value.Command.EffectChoice.ResolutionId.Equals(choice.ResolutionId) &&
+                value.Command.EffectChoice.ChoiceId.Equals(choice.ChoiceId)), Is.True,
+                "Every forwarded invocation is one the projection built, identities included.");
+
+            Assert.That(presenter.Submit(model.EffectChoices[0]), Is.True);
+            var repeated = RoundActionPresenter.CreateViewModel(session.Projection);
+            Assert.That(repeated.EffectChoiceTargets, Is.Not.Empty,
+                "Confirming starts the second instance, whose own prompt the presenter forwards the " +
+                "same way; nothing about a repeated instance is presented differently.");
+            Assert.That(repeated.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm &&
+                    value.Command.EffectChoice.ChoiceId.Value.Contains(LongbowRepeat.Value)),
+                Is.False,
+                "The repeated instance never offers a repeat of its own, so no control exists for one.");
+        }
+
+        /// <summary>
+        /// Commits Red Bombard at Initiative 5 against Blue Longbow at 4, then spends the Red turn on
+        /// p.12's Hold, because Blue Longbow sits below every Red card and so always acts second.
+        /// </summary>
+        private static void StartLongbowTurn(MatchSession session)
+        {
+            var red = GetHandCards(session, TeamSide.Red)
+                .Single(card => card.Id.Value == "red-bombard-card");
+            var blue = GetHandCards(session, TeamSide.Blue)
+                .Single(card => card.Id.Value == "blue-longbow-card");
+            Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
+            Accept(session, DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId));
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(blue.Id));
+            Accept(session, DirectorCommand.StartAction(LongbowSkill));
+        }
+
         /// <summary>
         /// Commits Red Bombard at Initiative 5 against Blue Longbow at 4, which is the only Blue card
         /// below it, so the Red hero acts first and its converted Skill is the current actor's offer.

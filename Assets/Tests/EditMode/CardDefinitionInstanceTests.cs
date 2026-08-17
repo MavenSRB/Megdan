@@ -111,7 +111,7 @@ namespace GuardsDigital.Tests.EditMode
                     "phase-6-6a-rev-1",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3",
-                    "phase-5-1a-rev-3"
+                    "phase-6-7a-rev-1"
                 }));
             Assert.That(redHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
             Assert.That(blueHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
@@ -144,18 +144,19 @@ namespace GuardsDigital.Tests.EditMode
                 blueHand,
                 new[] { "Blue Feint", "Blue Sentinel", "Blue Scout Shot", "Blue Hammer", "Blue Longbow" },
                 new[] { 12, 11, 8, 6, 4 },
-                // Blue Feint's and Blue Sentinel's printed Primary Attacks became milestones 6.8b's
-                // and 6.6a's showcase Skills; the attack and range columns say nothing for a Skill,
-                // which prints no value channel. Blue Hammer remains the team's one printed
-                // non-Ranged Attack, and Blue Scout Shot and Blue Longbow its Ranged pair until
-                // 6.7a converts the second of them.
+                // Blue Feint's, Blue Sentinel's and Blue Longbow's printed Primary Attacks became
+                // milestones 6.8b's, 6.6a's and 6.7a's showcase Skills; the attack and range columns
+                // say nothing for a Skill, which prints no value channel. Blue Hammer remains the
+                // team's one printed non-Ranged Attack and Blue Scout Shot its one Ranged Attack,
+                // which is the floor the showcase schedule requires - and with 6.7a the last of the
+                // six conversions, this matrix is the schedule's final shape.
                 new[]
                 {
                     ActionKind.Skill, ActionKind.Skill, ActionKind.Attack,
-                    ActionKind.Attack, ActionKind.Attack
+                    ActionKind.Attack, ActionKind.Skill
                 },
-                new[] { 0, 0, 2, 5, 3 },
-                new[] { 0, 0, 2, 0, 3 },
+                new[] { 0, 0, 2, 5, 0 },
+                new[] { 0, 0, 2, 0, 0 },
                 new[] { 3, 2, 4, 2, 3 },
                 new[] { 2, 4, 1, 1, 2 });
         }
