@@ -65,11 +65,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference DirectMoveV2 =>
             new EffectCapabilityReference(DirectMove, 2);
 
-        public static EffectCapabilityReference ObjectPushV1 =>
-            new EffectCapabilityReference(ObjectPush, 1);
+        /// <summary>
+        /// Revision 2, minted at milestone 6.4c: revision 1's declaration plus the eligible piece kind.
+        ///
+        /// Both Push declarations move together because both resolve through one routine and one pair
+        /// of target finders, so a parameter added to only the named one would leave the batch reading
+        /// a declaration it does not have.
+        /// </summary>
+        public static EffectCapabilityReference ObjectPushV2 =>
+            new EffectCapabilityReference(ObjectPush, 2);
 
-        public static EffectCapabilityReference PushTargetV1 =>
-            new EffectCapabilityReference(PushTarget, 1);
+        /// <summary>Revision 2, minted at milestone 6.4c, for the same reason the batch's is.</summary>
+        public static EffectCapabilityReference PushTargetV2 =>
+            new EffectCapabilityReference(PushTarget, 2);
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
@@ -301,7 +309,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class ObjectPushHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => ObjectPushV1;
+            public EffectCapabilityReference Reference => ObjectPushV2;
 
             public EffectCapabilityParameterSchema Schema { get; } = PushSchema(named: false);
 
@@ -331,7 +339,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class PushTargetHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => PushTargetV1;
+            public EffectCapabilityReference Reference => PushTargetV2;
 
             public EffectCapabilityParameterSchema Schema { get; } = PushSchema(named: true);
 
@@ -365,6 +373,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             parameters.Add(new EffectCapabilityParameter("distance", EffectValueKind.Integer));
             parameters.Add(new EffectCapabilityParameter("ignoresObstacles", EffectValueKind.Boolean));
+
+            // Milestone 6.4c. Both declarations carry it, because both produce their target set
+            // through the finders below and the reading lives there rather than per handler. The
+            // spelling is milestone 6.6a's own constant rather than a second one with the same
+            // literal: a card author declaring an eligible kind for a Push and for a Remove must not
+            // be able to get one of them wrong.
+            parameters.Add(new EffectCapabilityParameter(
+                SyntheticExchangeCapabilities.EligiblePieceParameterName, EffectValueKind.Integer));
             return new EffectCapabilityParameterSchema(
                 parameters,
                 new[]
@@ -536,6 +552,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .ThenBy(coordinate => coordinate.R))
             {
                 if (board.TryGetObjectAt(neighbor, out var occupant) &&
+                    AdmitsThisPiece(context, occupant) &&
                     !IsImmuneToThisPush(context, occupant, pushingUnit))
                 {
                     found.Add(occupant);
@@ -568,6 +585,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             var named = context.Input("target");
             if (named.Kind != EffectValueKind.Coordinate || named.Coordinate.Equals(pusherAt) ||
                 !context.Components.Board.TryGetObjectAt(named.Coordinate, out var occupant) ||
+                !AdmitsThisPiece(context, occupant) ||
                 IsImmuneToThisPush(context, occupant, pushingUnit))
             {
                 return false;
@@ -599,6 +617,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
             pushingUnit = pusher.AsRuleObject();
             return true;
         }
+
+        /// <summary>
+        /// Milestone 6.4c: whether the declared eligible kind admits this piece, asked in the one place
+        /// both finders share.
+        ///
+        /// p.18 pushes "a unit or a token", so the breadth is the rule's and the narrowing is the
+        /// card's. Reading it here rather than in each handler is what makes the probe and the
+        /// operation the same answer: <c>Anticipate</c>, <c>Execute</c>, and <c>Resume</c> all reach a
+        /// finder, so neither can admit a piece the other refuses, and milestone 6.8l turns that one
+        /// answer into the offer a player is shown.
+        /// </summary>
+        private static bool AdmitsThisPiece(
+            EffectCapabilityContext context, BoardObjectReference occupant) =>
+            PushEligibility.Admits(
+                (PushEligiblePieceKind)context
+                    .Input(SyntheticExchangeCapabilities.EligiblePieceParameterName).IntegerValue,
+                occupant.Kind);
 
         private static bool IsImmuneToThisPush(
             EffectCapabilityContext context, BoardObjectReference occupant, RuleObject pushingUnit)

@@ -279,17 +279,37 @@ namespace GuardsDigital.Tests.EditMode
         /// capability registration list is untouched, because this conversion registers and revises
         /// nothing, and the replaced action set never appears at all - the payload names definitions and
         /// the catalog supplies what they contain.
+        /// Milestone 6.4c keeps schema v12 and re-pins every fixture for two causes, one registration
+        /// and one content. Both Push declarations gain a declared eligible piece kind and therefore
+        /// move from revision 1 to revision 2, and four card revisions move - Red Needle and Blue
+        /// Longbow, which now say `unit`, and the two fixture Skill cards, which restate p.18's own
+        /// unit-or-token breadth. Both decisions are reject rather than migrate, by the existing
+        /// capability-sequence and content-revision checks: a payload recording either Push at revision
+        /// 1 states a contract set that cannot express which pieces its definitions admit, and reading
+        /// it under revision 2 would have to invent that declaration.
+        /// Measured in a throwaway worktree at pre-change revision <c>0116c5c</c> rather than assumed,
+        /// and the measurement is the clearest evidence that the registration cause costs nothing on the
+        /// wire: all eight payloads keep their exact decoded lengths - 2725, 2920, 3100, 3130, 3335,
+        /// 3775, 3824 and 3835 bytes - because a capability revision is a fixed-width int32 and every
+        /// content revision is the same sixteen characters. The five ordinary fixtures differ in ten
+        /// bytes across six runs, two of them the single revision ints inside the
+        /// <c>synthetic-object-push</c> and <c>synthetic-push-target</c> registration entries and the
+        /// other eight the two moved characters of each card revision at its definition-table and
+        /// card-instance sites. The three Skill-fixture payloads differ in eighteen bytes across ten
+        /// runs, which is the same two registration ints plus four cards instead of two. Nothing else
+        /// moved, and the new parameter itself never appears: a payload records the capability contract
+        /// set and the card definitions, and the catalog supplies what those contain.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v12", "d8221deedb0f44d48818f280559b114b7b0eee825ce44697be644b6f9fcdc10d"),
-            new CompatibilityFixture("active-turn-v12", "6640d053fcba9e4f71b5f1b935412114923e5076992ffe6ce4ba171c05befa82"),
-            new CompatibilityFixture("pending-choice-v12", "7811f76a083a6b4500957e3365cf455c8a386a944e60ac5c748cda086d34285c"),
-            new CompatibilityFixture("end-of-round-v12", "3d09b7414351adf1a88eaa300199621ec253412af6807b41608b0e62e37db2d5"),
-            new CompatibilityFixture("pending-minion-battle-v12", "6df05fc3ae2a6b8821884b5ed51edece8cee7acac0ab0266af1ce0315842fa1c"),
-            new CompatibilityFixture("placed-token-v12", "20f5bf52b23c5e2cfcca3e58ea39b8f72246aefee2336c5b8793084ceacadd29"),
-            new CompatibilityFixture("attached-marker-v12", "d39ad8be4adc05e9afa94b320878599838c4e15cd029ee9bf43a6ee7e8873be0"),
-            new CompatibilityFixture("pending-correction-v12", "9dbade703e15d29ce3cf701abd55aa24d369e1ef40c64745c760f368cd95a626")
+            new CompatibilityFixture("setup-v12", "70a8115e918dc6d045926d247ec2f2ee8928d0dd9f8ce451f234534dc775b362"),
+            new CompatibilityFixture("active-turn-v12", "05603c9f1bf464cb23bd3c1489b31d2f94bdccc3ab8c7de19e9d1adf9e353def"),
+            new CompatibilityFixture("pending-choice-v12", "79ac3966a9b1197ef587e3df145433f04a061f2206677a6bf3327761be4ab009"),
+            new CompatibilityFixture("end-of-round-v12", "52af31d4ba2d4332a19ac99f6d3673cd71ce7398c330093f3ba327b7e23f3a76"),
+            new CompatibilityFixture("pending-minion-battle-v12", "fff926d192f001ec253c98000b9cc0f15ead8574ceb2d0dc5c2ef4c59a7af65e"),
+            new CompatibilityFixture("placed-token-v12", "92ad1e92bc32085307337ba5cd5b4b38b905d120d21431bbf6e3a3481d742f04"),
+            new CompatibilityFixture("attached-marker-v12", "64c0621617a0f563857565af2076bf40d66b6d3e6c8e14d78c593ac0110ef1ad"),
+            new CompatibilityFixture("pending-correction-v12", "9c2d6adb4e1ad1d4a67da50865efdb17d8f3be48e48ab4cfcaf7b06e177701fc")
         };
 
         [Test]

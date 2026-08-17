@@ -97,7 +97,7 @@ namespace GuardsDigital.Tests.EditMode
                 redHand.Definitions.Select(definition => definition.ContentRevision),
                 Is.EqualTo(new[]
                 {
-                    "phase-6-8l-rev-1",
+                    "phase-6-4c-rev-1",
                     "phase-6-8a-rev-1",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3",
@@ -111,7 +111,7 @@ namespace GuardsDigital.Tests.EditMode
                     "phase-6-6a-rev-1",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3",
-                    "phase-6-7a-rev-1"
+                    "phase-6-4c-rev-1"
                 }));
             Assert.That(redHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
             Assert.That(blueHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));

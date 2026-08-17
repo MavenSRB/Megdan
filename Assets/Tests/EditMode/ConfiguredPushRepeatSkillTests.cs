@@ -61,6 +61,13 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly EffectNodeId Push = new EffectNodeId("longbow-push");
         private static readonly EffectNodeId Repeat = new EffectNodeId("longbow-repeat");
 
+        /// <summary>Milestone 6.2's Cache Skill, which is how a token reaches the board at all.</summary>
+        private static readonly ActionDefinitionId ComponentSkill =
+            new ActionDefinitionId("primary-component-skill");
+
+        private static readonly EffectNodeId TokenPlaceBranch =
+            new EffectNodeId("component-place-branch");
+
         /// <summary>Beside red-melee-01, red-melee-02, and the immune blue-heavy-01.</summary>
         private static readonly HexCoordinate BesideTwo = new HexCoordinate(0, -1);
 
@@ -106,7 +113,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(definition.Id, Is.EqualTo(new CardDefinitionId("placeholder-blue-longbow")),
                 "The conversion advances the revision, never the card's identity.");
-            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-7a-rev-1"));
+            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-4c-rev-1"));
             Assert.That(definition.ContentAuthority,
                 Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(definition.Initiative.Value, Is.EqualTo(4));
@@ -194,7 +201,7 @@ namespace GuardsDigital.Tests.EditMode
                 "are offered.");
 
             var push = effect.Nodes.Single(node => node.Id.Equals(Push));
-            Assert.That(push.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.PushTargetV1),
+            Assert.That(push.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.PushTargetV2),
                 "The Push names one target, so it uses the target-named declaration of p.18's Push.");
             Assert.That(push.FailurePolicy, Is.EqualTo(EffectFailurePolicy.Mandatory),
                 "A fixed distance opens no distance choice.");
@@ -659,6 +666,44 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // ---------------------------------------------------------------------------------------
+        // Milestone 6.4c: `another adjacent unit` never names a token
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void AnAdjacentToken_IsNeitherOfferedToNorPushedByThisCard()
+        {
+            // The card text says unit, and p.19 states that tokens are not units. p.18's Push admits
+            // "a unit or a token", so the breadth is the rule's and this narrowing is the card's,
+            // declared on the operation rather than enforced here.
+            var session = StartLongbowSkillBesideAToken(out var tokenAt);
+
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice.NodeId, Is.EqualTo(SelectTarget));
+            Assert.That(
+                choice.Candidates.Select(candidate => candidate.Value.Coordinate),
+                Has.No.Member(tokenAt),
+                "The Hazard stands beside the acting hero and is not offered.");
+            Assert.That(
+                choice.Candidates.Select(candidate => candidate.Value.Coordinate),
+                Is.EquivalentTo(new[] { FirstMinionAt, SecondMinionAt }),
+                "The two adjacent units are still offered, so the narrowing took the token and " +
+                "nothing else.");
+
+            var forged = session.Execute(DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
+                choice.ResolutionId,
+                choice.ChoiceId,
+                EffectChoiceCommandKind.Select,
+                EffectChoiceCandidate.Value_(EffectValue.Space(tokenAt)))));
+
+            Assert.That(forged.Accepted, Is.False,
+                "And an answer naming it anyway is refused, because the offer is not the only place " +
+                "the declaration is read.");
+            Assert.That(
+                session.Projection.PlacedTokens.Single().Coordinate, Is.EqualTo(tokenAt),
+                "The token has not moved.");
+        }
+
+        // ---------------------------------------------------------------------------------------
         // Helpers
         // ---------------------------------------------------------------------------------------
 
@@ -758,6 +803,48 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.Accepted, Is.True, result.Detail);
         }
 
+        /// <summary>
+        /// The same position one turn later, with a Hazard standing beside the acting hero.
+        ///
+        /// No initial scenario can seed a token, so this places one the way a match does: the Blue
+        /// hero spends the earlier turn on milestone 6.2's Cache Skill, whose placement takes an empty
+        /// space adjacent to the actor. That needs the Skill-fixture hand, which is the only one that
+        /// deals the Cache card beside the ordinary five.
+        /// </summary>
+        private static MatchSession StartLongbowSkillBesideAToken(out HexCoordinate tokenAt)
+        {
+            var session = CreateSession(BesideTwo, withSkillCards: true);
+            CommitCards(session, "bombard", "cache");
+            Accept(session, DirectorCommand.PerformHold(
+                session.Projection.SelectedActor.CardInstanceId));
+
+            var offer = session.Projection.AvailableTurnActions
+                .Single(candidate => candidate.ActionDefinitionId.Equals(ComponentSkill));
+            Accept(session, DirectorCommand.StartAction(offer.ActionDefinitionId));
+            ChooseMode(session, TokenPlaceBranch);
+            tokenAt = session.Projection.PendingEffectChoice.Candidates[0].Value.Coordinate;
+            SelectValue(session, tokenAt);
+
+            CommitCards(session, "pursuit", "longbow");
+            Accept(session, DirectorCommand.PerformHold(
+                session.Projection.SelectedActor.CardInstanceId));
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(LongbowCardId));
+            var skill = session.Projection.AvailableTurnActions
+                .Single(candidate => candidate.ActionDefinitionId.Equals(LongbowSkill));
+            Accept(session, DirectorCommand.StartAction(skill.ActionDefinitionId));
+            return session;
+        }
+
+        /// <summary>A mode keeps milestone 6.8a's explicit confirm, so both invocations are sent.</summary>
+        private static void ChooseMode(MatchSession session, EffectNodeId branch)
+        {
+            var choice = session.Projection.PendingEffectChoice;
+            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.OptionNodeId.Equals(branch))));
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+        }
+
         /// <summary>The Blue hero's turn with Blue Longbow's Skill started and its first prompt open.</summary>
         private static MatchSession StartLongbowSkill(HexCoordinate blueAt)
         {
@@ -776,11 +863,22 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateLongbowTurn(HexCoordinate blueAt)
         {
             var session = CreateSession(blueAt);
+            CommitCards(session, "bombard", "longbow");
+            Accept(session, DirectorCommand.PerformHold(
+                session.Projection.SelectedActor.CardInstanceId));
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(LongbowCardId),
+                "The hero the board was built around must be the one whose turn this is.");
+            return session;
+        }
+
+        private static void CommitCards(
+            MatchSession session, string redCardFragment, string blueCardFragment)
+        {
             Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
             foreach (var pair in new[]
             {
-                new { Side = TeamSide.Red, Fragment = "bombard" },
-                new { Side = TeamSide.Blue, Fragment = "longbow" }
+                new { Side = TeamSide.Red, Fragment = redCardFragment },
+                new { Side = TeamSide.Blue, Fragment = blueCardFragment }
             })
             {
                 var card = session.Projection.Cards.Single(candidate =>
@@ -792,16 +890,13 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(session.Projection.PendingInitiativeChoice, Is.Null,
                 "The committed Initiatives differ, so no tie has to be steered.");
-            Accept(session, DirectorCommand.PerformHold(
-                session.Projection.SelectedActor.CardInstanceId));
-            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(LongbowCardId),
-                "The hero the board was built around must be the one whose turn this is.");
-            return session;
         }
 
-        private static MatchSession CreateSession(HexCoordinate blueAt)
+        private static MatchSession CreateSession(HexCoordinate blueAt, bool withSkillCards = false)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = withSkillCards
+                ? PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue)
+                : PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

@@ -290,7 +290,7 @@ Non-goals: No change to Clear eligibility, adjacency, empty-subset legality, rem
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-63a-let-a-player-choose-clear-and-point-token-controls-back-to-the-board-completion-evidence).
 
-### [~] 6.4c Let a Push declare which kind of piece its card text may move
+### [x] 6.4c Let a Push declare which kind of piece its card text may move
 
 **Corrective amendment (2026-08-17, user approved).** Milestone 6.7a's handoff reported a defect it inherited rather than introduced, and the user scheduled this correction for it. Rulebook p.18 defines Push over "a unit or a token", so the general rule admits both; two configured cards narrow it in their own text and neither narrowing is enforced. Red Needle's Skill says `choose another adjacent unit and Push it 3 spaces` and Blue Longbow's says `Choose another adjacent unit and Push it 1 space`, but `synthetic-push-target` declares no eligible piece kind, so an adjacent Hazard is offered to both and would be pushed by either. p.19's own sentence that tokens are not units is what makes that wrong, and it is the same sentence milestone 6.6a already acted on for the Swap and the Remove.
 
@@ -314,3 +314,5 @@ Acceptance checks:
 - Validation tier T3, for the same reason milestone 6.6a used it: a change that moves every pinned digest and edits configured cards, so both unfiltered suites run rather than a filter.
 
 Non-goals: No change to p.18's Push geometry, distance, immunity, obstacle, or zero-space rules; no new Push declaration, capability, or card; no eligible-piece kind for any operation other than Push; no narrowing of the general rule itself; no minion-only or hero-only Push kind, which no card text in this hand needs; no presentation change, since a candidate that is never offered needs no surface; no Wasp definition, printed-text parsing, card-name or hero-name branch, production art, animation, or audio.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64c-let-a-push-declare-which-kind-of-piece-its-card-text-may-move-completion-evidence).

@@ -10,6 +10,7 @@ using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
@@ -102,7 +103,7 @@ namespace GuardsDigital.Tests.EditMode
             var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
             var otherAt = ActorAt.GetNeighbor(HexDirection.East);
 
-            var handler = Handler(SyntheticDisplacementCapabilities.ObjectPushV1);
+            var handler = Handler(SyntheticDisplacementCapabilities.ObjectPushV2);
             var offered = handler.Execute(Context(
                 board, EffectFailurePolicy.UpTo, distance: 2, modifications: RuleModificationSet.Empty));
 
@@ -133,13 +134,118 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(board.IsEmptyPlayableSpace(minionAt), Is.True);
         }
 
+        // ---------------------------------------------------------------------------------------
+        // Milestone 6.4c: which kind of piece a declaration admits
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void ADeclaredUnitPush_LeavesAnAdjacentTokenStandingWhileEveryUnitTravels()
+        {
+            // The same board and the same batch as the case above, declaring `unit` instead of p.18's
+            // own unit-or-token breadth. This is the whole of the milestone at the capability level:
+            // the rule is unchanged and the declaration is what narrowed.
+            var board = CreateStarBoard();
+            var token = PlaceToken(board, ActorAt.GetNeighbor(HexDirection.West));
+            var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
+            var otherAt = ActorAt.GetNeighbor(HexDirection.East);
+
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV2).Resume(
+                Context(board, EffectFailurePolicy.UpTo, 2, RuleModificationSet.Empty,
+                    PushEligiblePieceKind.Unit),
+                new[] { EffectValue.Integer(2) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(Output(applied, "moved").IntegerValue, Is.EqualTo(2),
+                "Two units travelled and the token did not, where p.18's own breadth moved three.");
+            Assert.That(board.PlacedTokens.Single().Coordinate, Is.EqualTo(token.Coordinate),
+                "p.19 states that tokens are not units, so text saying unit never names one.");
+            Assert.That(
+                board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(StraightLineQuery.Step(otherAt, HexDirection.East, 2)));
+            Assert.That(
+                board.Minions.Single().Coordinate,
+                Is.EqualTo(StraightLineQuery.Step(minionAt, HexDirection.NorthEast, 2)));
+        }
+
+        [Test]
+        public void ADeclaredUnitPush_NamingATokenIsRefusedRatherThanResolvedToNothing()
+        {
+            var board = CreateStarBoard();
+            var token = PlaceToken(board, ActorAt.GetNeighbor(HexDirection.West));
+
+            var refused = Handler(SyntheticDisplacementCapabilities.PushTargetV2).Execute(
+                NamedContext(board, token.Coordinate, PushEligiblePieceKind.Unit));
+
+            Assert.That(refused.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                "The named space holds a piece this declaration cannot take, so the step stops rather " +
+                "than pushing nothing and reporting success. Milestone 6.8l re-reads the answer when " +
+                "it arrives, so a stale or forged selection is refused here too.");
+            Assert.That(board.PlacedTokens.Single().Coordinate, Is.EqualTo(token.Coordinate));
+
+            var admitted = Handler(SyntheticDisplacementCapabilities.PushTargetV2).Execute(
+                NamedContext(board, token.Coordinate, PushEligiblePieceKind.UnitOrToken));
+
+            Assert.That(admitted.Kind, Is.EqualTo(EffectExecutionResultKind.Applied),
+                "The same token under p.18's own breadth is an ordinary target, which is what makes " +
+                "the refusal above the card's narrowing rather than a rule this milestone invented.");
+        }
+
+        [Test]
+        public void EveryPushDeclaration_ProbesTheSameEligibilityItPerforms()
+        {
+            // Milestone 6.6a found the opposite of this in `RemoveHandler`: a probe reported a piece
+            // removable that the operation then refused, because the eligibility reading had been
+            // written twice. The two answers are asserted equal rather than each separately, because
+            // milestone 6.8l reads the probe as the offer a player is shown.
+            var board = CreateStarBoard();
+            var token = PlaceToken(board, ActorAt.GetNeighbor(HexDirection.West));
+
+            foreach (var eligiblePiece in new[]
+            {
+                PushEligiblePieceKind.UnitOrToken,
+                PushEligiblePieceKind.Unit
+            })
+            {
+                var handler = Handler(SyntheticDisplacementCapabilities.PushTargetV2);
+                var anticipated = handler.Anticipate(
+                    NamedContext(board, token.Coordinate, eligiblePiece));
+                var executed = handler.Execute(NamedContext(board, token.Coordinate, eligiblePiece));
+
+                Assert.That(
+                    anticipated == EffectExecutionResultKind.ImpossibleMandatory,
+                    Is.EqualTo(executed.Kind == EffectExecutionResultKind.ImpossibleMandatory),
+                    $"Declaring {eligiblePiece}, the probe and the operation disagreed about whether " +
+                    "this piece may be pushed.");
+            }
+        }
+
+        [Test]
+        public void AnUndeclaredEligibleKind_AdmitsNothing()
+        {
+            // The declaration is required rather than defaulted, so a definition that states no kind
+            // pushes nothing instead of quietly meaning the widest thing.
+            foreach (var kind in new[]
+            {
+                BoardObjectKind.Hero, BoardObjectKind.Minion, BoardObjectKind.Token
+            })
+            {
+                Assert.That(PushEligibility.Admits(PushEligiblePieceKind.None, kind), Is.False);
+                Assert.That(PushEligibility.Admits(PushEligiblePieceKind.UnitOrToken, kind), Is.True,
+                    "p.18 pushes a unit or a token, and a hero is a unit.");
+            }
+
+            Assert.That(PushEligibility.Admits(PushEligiblePieceKind.Unit, BoardObjectKind.Hero), Is.True);
+            Assert.That(PushEligibility.Admits(PushEligiblePieceKind.Unit, BoardObjectKind.Minion), Is.True);
+            Assert.That(PushEligibility.Admits(PushEligiblePieceKind.Unit, BoardObjectKind.Token), Is.False);
+        }
+
         [Test]
         public void AChosenDistanceOfZero_AppliesAndMovesNothing()
         {
             var board = CreateStarBoard();
             var otherAt = ActorAt.GetNeighbor(HexDirection.East);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV1).Resume(
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV2).Resume(
                 Context(board, EffectFailurePolicy.UpTo, 2, RuleModificationSet.Empty),
                 new[] { EffectValue.Integer(0) });
 
@@ -156,7 +262,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateStarBoard();
             var otherAt = ActorAt.GetNeighbor(HexDirection.East);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV1).Resume(
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV2).Resume(
                 Context(board, EffectFailurePolicy.UpTo, 2, RuleModificationSet.Empty),
                 new[] { EffectValue.Integer(5) });
 
@@ -181,7 +287,7 @@ namespace GuardsDigital.Tests.EditMode
                 Actor, Actor, new CardInstanceId("push-wall-source"), wall));
             var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV1).Resume(
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV2).Resume(
                 Context(board, EffectFailurePolicy.UpTo, 2, RuleModificationSet.Empty),
                 new[] { EffectValue.Integer(2) });
 
@@ -504,7 +610,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static EffectExecutionResult Push(
             AdjacentMoveAuthority board, int distance, RuleModificationSet modifications) =>
-            Handler(SyntheticDisplacementCapabilities.ObjectPushV1)
+            Handler(SyntheticDisplacementCapabilities.ObjectPushV2)
                 .Execute(Context(board, EffectFailurePolicy.Mandatory, distance, modifications));
 
         private static EffectValue Output(EffectExecutionResult result, string name) =>
@@ -516,11 +622,42 @@ namespace GuardsDigital.Tests.EditMode
             EffectFailurePolicy policy,
             int distance,
             RuleModificationSet modifications) =>
+            Context(board, policy, distance, modifications, PushEligiblePieceKind.UnitOrToken);
+
+        /// <summary>
+        /// Milestone 6.4c: every case above this one is about what happens to a target the declaration
+        /// already admits - geometry, immunity, distance - so they declare p.18's own unit-or-token
+        /// breadth and are unchanged in meaning. The cases about the declaration itself pass their own.
+        /// </summary>
+        private static EffectCapabilityContext Context(
+            AdjacentMoveAuthority board,
+            EffectFailurePolicy policy,
+            int distance,
+            RuleModificationSet modifications,
+            PushEligiblePieceKind eligiblePiece) =>
             BuildContext(board, policy, modifications, new Dictionary<string, EffectValue>
             {
                 ["distance"] = EffectValue.Integer(distance),
-                ["ignoresObstacles"] = EffectValue.Boolean(false)
+                ["ignoresObstacles"] = EffectValue.Boolean(false),
+                [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
+                    EffectValue.Integer((int)eligiblePiece)
             });
+
+        /// <summary>Milestone 6.5a's named Push, at a fixed distance of 2 with obstacles observed.</summary>
+        private static EffectCapabilityContext NamedContext(
+            AdjacentMoveAuthority board,
+            HexCoordinate target,
+            PushEligiblePieceKind eligiblePiece) =>
+            BuildContext(
+                board, EffectFailurePolicy.Mandatory, RuleModificationSet.Empty,
+                new Dictionary<string, EffectValue>
+                {
+                    ["target"] = EffectValue.Space(target),
+                    ["distance"] = EffectValue.Integer(2),
+                    ["ignoresObstacles"] = EffectValue.Boolean(false),
+                    [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
+                        EffectValue.Integer((int)eligiblePiece)
+                });
 
         private static EffectCapabilityContext MoveContext(
             AdjacentMoveAuthority board,

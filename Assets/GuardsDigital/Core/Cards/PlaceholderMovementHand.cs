@@ -483,7 +483,7 @@ namespace GuardsDigital.Core.Cards
 
             var effect = new EffectDefinition(
                 new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
-                "phase-6-6a-rev-1",
+                "phase-6-4c-rev-1",
                 root,
                 new[]
                 {
@@ -531,11 +531,18 @@ namespace GuardsDigital.Core.Cards
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticDisplacementCapabilities.ObjectPushV1,
+                        SyntheticDisplacementCapabilities.ObjectPushV2,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
-                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
+                            // p.18's own breadth, restated by the fixture hand rather than narrowed:
+                            // this card says every adjacent object, and a token standing beside the
+                            // actor is one. It is the conservative case the batch's coverage rests on.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Displacement.PushEligiblePieceKind.UnitOrToken))
                         },
                         outputs: new[]
                         {
@@ -666,7 +673,7 @@ namespace GuardsDigital.Core.Cards
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
-                "phase-6-6a-rev-1",
+                "phase-6-4c-rev-1",
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
@@ -715,7 +722,7 @@ namespace GuardsDigital.Core.Cards
 
             var effect = new EffectDefinition(
                 new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
-                "phase-6-7-rev-1",
+                "phase-6-4c-rev-1",
                 root,
                 new[]
                 {
@@ -756,11 +763,18 @@ namespace GuardsDigital.Core.Cards
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticDisplacementCapabilities.ObjectPushV1,
+                        SyntheticDisplacementCapabilities.ObjectPushV2,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
-                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
+                            // p.18's own breadth, restated by the fixture hand rather than narrowed:
+                            // this card says every adjacent object, and a token standing beside the
+                            // actor is one. It is the conservative case the batch's coverage rests on.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Displacement.PushEligiblePieceKind.UnitOrToken))
                         },
                         outputs: new[]
                         {
@@ -774,7 +788,7 @@ namespace GuardsDigital.Core.Cards
 
             return new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
-                "phase-6-7-rev-1",
+                "phase-6-4c-rev-1",
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
@@ -1063,13 +1077,19 @@ namespace GuardsDigital.Core.Cards
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticDisplacementCapabilities.PushTargetV1,
+                        SyntheticDisplacementCapabilities.PushTargetV2,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "target", selectTarget, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
-                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
+                            // `unit` rather than p.18's own unit-or-token breadth, which is why an
+                            // adjacent token is never among this branch's candidates.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Displacement.PushEligiblePieceKind.Unit))
                         },
                         outputs: new[]
                         {
@@ -1400,13 +1420,19 @@ namespace GuardsDigital.Core.Cards
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticDisplacementCapabilities.PushTargetV1,
+                        SyntheticDisplacementCapabilities.PushTargetV2,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "target", selectTarget, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
+                            // `unit` rather than p.18's own unit-or-token breadth, which is why an
+                            // adjacent token is never among this branch's candidates.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Displacement.PushEligiblePieceKind.Unit))
                         },
                         outputs: new[]
                         {
@@ -1546,7 +1572,7 @@ namespace GuardsDigital.Core.Cards
                 int defenseValue) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.PushPlaceSkill,
-                    "phase-6-8l-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    "phase-6-4c-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             /// <summary>Milestone 6.5b's converted card, on the same terms as the three before it.</summary>
             public static SyntheticCardProfile WithDirectMoveSpawnSkill(
@@ -1592,7 +1618,7 @@ namespace GuardsDigital.Core.Cards
                 int defenseValue) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.PushRepeatSkill,
-                    "phase-6-7a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    "phase-6-4c-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             public string Id { get; }
             public string DisplayName { get; }

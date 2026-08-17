@@ -42,8 +42,10 @@ namespace GuardsDigital.Tests.PlayMode
             var definition = runtime.Definitions
                 .Single(value => value.Reference.Equals(longbow.DefinitionReference));
 
-            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-7a-rev-1"),
-                "The scene deals the converted card rather than a fixture-only copy of it.");
+            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-4c-rev-1"),
+                "The scene deals the converted card rather than a fixture-only copy of it. Milestone " +
+                "6.4c advanced the revision again when the card declared which kind of piece its " +
+                "Push may take.");
             Assert.That(
                 definition.ActionDefinitions
                     .Single(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary).Kind,

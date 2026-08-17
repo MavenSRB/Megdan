@@ -45,6 +45,13 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly EffectNodeId SelectTarget = new EffectNodeId("needle-select-target");
         private static readonly EffectNodeId Push = new EffectNodeId("needle-push");
         private static readonly EffectNodeId PlaceBranch = new EffectNodeId("needle-place-branch");
+
+        /// <summary>Milestone 6.2's Cache Skill, which is how a token reaches the board at all.</summary>
+        private static readonly ActionDefinitionId ComponentSkill =
+            new ActionDefinitionId("primary-component-skill");
+
+        private static readonly EffectNodeId TokenPlaceBranch =
+            new EffectNodeId("component-place-branch");
         private static readonly EffectNodeId ActorSpace = new EffectNodeId("needle-actor-space");
         private static readonly EffectNodeId Place = new EffectNodeId("needle-place");
 
@@ -66,7 +73,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(definition.Id, Is.EqualTo(new CardDefinitionId("placeholder-red-needle")),
                 "The conversion advances the revision, never the card's identity.");
-            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-8l-rev-1"));
+            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-4c-rev-1"));
             Assert.That(definition.ContentAuthority,
                 Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(definition.Initiative.Value, Is.EqualTo(13));
@@ -138,7 +145,7 @@ namespace GuardsDigital.Tests.EditMode
                 "The target offer asks the same immunity question as its consuming Push.");
 
             var push = effect.Nodes.Single(node => node.Id.Equals(Push));
-            Assert.That(push.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.PushTargetV1),
+            Assert.That(push.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.PushTargetV2),
                 "The Push names one target, so it uses the target-named declaration of p.18's Push.");
             Assert.That(push.FailurePolicy, Is.EqualTo(EffectFailurePolicy.Mandatory),
                 "A fixed distance opens no distance choice.");
@@ -189,6 +196,38 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(session.Projection.PendingEffectChoice, Is.Null,
                 "Distance 3 is fixed, so the Push opens no second decision and the Skill completes.");
+        }
+
+        [Test]
+        public void ThePushBranch_NeitherOffersNorPushesAnAdjacentToken()
+        {
+            // Milestone 6.4c. The card text says unit, and p.19 states that tokens are not units.
+            // p.18's Push admits "a unit or a token", so the breadth is the rule's and this narrowing
+            // is the card's, declared on the operation rather than enforced in this branch.
+            var session = StartNeedleSkillBesideAToken(out var tokenAt);
+
+            ChooseBranch(session, PushBranch);
+
+            var selection = session.Projection.PendingEffectChoice;
+            Assert.That(
+                selection.Candidates.Select(candidate => candidate.Value.Coordinate),
+                Has.No.Member(tokenAt),
+                "The Hazard stands beside the acting hero and is not offered.");
+            Assert.That(
+                selection.Candidates.Select(candidate => candidate.Value.Coordinate),
+                Has.Member(BlueAt),
+                "The adjacent unit is still offered, so the narrowing took the token and nothing else.");
+
+            var forged = session.Execute(DirectorCommand.AnswerEffectChoice(new EffectChoiceCommand(
+                selection.ResolutionId,
+                selection.ChoiceId,
+                EffectChoiceCommandKind.Select,
+                EffectChoiceCandidate.Value_(EffectValue.Space(tokenAt)))));
+
+            Assert.That(forged.Accepted, Is.False,
+                "And an answer naming it anyway is refused, because the offer is not the only place " +
+                "the declaration is read.");
+            Assert.That(session.Projection.PlacedTokens.Single().Coordinate, Is.EqualTo(tokenAt));
         }
 
         [Test]
@@ -461,6 +500,40 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// The same line one turn later, with a Hazard standing beside the acting hero.
+        ///
+        /// No initial scenario can seed a token, so this places one the way a match does: the Red hero
+        /// spends the earlier turn on milestone 6.2's Cache Skill, whose placement takes an empty space
+        /// adjacent to the actor. That needs the Skill-fixture hand, which is the only one dealing the
+        /// Cache card beside the ordinary five; Red Cache at Initiative 15 is above every Blue card, so
+        /// the Red hero acts first on that turn as well as on the Needle's.
+        /// </summary>
+        private static MatchSession StartNeedleSkillBesideAToken(out HexCoordinate tokenAt)
+        {
+            var session = CreateNeedleSession(RedAt, BlueAt, withSkillCards: true);
+            CommitCards(session, "cache", "longbow");
+            var placement = session.Projection.AvailableTurnActions
+                .Single(candidate => candidate.ActionDefinitionId.Equals(ComponentSkill));
+            Accept(session, DirectorCommand.StartAction(placement.ActionDefinitionId));
+            ChooseBranch(session, TokenPlaceBranch);
+            tokenAt = session.Projection.PendingEffectChoice.Candidates
+                .Select(candidate => candidate.Value.Coordinate)
+                .First(space => !space.Equals(BlueAt));
+            SelectValue(session, tokenAt);
+
+            // Red acted first on that turn, so the Blue hero still owes one before the round can end.
+            Accept(session, DirectorCommand.PerformHold(
+                session.Projection.SelectedActor.CardInstanceId));
+
+            CommitCards(session, "needle", "hammer");
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(NeedleCardId));
+            var skill = session.Projection.AvailableTurnActions
+                .Single(candidate => candidate.ActionDefinitionId.Equals(NeedleSkill));
+            Accept(session, DirectorCommand.StartAction(skill.ActionDefinitionId));
+            return session;
+        }
+
+        /// <summary>
         /// The corpus fixture's correction geography: the Red hero at (0,-1) with red-melee-01 adjacent
         /// at (-1,-1), where a push directly away carries the minion out of the Battle Zone.
         /// </summary>
@@ -522,9 +595,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.Accepted, Is.True, result.Detail);
         }
 
-        private static MatchSession CreateNeedleSession(HexCoordinate redAt, HexCoordinate blueAt)
+        private static MatchSession CreateNeedleSession(
+            HexCoordinate redAt, HexCoordinate blueAt, bool withSkillCards = false)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = withSkillCards
+                ? PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Red)
+                : PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
