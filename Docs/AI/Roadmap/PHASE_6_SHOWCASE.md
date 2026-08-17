@@ -113,7 +113,7 @@ Non-goals: No minion-targeting configured Remove before 6.9, card-state Swap, ca
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-66a-convert-blue-sentinel-into-the-swapreplaceremove-showcase-skill-completion-evidence).
 
-### [ ] 6.7a Convert Blue Longbow into the bounded-Repeat showcase Skill
+### [~] 6.7a Convert Blue Longbow into the bounded-Repeat showcase Skill
 
 Observable outcome: The configured Blue hand's existing Blue Longbow card replaces its printed Primary Attack with the synthetic Skill `Choose another adjacent unit and Push it 1 space; you may Repeat this action once`, visibly proving a separate bounded repeated action instance and the correction boundary between instances.
 

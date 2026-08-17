@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.7**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **6.7**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.7a**.
 - Next proposed milestone: **6.7a**.
 
 Milestone **6.7** completed on 2026-08-17: a definition can ask for its own action to happen again, and what happens is a second, separate action instance with the after-action displaced-minion correction finished between the two. The request performs nothing itself; the repeated instance runs the same trusted definition under an explicit repeated context that makes its own repeat ineligible, so the bound is two instances by construction rather than a count, and no ordinary start can create one. Schema advances to v12 for the single fact that crosses the wire - a paused correction that still owes a repeat - and every prior payload is rejected rather than migrated. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
