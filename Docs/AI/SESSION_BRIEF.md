@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.4c**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.4c**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.9**.
 - Next proposed milestone: **6.9**.
 
 Corrective milestone **6.4c** completed on 2026-08-17: a Push states which kind of piece it may move, so Red Needle and Blue Longbow no longer offer an adjacent token to card text that says unit. p.18 pushes "a unit or a token", so the breadth is the rule's and the narrowing is the card's; the declaration lives on the operation and one statement of it is read by the probe and the operation alike, which is how milestone 6.8l narrows the offer without either card mentioning a token. Schema stays v12; both Push declarations and four card revisions moved, so every pinned digest was re-pinned with its equality groups unchanged. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
