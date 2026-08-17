@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.3a**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.3a**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.7**.
 - Next proposed milestone: **6.7**.
 
 Corrective milestone **6.3a** completed on 2026-08-17: milestone 6.3's implemented Clear reaches a player, and every control that names a token says which piece it means. The rule is untouched - the projection carries one Clear option per currently available replaceable Attack, built from the offer and adjacency queries the command path already asks, plus the exact canonical invocation for every confirmable subset, so presentation tracks only what the player selected and composes no payload. A control naming a token reports the stable identity rather than a name or a space, and the board marks that piece with the cue the minion-removal surface uses, which closes milestone 6.6a's handoff finding. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).

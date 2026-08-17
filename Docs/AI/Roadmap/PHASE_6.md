@@ -605,7 +605,7 @@ Non-goals: No Wasp definition, card-state swap or upgrade replacement, hero Defe
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-66-complete-reusable-board-object-swap-replace-and-remove-effects-completion-evidence).
 
-### [ ] 6.7 Add bounded Repeat action control flow
+### [~] 6.7 Add bounded Repeat action control flow
 
 Observable outcome: Synthetic definitions can Repeat an eligible action as a separate bounded action instance through milestone 6.2a's typed effect frame, with each instance completing displaced-minion correction before the next begins.
 
