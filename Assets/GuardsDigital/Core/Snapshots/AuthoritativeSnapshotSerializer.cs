@@ -26,6 +26,12 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
+        // v12: milestone 6.7's bounded Repeat adds an optional pending repeated-action record to the
+        // card-action section's Correction continuation, naming the second instance an action asked for
+        // while the correction between the two instances is paused. v11 is rejected rather than
+        // migrated: a v11 correction payload cannot state whether the action it belongs to asked to
+        // repeat, and reading one as "did not" would silently drop half of a card's printed text.
+        //
         // v11: milestone 6.5aa widens Minion Battle candidates and selections from intrinsic minion
         // IDs to stable effective-unit identities, so a counts-as-minion hero can be removed and the
         // resulting off-board hero occupancy can survive restore. v10 is rejected rather than
@@ -47,7 +53,7 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 11;
+        public const int CurrentSchemaVersion = 12;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

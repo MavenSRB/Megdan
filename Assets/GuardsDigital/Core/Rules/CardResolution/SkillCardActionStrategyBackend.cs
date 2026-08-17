@@ -68,8 +68,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             MatchComponents components,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            out PendingRepeatedAction repeat)
         {
+            repeat = null;
             if (!resolutionId.IsDefined)
             {
                 throw new ArgumentException("A Skill requires a resolution ID.", nameof(resolutionId));
@@ -100,7 +102,109 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer.InvocationContext,
                 context);
 
-            return Complete(step, resolutionId, offer, true);
+            if (step.RepeatRequested)
+            {
+                repeat = PendingRepeatedAction.Mint(
+                    resolutionId, offer.SourceCardInstanceId, offer.SourceDefinitionReference,
+                    offer.ActionDefinitionId, action.EffectRoot.Reference, offer.ActorId, offer.ActorId);
+            }
+
+            return Complete(
+                step, resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId,
+                offer.ActorId, true);
+        }
+
+        /// <summary>
+        /// Milestone 6.7: starts the second instance a completed action asked for.
+        ///
+        /// It takes the identities the finished instance recorded rather than an
+        /// <see cref="ActionOffer"/>, because a repeated action is created by a rule and is never
+        /// offered: the dispatcher's own start gate admits the two printed invocation contexts only, so
+        /// nothing that reads offers can reach this. The action definition is resolved from the trusted
+        /// card definitions, and the repeated instance runs under
+        /// <see cref="ActionInvocationContext.Repeated"/>, which is what makes its own Repeat node
+        /// ineligible and the whole thing bounded at two instances.
+        ///
+        /// Every collaborator - participants, timing, modifications, components, round and turn - is the
+        /// caller's current state rather than anything the first instance carried, so an Active effect
+        /// the first instance created restricts the second.
+        /// </summary>
+        public CardActionResolutionResult StartRepeatedSkill(
+            ActionResolutionId resolutionId,
+            PendingRepeatedAction repeat,
+            IEnumerable<CardDefinition> definitions,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            MatchComponents components,
+            int roundIndex,
+            int turnIndex)
+        {
+            if (repeat == null) throw new ArgumentNullException(nameof(repeat));
+            if (!resolutionId.IsDefined)
+            {
+                throw new ArgumentException("A repeated Skill requires a resolution ID.", nameof(resolutionId));
+            }
+
+            if (pendingResolution != null)
+            {
+                return Reject(CardActionResolutionRejectionReason.NoPendingResolution);
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var action = FindRepeatableAction(materializedDefinitions, repeat);
+            if (action == null)
+            {
+                return Reject(CardActionResolutionRejectionReason.UnavailableOffer);
+            }
+
+            var context = new EffectResolutionContext(
+                action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
+                components: components);
+            var step = EffectResolutionSession.Start(
+                new EffectResolutionId(resolutionId.Value),
+                repeat.SourceCardInstanceId,
+                repeat.SourceDefinitionReference,
+                repeat.ActionDefinitionId,
+                repeat.ActorId,
+                repeat.ControllerId,
+                ActionInvocationContext.Repeated,
+                context);
+
+            return Complete(
+                step, resolutionId, repeat.SourceCardInstanceId, repeat.ActionDefinitionId,
+                repeat.ActorId, true);
+        }
+
+        /// <summary>
+        /// The Skill action a repeat names, resolved from the trusted definitions. Returns <c>null</c>
+        /// wherever the payload does not describe one this build supplies, so a tampered or stale
+        /// repeat is refused rather than reconstructed.
+        /// </summary>
+        internal static ActionDefinition FindRepeatableAction(
+            IReadOnlyList<CardDefinition> definitions,
+            PendingRepeatedAction repeat)
+        {
+            foreach (var definition in definitions)
+            {
+                if (!definition.Reference.Equals(repeat.SourceDefinitionReference))
+                {
+                    continue;
+                }
+
+                foreach (var action in definition.ActionDefinitions)
+                {
+                    if (action.Id.Equals(repeat.ActionDefinitionId) &&
+                        action.Kind == ActionKind.Skill &&
+                        action.EffectRoot != null &&
+                        action.EffectRoot.Reference.Equals(repeat.EffectDefinitionReference))
+                    {
+                        return action;
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -157,8 +261,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             MatchComponents components,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            out PendingRepeatedAction repeat)
         {
+            repeat = null;
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (pendingResolution == null)
             {
@@ -183,7 +289,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     : CardActionResolutionRejectionReason.InvalidChoice);
             }
 
-            return Complete(step, default, default, false);
+            if (step.RepeatRequested)
+            {
+                repeat = PendingRepeatedAction.Mint(
+                    new ActionResolutionId(pendingResolution.ResolutionId.Value),
+                    pendingResolution.SourceCardInstanceId,
+                    pendingResolution.SourceDefinitionReference,
+                    pendingResolution.ActionDefinitionId,
+                    pendingResolution.EffectDefinitionReference,
+                    pendingResolution.ActorId,
+                    pendingResolution.ControllerId);
+            }
+
+            return Complete(step, default, default, default, default, false);
         }
 
         /// <summary>
@@ -219,7 +337,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private CardActionResolutionResult Complete(
             EffectResolutionStepResult step,
             ActionResolutionId startedResolutionId,
-            ActionOffer startedOffer,
+            CardInstanceId startedCard,
+            ActionDefinitionId startedAction,
+            HeroId startedActor,
             bool isStart)
         {
             // Read the identity before overwriting the field: on the final step the frame is gone, so
@@ -237,9 +357,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (isStart)
             {
                 resolutionId = startedResolutionId;
-                card = startedOffer.SourceCardInstanceId;
-                action = startedOffer.ActionDefinitionId;
-                actor = startedOffer.ActorId;
+                card = startedCard;
+                action = startedAction;
+                actor = startedActor;
             }
             else
             {
@@ -257,7 +377,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 steps.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted));
                 steps.Add(ResolutionStep.FromFact(
-                    CardActionResolutionEvent.SkillActionStarted(resolutionId, startedOffer)));
+                    CardActionResolutionEvent.SkillActionStarted(resolutionId, card, action, actor)));
             }
 
             foreach (var effectEvent in step.Events)

@@ -72,6 +72,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         private PendingDisplacedMinionCorrection pendingCorrection;
+        private PendingRepeatedAction pendingRepeat;
 
         private CardActionResolutionAuthority(
             MovementCardActionStrategyBackend movementBackend,
@@ -183,6 +184,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public PendingDisplacedMinionCorrection PendingDisplacedMinionCorrection => pendingCorrection;
 
         /// <summary>
+        /// Milestone 6.7's owed second action instance, or <c>null</c>. Non-null only while the
+        /// correction between the two instances is paused on a team choice: a correction that needs no
+        /// choice starts the instance inside the same command, so there is nothing to hold.
+        /// </summary>
+        public PendingRepeatedAction PendingRepeatedAction => pendingRepeat;
+
+        /// <summary>
         /// The modifications in effect right now, derived from the supplied timing state and this
         /// authority's board. Built per command rather than cached: an Active effect can expire and a
         /// token can be removed between two commands, and a cached set would answer for the wrong moment.
@@ -195,7 +203,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
-            skillBackend.HasPendingResolution || pendingCorrection != null;
+            skillBackend.HasPendingResolution || pendingCorrection != null || pendingRepeat != null;
 
         public CardActionResolutionResult StartTurnSkill(
             ActionResolutionId resolutionId,
@@ -226,10 +234,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var result = skillBackend.StartTurnSkill(
                 resolutionId, offer, prepared.Definitions, prepared.Instances, participants,
-                timing, modifications, components, roundIndex, turnIndex);
-            return RunCorrectionAfterAction(
-                result, resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId,
-                offer.ActorId, participants, tieBreaker);
+                timing, modifications, components, roundIndex, turnIndex, out var repeat);
+            return CloseActionBoundary(
+                result, repeat, resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId,
+                offer.ActorId,
+                new ActionBoundaryContext(
+                    prepared.Definitions, participants, timing, tieBreaker, roundIndex, turnIndex));
         }
 
         /// <summary>
@@ -262,16 +272,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // Read the owning action's identity before the answer: a completing answer clears the
             // frame, and the correction facts still have to name the action they close.
             var frame = skillBackend.PendingResolution;
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
             var result = skillBackend.AnswerEffectChoice(
-                command, definitions, participants, timing, modifications, components, roundIndex, turnIndex);
+                command, materializedDefinitions, participants, timing, modifications, components,
+                roundIndex, turnIndex, out var repeat);
             if (frame == null)
             {
                 return result;
             }
 
-            return RunCorrectionAfterAction(
-                result, new ActionResolutionId(frame.ResolutionId.Value), frame.SourceCardInstanceId,
-                frame.ActionDefinitionId, frame.ActorId, participants, tieBreaker);
+            return CloseActionBoundary(
+                result, repeat, new ActionResolutionId(frame.ResolutionId.Value),
+                frame.SourceCardInstanceId, frame.ActionDefinitionId, frame.ActorId,
+                new ActionBoundaryContext(
+                    materializedDefinitions, participants, timing, tieBreaker, roundIndex, turnIndex));
         }
 
         /// <summary>
@@ -282,11 +297,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         public CardActionResolutionResult AnswerDisplacedMinionCorrection(
             DisplacedMinionCorrectionCommand command,
-            MatchParticipants participants,
-            TieBreakerState tieBreaker)
+            ActionBoundaryContext boundary)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
-            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            var participants = boundary.Participants ??
+                throw new ArgumentException("A correction answer requires the match participants.", nameof(boundary));
+            var tieBreaker = boundary.TieBreaker;
             if (pendingCorrection == null)
             {
                 return CardActionResolutionResult.Reject(
@@ -375,36 +391,102 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var complete = AppendCorrectionSteps(
                 steps, pending.ResolutionId, pending.SourceCardInstanceId, pending.ActionDefinitionId,
                 pending.ActorId, participants, tieBreaker, true);
-            return CardActionResolutionResult.Accept(complete, null, null, steps);
+            return complete
+                ? StartOwedRepeat(steps, boundary)
+                : CardActionResolutionResult.Accept(false, null, null, steps);
         }
 
         /// <summary>
-        /// Runs the after-action displaced-minion correction once a Skill's effect nodes and batches
-        /// have all finished (p.18: "after you perform an action"). Appends nothing at all when no
-        /// minion miniature ended up outside the Battle Zone, so every existing action's fact stream
-        /// is untouched by the seam existing.
+        /// Milestone 6.7: closes one action instance's boundary, and starts the next instance when this
+        /// one asked for it.
+        ///
+        /// The order is the acceptance check: the instance's own effect nodes finish, p.18's
+        /// after-action correction runs to completion, and only then does a repeated instance begin.
+        /// Nothing starts while the correction is paused - the request is held instead, and the pause
+        /// is what the next command answers.
+        ///
+        /// A still-resolving action is returned untouched: an instance that has not completed cannot
+        /// have requested anything, because the request is read from the completing frame.
         /// </summary>
-        private CardActionResolutionResult RunCorrectionAfterAction(
+        private CardActionResolutionResult CloseActionBoundary(
             CardActionResolutionResult result,
+            PendingRepeatedAction repeat,
             ActionResolutionId resolutionId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
             HeroId actorId,
-            MatchParticipants participants,
-            TieBreakerState tieBreaker)
+            ActionBoundaryContext boundary)
         {
             if (!result.Accepted || !result.IsComplete)
             {
                 return result;
             }
 
+            pendingRepeat = repeat;
             var steps = new List<ResolutionStep>(result.Steps);
             var complete = AppendCorrectionSteps(
                 steps, resolutionId, sourceCardInstanceId, actionDefinitionId, actorId,
-                participants, tieBreaker, false);
-            return complete && steps.Count == result.Steps.Count
-                ? result
-                : CardActionResolutionResult.Accept(complete, null, null, steps);
+                boundary.Participants, boundary.TieBreaker, false);
+            if (!complete)
+            {
+                return CardActionResolutionResult.Accept(false, null, null, steps);
+            }
+
+            if (pendingRepeat == null)
+            {
+                return steps.Count == result.Steps.Count
+                    ? result
+                    : CardActionResolutionResult.Accept(true, null, null, steps);
+            }
+
+            return StartOwedRepeat(steps, boundary);
+        }
+
+        /// <summary>
+        /// Starts the instance a completed action asked for, once its boundary is clean, and closes
+        /// that instance's own boundary in turn.
+        ///
+        /// The recursion is bounded at one level by the rule itself rather than by a guard here: the
+        /// repeated instance runs under <c>ActionInvocationContext.Repeated</c>, under which a Repeat
+        /// node is ineligible, so it reports no request of its own and the repeat handed down is null.
+        /// </summary>
+        private CardActionResolutionResult StartOwedRepeat(
+            List<ResolutionStep> steps,
+            ActionBoundaryContext boundary)
+        {
+            var repeat = pendingRepeat;
+            if (repeat == null)
+            {
+                return CardActionResolutionResult.Accept(true, null, null, steps);
+            }
+
+            pendingRepeat = null;
+            var repeated = skillBackend.StartRepeatedSkill(
+                repeat.ResolutionId,
+                repeat,
+                boundary.Definitions,
+                boundary.Participants,
+                boundary.Timing,
+                CurrentModifications(boundary.Timing, boundary.Participants, boundary.TieBreaker),
+                components,
+                boundary.RoundIndex,
+                boundary.TurnIndex);
+            if (!repeated.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A repeated action instance could not start from the definition its own action " +
+                    "just resolved from; the trusted definitions and the recorded repeat disagree.");
+            }
+
+            steps.AddRange(repeated.Steps);
+            return CloseActionBoundary(
+                CardActionResolutionResult.Accept(repeated.IsComplete, null, null, steps),
+                null,
+                repeat.ResolutionId,
+                repeat.SourceCardInstanceId,
+                repeat.ActionDefinitionId,
+                repeat.ActorId,
+                boundary);
         }
 
         /// <summary>
@@ -563,7 +645,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             return pendingCorrection != null
-                ? CardActionResolutionRestoreState.WithPendingCorrection(pendingCorrection, rewards)
+                ? CardActionResolutionRestoreState.WithPendingCorrection(
+                    pendingCorrection, rewards, pendingRepeat)
                 : CardActionResolutionRestoreState.WithoutPendingAction(rewards);
         }
 
@@ -661,6 +744,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         components,
                         adjacentMoveAuthority);
                     restored.pendingCorrection = state.PendingCorrection;
+                    restored.pendingRepeat = state.PendingRepeat;
                     return restored;
 
                 default:

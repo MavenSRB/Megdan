@@ -63,7 +63,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectResolutionRejectionReason rejectionReason,
             PendingResolution frame,
             bool isComplete,
-            IEnumerable<EffectResolutionEvent> events)
+            IEnumerable<EffectResolutionEvent> events,
+            bool repeatRequested)
         {
             Accepted = accepted;
             RejectionReason = rejectionReason;
@@ -71,6 +72,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IsComplete = isComplete;
             Events = new ReadOnlyCollection<EffectResolutionEvent>(
                 (events ?? Enumerable.Empty<EffectResolutionEvent>()).ToArray());
+            RepeatRequested = repeatRequested;
         }
 
         public bool Accepted { get; }
@@ -82,12 +84,25 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public bool IsComplete { get; }
         public IReadOnlyList<EffectResolutionEvent> Events { get; }
 
+        /// <summary>
+        /// Milestone 6.7: whether this completed instance asked to be repeated. Meaningful only
+        /// alongside <see cref="IsComplete"/>, because the completing frame is the last thing that
+        /// carries the outcome the request lives on; while a resolution is still paused the same
+        /// question is asked of <see cref="Frame"/> through <see cref="RepeatedActionQuery"/>.
+        ///
+        /// It says nothing about when the next instance starts. That is the card action's business,
+        /// and its answer is "once this instance's after-action correction boundary is clean".
+        /// </summary>
+        public bool RepeatRequested { get; }
+
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
             bool isComplete,
-            IEnumerable<EffectResolutionEvent> events) =>
+            IEnumerable<EffectResolutionEvent> events,
+            bool repeatRequested = false) =>
             new EffectResolutionStepResult(
-                true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events);
+                true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
+                repeatRequested);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -98,7 +113,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 throw new ArgumentException("A rejected effect step requires a reason.", nameof(reason));
             }
 
-            return new EffectResolutionStepResult(false, reason, frame, false, null);
+            return new EffectResolutionStepResult(false, reason, frame, false, null, false);
         }
     }
 
@@ -292,7 +307,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             EffectResolutionRejectionReason.InvalidChoice, frame);
                     }
 
-                    return Stop(frame, choice);
+                    return Stop(frame, choice, context);
 
                 default:
                     return EffectResolutionStepResult.Reject(
@@ -323,7 +338,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         private static EffectResolutionStepResult Stop(
             PendingResolution frame,
-            PendingEffectChoice choice)
+            PendingEffectChoice choice,
+            EffectResolutionContext context)
         {
             var continuation = frame.Continuation.ToList();
             var outcomes = frame.CompletedOutcomes.ToList();
@@ -332,7 +348,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             Record(outcomes, events, choice.NodeId, EffectExecutionResultKind.ImpossibleMandatory);
             continuation.Clear();
             return EffectResolutionStepResult.Accept(
-                Rebuild(frame, continuation, outcomes, frame.AcceptedChoices), true, events);
+                Rebuild(frame, continuation, outcomes, frame.AcceptedChoices), true, events,
+                RepeatedActionQuery.WasRequested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult Resume(
@@ -376,6 +393,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         continuation.Add(new EffectContinuationFrame(candidate, 0));
                     }
 
+                    break;
+
+                case EffectNodeKind.RepeatAction:
+                    // Milestone 6.7. The request is the whole of what confirming does; the second
+                    // instance is created by the card action once this one's boundary is clean. The
+                    // node is popped here rather than re-entered, because re-entering would reach the
+                    // same `may` and ask again.
+                    Pop(continuation);
+                    Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied);
                     break;
 
                 case EffectNodeKind.Capability:
@@ -430,7 +456,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 if (continuation.Count == 0)
                 {
                     return EffectResolutionStepResult.Accept(
-                        Rebuild(frame, continuation, outcomes, choices), true, events);
+                        Rebuild(frame, continuation, outcomes, choices), true, events,
+                        RepeatedActionQuery.WasRequested(context.Definition, outcomes));
                 }
 
                 var top = continuation[continuation.Count - 1];
@@ -532,6 +559,30 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied);
                         continue;
 
+                    case EffectNodeKind.RepeatAction:
+                        // Milestone 6.7. Nothing is performed here. An eligible `may` opens p.10's
+                        // confirm-or-decline; an eligible `if able` requests without asking; and an
+                        // instance that is already a repeat skips in silence, which is the whole bound
+                        // and is why this node kind refuses to be mandatory.
+                        if (!RepeatedActionQuery.CanRepeat(frame))
+                        {
+                            Pop(continuation);
+                            Record(outcomes, events, node.Id,
+                                EffectExecutionResultKind.DeclinedOptional);
+                            continue;
+                        }
+
+                        if (node.FailurePolicy == EffectFailurePolicy.May)
+                        {
+                            return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
+                                frame, node, context, EffectChoiceKind.ConfirmOrDecline,
+                                Array.Empty<EffectChoiceCandidate>(), 0, 0));
+                        }
+
+                        Pop(continuation);
+                        Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied);
+                        continue;
+
                     case EffectNodeKind.Capability:
                         var handler = context.Catalog.Load(node.Capability);
                         var result = handler.Execute(BuildCapabilityContext(frame, node, outcomes, context));
@@ -583,7 +634,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         // carries no result, because the one this node produced was a request for a
                         // choice that is not going to be opened.
                         return RefuseCapability(
-                            frame, node, null, continuation, outcomes, choices, events);
+                            frame, node, null, continuation, outcomes, choices, events, context);
                     }
 
                     return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
@@ -595,7 +646,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                 case EffectExecutionResultKind.ImpossibleMandatory:
                     return RefuseCapability(
-                        frame, node, result, continuation, outcomes, choices, events);
+                        frame, node, result, continuation, outcomes, choices, events, context);
 
                 case EffectExecutionResultKind.DeclinedOptional:
                     Pop(continuation);
@@ -621,7 +672,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             List<EffectContinuationFrame> continuation,
             List<EffectNodeOutcome> outcomes,
             List<EffectChoiceRecord> choices,
-            List<EffectResolutionEvent> events)
+            List<EffectResolutionEvent> events,
+            EffectResolutionContext context)
         {
             Pop(continuation);
             if (node.FailurePolicy != EffectFailurePolicy.Mandatory)
@@ -630,11 +682,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 return null;
             }
 
-            // The action stops here. Everything already applied stays applied.
+            // The action stops here. Everything already applied stays applied - a repeat this
+            // instance already asked for included, because asking is applied work like any other.
             Record(outcomes, events, node.Id, EffectExecutionResultKind.ImpossibleMandatory, result);
             continuation.Clear();
             return EffectResolutionStepResult.Accept(
-                Rebuild(frame, continuation, outcomes, choices), true, events);
+                Rebuild(frame, continuation, outcomes, choices), true, events,
+                RepeatedActionQuery.WasRequested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult PauseOn(

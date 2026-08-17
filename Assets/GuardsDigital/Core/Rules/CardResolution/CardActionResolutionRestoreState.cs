@@ -48,7 +48,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution pendingAttackResolution,
             PendingResolution pendingSkillResolution,
             DefeatRewardRestoreStateHolder defeatRewards,
-            PendingDisplacedMinionCorrection pendingCorrection = null)
+            PendingDisplacedMinionCorrection pendingCorrection = null,
+            PendingRepeatedAction pendingRepeat = null)
         {
             ContinuationKind = continuationKind;
             PendingSkillResolution = pendingSkillResolution;
@@ -56,6 +57,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution = pendingAttackResolution;
             DefeatRewards = defeatRewards;
             PendingCorrection = pendingCorrection;
+            PendingRepeat = pendingRepeat;
         }
 
         public CardActionContinuationKind ContinuationKind { get; }
@@ -71,6 +73,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Set only when <see cref="ContinuationKind"/> is Correction.</summary>
         public PendingDisplacedMinionCorrection PendingCorrection { get; }
+
+        /// <summary>
+        /// Milestone 6.7's owed second action instance, or <c>null</c>. It rides the Correction
+        /// continuation rather than becoming a kind of its own, because a repeat is not a kind of
+        /// pause: it is a fact about the action boundary the correction is holding open, and the only
+        /// state in which one survives a command is a correction that stopped for a team choice.
+        /// </summary>
+        public PendingRepeatedAction PendingRepeat { get; }
 
         /// <summary>
         /// The Defeat-reward accounting to restore. Never omitted: an authority with no
@@ -134,13 +144,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public static CardActionResolutionRestoreState WithPendingCorrection(
             PendingDisplacedMinionCorrection pendingCorrection,
-            DefeatRewardRestoreStateHolder defeatRewards) =>
+            DefeatRewardRestoreStateHolder defeatRewards,
+            PendingRepeatedAction pendingRepeat = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.Correction,
                 null,
                 null,
                 null,
                 defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
-                pendingCorrection ?? throw new ArgumentNullException(nameof(pendingCorrection)));
+                pendingCorrection ?? throw new ArgumentNullException(nameof(pendingCorrection)),
+                pendingRepeat);
     }
 }

@@ -6,8 +6,8 @@ using System.Linq;
 namespace GuardsDigital.Core.Effects
 {
     /// <summary>
-    /// The control structures milestone 6.2a implements, plus the capability leaf they compose.
-    /// <c>RepeatAction</c> is milestone 6.7's; <c>PerformAction</c>, <c>ReplaceAction</c>, and
+    /// The control structures milestone 6.2a implements, plus the capability leaf they compose and
+    /// milestone 6.7's <c>RepeatAction</c>. <c>PerformAction</c>, <c>ReplaceAction</c>, and
     /// <c>SimultaneousBatch</c> are not implemented here.
     /// </summary>
     public enum EffectNodeKind
@@ -27,7 +27,18 @@ namespace GuardsDigital.Core.Effects
         Choose = 4,
 
         /// <summary>A leaf that invokes one registered capability handler.</summary>
-        Capability = 5
+        Capability = 5,
+
+        /// <summary>
+        /// Milestone 6.7. A leaf that asks for this action to happen again as a separate instance.
+        ///
+        /// It performs nothing itself and invokes no capability: it records the request on the frame,
+        /// and the card-action dispatcher creates the second instance once this one's action boundary -
+        /// including milestone 6.4a's after-action displaced-minion correction - is complete. That is
+        /// why repetition is a node kind rather than a loop in the node table, which
+        /// <see cref="EffectDefinitionValidator"/> refuses.
+        /// </summary>
+        RepeatAction = 6
     }
 
     /// <summary>
@@ -210,6 +221,33 @@ namespace GuardsDigital.Core.Effects
                     if (ChildNodeIds.Count != 0)
                         throw new ArgumentException("A Capability node is a leaf and takes no children.");
                     RequireNoChooser();
+                    RequireNoSelectionBounds();
+                    break;
+
+                case EffectNodeKind.RepeatAction:
+                    RequireNoCapability();
+                    if (ChildNodeIds.Count != 0)
+                        throw new ArgumentException("A RepeatAction node is a leaf and takes no children.");
+                    if (Inputs.Count != 0 || Outputs.Count != 0)
+                        throw new ArgumentException(
+                            "A RepeatAction node reads and publishes nothing; the repeated instance " +
+                            "runs the same definition from its own start.");
+
+                    // A repeat that must happen is unbounded by construction, and `up to` would need a
+                    // count this node does not have. Admitting `may` and `if able` only is what makes
+                    // milestone 6.7's non-recursion structural: a Repeat reached in an already-repeated
+                    // instance is ineligible, and an ineligible non-mandatory step is p.10's silent skip
+                    // rather than a stop, so nothing is exposed and nothing halts.
+                    if (FailurePolicy != EffectFailurePolicy.May &&
+                        FailurePolicy != EffectFailurePolicy.IfAble)
+                        throw new ArgumentException(
+                            "A RepeatAction node is `may` or `if able`; a mandatory or counted repeat is unbounded.");
+                    if (FailurePolicy == EffectFailurePolicy.May && Chooser == EffectChooserRole.None)
+                        throw new ArgumentException(
+                            "A may RepeatAction node requires a chooser, because it opens a decision.");
+                    if (FailurePolicy == EffectFailurePolicy.IfAble && Chooser != EffectChooserRole.None)
+                        throw new ArgumentException(
+                            "An if-able RepeatAction node opens no decision, so it must name no chooser.");
                     RequireNoSelectionBounds();
                     break;
             }

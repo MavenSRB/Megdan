@@ -498,26 +498,7 @@ Non-goals: No new `DirectorCommandKind` member, pending-choice class, `MatchSess
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-62c-close-the-skill-seam-parity-and-vocabulary-gaps-completion-evidence).
 
-### [x] 6.3 Add core token interactions, persistent properties, and Clear
-
-Observable outcome: Synthetic tokens preserve their properties while supporting the general board interactions needed by the core loop.
-
-Prerequisite: milestone 6.2b has independently closed the post-5.8c action/effect foundation findings or recorded an approved correction-plus-verification disposition.
-
-Acceptance checks:
-
-- Token properties are continuous sources, not ordinary card Active effects.
-- Clear replaces an entire Attack and may remove any chosen subset of adjacent tokens.
-- A unit spawning on a token-covered Spawn point removes that token first.
-- Token lifetime is defined independently from the source hero's on-board or defeated state.
-
-Closing check: acceptance evidence rather than a failing-then-passing defect pair. `TokenAndMarkerComponentTests` proves catalog-owned token properties project as `TokenProperty` continuous sources only while the stable token instance remains placed, never enter `ActiveEffectLifecycle`, survive restoration without the source hero on the board, and are removed before a validated unit Spawn uses their covered Spawn point. `ClearActionTests` proves the value-free, text-suppressing replacement revalidates one current replaceable Attack, accepts any adjacent-token subset including none, rejects duplicate/non-adjacent/stale selections atomically, removes exactly the chosen stable identities, and emits Clear rather than Attack facts between resolver-owned action checkpoints. `MatchSessionComponentDispatchTests` carries the typed `PerformClear` command through turn/card resolution, snapshot restore, retained-prefix Undo, and byte-identical replay.
-
-Compatibility decision: schema remains v9. The synthetic Hazard definition moves from revision 1 to revision 2 because its trusted catalog content now owns the persistent property declaration. Existing v9 payloads naming the unavailable revision 1 are rejected rather than silently acquiring revision 2 semantics; no persisted state exists outside the test corpus. The seven compatibility-corpus hashes and nine aggregate-invariance pairs are explicitly re-pinned to that one content-registration delta, with their mutation/restore/replay equality groups unchanged.
-
-Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-63-add-core-token-interactions-persistent-properties-and-clear-completion-evidence).
-
-Non-goals: No generic `ReplaceAction` effect node, pending Clear continuation, token projection or player-facing Clear UI, Wasp definition, printed-text parsing, displacement, general Place/Spawn, Swap/Replace/Remove, end-of-round cleanup, presentation, art, animation, or audio. The Spawn work is only the mandatory token-removal pre-commit seam; milestone 6.5 still owns the complete reusable Spawn capability.
+The completed milestone **6.3** definition - core token interactions, persistent properties, and Clear - moved verbatim to [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) on 2026-08-17 during the required warning-threshold ownership review; its evidence stays addressed from the [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md#milestone-63-add-core-token-interactions-persistent-properties-and-clear-completion-evidence).
 
 The completed milestone **6.4** definition - reusable direct Move and Object Push - moved verbatim to [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) on 2026-08-16 during the required warning-threshold ownership review; its evidence stays addressed from the [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64-implement-reusable-direct-move-and-object-push-effects-completion-evidence).
 
@@ -572,40 +553,9 @@ Non-goals: No correction-rule change, redesign of 6.1a's removal authority, one 
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-64b-add-player-facing-displaced-minion-correction-choices-completion-evidence).
 
-### [x] 6.5 Complete reusable Place and Spawn effects
+The completed milestone **6.5** definition - reusable Place and Spawn - and the completed milestone **6.6** definition - reusable board-object Swap, Replace, and Remove - moved verbatim to [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) on 2026-08-17 during the same ownership review; their evidence stays addressed from the [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65-complete-reusable-place-and-spawn-effects-completion-evidence).
 
-Observable outcome: Synthetic effects use general typed Place and Spawn operations for eligible board pieces and supplies before verified hero content is introduced.
-
-Acceptance checks:
-
-- Place declares its source container, eligible piece type, destination query, chooser, and no-destination policy and never emits Movement or Spawn facts.
-- Spawn accepts only an eligible supply object, validates the invoking rule's destination constraints, and removes a token first when a unit legally Spawns on a token-covered Spawn point.
-- Unit, minion, token, supply, occupancy, obstacle, and empty-space rules compose shared queries; presentation and art do not determine eligibility.
-- Atomic rejection, pending choices, typed outcomes, snapshot state, replay, and Undo are covered with synthetic definitions on the full map.
-- Milestone 6.4a's minimum minion-correction Place path is migrated to or proven conformant with the completed general Place capability without changing its verified outcome.
-
-Non-goals: No Wasp definition, hero Respawn eligibility/timing, Lane-Push minion Respawn, card-name/hero-name branch, or production presentation.
-
-Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-65-complete-reusable-place-and-spawn-effects-completion-evidence).
-
-### [x] 6.6 Complete reusable board-object Swap, Replace, and Remove effects
-
-Observable outcome: Synthetic effects atomically exchange, substitute, or remove authoritative board objects through distinct reusable operations before verified hero content is introduced.
-
-Acceptance checks:
-
-- Swap validates both objects and resulting occupancies against one pre-effect state and emits one semantic transaction; it is neither Movement nor Place.
-- Replace declares the incoming source, outgoing destination, property-transfer policy, and observable triggers and is not silently decomposed into Remove plus Spawn.
-- Remove records its destination and removal/prevention outcome without Defeat rewards and remains distinct from Clear and Defeat.
-- Moving, pushing, or swapping the last Battle-Zone minion never qualifies for Lane Push; a successful standalone Remove records a qualifying cause while a prevented Remove does not. Milestone 6.9 owns live request emission.
-- Swap and Replace reuse milestone 6.4a's after-action correction authority whenever their completed action leaves an intrinsic minion outside the Battle Zone.
-- Synthetic accepted, rejected, prevented, snapshot, replay, and Undo scenarios prove atomic state and deterministic typed outcomes.
-
-Non-goals: No Wasp definition, card-state swap or upgrade replacement, hero Defeat consequences, specialized Respawn, card-name/hero-name branch, or production presentation.
-
-Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-66-complete-reusable-board-object-swap-replace-and-remove-effects-completion-evidence).
-
-### [~] 6.7 Add bounded Repeat action control flow
+### [x] 6.7 Add bounded Repeat action control flow
 
 Observable outcome: Synthetic definitions can Repeat an eligible action as a separate bounded action instance through milestone 6.2a's typed effect frame, with each instance completing displaced-minion correction before the next begins.
 
@@ -618,6 +568,8 @@ Acceptance checks:
 - Focused integration tests cover Repeat across direct Move/Object Push displacement, the milestone 6.4a correction checkpoint, pending milestone 6.4b player choice, snapshot restore, replay, and retained-prefix Undo.
 
 Non-goals: No new Skill, Sequence, Optional, Conditional, or Choose foundation; no new leaf effect merely to exercise Repeat; no Wasp definition or text interpretation, invented scripting language, card-name/hero-name branch, production presentation, or source-unverified special case.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-67-add-bounded-repeat-action-control-flow-completion-evidence).
 
 ### [x] 6.8 Implement reusable modifiers, permissions, immunity, and effective characteristics
 

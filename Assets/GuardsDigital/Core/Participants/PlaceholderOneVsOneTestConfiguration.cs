@@ -142,6 +142,22 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// The ordinary configuration plus milestone 6.7's Repeat-bearing card in each hand.
+        ///
+        /// Separate for the same reason the three before it are, and for one more: a Repeat's subject is
+        /// the whole enclosing action, so adding it to an existing fixture Skill would give every
+        /// fixture that plays that Skill a decision it never asked about.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForRepeatFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                PlaceholderMovementHand.CreateRedWithRepeatSkill,
+                PlaceholderMovementHand.CreateBlueWithRepeatSkill);
+        }
+
+        /// <summary>
         /// Each named configuration says which hand it deals rather than setting a flag another one
         /// reads. Milestone 6.2d needed a third combination and a second boolean would have made the
         /// four callers here describe themselves by what they are not.

@@ -53,7 +53,68 @@ namespace GuardsDigital.Core.Snapshots
             if (continuationKind == CardActionContinuationKind.Correction)
             {
                 WriteCorrectionResolution(writer, state.PendingCorrection);
+                WriteRepeatedAction(writer, state.PendingRepeat);
             }
+        }
+
+        /// <summary>
+        /// Milestone 6.7. A repeat that has been asked for and cannot start until the correction
+        /// holding the boundary open finishes. It is written here rather than as a continuation kind of
+        /// its own because that is the only state it survives a command in, and it carries identity
+        /// alone - the effect it repeats is rebound from the trusted card definitions on the way back,
+        /// so no payload can state semantics.
+        /// </summary>
+        private static void WriteRepeatedAction(BinaryWriter writer, PendingRepeatedAction pending)
+        {
+            writer.Write(pending != null);
+            if (pending == null)
+            {
+                return;
+            }
+
+            writer.Write(pending.ResolutionId.Value);
+            writer.Write(pending.SourceCardInstanceId.Value);
+            writer.Write(pending.SourceDefinitionReference.DefinitionId.Value);
+            writer.Write(pending.SourceDefinitionReference.ContentRevision);
+            writer.Write(pending.ActionDefinitionId.Value);
+            writer.Write(pending.EffectDefinitionReference.DefinitionId.Value);
+            writer.Write(pending.EffectDefinitionReference.ContentRevision);
+            writer.Write(pending.ActorId.Value);
+            writer.Write(pending.ControllerId.Value);
+        }
+
+        /// <summary>
+        /// Reads that repeat back and refuses one this build cannot honour. The action it names must be
+        /// a Skill this build's trusted definitions supply at the exact effect-definition revision
+        /// recorded, so a tampered or superseded repeat is rejected at load rather than throwing when
+        /// the correction is answered.
+        /// </summary>
+        private static PendingRepeatedAction ReadRepeatedAction(
+            BinaryReader reader,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            var repeat = new PendingRepeatedAction(
+                new ActionResolutionId(reader.ReadString()),
+                new CardInstanceId(reader.ReadString()),
+                new CardDefinitionReference(
+                    new CardDefinitionId(reader.ReadString()), reader.ReadString()),
+                new ActionDefinitionId(reader.ReadString()),
+                new EffectDefinitionReference(
+                    new EffectDefinitionId(reader.ReadString()), reader.ReadString()),
+                new HeroId(reader.ReadString()),
+                new HeroId(reader.ReadString()));
+            if (SkillCardActionStrategyBackend.FindRepeatableAction(definitions, repeat) == null)
+            {
+                throw Malformed(
+                    "Snapshot pending repeat names an action this build's trusted definitions do not supply.");
+            }
+
+            return repeat;
         }
 
         private static CardActionResolutionAuthority ReadCardAction(
@@ -94,9 +155,9 @@ namespace GuardsDigital.Core.Snapshots
                         defeatRewards);
                     break;
                 case CardActionContinuationKind.Correction:
+                    var correction = ReadCorrectionResolution(reader, board, participants, tieBreaker);
                     state = CardActionResolutionRestoreState.WithPendingCorrection(
-                        ReadCorrectionResolution(reader, board, participants, tieBreaker),
-                        defeatRewards);
+                        correction, defeatRewards, ReadRepeatedAction(reader, definitions));
                     break;
                 default:
                     throw Malformed("Unknown pending card-action kind.");

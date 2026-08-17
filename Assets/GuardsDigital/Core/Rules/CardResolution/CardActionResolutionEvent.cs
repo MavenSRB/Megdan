@@ -509,12 +509,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public static CardActionResolutionEvent SkillActionStarted(
             ActionResolutionId resolutionId,
             ActionOffer offer) =>
+            SkillActionStarted(
+                resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId, offer.ActorId);
+
+        /// <summary>
+        /// The same fact, named by identity rather than by an offer. Milestone 6.7's repeated instance
+        /// is created by a rule and never has an offer, and fabricating one that claimed to be
+        /// available would have stated something untrue on the wire.
+        /// </summary>
+        public static CardActionResolutionEvent SkillActionStarted(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId) =>
             Skill(
                 CardActionResolutionEventKind.SkillActionStarted,
                 resolutionId,
-                offer.SourceCardInstanceId,
-                offer.ActionDefinitionId,
-                offer.ActorId,
+                sourceCardInstanceId,
+                actionDefinitionId,
+                actorId,
                 new ActionResolutionStepId("skill-start"));
 
         public static CardActionResolutionEvent SkillEffectNode(

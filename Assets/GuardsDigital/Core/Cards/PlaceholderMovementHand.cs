@@ -72,6 +72,25 @@ namespace GuardsDigital.Core.Cards
         private static readonly SyntheticSkillProfile BlueDisplacementSkillProfile =
             new SyntheticSkillProfile("blue-shove", "Blue Shove", 1);
 
+        /// <summary>
+        /// Milestone 6.7's Skill cards: a displacement `Choose one` followed by a `may` Repeat.
+        ///
+        /// A pair of their own rather than a seventh branch on the Shove card, because a Repeat's
+        /// subject is the whole enclosing action - every fixture that reaches Shove today would gain a
+        /// repeat prompt it never asked about, and several of them count the facts their action emits.
+        /// They are dealt only by the repeat configuration, so the Shove hand and every digest measured
+        /// against it are untouched.
+        ///
+        /// Red's 17 is the highest Initiative in any fixture hand, so the Red hero reliably acts first;
+        /// Blue's 5 is the one value free inside Blue's ordinary band, which is where a Blue card has to
+        /// sit now that the band reaches down to 1 and nothing positive is left below it.
+        /// </summary>
+        private static readonly SyntheticSkillProfile RedRepeatSkillProfile =
+            new SyntheticSkillProfile("red-volley", "Red Volley", 17);
+
+        private static readonly SyntheticSkillProfile BlueRepeatSkillProfile =
+            new SyntheticSkillProfile("blue-volley", "Blue Volley", 5);
+
         private PlaceholderMovementHand(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances)
@@ -143,6 +162,23 @@ namespace GuardsDigital.Core.Cards
             return Create(ownerId, BlueProfiles, null, componentSkillProfile: BlueComponentSkillProfile);
         }
 
+        /// <summary>
+        /// The five ordinary cards plus milestone 6.7's Repeat card alone.
+        ///
+        /// Kept to one extra card for the reason every earlier fixture hand is: the ordinary five pin an
+        /// action matrix and a digest that must not move, and a repeat fixture needs exactly one action
+        /// that can displace something and then ask to happen again.
+        /// </summary>
+        public static PlaceholderMovementHand CreateRedWithRepeatSkill(HeroId ownerId)
+        {
+            return Create(ownerId, RedProfiles, null, repeatSkillProfile: RedRepeatSkillProfile);
+        }
+
+        public static PlaceholderMovementHand CreateBlueWithRepeatSkill(HeroId ownerId)
+        {
+            return Create(ownerId, BlueProfiles, null, repeatSkillProfile: BlueRepeatSkillProfile);
+        }
+
         internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
             new PlaceholderMovementHandRestoreState(Definitions, Instances);
 
@@ -168,7 +204,8 @@ namespace GuardsDigital.Core.Cards
             string instancePrefix,
             SyntheticSkillProfile skillProfile = null,
             SyntheticSkillProfile componentSkillProfile = null,
-            SyntheticSkillProfile displacementSkillProfile = null)
+            SyntheticSkillProfile displacementSkillProfile = null,
+            SyntheticSkillProfile repeatSkillProfile = null)
         {
             if (!ownerId.IsDefined)
             {
@@ -201,6 +238,13 @@ namespace GuardsDigital.Core.Cards
                 AddCard(
                     definitions, instances, CreateDisplacementSkillDefinition(displacementSkillProfile),
                     displacementSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (repeatSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances, CreateRepeatSkillDefinition(repeatSkillProfile),
+                    repeatSkillProfile.Id, instancePrefix, ownerId);
             }
 
             return new PlaceholderMovementHand(
@@ -630,6 +674,114 @@ namespace GuardsDigital.Core.Cards
                 {
                     new ActionDefinition(
                         new ActionDefinitionId("primary-displacement-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// A card whose only printed action is milestone 6.7's bounded Repeat: `Choose one` between
+        /// naming an adjacent object and moving it one space, or pushing every adjacent object two
+        /// spaces - and then `you may Repeat this action`.
+        ///
+        /// Every leaf is a capability the displacement Skill already uses at a different distance. That
+        /// is deliberate: 6.7's non-goals bar a new leaf effect written only to exercise Repeat, and
+        /// what a repeat has to prove is that the second instance is a real separate action, not that
+        /// some new thing happens inside it.
+        ///
+        /// The two branches exist because the acceptance text asks two different questions of the
+        /// repeated instance. The choice-bearing branch is where a later instance can legally name a
+        /// different subject and a different destination than the first did; the fixed push is where
+        /// the correction between the instances is deterministic, so a fixture can pause it, save it,
+        /// and answer it without steering anything. The Repeat sits after the `Choose` rather than
+        /// inside a branch, because p.10's `may` here governs the action, not the mode.
+        ///
+        /// Board-neutral like every other fixture Skill: it names no hero, no card, and no space.
+        /// </summary>
+        private static CardDefinition CreateRepeatSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("repeat-root");
+            var choice = new EffectNodeId("repeat-choice");
+            var moveSequence = new EffectNodeId("repeat-move-sequence");
+            var selectSubject = new EffectNodeId("repeat-select-subject");
+            var move = new EffectNodeId("repeat-direct-move");
+            var push = new EffectNodeId("repeat-object-push");
+            var repeat = new EffectNodeId("repeat-again");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-6-7-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { choice, repeat }),
+                    new EffectNodeDefinition(
+                        choice, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { moveSequence, push },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    new EffectNodeDefinition(
+                        moveSequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { selectSubject, move }),
+                    new EffectNodeDefinition(
+                        selectSubject, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.ChooseTargetV3,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(move))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                        SyntheticDisplacementCapabilities.DirectMoveV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "mover", selectSubject, "chosen", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                        },
+                        outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.ObjectPushV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
+                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("distance", EffectValueKind.Integer),
+                            new EffectOutputBinding("moved", EffectValueKind.Integer)
+                        }),
+                    new EffectNodeDefinition(
+                        repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
+                        chooser: EffectChooserRole.Actor)
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-6-7-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-repeat-skill"),
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
                         Array.Empty<PrintedValueDefinition>(),

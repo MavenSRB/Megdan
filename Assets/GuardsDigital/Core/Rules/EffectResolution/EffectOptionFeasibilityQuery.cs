@@ -191,6 +191,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                     return Verdict.Empty;
 
+                case EffectNodeKind.RepeatAction:
+                    // Milestone 6.7. A Repeat applies nothing of its own: what it re-runs is the very
+                    // action this walk is judging, so calling it performable would let an action that
+                    // can do nothing be offered on the strength of being able to do nothing twice. It
+                    // never blocks either, because the node kind refuses to be mandatory.
+                    return Verdict.Empty;
+
                 default:
                     return Verdict.Performable;
             }

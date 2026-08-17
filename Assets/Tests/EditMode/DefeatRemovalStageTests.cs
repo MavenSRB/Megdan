@@ -262,8 +262,10 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(11),
-                "Nothing about the removal decision is stored, so it carries no schema move of its own.");
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(12),
+                "Nothing about the removal decision is stored, so it carried no schema move of its " +
+                "own. The version has since moved once, at milestone 6.7, for a repeated action " +
+                "instance owed across a paused correction - which this decision has no part in.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
                 Is.EqualTo(payload),

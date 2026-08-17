@@ -1057,7 +1057,9 @@ namespace GuardsDigital.Core.Cards
             }
 
             var answered = cardActions.AnswerDisplacedMinionCorrection(
-                command, participants, TieBreakerState);
+                command,
+                new GuardsDigital.Core.Rules.CardResolution.ActionBoundaryContext(
+                    definitions, participants, timing, TieBreakerState, roundIndex, turnIndex));
             if (!answered.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CorrectionCommandRejected);
             return CompleteSkillStep(answered);

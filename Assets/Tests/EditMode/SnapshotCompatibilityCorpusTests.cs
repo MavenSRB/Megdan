@@ -245,17 +245,35 @@ namespace GuardsDigital.Tests.EditMode
         /// converted card's revision appears twice per payload - the definition table entry and the
         /// <c>blue-sentinel-card</c> instance's definition reference - and the two shove cards' twice
         /// each again in the three Skill-fixture payloads, which is the whole of the content cause.
+        /// Milestone 6.7 moves every fixture from v11 to v12 for one persistence cause and one only: a
+        /// paused after-action correction now records whether the action it holds open asked to repeat,
+        /// so a second bounded instance is still owed when the correction is answered. The decision is
+        /// reject rather than migrate, and it is the strongest reject in this list rather than a
+        /// formality: a v11 correction payload has no field for that fact, reading one as "did not ask"
+        /// would silently drop the second half of a card's printed text, and reading it as "did" would
+        /// invent an action nobody chose. The engine keeps one reader per version and no persisted state
+        /// exists outside this corpus. Nothing else in the milestone reaches the wire - the request
+        /// itself is an ordinary node outcome inside the effect frame, the repeated instance rebinds its
+        /// effect from the trusted definitions, and no capability is registered or revised.
+        /// Measured in a throwaway worktree at pre-change revision <c>59766f2</c> rather than assumed.
+        /// Every payload has a 30-byte common prefix and then one byte differs, <c>0b</c> to <c>0c</c>,
+        /// which is the schema version int; it is fixed-width, so seven of the eight keep their exact
+        /// decoded length - 2725, 2920, 3100, 3130, 3335, 3775 and 3824 bytes - and are byte-identical
+        /// everywhere else. Only <c>pending-correction</c> moves, 3834 to 3835 bytes, gaining exactly
+        /// one trailing <c>00</c>: the boolean saying this correction owes no repeat. That single byte
+        /// is the whole persistence cost of the milestone, and the fixture that grows is the one whose
+        /// section grew, which is the corpus's own proof that nothing else did.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v11", "e9138f20bed45436f67050f96631f36ec10a3659661b7ccfcbac79b22db43745"),
-            new CompatibilityFixture("active-turn-v11", "8612c348301846f358ba5403c2e0336fa2ccc2e1bd941a173103656e4def230e"),
-            new CompatibilityFixture("pending-choice-v11", "ff82c40bb48df6e0f9a7c5aba5c8d3aab45f3ae0bf15056a7cfd41783c8b9bf0"),
-            new CompatibilityFixture("end-of-round-v11", "05ecc3793ef964720203b7a35c11d910e4e0118ca4350bb1f56ad2d668b25e95"),
-            new CompatibilityFixture("pending-minion-battle-v11", "57eea96b83617010e5a0626d7708966ed0607ad1f27036b5c53042d129cffc3a"),
-            new CompatibilityFixture("placed-token-v11", "b248551912224d7495f034f4eae7bb1633202a6770dfc419de741a1804df6e28"),
-            new CompatibilityFixture("attached-marker-v11", "36032680876db2a7772cde7071ee1714e5ef595a6ab430fa4b0c20764bfb7371"),
-            new CompatibilityFixture("pending-correction-v11", "245c6360167531c9b17ad994b79786f6e7431b9ad2933e3b8d0e7767f1ccad45")
+            new CompatibilityFixture("setup-v12", "670717a9bd5075355fbe14a20318a1879d9f04a81725faaf8f2a00369ce99bf7"),
+            new CompatibilityFixture("active-turn-v12", "2e63162d54559ba12f950d5b0141087c0f36550e033e71950fd65793761005b4"),
+            new CompatibilityFixture("pending-choice-v12", "47d67fbe7599d52ac0c40ebaa8ec3e2eb7e6bfc29d9b0220f09367ecf1d4c5d5"),
+            new CompatibilityFixture("end-of-round-v12", "be5d1f265abb60a160d434dd15f6c3f0142525185a15644d038a80fc1e6eb1b8"),
+            new CompatibilityFixture("pending-minion-battle-v12", "7f6cd089253d6d03aea0968b4f2447b72ab0b5098c1ea52e602640da58338775"),
+            new CompatibilityFixture("placed-token-v12", "b2cc0664567cb1cd5cb38f3eeacbd72b26b08e6cafd8f09af2194f73e42872fd"),
+            new CompatibilityFixture("attached-marker-v12", "75c07239d89d93ce89aec730ca467ecd783f64059ad3d94f58920b9563fdde43"),
+            new CompatibilityFixture("pending-correction-v12", "d8dddf73bf8c10bfb7e787c9a24781112033c79a046a4f65c1d84046e8570e32")
         };
 
         [Test]
@@ -338,16 +356,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v11", session.CaptureSnapshot());
+            values.Add("setup-v12", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v11", session.CaptureSnapshot());
+            values.Add("active-turn-v12", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v11", session.CaptureSnapshot());
+            values.Add("pending-choice-v12", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -363,7 +381,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v11", session.CaptureSnapshot());
+            values.Add("end-of-round-v12", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -372,17 +390,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v11", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v12", session.CaptureSnapshot());
 
             // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
             // carry zero components would leave the sections it exists to protect untested, so one
             // payload holds a token on the board and one holds a marker on a hero.
-            values.Add("placed-token-v11", CaptureComponentSnapshot("component-place-branch"));
-            values.Add("attached-marker-v11", CaptureComponentSnapshot("component-give-marker"));
+            values.Add("placed-token-v12", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v12", CaptureComponentSnapshot("component-give-marker"));
 
             // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
             // so the paused after-action correction gets the eighth.
-            values.Add("pending-correction-v11", CapturePendingCorrectionSnapshot());
+            values.Add("pending-correction-v12", CapturePendingCorrectionSnapshot());
             return values;
         }
 
