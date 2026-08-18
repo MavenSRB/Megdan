@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.10a**. The configured v
 ## Current authorization and next route
 
 - Current completed milestone: **6.10a**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.11**.
 - Next proposed milestone: **6.11**.
 
 Milestone **6.10a** completed on 2026-08-18: a multi-step authoritative system transition can now stop in the middle of itself, on a player, and resume exactly where it stopped. The continuation is authority-owned serializable state rather than a handler-local callback - it records the owning run and definition, the stable current step, the chooser, the legal options with the exact commands that answer them, and the completed steps that are its resume location - and a conformance rule keeps any driver from holding a second record of that position. Accepted, rejected, stale, restored, replayed and Undo-truncated resumptions cannot skip, repeat or restart a completed step. Definitions are catalog content the payload names rather than describes, so a restore rebinds them and refuses a transition this build no longer supplies. Its first consumer is a bounded synthetic transition; 6.11's Lane-Push respawn and 7.5's progression are the named production consumers and are not built. Schema moves to v15 and rejects v14. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).

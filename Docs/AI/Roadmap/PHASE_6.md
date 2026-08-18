@@ -641,7 +641,7 @@ Non-goals: No Lane Push Wave/Zone/respawn rules (6.10 and 6.11 own those), no mi
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-610a-establish-the-reusable-system-transition-continuation-contract-completion-evidence).
 
-### [ ] 6.11 Complete Lane Push minion respawn and transition
+### [~] 6.11 Complete Lane Push minion respawn and transition
 
 Completes the transition by removing all minions from the previous Battle Zone and respawning the matching type at every verified Spawn point in the new Battle Zone.
 
