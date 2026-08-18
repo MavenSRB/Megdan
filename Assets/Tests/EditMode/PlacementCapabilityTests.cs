@@ -382,7 +382,7 @@ namespace GuardsDigital.Tests.EditMode
             board.CommitValidatedTokenPlacement(new PlacedToken(
                 new TokenInstanceId($"placement-token-{coordinate.Q}-{coordinate.R}"),
                 SyntheticComponentDefinitions.CreateCatalog()
-                    .LoadToken(SyntheticComponentDefinitions.HazardV3),
+                    .LoadToken(SyntheticComponentDefinitions.HazardV4),
                 RedActor,
                 RedActor,
                 new CardInstanceId("placement-token-source"),

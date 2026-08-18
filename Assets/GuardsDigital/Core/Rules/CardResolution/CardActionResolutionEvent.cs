@@ -77,7 +77,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             TokenInstanceId targetTokenInstanceId = default,
             TokenDefinitionReference targetTokenDefinitionReference = default,
             HexCoordinate targetTokenCoordinate = default,
-            DisplacedMinionCorrectionEvent correctionEvent = default)
+            DisplacedMinionCorrectionEvent correctionEvent = default,
+            MarkerInstanceId returnedMarkerInstanceId = default,
+            MarkerDefinitionReference returnedMarkerDefinitionReference = default)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -131,6 +133,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             TargetTokenDefinitionReference = targetTokenDefinitionReference;
             TargetTokenCoordinate = targetTokenCoordinate;
             CorrectionEvent = correctionEvent;
+            ReturnedMarkerInstanceId = returnedMarkerInstanceId;
+            ReturnedMarkerDefinitionReference = returnedMarkerDefinitionReference;
         }
 
         public CardActionResolutionEventKind Kind { get; }
@@ -168,6 +172,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public TokenInstanceId TargetTokenInstanceId { get; }
         public TokenDefinitionReference TargetTokenDefinitionReference { get; }
         public HexCoordinate TargetTokenCoordinate { get; }
+
+        /// <summary>Milestone 6.12: the marker p.13's defeat return took back, or <c>default</c>.</summary>
+        public MarkerInstanceId ReturnedMarkerInstanceId { get; }
+
+        public MarkerDefinitionReference ReturnedMarkerDefinitionReference { get; }
         public DisplacedMinionCorrectionEvent CorrectionEvent { get; }
 
         public static CardActionResolutionEvent MovementActionStarted(
@@ -347,6 +356,48 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CardActionResolutionEventKind.AttackResolutionCompleted,
                 resolution,
                 outcome);
+        }
+
+        /// <summary>
+        /// Milestone 6.12. Rulebook p.13, "When a Hero is Defeated": "Any markers they had are
+        /// returned." One event per attachment that ended, naming the marker and the holder it left, so
+        /// the return is as readable after the fact as the Defeat that caused it.
+        ///
+        /// It reports only the marker half of that line. The same page's effect cancellation, the hero's
+        /// removal, the Life counters, and the rewards remain their own later milestones' work, and this
+        /// event deliberately says nothing about them.
+        /// </summary>
+        public static CardActionResolutionEvent MarkerReturnedOnHeroDefeat(
+            PendingAttackResolution resolution,
+            MarkerAttachment attachment)
+        {
+            if (resolution == null) throw new ArgumentNullException(nameof(resolution));
+            if (attachment == null) throw new ArgumentNullException(nameof(attachment));
+            if (!resolution.TargetHeroId.IsDefined ||
+                !attachment.HolderHeroId.Equals(resolution.TargetHeroId))
+            {
+                throw new ArgumentException(
+                    "A p.13 defeat return reports a marker the defeated hero held.", nameof(attachment));
+            }
+
+            return new CardActionResolutionEvent(
+                CardActionResolutionEventKind.MarkerReturnedOnHeroDefeat,
+                resolution.ResolutionId,
+                resolution.SourceCardInstanceId,
+                resolution.ActionDefinitionId,
+                default,
+                resolution.ActorId,
+                resolution.TargetHeroId,
+                new ActionResolutionStepId($"defeat-return-marker-{attachment.Id.Value}"),
+                0,
+                0,
+                default,
+                0,
+                AttackResolutionOutcome.None,
+                default,
+                default,
+                returnedMarkerInstanceId: attachment.Id,
+                returnedMarkerDefinitionReference: attachment.Definition.Reference);
         }
 
         public static CardActionResolutionEvent HeroDefeatRecorded(

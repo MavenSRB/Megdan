@@ -186,7 +186,7 @@ namespace GuardsDigital.Tests.EditMode
         private static void PlaceToken(AdjacentMoveAuthority board, HexCoordinate coordinate) =>
             board.CommitValidatedTokenPlacement(new PlacedToken(
                 new TokenInstanceId($"target-query-token-{coordinate.Q}-{coordinate.R}"),
-                SyntheticComponentDefinitions.CreateCatalog().LoadToken(SyntheticComponentDefinitions.HazardV3),
+                SyntheticComponentDefinitions.CreateCatalog().LoadToken(SyntheticComponentDefinitions.HazardV4),
                 Actor,
                 Actor,
                 new CardInstanceId("target-query-token-source"),

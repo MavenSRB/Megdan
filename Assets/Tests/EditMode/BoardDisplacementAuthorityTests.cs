@@ -331,7 +331,7 @@ namespace GuardsDigital.Tests.EditMode
             var catalog = SyntheticComponentDefinitions.CreateCatalog();
             var token = new PlacedToken(
                 new TokenInstanceId($"displacement-token-{coordinate.Q}-{coordinate.R}"),
-                catalog.LoadToken(SyntheticComponentDefinitions.HazardV3),
+                catalog.LoadToken(SyntheticComponentDefinitions.HazardV4),
                 Mover,
                 Mover,
                 new CardInstanceId("displacement-token-source"),

@@ -405,7 +405,10 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
             token = session.Projection.PlacedTokens.Single();
 
-            AdvanceToNextRound(session);
+            // Milestone 6.12: a later turn of the same round, not the next one. p.8's end-of-round
+            // cleanup returns every placed token, so a fixture that crossed the boundary would reach
+            // its Attack turn with nothing left to Clear.
+            AdvanceToNextTurnInSameRound(session);
             CommitAttackTurnForActor(session, actor);
             return session;
         }
@@ -440,25 +443,23 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(actorId));
         }
 
-        private static void AdvanceToNextRound(MatchSession session)
+        /// <summary>
+        /// Finishes the current turn and stops at the next turn's commitments, asserting the round did
+        /// not turn over. Since milestone 6.12 that distinction decides whether a placed token is still
+        /// standing when the fixture reaches its Attack.
+        /// </summary>
+        private static void AdvanceToNextTurnInSameRound(MatchSession session)
         {
             var round = session.Projection.RoundIndex;
-            while (session.Projection.RoundIndex == round)
+            while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn)
             {
-                switch (session.Projection.Phase)
-                {
-                    case RoundResolutionPhase.AwaitingCommitments:
-                        CommitAnyEligibleCards(session);
-                        break;
-                    case RoundResolutionPhase.ResolvingTurn:
-                        Accept(session, DirectorCommand.PerformHold(
-                            session.Projection.SelectedActor.CardInstanceId));
-                        break;
-                    default:
-                        Accept(session, DirectorCommand.AdvanceEndOfRound());
-                        break;
-                }
+                Accept(session, DirectorCommand.PerformHold(
+                    session.Projection.SelectedActor.CardInstanceId));
             }
+
+            Assert.That(session.Projection.RoundIndex, Is.EqualTo(round),
+                "The Hazard must not cross a round boundary, or p.8's cleanup takes it before Clear can.");
+            Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
         }
 
         private static void CommitAnyEligibleCards(MatchSession session)

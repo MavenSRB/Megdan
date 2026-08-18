@@ -283,7 +283,7 @@ namespace GuardsDigital.Tests.EditMode
             var wall = StraightLineQuery.Step(ActorAt, HexDirection.East, 2);
             board.CommitValidatedTokenPlacement(new PlacedToken(
                 new TokenInstanceId("push-wall-token"),
-                SyntheticComponentDefinitions.CreateCatalog().LoadToken(SyntheticComponentDefinitions.HazardV3),
+                SyntheticComponentDefinitions.CreateCatalog().LoadToken(SyntheticComponentDefinitions.HazardV4),
                 Actor, Actor, new CardInstanceId("push-wall-source"), wall));
             var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
 
@@ -557,7 +557,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var tokenBoard = CreateLineBoard(otherAt: new HexCoordinate(-2, 0));
             PlaceToken(tokenBoard, new HexCoordinate(3, 0));
-            PlaceToken(tokenBoard, new HexCoordinate(4, 0));
+            PlaceToken(tokenBoard, new HexCoordinate(4, 0), SyntheticComponentDefinitions.WardV1);
             var tokenOffered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
                 MoveContext(tokenBoard, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, false, withPermission));
             Assert.That(tokenOffered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
@@ -758,11 +758,23 @@ namespace GuardsDigital.Tests.EditMode
                 });
         }
 
-        private static PlacedToken PlaceToken(AdjacentMoveAuthority board, HexCoordinate coordinate)
+        private static PlacedToken PlaceToken(AdjacentMoveAuthority board, HexCoordinate coordinate) =>
+            PlaceToken(board, coordinate, SyntheticComponentDefinitions.HazardV4);
+
+        /// <summary>
+        /// Places one token of the named kind. The kind is a parameter because the Hazard supply is one
+        /// since milestone 6.12, so a case needing two tokens standing at once takes the second from the
+        /// Ward's supply. Nothing here depends on which token it is: both are obstacles, and these cases
+        /// are about what a displacement does to a token rather than about any token's own properties.
+        /// </summary>
+        private static PlacedToken PlaceToken(
+            AdjacentMoveAuthority board,
+            HexCoordinate coordinate,
+            TokenDefinitionReference definition)
         {
             var token = new PlacedToken(
                 new TokenInstanceId($"push-token-{coordinate.Q}-{coordinate.R}"),
-                SyntheticComponentDefinitions.CreateCatalog().LoadToken(SyntheticComponentDefinitions.HazardV3),
+                SyntheticComponentDefinitions.CreateCatalog().LoadToken(definition),
                 Actor,
                 Actor,
                 new CardInstanceId("push-token-source"),

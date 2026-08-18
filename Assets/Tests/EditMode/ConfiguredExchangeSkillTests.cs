@@ -335,7 +335,7 @@ namespace GuardsDigital.Tests.EditMode
                 standing.Definition.Reference, Is.EqualTo(SyntheticComponentDefinitions.WardV1),
                 "p.19 requires a different object, so a Ward stands where the Hazard did.");
             Assert.That(
-                catalog.CountAvailableTokens(SyntheticComponentDefinitions.HazardV3, tokens),
+                catalog.CountAvailableTokens(SyntheticComponentDefinitions.HazardV4, tokens),
                 Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount),
                 "The outgoing Hazard went back to its own supply.");
             Assert.That(
@@ -404,7 +404,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(board.PlacedTokens, Is.Empty);
             Assert.That(board.IsEmptyPlayableSpace(tokenAt), Is.True);
             Assert.That(
-                catalog.CountAvailableTokens(SyntheticComponentDefinitions.HazardV3, board.PlacedTokens),
+                catalog.CountAvailableTokens(SyntheticComponentDefinitions.HazardV4, board.PlacedTokens),
                 Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount),
                 "The declared destination is the supply, and the piece is genuinely back in it.");
             Assert.That(board.Minions.Count, Is.EqualTo(12),
@@ -550,7 +550,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeConfirm));
             Assert.That(
                 RestoreBoard(session).PlacedTokens.Single().Definition.Reference,
-                Is.EqualTo(SyntheticComponentDefinitions.HazardV3),
+                Is.EqualTo(SyntheticComponentDefinitions.HazardV4),
                 "Retained-prefix Undo puts the Hazard back and the Ward into its supply.");
 
             Accept(session, DirectorCommand.AnswerEffectChoice(

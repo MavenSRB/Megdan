@@ -188,7 +188,8 @@ namespace GuardsDigital.Tests.EditMode
                         "clear-test-property",
                         "clear-test-rule",
                         "while-token-remains-placed")
-                });
+                },
+                TokenRemovalCondition.EndOfRoundCleanup);
 
             public Fixture()
             {

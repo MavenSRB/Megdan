@@ -702,7 +702,7 @@ namespace GuardsDigital.Tests.EditMode
                 Board.CommitValidatedTokenPlacement(new PlacedToken(
                     new TokenInstanceId("lane-push-fixture-token"),
                     SyntheticComponentDefinitions.CreateCatalog().LoadToken(
-                        SyntheticComponentDefinitions.HazardV3),
+                        SyntheticComponentDefinitions.HazardV4),
                     RedHero,
                     RedHero,
                     new CardInstanceId("lane-push-fixture-card"),

@@ -74,25 +74,24 @@ namespace GuardsDigital.Tests.EditMode
         public void TokenSupply_IsFiniteAndDerivedFromWhatIsOnTheBoard()
         {
             var catalog = SyntheticComponentDefinitions.CreateCatalog();
-            var reference = SyntheticComponentDefinitions.HazardV3;
+            var reference = SyntheticComponentDefinitions.HazardV4;
             var board = CreateBoard(new HexCoordinate(0, 0));
             var supply = SyntheticComponentDefinitions.HazardDefinition.SupplyCount;
 
             Assert.That(catalog.CountAvailableTokens(reference, board.PlacedTokens), Is.EqualTo(supply));
 
             board.CommitValidatedTokenPlacement(CreateToken("token-1", new HexCoordinate(1, 0)));
-            board.CommitValidatedTokenPlacement(CreateToken("token-2", new HexCoordinate(0, 1)));
 
             Assert.That(catalog.CountAvailableTokens(reference, board.PlacedTokens), Is.Zero);
             Assert.That(
-                () => board.CommitValidatedTokenPlacement(CreateToken("token-3", new HexCoordinate(-1, 1))),
+                () => board.CommitValidatedTokenPlacement(CreateToken("token-2", new HexCoordinate(0, 1))),
                 Throws.InvalidOperationException,
                 "Rulebook p.19: tokens are intentionally limited.");
 
             var reclaimed = board.CommitValidatedTokenReclamation(new TokenInstanceId("token-1"));
 
             Assert.That(reclaimed.Coordinate, Is.EqualTo(new HexCoordinate(1, 0)));
-            Assert.That(catalog.CountAvailableTokens(reference, board.PlacedTokens), Is.EqualTo(1),
+            Assert.That(catalog.CountAvailableTokens(reference, board.PlacedTokens), Is.EqualTo(supply),
                 "Reclaiming returns the token to the supply, because the supply is the total minus " +
                 "what is on the board rather than a counter that could disagree with it.");
             Assert.That(board.IsEmptyPlayableSpace(new HexCoordinate(1, 0)), Is.True,
@@ -202,7 +201,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(board.IsEmptyPlayableSpace(spawnSpace.Coordinate), Is.True,
                 "The Spawn owner receives an empty destination after the mandatory token-removal step.");
             Assert.That(SyntheticComponentDefinitions.CreateCatalog().CountAvailableTokens(
-                SyntheticComponentDefinitions.HazardV3, board.PlacedTokens),
+                SyntheticComponentDefinitions.HazardV4, board.PlacedTokens),
                 Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount));
 
             Assert.That(board.CommitValidatedTokenRemovalBeforeUnitSpawn(

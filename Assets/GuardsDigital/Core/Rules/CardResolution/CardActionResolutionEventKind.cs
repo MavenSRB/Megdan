@@ -42,6 +42,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         DisplacedMinionCorrectionPlaced = 37,
         DisplacedMinionCorrectionLeftInPlace = 38,
         DisplacedMinionCorrectionCompleted = 39,
-        MinionRemovalPrevented = 40
+        MinionRemovalPrevented = 40,
+
+        /// <summary>Milestone 6.12: rulebook p.13 returned one marker a defeated hero held.</summary>
+        MarkerReturnedOnHeroDefeat = 41
     }
 }

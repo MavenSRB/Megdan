@@ -88,7 +88,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV3;
+                var reference = SyntheticComponentDefinitions.HazardV4;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) > 0)
                 {
                     return EffectExecutionResult.DeclinedOptional();
@@ -113,7 +113,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var coordinate = selected[0].Coordinate;
-                var token = SameTypeTokens(components, SyntheticComponentDefinitions.HazardV3)
+                var token = SameTypeTokens(components, SyntheticComponentDefinitions.HazardV4)
                     .FirstOrDefault(candidate => candidate.Coordinate.Equals(coordinate));
                 if (token == null)
                 {
@@ -140,7 +140,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV3;
+                var reference = SyntheticComponentDefinitions.HazardV4;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) > 0)
                 {
                     return EffectExecutionResultKind.DeclinedOptional;
@@ -208,7 +208,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV3;
+                var reference = SyntheticComponentDefinitions.HazardV4;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) < 1)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -232,7 +232,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV3;
+                var reference = SyntheticComponentDefinitions.HazardV4;
                 var coordinate = selected[0].Coordinate;
                 if (!components.Tokens.TryGetHeroCoordinate(context.ActorId, out var origin))
                 {
@@ -284,7 +284,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV3;
+                var reference = SyntheticComponentDefinitions.HazardV4;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) < 1)
                 {
                     return EffectExecutionResultKind.ImpossibleMandatory;

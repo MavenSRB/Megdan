@@ -73,6 +73,30 @@ namespace GuardsDigital.Core.Components
     }
 
     /// <summary>
+    /// When a placed token leaves the board and goes back to the supply on its own.
+    ///
+    /// The token twin of <see cref="MarkerReturnCondition"/>, and deliberately narrower than it looks.
+    /// Rulebook p.19 states the rule with its condition attached - "Unless the card text says otherwise,
+    /// tokens are removed at the end of round (See Page 8)" - so <see cref="EndOfRoundCleanup"/> is the
+    /// baseline every token declares and the "otherwise" is a member added with the verified card text
+    /// that requires it, never ahead of it. No current definition needs one, so none exists.
+    ///
+    /// The same page's next sentence is the negative this enum must not be read as covering: "Tokens are
+    /// not removed when the hero who placed them is defeated." That is already structural - a token's
+    /// owner is provenance rather than lifetime, which <see cref="PlacedToken"/> says outright - so the
+    /// p.13 defeat checkpoint returns markers and consults this enum not at all.
+    ///
+    /// Milestone 6.12 both declares this and wires the cleanup that reads it.
+    /// </summary>
+    public enum TokenRemovalCondition
+    {
+        None = 0,
+
+        /// <summary>Removed to supply at the end of every round (p.8, "Remove Tokens, Return Markers").</summary>
+        EndOfRoundCleanup = 1
+    }
+
+    /// <summary>
     /// The immutable, catalog-owned description of one kind of token: its identity and how many exist.
     ///
     /// The supply count is content, not runtime state. Rulebook p.19 says "tokens are intentionally
@@ -91,7 +115,8 @@ namespace GuardsDigital.Core.Components
             int revision,
             string displayName,
             int supplyCount,
-            IEnumerable<TokenPropertyDefinition> properties)
+            IEnumerable<TokenPropertyDefinition> properties,
+            TokenRemovalCondition removalCondition)
         {
             Reference = new TokenDefinitionReference(definitionId, revision);
 
@@ -118,9 +143,19 @@ namespace GuardsDigital.Core.Components
                     nameof(properties));
             }
 
+            if (removalCondition == TokenRemovalCondition.None)
+            {
+                throw new ArgumentException(
+                    "A token definition requires an explicit removal condition; a token that never " +
+                    "leaves the board would contradict the end-of-round cleanup rulebook p.19 applies " +
+                    "to every token whose card text does not say otherwise.",
+                    nameof(removalCondition));
+            }
+
             DisplayName = displayName;
             SupplyCount = supplyCount;
             Properties = new ReadOnlyCollection<TokenPropertyDefinition>(materializedProperties);
+            RemovalCondition = removalCondition;
         }
 
         public TokenDefinitionReference Reference { get; }
@@ -136,6 +171,9 @@ namespace GuardsDigital.Core.Components
 
         /// <summary>Persistent token-owned rules, queried as continuous sources while placed.</summary>
         public IReadOnlyList<TokenPropertyDefinition> Properties { get; }
+
+        /// <summary>When this token leaves the board on its own (p.19's "unless the card text says otherwise").</summary>
+        public TokenRemovalCondition RemovalCondition { get; }
 
         public override string ToString() => $"{Reference} x{SupplyCount}";
     }

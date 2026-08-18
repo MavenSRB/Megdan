@@ -361,17 +361,41 @@ namespace GuardsDigital.Tests.EditMode
         /// before and after is identical. Unlike the Battle Zone at 6.10, no fixture is exempt: a
         /// transition belongs to the match rather than to a board or an action, so even the
         /// <c>setup</c> payload records that none is running.
+        /// Milestone 6.12 keeps schema v16 and re-pins every fixture for one content cause: the
+        /// synthetic Hazard token moved from revision 3 to revision 4 because its supply count fell from
+        /// two to one. The supply is definition content rather than runtime state - the register derives
+        /// what remains from the trusted total minus what is on the board - so changing it changes what
+        /// revision 3 meant, and the revision advances rather than being reused. The cleanup this
+        /// milestone wires is what forced it: p.8 returns every placed token at the end of every round,
+        /// a round offers exactly two component-Skill activations, and a two-token supply therefore
+        /// could never be exhausted again, which made p.18's short-supply reclamation unreachable. The
+        /// decision is reject rather than migrate, by the existing content-revision check: a payload
+        /// naming <c>synthetic-hazard-token@3</c> states a supply this build no longer supplies, and
+        /// reading it as revision 4 would silently halve a saved match's token pool.
+        /// The cleanup itself reaches the wire nowhere. It requests no choice, cannot pause, and so adds
+        /// no continuation and no persisted field; the stage cursor it advances has crossed the boundary
+        /// since the stage list existed, which is why the schema does not move and the fixture names
+        /// keep their <c>-v16</c> suffix.
+        /// Measured in a throwaway worktree at pre-change revision <c>1345152</c> rather than assumed.
+        /// All eight payloads keep their exact decoded lengths - 2761, 2957, 3137, 3167, 3372, 3812,
+        /// 3861 and 3872 bytes - because a revision is a fixed-width int beside an unchanged id. Seven
+        /// differ in exactly one byte, <c>03</c> to <c>04</c>, at the component definition table's
+        /// Hazard entry: offset 1236 in the five ordinary fixtures and 1471 in the three Skill-fixture
+        /// ones. Only <c>placed-token-v16</c> differs in two, gaining the same change at offset 2124
+        /// where the placed instance names its own definition, which is the corpus's own proof that a
+        /// token's revision reaches the wire twice and its supply count not at all - the payload names
+        /// definitions and the catalog supplies what they contain.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v16", "16d20dbacdfc53d3408f3098b4153a69425d03a8d691e1a9f46d93108197d7bc"),
-            new CompatibilityFixture("active-turn-v16", "08b1cf62cf850609e6c510d27c77dfec813958d9c0ae2905e0a9c21ee85420eb"),
-            new CompatibilityFixture("pending-choice-v16", "50abf7af6040c7eb5b10ef58240726ee1b43a327407dcbaa55ce74d76bd24ff8"),
-            new CompatibilityFixture("end-of-round-v16", "51e1e8156a78db3db655d04933ab74301b9fc896934a0b3dd0ef022b23d81408"),
-            new CompatibilityFixture("pending-minion-battle-v16", "438bc00efb65cc5b302e398efd9a8bc234b208458d235e2cfbecabf64d0d08b7"),
-            new CompatibilityFixture("placed-token-v16", "543ab19be5daf4a94df00c5183b9f2cd1443b09b98f32c4681ac5b7116ce87ab"),
-            new CompatibilityFixture("attached-marker-v16", "f8a532046adf3730872459be007c4caa145f919d22ca8d6911b34e9ebc7e061d"),
-            new CompatibilityFixture("pending-correction-v16", "646e36ea9106cf8878b0834f6d759c916fb4dde6eb34038985bae6f8151e45a2")
+            new CompatibilityFixture("setup-v16", "1c7283c01b3ec1ebc9f76628827b09cc061bd210e17578f8e7e2f59e280e1d0c"),
+            new CompatibilityFixture("active-turn-v16", "c784f82331f1c32238b41e6f14bb32a8bf052974747e740aacb0cabc7815cc09"),
+            new CompatibilityFixture("pending-choice-v16", "a215931445ea2c39d5f836d5b15905f6a8f2e33f8fc8a0f36a6aecb67b77e6a9"),
+            new CompatibilityFixture("end-of-round-v16", "8956b3380d66de446f1f314f66214066202d284a9f49b8c82c0723050d37bb42"),
+            new CompatibilityFixture("pending-minion-battle-v16", "d011e0c1114c5ceb6cc3813bb33545d570c36f9d0f0bc751d127fdd6f1178de2"),
+            new CompatibilityFixture("placed-token-v16", "2a11f9f2bffd912e141b140655c6b86615a93c15b44992cd276dc762f1fa657a"),
+            new CompatibilityFixture("attached-marker-v16", "0822573fad75ffc78f17acbc665fc944b1b2f7b52e7889aa8d38eefef8ff5252"),
+            new CompatibilityFixture("pending-correction-v16", "5cbc35b14b057b5fc5edfa5ab166f72b145c50faafe10441e1ec70ea8373d50e")
         };
 
         [Test]

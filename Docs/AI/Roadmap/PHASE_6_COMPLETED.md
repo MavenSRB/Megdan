@@ -558,3 +558,114 @@ Acceptance checks:
 Non-goals: No displaced-minion correction (6.4a owns it), no new displacement operation, no Place/Spawn/Swap/Replace, no Wasp definition, no card-name/hero-name branch, no configured live exposure, and no production presentation.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-68k-give-effect-definitions-a-typed-target-selection-node-completion-evidence).
+
+### [x] 6.1ap Emit timing checkpoints from resolver steps
+
+Observable outcome: Timing checkpoints originate from the resolution step that raises them rather than from a post-hoc rescan of the produced event list.
+
+Context: `TurnResolutionAuthority.ApplyActionTiming` takes the event list a card action already produced, reads each entry's `CardActionResolutionEventKind`, and splices `ActionStarted`, `BeforeAttack`, `DefenseResponse`, `AfterAttack`, and `ActionEnded` around it. Timing is therefore inferred by the turn dispatcher from what a resolver happened to emit, rather than declared by the resolver at the moment it acts. An ordered-step effect engine cannot work that way: an effect node's checkpoints are declared by its capability contract and are not recoverable from an event kind, so 6.2a would either extend the rewriter with effect-shaped arms or grow a second parallel mechanism. Both are barred by the `Execution rule`'s prohibition on a shortcut the next card milestone is expected to replace.
+
+Acceptance checks:
+
+- Each card-action backend emits one ordered stream of facts and checkpoints, and the turn authority materializes that stream without inspecting any fact's kind. `ApplyActionTiming` is deleted rather than extended, and no replacement branches on `CardActionResolutionEventKind`.
+- A compiled-member conformance test in the 6.1k style proves checkpoint events originate from resolver step members rather than a post-hoc rescan, paired with a positive rule proving each backend actually references the checkpoint emitter so the negative rule cannot pass vacuously, and with the deliberate-violator and compliant-twin samples the existing conformance fixture requires of every rule.
+- The emitted checkpoint order for Movement, Attack with a Defense response, Attack against a minion, and Fast Travel is pinned by a fixture running on a session that actually carries Active effects, and is unchanged across the correction. A fixture on the placeholder configuration alone would be vacuous, because that configuration creates no Active effect and the checkpoint call returns nothing either way.
+- The Active-effect lifecycle mutation order changes deliberately and is asserted: action end now runs before source-card cancellation, which is the order [RESOLUTION_AND_EFFECTS.md](../Card-System/RESOLUTION_AND_EFFECTS.md) already specifies and the rewriter's late placement inverted.
+- The wire format is unchanged, asserted rather than assumed: `CurrentSchemaVersion` stays at 7 and all fifteen pinned digests pass unmoved.
+
+Closing check: two observed failing-then-passing transitions against genuine pre-fix defects. `ResolverEmittedCheckpointConformanceTests` at `2e47c97` reported exactly one subject, `TurnResolutionAuthority.ApplyActionTiming` reaching `CardActionResolutionEvent.get_Kind`, and reports none after. `TurnTimingCheckpointOrderTests.ActionEndCheckpoint_ReachesAnEffectBeforeItsSourceCardCancellation` was observed at `2e47c97` failing with the effect already cancelled - `Triggered@TurnStarted, Triggered@ActionStarted, Cancelled@SourceCardStateChanged` and no action-end trigger - and passing after; the four order pins and the vacuity guard in that same fixture pass at both revisions, which is what makes the pair evidence that only the lifecycle application order moved.
+
+Historical evidence: [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md).
+
+Non-goals: No Skill action, effect node, capability catalog, or execution frame, which 6.2a owns. No schema version, wire-format, or migration change. No new `TimingCheckpoint` member and no change to which checkpoints exist or what they mean. No change to Movement, Attack/Defense, or Fast-Travel rules behavior beyond where a checkpoint is raised, and no change to the harness exclude list.
+
+## Phase 6 gameplay milestones (continued)
+
+**Sequencing amendment (2026-08-14, user approved).** Milestone 6.2a completes before 6.2, and 6.2 completes before 6.2b. The source is this sequencing finding, **not** the ER2 external review and **not** review 5.8c; do not attribute it to either record. The existing 6.1r-before-6.2 and 6.1q-before-6.2a constraints are unchanged, and 6.3 stays gated on 6.2b. Scheduling is not authorization: each milestone still requires exact user approval before execution.
+
+6.2's third acceptance check makes token placement, reclamation, and marker attachment authoritative choices, and a stable-node serializable `Choose` frame is exactly what 6.2a builds. Under the former order those choices had nowhere to live. The source holds five bespoke pending-choice families and no shared contract, `DirectorCommandKind` is a closed enum over a fixed field union, and the pending card-action discriminator is `None | Movement | Attack`. Tokens would have bought a sixth pending-choice class, new command kinds, a new projection field, and a fourth discriminator arm - four shortcuts 6.2a is chartered to replace, and the `Execution rule` in [ROADMAP.md](../ROADMAP.md) already bars a narrow milestone from introducing a shortcut the next card milestone is expected to replace. The occupancy half was never at risk: 6.1r's index admits a token occupant by declaration.
+
+This supersedes the accepted dependency order recorded in the [post-5.8c amendment](../Archive/Phase-Handoffs/PHASE_5.md#post-58c-approved-phase-6-roadmap-amendment) - 6.1, 6.1a, 6.2, 6.2a, 6.2b, then 6.3 onward. That review judged 6.2 unblocked by `F58C-02` and was right about the board state; the ground for revisiting it is acceptance check 3, which its disposition did not weigh. The archive is append-only and is not edited, so this paragraph is where the supersession is recorded.
+
+6.2 precedes 6.2b rather than following it because `F-ER2-06`'s wording is that tokens would add a fourth per-kind collection and markers a fifth. A review closing that finding before any token exists verifies the prediction; one running after 6.2 verifies the outcome.
+
+Milestone IDs are unchanged and 6.2 keeps its position in numeric order below, so the ER2 disposition table, the risk register, and existing cross-references stay valid. Execution order is carried by this paragraph, as it is for the 6.1c-6.1k corrective sequence above.
+
+**Sequencing amendment (2026-08-14, user approved).** After milestone 6.2b closes its gate, the dependency-safe gameplay order begins **6.3 -> 6.8 -> 6.4**. Milestone 6.4 consumes the targeting, presence, immunity, permission, and obstacle contracts owned by 6.8, so 6.8 is an explicit prerequisite of 6.4 rather than later work. Numeric placement below is unchanged; execution follows these prerequisite declarations. Scheduling is not authorization: each milestone still requires exact user approval before execution.
+
+**Scheduling amendment (2026-08-14, user approved).** Review 6.2b's two proposals are scheduled. Corrective micro-milestone 6.2c closes findings `F62B-01` through `F62B-04` on the named checks in its block; it does not gate 6.3, and it must complete before milestone 6.4 begins, because `F62B-04` corrects the restore re-derivation context that 6.4's input-dependent choices would expose and `F62B-03` closes the Core-seam gap that 6.7's second caller would widen. Milestone 6.10a splits the reusable system-transition continuation contract out of 6.11 per the review's determination, sitting between 6.10's durable Battle-Zone state and the respawn transition; 6.11 keeps its observable outcome and gains the corresponding prerequisite. Every closure in this sequence is a named check or 6.2a-style acceptance evidence, so no further verification milestone is scheduled. Scheduling is not authorization: each milestone still requires exact user approval before execution.
+
+**Mechanics-showcase scheduling amendment (2026-08-14, user approved).** Six existing configured cards become staged Skill integrations after their reusable dependencies. The exact execution order, durable hand shape, acceptance checks, and non-goals for milestones 6.8a, 6.8b, 6.5a, 6.5b, 6.6a, and 6.7a live in the indexed [mechanics-showcase subshard](PHASE_6_SHOWCASE.md). The next proposed milestone remains 6.8, and scheduling still does not authorize any showcase implementation.
+
+### [x] 6.1ad Reject undefined enum values at the snapshot decode boundary
+
+Scheduled and executed on 2026-08-14 from an engineering-review finding against snapshot enum decoding - **not** ER2, **not** review 5.8c, and **not** the documentation-truth finding behind 6.1z through 6.1ac. Unordered against all of them; it adds a check to the same validator script, so whichever lands second takes the next unused number.
+
+Observable outcome: A snapshot field holding an integer that is not a declared member of its enum is refused where it is read, under its own rejection reason, and no reader in the decoder can accept one.
+
+Context: the decoder cast every payload enum straight out of the stream at 37 sites across 21 enums. Whether an undefined value was caught depended on which constructor consumed it: about half reached an `Enum.IsDefined` guard and surfaced late as `MalformedPayload`, indistinguishable from a garbled byte stream, and the rest built invalid state and carried on. `MatchAggregate.Rollback` runs this decoder on every refused command, and [PHASE_8.md](PHASE_8.md) requires reconnect to converge or enter one explicit failure state, which a decoder that cannot say why it refused cannot support.
+
+Acceptance checks:
+
+- `SnapshotEnumReader.Read<T>` rejects any value that is not a declared member under the new `SnapshotLoadRejectionReason.UnrecognizedEnumValue`, naming the field, the type, and the offending value; `ReadNullable<T>` does the same behind a presence flag.
+- All 37 raw casts are converted, and the `AttackTargetKind` ternary becomes a switch mirroring its writer - that ternary's `default` both produced an empty target and skipped the `ReadString` a Hero or Minion target consumes, misaligning every field after it.
+- The boundary guarantees membership only. Rejecting `None`, or a member illegal in a given position, stays with the domain constructors that own those rules rather than moving rule meaning into the wire layer.
+- Declared members are cached per enum type rather than routed through `Enum.IsDefined`, which is reflection-backed and boxes its argument, because this decoder runs on every refused command.
+- Code-truth check 6 fails on any `(<DeclaredEnum>)reader.Read…` under `Core/Snapshots/` in the single-line, multi-line, and nullable forms, with vacuity guards for an empty decoder, an empty enum set, and a decoder containing no typed read.
+- The wire format is unchanged, asserted rather than assumed: `CurrentSchemaVersion` stays at 7 and all fifteen pinned digests pass unmoved. A moved digest would mean something was written differently and the milestone was wrong.
+
+Closing check: two observed failing-then-passing transitions against genuine pre-fix defects. Check 6 at `7c65dfa` reported all 37 casts and reports none after. `AuthoritativeSnapshotSerializerTests.Deserialize_RejectsAnUndefinedEnumValueInsteadOfRestoringIt` was observed at `7c65dfa` failing `Expected: UnrecognizedEnumValue, But was: MalformedPayload`, and passing after; it demonstrates the wrong-reason half specifically, since `TeamSide` is one of the sites a constructor did catch.
+
+Historical evidence: [Phase 6 archive](../Archive/Phase-Handoffs/PHASE_6.md).
+
+Non-goals: No schema version change, wire-format change, or migration path, and no reopening of the v7 migrate-or-reject decision. No semantic validation moved into the serializer. No terminal `else` added to `ActiveEffectDefinition.ValidateDuration` and no repair of the unvalidated `SelectedInitiativeActor` constructor: this closes the path a snapshot uses to reach them, and hardening them against in-memory callers is separate work. No change to how `MatchSession.RestoreSnapshot` flattens the typed reason, which is Phase 8 work. No change to the harness exclude list, and no documentation-truth validator work, which 6.1z through 6.1ac own.
+
+## Resolver-timing milestone from the 2026-08-14 milestone 6.2a planning finding
+
+**Sequencing amendment (2026-08-14, user approved).** New milestone 6.1ap completes before 6.2a. The source is the milestone 6.2a planning pass recorded here, **not** the ER2 external review and **not** review 5.8c; ER2 contributed the underlying finding `F-ER2-05`, but the decision to give it its own milestone is this pass's. Ownership of `F-ER2-05` moves from 6.2a to 6.1ap, and the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2)'s disposition row carries the new owner. Every other 6.2a prerequisite is unchanged. Scheduling is not authorization: each milestone still requires exact user approval before execution.
+
+The ground for splitting is that the correction is behavior-preserving and 6.2a is not. `F-ER2-05` closes on its own named conformance check and its own evidence - that every pinned digest stays byte-identical and the schema version does not move. Milestone 6.2a's fifth acceptance check bumps the snapshot schema and re-pins fourteen digests. Landed together, a moved digest has two candidate causes and neither observation proves anything about the other. Landed apart, the timing correction proves the digests unmoved first, and 6.2a's re-pinning then has exactly one cause to explain. This is the `Execution rule` split test in [ROADMAP.md](../ROADMAP.md): genuinely independent risk and separate acceptance evidence, above the handoff-cost floor.
+
+### [x] 6.1w Route the rules-ledger coverage sections to a shard
+
+Observable outcome: `RULES_LEDGER.md` returns below its warning threshold with no content deleted, abbreviated, or weakened.
+
+Context: the ledger is at 7,720 of its 9,000-word hard limit, so the validator warns and governance requires an ownership review. `Docs/AI/Rules/*.md` is already reserved at the same family threshold, so this needs no governance amendment or validator change.
+
+Acceptance checks:
+
+- The `Card architecture coverage` and `Effect capability coverage` sections move verbatim into an indexed `Docs/AI/Rules/` shard carrying the standard backlink line.
+- `RULES_LEDGER.md` keeps a short routing summary and stable link for each moved section, never a copy of the narrative.
+- The four required `RULES_LEDGER.md` headings are unaffected, and the shard is reachable from the session brief's routing table.
+
+Closing check: the validator reports the `warning-threshold` warning for `RULES_LEDGER.md` at the pre-fix revision and reports no such warning at the post-fix revision, with the moved text byte-identical in its new home.
+
+Non-goals: No rule content change, no re-verification of rule status, no sharding of the `Rule-system ledger` section itself, which is 5,695 words and belongs to its own later milestone.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61w-route-the-rules-ledger-coverage-sections-to-a-shard-completion-evidence).
+
+## Documentation-structure milestone from the 6.1w handoff
+
+Scheduled by a user-approved roadmap amendment on 2026-08-13. Its source is the growth the 6.1w handoff recorded, **not** a review. The approved decision is that hero content is owned per hero rather than held in one ledger section. 6.1y is unordered against the rest of Phase 6 and must complete before 8.1, which is the first milestone that would otherwise write hero content into `RULES_LEDGER.md`.
+
+### [x] 6.1u Delete dead code and single-source duplicated resolution lookups
+
+Observable outcome: Code with no production caller is removed, the duplicated action-definition lookup has one implementation, and a wedged Lane-Push advance names its real cause.
+
+Acceptance checks:
+
+- `Core/Board/AdjacentDestinationQuery.cs` and its fixture, `MovementSessionCompletion`, the void `Forward*Intent` overloads in `BoardInteractionUnityView`, and the milestone-0 `TestShell*Tests` are deleted with their `.meta` files; repository-wide search proves zero remaining references.
+- `FindActionDefinition` has one shared implementation with a focused test; the three per-file copies are gone.
+- Advancing end-of-round with a pending Lane-Push request rejects with a typed reason naming the unimplemented consumption checkpoint instead of `MissingRequiredEndOfRoundHandler`, covered by a focused test.
+
+Closing check for `F-ER2-10`: compilation and the directly affected suites green after deletion, plus the shared-lookup and typed-rejection tests observed failing at the pre-fix revision and passing at the post-fix revision.
+
+Non-goals: No behavior change beyond the rejection reason, no refactor of live code paths, no relocation of coin/modifier content (owned by 7.4).
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61u-delete-dead-code-and-single-source-duplicated-resolution-lookups-completion-evidence).
+
+## Validation-integrity milestones from the 6.1s Windows handoff
+
+These milestones were scheduled by a user-approved roadmap amendment on 2026-08-13. Their source is the 6.1s Windows Unity tier and the complete-suite run that followed it, **not** the ER2 external review; do not attribute them to the ER2 record. Each closes a way the validation route can report green while a directly affected fixture was never executed.
+
+6.1x is corrective and blocks the others: an active fixture is failing on `main`, and under [Testing/POLICY.md](../Testing/POLICY.md) an observed failure blocks the handoff. 6.1v and 6.1w are unordered against each other and against the rest of Phase 6.

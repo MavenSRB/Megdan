@@ -14,8 +14,14 @@ namespace GuardsDigital.Core.Components.Synthetic
     ///
     /// The supplies are deliberately tiny. Rulebook p.18's reclamation rule only exists because a supply
     /// can run out, so a fixture has to be able to exhaust one without placing a realistic number of
-    /// tokens; two tokens and one marker make both exhaustion paths reachable in a handful of commands.
+    /// tokens; one token and one marker make both exhaustion paths reachable in a handful of commands.
     /// The counts imply nothing about verified hero content, which arrives in Phase 8.
+    ///
+    /// The Hazard supply was two until milestone 6.12, when p.8's end-of-round cleanup made a two-token
+    /// supply impossible to exhaust: a round offers exactly two component-Skill activations, one per
+    /// hero, and the cleanup returns every placed token before a third could be attempted. A supply of
+    /// one restores the rule's reachability inside a single round and ends the fixture's old dependence
+    /// on tokens surviving a round boundary, which is the very thing that page now forbids.
     /// </summary>
     public static class SyntheticComponentDefinitions
     {
@@ -25,16 +31,21 @@ namespace GuardsDigital.Core.Components.Synthetic
 
         public static MarkerDefinitionId Focus { get; } = new MarkerDefinitionId("synthetic-focus-marker");
 
-        public static TokenDefinitionReference HazardV3 => new TokenDefinitionReference(Hazard, 3);
+        public static TokenDefinitionReference HazardV4 => new TokenDefinitionReference(Hazard, 4);
 
         public static TokenDefinitionReference WardV1 => new TokenDefinitionReference(Ward, 1);
 
         public static MarkerDefinitionReference FocusV1 => new MarkerDefinitionReference(Focus, 1);
 
         /// <summary>
-        /// A two-token supply, so a third placement must reclaim before it can place.
+        /// A one-token supply, so a second placement must reclaim before it can place.
         ///
-        /// Revision 3 is milestone 6.8: the property declared at 6.3 gains the typed rule it supplies.
+        /// Revision 4 is milestone 6.12: the supply count is definition content, so shrinking it from two
+        /// to one advances the revision rather than quietly changing what revision 3 meant. A payload
+        /// naming <c>synthetic-hazard-token@3</c> therefore rejects, which is the same reject the
+        /// property and typed-rule revisions took before it.
+        ///
+        /// Revision 3 was milestone 6.8: the property declared at 6.3 gains the typed rule it supplies.
         /// Rulebook p.19 keeps a token's properties outside the Active-effect rules ("this does not
         /// include Active effects"), so the modifier below lives and dies with the placed instance and
         /// reaches the token's controller for exactly as long as the token is on the board.
@@ -42,9 +53,9 @@ namespace GuardsDigital.Core.Components.Synthetic
         public static TokenDefinition HazardDefinition { get; } =
             new TokenDefinition(
                 Hazard,
-                3,
+                4,
                 "TEST - Hazard",
-                2,
+                1,
                 new[]
                 {
                     new TokenPropertyDefinition(
@@ -52,7 +63,8 @@ namespace GuardsDigital.Core.Components.Synthetic
                         "synthetic-hazard",
                         "while-token-remains-placed",
                         RuleModification.ForValue(PrintedValueChannel.Defense, 1))
-                });
+                },
+                TokenRemovalCondition.EndOfRoundCleanup);
 
         /// <summary>
         /// A second token kind, added by milestone 6.6 so p.19's Replace has "a different object" to
@@ -71,7 +83,8 @@ namespace GuardsDigital.Core.Components.Synthetic
                 1,
                 "TEST - Ward",
                 1,
-                Array.Empty<TokenPropertyDefinition>());
+                Array.Empty<TokenPropertyDefinition>(),
+                TokenRemovalCondition.EndOfRoundCleanup);
 
         /// <summary>A one-marker supply, so a second give has nothing left to take.</summary>
         public static MarkerDefinition FocusDefinition { get; } =

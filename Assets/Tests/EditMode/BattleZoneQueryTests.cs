@@ -80,7 +80,7 @@ namespace GuardsDigital.Tests.EditMode
                 });
             board.CommitValidatedTokenPlacement(new PlacedToken(
                 new TokenInstanceId("zone-query-token"),
-                SyntheticComponentDefinitions.CreateCatalog().LoadToken(SyntheticComponentDefinitions.HazardV3),
+                SyntheticComponentDefinitions.CreateCatalog().LoadToken(SyntheticComponentDefinitions.HazardV4),
                 Hero,
                 Hero,
                 new CardInstanceId("zone-query-token-source"),

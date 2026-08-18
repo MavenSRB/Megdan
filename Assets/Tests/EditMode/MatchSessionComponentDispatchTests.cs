@@ -81,12 +81,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingSkillResolution, Is.Null, "The Skill completes.");
             Assert.That(token.Coordinate, Is.EqualTo(chosen));
             Assert.That(token.OwnerHeroId, Is.EqualTo(actorId));
-            Assert.That(token.Definition.Reference, Is.EqualTo(SyntheticComponentDefinitions.HazardV3));
+            Assert.That(token.Definition.Reference, Is.EqualTo(SyntheticComponentDefinitions.HazardV4));
             Assert.That(board.IsEmptyPlayableSpace(chosen), Is.False,
                 "A placed token occupies its space for every consumer of the shared occupancy index.");
             Assert.That(
                 SyntheticComponentDefinitions.CreateCatalog().CountAvailableTokens(
-                    SyntheticComponentDefinitions.HazardV3, board.PlacedTokens),
+                    SyntheticComponentDefinitions.HazardV4, board.PlacedTokens),
                 Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount - 1));
         }
 
@@ -293,7 +293,10 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
             var token = RestoreBoard(session).PlacedTokens.Single();
 
-            AdvanceToNextRound(session);
+            // Milestone 6.12: the Clear now happens in a later turn of the same round rather than in the
+            // next one. p.8's end-of-round cleanup removes every token, so a fixture that crossed the
+            // round boundary would be Clearing a token the round had already taken back.
+            AdvanceToNextTurnInSameRound(session);
             CommitAttackTurnForActor(session, actorId);
             var attackOffer = session.Projection.AvailableTurnActions.Single(offer =>
                 session.Projection.Definitions
@@ -336,21 +339,23 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Plays the component Skill once per round until the two-token supply is empty, then leaves the
-        /// session with the Skill available again so the caller can drive the short-supply path.
+        /// Plays the component Skill until the one-token supply is empty, then leaves the session with
+        /// the Skill available again so the caller can drive the short-supply path.
         ///
-        /// It takes a whole round each time because a played card is resolved, and only the end-of-round
-        /// Retrieve Cards step puts it back in hand. That is the real match rhythm rather than a
-        /// shortcut, which is the point: the supply has to survive round boundaries to run out at all.
+        /// It stays inside one round, and must. This helper used to play the Skill once per round and
+        /// said so - "the supply has to survive round boundaries to run out at all" - which milestone
+        /// 6.12 made false: p.8's cleanup returns every placed token at the end of every round, so a
+        /// token can no longer be accumulated across one. The supply is therefore exhausted by the two
+        /// heroes' Skills inside a single turn, which is why the Hazard supply is one rather than two.
         /// </summary>
         private static MatchSession PlaceTokensUntilSupplyIsExhausted(out int placed)
         {
             var session = CreateComponentSession();
             var supply = SyntheticComponentDefinitions.HazardDefinition.SupplyCount;
             placed = 0;
+            CommitComponentCards(session);
             while (placed < supply)
             {
-                CommitComponentCards(session);
                 StartComponentSkillOnCurrentTurn(session);
                 ChooseOption(session, PlaceBranch);
 
@@ -361,10 +366,8 @@ namespace GuardsDigital.Tests.EditMode
                 Accept(session, DirectorCommand.AnswerEffectChoice(
                     session.Projection.PendingEffectChoice.ConfirmInvocation));
                 placed++;
-                AdvanceToNextRound(session);
             }
 
-            CommitComponentCards(session);
             return session;
         }
 
@@ -374,6 +377,25 @@ namespace GuardsDigital.Tests.EditMode
         /// stays in the turn area for all of them, which is exactly why a supply can be spent across
         /// rounds rather than within one.
         /// </summary>
+        /// <summary>
+        /// Finishes the current turn and stops at the next turn's commitments, asserting that the round
+        /// did not turn over. Milestone 6.12 made that distinction load-bearing for any fixture holding a
+        /// token: within a round a placed token persists, and across one p.8's cleanup takes it.
+        /// </summary>
+        private static void AdvanceToNextTurnInSameRound(MatchSession session)
+        {
+            var round = session.Projection.RoundIndex;
+            while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn)
+            {
+                Accept(session, DirectorCommand.PerformHold(
+                    session.Projection.SelectedActor.CardInstanceId));
+            }
+
+            Assert.That(session.Projection.RoundIndex, Is.EqualTo(round),
+                "The token must not cross a round boundary, or p.8's cleanup rather than Clear removes it.");
+            Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
+        }
+
         private static void AdvanceToNextRound(MatchSession session)
         {
             var round = session.Projection.RoundIndex;

@@ -236,13 +236,13 @@ namespace GuardsDigital.Tests.EditMode
             PlaceHazard(board, NextTo);
             var catalog = SyntheticComponentDefinitions.CreateCatalog();
             var hazardsBefore = catalog.CountAvailableTokens(
-                SyntheticComponentDefinitions.HazardV3, board.PlacedTokens);
+                SyntheticComponentDefinitions.HazardV4, board.PlacedTokens);
 
             Handler(SyntheticExchangeCapabilities.ReplaceTokenV1)
                 .Execute(Context(board, RedActor, SubjectInput(NextTo)));
 
             Assert.That(
-                catalog.CountAvailableTokens(SyntheticComponentDefinitions.HazardV3, board.PlacedTokens),
+                catalog.CountAvailableTokens(SyntheticComponentDefinitions.HazardV4, board.PlacedTokens),
                 Is.EqualTo(hazardsBefore + 1),
                 "The replaced object goes back to the supply it came from and can be placed again.");
             Assert.That(
@@ -287,11 +287,15 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Replace_RefusesWhenTheIncomingSupplyIsExhausted()
         {
+            // The Hazard supply is one since milestone 6.12, so the two Replaces are sequenced rather
+            // than set up side by side: the first turns the only Hazard into the only Ward, which puts
+            // the Hazard back in its supply and empties the Ward's. The second then has a subject and
+            // nothing to bring in, which is the exhaustion this case is about.
             var board = CreateLineBoard();
             PlaceHazard(board, NextTo);
-            PlaceHazard(board, Beyond);
             Handler(SyntheticExchangeCapabilities.ReplaceTokenV1)
                 .Execute(Context(board, RedActor, SubjectInput(NextTo)));
+            PlaceHazard(board, Beyond);
 
             var refused = Handler(SyntheticExchangeCapabilities.ReplaceTokenV1)
                 .Execute(Context(board, RedActor, SubjectInput(Beyond), node: "exchange-second"));
@@ -301,7 +305,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 board.PlacedTokens.Single(token => token.Coordinate.Equals(Beyond))
                     .Definition.Reference,
-                Is.EqualTo(SyntheticComponentDefinitions.HazardV3));
+                Is.EqualTo(SyntheticComponentDefinitions.HazardV4));
         }
 
         [Test]
@@ -406,7 +410,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(board.PlacedTokens, Is.Empty);
             Assert.That(board.IsEmptyPlayableSpace(NextTo), Is.True);
             Assert.That(
-                catalog.CountAvailableTokens(SyntheticComponentDefinitions.HazardV3, board.PlacedTokens),
+                catalog.CountAvailableTokens(SyntheticComponentDefinitions.HazardV4, board.PlacedTokens),
                 Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount),
                 "The declared destination is the supply, and the piece is genuinely back in it.");
         }
@@ -806,7 +810,7 @@ namespace GuardsDigital.Tests.EditMode
             board.CommitValidatedTokenPlacement(new PlacedToken(
                 id,
                 SyntheticComponentDefinitions.CreateCatalog()
-                    .LoadToken(SyntheticComponentDefinitions.HazardV3),
+                    .LoadToken(SyntheticComponentDefinitions.HazardV4),
                 RedActor,
                 RedActor,
                 new CardInstanceId("exchange-token-source"),
@@ -828,7 +832,7 @@ namespace GuardsDigital.Tests.EditMode
             new PlacedToken(
                 new TokenInstanceId(id),
                 SyntheticComponentDefinitions.CreateCatalog()
-                    .LoadToken(SyntheticComponentDefinitions.HazardV3),
+                    .LoadToken(SyntheticComponentDefinitions.HazardV4),
                 RedActor,
                 RedActor,
                 new CardInstanceId("exchange-token-source"),

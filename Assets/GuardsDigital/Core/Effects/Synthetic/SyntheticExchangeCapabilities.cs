@@ -428,7 +428,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var replaced = components.Tokens.PlacedTokens.FirstOrDefault(
                     token => token.Coordinate.Equals(named.Coordinate) &&
-                        token.Definition.Reference.Equals(SyntheticComponentDefinitions.HazardV3));
+                        token.Definition.Reference.Equals(SyntheticComponentDefinitions.HazardV4));
                 if (replaced == null)
                 {
                     return false;

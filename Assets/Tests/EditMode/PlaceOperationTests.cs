@@ -263,19 +263,18 @@ namespace GuardsDigital.Tests.EditMode
             // on the board, so exhausting it needs nothing but placing them.
             var board = CreateBoard(otherAt: new HexCoordinate(1, 0));
             var catalog = SyntheticComponentDefinitions.CreateCatalog();
-            foreach (var coordinate in new[] { new HexCoordinate(0, 1), new HexCoordinate(0, -1) })
-            {
-                Assert.That(PlaceOperation.PlaceFromSupply(
-                    SupplyRadius(1), board, catalog, Hazard(catalog, coordinate),
-                    ActorAt, Array.Empty<HexCoordinate>()).Accepted, Is.True);
-            }
+            Assert.That(PlaceOperation.PlaceFromSupply(
+                SupplyRadius(1), board, catalog, Hazard(catalog, new HexCoordinate(0, 1)),
+                ActorAt, Array.Empty<HexCoordinate>()).Accepted, Is.True);
 
             var exhausted = PlaceOperation.PlaceFromSupply(
                 SupplyRadius(1), board, catalog, Hazard(catalog, new HexCoordinate(-1, 0)),
                 ActorAt, Array.Empty<HexCoordinate>());
 
             Assert.That(exhausted.RejectionReason, Is.EqualTo(PlaceRejectionReason.SupplyEmpty));
-            Assert.That(board.PlacedTokens.Count, Is.EqualTo(2), "Nothing was placed beyond the supply.");
+            Assert.That(board.PlacedTokens.Count,
+                Is.EqualTo(SyntheticComponentDefinitions.HazardDefinition.SupplyCount),
+                "Nothing was placed beyond the supply.");
         }
 
         // ---------------------------------------------------------------------------------------
@@ -293,7 +292,7 @@ namespace GuardsDigital.Tests.EditMode
         private static PlacedToken Hazard(ComponentDefinitionCatalog catalog, HexCoordinate coordinate) =>
             new PlacedToken(
                 new TokenInstanceId($"place-token-{coordinate.Q}-{coordinate.R}"),
-                catalog.LoadToken(SyntheticComponentDefinitions.HazardV3),
+                catalog.LoadToken(SyntheticComponentDefinitions.HazardV4),
                 Actor,
                 Actor,
                 new CardInstanceId("place-token-source"),

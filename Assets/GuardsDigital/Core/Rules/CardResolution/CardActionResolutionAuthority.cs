@@ -63,7 +63,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     adjacentMoveAuthority,
                     movementActionStartRestrictions ?? throw new ArgumentNullException(
                         nameof(movementActionStartRestrictions))),
-                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority),
+                new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, null, markers),
                 new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                 new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                 new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
@@ -748,7 +748,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             new MovementBackendRestoreState(state.PendingMovementResolution),
                             verifiedMovementChoice,
                             modifications),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
@@ -767,6 +767,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             instances,
                             participants,
                             defeatRewards,
+                            markers,
                             modifications),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
@@ -777,7 +778,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case CardActionContinuationKind.Skill:
                     return new CardActionResolutionAuthority(
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         SkillCardActionStrategyBackend.Restore(
@@ -789,7 +790,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case CardActionContinuationKind.Correction:
                     var restored = new CardActionResolutionAuthority(
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
@@ -802,7 +803,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 default:
                     return new CardActionResolutionAuthority(
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),

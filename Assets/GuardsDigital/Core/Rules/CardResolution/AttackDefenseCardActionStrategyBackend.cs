@@ -22,17 +22,34 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingDefenseResponseChoice pendingDefenseChoice;
         private DefeatRewardAccounting defeatRewards;
 
+        /// <summary>
+        /// Milestone 6.12: the same register the round authority holds, so rulebook p.13's "Any markers
+        /// they had are returned" happens where the Defeat is recorded rather than at some later
+        /// checkpoint that would have to rediscover which hero was defeated. Absent outside a live match,
+        /// where there is no attachment to return.
+        /// </summary>
+        private readonly MarkerAttachmentRegister markers;
+
         internal AttackDefenseCardActionStrategyBackend(AdjacentMoveAuthority adjacentMoveAuthority)
-            : this(adjacentMoveAuthority, null)
+            : this(adjacentMoveAuthority, null, null)
         {
         }
 
         internal AttackDefenseCardActionStrategyBackend(
             AdjacentMoveAuthority adjacentMoveAuthority,
             DefeatRewardAccounting defeatRewards)
+            : this(adjacentMoveAuthority, defeatRewards, null)
+        {
+        }
+
+        internal AttackDefenseCardActionStrategyBackend(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            DefeatRewardAccounting defeatRewards,
+            MarkerAttachmentRegister markers)
         {
             this.adjacentMoveAuthority = adjacentMoveAuthority ?? throw new ArgumentNullException(nameof(adjacentMoveAuthority));
             this.defeatRewards = defeatRewards;
+            this.markers = markers;
         }
 
         internal PendingAttackResolution PendingResolution => pendingAttackResolution;
@@ -679,6 +696,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     completedResolution.ActorId));
                 events.Add(ResolutionStep.FromFact(
                     CardActionResolutionEvent.HeroDefeatRecorded(completedResolution, heroDefeat)));
+
+                // Milestone 6.12. Rulebook p.13: "Any markers they had are returned." It follows the
+                // recorded Defeat because that is the sentence's own order, and it is the only p.13
+                // consequence this milestone owns - the removal, the cancellation, the Life counters and
+                // the rewards are still deferred. p.19's "tokens are not removed when the hero who
+                // placed them is defeated" is why nothing here touches the board.
+                foreach (var attachment in ComponentCleanupRules.MarkersReturnedOnDefeat(
+                             markers?.Attachments ?? Array.Empty<MarkerAttachment>(),
+                             completedResolution.TargetHeroId))
+                {
+                    events.Add(ResolutionStep.FromFact(
+                        CardActionResolutionEvent.MarkerReturnedOnHeroDefeat(
+                            completedResolution, markers.Return(attachment.Id))));
+                }
             }
 
             events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.AfterAttack));
@@ -722,6 +753,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             DefeatRewardAccounting defeatRewards,
+            MarkerAttachmentRegister markers,
             RuleModificationSet modifications)
         {
             if (state == null)
@@ -737,7 +769,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var pendingResolution = state.PendingResolution;
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards);
+            var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers);
             var offer = FindPendingAttackOffer(pendingResolution, materializedDefinitions, materializedInstances);
             if (!offer.HasValue)
             {

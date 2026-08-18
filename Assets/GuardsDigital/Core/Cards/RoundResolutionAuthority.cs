@@ -1013,6 +1013,15 @@ namespace GuardsDigital.Core.Cards
                 return ResolveMinionBattle();
             }
 
+            // Milestone 6.12. Handled here rather than through an IEndOfRoundStageHandler for the reason
+            // Minion Battle is: the stage's collaborators are the board and the marker register, which
+            // the authority already holds and the handler context deliberately does not carry.
+            if (stage == EndOfRoundStage.RemoveTokensAndReturnMarkers &&
+                endOfRoundCapabilities.IsAvailable(EndOfRoundStage.RemoveTokensAndReturnMarkers))
+            {
+                return ResolveComponentCleanup(stage);
+            }
+
             EndOfRoundStageResolution resolution;
             if (!endOfRoundCapabilities.IsAvailable(stage))
             {
@@ -1053,6 +1062,44 @@ namespace GuardsDigital.Core.Cards
             }
 
             return CompleteEndOfRoundStage(stage, resolution.OutcomeKind, events);
+        }
+
+        /// <summary>
+        /// Rulebook p.8's "Remove Tokens, Return Markers": "Remove all tokens from the board. Return all
+        /// markers back into the supply."
+        ///
+        /// Deterministic and unconditional. It asks no player anything, so unlike Minion Battle and the
+        /// Lane Push it can never pause, which is why it carries no continuation and adds no persisted
+        /// state - the stage cursor that already crosses the snapshot is the whole of where it is.
+        ///
+        /// Order inside the stage is tokens then markers, matching the page's two sentences. Nothing
+        /// depends on it: a token is board state and a marker is not, so neither can change what the
+        /// other's rule sees.
+        /// </summary>
+        private RoundResolutionResult ResolveComponentCleanup(EndOfRoundStage stage)
+        {
+            var events = new List<RoundResolutionEvent>();
+
+            if (board != null)
+            {
+                foreach (var token in GuardsDigital.Core.Components.ComponentCleanupRules
+                             .TokensRemovedAtEndOfRound(board.PlacedTokens))
+                {
+                    events.Add(RoundResolutionEvent.TokenRemovedAtEndOfRound(
+                        RoundIndex,
+                        board.CommitValidatedTokenReclamation(token.Id)));
+                }
+            }
+
+            foreach (var attachment in GuardsDigital.Core.Components.ComponentCleanupRules
+                         .MarkersReturnedAtEndOfRound(markers.Attachments))
+            {
+                events.Add(RoundResolutionEvent.MarkerReturnedAtEndOfRound(
+                    RoundIndex,
+                    markers.Return(attachment.Id)));
+            }
+
+            return CompleteEndOfRoundStage(stage, EndOfRoundStageOutcomeKind.Completed, events);
         }
 
         /// <summary>

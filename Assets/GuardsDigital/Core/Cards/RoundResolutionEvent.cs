@@ -36,7 +36,13 @@ namespace GuardsDigital.Core.Cards
         SystemTransitionProgressed = 17,
 
         /// <summary>Milestone 6.11: one of rulebook p.8's numbered Lane-Push steps ran.</summary>
-        LanePushStageResolved = 18
+        LanePushStageResolved = 18,
+
+        /// <summary>Milestone 6.12: p.8's end-of-round cleanup took one token off the board.</summary>
+        TokenRemovedAtEndOfRound = 19,
+
+        /// <summary>Milestone 6.12: p.8's end-of-round cleanup returned one marker to its supply.</summary>
+        MarkerReturnedAtEndOfRound = 20
     }
 
     public readonly struct RoundResolutionEvent
@@ -64,7 +70,9 @@ namespace GuardsDigital.Core.Cards
             MinionBattleChoiceCommandKind minionBattleChoiceCommandKind = MinionBattleChoiceCommandKind.None,
             GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep systemTransitionStep = null,
             bool systemTransitionCompleted = false,
-            GuardsDigital.Core.Rules.LanePush.LanePushStageOutcome lanePushStageOutcome = default)
+            GuardsDigital.Core.Rules.LanePush.LanePushStageOutcome lanePushStageOutcome = default,
+            GuardsDigital.Core.Components.PlacedToken removedToken = null,
+            GuardsDigital.Core.Components.MarkerAttachment returnedMarker = null)
         {
             Kind = kind;
             RoundIndex = roundIndex;
@@ -91,6 +99,8 @@ namespace GuardsDigital.Core.Cards
             SystemTransitionStep = systemTransitionStep;
             SystemTransitionCompleted = systemTransitionCompleted;
             LanePushStageOutcome = lanePushStageOutcome;
+            RemovedToken = removedToken;
+            ReturnedMarker = returnedMarker;
         }
 
         public RoundResolutionEventKind Kind { get; }
@@ -122,6 +132,12 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>Milestone 6.11: which p.8 Lane-Push step this event reports, and how it ended.</summary>
         public GuardsDigital.Core.Rules.LanePush.LanePushStageOutcome LanePushStageOutcome { get; }
+
+        /// <summary>Milestone 6.12: the token p.8's cleanup took off the board, or <c>null</c>.</summary>
+        public GuardsDigital.Core.Components.PlacedToken RemovedToken { get; }
+
+        /// <summary>Milestone 6.12: the attachment p.8's cleanup ended, or <c>null</c>.</summary>
+        public GuardsDigital.Core.Components.MarkerAttachment ReturnedMarker { get; }
 
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
@@ -426,6 +442,41 @@ namespace GuardsDigital.Core.Cards
                 roundIndex,
                 turnIndex,
                 lanePushStageOutcome: outcome);
+        }
+
+        /// <summary>
+        /// Milestone 6.12: one token left the board at p.8's cleanup. It names the instance and where it
+        /// stood, because after the stage the board no longer holds either and the event is the only
+        /// record of what was cleared.
+        /// </summary>
+        public static RoundResolutionEvent TokenRemovedAtEndOfRound(
+            int roundIndex,
+            GuardsDigital.Core.Components.PlacedToken token)
+        {
+            if (token == null) throw new ArgumentNullException(nameof(token));
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.TokenRemovedAtEndOfRound,
+                roundIndex,
+                0,
+                endOfRoundStage: Cards.EndOfRoundStage.RemoveTokensAndReturnMarkers,
+                removedToken: token);
+        }
+
+        /// <summary>
+        /// Milestone 6.12: one marker returned to its supply at p.8's cleanup, naming the attachment
+        /// that ended so a reader can say which marker left which holder.
+        /// </summary>
+        public static RoundResolutionEvent MarkerReturnedAtEndOfRound(
+            int roundIndex,
+            GuardsDigital.Core.Components.MarkerAttachment attachment)
+        {
+            if (attachment == null) throw new ArgumentNullException(nameof(attachment));
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.MarkerReturnedAtEndOfRound,
+                roundIndex,
+                0,
+                endOfRoundStage: Cards.EndOfRoundStage.RemoveTokensAndReturnMarkers,
+                returnedMarker: attachment);
         }
     }
 }

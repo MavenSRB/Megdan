@@ -59,6 +59,11 @@ namespace GuardsDigital.Core.Cards
             return new EndOfRoundFixtureCapabilities(new[]
             {
                 EndOfRoundStage.MinionBattle,
+
+                // Milestone 6.12. Declared here and not in the board-free factory below: p.8 runs the
+                // cleanup in every round, but a fixture with no board has no space a token could be on,
+                // and the synthetic round deliberately proves the retrieval stage alone.
+                EndOfRoundStage.RemoveTokensAndReturnMarkers,
                 EndOfRoundStage.RetrieveCardsAndCancelActiveEffects
             });
         }
