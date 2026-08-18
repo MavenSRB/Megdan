@@ -40,6 +40,7 @@ namespace GuardsDigital.Core.Cards
         private TieBreakerState tieBreakerState;
         private readonly ActiveEffectLifecycle timing;
         private readonly MarkerAttachmentRegister markers;
+        private readonly GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions;
 
         public RoundResolutionAuthority(
             IEnumerable<CardDefinition> definitions,
@@ -54,6 +55,7 @@ namespace GuardsDigital.Core.Cards
             var board = composition.Board;
             var timing = composition.Timing;
             var markers = composition.Markers;
+            var compositionTransitions = composition.SystemTransitions;
             var endOfRoundCapabilities = composition.EndOfRoundCapabilities;
             var endOfRoundHandlers = composition.EndOfRoundHandlers;
 
@@ -102,6 +104,13 @@ namespace GuardsDigital.Core.Cards
             this.board = board;
             this.timing = timing ?? new ActiveEffectLifecycle();
             this.markers = markers ?? new MarkerAttachmentRegister();
+
+            // An absent transition authority is substituted with one over the empty catalog rather than
+            // left null, so every caller can ask where a transition is stopped and get the honest "no
+            // transition exists in this build" instead of a reference check.
+            this.systemTransitions = compositionTransitions ??
+                new GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority(
+                    GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog.Empty);
             this.endOfRoundCapabilities = endOfRoundCapabilities ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -177,6 +186,84 @@ namespace GuardsDigital.Core.Cards
         /// <summary>Milestone 6.2's marker attachments, held beside <see cref="Timing"/>.</summary>
         public MarkerAttachmentRegister Markers => markers;
 
+        /// <summary>Milestone 6.10a's system-transition continuation, held beside <see cref="Markers"/>.</summary>
+        public GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority SystemTransitions =>
+            systemTransitions;
+
+        /// <summary>
+        /// Begins a declared multi-step system transition (milestone 6.10a).
+        ///
+        /// The instance identity is composed from the round cursor and the definition rather than minted
+        /// from a counter, so a replay of the same command prefix produces the same identity: a counter
+        /// would rebuild an equal match under different names and break the byte-identity the aggregate
+        /// invariance fixture pins.
+        ///
+        /// This exists because a bounded synthetic transition has no rules of its own to be begun by.
+        /// Milestone 6.11's Lane-Push respawn and milestone 7.5's progression begin theirs from their
+        /// own rules and do not reach this path.
+        /// </summary>
+        public RoundResolutionResult TryBeginSystemTransition(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId definitionId)
+        {
+            if (Phase == RoundResolutionPhase.GameEnded)
+            {
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.GameAlreadyEnded);
+            }
+
+            var instanceId = new GuardsDigital.Core.Rules.Transitions.SystemTransitionInstanceId(
+                $"round-{RoundIndex}-turn-{TurnIndex}-{definitionId.Value}");
+            var result = systemTransitions.TryBegin(definitionId, instanceId);
+            if (!result.Accepted)
+            {
+                return RoundResolutionResult.Reject(TranslateTransitionRejection(result.RejectionReason));
+            }
+
+            return RoundResolutionResult.Accept(new[]
+            {
+                RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result)
+            });
+        }
+
+        /// <summary>Answers the paused step of the running system transition (milestone 6.10a).</summary>
+        public RoundResolutionResult TryAnswerSystemTransitionStep(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand command)
+        {
+            if (Phase == RoundResolutionPhase.GameEnded)
+            {
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.GameAlreadyEnded);
+            }
+
+            var result = systemTransitions.TryAnswer(command);
+            if (!result.Accepted)
+            {
+                return RoundResolutionResult.Reject(TranslateTransitionRejection(result.RejectionReason));
+            }
+
+            return RoundResolutionResult.Accept(new[]
+            {
+                RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result)
+            });
+        }
+
+        private static RoundResolutionRejectionReason TranslateTransitionRejection(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionRejectionReason reason)
+        {
+            switch (reason)
+            {
+                case GuardsDigital.Core.Rules.Transitions.SystemTransitionRejectionReason.UnknownDefinition:
+                    return RoundResolutionRejectionReason.UnknownSystemTransition;
+                case GuardsDigital.Core.Rules.Transitions.SystemTransitionRejectionReason.TransitionAlreadyRunning:
+                    return RoundResolutionRejectionReason.SystemTransitionAlreadyRunning;
+                case GuardsDigital.Core.Rules.Transitions.SystemTransitionRejectionReason.NoPendingStep:
+                    return RoundResolutionRejectionReason.NoPendingSystemTransitionStep;
+                default:
+                    // Wrong instance, stale step, wrong chooser and an illegal option are all one thing
+                    // to a caller: this answer is not about the step that is paused, and the
+                    // continuation is exactly as it was.
+                    return RoundResolutionRejectionReason.IllegalSystemTransitionChoice;
+            }
+        }
+
         internal RoundResolutionRestoreState CaptureRestoreState()
         {
             var rewards = CardActions?.DefeatRewards == null
@@ -190,7 +277,8 @@ namespace GuardsDigital.Core.Cards
                     EndOfRoundOutcomes,
                     PendingMinionBattleChoice,
                     PendingLanePushRequest),
-                new RoundCardActionsRestoreState(CardActions != null, rewards));
+                new RoundCardActionsRestoreState(CardActions != null, rewards),
+                systemTransitions.CaptureRestoreState());
         }
 
         internal static RoundResolutionAuthority Restore(
@@ -203,7 +291,8 @@ namespace GuardsDigital.Core.Cards
             CardActionResolutionAuthority cardActions,
             ActiveEffectLifecycle timing,
             MarkerAttachmentRegister markers,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var roundIndex = state.Cursor.RoundIndex;
@@ -219,7 +308,8 @@ namespace GuardsDigital.Core.Cards
                 participants,
                 tieBreakerState,
                 roundIndex,
-                RoundResolutionComposition.ForMatch(cardActions, board, timing, markers));
+                RoundResolutionComposition.ForMatch(
+                    cardActions, board, timing, markers, systemTransitions));
             if (turnIndex < 1 || turnIndex > TurnsPerRound || !Enum.IsDefined(typeof(RoundResolutionPhase), phase))
             {
                 throw new ArgumentException("Restored round cursor is invalid.");

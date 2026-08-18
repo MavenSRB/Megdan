@@ -47,7 +47,21 @@ namespace GuardsDigital.Core.Replay
         ChooseCorrectionSubject = 17,
         ChooseCorrectionDestination = 18,
         RespawnHero = 19,
-        ResolveCardWithoutRespawn = 20
+        ResolveCardWithoutRespawn = 20,
+
+        /// <summary>
+        /// Milestone 6.10a. A multi-step system transition is a new authority-level operation with its
+        /// own pending family and its own resume path, which is the Minion-Battle and correction
+        /// precedent for giving one a command kind rather than riding another family's.
+        ///
+        /// Beginning one is a command because the contract's first consumer is a bounded synthetic
+        /// transition, which has no rules of its own to be begun by, and because a transition begun
+        /// outside the recorded command stream would simply not exist in a replayed or Undone match -
+        /// which would make the acceptance check about replay pass vacuously. Milestone 6.11's
+        /// Lane-Push respawn and milestone 7.5's progression begin theirs from their own rules.
+        /// </summary>
+        BeginSystemTransition = 21,
+        AnswerSystemTransitionStep = 22
     }
 
     public sealed class DirectorCommand : IEquatable<DirectorCommand>
@@ -65,7 +79,9 @@ namespace GuardsDigital.Core.Replay
             EndOfRoundResolutionId endOfRoundResolutionId = default,
             EndOfRoundChoiceId endOfRoundChoiceId = default,
             EffectChoiceCommand effectChoice = null,
-            IEnumerable<TokenInstanceId> tokenInstanceIds = null)
+            IEnumerable<TokenInstanceId> tokenInstanceIds = null,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId systemTransitionDefinitionId = default,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand systemTransitionChoice = default)
         {
             var materializedTokenIds = tokenInstanceIds?.ToArray() ?? Array.Empty<TokenInstanceId>();
             if (materializedTokenIds.Any(id => !id.IsDefined) ||
@@ -87,6 +103,8 @@ namespace GuardsDigital.Core.Replay
             EndOfRoundResolutionId = endOfRoundResolutionId;
             EndOfRoundChoiceId = endOfRoundChoiceId;
             EffectChoice = effectChoice;
+            SystemTransitionDefinitionId = systemTransitionDefinitionId;
+            SystemTransitionChoice = systemTransitionChoice;
             TokenInstanceIds = Array.AsReadOnly(materializedTokenIds
                 .OrderBy(id => id.Value, StringComparer.Ordinal)
                 .ToArray());
@@ -107,6 +125,46 @@ namespace GuardsDigital.Core.Replay
 
         /// <summary>The projected typed invocation an effect choice is answered with.</summary>
         public EffectChoiceCommand EffectChoice { get; }
+
+        /// <summary>Milestone 6.10a: which declared transition to begin.</summary>
+        public GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId SystemTransitionDefinitionId { get; }
+
+        /// <summary>Milestone 6.10a: the projected invocation a paused transition step is answered with.</summary>
+        public GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand SystemTransitionChoice { get; }
+
+        public static DirectorCommand BeginSystemTransition(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId definitionId)
+        {
+            if (!definitionId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "Beginning a transition requires a defined definition ID.", nameof(definitionId));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.BeginSystemTransition,
+                systemTransitionDefinitionId: definitionId);
+        }
+
+        /// <summary>
+        /// Answers a paused transition step with an invocation the continuation itself projected.
+        /// Composing one by hand is refused here rather than at the authority, the same guard the
+        /// Minion-Battle and effect-choice factories apply.
+        /// </summary>
+        public static DirectorCommand AnswerSystemTransitionStep(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand invocation)
+        {
+            if (!invocation.IsDefined)
+            {
+                throw new ArgumentException(
+                    "Answering a transition step requires the exact projected invocation.", nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.AnswerSystemTransitionStep,
+                teamSide: invocation.ChoosingSide,
+                systemTransitionChoice: invocation);
+        }
 
         /// <summary>
         /// Answers a pending effect choice with an invocation the pending choice itself projected.
@@ -374,6 +432,8 @@ namespace GuardsDigital.Core.Replay
                 EndOfRoundResolutionId.Equals(other.EndOfRoundResolutionId) &&
                 EndOfRoundChoiceId.Equals(other.EndOfRoundChoiceId) &&
                 Equals(EffectChoice, other.EffectChoice) &&
+                SystemTransitionDefinitionId.Equals(other.SystemTransitionDefinitionId) &&
+                SystemTransitionChoice.Equals(other.SystemTransitionChoice) &&
                 TokenInstanceIds.SequenceEqual(other.TokenInstanceIds);
         }
 
@@ -395,6 +455,8 @@ namespace GuardsDigital.Core.Replay
                 hash = (hash * 397) ^ EndOfRoundResolutionId.GetHashCode();
                 hash = (hash * 397) ^ EndOfRoundChoiceId.GetHashCode();
                 hash = (hash * 397) ^ (EffectChoice?.GetHashCode() ?? 0);
+                hash = (hash * 397) ^ SystemTransitionDefinitionId.GetHashCode();
+                hash = (hash * 397) ^ SystemTransitionChoice.GetHashCode();
                 foreach (var tokenId in TokenInstanceIds)
                     hash = (hash * 397) ^ tokenId.GetHashCode();
                 return hash;

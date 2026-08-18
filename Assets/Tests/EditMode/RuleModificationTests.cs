@@ -502,7 +502,8 @@ namespace GuardsDigital.Tests.EditMode
                     new CardActionResolutionAuthority(board),
                     board,
                     timing,
-                    new MarkerAttachmentRegister()));
+                    new MarkerAttachmentRegister(),
+                    null));
             Assert.That(round.TryCommitCard(red.OwnerId, red.Id).Accepted, Is.True);
             Assert.That(round.TryCommitCard(blue.OwnerId, blue.Id).Accepted, Is.True);
             var selected = round.CurrentTurnAuthority.SelectedActor;
@@ -608,7 +609,8 @@ namespace GuardsDigital.Tests.EditMode
                     new CardActionResolutionAuthority(board),
                     board,
                     timing,
-                    new MarkerAttachmentRegister()));
+                    new MarkerAttachmentRegister(),
+                    null));
 
             var payload = AuthoritativeSnapshotSerializer.Serialize(round, board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(

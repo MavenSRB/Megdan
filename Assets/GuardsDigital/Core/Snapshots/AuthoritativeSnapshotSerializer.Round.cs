@@ -23,7 +23,8 @@ namespace GuardsDigital.Core.Snapshots
     {
         private static void WriteRound(BinaryWriter writer, RoundResolutionAuthority round)
         {
-            var (cursor, history, endOfRound, roundCardActions) = round.CaptureRestoreState();
+            var (cursor, history, endOfRound, roundCardActions, systemTransitions) =
+                round.CaptureRestoreState();
             var (roundIndex, turnIndex, phase, tieBreakerState) = cursor;
             writer.Write(roundIndex);
             writer.Write(turnIndex);
@@ -48,6 +49,7 @@ namespace GuardsDigital.Core.Snapshots
             WritePendingLanePushRequest(writer, pendingLanePushRequest);
             WriteTiming(writer, round.Timing.CaptureRestoreState());
             WriteMarkers(writer, round.Markers.CaptureRestoreState());
+            WritePendingSystemTransitionStep(writer, systemTransitions);
 
             var (hasCardActions, roundDefeatRewards) = roundCardActions;
             writer.Write(hasCardActions);
@@ -70,7 +72,8 @@ namespace GuardsDigital.Core.Snapshots
             MatchParticipants participants,
             AdjacentMoveAuthority board,
             EffectCapabilityCatalog capabilities,
-            ComponentDefinitionCatalog components)
+            ComponentDefinitionCatalog components,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions)
         {
             var roundIndex = reader.ReadInt32();
             var turnIndex = reader.ReadInt32();
@@ -92,6 +95,7 @@ namespace GuardsDigital.Core.Snapshots
             var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
             var timing = ActiveEffectLifecycle.Restore(ReadTiming(reader, capabilities));
             var markers = MarkerAttachmentRegister.Restore(ReadMarkers(reader, components, participants));
+            var systemTransitions = ReadSystemTransitions(reader, transitions);
             var hasRoundCardActions = reader.ReadBoolean();
             var roundDefeatRewards = ReadDefeatRewards(reader);
 
@@ -138,13 +142,66 @@ namespace GuardsDigital.Core.Snapshots
                         outcomes,
                         pendingMinionBattleChoice,
                         pendingLanePushRequest),
-                    new RoundCardActionsRestoreState(hasRoundCardActions, roundDefeatRewards)),
+                    new RoundCardActionsRestoreState(hasRoundCardActions, roundDefeatRewards),
+                    systemTransitions.CaptureRestoreState()),
                 commitment,
                 turn,
                 cardActions,
                 timing,
                 markers,
-                board);
+                board,
+                systemTransitions);
+        }
+
+        /// <summary>
+        /// Milestone 6.10a. A paused transition writes identity and recorded facts only - which
+        /// transition, which step, who chooses, what they may choose, and which steps have already
+        /// happened. What those steps *are* stays in the catalog, for the reason the Active-effect
+        /// section states at v8 and the marker section repeats: a payload may say which content this is
+        /// and what has happened to it, never what that content means.
+        ///
+        /// The single leading boolean is the whole cost for a match with no transition running, which
+        /// is every match this build can produce outside the synthetic fixture.
+        /// </summary>
+        private static void WritePendingSystemTransitionStep(
+            BinaryWriter writer,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState state)
+        {
+            state.Deconstruct(out var pending);
+            writer.Write(pending != null);
+            if (pending == null) return;
+
+            writer.Write(pending.InstanceId.Value);
+            writer.Write(pending.DefinitionId.Value);
+            writer.Write(pending.StepId.Value);
+            writer.Write((int)pending.ChoosingSide);
+            WriteStrings(writer, pending.Options.Select(option => option.Value));
+            WriteStrings(writer, pending.CompletedStepIds.Select(step => step.Value));
+        }
+
+        private static GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority ReadSystemTransitions(
+            BinaryReader reader,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions)
+        {
+            GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep pending = null;
+            if (reader.ReadBoolean())
+            {
+                pending = new GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep(
+                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionInstanceId(reader.ReadString()),
+                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId(reader.ReadString()),
+                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionStepId(reader.ReadString()),
+                    SnapshotEnumReader.Read<TeamSide>(reader, "transition choosing side"),
+                    ReadStrings(reader, "transition options")
+                        .Select(value => new GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId(value)),
+                    ReadStrings(reader, "transition completed steps")
+                        .Select(value => new GuardsDigital.Core.Rules.Transitions.SystemTransitionStepId(value)));
+            }
+
+            // The authority's own restore is what refuses a payload the trusted definitions do not
+            // reproduce, so the reader states no second opinion about what a legal continuation is.
+            return GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority.Restore(
+                new GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState(pending),
+                transitions);
         }
 
         /// <summary>

@@ -174,6 +174,28 @@ namespace GuardsDigital.Core.Diagnostics
                             $"losingTeam={ruleEvent.TeamId.Value}"),
                         $"losingSide={ruleEvent.TeamSide};checkpoint={EndOfRoundStage.ResolveRequestedLanePush}");
                     return;
+                case RoundResolutionEventKind.SystemTransitionProgressed:
+                {
+                    // Milestone 6.10a. What a reader needs is where the transition is now, so a paused
+                    // one logs its step and chooser and a finished one logs that it finished. The
+                    // completed steps are deliberately absent: they are the continuation's own record,
+                    // and repeating them here would be a second history that could disagree with it.
+                    var step = ruleEvent.SystemTransitionStep;
+                    Add(
+                        "Round.SystemTransitionProgressed",
+                        step == null
+                            ? roundReference
+                            : JoinReferences(
+                                roundReference,
+                                $"transition={step.InstanceId.Value}",
+                                $"definition={step.DefinitionId.Value}",
+                                $"step={step.StepId.Value}"),
+                        step == null
+                            ? $"completed={ruleEvent.SystemTransitionCompleted}"
+                            : $"chooser={step.ChoosingSide};options={step.Options.Count}");
+                    return;
+                }
+
                 default:
                     Add($"Round.{ruleEvent.Kind}", roundReference, "accepted boundary");
                     return;

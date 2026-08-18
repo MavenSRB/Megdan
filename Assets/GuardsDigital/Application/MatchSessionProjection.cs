@@ -364,7 +364,9 @@ namespace GuardsDigital.Application
                 pendingEffectChoicePreview = null,
             IEnumerable<ClearOptionProjection> availableClearOptions = null,
             GuardsDigital.Core.Rules.CardResolution.PendingImmediateLanePushRequest
-                pendingImmediateLanePush = null)
+                pendingImmediateLanePush = null,
+            GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
+                pendingSystemTransitionStep = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -421,6 +423,7 @@ namespace GuardsDigital.Application
             PendingHeroRespawnChoice = pendingHeroRespawnChoice;
             PendingLanePushRequest = pendingLanePushRequest;
             PendingImmediateLanePush = pendingImmediateLanePush;
+            PendingSystemTransitionStep = pendingSystemTransitionStep;
             PendingDisplacedMinionCorrection = pendingDisplacedMinionCorrection;
             PendingEffectChoicePreview = Array.AsReadOnly((pendingEffectChoicePreview ??
                 Enumerable.Empty<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>())
@@ -550,6 +553,16 @@ namespace GuardsDigital.Application
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
         public PendingLanePushRequest PendingLanePushRequest { get; }
+
+        /// <summary>
+        /// Milestone 6.10a: where a multi-step system transition is stopped, or <c>null</c>. This is
+        /// authoritative state reaching a reader, not a presentation surface - the milestone's non-goals
+        /// forbid production presentation, and nothing draws this. It is projected because a paused
+        /// transition is a state a caller has to be able to see to answer, exactly as the Minion-Battle
+        /// choice beside it is.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
+            PendingSystemTransitionStep { get; }
 
         /// <summary>
         /// Milestone 6.9: rulebook p.8's mid-turn Lane-Push request, or <c>null</c>. Projected beside its

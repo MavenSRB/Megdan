@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Cards
@@ -26,6 +27,7 @@ namespace GuardsDigital.Core.Cards
             AdjacentMoveAuthority board,
             ActiveEffectLifecycle timing,
             MarkerAttachmentRegister markers,
+            SystemTransitionAuthority systemTransitions,
             EndOfRoundFixtureCapabilities endOfRoundCapabilities,
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers)
         {
@@ -33,6 +35,7 @@ namespace GuardsDigital.Core.Cards
             Board = board;
             Timing = timing;
             Markers = markers;
+            SystemTransitions = systemTransitions;
             EndOfRoundCapabilities = endOfRoundCapabilities;
             EndOfRoundHandlers = endOfRoundHandlers;
         }
@@ -49,6 +52,16 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public MarkerAttachmentRegister Markers { get; }
 
+        /// <summary>
+        /// Milestone 6.10a's system-transition continuation. It travels here for the same reason
+        /// <see cref="Markers"/> does, and the note above gives it: match-scoped state the round
+        /// authority holds and the snapshot's round section persists, rather than anything the round
+        /// owns rules for. Both of the contract's named production consumers - milestone 6.11's
+        /// Lane-Push respawn and milestone 7.5's progression - route through the round, so this is
+        /// where a paused transition is reachable from without giving the aggregate a fifth graph.
+        /// </summary>
+        public SystemTransitionAuthority SystemTransitions { get; }
+
         public EndOfRoundFixtureCapabilities EndOfRoundCapabilities { get; }
         public IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> EndOfRoundHandlers { get; }
 
@@ -60,9 +73,11 @@ namespace GuardsDigital.Core.Cards
             CardActionResolutionAuthority cardActions,
             AdjacentMoveAuthority board,
             ActiveEffectLifecycle timing,
-            MarkerAttachmentRegister markers)
+            MarkerAttachmentRegister markers,
+            SystemTransitionAuthority systemTransitions)
         {
-            return new RoundResolutionComposition(cardActions, board, timing, markers, null, null);
+            return new RoundResolutionComposition(
+                cardActions, board, timing, markers, systemTransitions, null, null);
         }
 
         /// <summary>
@@ -73,7 +88,7 @@ namespace GuardsDigital.Core.Cards
         public static RoundResolutionComposition ForCardActionsOnly(
             CardActionResolutionAuthority cardActions)
         {
-            return new RoundResolutionComposition(cardActions, null, null, null, null, null);
+            return new RoundResolutionComposition(cardActions, null, null, null, null, null, null);
         }
     }
 }

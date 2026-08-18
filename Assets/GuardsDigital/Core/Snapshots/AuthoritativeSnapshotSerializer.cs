@@ -26,6 +26,14 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
+        // v15: milestone 6.10a adds the system-transition continuation to the round section - one
+        // boolean saying whether a multi-step transition is stopped, and when it is, which transition,
+        // which step, who chooses, what they may choose, and which steps have already happened. v14 is
+        // rejected rather than migrated: a v14 payload has no field for a paused transition, and
+        // reading one as "nothing is running" would restore a match that had silently skipped a step a
+        // player still owes. What the steps mean stays in the trusted catalog, so a payload naming a
+        // transition this build no longer supplies is refused rather than reinterpreted.
+        //
         // v14: milestone 6.10 puts rulebook p.8's Battle Zone on the wire, beside the map reference it
         // is scoped to, because it is now authoritative state the Lane-Push Zone stage advances rather
         // than a derivation from the map's starting-Battle-Zone flag. v13 is rejected rather than
@@ -63,7 +71,7 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 14;
+        public const int CurrentSchemaVersion = 15;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full
@@ -131,13 +139,16 @@ namespace GuardsDigital.Core.Snapshots
             IEnumerable<BoardMapDefinition> currentMapDefinitions,
             IEnumerable<QuickGameMinionSetupState> minions,
             EffectCapabilityCatalog capabilities = null,
-            ComponentDefinitionCatalog components = null)
+            ComponentDefinitionCatalog components = null,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions = null)
         {
             // The trusted capability and component sets a restore rebinds against. Defaulted rather
             // than required so existing callers keep compiling; the configured session always supplies
             // the real ones.
             capabilities = capabilities ?? SyntheticEffectCapabilities.CreateCatalog();
             components = components ?? SyntheticComponentDefinitions.CreateCatalog();
+            transitions = transitions ??
+                GuardsDigital.Core.Rules.Transitions.Synthetic.SyntheticSystemTransitions.CreateCatalog();
             if (string.IsNullOrWhiteSpace(payload))
             {
                 throw new SnapshotLoadException(
@@ -186,7 +197,8 @@ namespace GuardsDigital.Core.Snapshots
                     var board = ReadBoard(reader, mapCatalog, minions, components);
                     var cards = ReadCards(reader, definitions, participants);
                     var round = ReadRound(
-                        reader, definitions, cards, participants, board, capabilities, components);
+                        reader, definitions, cards, participants, board, capabilities, components,
+                        transitions);
                     if (stream.Position != stream.Length)
                     {
                         throw Malformed("Snapshot contains unexpected trailing data.");

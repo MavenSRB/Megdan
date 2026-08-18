@@ -235,6 +235,12 @@ namespace GuardsDigital.Application
                         HeroRespawnCommandKind.ResolveWithoutAction,
                         command.HeroId,
                         command.CardInstanceId)));
+                case DirectorCommandKind.BeginSystemTransition:
+                    return DispatchResult.From(
+                        round.TryBeginSystemTransition(command.SystemTransitionDefinitionId));
+                case DirectorCommandKind.AnswerSystemTransitionStep:
+                    return DispatchResult.From(
+                        round.TryAnswerSystemTransitionStep(command.SystemTransitionChoice));
                 default:
                     return DispatchResult.Unavailable("The command kind is not supported by this match session.");
             }
@@ -720,7 +726,8 @@ namespace GuardsDigital.Application
                 round.PendingDisplacedMinionCorrection,
                 turn?.DescribePendingEffectChoice(configuration.CardDefinitions, turnModifications),
                 availableClearOptions,
-                turn?.PendingImmediateLanePush);
+                turn?.PendingImmediateLanePush,
+                round.SystemTransitions.PendingStep);
         }
 
         private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn,

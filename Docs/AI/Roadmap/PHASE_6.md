@@ -623,7 +623,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-610-resolve-lane-push-wave-and-battle-zone-stages-completion-evidence).
 
-### [~] 6.10a Establish the reusable system-transition continuation contract
+### [x] 6.10a Establish the reusable system-transition continuation contract
 
 Observable outcome: A multi-step authoritative system transition pauses on a typed, serializable, authority-owned intra-stage continuation and resumes exactly where it stopped, proven on a bounded synthetic transition before milestone 6.11's respawn consumes the same contract.
 
@@ -638,6 +638,8 @@ Acceptance checks:
 Closing check: acceptance evidence in the 6.2a style, because this milestone builds a contract that did not exist - the paused synthetic transition driven through snapshot restore, replay, and retained-prefix Undo, plus the conformance rule proved against its violator and compliant twin.
 
 Non-goals: No Lane Push Wave/Zone/respawn rules (6.10 and 6.11 own those), no minion Respawn behavior, no progression content (7.5), no production presentation, no schema change beyond the continuation itself.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-610a-establish-the-reusable-system-transition-continuation-contract-completion-evidence).
 
 ### [ ] 6.11 Complete Lane Push minion respawn and transition
 

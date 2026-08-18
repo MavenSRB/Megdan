@@ -34,7 +34,27 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="MissingRequiredEndOfRoundHandler"/>: the handler is not missing by
         /// misconfiguration, the rule it would apply is unimplemented.
         /// </summary>
-        UnimplementedLanePushConsumption = 14
+        UnimplementedLanePushConsumption = 14,
+
+        /// <summary>Milestone 6.10a: this build supplies no transition definition by that name.</summary>
+        UnknownSystemTransition = 15,
+
+        /// <summary>
+        /// A transition is already running. Two at once would be two resume locations, and the
+        /// continuation contract is built on there being exactly one.
+        /// </summary>
+        SystemTransitionAlreadyRunning = 16,
+
+        /// <summary>No transition is paused, so there is nothing to answer.</summary>
+        NoPendingSystemTransitionStep = 17,
+
+        /// <summary>
+        /// The answer is not about the step that is paused - a different running transition, a step
+        /// already completed or not yet reached, somebody other than the chooser, or an option the step
+        /// never offered. One reason rather than four, because they are one fact to a caller: the
+        /// continuation is exactly as it was.
+        /// </summary>
+        IllegalSystemTransitionChoice = 18
     }
 
     public readonly struct RoundResolutionResult

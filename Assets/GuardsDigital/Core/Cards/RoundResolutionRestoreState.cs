@@ -154,12 +154,14 @@ namespace GuardsDigital.Core.Cards
             RoundCursorRestoreState cursor,
             RoundHistoryRestoreState history,
             EndOfRoundRestoreState endOfRound,
-            RoundCardActionsRestoreState cardActions)
+            RoundCardActionsRestoreState cardActions,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions)
         {
             Cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
             History = history ?? throw new ArgumentNullException(nameof(history));
             EndOfRound = endOfRound ?? throw new ArgumentNullException(nameof(endOfRound));
             CardActions = cardActions ?? throw new ArgumentNullException(nameof(cardActions));
+            SystemTransitions = systemTransitions ?? throw new ArgumentNullException(nameof(systemTransitions));
         }
 
         public RoundCursorRestoreState Cursor { get; }
@@ -167,16 +169,21 @@ namespace GuardsDigital.Core.Cards
         public EndOfRoundRestoreState EndOfRound { get; }
         public RoundCardActionsRestoreState CardActions { get; }
 
+        /// <summary>Milestone 6.10a's paused system transition, or the absence of one.</summary>
+        public GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState SystemTransitions { get; }
+
         public void Deconstruct(
             out RoundCursorRestoreState cursor,
             out RoundHistoryRestoreState history,
             out EndOfRoundRestoreState endOfRound,
-            out RoundCardActionsRestoreState cardActions)
+            out RoundCardActionsRestoreState cardActions,
+            out GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions)
         {
             cursor = Cursor;
             history = History;
             endOfRound = EndOfRound;
             cardActions = CardActions;
+            systemTransitions = SystemTransitions;
         }
     }
 }

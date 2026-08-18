@@ -343,17 +343,35 @@ namespace GuardsDigital.Tests.EditMode
         /// fixture, whose definition table carries two more cards. With the schema int alone accounted
         /// for, the common prefix runs to that offset and every later byte is identical, which is the
         /// corpus's own proof that adding the Zone moved no board, card, component or round field.
+        /// Milestone 6.10a moves every fixture from v14 to v15 for one persistence cause: a multi-step
+        /// system transition can now stop on an intra-stage continuation, and that continuation is
+        /// authority-owned state the round section persists. The decision is reject rather than migrate,
+        /// by the same reasoning as every bump: a v14 payload has no field for a paused transition, and
+        /// reading one as "nothing is running" would restore a match that had silently skipped a step a
+        /// player still owes. What the steps mean stays in the trusted catalog, so no registration list
+        /// joins the wire and a payload naming a transition this build no longer supplies is refused
+        /// rather than reinterpreted. No capability is registered or revised, no card revision moves and
+        /// no component definition changes.
+        /// Measured at the byte level rather than assumed, against the v14 payloads captured earlier in
+        /// the same session: every one of the eight grows by exactly one byte - the trailing <c>00</c>
+        /// saying no transition is paused - 2746 to 2747, 2942 to 2943, 3122 to 3123, 3152 to 3153, 3357
+        /// to 3358, 3797 to 3798, 3846 to 3847 and 3857 to 3858. With the fixed-width schema int at
+        /// offset 30 accounted for, each differs in exactly one inserted byte at the round section's
+        /// marker boundary - offsets 2733, 2812, 2812, 3061, 3266, 3669, 3718 and 3541 - and every byte
+        /// before and after is identical. Unlike the Battle Zone at 6.10, no fixture is exempt: a
+        /// transition belongs to the match rather than to a board or an action, so even the
+        /// <c>setup</c> payload records that none is running.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v14", "a31a7e5d568806e7c5ddbeab75629354c7eb1574a43085a1eab73803ac36e79b"),
-            new CompatibilityFixture("active-turn-v14", "0160f17b3ffbd4c5656e8b019aac0074f7efc90a9116215c2ee80017cf02c278"),
-            new CompatibilityFixture("pending-choice-v14", "274086fd40d5c52e08f3cebd702451e4763cdadd13390c8268701151d88fc3a2"),
-            new CompatibilityFixture("end-of-round-v14", "a57c7971c54f88aa1f1e2a9dd56f2a955252706127fb21f90373ce800388be0d"),
-            new CompatibilityFixture("pending-minion-battle-v14", "0d6b378384c8327187a9340dcc04c81efe1f5fd5810782fa71721b07f2cfbac0"),
-            new CompatibilityFixture("placed-token-v14", "606943da6d216c4e09a147342524f45abe286e57592a51b0cea8034840985a9c"),
-            new CompatibilityFixture("attached-marker-v14", "9b8758b72d34d37bfb4fdc179444f49e1ef659d7f05a8909241355b1928f1bec"),
-            new CompatibilityFixture("pending-correction-v14", "1638dbb4e871751188648375c9c083df0b7a696561e488b0b48a6d102fb82090")
+            new CompatibilityFixture("setup-v15", "42d0da50bdaf3a16703b9f80a11d1c7f42e965ffd85baa6f3ed93de225e56004"),
+            new CompatibilityFixture("active-turn-v15", "c33d36b5165a2923e243a215e8a0e507d1b8d71e783864acbbff6b38c8b581dd"),
+            new CompatibilityFixture("pending-choice-v15", "bb748f1dfa3625bce84ffbf1e7db43e773978e6c8897bd7d7dac777066e11bb3"),
+            new CompatibilityFixture("end-of-round-v15", "204c16e26f71adfd97dccfd4e3ed7fd21d7e8748c8ad0c846834e02cffdeee7c"),
+            new CompatibilityFixture("pending-minion-battle-v15", "624f9d576947fc5fd52bd5e66e0301c832fab088c926598de51ae18c481bac40"),
+            new CompatibilityFixture("placed-token-v15", "029b26eccc64e0aee742b95a7d0a7ea4d004ff55a7a340d55866ac69501110f4"),
+            new CompatibilityFixture("attached-marker-v15", "0b21a43ac17fd5eaab54a1a617fa4b89a9f395576f04ca545669d5ecd3b98f63"),
+            new CompatibilityFixture("pending-correction-v15", "baea2859c0a1f68a30cefec10cf36eb1f03b7ba4e80f08382ddfe4f236fe3c6d")
         };
 
         [Test]
@@ -436,16 +454,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v14", session.CaptureSnapshot());
+            values.Add("setup-v15", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v14", session.CaptureSnapshot());
+            values.Add("active-turn-v15", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v14", session.CaptureSnapshot());
+            values.Add("pending-choice-v15", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -461,7 +479,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v14", session.CaptureSnapshot());
+            values.Add("end-of-round-v15", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -470,17 +488,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v14", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v15", session.CaptureSnapshot());
 
             // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
             // carry zero components would leave the sections it exists to protect untested, so one
             // payload holds a token on the board and one holds a marker on a hero.
-            values.Add("placed-token-v14", CaptureComponentSnapshot("component-place-branch"));
-            values.Add("attached-marker-v14", CaptureComponentSnapshot("component-give-marker"));
+            values.Add("placed-token-v15", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v15", CaptureComponentSnapshot("component-give-marker"));
 
             // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
             // so the paused after-action correction gets the eighth.
-            values.Add("pending-correction-v14", CapturePendingCorrectionSnapshot());
+            values.Add("pending-correction-v15", CapturePendingCorrectionSnapshot());
             return values;
         }
 

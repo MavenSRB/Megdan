@@ -922,7 +922,7 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red),
                 1,
                 new RoundResolutionComposition(
-                    cardActions, board, timing, null,
+                    cardActions, board, timing, null, null,
                     EndOfRoundFixtureCapabilities.ConfiguredMatch(), null));
 
             return new BattleZoneFixture(authority, board, minions, red, blue, blueSpawn);

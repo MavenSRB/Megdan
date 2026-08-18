@@ -30,7 +30,10 @@ namespace GuardsDigital.Core.Cards
         MinionBattleChoiceRequested = 13,
         MinionBattleSelectionChanged = 14,
         MinionBattleMinionRemoved = 15,
-        LanePushRequested = 16
+        LanePushRequested = 16,
+
+        /// <summary>Milestone 6.10a: a system transition began, stopped on a step, or finished.</summary>
+        SystemTransitionProgressed = 17
     }
 
     public readonly struct RoundResolutionEvent
@@ -55,7 +58,9 @@ namespace GuardsDigital.Core.Cards
             MinionId minionId = default,
             RuleObject unit = default,
             LanePushRequestId lanePushRequestId = default,
-            MinionBattleChoiceCommandKind minionBattleChoiceCommandKind = MinionBattleChoiceCommandKind.None)
+            MinionBattleChoiceCommandKind minionBattleChoiceCommandKind = MinionBattleChoiceCommandKind.None,
+            GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep systemTransitionStep = null,
+            bool systemTransitionCompleted = false)
         {
             Kind = kind;
             RoundIndex = roundIndex;
@@ -79,6 +84,8 @@ namespace GuardsDigital.Core.Cards
             MinionId = Unit.Kind == RuleObjectKind.Minion ? Unit.MinionId : default;
             LanePushRequestId = lanePushRequestId;
             MinionBattleChoiceCommandKind = minionBattleChoiceCommandKind;
+            SystemTransitionStep = systemTransitionStep;
+            SystemTransitionCompleted = systemTransitionCompleted;
         }
 
         public RoundResolutionEventKind Kind { get; }
@@ -102,6 +109,11 @@ namespace GuardsDigital.Core.Cards
         public RuleObject Unit { get; }
         public LanePushRequestId LanePushRequestId { get; }
         public MinionBattleChoiceCommandKind MinionBattleChoiceCommandKind { get; }
+
+        /// <summary>Where the transition is now stopped, or <c>null</c> when it is not stopped.</summary>
+        public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep SystemTransitionStep { get; }
+
+        public bool SystemTransitionCompleted { get; }
 
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
@@ -332,6 +344,37 @@ namespace GuardsDigital.Core.Cards
                 teamId: request.LosingTeamId,
                 teamSide: request.LosingSide,
                 lanePushRequestId: request.RequestId);
+        }
+
+        /// <summary>
+        /// Milestone 6.10a. One event kind covers began, stopped and finished, because the fact a
+        /// reader needs is the same in all three: where the transition is now. A paused transition
+        /// names its step and its chooser; a finished one names neither, which is what "finished" is.
+        /// </summary>
+        public static RoundResolutionEvent SystemTransitionProgressed(
+            int roundIndex,
+            int turnIndex,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionResult result)
+        {
+            if (result == null)
+            {
+                throw new ArgumentNullException(nameof(result));
+            }
+
+            if (!result.Accepted)
+            {
+                throw new ArgumentException(
+                    "A refused transition command produces no event; it left nothing to report.",
+                    nameof(result));
+            }
+
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.SystemTransitionProgressed,
+                roundIndex,
+                turnIndex,
+                teamSide: result.PendingStep?.ChoosingSide ?? TeamSide.None,
+                systemTransitionStep: result.PendingStep,
+                systemTransitionCompleted: result.TransitionCompleted);
         }
     }
 }
