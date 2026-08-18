@@ -190,7 +190,7 @@ Non-goals: No change to what any test asserts, no new test assembly (a shared te
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61v-make-reflected-member-names-and-digest-fixtures-checkable-completion-evidence).
 
-### [ ] 6.1y Give each hero its own rules-ledger shard
+### [~] 6.1y Give each hero its own rules-ledger shard
 
 Observable outcome: Hero-specific rule authority lives in one shard per hero under `Docs/AI/Rules/`, starting with Wasp, and `RULES_LEDGER.md` keeps a routing summary and stable link rather than the content.
 
