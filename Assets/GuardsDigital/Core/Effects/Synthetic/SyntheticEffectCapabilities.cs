@@ -15,7 +15,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// output binding, chooser ownership, and declared checkpoints - not new game rules.
     ///
     /// It lives in production Core rather than a test assembly for the same reason
-    /// <c>PlaceholderMovementHand</c> and <c>SyntheticCardRetrievalHandler</c> do: the configured session
+    /// <c>PlaceholderMovementHand</c> and <c>CardRetrievalHandler</c> do: the configured session
     /// composes it, so it must be reachable from the composition root.
     /// </summary>
     public static class SyntheticEffectCapabilities

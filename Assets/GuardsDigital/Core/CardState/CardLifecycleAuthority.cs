@@ -88,7 +88,22 @@ namespace GuardsDigital.Core.Cards
                 new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
         }
 
-        public static bool TryRetrieveEligibleSyntheticCard(CardInstance card)
+        /// <summary>
+        /// Rulebook p.8's Retrieve Cards, asked of one card: is this card one the round returns to its
+        /// owner's hand, and if so return it in fresh state.
+        ///
+        /// Two shapes are eligible and they are the two the round can produce - a played card that
+        /// resolved, and a Defense discarded from hand without being played. Everything else is
+        /// ineligible by not being either: a card still in hand, one set aside, one in an item slot.
+        /// Face orientation is deliberately not part of either shape, because it is orthogonal to both:
+        /// a played card is revealed before it can resolve, so no resolved card is facedown, and adding
+        /// the redundant condition would let a future facedown resolution silently stop being retrieved.
+        ///
+        /// Milestone 6.13 renamed this from `TryRetrieveEligibleSyntheticCard` and changed nothing else.
+        /// It is the only eligibility question end-of-round retrieval asks, and the milestone's audit
+        /// forbids a second one existing beside it.
+        /// </summary>
+        public static bool TryRetrieveEligibleCard(CardInstance card)
         {
             if (card == null)
             {

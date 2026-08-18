@@ -928,7 +928,7 @@ namespace GuardsDigital.Tests.EditMode
                 1,
                 new RoundResolutionComposition(
                     cardActions, board, timing, null, null, null,
-                    EndOfRoundFixtureCapabilities.ConfiguredMatch(), null));
+                    EndOfRoundStageAvailability.ConfiguredMatch(), null));
 
             return new BattleZoneFixture(authority, board, minions, red, blue, blueSpawn);
         }

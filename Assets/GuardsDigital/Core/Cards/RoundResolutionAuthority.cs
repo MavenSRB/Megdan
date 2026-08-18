@@ -34,7 +34,7 @@ namespace GuardsDigital.Core.Cards
         private readonly List<CompletedRoundRecord> completedRounds = new List<CompletedRoundRecord>();
         private readonly List<EndOfRoundStageOutcome> endOfRoundOutcomes =
             new List<EndOfRoundStageOutcome>();
-        private readonly EndOfRoundFixtureCapabilities endOfRoundCapabilities;
+        private readonly EndOfRoundStageAvailability endOfRoundStageAvailability;
         private readonly IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers;
         private readonly AdjacentMoveAuthority board;
         private TieBreakerState tieBreakerState;
@@ -58,7 +58,7 @@ namespace GuardsDigital.Core.Cards
             var markers = composition.Markers;
             var compositionTransitions = composition.SystemTransitions;
             var compositionLanePush = composition.LanePush;
-            var endOfRoundCapabilities = composition.EndOfRoundCapabilities;
+            var endOfRoundStageAvailability = composition.EndOfRoundStageAvailability;
             var endOfRoundHandlers = composition.EndOfRoundHandlers;
 
             this.definitions = Array.AsReadOnly(
@@ -118,18 +118,18 @@ namespace GuardsDigital.Core.Cards
             // Wave counters to spend; the two consumption checkpoints say so rather than substituting a
             // push nothing could win.
             lanePush = compositionLanePush;
-            this.endOfRoundCapabilities = endOfRoundCapabilities ??
+            this.endOfRoundStageAvailability = endOfRoundStageAvailability ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
-                    ? EndOfRoundFixtureCapabilities.ConfiguredMatch()
-                    : EndOfRoundFixtureCapabilities.SyntheticRepeatedRound());
+                    ? EndOfRoundStageAvailability.ConfiguredMatch()
+                    : EndOfRoundStageAvailability.SyntheticRepeatedRound());
             var handlers = endOfRoundHandlers != null
                 ? new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>(endOfRoundHandlers)
                 : new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
                 {
                     {
                         EndOfRoundStage.RetrieveCardsAndCancelActiveEffects,
-                        new SyntheticCardRetrievalHandler()
+                        new CardRetrievalHandler()
                     }
                 };
             if (handlers.Any(pair =>
@@ -1007,7 +1007,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             if (stage == EndOfRoundStage.MinionBattle &&
-                endOfRoundCapabilities.IsAvailable(EndOfRoundStage.MinionBattle) &&
+                endOfRoundStageAvailability.IsAvailable(EndOfRoundStage.MinionBattle) &&
                 board != null)
             {
                 return ResolveMinionBattle();
@@ -1017,13 +1017,13 @@ namespace GuardsDigital.Core.Cards
             // Minion Battle is: the stage's collaborators are the board and the marker register, which
             // the authority already holds and the handler context deliberately does not carry.
             if (stage == EndOfRoundStage.RemoveTokensAndReturnMarkers &&
-                endOfRoundCapabilities.IsAvailable(EndOfRoundStage.RemoveTokensAndReturnMarkers))
+                endOfRoundStageAvailability.IsAvailable(EndOfRoundStage.RemoveTokensAndReturnMarkers))
             {
                 return ResolveComponentCleanup(stage);
             }
 
             EndOfRoundStageResolution resolution;
-            if (!endOfRoundCapabilities.IsAvailable(stage))
+            if (!endOfRoundStageAvailability.IsAvailable(stage))
             {
                 resolution = EndOfRoundStageResolution.NotApplicable();
             }

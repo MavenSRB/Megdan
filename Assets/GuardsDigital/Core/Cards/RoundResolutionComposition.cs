@@ -30,7 +30,7 @@ namespace GuardsDigital.Core.Cards
             MarkerAttachmentRegister markers,
             SystemTransitionAuthority systemTransitions,
             LanePushConsumption lanePush,
-            EndOfRoundFixtureCapabilities endOfRoundCapabilities,
+            EndOfRoundStageAvailability endOfRoundStageAvailability,
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers)
         {
             CardActions = cardActions;
@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Cards
             Markers = markers;
             SystemTransitions = systemTransitions;
             LanePush = lanePush;
-            EndOfRoundCapabilities = endOfRoundCapabilities;
+            EndOfRoundStageAvailability = endOfRoundStageAvailability;
             EndOfRoundHandlers = endOfRoundHandlers;
         }
 
@@ -76,7 +76,7 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public LanePushConsumption LanePush { get; }
 
-        public EndOfRoundFixtureCapabilities EndOfRoundCapabilities { get; }
+        public EndOfRoundStageAvailability EndOfRoundStageAvailability { get; }
         public IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> EndOfRoundHandlers { get; }
 
         /// <summary>

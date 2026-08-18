@@ -401,7 +401,7 @@ namespace GuardsDigital.Tests.EditMode
         public void EndOfRound_PausedHandlerRetainsCursorAndMissingAvailableHandlerRejectsWithoutMutation()
         {
             var fixture = CreateOneCardPerSideFixture(
-                new EndOfRoundFixtureCapabilities(new[] { EndOfRoundStage.MinionBattle }),
+                new EndOfRoundStageAvailability(new[] { EndOfRoundStage.MinionBattle }),
                 new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
                 {
                     { EndOfRoundStage.MinionBattle, new PauseOnceHandler() }
@@ -424,7 +424,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(EndOfRoundStageOutcomeKind.Completed));
 
             var missingFixture = CreateOneCardPerSideFixture(
-                new EndOfRoundFixtureCapabilities(new[] { EndOfRoundStage.MinionBattle }),
+                new EndOfRoundStageAvailability(new[] { EndOfRoundStage.MinionBattle }),
                 new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>());
             CompleteOneCardRound(missingFixture);
             var slots = missingFixture.Authority.TurnSlots.ToArray();
@@ -442,7 +442,7 @@ namespace GuardsDigital.Tests.EditMode
         public void EndOfRound_GameEndingHandlerStopsCursorAndLaterCommands()
         {
             var fixture = CreateOneCardPerSideFixture(
-                new EndOfRoundFixtureCapabilities(new[] { EndOfRoundStage.MinionBattle }),
+                new EndOfRoundStageAvailability(new[] { EndOfRoundStage.MinionBattle }),
                 new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
                 {
                     { EndOfRoundStage.MinionBattle, new GameEndingHandler() }
@@ -465,6 +465,101 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(rejected.Accepted, Is.False);
             Assert.That(rejected.RejectionReason,
                 Is.EqualTo(RoundResolutionRejectionReason.GameAlreadyEnded));
+        }
+
+        /// <summary>
+        /// Milestone 6.13. Rulebook p.8 prints Retrieve Cards after the Lane Push, so a push that stops
+        /// on a choice must hold the whole round there: no card comes back early, and the one
+        /// `CardsRetrieved` checkpoint does not run early either. Resuming then does both exactly once.
+        ///
+        /// The pause is staged at the Lane-Push stage through a handler rather than through a real push,
+        /// because what is under test is the stage cursor's promise rather than p.8's transition, which
+        /// <c>LanePushTransitionTests</c> owns.
+        /// </summary>
+        [Test]
+        public void EndOfRound_APauseBeforeRetrieval_RetrievesNothingUntilItResumesAndThenRetrievesOnce()
+        {
+            var fixture = CreateOneCardPerSideFixture(
+                new EndOfRoundStageAvailability(new[]
+                {
+                    EndOfRoundStage.ResolveRequestedLanePush,
+                    EndOfRoundStage.RetrieveCardsAndCancelActiveEffects
+                }),
+                new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
+                {
+                    { EndOfRoundStage.ResolveRequestedLanePush, new PauseOnceHandler() },
+                    { EndOfRoundStage.RetrieveCardsAndCancelActiveEffects, new CardRetrievalHandler() }
+                });
+            CompleteOneCardRound(fixture);
+            AdvanceToStage(fixture, EndOfRoundStage.ResolveRequestedLanePush);
+
+            var paused = fixture.Authority.TryAdvanceEndOfRound();
+
+            Assert.That(paused.Accepted, Is.True);
+            Assert.That(fixture.Authority.CurrentEndOfRoundStage,
+                Is.EqualTo(EndOfRoundStage.ResolveRequestedLanePush));
+            Assert.That(paused.Events.Any(ruleEvent =>
+                    ruleEvent.Kind == RoundResolutionEventKind.CardRetrieved ||
+                    ruleEvent.Kind == RoundResolutionEventKind.ActiveEffectCancellationCheckpoint),
+                Is.False,
+                "A stopped stage cannot reach past itself into the stage p.8 prints after it.");
+            Assert.That(fixture.Red.State.Location, Is.EqualTo(CardLocation.TurnArea));
+            Assert.That(fixture.Blue.State.Location, Is.EqualTo(CardLocation.TurnArea));
+
+            var resumed = fixture.Authority.TryAdvanceEndOfRound();
+            Assert.That(resumed.Accepted, Is.True);
+            Assert.That(fixture.Authority.CurrentEndOfRoundStage,
+                Is.EqualTo(EndOfRoundStage.RetrieveCardsAndCancelActiveEffects));
+            Assert.That(resumed.Events.Any(ruleEvent =>
+                    ruleEvent.Kind == RoundResolutionEventKind.CardRetrieved), Is.False,
+                "Resuming finishes the stage that stopped; it does not run the next one with it.");
+
+            var retrieval = fixture.Authority.TryAdvanceEndOfRound();
+
+            Assert.That(retrieval.Accepted, Is.True);
+            Assert.That(
+                retrieval.Events.Count(ruleEvent => ruleEvent.Kind == RoundResolutionEventKind.CardRetrieved),
+                Is.EqualTo(2), "Each of the two played cards comes back exactly once.");
+            Assert.That(
+                retrieval.Events.Count(ruleEvent =>
+                    ruleEvent.Kind == RoundResolutionEventKind.ActiveEffectCancellationCheckpoint),
+                Is.EqualTo(1), "and the round crosses its one cancellation boundary exactly once.");
+            Assert.That(fixture.Red.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(fixture.Blue.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+        }
+
+        /// <summary>
+        /// Milestone 6.13, the other half: p.8's push can end the game, and a game that ended does not
+        /// go on to retrieve cards for a round nobody will play.
+        /// </summary>
+        [Test]
+        public void EndOfRound_AGameEndingStageBeforeRetrieval_RetrievesNoCardAtAll()
+        {
+            var fixture = CreateOneCardPerSideFixture(
+                new EndOfRoundStageAvailability(new[]
+                {
+                    EndOfRoundStage.ResolveRequestedLanePush,
+                    EndOfRoundStage.RetrieveCardsAndCancelActiveEffects
+                }),
+                new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
+                {
+                    { EndOfRoundStage.ResolveRequestedLanePush, new GameEndingHandler() },
+                    { EndOfRoundStage.RetrieveCardsAndCancelActiveEffects, new CardRetrievalHandler() }
+                });
+            CompleteOneCardRound(fixture);
+            AdvanceToStage(fixture, EndOfRoundStage.ResolveRequestedLanePush);
+
+            var ended = fixture.Authority.TryAdvanceEndOfRound();
+
+            Assert.That(ended.Accepted, Is.True);
+            Assert.That(fixture.Authority.Phase, Is.EqualTo(RoundResolutionPhase.GameEnded));
+            Assert.That(ended.Events.Any(ruleEvent =>
+                    ruleEvent.Kind == RoundResolutionEventKind.CardRetrieved), Is.False);
+            Assert.That(fixture.Red.State.Location, Is.EqualTo(CardLocation.TurnArea),
+                "The cards stay where the game ended, which is the only honest record of where it ended.");
+            Assert.That(fixture.Blue.State.Location, Is.EqualTo(CardLocation.TurnArea));
+            Assert.That(fixture.Authority.TryAdvanceEndOfRound().Accepted, Is.False);
+            Assert.That(fixture.Authority.CompletedRounds, Is.Empty);
         }
 
         [Test]
@@ -499,7 +594,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static OneCardFixture CreateOneCardPerSideFixture(
-            EndOfRoundFixtureCapabilities capabilities = null,
+            EndOfRoundStageAvailability capabilities = null,
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> handlers = null)
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
@@ -522,6 +617,21 @@ namespace GuardsDigital.Tests.EditMode
                 new RoundResolutionComposition(
                     null, null, null, null, null, null, capabilities, handlers));
             return new OneCardFixture(red, blue, authority);
+        }
+
+        /// <summary>
+        /// Advances the end-of-round cursor to the named stage, crossing whatever earlier stages this
+        /// fixture's availability declares not applicable. Milestone 6.13 needs it because the stage
+        /// under test is the one before retrieval rather than the first one.
+        /// </summary>
+        private static void AdvanceToStage(OneCardFixture fixture, EndOfRoundStage stage)
+        {
+            while (fixture.Authority.CurrentEndOfRoundStage != stage)
+            {
+                Assert.That(fixture.Authority.CurrentEndOfRoundStage.HasValue, Is.True,
+                    "The round left end of round before reaching " + stage + ".");
+                Assert.That(fixture.Authority.TryAdvanceEndOfRound().Accepted, Is.True);
+            }
         }
 
         private static void CompleteOneCardRound(OneCardFixture fixture)

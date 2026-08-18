@@ -25,11 +25,20 @@ namespace GuardsDigital.Core.Cards
         GameEnded = 3
     }
 
-    public sealed class EndOfRoundFixtureCapabilities
+    /// <summary>
+    /// Which of rulebook p.8's end-of-round stages a match runs, declared rather than inferred.
+    ///
+    /// Milestone 6.13's naming audit renamed this from `EndOfRoundFixtureCapabilities`: a configured
+    /// production match selects <see cref="ConfiguredMatch"/> through
+    /// <see cref="RoundResolutionComposition.ForMatch"/>, so the type was never fixture-only and the
+    /// qualifier was a claim about reach that had stopped being true. The one factory that is still
+    /// fixture-only keeps its name and states its limit at the declaration.
+    /// </summary>
+    public sealed class EndOfRoundStageAvailability
     {
         private readonly HashSet<EndOfRoundStage> availableStages;
 
-        public EndOfRoundFixtureCapabilities(IEnumerable<EndOfRoundStage> availableStages)
+        public EndOfRoundStageAvailability(IEnumerable<EndOfRoundStage> availableStages)
         {
             if (availableStages == null)
             {
@@ -41,22 +50,29 @@ namespace GuardsDigital.Core.Cards
                 this.availableStages.Any(stage => !Enum.IsDefined(typeof(EndOfRoundStage), stage)))
             {
                 throw new ArgumentException(
-                    "Fixture capabilities may declare only executable end-of-round stages.",
+                    "End-of-round stage availability may declare only executable stages.",
                     nameof(availableStages));
             }
         }
 
-        public static EndOfRoundFixtureCapabilities SyntheticRepeatedRound()
+        /// <summary>
+        /// The board-free fixture shape, and the one declaration whose `Synthetic` qualifier milestone
+        /// 6.13 deliberately kept, because the limitation it names is real and precise: it admits the
+        /// retrieval stage alone. A Minion Battle needs a board, the cleanup needs spaces a token could
+        /// stand on, and a Lane Push needs a Lane, so a synthetic repeated round declares none of them
+        /// and proves retrieval on its own. No configured match reaches this factory.
+        /// </summary>
+        public static EndOfRoundStageAvailability SyntheticRepeatedRound()
         {
-            return new EndOfRoundFixtureCapabilities(new[]
+            return new EndOfRoundStageAvailability(new[]
             {
                 EndOfRoundStage.RetrieveCardsAndCancelActiveEffects
             });
         }
 
-        public static EndOfRoundFixtureCapabilities ConfiguredMatch()
+        public static EndOfRoundStageAvailability ConfiguredMatch()
         {
-            return new EndOfRoundFixtureCapabilities(new[]
+            return new EndOfRoundStageAvailability(new[]
             {
                 EndOfRoundStage.MinionBattle,
 
@@ -193,7 +209,18 @@ namespace GuardsDigital.Core.Cards
         EndOfRoundStageResolution TryResolve(EndOfRoundStageContext context);
     }
 
-    public sealed class SyntheticCardRetrievalHandler : IEndOfRoundStageHandler
+    /// <summary>
+    /// Rulebook p.8's "Retrieve Cards": every card a hero resolved or discarded this round returns to
+    /// that hero's hand, in stable order, with one fact per card that moved.
+    ///
+    /// Milestone 3.8c wrote this behaviour and milestone 6.13 renamed it from
+    /// `SyntheticCardRetrievalHandler` without touching it. The audit's finding was that the qualifier
+    /// described the handler's callers at the time it was written rather than its callers now: a
+    /// configured match composes this handler and no other, and the configured scene has depended on it
+    /// to play repeated rounds since Phase 3. What is general here is the whole of it - the ordering,
+    /// the owner validation, the two eligible shapes, and the one cancellation boundary it reports.
+    /// </summary>
+    public sealed class CardRetrievalHandler : IEndOfRoundStageHandler
     {
         public EndOfRoundStageResolution TryResolve(EndOfRoundStageContext context)
         {
@@ -206,7 +233,7 @@ namespace GuardsDigital.Core.Cards
             foreach (var card in context.Instances.OrderBy(instance => instance.Id.Value, StringComparer.Ordinal))
             {
                 context.Participants.GetHero(card.OwnerId);
-                if (!CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(card))
+                if (!CardLifecycleAuthority.TryRetrieveEligibleCard(card))
                 {
                     continue;
                 }

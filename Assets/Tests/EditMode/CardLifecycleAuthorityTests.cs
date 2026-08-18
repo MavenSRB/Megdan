@@ -93,19 +93,19 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(CardLifecycleAuthority.TryResolveAfterAction(resolved), Is.True);
             Assert.That(CardLifecycleAuthority.TryDiscardDefenseFromHand(discarded), Is.True);
 
-            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(resolved), Is.True);
-            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(discarded), Is.True);
-            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(untouched), Is.False);
-            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(setAside), Is.False);
-            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(item), Is.False);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(resolved), Is.True);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(discarded), Is.True);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(untouched), Is.False);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(setAside), Is.False);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(item), Is.False);
             Assert.That(resolved.State, Is.EqualTo(CardStateFacts.InitialInHand()));
             Assert.That(discarded.State, Is.EqualTo(CardStateFacts.InitialInHand()));
             Assert.That(untouched.State, Is.EqualTo(CardStateFacts.InitialInHand()));
             Assert.That(setAside.State.Location, Is.EqualTo(CardLocation.SetAside));
             Assert.That(item.State.Location, Is.EqualTo(CardLocation.ItemSlot));
-            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(resolved), Is.False);
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(resolved), Is.False);
             Assert.Throws<ArgumentNullException>(() =>
-                CardLifecycleAuthority.TryRetrieveEligibleSyntheticCard(null));
+                CardLifecycleAuthority.TryRetrieveEligibleCard(null));
         }
 
         [Test]
@@ -121,6 +121,40 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(state.HasBeenPlayed, Is.True);
             Assert.That(state.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(state.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceDown));
+        }
+
+        /// <summary>
+        /// Milestone 6.13's eligibility audit, stated as the negative it settles: face orientation is
+        /// orthogonal to both admitted shapes, so it cannot by itself make a card eligible or
+        /// ineligible. A resolved played card is retrieved whichever way it is facing, and a facedown
+        /// card that never resolved is not retrieved for being facedown - it is ineligible for being
+        /// unresolved, which is a different fact about a different field.
+        /// </summary>
+        [Test]
+        public void Retrieval_ReadsTheTwoAdmittedShapesWithoutReadingFaceOrientation()
+        {
+            var definition = new CardDefinitionReference(new CardDefinitionId("retrieval"), "rev-1");
+            var owner = new HeroId("retrieval-owner");
+            var faceDownResolved = new CardInstance(
+                new CardInstanceId("face-down-resolved"),
+                definition,
+                owner,
+                new CardStateFacts(
+                    CardLocation.TurnArea, true, CardResolutionStatus.Resolved, CardFaceOrientation.FaceDown));
+            var faceUpUnresolved = new CardInstance(
+                new CardInstanceId("face-up-unresolved"),
+                definition,
+                owner,
+                new CardStateFacts(
+                    CardLocation.TurnArea, true, CardResolutionStatus.Unresolved, CardFaceOrientation.FaceUp));
+
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(faceDownResolved), Is.True,
+                "The resolved-played shape names location, played and resolution, and nothing else.");
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(faceUpUnresolved), Is.False,
+                "and an unresolved card is refused for being unresolved rather than for its face.");
+            Assert.That(faceDownResolved.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(faceUpUnresolved.State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Unresolved));
         }
 
         [Test]
