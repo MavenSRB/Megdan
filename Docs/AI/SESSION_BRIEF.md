@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.9**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **6.9**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.10**.
 - Next proposed milestone: **6.10**.
 
 Milestone **6.9** completed on 2026-08-18: rulebook p.8's Lane Push can now be requested in the middle of a turn. A Defeat or a successful standalone Remove that takes the last relevant enemy minion out of the Battle Zone emits the request at the action boundary, carrying which of p.8's two sentences caused it, and the turn stops at that checkpoint before a later Initiative action can continue - milestones 6.10 and 6.11 own the transition, so no part of it is exposed. Moving, pushing, swapping, placing, spawning, replacing and a prevented Remove reach neither the question nor the request, held by two conformance rules rather than by sampled cases. Schema moves to v13 and rejects v12. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
