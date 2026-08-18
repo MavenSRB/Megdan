@@ -559,7 +559,7 @@ An end-of-round Lane-Push request remains pending until this cleanup finishes.
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-612-remove-tokens-and-return-markers-at-end-of-round-completion-evidence).
 
-### [ ] 6.13 Close retrieval-time effect lifetimes and pass the Phase 6 gate
+### [~] 6.13 Close retrieval-time effect lifetimes and pass the Phase 6 gate
 
 **Scope correction (2026-08-18, user approved).** Ordinary card retrieval is not missing. Milestone 3.8c's live handler already iterates the configured card instances in stable order, validates every canonical owner, returns resolved played cards and Defense-discarded cards to fresh in-hand state, leaves untouched hand, set-aside and item-slot cards alone, emits one retrieval event per returned card, and applies the `CardsRetrieved` Active-effect checkpoint. The configured scene has depended on that behavior to play repeated rounds since Phase 3. Reimplementing it here would duplicate working authority and make the roadmap less truthful.
 
