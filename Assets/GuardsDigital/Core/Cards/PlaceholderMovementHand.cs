@@ -46,6 +46,13 @@ namespace GuardsDigital.Core.Cards
         /// action does not exist in the rulebook - p.7 lists Skill only among the primary icons, and
         /// names Hold, Fast Travel and Clear as the secondary ones - so adding one would have invented
         /// content to save a card.
+        ///
+        /// Fixture-only again since the configured scene went back to five cards per hero. Milestone
+        /// 6.2d had dealt the Blue one into the scene as its sixth card, purely so a player could put a
+        /// token on the board; Blue Sentinel and Blue Feint now carry those three capabilities between
+        /// them, and Red's copy was dropped rather than rehoused, so no Red profile moved. Both cards
+        /// stay here because the eight-card Skill-fixture hand still deals them, and several fixtures
+        /// exist to reach one operation family through them in isolation.
         /// </summary>
         private static readonly SyntheticSkillProfile RedComponentSkillProfile =
             new SyntheticSkillProfile("red-cache", "Red Cache", 15);
@@ -140,26 +147,6 @@ namespace GuardsDigital.Core.Cards
             return Create(
                 ownerId, BlueProfiles, null, BlueSkillProfile, BlueComponentSkillProfile,
                 BlueDisplacementSkillProfile);
-        }
-
-        /// <summary>
-        /// The five ordinary cards plus milestone 6.2's Cache card alone, for the configured scene.
-        ///
-        /// Milestone 6.2d deals this hand rather than the Skill-fixture one. The scene needed exactly
-        /// one thing it did not have - a way for a player to put a token on the board through ordinary
-        /// commands - and the Cache card already places a Hazard into an adjacent empty space, so this
-        /// invents no content and prints nothing onto a card. The other two fixture Skills are left out
-        /// deliberately: each exists so a fixture can reach one operation family in isolation, and
-        /// dealing them into the scene would widen it well past what 6.2d needs.
-        /// </summary>
-        public static PlaceholderMovementHand CreateRedWithComponentSkill(HeroId ownerId)
-        {
-            return Create(ownerId, RedProfiles, null, componentSkillProfile: RedComponentSkillProfile);
-        }
-
-        public static PlaceholderMovementHand CreateBlueWithComponentSkill(HeroId ownerId)
-        {
-            return Create(ownerId, BlueProfiles, null, componentSkillProfile: BlueComponentSkillProfile);
         }
 
         /// <summary>
@@ -978,12 +965,37 @@ namespace GuardsDigital.Core.Cards
         ///
         /// Board-neutral: it names no hero, no card and no space, and it carries no printed value,
         /// because a Skill has no printed icon channel of its own. None of it is official content.
+        ///
+        /// The last three modes arrived together when the configured scene went back to five cards per
+        /// hero and the Blue Cache card that had carried them stopped being dealt. They keep that
+        /// card's own order - place, give, return - and are appended, so 6.8b's two keep their indices.
+        ///
+        /// Two of the three belong here on their own merits: a marker attaches to a hero, which is what
+        /// the two modes above already do. The placement is here for a harder reason. Its family is
+        /// Blue Sentinel's, whose Swap, Replace and Remove are p.19's operations on that same piece,
+        /// and putting it there is what a reader would expect. Implementation refuted that: p.8 removes
+        /// every placed token at the end of a round, and a card is played at most once in a round, so a
+        /// self-supplying Sentinel could never have a Hazard standing when it came back to hand. Here
+        /// it sits one Initiative above Sentinel on the same team, so one round holds both the play
+        /// that places the token and the play that acts on it - milestone 6.2d's shape without 6.2d's
+        /// sixth card.
+        ///
+        /// Give and Return stay on one card because p.18's return is scoped to the source that gave -
+        /// <c>ReturnMarkerHandler</c> finds an attachment by <c>SourceCardInstanceId</c> - so splitting
+        /// them across two cards would leave the Return with nothing it could ever find. It keeps the
+        /// `if able` policy the Cache card gave it, so a hand that has given no marker yet reads the
+        /// mode greyed rather than spending the action on a stop.
         /// </summary>
         private static ActionDefinition CreateImmunityTimingSkillAction(SyntheticCardProfile profile)
         {
             var root = new EffectNodeId("feint-root");
             var pushImmunity = new EffectNodeId("feint-push-immunity");
             var countsAsMinion = new EffectNodeId("feint-counts-as-minion");
+            var placeBranch = new EffectNodeId("feint-place-branch");
+            var reclaimToken = new EffectNodeId("feint-reclaim-token");
+            var placeToken = new EffectNodeId("feint-place-token");
+            var giveMarker = new EffectNodeId("feint-give-marker");
+            var returnMarker = new EffectNodeId("feint-return-marker");
 
             EffectNodeDefinition Mode(EffectNodeId id, EffectCapabilityReference capability) =>
                 new EffectNodeDefinition(
@@ -999,12 +1011,41 @@ namespace GuardsDigital.Core.Cards
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { pushImmunity, countsAsMinion },
+                        childNodeIds: new[]
+                        {
+                            pushImmunity, countsAsMinion, placeBranch, giveMarker, returnMarker
+                        },
                         chooser: EffectChooserRole.Actor,
                         minimumSelections: 1,
                         maximumSelections: 1),
                     Mode(pushImmunity, SyntheticModificationCapabilities.GrantPushImmunityV1),
-                    Mode(countsAsMinion, SyntheticModificationCapabilities.CountAsMinionV1)
+                    Mode(countsAsMinion, SyntheticModificationCapabilities.CountAsMinionV1),
+                    // The place branch is p.18's order made explicit, exactly as the Cache card had
+                    // it: an `if able` short-supply reclamation, then the placement, as two nodes so
+                    // each carries at most one decision. That is why it is the one branch here with a
+                    // shape of its own; the four beside it are single capabilities.
+                    new EffectNodeDefinition(
+                        placeBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { reclaimToken, placeToken }),
+                    new EffectNodeDefinition(
+                        reclaimToken, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticComponentCapabilities.ReclaimTokenV1,
+                        outputs: new[] { new EffectOutputBinding("reclaimed", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        placeToken, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticComponentCapabilities.PlaceTokenV1,
+                        outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) }),
+                    // Neither marker mode can use `Mode`: the two capabilities publish `holder` and
+                    // `returned` rather than `affected`, and the definition validator checks an
+                    // output by both its name and its kind.
+                    new EffectNodeDefinition(
+                        giveMarker, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticComponentCapabilities.GiveMarkerV1,
+                        outputs: new[] { new EffectOutputBinding("holder", EffectValueKind.Hero) }),
+                    new EffectNodeDefinition(
+                        returnMarker, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticComponentCapabilities.ReturnMarkerV1,
+                        outputs: new[] { new EffectOutputBinding("returned", EffectValueKind.Hero) })
                 });
 
             return new ActionDefinition(
@@ -1248,6 +1289,17 @@ namespace GuardsDigital.Core.Cards
         /// goes, that nothing transfers, and that observers see one replacement are all the capability's
         /// own declaration, and a card that restated them would be stating a rule of its own. None of
         /// it is official content, and the card names no hero, no card and no space.
+        ///
+        /// When the configured scene went back to five cards per hero and the Blue Cache card stopped
+        /// being dealt, its placement deliberately did not come here, though this is the card whose
+        /// family it belongs to - a token is a board object, and these three branches are the
+        /// board-object operations p.19 gives that same piece. Implementation refuted it. Rulebook p.8
+        /// removes every placed token at the end of a round and a card is played at most once in a
+        /// round, so a Hazard this card placed would always be gone before this card returned to hand,
+        /// and the Replace and the Remove would name a piece that could never be standing. The
+        /// placement went to Blue Feint instead, one Initiative above this card, so both are playable
+        /// in the same round and the Hazard is still there when this card is reached - which is the
+        /// shape milestone 6.2d had with the Cache card, kept without the sixth card.
         /// </summary>
         private static ActionDefinition CreateExchangeSkillAction(SyntheticCardProfile profile)
         {
@@ -1552,6 +1604,11 @@ namespace GuardsDigital.Core.Cards
             /// Milestone 6.8b's converted card, on the same terms: identity, Initiative, printed
             /// Secondary Movement and Defense reaction all stay, and it states no Attack values at all,
             /// because its printed Primary Attack is replaced rather than suppressed.
+            ///
+            /// Revision 2 is the two marker modes the retired Blue Cache card handed over. Only this
+            /// profile and Blue Sentinel's advance; the eight others, both Red hands included, stay
+            /// byte-identical, so the digests that move are the two Blue definitions and the instances
+            /// referring to them rather than the whole table.
             /// </summary>
             public static SyntheticCardProfile WithImmunityTimingSkill(
                 string id,
@@ -1561,7 +1618,7 @@ namespace GuardsDigital.Core.Cards
                 int defenseValue) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.ImmunityTimingSkill,
-                    "phase-6-8b-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    "phase-6-8b-rev-2", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
 
             /// <summary>Milestone 6.5a's converted card, on the same terms as the two before it.</summary>
             public static SyntheticCardProfile WithPushPlaceSkill(

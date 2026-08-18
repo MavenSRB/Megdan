@@ -55,6 +55,15 @@ namespace GuardsDigital.Tests.EditMode
 
         private static readonly EffectNodeId ImmunityMode = new EffectNodeId("feint-push-immunity");
         private static readonly EffectNodeId CountsAsMode = new EffectNodeId("feint-counts-as-minion");
+
+        // The three modes the retired Blue Cache card handed over when the configured scene went back
+        // to five cards per hero, in that card's own order. They are appended after 6.8b's own pair, so
+        // every assertion below that names a position still names the same mode it always did.
+        private static readonly EffectNodeId PlaceBranch = new EffectNodeId("feint-place-branch");
+        private static readonly EffectNodeId Reclaim = new EffectNodeId("feint-reclaim-token");
+        private static readonly EffectNodeId PlaceToken = new EffectNodeId("feint-place-token");
+        private static readonly EffectNodeId GiveMarkerMode = new EffectNodeId("feint-give-marker");
+        private static readonly EffectNodeId ReturnMarkerMode = new EffectNodeId("feint-return-marker");
         private static readonly EffectNodeId PushBranch = new EffectNodeId("displacement-object-push");
         private static readonly EffectNodeId NeedlePushBranch = new EffectNodeId("needle-push-branch");
         private static readonly EffectNodeId NeedlePlaceBranch = new EffectNodeId("needle-place-branch");
@@ -77,7 +86,8 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(definition.Id, Is.EqualTo(new CardDefinitionId("placeholder-blue-feint")),
                 "The conversion advances the revision, never the card's identity.");
-            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-8b-rev-1"));
+            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-8b-rev-2"),
+                "Revision 2 is the two marker modes the retired Blue Cache card handed over.");
             Assert.That(definition.ContentAuthority,
                 Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(definition.Initiative.Value, Is.EqualTo(12));
@@ -102,7 +112,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheSkill_DeclaresTwoModesEachNamingOneRegisteredCapability()
+        public void TheSkill_DeclaresFiveModesEachNamingOneRegisteredCapability()
         {
             var effect = FeintEffect();
 
@@ -112,7 +122,13 @@ namespace GuardsDigital.Tests.EditMode
                 "The acting player picks the mode; the resolver never picks for a player.");
             Assert.That(root.MinimumSelections, Is.EqualTo(1));
             Assert.That(root.MaximumSelections, Is.EqualTo(1));
-            Assert.That(root.ChildNodeIds, Is.EqualTo(new[] { ImmunityMode, CountsAsMode }));
+            Assert.That(root.ChildNodeIds,
+                Is.EqualTo(new[]
+                {
+                    ImmunityMode, CountsAsMode, PlaceBranch, GiveMarkerMode, ReturnMarkerMode
+                }),
+                "The Cache card's three are appended in its own order, so 6.8b's own two keep their " +
+                "positions.");
 
             var capabilities = new Dictionary<EffectNodeId, EffectCapabilityReference>
             {
@@ -128,6 +144,45 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(mode.Outputs.Single().OutputName, Is.EqualTo("affected"));
                 Assert.That(mode.Outputs.Single().ValueKind, Is.EqualTo(EffectValueKind.Hero));
             }
+
+            // The place branch is the one mode with a shape of its own: p.18's `if able` short-supply
+            // reclamation, then the placement, as two nodes so each carries at most one decision.
+            var placeBranch = effect.Nodes.Single(node => node.Id.Equals(PlaceBranch));
+            Assert.That(placeBranch.Kind, Is.EqualTo(EffectNodeKind.Sequence));
+            Assert.That(placeBranch.ChildNodeIds, Is.EqualTo(new[] { Reclaim, PlaceToken }));
+
+            var reclaim = effect.Nodes.Single(node => node.Id.Equals(Reclaim));
+            Assert.That(reclaim.Capability, Is.EqualTo(SyntheticComponentCapabilities.ReclaimTokenV1));
+            Assert.That(reclaim.FailurePolicy, Is.EqualTo(EffectFailurePolicy.IfAble),
+                "`if able` is p.18's own word for the short-supply step, and it is the policy that " +
+                "lets a stocked supply skip the step instead of stopping the action.");
+            Assert.That(reclaim.Outputs.Single().OutputName, Is.EqualTo("reclaimed"));
+
+            var placeToken = effect.Nodes.Single(node => node.Id.Equals(PlaceToken));
+            Assert.That(placeToken.Capability, Is.EqualTo(SyntheticComponentCapabilities.PlaceTokenV1));
+            Assert.That(placeToken.FailurePolicy, Is.EqualTo(EffectFailurePolicy.Mandatory));
+            Assert.That(placeToken.Inputs, Is.Empty,
+                "Where a supply Place may go is the capability's declared destination question, so " +
+                "the card names no space and binds no coordinate.");
+            Assert.That(placeToken.Outputs.Single().OutputName, Is.EqualTo("placed"));
+
+            // The marker pair names milestone 6.2's capabilities too, and publishes under their own
+            // names rather than `affected` - which is the reason neither can share the loop above.
+            var give = effect.Nodes.Single(node => node.Id.Equals(GiveMarkerMode));
+            Assert.That(give.Kind, Is.EqualTo(EffectNodeKind.Capability));
+            Assert.That(give.Capability, Is.EqualTo(SyntheticComponentCapabilities.GiveMarkerV1));
+            Assert.That(give.FailurePolicy, Is.EqualTo(EffectFailurePolicy.Mandatory));
+            Assert.That(give.Outputs.Single().OutputName, Is.EqualTo("holder"));
+            Assert.That(give.Outputs.Single().ValueKind, Is.EqualTo(EffectValueKind.Hero));
+
+            var returnMarker = effect.Nodes.Single(node => node.Id.Equals(ReturnMarkerMode));
+            Assert.That(returnMarker.Kind, Is.EqualTo(EffectNodeKind.Capability));
+            Assert.That(returnMarker.Capability,
+                Is.EqualTo(SyntheticComponentCapabilities.ReturnMarkerV1));
+            Assert.That(returnMarker.FailurePolicy, Is.EqualTo(EffectFailurePolicy.IfAble),
+                "A hand that has given no marker yet reads the mode greyed rather than stopping on it.");
+            Assert.That(returnMarker.Outputs.Single().OutputName, Is.EqualTo("returned"));
+            Assert.That(returnMarker.Outputs.Single().ValueKind, Is.EqualTo(EffectValueKind.Hero));
 
             Assert.That(
                 EffectDefinitionValidator.Validate(effect, SyntheticEffectCapabilities.CreateCatalog()),
@@ -185,7 +240,7 @@ namespace GuardsDigital.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         [Test]
-        public void StartingTheSkill_OpensAChooserOwnedSelectionAmongItsTwoModes()
+        public void StartingTheSkill_OpensAChooserOwnedSelectionAmongItsFiveModes()
         {
             var session = StartFeintSkill(out var actorId);
 
@@ -196,8 +251,44 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(choice.ChooserId, Is.EqualTo(actorId));
             Assert.That(
                 choice.Candidates.Select(candidate => candidate.OptionNodeId),
-                Is.EqualTo(new[] { ImmunityMode, CountsAsMode }),
+                Is.EqualTo(new[]
+                {
+                    ImmunityMode, CountsAsMode, PlaceBranch, GiveMarkerMode, ReturnMarkerMode
+                }),
                 "Modes are offered in the definition's own order.");
+        }
+
+        /// <summary>
+        /// The mode that keeps the configured scene able to hold a token at all, now that no sixth card
+        /// is dealt to carry it. It is on this card rather than Blue Sentinel's, whose family it
+        /// belongs to, because p.8 removes every placed token at the end of a round: a Sentinel that
+        /// supplied its own Hazard could never have one standing when it returned to hand.
+        /// </summary>
+        [Test]
+        public void ThePlaceMode_PutsAHazardInAnEmptySpaceBesideTheActingHero()
+        {
+            var session = StartFeintSkill(out _);
+
+            ChooseMode(session, PlaceBranch);
+
+            // The supply is untouched, so p.18's `if able` reclamation skips and the placement is the
+            // next decision.
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null, "The placement is the next decision.");
+            var destination = choice.Candidates[0].Value.Coordinate;
+            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.Value.Coordinate.Equals(destination))));
+            if (session.Projection.PendingEffectChoice?.ConfirmInvocation != null)
+            {
+                Accept(session, DirectorCommand.AnswerEffectChoice(
+                    session.Projection.PendingEffectChoice.ConfirmInvocation));
+            }
+
+            var placed = RestoreBoard(session).PlacedTokens.Single();
+            Assert.That(placed.Coordinate, Is.EqualTo(destination));
+            Assert.That(placed.SourceCardInstanceId.Value, Is.EqualTo("blue-feint-card"),
+                "The card that placed it is the stable source, exactly as it is for this card's " +
+                "other four modes.");
         }
 
         [TestCase("feint-push-immunity", "synthetic-push-immunity-effect")]

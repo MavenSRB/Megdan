@@ -76,10 +76,12 @@ namespace GuardsDigital.Presentation.Interaction
 
             var catalog = OfficialBoardMapCatalog.Load();
             var map = catalog.Load(OfficialBoardMapCatalog.SelectedMap);
-            // Milestone 6.2d: the scene's own hand, which is the ordinary five plus milestone 6.2's
-            // Cache card. Without it the scene could not put a token on the board at all, so 6.3's
-            // Clear and two of 6.6a's three modes were controls with nothing to act on.
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForConfiguredScene();
+            // Five cards per hero, which is the shape every hand in this project has been specified at
+            // since milestone 3.7b. Milestone 6.2d had dealt a sixth here - milestone 6.2's Cache card -
+            // because nothing else could put a token on the board, and without one 6.3's Clear and two
+            // of 6.6a's three modes were controls with nothing to act on. Blue Sentinel and Blue Feint
+            // carry those capabilities now, so the scene keeps them at five.
+            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 configuration.Participants,

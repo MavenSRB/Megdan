@@ -21,10 +21,18 @@ namespace GuardsDigital.Tests.PlayMode
     ///
     /// Three layers were empty before this milestone and closing any one of them alone changed nothing
     /// a player could see, so this fixture crosses all three in one run. The scene could not hold a
-    /// token at all, because the only capability that places one lives on milestone 6.2's Cache card
+    /// token at all, because the only capability that places one lived on milestone 6.2's Cache card
     /// and the scene dealt the ordinary five; the projection carried no token, by 6.2's own decision;
     /// and the whole Presentation assembly named a token nowhere. Here the Blue hero spends a turn on
-    /// the Cache Skill exactly as an ordinary match would, and the board draws what it placed.
+    /// the Skill that places one exactly as an ordinary match would, and the board draws what it
+    /// placed.
+    ///
+    /// That Skill is Blue Feint's since the scene went back to five cards per hero: the Cache card is
+    /// no longer dealt, and Feint carries its three modes. The fixture's shape is unchanged, because
+    /// Feint at Initiative 12 and Sentinel at 11 are two cards of one hand exactly as Cache and
+    /// Sentinel were - which is the whole reason the placement went to Feint rather than to Sentinel,
+    /// whose family it belongs to. p.8 removes every placed token at the end of a round, so a Sentinel
+    /// that supplied its own Hazard would never have one standing when it came back to hand.
     ///
     /// The view is asserted through the configured camera rather than by its local offset, which is
     /// the lesson milestone 6.5c recorded when the hero choice cue shipped invisible: the board is the
@@ -33,20 +41,20 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class PlacedTokenPlayModeTests
     {
-        private static readonly ActionDefinitionId CacheSkill =
-            new ActionDefinitionId("primary-component-skill");
+        private static readonly ActionDefinitionId FeintSkill =
+            new ActionDefinitionId("primary-immunity-skill");
 
         private static readonly EffectNodeId PlaceBranch =
-            new EffectNodeId("component-place-branch");
+            new EffectNodeId("feint-place-branch");
 
         [UnityTest]
         public IEnumerator Scene_DrawsATokenAPlayerPlacedAndTakesItBackOnUndo()
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
-            Assert.That(runtime.Cards, Has.Count.EqualTo(12),
-                "The scene deals milestone 6.2's Cache card beside the ordinary five, which is the " +
-                "only way a player can put a token on this board.");
+            Assert.That(runtime.Cards, Has.Count.EqualTo(10),
+                "Five cards per hero. The capability that puts a token on this board rides on one of " +
+                "them rather than on a sixth card dealt beside them.");
             Assert.That(runtime.BoardView.TokenViews, Is.Empty,
                 "Nothing has been placed, so the board has built no token view at all.");
 
@@ -287,20 +295,20 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Spends the opening round on the Cache Skill and returns the space its Hazard took. Red
-        /// commits its lowest card, so the Blue hero acts second on that round and the placement is the
-        /// last thing to happen in it.
+        /// Spends the opening turn on Blue Feint's place mode and returns the space its Hazard took.
+        /// Red commits its lowest card, and Feint at Initiative 12 outranks it, so the Blue hero acts
+        /// first and the placement is the first thing to happen in the round.
         /// </summary>
         private static HexCoordinate PlaceAHazard(ConfiguredMatchSceneRuntime runtime)
         {
-            CommitTurn(runtime, "blue-cache-card");
-            if (!runtime.SelectedActor.CardInstanceId.Value.StartsWith("blue-cache"))
+            CommitTurn(runtime, "blue-feint-card");
+            if (!runtime.SelectedActor.CardInstanceId.Value.StartsWith("blue-feint"))
             {
                 Assert.That(runtime.SubmitEndTurn(), Is.True,
-                    "The Red actor completes by Hold first; the Cache card sits below its band.");
+                    "Whichever actor holds the turn first completes by Hold.");
             }
 
-            Assert.That(runtime.SubmitAction(CacheSkill), Is.True);
+            Assert.That(runtime.SubmitAction(FeintSkill), Is.True);
             Assert.That(runtime.SubmitEffectChoiceOption(PlaceBranch), Is.True);
             Assert.That(runtime.ConfirmEffectChoice(), Is.True,
                 "A mode keeps the explicit confirm milestone 6.8a gave it; only a value candidate " +

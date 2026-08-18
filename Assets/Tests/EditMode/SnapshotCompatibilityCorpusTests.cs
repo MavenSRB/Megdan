@@ -385,17 +385,43 @@ namespace GuardsDigital.Tests.EditMode
         /// where the placed instance names its own definition, which is the corpus's own proof that a
         /// token's revision reaches the wire twice and its supply count not at all - the payload names
         /// definitions and the catalog supplies what they contain.
+        /// The five-card scene keeps schema v16 and re-pins every fixture for one cause, which is
+        /// content and nothing else: the configured scene stopped being dealt milestone 6.2's Cache
+        /// card as a sixth card per hero, and Blue Feint took all three of its modes - p.18's `if able`
+        /// reclamation and placement, and the give/return marker pair - moving from
+        /// <c>phase-6-8b-rev-1</c> to <c>phase-6-8b-rev-2</c>. Exactly one card definition moves. Red's
+        /// copy of the Cache card was dropped rather than rehoused, so no Red profile moved; Blue
+        /// Sentinel is untouched at <c>phase-6-6a-rev-1</c>, and that is a decision rather than an
+        /// omission - the placement belongs to its family, but p.8 removes every placed token at the
+        /// end of a round and a card is played at most once in a round, so a Sentinel that supplied its
+        /// own Hazard could never have one standing when it returned to hand. Nothing else is a cause:
+        /// no capability was registered or revised - all four were already in the catalog, since the
+        /// Cache card named them - no schema field was added, and the supply is the catalog's rather
+        /// than the card's.
+        /// Measured in a throwaway worktree at pre-change revision <c>8a84b68</c> rather than assumed.
+        /// All eight payloads keep their exact stored length, because the revision string is the same
+        /// sixteen characters before and after. Seven differ in exactly two bytes and
+        /// <c>pending-choice-v16</c> in three, and every one of them is that revision's final
+        /// character: it appears once in the sorted definition table and once where the
+        /// <c>blue-feint-card</c> instance names its definition reference - offsets 114 and 3082 in
+        /// <c>setup-v16</c>, 166 and 3893 in <c>placed-token-v16</c> - while <c>pending-choice-v16</c>
+        /// carries it a third time at 4093, because the Blue hero is its acting hero and its paused
+        /// Movement continuation records the same reference, which is the same third occurrence
+        /// milestone 6.8b measured in that fixture. The decision is reject rather than migrate, by the
+        /// existing content-revision check: a payload naming Blue Feint at <c>phase-6-8b-rev-1</c>
+        /// describes a two-mode Skill that can neither place the Hazard a restored match might have
+        /// standing nor account for a marker it might be holding.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v16", "1c7283c01b3ec1ebc9f76628827b09cc061bd210e17578f8e7e2f59e280e1d0c"),
-            new CompatibilityFixture("active-turn-v16", "c784f82331f1c32238b41e6f14bb32a8bf052974747e740aacb0cabc7815cc09"),
-            new CompatibilityFixture("pending-choice-v16", "a215931445ea2c39d5f836d5b15905f6a8f2e33f8fc8a0f36a6aecb67b77e6a9"),
-            new CompatibilityFixture("end-of-round-v16", "8956b3380d66de446f1f314f66214066202d284a9f49b8c82c0723050d37bb42"),
-            new CompatibilityFixture("pending-minion-battle-v16", "d011e0c1114c5ceb6cc3813bb33545d570c36f9d0f0bc751d127fdd6f1178de2"),
-            new CompatibilityFixture("placed-token-v16", "2a11f9f2bffd912e141b140655c6b86615a93c15b44992cd276dc762f1fa657a"),
-            new CompatibilityFixture("attached-marker-v16", "0822573fad75ffc78f17acbc665fc944b1b2f7b52e7889aa8d38eefef8ff5252"),
-            new CompatibilityFixture("pending-correction-v16", "5cbc35b14b057b5fc5edfa5ab166f72b145c50faafe10441e1ec70ea8373d50e")
+            new CompatibilityFixture("setup-v16", "de8a36dc366fb7e159590f8983264ef1470d15a08d707c8eb3e02673d409b5e2"),
+            new CompatibilityFixture("active-turn-v16", "78390dd3a20dcdb5e727477504b4e7d561a9df6c0c7808d3144f1742cf8d7b0e"),
+            new CompatibilityFixture("pending-choice-v16", "770c116b1bd8918ba53cf948464b683d6be55b9a90e5646ad3a0e600acc8eb58"),
+            new CompatibilityFixture("end-of-round-v16", "11318e3bc91e8d2b1587327a7e71d9ba47d7d5a7c50c48c925f8baa31262fca7"),
+            new CompatibilityFixture("pending-minion-battle-v16", "41ce7ce204fce66d2b4b0ebfc341aa3fb64e1c1ceaaad1ecafe586c17f75584d"),
+            new CompatibilityFixture("placed-token-v16", "08cce8e610e9ae8cd937ad3e58020900447126d6b632bc4ad094171f9355fc99"),
+            new CompatibilityFixture("attached-marker-v16", "e0c5361de996356e78f98f9d131d977f4ca28e0181fa727f99d8b7b668ad4235"),
+            new CompatibilityFixture("pending-correction-v16", "6c7466ceb7c8bfbf80f1a1cf04ead5561178d7e16b73c4595f000a24c219d9ae")
         };
 
         [Test]

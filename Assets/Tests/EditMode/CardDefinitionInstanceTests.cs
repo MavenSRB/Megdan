@@ -107,7 +107,11 @@ namespace GuardsDigital.Tests.EditMode
                 blueHand.Definitions.Select(definition => definition.ContentRevision),
                 Is.EqualTo(new[]
                 {
-                    "phase-6-8b-rev-1",
+                    // Blue Feint took all three of the retired Blue Cache card's modes when the
+                    // configured scene went back to five cards per hero. Red dropped its copy rather
+                    // than rehousing it, and Blue Sentinel is untouched because p.8 clears the board of
+                    // tokens each round, so a card cannot supply the Hazard its own later play takes.
+                    "phase-6-8b-rev-2",
                     "phase-6-6a-rev-1",
                     "phase-5-1a-rev-3",
                     "phase-5-1a-rev-3",

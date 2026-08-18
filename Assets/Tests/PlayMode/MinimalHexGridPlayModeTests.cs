@@ -198,10 +198,13 @@ namespace GuardsDigital.Tests.PlayMode
 
             for (var approachTurn = 0; approachTurn < 3; approachTurn++)
             {
-                // Milestone 6.2d: the approach card is named by the printed action it has to perform
-                // rather than by being the top of the band. The scene now deals milestone 6.2's Cache
-                // card, whose only printed action is a Skill, and it sits above every ordinary Red
-                // card - so "Red's highest" would pick a card with no Movement to approach with.
+                // The approach card is named by the printed action it has to perform rather than by
+                // being the top of the band. Milestone 6.2d needed that, because the scene was dealt
+                // milestone 6.2's Cache card as a sixth - its only printed action a Skill, and its
+                // Initiative above every ordinary Red card - so "Red's highest" picked a card with no
+                // Movement to approach with. The five-card scene deals no such card any more, and the
+                // filter stays because naming the action a fixture needs is the right way round: it
+                // survives whatever a later conversion does to the top of the band.
                 var red = Hand(runtime, TeamSide.Red).Cards
                     .Where(card => !card.Id.Equals(attackCard.Id) &&
                         runtime.Definitions.Single(definition =>

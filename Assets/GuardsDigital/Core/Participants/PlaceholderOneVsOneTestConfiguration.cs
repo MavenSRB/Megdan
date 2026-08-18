@@ -55,30 +55,22 @@ namespace GuardsDigital.Core.Participants
 
         public IReadOnlyList<CardInstance> CardInstances { get; }
 
+        /// <summary>
+        /// The ordinary five cards per hero, and what the configured scene deals.
+        ///
+        /// It had a named sibling of its own between milestones 6.2d and the five-card scene, because
+        /// the scene was dealt a sixth card - milestone 6.2's Cache - so a player could put a token on
+        /// the board at all. That sibling is gone rather than renamed: Blue Feint absorbed the Cache
+        /// card's three modes, so the scene's hand and the hand every pinned digest, corpus fixture and
+        /// card-matrix assertion measures are the same five again, and there is nothing left for a
+        /// second factory to say.
+        /// </summary>
         public static PlaceholderOneVsOneTestConfiguration Create()
         {
             return Create(
                 TieBreakerSetupAuthority.CreateNormalSetupState(),
                 PlaceholderMovementHand.CreateRed,
                 PlaceholderMovementHand.CreateBlue);
-        }
-
-        /// <summary>
-        /// The configured scene's hand: the ordinary five plus milestone 6.2's Cache card.
-        ///
-        /// Milestone 6.2d added it, and kept it separate from <see cref="Create"/> for the reason
-        /// <see cref="CreateForSkillFixture"/> is separate: the default configuration is what every
-        /// pinned digest, corpus fixture and card-matrix assertion measures, and a scene that can hold
-        /// a token must not move any of them. What the extra card buys is the first layer of 6.2d's
-        /// problem - the scene had no way to put a token on the board at all, so milestone 6.3's Clear
-        /// and two of milestone 6.6a's three modes were controls whose result could never be seen.
-        /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForConfiguredScene()
-        {
-            return Create(
-                TieBreakerSetupAuthority.CreateNormalSetupState(),
-                PlaceholderMovementHand.CreateRedWithComponentSkill,
-                PlaceholderMovementHand.CreateBlueWithComponentSkill);
         }
 
         public static PlaceholderOneVsOneTestConfiguration CreateForInternalTest(
@@ -160,7 +152,9 @@ namespace GuardsDigital.Core.Participants
         /// <summary>
         /// Each named configuration says which hand it deals rather than setting a flag another one
         /// reads. Milestone 6.2d needed a third combination and a second boolean would have made the
-        /// four callers here describe themselves by what they are not.
+        /// callers here describe themselves by what they are not. The five-card scene removed that
+        /// combination again, and the shape stayed, because it is what lets the three fixture hands
+        /// differ from the ordinary one without any of them naming a flag.
         /// </summary>
         private static PlaceholderOneVsOneTestConfiguration Create(
             TieBreakerState tieBreakerState,
