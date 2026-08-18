@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.10**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.10**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.10a**.
 - Next proposed milestone: **6.10a**.
 
 Milestone **6.10** completed on 2026-08-18: rulebook p.8's Battle Zone is now authoritative map-scoped state rather than a reading of the map's starting-Battle-Zone flag, and the ordered Lane-Push prefix that moves it exists behind a seam no live match can reach. The Minion Battle, the p.13 Heavy-immunity accompaniment, p.18's displaced-minion correction and p.8's own Lane-Push cause all read that zone, held there by a conformance rule permitting only setup and the board's construction to read the flag at all. The prefix flips one of the shared Wave counters and stops the transition on the final one, otherwise advances the zone one verified step along the ordered Lane towards the losing team's Throne and stops on its capture, and reports the page's third step unimplemented rather than skipping it; both Lane-Push requests still refuse at their own checkpoints. Schema moves to v14 and rejects v13. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).

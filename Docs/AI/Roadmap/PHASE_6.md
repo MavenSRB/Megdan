@@ -623,7 +623,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-610-resolve-lane-push-wave-and-battle-zone-stages-completion-evidence).
 
-### [ ] 6.10a Establish the reusable system-transition continuation contract
+### [~] 6.10a Establish the reusable system-transition continuation contract
 
 Observable outcome: A multi-step authoritative system transition pauses on a typed, serializable, authority-owned intra-stage continuation and resumes exactly where it stopped, proven on a bounded synthetic transition before milestone 6.11's respawn consumes the same contract.
 
