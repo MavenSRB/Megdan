@@ -118,6 +118,12 @@ namespace GuardsDigital.Core.Cards
             // Wave counters to spend; the two consumption checkpoints say so rather than substituting a
             // push nothing could win.
             lanePush = compositionLanePush;
+
+            // Milestone 7.1. p.15's "Your hero starts the game at level 1" applied to every hero the
+            // match has, at the moment the round authority knows who they are. Restore replaces it
+            // below rather than mutating it, so a restored match never passes through Level 1 on its
+            // way to the Levels it recorded.
+            HeroProgression = new GuardsDigital.Core.Rules.Progression.HeroProgressionState(participants);
             this.endOfRoundStageAvailability = endOfRoundStageAvailability ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -189,6 +195,13 @@ namespace GuardsDigital.Core.Cards
         internal CardActionResolutionAuthority CardActions => cardActions;
 
         public ActiveEffectLifecycle Timing => timing;
+
+        /// <summary>
+        /// Milestone 7.1's per-hero Level, held here because p.15 changes a Level at the end of a
+        /// round, which is this authority's boundary, and because it is round-scoped state the round's
+        /// restore state already carries the rest of.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Progression.HeroProgressionState HeroProgression { get; private set; }
 
         /// <summary>Milestone 6.2's marker attachments, held beside <see cref="Timing"/>.</summary>
         public MarkerAttachmentRegister Markers => markers;
@@ -407,7 +420,8 @@ namespace GuardsDigital.Core.Cards
                     PendingMinionBattleChoice,
                     PendingLanePushRequest),
                 new RoundCardActionsRestoreState(CardActions != null, rewards),
-                systemTransitions.CaptureRestoreState());
+                systemTransitions.CaptureRestoreState(),
+                HeroProgression.CaptureRestoreState());
         }
 
         internal static RoundResolutionAuthority Restore(
@@ -445,6 +459,8 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Restored round cursor is invalid.");
             }
 
+            authority.HeroProgression = GuardsDigital.Core.Rules.Progression.HeroProgressionState.Restore(
+                participants, state.HeroProgression);
             authority.RoundIndex = roundIndex;
             authority.TurnIndex = turnIndex;
             authority.Phase = phase;

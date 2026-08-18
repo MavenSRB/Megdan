@@ -172,6 +172,7 @@ namespace GuardsDigital.Tests.EditMode
                 "TEST - Range One Attack",
                 new InitiativeValue(5),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(

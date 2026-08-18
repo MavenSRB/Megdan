@@ -694,6 +694,7 @@ namespace GuardsDigital.Tests.EditMode
                 "TEST - Immediate Lane Push Remove",
                 new InitiativeValue(30),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(

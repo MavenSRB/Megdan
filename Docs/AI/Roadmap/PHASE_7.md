@@ -14,7 +14,7 @@ Every Phase 7 milestone, including milestones 7.1-7.7, that adds authoritative s
 - projection reconstruction from restored and replayed authority rather than serialized or presentation-owned projection state; and
 - explicit compatibility handling in that milestone: every incompatible snapshot schema, stable identity, or content-revision change receives a typed migrate-or-reject decision and corresponding compatibility-corpus update, while a compatible change proves the maintained corpus still restores and round-trips with unchanged meaning.
 
-### [~] 7.1 Add synthetic card colors, tiers, and upgrade relationships
+### [x] 7.1 Add synthetic card colors, tiers, and upgrade relationships
 
 Observable outcome: Synthetic cards expose authoritative typed `CardColor` and Tier data for rules queries, while synthetic non-Basic cards model Tier I-III same-color upgrade choices without mutating definitions or using Wasp data.
 
@@ -31,6 +31,8 @@ Acceptance checks:
 - Focused tests cover same-color upgrade candidates, color-filtered legal-card candidates, team/color separation, state and ownership filtering, information suppression, and deterministic empty-candidate behavior.
 
 Non-goals: No coin spending, level purchase, item bonus, Ultimate, Wasp definition, verified hero-specific color effect, or production card-color presentation.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-71-add-synthetic-card-colors-tiers-and-upgrade-relationships-completion-evidence).
 
 ### [ ] 7.2 Add generic item state and printed-icon bonuses
 

@@ -29,7 +29,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 var discarded = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
                 var discardedCard = discarded.BlueHand.Instances[index];
-                Assert.That(CardLifecycleAuthority.TryDiscardDefenseFromHand(discardedCard), Is.True);
+                Assert.That(CardLifecycleAuthority.TryDiscardFromHand(discardedCard), Is.True);
                 var rejected = CreateAuthority(discarded)
                     .TryCommitCard(discardedCard.OwnerId, discardedCard.Id);
                 AssertRejected(rejected, TurnCardCommitmentRejectionReason.CardNotEligible);
@@ -117,7 +117,7 @@ namespace GuardsDigital.Tests.EditMode
 
             foreach (var card in configuration.RedHand.Instances)
             {
-                Assert.That(CardLifecycleAuthority.TryDiscardDefenseFromHand(card), Is.True);
+                Assert.That(CardLifecycleAuthority.TryDiscardFromHand(card), Is.True);
             }
 
             Assert.That(authority.CanPass(redHeroId), Is.True);

@@ -313,6 +313,7 @@ namespace GuardsDigital.Tests.EditMode
                 "TEST - Counts As Consumer",
                 new InitiativeValue(30),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(

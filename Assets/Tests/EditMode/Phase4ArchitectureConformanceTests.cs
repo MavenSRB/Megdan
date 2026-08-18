@@ -470,7 +470,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(ILConformanceScanner.Methods(
                     typeof(FastTravelActionQuery), nameof(FastTravelActionQuery.EvaluateDestination)))
                 .Concat(ILConformanceScanner.Methods(
-                    typeof(CardLifecycleAuthority), nameof(CardLifecycleAuthority.TryDiscardDefenseFromHand)));
+                    typeof(CardLifecycleAuthority), nameof(CardLifecycleAuthority.TryDiscardFromHand)));
 
         /// <summary>
         /// Type-level rule: neither the compiled body nor any declared signature may mention one of the

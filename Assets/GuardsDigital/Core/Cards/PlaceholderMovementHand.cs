@@ -9,23 +9,81 @@ namespace GuardsDigital.Core.Cards
 {
     public sealed class PlaceholderMovementHand
     {
+        /// <summary>
+        /// Milestone 7.1's colour and Tier assignment for the two configured hands, and why each hand
+        /// looks the way it does.
+        ///
+        /// The shape is the rulebook's own starting hand. Page 6 deals "the three Tier I cards and the
+        /// two basic cards with no Tier", page 15 says the hand holds "exactly 5 cards, 1 of each
+        /// color", and each hand below is exactly that: five distinct colours, the Gold and Silver pair
+        /// Basic and the other three Tier I.
+        ///
+        /// The assignment is then chosen so that no derivation could reproduce it, which is what
+        /// acceptance check two asks for. Card colour is not team identity: the Red team holds the
+        /// Red-coloured Red Bombard and the Blue-coloured Red Bulwark, and the Blue team holds the
+        /// Red-coloured Blue Sentinel and the Blue-coloured Blue Feint, so no reading of
+        /// <c>TeamSide</c> produces either column. It is not the display name: every card in a hand
+        /// shares that hand's word, and the five colours in each hand are distinct, so a name-derived
+        /// rule would have to give all five the same answer. It is not the hand slot: the Basic pair
+        /// sits at positions one and three of the Red hand and three and five of the Blue one. And it
+        /// is not the printed action icon, which p.7 ties to colour for official cards - Red Lancer
+        /// prints a Ranged Attack and is Gold, Red Bulwark prints a Skill and is Blue, Blue Hammer
+        /// prints an Attack and is Green. That deliberate mismatch is the point: these are synthetic
+        /// cards whose primary actions the showcase milestones fixed, milestone 7.9 gates that matrix
+        /// unchanged, and nothing in the implementation may read a colour off an icon.
+        ///
+        /// Every one of the ten therefore advances to <c>phase-7-1-rev-1</c>. No printed value, action,
+        /// effect node, binding, capability or Initiative moves; the definitions gain progression
+        /// content and nothing else, and the six converted Skill cards' effect definitions inherit the
+        /// new string only through the revision coupling this file has always had.
+        /// </summary>
         private static readonly SyntheticCardProfile[] RedProfiles =
         {
-            SyntheticCardProfile.WithPushPlaceSkill("red-needle", "Red Needle", 13, 2, 1),
-            SyntheticCardProfile.WithModificationSkill("red-bulwark", "Red Bulwark", 11, 2, 3),
-            new SyntheticCardProfile("red-lancer", "Red Lancer", 9, AttackRangeKind.Ranged, 2, 3, 3, 1),
-            new SyntheticCardProfile("red-pursuit", "Red Pursuit", 7, AttackRangeKind.NonRanged, 4, 0, 3, 2),
-            SyntheticCardProfile.WithDirectMoveSpawnSkill("red-bombard", "Red Bombard", 5, 2, 2)
+            SyntheticCardProfile.WithPushPlaceSkill(
+                "red-needle", "Red Needle", 13, 2, 1, CardProgressionProfile.BasicCard(CardColor.Silver)),
+            SyntheticCardProfile.WithModificationSkill(
+                "red-bulwark", "Red Bulwark", 11, 2, 3, TierOne("red-bulwark", CardColor.Blue)),
+            new SyntheticCardProfile(
+                "red-lancer", "Red Lancer", 9, AttackRangeKind.Ranged, 2, 3, 3, 1,
+                CardProgressionProfile.BasicCard(CardColor.Gold)),
+            new SyntheticCardProfile(
+                "red-pursuit", "Red Pursuit", 7, AttackRangeKind.NonRanged, 4, 0, 3, 2,
+                TierOne("red-pursuit", CardColor.Green)),
+            SyntheticCardProfile.WithDirectMoveSpawnSkill(
+                "red-bombard", "Red Bombard", 5, 2, 2, TierOne("red-bombard", CardColor.Red))
         };
 
         private static readonly SyntheticCardProfile[] BlueProfiles =
         {
-            SyntheticCardProfile.WithImmunityTimingSkill("blue-feint", "Blue Feint", 12, 3, 2),
-            SyntheticCardProfile.WithExchangeSkill("blue-sentinel", "Blue Sentinel", 11, 2, 4),
-            new SyntheticCardProfile("blue-scout-shot", "Blue Scout Shot", 8, AttackRangeKind.Ranged, 2, 2, 4, 1),
-            new SyntheticCardProfile("blue-hammer", "Blue Hammer", 6, AttackRangeKind.NonRanged, 5, 0, 2, 1),
-            SyntheticCardProfile.WithPushRepeatSkill("blue-longbow", "Blue Longbow", 4, 3, 2)
+            SyntheticCardProfile.WithImmunityTimingSkill(
+                "blue-feint", "Blue Feint", 12, 3, 2, TierOne("blue-feint", CardColor.Blue)),
+            SyntheticCardProfile.WithExchangeSkill(
+                "blue-sentinel", "Blue Sentinel", 11, 2, 4, TierOne("blue-sentinel", CardColor.Red)),
+            new SyntheticCardProfile(
+                "blue-scout-shot", "Blue Scout Shot", 8, AttackRangeKind.Ranged, 2, 2, 4, 1,
+                CardProgressionProfile.BasicCard(CardColor.Silver)),
+            new SyntheticCardProfile(
+                "blue-hammer", "Blue Hammer", 6, AttackRangeKind.NonRanged, 5, 0, 2, 1,
+                TierOne("blue-hammer", CardColor.Green)),
+            SyntheticCardProfile.WithPushRepeatSkill(
+                "blue-longbow", "Blue Longbow", 4, 3, 2, CardProgressionProfile.BasicCard(CardColor.Gold))
         };
+
+        /// <summary>
+        /// The Tier I profile for a configured card, naming the two Tier II cards of its own colour
+        /// that <see cref="SyntheticUpgradeTree"/> supplies for it.
+        ///
+        /// The two ids are written here rather than derived from the colour, because that is the
+        /// distinction acceptance check five draws: colour constrains which upgrades are legal, and the
+        /// relationship itself is content the card states. <see cref="CardProgressionValidator"/> then
+        /// checks the stated pair against the colour and Tier rules over the whole set.
+        /// </summary>
+        private static CardProgressionProfile TierOne(string cardId, CardColor color) =>
+            CardProgressionProfile.NonBasicCard(
+                color,
+                CardTier.I,
+                SyntheticUpgradeTree.DefinitionId(cardId, CardTier.II, 'a'),
+                SyntheticUpgradeTree.DefinitionId(cardId, CardTier.II, 'b'));
 
         /// <summary>
         /// Milestone 6.2a's Skill cards. Higher Initiative acts first, so Red's sits above every
@@ -104,11 +162,32 @@ namespace GuardsDigital.Core.Cards
         {
             Definitions = definitions;
             Instances = instances;
+            DealtDefinitions = Array.AsReadOnly(instances
+                .Select(instance => definitions.First(definition =>
+                    definition.Reference.Equals(instance.DefinitionReference)))
+                .ToArray());
         }
 
+        /// <summary>
+        /// Every definition this hand supplies: the cards it deals, and since milestone 7.1 the
+        /// upgrade targets those cards state. Pass this wherever a definition has to be resolvable -
+        /// an offer query, a round authority, a snapshot - because a card can name content it has not
+        /// been dealt.
+        /// </summary>
         public IReadOnlyList<CardDefinition> Definitions { get; }
 
         public IReadOnlyList<CardInstance> Instances { get; }
+
+        /// <summary>
+        /// The definitions this hand actually deals, in the order it deals them, one per entry of
+        /// <see cref="Instances"/>.
+        ///
+        /// This is the set the approved card matrix is about, and it is named separately from
+        /// <see cref="Definitions"/> because milestone 7.1 made the two differ for the first time: a
+        /// hand now supplies the Tier II and Tier III cards its Tier I cards upgrade into, and none of
+        /// them is dealt. A fixture asserting the five-card shape means this one.
+        /// </summary>
+        public IReadOnlyList<CardDefinition> DealtDefinitions { get; }
 
         public static PlaceholderMovementHand Create(HeroId ownerId)
         {
@@ -204,6 +283,14 @@ namespace GuardsDigital.Core.Cards
             foreach (var profile in profiles)
             {
                 AddCard(definitions, instances, CreateDefinition(profile), profile.Id, instancePrefix, ownerId);
+
+                // Milestone 7.1. The cards this one upgrades into are definitions and not instances.
+                // p.15 sends the player to their own deck for them, so they are content this hand
+                // supplies; dealing them as deck cards is milestone 7.5's, which is the first milestone
+                // that moves one, and dealing them here would change the five-card hand every pinned
+                // digest, card-matrix fixture and configured scene measures for no behaviour this
+                // milestone adds.
+                definitions.AddRange(SyntheticUpgradeTree.Definitions(profile));
             }
 
             if (skillProfile != null)
@@ -303,6 +390,11 @@ namespace GuardsDigital.Core.Cards
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
+                // Milestone 7.1: a fixture Skill card states no colour, Tier or classification. The
+                // absence is explicit because the constructor refuses a definition without a
+                // profile, so every colour, Tier and upgrade query excludes these by
+                // classification rather than by a colour that happened to be left unset.
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(
@@ -379,6 +471,11 @@ namespace GuardsDigital.Core.Cards
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
+                // Milestone 7.1: a fixture Skill card states no colour, Tier or classification. The
+                // absence is explicit because the constructor refuses a definition without a
+                // profile, so every colour, Tier and upgrade query excludes these by
+                // classification rather than by a colour that happened to be left unset.
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(
@@ -664,6 +761,11 @@ namespace GuardsDigital.Core.Cards
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
+                // Milestone 7.1: a fixture Skill card states no colour, Tier or classification. The
+                // absence is explicit because the constructor refuses a definition without a
+                // profile, so every colour, Tier and upgrade query excludes these by
+                // classification rather than by a colour that happened to be left unset.
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(
@@ -779,6 +881,11 @@ namespace GuardsDigital.Core.Cards
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
+                // Milestone 7.1: a fixture Skill card states no colour, Tier or classification. The
+                // absence is explicit because the constructor refuses a definition without a
+                // profile, so every colour, Tier and upgrade query excludes these by
+                // classification rather than by a colour that happened to be left unset.
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(
@@ -822,6 +929,7 @@ namespace GuardsDigital.Core.Cards
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
+                profile.Progression,
                 actions);
         }
 
@@ -1544,7 +1652,13 @@ namespace GuardsDigital.Core.Cards
             /// advances past it alone, so the unconverted profiles stay byte-identical and only the
             /// converted card's definition moves a pinned digest.
             /// </summary>
-            private const string PrintedAttackRevision = "phase-5-1a-rev-3";
+            /// <summary>
+            /// Milestone 7.1's revision, and the first one all ten configured cards have shared since
+            /// 5.1a: every one of them gains colour and Tier content in the same milestone, so every
+            /// one of them moves, and there is nothing left for the per-card strings to distinguish.
+            /// It is also what the generated upgrade-target definitions carry, since they are new here.
+            /// </summary>
+            public const string ProgressionRevision = "phase-7-1-rev-1";
 
             public SyntheticCardProfile(
                 string id,
@@ -1554,10 +1668,11 @@ namespace GuardsDigital.Core.Cards
                 int attackValue,
                 int rangeValue,
                 int movementValue,
-                int defenseValue)
+                int defenseValue,
+                CardProgressionProfile progression)
                 : this(
-                    id, displayName, initiative, SyntheticPrintedPrimaryKind.Attack, PrintedAttackRevision,
-                    attackRange, attackValue, rangeValue, movementValue, defenseValue)
+                    id, displayName, initiative, SyntheticPrintedPrimaryKind.Attack, ProgressionRevision,
+                    attackRange, attackValue, rangeValue, movementValue, defenseValue, progression)
             {
             }
 
@@ -1571,7 +1686,8 @@ namespace GuardsDigital.Core.Cards
                 int attackValue,
                 int rangeValue,
                 int movementValue,
-                int defenseValue)
+                int defenseValue,
+                CardProgressionProfile progression)
             {
                 Id = id;
                 DisplayName = displayName;
@@ -1583,6 +1699,7 @@ namespace GuardsDigital.Core.Cards
                 RangeValue = rangeValue;
                 MovementValue = movementValue;
                 DefenseValue = defenseValue;
+                Progression = progression;
             }
 
             /// <summary>
@@ -1595,10 +1712,12 @@ namespace GuardsDigital.Core.Cards
                 string displayName,
                 int initiative,
                 int movementValue,
-                int defenseValue) =>
+                int defenseValue,
+                CardProgressionProfile progression) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.ModificationSkill,
-                    "phase-6-8a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    ProgressionRevision, AttackRangeKind.None, 0, 0, movementValue, defenseValue,
+                    progression);
 
             /// <summary>
             /// Milestone 6.8b's converted card, on the same terms: identity, Initiative, printed
@@ -1615,10 +1734,12 @@ namespace GuardsDigital.Core.Cards
                 string displayName,
                 int initiative,
                 int movementValue,
-                int defenseValue) =>
+                int defenseValue,
+                CardProgressionProfile progression) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.ImmunityTimingSkill,
-                    "phase-6-8b-rev-2", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    ProgressionRevision, AttackRangeKind.None, 0, 0, movementValue, defenseValue,
+                    progression);
 
             /// <summary>Milestone 6.5a's converted card, on the same terms as the two before it.</summary>
             public static SyntheticCardProfile WithPushPlaceSkill(
@@ -1626,10 +1747,12 @@ namespace GuardsDigital.Core.Cards
                 string displayName,
                 int initiative,
                 int movementValue,
-                int defenseValue) =>
+                int defenseValue,
+                CardProgressionProfile progression) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.PushPlaceSkill,
-                    "phase-6-4c-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    ProgressionRevision, AttackRangeKind.None, 0, 0, movementValue, defenseValue,
+                    progression);
 
             /// <summary>Milestone 6.5b's converted card, on the same terms as the three before it.</summary>
             public static SyntheticCardProfile WithDirectMoveSpawnSkill(
@@ -1637,10 +1760,12 @@ namespace GuardsDigital.Core.Cards
                 string displayName,
                 int initiative,
                 int movementValue,
-                int defenseValue) =>
+                int defenseValue,
+                CardProgressionProfile progression) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.DirectMoveSpawnSkill,
-                    "phase-6-8l-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    ProgressionRevision, AttackRangeKind.None, 0, 0, movementValue, defenseValue,
+                    progression);
 
             /// <summary>
             /// Milestone 6.6a's converted card, on the same terms as the four before it. It is the
@@ -1653,10 +1778,12 @@ namespace GuardsDigital.Core.Cards
                 string displayName,
                 int initiative,
                 int movementValue,
-                int defenseValue) =>
+                int defenseValue,
+                CardProgressionProfile progression) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.ExchangeSkill,
-                    "phase-6-6a-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    ProgressionRevision, AttackRangeKind.None, 0, 0, movementValue, defenseValue,
+                    progression);
 
             /// <summary>
             /// Milestone 6.7a's converted card, the last of the showcase six and on the same terms as
@@ -1672,10 +1799,12 @@ namespace GuardsDigital.Core.Cards
                 string displayName,
                 int initiative,
                 int movementValue,
-                int defenseValue) =>
+                int defenseValue,
+                CardProgressionProfile progression) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.PushRepeatSkill,
-                    "phase-6-4c-rev-1", AttackRangeKind.None, 0, 0, movementValue, defenseValue);
+                    ProgressionRevision, AttackRangeKind.None, 0, 0, movementValue, defenseValue,
+                    progression);
 
             public string Id { get; }
             public string DisplayName { get; }
@@ -1687,6 +1816,104 @@ namespace GuardsDigital.Core.Cards
             public int RangeValue { get; }
             public int MovementValue { get; }
             public int DefenseValue { get; }
+
+            /// <summary>Milestone 7.1's printed colour, Tier, classification and upgrade candidates.</summary>
+            public CardProgressionProfile Progression { get; }
+        }
+
+        /// <summary>
+        /// Milestone 7.1's synthetic upgrade content: the four definitions a configured Tier I card can
+        /// eventually become, generated from that card rather than written out four times.
+        ///
+        /// The shape is p.15's. Each Tier I card names two Tier II cards of its own colour; both of
+        /// those name the same two Tier III cards, because the page sends the player back to the same
+        /// deck with the same instruction ("two Action cards in your deck that have the same color as
+        /// the chosen card but are one Tier higher") and the other Tier II card has already been set
+        /// aside as an item by then. A Tier III card names none: the only card above it is the
+        /// Ultimate, which p.16 unlocks instead of upgrading into, and which milestone 7.3 owns. Three
+        /// colours of five cards each plus the Basic pair is seventeen definitions per hand, which is
+        /// p.6's eighteen-card deck less the Ultimate this milestone does not add.
+        ///
+        /// What they print is deliberately minimal and deliberately says so: one printed Primary
+        /// Movement carrying the source card's Movement value, and the source card's Defense reaction.
+        /// They are not conversions of the card they upgrade from, they invent no power curve - copying
+        /// the source values rather than raising them is what keeps this from rebalancing anything -
+        /// and no Skill effect is duplicated into them. Milestone 7.5 is the first that moves one into a
+        /// hand, and it is the milestone that will have a reason to print anything more.
+        ///
+        /// The Movement Primary is also evidence rather than convenience. p.7 ties an official card's
+        /// primary icon to its colour; these print Movement whatever their colour, so a Red or Blue
+        /// upgrade card prints the green icon, and no query in this build can be reading colour off an
+        /// action kind.
+        /// </summary>
+        private static class SyntheticUpgradeTree
+        {
+            /// <summary>
+            /// The stable id of one generated upgrade target. Public shape rather than a private
+            /// convention because the Tier I profiles name their candidates through it, so the id a
+            /// card states and the id a definition is built with cannot drift apart.
+            /// </summary>
+            public static CardDefinitionId DefinitionId(string cardId, CardTier tier, char branch) =>
+                new CardDefinitionId($"placeholder-{cardId}-t{(int)tier}{branch}");
+
+            public static IEnumerable<CardDefinition> Definitions(SyntheticCardProfile profile)
+            {
+                var progression = profile.Progression;
+                if (!progression.IsNonBasic || progression.Tier != CardTier.I)
+                {
+                    return Enumerable.Empty<CardDefinition>();
+                }
+
+                var tierThree = new[]
+                {
+                    DefinitionId(profile.Id, CardTier.III, 'a'),
+                    DefinitionId(profile.Id, CardTier.III, 'b')
+                };
+
+                return new[]
+                {
+                    Create(profile, CardTier.II, 'a', tierThree),
+                    Create(profile, CardTier.II, 'b', tierThree),
+                    Create(profile, CardTier.III, 'a', Array.Empty<CardDefinitionId>()),
+                    Create(profile, CardTier.III, 'b', Array.Empty<CardDefinitionId>())
+                };
+            }
+
+            private static CardDefinition Create(
+                SyntheticCardProfile profile,
+                CardTier tier,
+                char branch,
+                IReadOnlyList<CardDefinitionId> nextTierCandidateIds)
+            {
+                var numeral = tier == CardTier.II ? "II" : "III";
+                return new CardDefinition(
+                    DefinitionId(profile.Id, tier, branch),
+                    SyntheticCardProfile.ProgressionRevision,
+                    $"TEST - {profile.DisplayName} {numeral}-{char.ToUpperInvariant(branch)}",
+                    new InitiativeValue(profile.Initiative),
+                    CardContentAuthority.SyntheticTestFixture,
+                    CardProgressionProfile.NonBasicCard(
+                        profile.Progression.Color, tier, nextTierCandidateIds),
+                    new[]
+                    {
+                        CreatePrimaryMovementAction(profile.MovementValue),
+                        CreateDefenseAction(profile.DefenseValue)
+                    });
+            }
+
+            /// <summary>
+            /// A printed Primary Movement, which p.7 lists among the five primary icons. It differs
+            /// from <see cref="CreateMovementAction"/> only in origin, and that difference is the whole
+            /// content of these cards: card text applies when performing a Primary action, so the
+            /// policy says Applies where the printed Secondary one says Suppressed.
+            /// </summary>
+            private static ActionDefinition CreatePrimaryMovementAction(int value) =>
+                new ActionDefinition(
+                    new ActionDefinitionId("primary-movement"),
+                    ActionKind.Movement,
+                    ActionDefinitionOrigin.PrintedPrimary,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, value) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true));
         }
     }
 }

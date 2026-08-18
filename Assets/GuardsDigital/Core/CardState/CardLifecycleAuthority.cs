@@ -70,7 +70,26 @@ namespace GuardsDigital.Core.Cards
             return true;
         }
 
-        public static bool TryDiscardDefenseFromHand(CardInstance card)
+        /// <summary>
+        /// The card-system contract's <c>DiscardCard</c>: move one named in-hand card to the discard
+        /// pile without playing it.
+        ///
+        /// It decides one thing and states what it refuses to decide. The only question it asks is
+        /// whether this card is in the lifecycle shape a discard from hand starts in - in hand,
+        /// unplayed, with no resolution status. It does not ask whose card it is, what colour it is,
+        /// whether the card is a Defense, or who chose it, because those belong to whatever effect or
+        /// reaction reached this point: milestone 7.1's acceptance check puts it exactly that way, and
+        /// a mutation that re-derived eligibility would give a colour-restricted discard two different
+        /// candidate sets - the query's and its own - that nothing keeps in agreement.
+        ///
+        /// Milestone 7.1 renamed this from <c>TryDiscardDefenseFromHand</c> and changed nothing else.
+        /// Its behaviour was never Defense-specific; the Defense reaction is one caller that has
+        /// already decided the card is a legal Defense before it arrives here, and a colour-restricted
+        /// discard is another that has already decided the colour. A second, general discard beside a
+        /// Defense-named one would have been two names for one transition, which is the shape milestone
+        /// 6.13's audit removed from retrieval.
+        /// </summary>
+        public static bool TryDiscardFromHand(CardInstance card)
         {
             if (card == null)
             {
@@ -86,6 +105,62 @@ namespace GuardsDigital.Core.Cards
 
             return card.TryApplyLocationTransition(
                 new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
+        }
+
+        /// <summary>
+        /// p.15's "Return this card to your deck", the first of the three transitions an upgrade moves
+        /// cards through.
+        ///
+        /// Milestone 7.1 supplies the transitions and not the purchase: nothing here spends a coin,
+        /// checks a Level, picks which card is returned, or orders anything, all of which are milestone
+        /// 7.5's. What it does prove is that the instance survives the move - the same instance keeps
+        /// its owner and its definition reference, because only <see cref="CardInstance.State"/> moves
+        /// and the identity fields are immutable - which is what acceptance check six is about.
+        /// </summary>
+        public static bool TryReturnToDeck(CardInstance card) =>
+            TryMove(card, CardLocation.Hand, CardLocation.Deck, CardFaceOrientation.FaceUp);
+
+        /// <summary>
+        /// p.15's "Take one of those cards into your hand". The card is one the player found in their
+        /// own deck, so it arrives in the ordinary in-hand shape a turn can commit.
+        /// </summary>
+        public static bool TryTakeFromDeckIntoHand(CardInstance card) =>
+            TryMove(card, CardLocation.Deck, CardLocation.Hand, CardFaceOrientation.FaceUp);
+
+        /// <summary>
+        /// p.15's "set the other one aside, Facedown, next to your hero dashboard - you will need it
+        /// later". Facedown is the page's own word and is kept, so the card's colour and Tier stop
+        /// being rules-facing information while it waits; p.16 turns it Faceup when it becomes an item,
+        /// which is milestone 7.2's transition rather than this one.
+        /// </summary>
+        public static bool TrySetAsideFromDeck(CardInstance card) =>
+            TryMove(card, CardLocation.Deck, CardLocation.SetAside, CardFaceOrientation.FaceDown);
+
+        /// <summary>
+        /// One unplayed card moving between two resting places. Every caller above is a rulebook
+        /// sentence; this is the single shape all three share, so none of them can accidentally admit a
+        /// played or resolved card.
+        /// </summary>
+        private static bool TryMove(
+            CardInstance card,
+            CardLocation from,
+            CardLocation to,
+            CardFaceOrientation faceOrientation)
+        {
+            if (card == null)
+            {
+                throw new ArgumentNullException(nameof(card));
+            }
+
+            if (card.State.Location != from ||
+                card.State.HasBeenPlayed ||
+                card.State.ResolutionStatus != CardResolutionStatus.None)
+            {
+                return false;
+            }
+
+            card.ApplyState(new CardStateFacts(to, false, CardResolutionStatus.None, faceOrientation));
+            return true;
         }
 
         /// <summary>

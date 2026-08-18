@@ -1012,6 +1012,7 @@ namespace GuardsDigital.Tests.EditMode
                 $"TEST - {id}",
                 new InitiativeValue(initiative),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(
@@ -1030,7 +1031,8 @@ namespace GuardsDigital.Tests.EditMode
                 "turn-test-rev-1",
                 $"TEST - {id}",
                 new InitiativeValue(initiative),
-                CardContentAuthority.SyntheticTestFixture);
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated);
         }
 
         private static CardInstance CreateRevealedCard(

@@ -560,6 +560,7 @@ namespace GuardsDigital.Tests.EditMode
                 "TEST - Lane Push Transition Remove",
                 new InitiativeValue(30),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(

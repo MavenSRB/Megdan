@@ -146,6 +146,7 @@ namespace GuardsDigital.Tests.EditMode
                 "TEST - Primary Movement Source",
                 new InitiativeValue(10),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[] { primaryMovement });
             var card = CardInstance.CreateInHand(
                 new CardInstanceId("fast-travel-primary-card"),

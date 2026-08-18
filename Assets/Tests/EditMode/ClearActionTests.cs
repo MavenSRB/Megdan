@@ -214,6 +214,7 @@ namespace GuardsDigital.Tests.EditMode
                     "TEST - Clear Source",
                     new InitiativeValue(10),
                     CardContentAuthority.SyntheticTestFixture,
+                    CardProgressionProfile.NotStated,
                     new[] { AttackAction, MovementAction });
                 Card = CardInstance.CreateInHand(
                     new CardInstanceId("clear-source-card"), definition.Reference, ActorId);

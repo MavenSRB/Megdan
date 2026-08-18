@@ -155,13 +155,15 @@ namespace GuardsDigital.Core.Cards
             RoundHistoryRestoreState history,
             EndOfRoundRestoreState endOfRound,
             RoundCardActionsRestoreState cardActions,
-            GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions)
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions,
+            GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression)
         {
             Cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
             History = history ?? throw new ArgumentNullException(nameof(history));
             EndOfRound = endOfRound ?? throw new ArgumentNullException(nameof(endOfRound));
             CardActions = cardActions ?? throw new ArgumentNullException(nameof(cardActions));
             SystemTransitions = systemTransitions ?? throw new ArgumentNullException(nameof(systemTransitions));
+            HeroProgression = heroProgression ?? throw new ArgumentNullException(nameof(heroProgression));
         }
 
         public RoundCursorRestoreState Cursor { get; }
@@ -172,18 +174,28 @@ namespace GuardsDigital.Core.Cards
         /// <summary>Milestone 6.10a's paused system transition, or the absence of one.</summary>
         public GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState SystemTransitions { get; }
 
+        /// <summary>
+        /// Milestone 7.1's per-hero Level. Required rather than optional and with no absent form,
+        /// because every match has heroes and every hero has a Level from p.15's first sentence: an
+        /// optional field here would have let a caller restore a round whose heroes had no Level, which
+        /// is the shape finding <c>F613-07</c> was about for the two pending end-of-round fields.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState HeroProgression { get; }
+
         public void Deconstruct(
             out RoundCursorRestoreState cursor,
             out RoundHistoryRestoreState history,
             out EndOfRoundRestoreState endOfRound,
             out RoundCardActionsRestoreState cardActions,
-            out GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions)
+            out GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions,
+            out GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression)
         {
             cursor = Cursor;
             history = History;
             endOfRound = EndOfRound;
             cardActions = CardActions;
             systemTransitions = SystemTransitions;
+            heroProgression = HeroProgression;
         }
     }
 }

@@ -980,6 +980,7 @@ namespace GuardsDigital.Tests.EditMode
                 "Placeholder Movement Card",
                 new InitiativeValue(5),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 actionDefinitions);
         }
 

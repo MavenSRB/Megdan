@@ -469,6 +469,7 @@ namespace GuardsDigital.Tests.EditMode
                 "TEST - Correction Boundary Skill",
                 new InitiativeValue(30),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(

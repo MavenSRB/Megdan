@@ -58,6 +58,8 @@ A color-restricted choice, condition, count, cost, or effect composes this pure 
 
 Queries must respect context-sensitive information suppression. A color unavailable to the acting rules context because of face orientation or another explicit state cannot satisfy a color predicate merely because presentation or immutable content data can still inspect the underlying definition. Identical authoritative state and query context produce the same ordered candidate set.
 
+Milestone 7.1 implements all three paragraphs above. The query narrows on color, tier, classification, owner, location, played state, and resolution status, treats every omitted predicate as "do not narrow", and orders its answer by instance ID so the result is independent of the order a caller supplied its collections in; an empty result is an ordinary answer. A facedown card satisfies no color, tier, or classification predicate while still answering questions of location and ownership, and revealing restores the reading, so the suppression is about orientation rather than about having been played. It also answers the lowest non-Basic tier over whatever scope its criteria state, because rulebook p.15 asks that question of a hand and milestone 7.4 will ask it of a hero mid-round. `ColorRestrictedDiscard` is the worked example of the composition above, built from this query, the effect frame's own typed pending-choice shape, and the discard mutation; it re-derives the candidate set when the answer arrives rather than trusting the offer. It is not reachable from an effect definition yet, because the effect frame carries definitions but not card instances once a Skill has started, so a paused color choice could not re-derive its candidates; threading instances through the resolver and snapshot restore is work the first verified color effect owes.
+
 Reusable card-state transitions include:
 
 - `PlayCard`, `RevealCard`, `ResolveCard`, and `ResolveWithoutAction`.
@@ -68,6 +70,8 @@ Reusable card-state transitions include:
 - `UpgradeCard`, `SetAsideAsItem`, and `UnlockUltimate` using immutable definitions and explicit instance transitions.
 
 Card-state effects retain orthogonal location, played, resolution, and orientation facts. Every transition validates owner, source state, and definition revision.
+
+Milestone 7.1 implements the three resting-place moves rulebook p.15's Upgrade a Card step names - return to deck, take from deck into hand, and set aside facedown - as transitions rather than as a purchase: none of them spends a coin, reads a Level, chooses which card moves, or orders anything, all of which are milestone 7.5's. Each admits an unplayed card in one exact source location, and the instance's owner and definition revision are unchanged by construction because only its state facts move. The general in-hand discard is the same milestone's rename of the Defense-specific one; its behavior never was Defense-specific, and the reaction that calls it decides the card is a legal Defense before it arrives.
 
 Milestone 3.5 deliberately uses `ResolveCard` after the performed Hold action. It does not alias Hold to `ResolveWithoutAction`; the latter remains reserved for the separately timed defeat and declined-respawn paths.
 
@@ -125,4 +129,5 @@ See [CORE_MODEL.md](CORE_MODEL.md#contract-implementation-status) for what this 
 
 | Contract | State | Owning milestone |
 | --- | --- | --- |
-| `CardCharacteristicQuery` | Specified, not implemented. Milestone 6.8 implemented the characteristic, immunity, permission, and restriction contracts its acceptance names; card-characteristic predicates are a separate subject with no consumer yet. | Named trigger: the first verified card that selects, counts, or restricts by card characteristic |
+
+No row remains. `CardCharacteristicQuery` held the only one until milestone 7.1 implemented it, which is what this section's own rule asks for: a row is removed when its type is declared, not kept as a record of when it was not.

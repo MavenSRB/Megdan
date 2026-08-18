@@ -163,6 +163,7 @@ namespace GuardsDigital.Tests.EditMode
                 original.DisplayName,
                 original.Initiative,
                 original.ContentAuthority,
+                original.Progression,
                 original.ActionDefinitions);
             var revisionException = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(payload, definitions,
@@ -347,6 +348,7 @@ namespace GuardsDigital.Tests.EditMode
                 "TEST - Input Dependent Skill",
                 new InitiativeValue(14),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(
@@ -369,6 +371,7 @@ namespace GuardsDigital.Tests.EditMode
                 $"TEST - {id}",
                 new InitiativeValue(initiative),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(

@@ -224,9 +224,9 @@ namespace GuardsDigital.Tests.EditMode
             var hand = PlaceholderMovementHand.Create(ownerId);
             var primaryKinds = new List<ActionKind>();
 
-            Assert.That(hand.Definitions, Has.Count.EqualTo(5));
+            Assert.That(hand.DealtDefinitions, Has.Count.EqualTo(5));
             Assert.That(hand.Instances, Has.Count.EqualTo(5));
-            Assert.That(hand.Definitions, Has.All.Matches<CardDefinition>(definition =>
+            Assert.That(hand.DealtDefinitions, Has.All.Matches<CardDefinition>(definition =>
                 definition.DisplayName.StartsWith("TEST - ")));
             Assert.That(hand.Instances.Select(instance => instance.OwnerId), Has.All.EqualTo(ownerId));
 
@@ -563,6 +563,7 @@ namespace GuardsDigital.Tests.EditMode
                 "Another Placeholder Move",
                 new InitiativeValue(5),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[] { CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 3) });
             var instance = CardInstance.CreateInHand(
                 new CardInstanceId("primitive-card-1"),
@@ -602,6 +603,7 @@ namespace GuardsDigital.Tests.EditMode
                 "Placeholder Movement Card",
                 new InitiativeValue(5),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 actionDefinitions);
         }
 

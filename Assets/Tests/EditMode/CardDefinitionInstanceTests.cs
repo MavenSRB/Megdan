@@ -18,7 +18,8 @@ namespace GuardsDigital.Tests.EditMode
                 "rev-1",
                 "Placeholder Move",
                 new InitiativeValue(5),
-                CardContentAuthority.SyntheticTestFixture);
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated);
 
             Assert.That(definition.Id, Is.EqualTo(definitionId));
             Assert.That(definition.ContentRevision, Is.EqualTo("rev-1"));
@@ -37,25 +38,29 @@ namespace GuardsDigital.Tests.EditMode
                 " ",
                 "Name",
                 new InitiativeValue(5),
-                CardContentAuthority.SyntheticTestFixture));
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated));
             Assert.Throws<ArgumentException>(() => new CardDefinition(
                 new CardDefinitionId("card"),
                 "rev-1",
                 " ",
                 new InitiativeValue(5),
-                CardContentAuthority.SyntheticTestFixture));
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated));
             Assert.Throws<ArgumentException>(() => new CardDefinition(
                 new CardDefinitionId("card"),
                 "rev-1",
                 "Name",
                 default,
-                CardContentAuthority.SyntheticTestFixture));
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated));
             Assert.Throws<ArgumentException>(() => new CardDefinition(
                 new CardDefinitionId("card"),
                 "rev-1",
                 "Name",
                 new InitiativeValue(5),
-                CardContentAuthority.None));
+                CardContentAuthority.None,
+                CardProgressionProfile.NotStated));
         }
 
         [Test]
@@ -78,45 +83,31 @@ namespace GuardsDigital.Tests.EditMode
             var redHand = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
             var blueHand = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"));
 
-            Assert.That(redHand.Definitions.Select(definition => definition.Initiative.Value),
+            Assert.That(redHand.DealtDefinitions.Select(definition => definition.Initiative.Value),
                 Is.EqualTo(new[] { 13, 11, 9, 7, 5 }));
-            Assert.That(blueHand.Definitions.Select(definition => definition.Initiative.Value),
+            Assert.That(blueHand.DealtDefinitions.Select(definition => definition.Initiative.Value),
                 Is.EqualTo(new[] { 12, 11, 8, 6, 4 }));
-            Assert.That(redHand.Definitions[1].Initiative, Is.EqualTo(blueHand.Definitions[1].Initiative));
+            Assert.That(
+                redHand.DealtDefinitions[1].Initiative,
+                Is.EqualTo(blueHand.DealtDefinitions[1].Initiative));
             Assert.That(redHand.Definitions, Has.All.Property("ContentAuthority")
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(blueHand.Definitions, Has.All.Property("ContentAuthority")
                 .EqualTo(CardContentAuthority.SyntheticTestFixture));
-            // Each showcase conversion advances exactly one card - 6.8a Red Bulwark, 6.8b Blue Feint,
-            // 6.5b Red Bombard, 6.6a Blue Sentinel - and the six still at the 5.1a revision is what
-            // proves nothing else moved with it. Milestone 6.8l is the first non-conversion to
-            // advance a card revision, and it advances exactly the two whose Skill opens a target
-            // selection: what changed is the declaration those selections carry, not what either
-            // card does.
+            // Each showcase conversion advanced exactly one card - 6.8a Red Bulwark, 6.8b Blue Feint,
+            // 6.5b Red Bombard, 6.6a Blue Sentinel - and the six still at the 5.1a revision was what
+            // proved nothing else moved with it. Milestone 7.1 is the first change that reaches all
+            // ten at once: every configured card gains a colour, a classification and either a Tier or
+            // p.15's explicit absence of one, so every one of them advances and there is nothing left
+            // for the per-card strings to distinguish. The evidence that this is a content addition
+            // rather than a conversion moved to the matrix fixture below, which still pins each card's
+            // printed values, action set and Initiative unchanged.
             Assert.That(
-                redHand.Definitions.Select(definition => definition.ContentRevision),
-                Is.EqualTo(new[]
-                {
-                    "phase-6-4c-rev-1",
-                    "phase-6-8a-rev-1",
-                    "phase-5-1a-rev-3",
-                    "phase-5-1a-rev-3",
-                    "phase-6-8l-rev-1"
-                }));
+                redHand.DealtDefinitions.Select(definition => definition.ContentRevision),
+                Is.EqualTo(Enumerable.Repeat("phase-7-1-rev-1", 5)));
             Assert.That(
-                blueHand.Definitions.Select(definition => definition.ContentRevision),
-                Is.EqualTo(new[]
-                {
-                    // Blue Feint took all three of the retired Blue Cache card's modes when the
-                    // configured scene went back to five cards per hero. Red dropped its copy rather
-                    // than rehousing it, and Blue Sentinel is untouched because p.8 clears the board of
-                    // tokens each round, so a card cannot supply the Hazard its own later play takes.
-                    "phase-6-8b-rev-2",
-                    "phase-6-6a-rev-1",
-                    "phase-5-1a-rev-3",
-                    "phase-5-1a-rev-3",
-                    "phase-6-4c-rev-1"
-                }));
+                blueHand.DealtDefinitions.Select(definition => definition.ContentRevision),
+                Is.EqualTo(Enumerable.Repeat("phase-7-1-rev-1", 5)));
             Assert.That(redHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
             Assert.That(blueHand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "));
         }
@@ -281,7 +272,8 @@ namespace GuardsDigital.Tests.EditMode
                 "rev-2",
                 "Another Placeholder",
                 new InitiativeValue(6),
-                CardContentAuthority.SyntheticTestFixture);
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated);
 
             Assert.Throws<ArgumentException>(() => CardInitialSetupValidator.Validate(
                 new[] { firstDefinition, secondDefinition },
@@ -350,7 +342,8 @@ namespace GuardsDigital.Tests.EditMode
                 "rev-1",
                 "Placeholder Move",
                 new InitiativeValue(5),
-                CardContentAuthority.SyntheticTestFixture);
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated);
         }
 
         private static void AssertSyntheticMatrix(
@@ -363,11 +356,11 @@ namespace GuardsDigital.Tests.EditMode
             int[] movements,
             int[] defenses)
         {
-            Assert.That(hand.Definitions, Has.Count.EqualTo(5));
+            Assert.That(hand.DealtDefinitions, Has.Count.EqualTo(5));
             Assert.That(hand.Instances, Has.Count.EqualTo(5));
-            for (var index = 0; index < hand.Definitions.Count; index++)
+            for (var index = 0; index < hand.DealtDefinitions.Count; index++)
             {
-                var definition = hand.Definitions[index];
+                var definition = hand.DealtDefinitions[index];
                 Assert.That(definition.DisplayName, Is.EqualTo($"TEST - {names[index]}"));
                 Assert.That(definition.Initiative.Value, Is.EqualTo(initiatives[index]));
                 Assert.That(definition.ContentAuthority, Is.EqualTo(CardContentAuthority.SyntheticTestFixture));

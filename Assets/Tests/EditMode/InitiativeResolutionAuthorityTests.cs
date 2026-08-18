@@ -245,7 +245,8 @@ namespace GuardsDigital.Tests.EditMode
                 "initiative-test-rev-1",
                 $"TEST - {id}",
                 new InitiativeValue(initiative),
-                CardContentAuthority.SyntheticTestFixture);
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated);
         }
 
         private static CardInstance CreateRevealedCard(

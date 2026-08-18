@@ -23,7 +23,7 @@ namespace GuardsDigital.Core.Snapshots
     {
         private static void WriteRound(BinaryWriter writer, RoundResolutionAuthority round)
         {
-            var (cursor, history, endOfRound, roundCardActions, systemTransitions) =
+            var (cursor, history, endOfRound, roundCardActions, systemTransitions, heroProgression) =
                 round.CaptureRestoreState();
             var (roundIndex, turnIndex, phase, tieBreakerState) = cursor;
             writer.Write(roundIndex);
@@ -51,6 +51,7 @@ namespace GuardsDigital.Core.Snapshots
             WriteMarkers(writer, round.Markers.CaptureRestoreState());
             WriteLanePush(writer, round.LanePush?.LanePush);
             WritePendingSystemTransitionStep(writer, systemTransitions);
+            WriteHeroProgression(writer, heroProgression);
 
             var (hasCardActions, roundDefeatRewards) = roundCardActions;
             writer.Write(hasCardActions);
@@ -105,6 +106,7 @@ namespace GuardsDigital.Core.Snapshots
                 ? GuardsDigital.Core.Rules.Transitions.DeclaredSystemTransitionStepRules.Instance
                 : GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateRules(lanePushAuthority);
             var systemTransitions = ReadSystemTransitions(reader, transitions, transitionRules);
+            var heroProgression = ReadHeroProgression(reader);
             var lanePush = lanePushAuthority == null
                 ? null
                 : new GuardsDigital.Core.Rules.LanePush.LanePushConsumption(
@@ -156,7 +158,8 @@ namespace GuardsDigital.Core.Snapshots
                         pendingMinionBattleChoice,
                         pendingLanePushRequest),
                     new RoundCardActionsRestoreState(hasRoundCardActions, roundDefeatRewards),
-                    systemTransitions.CaptureRestoreState()),
+                    systemTransitions.CaptureRestoreState(),
+                    heroProgression),
                 commitment,
                 turn,
                 cardActions,
@@ -166,6 +169,50 @@ namespace GuardsDigital.Core.Snapshots
                 systemTransitions,
                 lanePush);
         }
+
+        /// <summary>
+        /// Milestone 7.1. Every hero's current Level, ordered by hero id.
+        ///
+        /// It is written even though no rule in this build can change it, and that is the point rather
+        /// than an oversight: p.15 gives every hero a Level from the first sentence, milestone 7.5 is
+        /// the milestone that moves one, and Phase 7's durability rule requires the milestone that adds
+        /// the state to close its persistence boundary rather than leaving a later integration gate to
+        /// discover the field was never on the wire. The reader refuses a payload whose Levels do not
+        /// cover exactly the participating heroes, so this can never silently restore as a default.
+        ///
+        /// Nothing here is derived. The hero id is written rather than an index into the participant
+        /// list, for the same reason the coin balances beside it are: an ordering the payload does not
+        /// state is an ordering a later build can change.
+        /// </summary>
+        private static void WriteHeroProgression(
+            BinaryWriter writer,
+            GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState state)
+        {
+            state.Deconstruct(out var levels);
+            writer.Write(levels.Count);
+            foreach (var entry in levels)
+            {
+                writer.Write(entry.Key.Value);
+                writer.Write(entry.Value.Value);
+            }
+        }
+
+        private static GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState ReadHeroProgression(
+            BinaryReader reader) =>
+            new GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState(
+                ReadMany(reader, "hero Levels", () =>
+                {
+                    var heroId = new HeroId(reader.ReadString());
+                    var level = reader.ReadInt32();
+                    if (level < GuardsDigital.Core.Rules.Progression.HeroLevel.Minimum ||
+                        level > GuardsDigital.Core.Rules.Progression.HeroLevel.Maximum)
+                    {
+                        throw Malformed($"Hero Level {level} is outside the legal range.");
+                    }
+
+                    return new KeyValuePair<HeroId, GuardsDigital.Core.Rules.Progression.HeroLevel>(
+                        heroId, new GuardsDigital.Core.Rules.Progression.HeroLevel(level));
+                }));
 
         /// <summary>
         /// Milestone 6.11. Rulebook p.8's shared Wave counters, the victory sentence that ended the game

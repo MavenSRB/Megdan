@@ -942,7 +942,8 @@ namespace GuardsDigital.Tests.EditMode
                 "minion-battle-test-rev-1",
                 $"TEST - {id}",
                 new InitiativeValue(initiative),
-                CardContentAuthority.SyntheticTestFixture);
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated);
 
         /// <summary>Plays one round to its end so the Minion Battle stage is the next thing to resolve,
         /// then resolves it.</summary>

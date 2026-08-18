@@ -578,6 +578,7 @@ namespace GuardsDigital.Tests.EditMode
                 $"TEST - {id}",
                 new InitiativeValue(initiative),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(

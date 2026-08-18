@@ -35,14 +35,21 @@ namespace GuardsDigital.Tests.EditMode
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
 
-            Assert.That(configuration.RedHand.Definitions, Has.Count.EqualTo(5));
+            Assert.That(configuration.RedHand.DealtDefinitions, Has.Count.EqualTo(5));
             Assert.That(configuration.RedHand.Instances, Has.Count.EqualTo(5));
             Assert.That(configuration.RedHand.Instances.All(card => card.OwnerId.Equals(redHeroId)), Is.True);
-            Assert.That(configuration.BlueHand.Definitions, Has.Count.EqualTo(5));
+            Assert.That(configuration.BlueHand.DealtDefinitions, Has.Count.EqualTo(5));
             Assert.That(configuration.BlueHand.Instances, Has.Count.EqualTo(5));
             Assert.That(configuration.BlueHand.Instances.All(card => card.OwnerId.Equals(blueHeroId)), Is.True);
-            Assert.That(configuration.CardDefinitions, Has.Count.EqualTo(10));
-            Assert.That(configuration.CardDefinitions.Select(card => card.Id).Distinct().Count(), Is.EqualTo(10));
+
+            // Milestone 7.1. Ten cards are dealt and thirty-four definitions exist, because each of the
+            // six non-Basic Tier I cards supplies the four same-colour cards p.15 has it upgrade into -
+            // two Tier II and the two Tier III both of those lead to. None of the twenty-four is dealt:
+            // p.15 finds them in the player's own deck, and milestone 7.5 is the first that moves one.
+            Assert.That(configuration.RedHand.Definitions, Has.Count.EqualTo(17));
+            Assert.That(configuration.BlueHand.Definitions, Has.Count.EqualTo(17));
+            Assert.That(configuration.CardDefinitions, Has.Count.EqualTo(34));
+            Assert.That(configuration.CardDefinitions.Select(card => card.Id).Distinct().Count(), Is.EqualTo(34));
             Assert.That(configuration.CardInstances.Select(card => card.Id).Distinct().Count(), Is.EqualTo(10));
 
             foreach (var card in configuration.CardInstances)

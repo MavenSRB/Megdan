@@ -105,9 +105,53 @@ namespace GuardsDigital.Core.Participants
                 var ownedInstances = instanceArray.Where(instance => instance.OwnerId.Equals(ownerId)).ToArray();
                 var ownedReferences = new HashSet<CardDefinitionReference>(
                     ownedInstances.Select(instance => instance.DefinitionReference));
+                var upgradeTargets = UpgradeTargetsOf(ownerId);
                 return PlaceholderMovementHand.Restore(new PlaceholderMovementHandRestoreState(
-                    definitionArray.Where(definition => ownedReferences.Contains(definition.Reference)),
+                    definitionArray.Where(definition =>
+                        ownedReferences.Contains(definition.Reference) ||
+                        upgradeTargets.Contains(definition.Id)),
                     ownedInstances));
+            }
+
+            // Milestone 7.1. A hand carries the cards its cards can become, and since the upgrade
+            // targets are definitions with no instance yet, instance ownership alone cannot route them
+            // back to the hand that supplied them. The closure of each owned card's stated next-Tier
+            // candidates is what does, and it is the same relationship the content states rather than a
+            // second rule about names or ids: a restored configuration therefore holds exactly the
+            // definitions the live one did, which is what makes restore-and-continue an equivalence
+            // rather than a subset.
+            HashSet<CardDefinitionId> UpgradeTargetsOf(HeroId ownerId)
+            {
+                var definitionsById = new Dictionary<CardDefinitionId, CardDefinition>();
+                foreach (var definition in definitionArray)
+                {
+                    if (!definitionsById.ContainsKey(definition.Id))
+                    {
+                        definitionsById.Add(definition.Id, definition);
+                    }
+                }
+
+                var reached = new HashSet<CardDefinitionId>();
+                var pending = new Queue<CardDefinitionId>(instanceArray
+                    .Where(instance => instance.OwnerId.Equals(ownerId))
+                    .Select(instance => instance.DefinitionReference.DefinitionId));
+                while (pending.Count > 0)
+                {
+                    if (!definitionsById.TryGetValue(pending.Dequeue(), out var definition))
+                    {
+                        continue;
+                    }
+
+                    foreach (var candidateId in definition.Progression.NextTierCandidateIds)
+                    {
+                        if (reached.Add(candidateId))
+                        {
+                            pending.Enqueue(candidateId);
+                        }
+                    }
+                }
+
+                return reached;
             }
 
             return new PlaceholderOneVsOneTestConfiguration(

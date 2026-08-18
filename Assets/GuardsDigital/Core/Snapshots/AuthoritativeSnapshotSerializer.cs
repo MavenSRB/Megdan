@@ -26,6 +26,17 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
+        // v17: milestone 7.1 adds every hero's current Level to the round section, beside the paused
+        // system transition - one count-prefixed hero id and Level per participant. v16 is rejected
+        // rather than migrated, and the reason is the same one v14 gave for the Battle Zone rather
+        // than the weaker "we have one read path per version": a v16 payload records no Level at all,
+        // and reading one as "everybody is at Level 1" would be a guess about a value the page makes
+        // authoritative from its first sentence. It is a guess that happens to be right for every
+        // payload this build can produce, because milestone 7.1 adds no way to change a Level, and
+        // that is exactly why it must not be written into the reader: the first payload it would be
+        // wrong about is the first one milestone 7.5 writes, and by then the migration would look
+        // established. No persisted state exists outside the version-controlled corpus to strand.
+        //
         // v15: milestone 6.10a adds the system-transition continuation to the round section - one
         // boolean saying whether a multi-step transition is stopped, and when it is, which transition,
         // which step, who chooses, what they may choose, and which steps have already happened. v14 is
@@ -71,7 +82,7 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 16;
+        public const int CurrentSchemaVersion = 17;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

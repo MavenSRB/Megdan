@@ -11,13 +11,15 @@ namespace GuardsDigital.Core.Cards
             string contentRevision,
             string displayName,
             InitiativeValue initiative,
-            CardContentAuthority contentAuthority)
+            CardContentAuthority contentAuthority,
+            CardProgressionProfile progression)
             : this(
                 id,
                 contentRevision,
                 displayName,
                 initiative,
                 contentAuthority,
+                progression,
                 Enumerable.Empty<ActionDefinition>())
         {
         }
@@ -28,6 +30,7 @@ namespace GuardsDigital.Core.Cards
             string displayName,
             InitiativeValue initiative,
             CardContentAuthority contentAuthority,
+            CardProgressionProfile progression,
             IEnumerable<ActionDefinition> actionDefinitions)
         {
             if (!id.IsDefined)
@@ -56,6 +59,18 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Card definition requires explicit content authority.", nameof(contentAuthority));
             }
 
+            if (progression == null)
+            {
+                // Deliberately not defaulted. Milestone 7.1's acceptance check requires every
+                // definition to represent its applicable card colour or a verified absence, and a
+                // required argument is what makes the absence a statement - CardProgressionProfile.
+                // NotStated - instead of the value a caller happened not to pass.
+                throw new ArgumentNullException(
+                    nameof(progression),
+                    "Card definition requires an explicit progression profile; state " +
+                    "CardProgressionProfile.NotStated when the definition carries no colour or Tier.");
+            }
+
             if (actionDefinitions == null)
             {
                 throw new ArgumentNullException(nameof(actionDefinitions));
@@ -66,6 +81,7 @@ namespace GuardsDigital.Core.Cards
             DisplayName = displayName;
             Initiative = initiative;
             ContentAuthority = contentAuthority;
+            Progression = progression;
             var materializedActionDefinitions = actionDefinitions.ToArray();
             ActionDefinitions = Array.AsReadOnly(materializedActionDefinitions);
 
@@ -89,6 +105,13 @@ namespace GuardsDigital.Core.Cards
         public InitiativeValue Initiative { get; }
 
         public CardContentAuthority ContentAuthority { get; }
+
+        /// <summary>
+        /// Milestone 7.1's printed colour, Tier, Basic classification, and same-colour next-Tier
+        /// candidates. Never null: the constructor refuses a definition that states nothing rather than
+        /// substituting an absence of its own.
+        /// </summary>
+        public CardProgressionProfile Progression { get; }
 
         public IReadOnlyList<ActionDefinition> ActionDefinitions { get; }
 

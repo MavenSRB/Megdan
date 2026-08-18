@@ -66,12 +66,12 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(definition.Id, Is.EqualTo(new CardDefinitionId("placeholder-red-bulwark")),
                 "The conversion advances the revision, never the card's identity.");
-            Assert.That(definition.ContentRevision, Is.EqualTo("phase-6-8a-rev-1"));
+            Assert.That(definition.ContentRevision, Is.EqualTo("phase-7-1-rev-1"));
             Assert.That(definition.ContentAuthority,
                 Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(definition.Initiative.Value, Is.EqualTo(11));
             Assert.That(instance.DefinitionReference, Is.EqualTo(definition.Reference));
-            Assert.That(hand.Definitions, Has.Count.EqualTo(5), "The hand keeps its five-card shape.");
+            Assert.That(hand.DealtDefinitions, Has.Count.EqualTo(5), "The hand keeps its five-card shape.");
 
             var primary = definition.ActionDefinitions.Single(action =>
                 action.Origin == ActionDefinitionOrigin.PrintedPrimary);

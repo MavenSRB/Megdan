@@ -61,6 +61,11 @@ namespace GuardsDigital.Core.Cards
                     throw new ArgumentException("Initial card instances must start in hand with unplayed, unresolved, face-up state.", nameof(instances));
                 }
             }
+
+            // Milestone 7.1. The upgrade relationships a definition states are a claim about the set
+            // around it, so they are checked once the set is known to be well formed rather than at
+            // each definition's own construction.
+            CardProgressionValidator.Validate(definitionsByReference.Values);
         }
     }
 }

@@ -1,0 +1,151 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace GuardsDigital.Core.Cards
+{
+    /// <summary>
+    /// What one card definition states about colour, Tier, Basic classification, and which cards it
+    /// upgrades into. Immutable definition content, like the printed values beside it.
+    ///
+    /// <see cref="CardDefinition"/> takes one as a required argument, and that is what makes acceptance
+    /// check two's "explicitly represents its applicable typed <c>CardColor</c> or verified absence"
+    /// true by construction rather than by convention: there is no overload that omits it, so a
+    /// definition that states nothing has to say so, through <see cref="NotStated"/>.
+    ///
+    /// The three factories are the three shapes the rulebook admits, and each refuses the fields that
+    /// do not belong to it:
+    ///
+    /// <list type="bullet">
+    /// <item><see cref="BasicCard"/> - p.15's Gold and Silver pair. They "are never upgraded, have no
+    /// Tier, and are not considered when checking your lowest card Tier", so this factory refuses a
+    /// Tier and refuses candidates outright rather than leaving either merely empty.</item>
+    /// <item><see cref="NonBasicCard"/> - a Tier I, II, or III card. It requires a Tier, and its
+    /// candidates are the explicit next-Tier cards p.15's Upgrade a Card step looks for: "two Action
+    /// cards in your deck that have the same color as the chosen card but are one Tier higher". Empty
+    /// is legal and means this card has no next Tier in the content set - a Tier III card, since Tier IV
+    /// is the Ultimate that milestone 7.3 owns.</item>
+    /// <item><see cref="NotStated"/> - the definition carries no progression content. Every query in
+    /// this milestone excludes such a definition by classification rather than by a colour comparison,
+    /// so a fixture card that models no progression can never satisfy a colour predicate by accident.
+    /// </item>
+    /// </list>
+    ///
+    /// Candidates are stable <see cref="CardDefinitionId"/> values rather than derived from colour.
+    /// Colour constrains progression and does not determine it: which two cards a Tier I card upgrades
+    /// into is content the card states, and <see cref="CardProgressionValidator"/> is what checks the
+    /// stated relationship against the colour and Tier rules over a whole definition set. A revision is
+    /// deliberately not part of a candidate reference: p.15 sends the player to their own deck, and the
+    /// card they find there is whichever revision of it this build supplies.
+    /// </summary>
+    public sealed class CardProgressionProfile
+    {
+        private static readonly CardDefinitionId[] NoCandidates = Array.Empty<CardDefinitionId>();
+
+        private CardProgressionProfile(
+            CardColor color,
+            CardClassification classification,
+            CardTier tier,
+            IReadOnlyList<CardDefinitionId> nextTierCandidateIds)
+        {
+            Color = color;
+            Classification = classification;
+            Tier = tier;
+            NextTierCandidateIds = nextTierCandidateIds;
+        }
+
+        /// <summary>
+        /// The explicit statement that a definition carries no colour, no Tier, and no classification.
+        ///
+        /// It is a statement rather than a default because it cannot be reached by omission: the only
+        /// way a definition acquires this profile is by naming it at construction.
+        /// </summary>
+        public static CardProgressionProfile NotStated { get; } = new CardProgressionProfile(
+            CardColor.None, CardClassification.None, CardTier.None, Array.AsReadOnly(NoCandidates));
+
+        public CardColor Color { get; }
+
+        public CardClassification Classification { get; }
+
+        public CardTier Tier { get; }
+
+        public IReadOnlyList<CardDefinitionId> NextTierCandidateIds { get; }
+
+        /// <summary>Whether this definition states progression content at all.</summary>
+        public bool StatesProgression => Classification != CardClassification.None;
+
+        public bool IsBasic => Classification == CardClassification.Basic;
+
+        public bool IsNonBasic => Classification == CardClassification.NonBasic;
+
+        /// <summary>
+        /// Whether this definition has a Tier at all. False for a Basic card and for a definition that
+        /// states nothing, which are exactly the two kinds p.15 excludes from the lowest-Tier reading.
+        /// </summary>
+        public bool HasTier => Tier != CardTier.None;
+
+        /// <summary>
+        /// p.15's Basic card. The colour is required because the pair is named by colour - "Your Basic
+        /// cards (Gold and Silver)" - and only those two are accepted, which is the page's own claim
+        /// rather than an inference from the five-colour hand.
+        /// </summary>
+        public static CardProgressionProfile BasicCard(CardColor color)
+        {
+            if (color != CardColor.Gold && color != CardColor.Silver)
+            {
+                throw new ArgumentException(
+                    "A Basic card is one of the Gold and Silver pair (rulebook p.15).", nameof(color));
+            }
+
+            return new CardProgressionProfile(
+                color, CardClassification.Basic, CardTier.None, Array.AsReadOnly(NoCandidates));
+        }
+
+        public static CardProgressionProfile NonBasicCard(
+            CardColor color,
+            CardTier tier,
+            params CardDefinitionId[] nextTierCandidateIds) =>
+            NonBasicCard(color, tier, (IEnumerable<CardDefinitionId>)nextTierCandidateIds);
+
+        public static CardProgressionProfile NonBasicCard(
+            CardColor color,
+            CardTier tier,
+            IEnumerable<CardDefinitionId> nextTierCandidateIds)
+        {
+            if (color == CardColor.None)
+            {
+                throw new ArgumentException(
+                    "A non-Basic card states a card colour.", nameof(color));
+            }
+
+            if (tier == CardTier.None)
+            {
+                throw new ArgumentException(
+                    "A non-Basic card states a Tier; only a Basic card has none (rulebook p.15).",
+                    nameof(tier));
+            }
+
+            if (!Enum.IsDefined(typeof(CardTier), tier))
+            {
+                throw new ArgumentOutOfRangeException(nameof(tier), tier, "Unknown card Tier.");
+            }
+
+            var candidates = (nextTierCandidateIds ?? throw new ArgumentNullException(nameof(nextTierCandidateIds)))
+                .ToArray();
+            if (candidates.Any(candidate => !candidate.IsDefined))
+            {
+                throw new ArgumentException(
+                    "Next-Tier candidates must be defined definition IDs.", nameof(nextTierCandidateIds));
+            }
+
+            if (candidates.Distinct().Count() != candidates.Length)
+            {
+                throw new ArgumentException(
+                    "Next-Tier candidates must be distinct.", nameof(nextTierCandidateIds));
+            }
+
+            return new CardProgressionProfile(
+                color, CardClassification.NonBasic, tier, Array.AsReadOnly(candidates));
+        }
+    }
+}

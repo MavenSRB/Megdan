@@ -251,6 +251,7 @@ namespace GuardsDigital.Tests.EditMode
                 "TEST - Start Completing Skill",
                 new InitiativeValue(30),
                 CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
                 new[]
                 {
                     new ActionDefinition(

@@ -56,9 +56,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             var card = CreateInHandCard("defense-card");
 
-            Assert.That(CardLifecycleAuthority.TryDiscardDefenseFromHand(card), Is.True);
+            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(card), Is.True);
             Assert.That(card.State, Is.EqualTo(CardStateFacts.DiscardedUnplayed()));
-            Assert.That(CardLifecycleAuthority.TryDiscardDefenseFromHand(card), Is.False);
+            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(card), Is.False);
             Assert.That(card.State, Is.EqualTo(CardStateFacts.DiscardedUnplayed()));
         }
 
@@ -91,7 +91,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(CardLifecycleAuthority.TryPlayFacedown(resolved), Is.True);
             Assert.That(CardLifecycleAuthority.TryReveal(resolved), Is.True);
             Assert.That(CardLifecycleAuthority.TryResolveAfterAction(resolved), Is.True);
-            Assert.That(CardLifecycleAuthority.TryDiscardDefenseFromHand(discarded), Is.True);
+            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(discarded), Is.True);
 
             Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(resolved), Is.True);
             Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(discarded), Is.True);
@@ -163,7 +163,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentNullException>(() => CardLifecycleAuthority.TryPlayFacedown(null));
             Assert.Throws<ArgumentNullException>(() => CardLifecycleAuthority.TryReveal(null));
             Assert.Throws<ArgumentNullException>(() => CardLifecycleAuthority.TryResolveAfterAction(null));
-            Assert.Throws<ArgumentNullException>(() => CardLifecycleAuthority.TryDiscardDefenseFromHand(null));
+            Assert.Throws<ArgumentNullException>(() => CardLifecycleAuthority.TryDiscardFromHand(null));
         }
 
         private static CardInstance CreateInHandCard(string instanceId)
