@@ -104,7 +104,7 @@ namespace GuardsDigital.Core.Cards
             this.markers = markers ?? new MarkerAttachmentRegister();
             this.endOfRoundCapabilities = endOfRoundCapabilities ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
-                        .TryGetStartingBattleZone(board.MapDefinition, out _)
+                        .TryGetCurrentBattleZone(board, out _)
                     ? EndOfRoundFixtureCapabilities.ConfiguredMatch()
                     : EndOfRoundFixtureCapabilities.SyntheticRepeatedRound());
             var handlers = endOfRoundHandlers != null
@@ -307,13 +307,13 @@ namespace GuardsDigital.Core.Cards
                         pendingLanePushRequest.LosingSide ||
                     !pendingLanePushRequest.CauseResolutionId.Equals(
                         new EndOfRoundResolutionId($"round-{roundIndex}-minion-battle")) ||
-                    !GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.TryGetStartingBattleZone(
-                        board.MapDefinition, out var flaggedZone) ||
-                    !flaggedZone.Id.Equals(pendingLanePushRequest.BattleZoneId) ||
+                    !GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.TryGetCurrentBattleZone(
+                        board, out var currentZone) ||
+                    !currentZone.Id.Equals(pendingLanePushRequest.BattleZoneId) ||
                     board.Minions.Any(value =>
                         value.TeamSide == pendingLanePushRequest.LosingSide &&
-                        GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
-                            board.MapDefinition, value.OccupiedSpace.SpaceId))))
+                        GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
+                            board, value.OccupiedSpace.SpaceId))))
             {
                 throw new ArgumentException("Restored Lane-Push request does not match authoritative end-of-round state.");
             }
@@ -686,7 +686,7 @@ namespace GuardsDigital.Core.Cards
             {
                 var minion = board.Minions.SingleOrDefault(value => value.MinionId.Equals(unit.MinionId));
                 return minion != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
-                        .IsInStartingBattleZone(board.MapDefinition, minion.OccupiedSpace.SpaceId)
+                        .IsInCurrentBattleZone(board, minion.OccupiedSpace.SpaceId)
                     ? new BattleRemovalCandidate(
                         unit, minion.TeamSide, minion.MinionType == StandardMinionType.Heavy)
                     : (BattleRemovalCandidate?)null;
@@ -702,8 +702,8 @@ namespace GuardsDigital.Core.Cards
             var space = board.MapDefinition.Spaces.Single(candidate =>
                 candidate.Kind == GuardsDigital.Core.Board.BoardMapSpaceKind.Playable &&
                 candidate.Coordinate.Equals(coordinate));
-            return GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
-                    board.MapDefinition, space.Id)
+            return GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
+                    board, space.Id)
                 ? new BattleRemovalCandidate(
                     unit, participants.GetTeamForHero(unit.HeroId).Side, false)
                 : (BattleRemovalCandidate?)null;
@@ -719,8 +719,8 @@ namespace GuardsDigital.Core.Cards
                         GuardsDigital.Core.Rules.Modifications.RuleObject.ForMinion(minion.MinionId),
                         GuardsDigital.Core.Rules.Modifications.EffectiveUnitKind.Minion,
                         modifications) &&
-                    GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
-                        board.MapDefinition, minion.OccupiedSpace.SpaceId)) ||
+                    GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
+                        board, minion.OccupiedSpace.SpaceId)) ||
                 board.Occupancies.Any(hero =>
                 {
                     var unit = GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(hero.HeroId);
@@ -737,7 +737,7 @@ namespace GuardsDigital.Core.Cards
                         candidate.Kind == GuardsDigital.Core.Board.BoardMapSpaceKind.Playable &&
                         candidate.Coordinate.Equals(hero.Coordinate));
                     return GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
-                        .IsInStartingBattleZone(board.MapDefinition, space.Id);
+                        .IsInCurrentBattleZone(board, space.Id);
                 });
         }
 

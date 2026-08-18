@@ -542,7 +542,7 @@ namespace GuardsDigital.Core.Cards
             // effective reading of "the minions in the Battle Zone" there too, so p.8's last-minion
             // Lane-Push cause counts exactly the set this resolution counts.
             var battleZone = GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
-                .GetStartingBattleZone(board.MapDefinition);
+                .GetCurrentBattleZone(board);
             var effective = BattleZoneQuery
                 .FindEffectiveMinionsInside(board, participants, modifications)
                 .ToArray();

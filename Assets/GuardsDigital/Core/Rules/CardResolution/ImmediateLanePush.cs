@@ -143,7 +143,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return null;
             }
 
-            if (!BattleZoneQuery.TryGetStartingBattleZone(board.MapDefinition, out var battleZone))
+            if (!BattleZoneQuery.TryGetCurrentBattleZone(board, out var battleZone))
             {
                 return null;
             }

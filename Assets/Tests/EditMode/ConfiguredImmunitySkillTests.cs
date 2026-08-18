@@ -447,7 +447,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var board = RestoreBoard(session);
             Assert.That(
-                BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, BlueAt), Is.False,
+                BattleZoneQuery.IsInCurrentBattleZone(board, BlueAt), Is.False,
                 "The Blue hero really is outside the Battle Zone, so this is not a vacuous check.");
             Assert.That(
                 BattleZoneQuery.FindMinionsOutside(board).Select(minion => minion.MinionId.Value),

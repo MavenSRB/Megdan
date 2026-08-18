@@ -310,14 +310,14 @@ namespace GuardsDigital.Core.Snapshots
 
             var subject = board.Minions.SingleOrDefault(minion => minion.MinionId.Equals(subjectMinionId));
             if (subject == null ||
-                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
-                    board.MapDefinition, subject.OccupiedSpace.SpaceId))
+                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
+                    board, subject.OccupiedSpace.SpaceId))
             {
                 throw Malformed("Snapshot pending correction names a subject the board does not show displaced.");
             }
 
             var zoneCoordinates = GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
-                .FindStartingBattleZoneCoordinates(board.MapDefinition);
+                .FindCurrentBattleZoneCoordinates(board);
             var destinationStep = GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionPlanner
                 .DeriveDestinationStep(
                     board, participants, zoneId, zoneCoordinates, subject,

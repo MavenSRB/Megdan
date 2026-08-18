@@ -39,13 +39,15 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<HeroOccupancy> heroOccupancies,
             IEnumerable<ObstacleOccupancy> obstacleOccupancies,
             IEnumerable<RestoredMinionPosition> remainingMinions,
-            IEnumerable<PlacedToken> placedTokens)
+            IEnumerable<PlacedToken> placedTokens,
+            ZoneId? currentBattleZoneId)
         {
             if (heroOccupancies == null) throw new ArgumentNullException(nameof(heroOccupancies));
             if (obstacleOccupancies == null) throw new ArgumentNullException(nameof(obstacleOccupancies));
             if (remainingMinions == null) throw new ArgumentNullException(nameof(remainingMinions));
             if (placedTokens == null) throw new ArgumentNullException(nameof(placedTokens));
 
+            CurrentBattleZoneId = currentBattleZoneId;
             HeroOccupancies = heroOccupancies.ToArray();
             ObstacleOccupancies = obstacleOccupancies.ToArray();
             RemainingMinions = remainingMinions.ToArray();
@@ -73,16 +75,25 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         // catalog before this state is built, so what arrives here is already trusted.
         public IReadOnlyList<PlacedToken> PlacedTokens { get; }
 
+        // Milestone 6.10. p.8's Battle Zone travels as a bare zone identity and nothing else: the
+        // zone's spaces, display name and lane position all come from the map the restore has already
+        // loaded, so what a payload may say is which zone this is, never what that zone contains. The
+        // named absence is a board whose map declares no starting Battle Zone, which is every synthetic
+        // one; restoring one as anything else would invent a lane the map does not have.
+        public ZoneId? CurrentBattleZoneId { get; }
+
         public void Deconstruct(
             out IReadOnlyList<HeroOccupancy> heroOccupancies,
             out IReadOnlyList<ObstacleOccupancy> obstacleOccupancies,
             out IReadOnlyList<RestoredMinionPosition> remainingMinions,
-            out IReadOnlyList<PlacedToken> placedTokens)
+            out IReadOnlyList<PlacedToken> placedTokens,
+            out ZoneId? currentBattleZoneId)
         {
             heroOccupancies = HeroOccupancies;
             obstacleOccupancies = ObstacleOccupancies;
             remainingMinions = RemainingMinions;
             placedTokens = PlacedTokens;
+            currentBattleZoneId = CurrentBattleZoneId;
         }
     }
 }

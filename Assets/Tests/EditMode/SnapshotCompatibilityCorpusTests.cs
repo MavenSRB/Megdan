@@ -321,17 +321,39 @@ namespace GuardsDigital.Tests.EditMode
         /// offsets 2921 and 3647 and shifts the rest unchanged. One byte per fixture is the whole
         /// persistence cost of the milestone, and the fixture that does not grow is the corpus's own
         /// proof that the field belongs to the action boundary rather than to the match.
+        /// Milestone 6.10 moves every fixture from v13 to v14 for one persistence cause and one only:
+        /// rulebook p.8's Battle Zone is now authoritative state the Lane-Push Zone stage advances, so it
+        /// travels beside the map reference it is scoped to instead of being derived from the map's
+        /// starting-Battle-Zone flag. The decision is reject rather than migrate, and the reason is
+        /// unusually concrete for a bump: a v13 payload records where every piece stands and nothing
+        /// about which Zone the Lane has reached, and no derivation can recover it - an emptied Battle
+        /// Zone and a Zone the Lane never reached look identical in occupancy, and the flag names only
+        /// where the match began. Reading a v13 payload as "still the starting Zone" would answer the
+        /// Minion Battle, the p.13 Heavy-immunity accompaniment, p.18's displaced-minion correction and
+        /// p.8's own Lane-Push cause about the wrong Zone for the rest of the match. No capability is
+        /// registered or revised, no card revision moves and no component definition changes, so the
+        /// contract set and the definition table are untouched.
+        /// Measured in a throwaway worktree at pre-change revision <c>7d73cb7</c> rather than assumed,
+        /// and the measurement is unusually uniform because no fixture has pushed the Lane: every one of
+        /// the eight grows by exactly 21 bytes - the <c>0x14</c> length prefix plus the twenty characters
+        /// of <c>starting-battle-zone</c> - 2725 to 2746, 2921 to 2942, 3101 to 3122, 3131 to 3152, 3336
+        /// to 3357, 3776 to 3797, 3825 to 3846 and 3836 to 3857. Two regions differ and no third: the
+        /// fixed-width schema int at offset 30, <c>0d</c> to <c>0e</c>, and one contiguous insertion at
+        /// offset 1475 in the five ordinary fixtures and at 1710 in the three built from the Skill
+        /// fixture, whose definition table carries two more cards. With the schema int alone accounted
+        /// for, the common prefix runs to that offset and every later byte is identical, which is the
+        /// corpus's own proof that adding the Zone moved no board, card, component or round field.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v13", "57188017db2afe45e13920959122741960c6f80061890d1804f67f61d7bd3408"),
-            new CompatibilityFixture("active-turn-v13", "d82b949b78d725d41097864ebbd68605166c40d95a19a3199cd3dd2fd44eff0f"),
-            new CompatibilityFixture("pending-choice-v13", "96c7a32014c958e04823b0918b7332a1f44e88e89b1b4b7816e45862d958a78b"),
-            new CompatibilityFixture("end-of-round-v13", "f42839b00f96bcfaacc6e1d1be959c2da80c99a29e7db8c55f99afd51d0cbf9e"),
-            new CompatibilityFixture("pending-minion-battle-v13", "486811d9580c12e93096a4fcfc49a8e2693088124037680c4d033b9c786ccce8"),
-            new CompatibilityFixture("placed-token-v13", "e3e00637bcffe5a70187968ad70d84d94239630ffedf09c5d005631c0506eb2a"),
-            new CompatibilityFixture("attached-marker-v13", "00882b8d1d4f9dc53d713c0ccce00819dbcc5d0b82882cc1a3aac9aead6e454b"),
-            new CompatibilityFixture("pending-correction-v13", "fd08e0c661f4359aa8743cd0aac41fa53f8252408c2a684c2668cd53b9cbc606")
+            new CompatibilityFixture("setup-v14", "a31a7e5d568806e7c5ddbeab75629354c7eb1574a43085a1eab73803ac36e79b"),
+            new CompatibilityFixture("active-turn-v14", "0160f17b3ffbd4c5656e8b019aac0074f7efc90a9116215c2ee80017cf02c278"),
+            new CompatibilityFixture("pending-choice-v14", "274086fd40d5c52e08f3cebd702451e4763cdadd13390c8268701151d88fc3a2"),
+            new CompatibilityFixture("end-of-round-v14", "a57c7971c54f88aa1f1e2a9dd56f2a955252706127fb21f90373ce800388be0d"),
+            new CompatibilityFixture("pending-minion-battle-v14", "0d6b378384c8327187a9340dcc04c81efe1f5fd5810782fa71721b07f2cfbac0"),
+            new CompatibilityFixture("placed-token-v14", "606943da6d216c4e09a147342524f45abe286e57592a51b0cea8034840985a9c"),
+            new CompatibilityFixture("attached-marker-v14", "9b8758b72d34d37bfb4fdc179444f49e1ef659d7f05a8909241355b1928f1bec"),
+            new CompatibilityFixture("pending-correction-v14", "1638dbb4e871751188648375c9c083df0b7a696561e488b0b48a6d102fb82090")
         };
 
         [Test]
@@ -414,16 +436,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v13", session.CaptureSnapshot());
+            values.Add("setup-v14", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v13", session.CaptureSnapshot());
+            values.Add("active-turn-v14", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v13", session.CaptureSnapshot());
+            values.Add("pending-choice-v14", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -439,7 +461,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v13", session.CaptureSnapshot());
+            values.Add("end-of-round-v14", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -448,17 +470,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v13", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v14", session.CaptureSnapshot());
 
             // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
             // carry zero components would leave the sections it exists to protect untested, so one
             // payload holds a token on the board and one holds a marker on a hero.
-            values.Add("placed-token-v13", CaptureComponentSnapshot("component-place-branch"));
-            values.Add("attached-marker-v13", CaptureComponentSnapshot("component-give-marker"));
+            values.Add("placed-token-v14", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v14", CaptureComponentSnapshot("component-give-marker"));
 
             // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
             // so the paused after-action correction gets the eighth.
-            values.Add("pending-correction-v13", CapturePendingCorrectionSnapshot());
+            values.Add("pending-correction-v14", CapturePendingCorrectionSnapshot());
             return values;
         }
 

@@ -146,6 +146,15 @@ namespace GuardsDigital.Core.Components
     {
         BoardMapDefinition MapDefinition { get; }
 
+        /// <summary>
+        /// Rulebook p.8's Battle Zone as authoritative state (milestone 6.10), and the named absence on
+        /// a map that declares none. It is on this port rather than beside the map because the map says
+        /// only where the match began; which Zone the Lane has since reached is a fact about the match,
+        /// and every question that asks it - the Minion Battle, the p.13 Heavy-immunity accompaniment,
+        /// p.18's displaced-minion correction, p.8's own Lane-Push cause - already arrives here.
+        /// </summary>
+        ZoneId? CurrentBattleZoneId { get; }
+
         IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroOccupancy> Occupancies { get; }
 
         IReadOnlyList<GuardsDigital.Core.Units.Minions.MinionOccupancy> Minions { get; }

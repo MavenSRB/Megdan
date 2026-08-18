@@ -54,12 +54,12 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             var heavy = board.Minions.SingleOrDefault(minion => minion.MinionId.Equals(target.MinionId));
             if (heavy == null || heavy.MinionType != StandardMinionType.Heavy ||
-                !BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, heavy.OccupiedSpace.SpaceId))
+                !BattleZoneQuery.IsInCurrentBattleZone(board, heavy.OccupiedSpace.SpaceId))
             {
                 return false;
             }
 
-            var battleZone = BattleZoneQuery.GetStartingBattleZone(board.MapDefinition).Id;
+            var battleZone = BattleZoneQuery.GetCurrentBattleZone(board).Id;
             var units = board.Minions
                 .Where(minion =>
                     board.MapDefinition.GetZoneForSpace(minion.OccupiedSpace.SpaceId).Id.Equals(battleZone))

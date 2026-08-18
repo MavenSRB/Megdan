@@ -355,7 +355,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 }
 
                 var subject = board.Minions.Single(minion => minion.MinionId.Equals(command.MinionId));
-                var zoneCoordinates = BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition);
+                var zoneCoordinates = BattleZoneQuery.FindCurrentBattleZoneCoordinates(board);
                 var destinationStep = DisplacedMinionCorrectionPlanner.DeriveDestinationStep(
                     board, participants, pending.BattleZoneId, zoneCoordinates, subject,
                     pending.ResolutionId, pending.SourceCardInstanceId,
@@ -383,9 +383,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
                 var subject = board.Minions.SingleOrDefault(minion =>
                     minion.MinionId.Equals(pending.SubjectMinionId));
-                var zoneCoordinates = BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition);
+                var zoneCoordinates = BattleZoneQuery.FindCurrentBattleZoneCoordinates(board);
                 var candidates = subject.MinionId.IsDefined &&
-                    !BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, subject.OccupiedSpace.SpaceId)
+                    !BattleZoneQuery.IsInCurrentBattleZone(board, subject.OccupiedSpace.SpaceId)
                         ? DisplacedMinionCorrectionPlanner.DeriveCandidates(
                             board, zoneCoordinates, subject, out var kind)
                         : Array.Empty<DisplacedMinionCorrectionCandidate>();
@@ -631,7 +631,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     board,
                     subject,
                     step.Destination.Destination,
-                    BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition)).Accepted
+                    BattleZoneQuery.FindCurrentBattleZoneCoordinates(board)).Accepted
                 : board.CommitValidatedDisplacement(subject, step.Destination.Destination).Accepted;
             if (!accepted)
             {

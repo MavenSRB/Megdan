@@ -83,7 +83,7 @@ namespace GuardsDigital.Tests.EditMode
                 "p.8: 'The team with one or more minions still remaining in the Battle Zone wins the push.'");
             Assert.That(
                 request.BattleZoneId,
-                Is.EqualTo(BattleZoneQuery.GetStartingBattleZone(fixture.Board.MapDefinition).Id));
+                Is.EqualTo(BattleZoneQuery.GetCurrentBattleZone(fixture.Board).Id));
             Assert.That(request.LosingSide, Is.EqualTo(defeat.MinionDefeat.LanePush.LosingSide),
                 "The side read from the board at the push and the side the operation recorded are the " +
                 "same fact; if they could disagree, one of the two readings would be wrong.");
@@ -349,7 +349,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(space => space.Kind == BoardMapSpaceKind.Playable)
                 .Select(space => space.Coordinate)
                 .First(coordinate =>
-                    !BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, coordinate) &&
+                    !BattleZoneQuery.IsInCurrentBattleZone(board, coordinate) &&
                     board.IsEmptyPlayableSpace(coordinate));
 
             Assert.That(

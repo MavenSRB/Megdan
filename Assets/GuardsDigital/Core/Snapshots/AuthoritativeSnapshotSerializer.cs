@@ -26,6 +26,16 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
+        // v14: milestone 6.10 puts rulebook p.8's Battle Zone on the wire, beside the map reference it
+        // is scoped to, because it is now authoritative state the Lane-Push Zone stage advances rather
+        // than a derivation from the map's starting-Battle-Zone flag. v13 is rejected rather than
+        // migrated, and here the reason is unusually concrete: a v13 payload records where every piece
+        // stands and nothing about which Zone the Lane has reached, and no derivation can recover it -
+        // an emptied Battle Zone and a Zone the Lane never reached look identical in occupancy, and the
+        // flag names only where the match began. Reading a v13 payload as "still the starting Zone"
+        // would answer the Minion Battle, the Heavy-immunity accompaniment, the displaced-minion
+        // correction and the Lane-Push cause about the wrong Zone for the rest of the match.
+        //
         // v12: milestone 6.7's bounded Repeat adds an optional pending repeated-action record to the
         // card-action section's Correction continuation, naming the second instance an action asked for
         // while the correction between the two instances is paused. v11 is rejected rather than
@@ -53,7 +63,7 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 13;
+        public const int CurrentSchemaVersion = 14;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

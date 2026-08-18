@@ -298,8 +298,8 @@ namespace GuardsDigital.Tests.EditMode
             var session = StartSentinelSkill(
                 true, out var actorAt, out var minion, out var minionAt);
             var board = RestoreBoard(session);
-            Assert.That(BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, minionAt), Is.True);
-            Assert.That(BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, actorAt), Is.False,
+            Assert.That(BattleZoneQuery.IsInCurrentBattleZone(board, minionAt), Is.True);
+            Assert.That(BattleZoneQuery.IsInCurrentBattleZone(board, actorAt), Is.False,
                 "The fixture is only meaningful if the exchange really strands the minion.");
 
             ChooseBranch(session, SwapBranch);
@@ -310,7 +310,7 @@ namespace GuardsDigital.Tests.EditMode
             var landed = corrected.Minions.Single(value => value.MinionId.Equals(minion)).Coordinate;
             Assert.That(
                 correction != null ||
-                    BattleZoneQuery.IsInStartingBattleZone(corrected.MapDefinition, landed),
+                    BattleZoneQuery.IsInCurrentBattleZone(corrected, landed),
                 Is.True,
                 "p.18 corrects a displaced minion at the after-action checkpoint: either the owning " +
                 "team is being asked where it returns, or a deterministic correction already ran.");

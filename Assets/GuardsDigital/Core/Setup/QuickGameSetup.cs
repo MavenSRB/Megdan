@@ -392,7 +392,7 @@ namespace GuardsDigital.Core.Setup
 
                 var resolved = ResolvePlacement(
                     selectedMap, definition.SpawnPoint, definition.OccupiedSpace, spaces, spawns, occupiedSpaceIds, occupiedSpawnIds);
-                var expectedTeam = GetMapTeamId(team.Side);
+                var expectedTeam = GuardsDigital.Core.Rules.Modifications.ThroneZoneQuery.GetMapTeamId(team.Side);
                 if (!string.Equals(resolved.Spawn.TeamId, expectedTeam, StringComparison.Ordinal))
                     throw Reject(QuickGameSetupRejectionReason.SpawnTeamMismatch, $"Hero '{definition.HeroId}' uses the wrong team spawn point.");
                 if (!string.Equals(resolved.Spawn.UnitType, "hero", StringComparison.Ordinal))
@@ -415,7 +415,7 @@ namespace GuardsDigital.Core.Setup
                 var team = participants.Teams.Single(value => value.Side == definition.TeamSide);
                 var resolved = ResolvePlacement(
                     selectedMap, definition.SpawnPoint, definition.OccupiedSpace, spaces, spawns, occupiedSpaceIds, occupiedSpawnIds);
-                if (!string.Equals(resolved.Spawn.TeamId, GetMapTeamId(definition.TeamSide), StringComparison.Ordinal))
+                if (!string.Equals(resolved.Spawn.TeamId, GuardsDigital.Core.Rules.Modifications.ThroneZoneQuery.GetMapTeamId(definition.TeamSide), StringComparison.Ordinal))
                     throw Reject(QuickGameSetupRejectionReason.SpawnTeamMismatch, $"Minion '{definition.MinionId}' uses the wrong team spawn point.");
                 if (!string.Equals(resolved.Spawn.UnitType, GetMapUnitType(definition.MinionType), StringComparison.Ordinal))
                     throw Reject(QuickGameSetupRejectionReason.SpawnUnitTypeMismatch, $"Minion '{definition.MinionId}' uses the wrong minion-type spawn point.");
@@ -432,10 +432,10 @@ namespace GuardsDigital.Core.Setup
                 .OrderBy(value => value.Side)
                 .Select(team =>
                 {
-                    var mapTeam = GetMapTeamId(team.Side);
-                    var throne = selectedMap.Zones.SingleOrDefault(zone => zone.IsThrone && string.Equals(zone.TeamId, mapTeam, StringComparison.Ordinal));
-                    if (throne == null)
-                        throw Reject(QuickGameSetupRejectionReason.InvalidHeroThrone, $"Map '{selectedMap.Reference}' has no {mapTeam} Throne zone.");
+                    if (!GuardsDigital.Core.Rules.Modifications.ThroneZoneQuery.TryGetThroneZone(
+                            selectedMap, team.Side, out var throne))
+                        throw Reject(QuickGameSetupRejectionReason.InvalidHeroThrone,
+                            $"Map '{selectedMap.Reference}' has no {team.Side} Throne zone.");
                     return new QuickGameTeamSetupState(team.Id, team.Side, configuration.LifeCountPerTeam, throne.Id);
                 })
                 .ToArray();
@@ -469,13 +469,6 @@ namespace GuardsDigital.Core.Setup
             if (!occupiedSpawnIds.Add(spawn.Id) || !occupiedSpaceIds.Add(space.Id))
                 throw Reject(QuickGameSetupRejectionReason.OccupancyConflict, $"Setup placement conflicts at '{space.Id}'.");
             return (spawn, space);
-        }
-
-        private static string GetMapTeamId(TeamSide side)
-        {
-            if (side == TeamSide.Red) return "red";
-            if (side == TeamSide.Blue) return "blue";
-            throw new ArgumentOutOfRangeException(nameof(side));
         }
 
         private static string GetMapUnitType(StandardMinionType type)

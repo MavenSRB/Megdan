@@ -157,17 +157,17 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                 return LanePushQualification.None;
             }
 
-            if (!BattleZoneQuery.TryGetStartingBattleZone(board.MapDefinition, out var battleZone))
+            if (!BattleZoneQuery.TryGetCurrentBattleZone(board, out var battleZone))
             {
-                // A map that flags no single Battle Zone - every synthetic board - has no lane to
-                // push, which is the same reading the displaced-minion correction takes.
+                // A board with no current Battle Zone - every synthetic one - has no lane to push,
+                // which is the same reading the displaced-minion correction takes.
                 return LanePushQualification.None;
             }
 
             // p.8 asks about "the last remaining enemy minion in the Battle Zone", so a removal that
             // happened outside it qualifies nothing even when that side has none inside: the zone is
             // no emptier than it was before the piece was taken.
-            if (!BattleZoneQuery.IsInStartingBattleZone(board.MapDefinition, removedFrom))
+            if (!BattleZoneQuery.IsInCurrentBattleZone(board, removedFrom))
             {
                 return LanePushQualification.None;
             }

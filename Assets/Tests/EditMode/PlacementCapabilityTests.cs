@@ -420,7 +420,8 @@ namespace GuardsDigital.Tests.EditMode
                     state.ObstacleOccupancies,
                     state.RemainingMinions.Where(position =>
                         !reservedMinionIds.Contains(position.MinionId.Value)),
-                    state.PlacedTokens),
+                    state.PlacedTokens,
+                    state.CurrentBattleZoneId),
                 map,
                 setup.Minions);
         }

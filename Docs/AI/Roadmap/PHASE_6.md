@@ -609,7 +609,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-69-emit-an-immediate-lane-push-request-during-a-turn-completion-evidence).
 
-### [~] 6.10 Resolve Lane Push Wave and Battle-Zone stages
+### [x] 6.10 Resolve Lane Push Wave and Battle-Zone stages
 
 Builds the non-executable ordered prefix: flip exactly one Wave counter and stop on final-Wave victory; otherwise advance one verified Zone toward the losing team's Throne and stop on Throne capture.
 
@@ -620,6 +620,8 @@ Acceptance checks:
 - `CurrentBattleZoneId` crosses snapshots, restore, replay, retained-prefix Undo, restart, and compatibility handling with stable map-scoped identity; malformed, missing, or map-incompatible zone identities are rejected atomically rather than reconstructed from setup or occupancy.
 - Wave and Zone stages emit deterministic typed outcomes/events.
 - An early game-ending result prevents later stages.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-610-resolve-lane-push-wave-and-battle-zone-stages-completion-evidence).
 
 ### [ ] 6.10a Establish the reusable system-transition continuation contract
 

@@ -382,10 +382,10 @@ namespace GuardsDigital.Core.Rules.Displacement
             if (board == null) throw new ArgumentNullException(nameof(board));
             if (participants == null) throw new ArgumentNullException(nameof(participants));
 
-            // A board that declares no starting Battle Zone has no p.18 correction to run - the
-            // single-zone synthetic boards predate the battle-zone concept, and on them every minion
-            // would otherwise read as displaced.
-            if (!BattleZoneQuery.TryGetStartingBattleZone(board.MapDefinition, out var zone))
+            // A board with no current Battle Zone has no p.18 correction to run - the single-zone
+            // synthetic boards predate the battle-zone concept, and on them every minion would
+            // otherwise read as displaced.
+            if (!BattleZoneQuery.TryGetCurrentBattleZone(board, out var zone))
             {
                 return DisplacedMinionCorrectionStep.Finished(Array.Empty<MinionOccupancy>());
             }
@@ -395,7 +395,7 @@ namespace GuardsDigital.Core.Rules.Displacement
             {
                 return DisplacedMinionCorrectionStep.Finished(Array.Empty<MinionOccupancy>());
             }
-            var zoneCoordinates = BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition);
+            var zoneCoordinates = BattleZoneQuery.FindCurrentBattleZoneCoordinates(board);
             var firstSide = tieBreaker.IsDefined ? tieBreaker.RevealedSide : TeamSide.Red;
             var secondSide = firstSide == TeamSide.Red ? TeamSide.Blue : TeamSide.Red;
 

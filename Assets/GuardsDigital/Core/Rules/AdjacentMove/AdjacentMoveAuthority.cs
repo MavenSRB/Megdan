@@ -18,7 +18,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 {
     public sealed class AdjacentMoveAuthority :
         ITokenPlacementAuthority, IBoardDisplacementAuthority, IUnitSpawnAuthority,
-        IBoardObjectExchangeAuthority
+        IBoardObjectExchangeAuthority, ILaneAdvanceAuthority
     {
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly HashSet<HexCoordinate> terrainCoordinates;
@@ -264,6 +264,15 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     nameof(initialReserveMinions));
             }
 
+            // Milestone 6.10. The opening value of p.8's Battle Zone is the one the map flags, and this
+            // is the only place the flag decides it: from here on the zone is authoritative state that
+            // the Lane-Push Zone stage advances, so every rules question reads this field rather than
+            // the flag. A map that declares no starting Battle Zone - every synthetic board - opens
+            // with the named absence rather than with a guess drawn from where minions happen to stand.
+            CurrentBattleZoneId = BattleZoneQuery.TryGetStartingBattleZone(mapDefinition, out var opening)
+                ? opening.Id
+                : (ZoneId?)null;
+
             minions = new List<MinionOccupancy>(materializedMinions);
             reserveMinions = new List<MinionOccupancy>(materializedReserve);
             tokens = new List<PlacedToken>(materializedTokens);
@@ -280,6 +289,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         private AdjacentMoveAuthority(AdjacentMoveAuthority source)
         {
             MapDefinition = source.MapDefinition;
+            CurrentBattleZoneId = source.CurrentBattleZoneId;
             boardCoordinates = source.boardCoordinates;
             terrainCoordinates = source.terrainCoordinates;
             occupancies = new List<HeroOccupancy>(source.occupancies);
@@ -300,6 +310,23 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         public BoardMapDefinition MapDefinition { get; }
 
         public MapDefinitionReference SelectedMap => MapDefinition.Reference;
+
+        /// <summary>
+        /// Rulebook p.8's Battle Zone, as authoritative map-scoped state rather than a derivation
+        /// (milestone 6.10).
+        ///
+        /// It opens at the zone the map flags and moves only through
+        /// <see cref="CommitValidatedBattleZoneAdvance"/>, so it is independent of presentation and of
+        /// where minions happen to be standing: an emptied Battle Zone is still the Battle Zone, and a
+        /// zone full of minions that the Lane never reached is not one. That independence is the whole
+        /// point of holding it here - inferring it from occupancy would answer p.8's own question with
+        /// the board state p.8 is about to rearrange.
+        ///
+        /// The named absence belongs to boards whose map declares no starting Battle Zone; on those the
+        /// Minion Battle, the Heavy-immunity accompaniment, the displaced-minion correction and the
+        /// Lane-Push cause all report "no zone" exactly as they did before this field existed.
+        /// </summary>
+        public ZoneId? CurrentBattleZoneId { get; private set; }
 
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupanciesView;
 
@@ -349,7 +376,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 occupancies,
                 obstacleOccupancies,
                 minions.Select(minion => new RestoredMinionPosition(minion.MinionId, minion.Coordinate)),
-                tokens);
+                tokens,
+                CurrentBattleZoneId);
 
         public static AdjacentMoveAuthority Restore(
             BoardRestoreState state,
@@ -398,13 +426,43 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 .Select(MinionOccupancy.FromSetup)
                 .ToArray();
 
-            return new AdjacentMoveAuthority(
+            var restored = new AdjacentMoveAuthority(
                 mapDefinition,
                 state.HeroOccupancies,
                 state.ObstacleOccupancies,
                 remaining,
                 state.PlacedTokens,
                 reserve);
+
+            // Milestone 6.10. The constructor has already opened the board at the zone the map flags,
+            // and this replaces that opening value with the restored one - never the other way round.
+            // A restored zone the selected map does not declare, or that the map declares off the
+            // ordered Lane, is refused here rather than quietly falling back to the flag: the whole
+            // reason the zone is persisted is that no derivation from setup or occupancy can tell which
+            // zone a pushed Lane reached, so a fallback would restore a match to the wrong board.
+            // Refusing throws, which is what makes it atomic - the caller receives no half-restored
+            // authority, exactly as a mismatched minion identity is refused above.
+            if (restored.CurrentBattleZoneId.HasValue != state.CurrentBattleZoneId.HasValue)
+            {
+                throw new ArgumentException(
+                    "A restored Battle Zone must be present exactly when the selected map declares one.",
+                    nameof(state));
+            }
+
+            if (state.CurrentBattleZoneId.HasValue)
+            {
+                var zoneId = state.CurrentBattleZoneId.Value;
+                if (!BattleZoneQuery.CanBeCurrentBattleZone(mapDefinition, zoneId))
+                {
+                    throw new ArgumentException(
+                        $"Restored Battle Zone '{zoneId}' is not a zone map '{mapDefinition.Reference}' could push the Lane to.",
+                        nameof(state));
+                }
+
+                restored.CurrentBattleZoneId = zoneId;
+            }
+
+            return restored;
         }
 
         public AdjacentMoveResult TryCommit(AdjacentMoveCommand command)
@@ -736,6 +794,42 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             HexCoordinate origin,
             int maximumDistance) =>
             MovementReachabilityQuery.FindReachableThroughEmptySpaces(origin, this, maximumDistance);
+
+        /// <summary>
+        /// Moves p.8's Battle Zone to <paramref name="destination"/>, or refuses and leaves it where it
+        /// is (milestone 6.10).
+        ///
+        /// Which zone is next is a rules decision the Lane-Push Zone stage makes from the ordered Lane
+        /// and the losing team's Throne; what is verified here is that the answer is a zone this map
+        /// actually has, that it lies on the ordered Lane, and that it is exactly one step from the
+        /// current zone along that Lane. So "advance one verified Zone" is one commit rather than an
+        /// assignment a caller could repeat, skip or reverse, in the shape
+        /// <see cref="CommitValidatedDisplacement"/> already gives a validated destination.
+        /// </summary>
+        public bool CommitValidatedBattleZoneAdvance(ZoneId destination)
+        {
+            if (!CurrentBattleZoneId.HasValue)
+            {
+                return false;
+            }
+
+            var lane = MapDefinition.OrderedLaneZoneIds;
+            var current = -1;
+            var next = -1;
+            for (var index = 0; index < lane.Count; index++)
+            {
+                if (lane[index].Equals(CurrentBattleZoneId.Value)) current = index;
+                if (lane[index].Equals(destination)) next = index;
+            }
+
+            if (current < 0 || next < 0 || Math.Abs(next - current) != 1)
+            {
+                return false;
+            }
+
+            CurrentBattleZoneId = destination;
+            return true;
+        }
 
         public DisplacementCommitResult CommitValidatedDisplacement(
             BoardObjectReference subject,

@@ -246,7 +246,7 @@ namespace GuardsDigital.Tests.EditMode
                     declared,
                     board,
                     DisplacedRedAt,
-                    BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition))),
+                    BattleZoneQuery.FindCurrentBattleZoneCoordinates(board))),
                 "The correction offers exactly the general Place's own answer for its declaration.");
         }
 

@@ -584,7 +584,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(outcome.LanePush.LosingSide, Is.EqualTo(TeamSide.Red));
             Assert.That(
                 outcome.LanePush.BattleZoneId,
-                Is.EqualTo(BattleZoneQuery.GetStartingBattleZone(board.MapDefinition).Id));
+                Is.EqualTo(BattleZoneQuery.GetCurrentBattleZone(board).Id));
         }
 
         [Test]
@@ -617,7 +617,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateOfficialBoard();
             var last = ClearBattleZoneExceptOne(board, TeamSide.Red);
-            var outside = BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition);
+            var outside = BattleZoneQuery.FindCurrentBattleZoneCoordinates(board);
             var elsewhere = board.MapDefinition.Spaces
                 .Where(space => space.Kind == BoardMapSpaceKind.Playable)
                 .Select(space => space.Coordinate)
@@ -645,7 +645,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateOfficialBoard();
             ClearBattleZoneExceptOne(board, TeamSide.Red);
-            var empty = BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition)
+            var empty = BattleZoneQuery.FindCurrentBattleZoneCoordinates(board)
                 .First(board.IsEmptyPlayableSpace);
             PlaceHazard(board, empty);
 
@@ -675,7 +675,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 board.CommitValidatedDisplacement(
                         BoardObjectReference.ForHero(redHero),
-                        BattleZoneQuery.FindStartingBattleZoneCoordinates(board.MapDefinition)
+                        BattleZoneQuery.FindCurrentBattleZoneCoordinates(board)
                             .First(board.IsEmptyPlayableSpace))
                     .Accepted,
                 Is.True);

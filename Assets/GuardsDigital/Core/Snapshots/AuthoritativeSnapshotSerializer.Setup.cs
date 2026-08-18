@@ -219,10 +219,16 @@ namespace GuardsDigital.Core.Snapshots
 
         private static void WriteBoard(BinaryWriter writer, AdjacentMoveAuthority board)
         {
-            var (heroOccupancies, obstacleOccupancies, remainingMinions, placedTokens) =
-                board.CaptureRestoreState();
+            var (heroOccupancies, obstacleOccupancies, remainingMinions, placedTokens,
+                currentBattleZoneId) = board.CaptureRestoreState();
             writer.Write(board.SelectedMap.MapId.Value);
             writer.Write(board.SelectedMap.ContentRevision);
+
+            // Milestone 6.10. p.8's Battle Zone rides beside the map reference because it is scoped to
+            // that map and means nothing without it. The empty string is the named absence rather than
+            // a sentinel zone: a map that declares no starting Battle Zone has none to record, and a
+            // reader that saw one would be reading a lane the map does not have.
+            writer.Write(currentBattleZoneId.HasValue ? currentBattleZoneId.Value.Value : string.Empty);
             writer.Write(heroOccupancies.Count);
             foreach (var occupancy in heroOccupancies.OrderBy(value => value.HeroId.Value, StringComparer.Ordinal))
             {
@@ -280,6 +286,29 @@ namespace GuardsDigital.Core.Snapshots
                     : SnapshotLoadRejectionReason.MapDefinitionContentRevisionMismatch;
                 throw new SnapshotLoadException(reason, exception.Message, exception);
             }
+
+            // Milestone 6.10. Read, then validated against the map that was just loaded, and refused
+            // rather than repaired. A blank zone says the map declares none; anything else has to be a
+            // zone p.8 could have pushed the Lane to on this map, which is the one statement of that
+            // answer the board's own restore consults. The alternative - falling back to the
+            // starting-Battle-Zone flag - is exactly what the acceptance check forbids: it would turn a
+            // payload naming another map's zone, or a zone this build no longer declares, into a match
+            // silently restored to the zone it began in.
+            var currentBattleZoneValue = reader.ReadString();
+            ZoneId? currentBattleZoneId = null;
+            if (currentBattleZoneValue.Length > 0)
+            {
+                var candidate = new ZoneId(currentBattleZoneValue);
+                if (!GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.CanBeCurrentBattleZone(
+                        mapDefinition, candidate))
+                {
+                    throw Malformed(
+                        $"Snapshot Battle Zone '{candidate}' is not a zone map '{reference}' could push the Lane to.");
+                }
+
+                currentBattleZoneId = candidate;
+            }
+
             var heroes = ReadMany(reader, "hero occupancies", () => new HeroOccupancy(
                 new HeroId(reader.ReadString()),
                 ReadCoordinate(reader)));
@@ -312,7 +341,8 @@ namespace GuardsDigital.Core.Snapshots
                     ReadCoordinate(reader));
             });
             return AdjacentMoveAuthority.Restore(
-                new BoardRestoreState(heroes, obstacles, remainingMinions, placedTokens),
+                new BoardRestoreState(
+                    heroes, obstacles, remainingMinions, placedTokens, currentBattleZoneId),
                 mapDefinition,
                 availableMinions);
         }
