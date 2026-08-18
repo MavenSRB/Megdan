@@ -660,7 +660,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-611-complete-lane-push-minion-respawn-and-transition-completion-evidence).
 
-### [ ] 6.12 Remove tokens and return markers at end of round
+### [~] 6.12 Remove tokens and return markers at end of round
 
 Runs the general cleanup checkpoint: remove all board tokens and return all markers to supply except where exact verified text provides an override.
 

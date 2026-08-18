@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **6.11**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.11**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **6.12**.
 - Next proposed milestone: **6.12**.
 
 Milestone **6.11** completed on 2026-08-18: rulebook p.8's Lane Push runs end to end, and the two requests that had been standing at their own checkpoints since milestones 6.1 and 6.9 are consumed by it. The transition flips one shared Wave counter and ends the game on the last, otherwise advances the Battle Zone one verified step towards the losing team's Throne and ends it on that Throne's capture, then removes every minion the previous zone held and respawns one of the matching type into each verified Spawn point of the new one - clearing a covering token first, and pausing on the owning team where any other obstacle stands on a Spawn point so that team places the minion in a nearest empty Battle-Zone space of its choice, Tie-Breaker side first and without flipping the coin. That pause is milestone 6.10a's continuation doing production work: the contract gained live-derived choosers, per-item pauses and an early end, and the respawn records which Spawn point and which miniature each pause is about, so accepted, rejected, stale, restored, replayed and Undo-truncated choices cannot repeat a Wave flip, a Zone advance, a removal or a prior respawn. A mid-turn push finishes before Initiative continues, which p.8 requires and which is now what withholds the advance. Schema moves to v16 and rejects v15. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
