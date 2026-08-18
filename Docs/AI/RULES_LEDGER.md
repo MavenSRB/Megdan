@@ -81,27 +81,11 @@ The rule-pressure to architecture-seam map, with the milestone that proves each 
 
 The capability-family catalog - primary general source, architecture status, and planned proving or integration milestones - is maintained in [Rules/CARD_COVERAGE.md](Rules/CARD_COVERAGE.md#effect-capability-coverage).
 
-## Wasp content ledger
+## Hero content ledgers
 
-The pitch requires Wasp's complete progression. Before verified Wasp definitions or effects are implemented, create an implementation-grade inventory containing at least:
+Hero-scoped rule authority is maintained one shard per approved hero under [Rules/](Rules/), named `Rules/HERO_<NAME>.md`. Each owns that hero's content inventory, capability mapping, source-verification status, and any deviation or open question scoped to that hero alone. Wasp's is [Rules/HERO_WASP.md](Rules/HERO_WASP.md#wasp-content-ledger), and it records the implementation-grade inventory milestone 8.1 must produce before any verified Wasp definition or effect is implemented; the five heroes joining Wasp are selected at milestone 8.17 and take their shards then.
 
-- Stable definition ID and content revision.
-- Display name, source image path/face, edition, and starting hand/deck/set-aside membership.
-- Hero/content-set ID, typed `CardColor`, nullable tier, and explicit same-color upgrade/replacement relationships.
-- Basic/non-basic/Ultimate/Handicap classification as applicable.
-- Stable action-definition IDs; derived Primary/Secondary/reaction/replacement offer contexts; subtype; and text-application policy.
-- Initiative, Attack, Defense, Movement, Range, and Radius values where present.
-- Exact rules text transcription.
-- Ordered mandatory/optional steps; choice owner; modal/repeat behavior.
-- Structured triggers, conditions, targets versus presence checks, choices, values, effects, batch/simultaneous behavior, timing, duration, and cancellation.
-- Stable effect-node IDs, capability ID/version, typed input/result bindings, operation-specific policies, outcome facts, and systemic checkpoints.
-- Reused capability IDs and any controlled custom-handler ID.
-- Item contribution and destination when set aside; Active-effect versus passive/continuous-source classification; Ultimate persistence requirements.
-- Required source-linked scenarios and interaction/ordering tests.
-- Source verification status and reviewer/date.
-- Any official correction or clarification.
-
-Current status: **Not inventoried**. Wasp inventory is deferred until milestone 8.1, after milestone 7.9 proves the deterministic synthetic core match; its capability matrix follows in 8.2. Other heroes remain outside the pitch inventory.
+Rule systems that span heroes stay in the `Rule-system ledger` above, and a deviation or open question that affects more than one hero stays in this document rather than being copied into each hero's shard.
 
 ## Rule implementation template
 

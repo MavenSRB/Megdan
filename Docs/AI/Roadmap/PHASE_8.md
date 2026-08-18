@@ -14,7 +14,7 @@ Acceptance checks:
 
 - Every required face is present and readable.
 - Structured data is manually checked against the images.
-- Missing or ambiguous content is recorded in `RULES_LEDGER.md`.
+- Missing or ambiguous content is recorded in `Rules/HERO_WASP.md`, the shard milestone 6.1y made the owner of Wasp's inventory; anything not scoped to Wasp alone stays in `RULES_LEDGER.md`.
 
 Non-goals: No other hero inventory or effect implementation.
 
@@ -136,7 +136,7 @@ Acceptance checks:
 
 - Every required face and component is present and readable for all five heroes.
 - Structured data is manually checked against source images and applicable official rulings.
-- Missing, ambiguous, or conflicting content is recorded in `RULES_LEDGER.md` and blocks the affected hero rather than being guessed.
+- Missing, ambiguous, or conflicting content is recorded in that hero's own `Rules/HERO_<NAME>.md` shard, per the contract milestone 6.1y established, and blocks the affected hero rather than being guessed; content affecting more than one hero stays in `RULES_LEDGER.md`.
 - No implementation begins from unverified filenames, OCR, display text, or assumed cross-hero similarity.
 
 ### [!] 8.19 Map the five heroes to capabilities and re-baseline the 3v3 pitch work

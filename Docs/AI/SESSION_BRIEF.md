@@ -13,16 +13,16 @@ The project has completed roadmap milestones through **6.13**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **6.13**.
-- Active authorized milestone: **6.1y**.
-- Next proposed milestone: **6.1y**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **7.1**.
 
 Milestone **6.13** completed on 2026-08-18 and closed the Phase 6 gate: every configured delayed effect now has a proven end, and three declarations that claimed limited reach stopped claiming it. No production behaviour moved - schema stays v16, no rule, capability, card or component definition changed, and both digest-pinning fixtures passed unchanged rather than being re-pinned. One configured scenario runs three rounds in which all four live lifetime forms happen together: the two delayed forms are created in one turn and activate in the next at their two different anchors, reveal before turn start, then expire at that turn's own checkpoint; both `This Round` forms apply from the action that made them and expire at Round End, which the round reaches at its Minion Battle stage, so they are gone before cleanup, before an owed Lane Push and before Retrieve Cards; and a delayed form created on the last turn of a round has no turn left to activate in, survives Round End on its cross-round flag, and is cancelled once by retrieval, which is rulebook p.17 cancelling an effect whose card changed state "including at the end of the round". The consequence is that no configured Active effect crosses a round boundary today. Resolving a source card is deliberately not a cancellation, because p.17 turns the card on its side after the action precisely to signal that its effect is still running. Ordinary retrieval was not reimplemented and its eligibility was not widened: the audit found only the two admitted lifecycle shapes reached, and face orientation orthogonal to both. `EndOfRoundFixtureCapabilities`, `SyntheticCardRetrievalHandler` and `TryRetrieveEligibleSyntheticCard` became `EndOfRoundStageAvailability`, `CardRetrievalHandler` and `TryRetrieveEligibleCard`, because the configured match composes all three; the one factory that is still fixture-only keeps its name and now states its limit at the declaration. Evidence lives in the completion commit, addressed from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md).
 
-The remaining route is **7.1 onward**; 7.1 still requires exact approval to execute. Phase 6's implementation is complete and its T3 gate is passed, with 6.1y the one milestone left inside it.
+The remaining route is **7.1 onward**; 7.1 still requires exact approval to execute. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone left inside it.
 
 The user-approved mechanics-showcase amendment is finished: all six configured cards are converted, each after its reusable dependencies, and every one preserved its Initiative, Secondary Movement, Defense, and stable identity under a new content revision. Which card carries which modes, and why, lives in [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md). Two constraints still bind: Red Lancer, Red Pursuit, Blue Scout Shot, and Blue Hammer retain the printed Attacks that keep one non-Ranged and one Ranged per team, which is now the floor rather than a margin, and the hero whose Skill is resolving is the affected rules object while the card is only the stable source. Milestone 7.9 later gates the complete ten-card matrix.
 
-Standing route exceptions: **6.1y** remains unordered but required before 8.1. Exact sequencing lives in [Roadmap/PHASE_6_DOCUMENTATION.md](Roadmap/PHASE_6_DOCUMENTATION.md), [Roadmap/PHASE_6_CORRECTIONS.md](Roadmap/PHASE_6_CORRECTIONS.md), and [Roadmap/PHASE_6.md](Roadmap/PHASE_6.md); scheduling is not authorization.
+Standing route exceptions: none remain. **6.1y** completed on 2026-08-18, ahead of the 8.1 that required it: hero-scoped rule authority now lives one shard per approved hero under Rules/HERO_<NAME>.md, starting with Wasp, and the ledger keeps a routing summary rather than the content. Exact sequencing lives in [Roadmap/PHASE_6_DOCUMENTATION.md](Roadmap/PHASE_6_DOCUMENTATION.md), [Roadmap/PHASE_6_CORRECTIONS.md](Roadmap/PHASE_6_CORRECTIONS.md), and [Roadmap/PHASE_6.md](Roadmap/PHASE_6.md); scheduling is not authorization.
 
 ## Durable boundaries
 
@@ -54,6 +54,7 @@ Go straight to the shard that owns the subject when this table names it. When th
 | Official map data contract and reviewed inventory | [Maps/README.md](Maps/README.md) |
 | Card architecture and effect capability coverage maps | [Rules/CARD_COVERAGE.md](Rules/CARD_COVERAGE.md) |
 | Per-system rule status, primary sources, and verification notes | [Rules/RULE_SYSTEMS.md](Rules/RULE_SYSTEMS.md) |
+| Hero-scoped inventory, capability mapping, and verification status | `Rules/HERO_<NAME>.md`, starting with [Rules/HERO_WASP.md](Rules/HERO_WASP.md) |
 | Card core model, resolution/effects, validation/extension | [Card-System/CORE_MODEL.md](Card-System/CORE_MODEL.md), [Card-System/RESOLUTION_AND_EFFECTS.md](Card-System/RESOLUTION_AND_EFFECTS.md), [Card-System/VALIDATION_AND_EXTENSION.md](Card-System/VALIDATION_AND_EXTENSION.md) |
 | Effects/queries/modifiers/tokens/timing/transitions | [CARD_EFFECT_CAPABILITIES.md](CARD_EFFECT_CAPABILITIES.md) matching capability section |
 | Validation policy, tiers, evidence rules | [Testing/POLICY.md](Testing/POLICY.md) |

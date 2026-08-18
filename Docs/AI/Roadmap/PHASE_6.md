@@ -190,7 +190,7 @@ Non-goals: No change to what any test asserts, no new test assembly (a shared te
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61v-make-reflected-member-names-and-digest-fixtures-checkable-completion-evidence).
 
-### [~] 6.1y Give each hero its own rules-ledger shard
+### [x] 6.1y Give each hero its own rules-ledger shard
 
 Observable outcome: Hero-specific rule authority lives in one shard per hero under `Docs/AI/Rules/`, starting with Wasp, and `RULES_LEDGER.md` keeps a routing summary and stable link rather than the content.
 
@@ -208,6 +208,8 @@ The governance ownership matrix already names `RULES_LEDGER.md` plus its indexed
 Closing check: the moved text is verified byte-identical against its pre-move revision from Git, no inbound link to a moved anchor breaks, and the validator passes with zero warnings at the post-fix revision. This milestone is preventive, so no failing pre-fix observation exists to record: `RULES_LEDGER.md` sits at 7,049 of 9,000 words and the validator is currently clean. The mechanical failing-then-passing rule governs review findings, and this is not one; claiming a transition here would be inventing evidence.
 
 Non-goals: No sharding of the `Rule-system ledger` section, which remains its own later milestone. No shard for a hero without an approved roster slot - the five heroes joining Wasp are selected at 8.17. No Wasp inventory content, which is 8.1's work. No rule meaning, status, or verification change, no threshold change, and no validator change.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-61y-give-each-hero-its-own-rules-ledger-shard-completion-evidence).
 
 ## Documentation-truth milestones from the 2026-08-14 validator-coverage finding
 
