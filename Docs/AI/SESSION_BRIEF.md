@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-08-18
+Last updated: 2026-08-19
 
 ## Purpose and authority
 
@@ -14,11 +14,13 @@ The project has completed roadmap milestones through **7.1**. The configured ver
 
 - Current completed milestone: **7.1**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **7.2**.
+- Next proposed milestone: **7.1a**.
 
-Milestone **7.1** completed on 2026-08-18 and opened Phase 7: synthetic cards now carry rulebook p.15's progression content, and every hero has a Level. Each of the ten configured definitions states a typed `CardColor`, a Basic or non-Basic classification, and either a Tier or the page's explicit absence of one, so all ten advance to `phase-7-1-rev-1`; each hand is p.15's five distinct colours with the Gold and Silver Basic pair, and the assignment is deliberately unreproducible from team, name, hand slot or printed icon, because both teams hold a Red-coloured and a Blue-coloured card. Each of the six non-Basic Tier I cards supplies the four same-colour cards p.15 has it upgrade into - two Tier II, and the two Tier III both of those lead to - as definitions the hand states and does not deal, since the page finds them in the player's own deck and milestone 7.5 is the first that moves one. `CardCharacteristicQuery` is the one place a colour is read, `CardProgressionValidator` checks every stated upgrade against the colour and Tier rules over the whole set so the relationship stays explicit content, and `ColorRestrictedDiscard` composes the query with the effect frame's own typed pending choice and with `DiscardCard`, renamed from its Defense-specific name and deciding nothing about colour, ownership or chooser. Hero Level is authoritative state initialized to 1, persisted in schema v17 with exact per-hero coverage on restore, and moved by nothing until 7.5 supplies the purchase. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
+Milestone **7.1** completed on 2026-08-18 and opened Phase 7: synthetic cards now carry rulebook p.15's progression content, and every hero has a Level. All ten configured definitions advance to `phase-7-1-rev-1`, and the colour assignment is deliberately unreproducible from team, name, hand slot or printed icon, because both teams hold a Red-coloured and a Blue-coloured card. `CardCharacteristicQuery` is the one place a colour is read, `CardProgressionValidator` checks every stated upgrade against the colour and Tier rules over the whole set so the relationship stays explicit content, and `ColorRestrictedDiscard` composes the query with the effect frame's own typed pending choice and with `DiscardCard`, renamed from its Defense-specific name and deciding nothing about colour, ownership or chooser. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
 
-The remaining route is **7.2 onward**; 7.2 requires exact approval to execute. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone left inside it.
+**Scheduling amendment (2026-08-19, user approved).** Milestone 7.1 composed `ColorRestrictedDiscard` but left it unreachable from a card: the effect frame carries card definitions, not instances, so no capability can re-derive candidates. New milestone **7.1a** builds that reach, ahead of 7.2 because 7.9 forbids deferring a reusable core capability to a verified hero milestone. Scheduling is not implementation authorization.
+
+The remaining route is **7.1a -> 7.2 onward**; 7.1a requires exact approval to execute. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone left inside it.
 
 The user-approved mechanics-showcase amendment is finished: all six configured cards are converted, each after its reusable dependencies, and every one preserved its Initiative, Secondary Movement, Defense, and stable identity under a new content revision. Which card carries which modes, and why, lives in [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md). Two constraints still bind: Red Lancer, Red Pursuit, Blue Scout Shot, and Blue Hammer retain the printed Attacks that keep one non-Ranged and one Ranged per team, which is now the floor rather than a margin, and the hero whose Skill is resolving is the affected rules object while the card is only the stable source. Milestone 7.9 later gates the complete ten-card matrix.
 
