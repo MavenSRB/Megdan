@@ -519,7 +519,8 @@ namespace GuardsDigital.Tests.EditMode
                 participants,
                 new TieBreakerState(TeamSide.Red),
                 1,
-                new RoundResolutionComposition(null, null, null, null, null, capabilities, handlers));
+                new RoundResolutionComposition(
+                    null, null, null, null, null, null, capabilities, handlers));
             return new OneCardFixture(red, blue, authority);
         }
 

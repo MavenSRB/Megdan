@@ -202,78 +202,78 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         [Test]
-        public void RemoveOfTheLastEnemyBattleZoneMinion_EmitsTheRequestBeforeInitiativeContinues()
+        public void RemoveOfTheLastEnemyBattleZoneMinion_PushesTheLaneBeforeInitiativeContinues()
         {
-            var session = StartRemoveSkillAgainstTheLastMinion(out var target, out var actorBefore);
+            var session = StartRemoveSkillAgainstTheLastMinion(out var target, out _);
 
-            var request = session.Projection.PendingImmediateLanePush;
-            Assert.That(request, Is.Not.Null,
-                "p.19's standalone Remove is p.8's second sentence, so taking the last enemy minion out " +
-                "of the Battle Zone owes the same immediate push a Defeat does.");
-            Assert.That(request.Cause, Is.EqualTo(LanePushCauseKind.Removal));
-            Assert.That(request.LosingSide, Is.EqualTo(TeamSide.Blue));
-            Assert.That(request.WinningSide, Is.EqualTo(TeamSide.Red));
-            Assert.That(
-                session.Projection.Minions.Any(minion => minion.MinionId.Equals(target)), Is.False,
-                "The removal itself happened; what is outstanding is the push it caused.");
-
-            Assert.That(session.Projection.SelectedActor.IsDefined, Is.False,
-                "p.8 pushes the Lane first and only then does 'the turn continue in the Initiative " +
-                "order as normal', so no later Initiative actor is selected while the request stands.");
-            Assert.That(
-                session.Projection.Cards.Any(card =>
-                    !card.OwnerId.Equals(actorBefore) && card.State.Location == CardLocation.TurnArea),
-                Is.True,
-                "The opposing hero's committed card is still waiting to resolve, so the turn really was " +
-                "stopped part way through rather than finished.");
             Assert.That(
                 session.Projection.RoundEvents.Any(value =>
                     value.Kind == RoundResolutionEventKind.TurnResolutionProgressed &&
                     value.TurnEvent.Kind == TurnResolutionEventKind.ImmediateLanePushRequested),
                 Is.True,
-                "The request reaches the checkpoint as a recorded fact rather than as a silent stall.");
+                "p.19's standalone Remove is p.8's second sentence, so taking the last enemy minion out " +
+                "of the Battle Zone owes the same immediate push a Defeat does, and the request reaches " +
+                "the checkpoint as a recorded fact.");
+            Assert.That(
+                session.Projection.Minions.Any(minion => minion.MinionId.Equals(target)), Is.True,
+                "The removal itself happened, which is what caused the push - and p.8's third step then " +
+                "respawned that same miniature out of the supply into the new Battle Zone.");
+
+            var requested = FirstIndexOf(session, TurnResolutionEventKind.ImmediateLanePushRequested);
+            var resolved = FirstIndexOf(session, TurnResolutionEventKind.ImmediateLanePushResolved);
+            Assert.That(resolved, Is.GreaterThan(requested),
+                "Milestone 6.11 consumes what milestone 6.9 recorded, so the push finishes after the " +
+                "request rather than instead of it.");
+            Assert.That(
+                session.Projection.RoundEvents
+                    .Select((value, index) => new { value, index })
+                    .Where(entry => entry.value.Kind == RoundResolutionEventKind.TurnResolutionProgressed &&
+                        entry.value.TurnEvent.Kind == TurnResolutionEventKind.InitiativeProgressed)
+                    .All(entry => entry.index < requested || entry.index > resolved),
+                Is.True,
+                "p.8 pushes the Lane first and only then does 'the turn continue in the Initiative " +
+                "order as normal', so no Initiative event falls between the two.");
         }
 
         [Test]
-        public void APendingRequest_RefusesEveryLaterTurnCommandWithItsOwnReason()
+        public void AResolvedRequest_LetsEveryLaterTurnCommandThrough()
         {
             var session = StartRemoveSkillAgainstTheLastMinion(out _, out _);
             var blueCard = session.Projection.Cards.First(card =>
                 session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue &&
                 card.State.Location == CardLocation.TurnArea);
 
-            var refused = session.Execute(DirectorCommand.PerformHold(blueCard.Id));
+            var held = session.Execute(DirectorCommand.PerformHold(blueCard.Id));
 
-            Assert.That(refused.Accepted, Is.False);
-            Assert.That(refused.Detail, Does.Contain(
-                TurnResolutionRejectionReason.UnimplementedLanePushConsumption.ToString()),
-                "The stop says what it is waiting for. Milestones 6.10 and 6.11 own the transition, and " +
-                "a rejection that blamed a resolved card or a missing actor would hide that.");
+            Assert.That(held.Accepted, Is.True, held.Detail);
+            Assert.That(session.Projection.PendingImmediateLanePush, Is.Null,
+                "Nothing is outstanding at the checkpoint, which is what lets the turn go on. Until " +
+                "milestone 6.11 this same command refused with the checkpoint's own reason.");
         }
 
         [Test]
-        public void APendingRequest_ExposesNoPartOfTheTransition()
+        public void AResolvedRequest_ExposesTheWholeTransitionRatherThanPartOfIt()
         {
             var session = StartRemoveSkillAgainstTheLastMinion(out var target, out _);
-            var minionsBefore = session.Projection.Minions
-                .Select(minion => minion.MinionId.Value).OrderBy(value => value).ToArray();
 
             Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.ResolvingTurn),
-                "The round has not advanced; the turn is stopped inside it.");
+                "The round has not advanced; p.8's mid-turn push happens inside the turn.");
             Assert.That(session.Projection.PendingLanePushRequest, Is.Null,
                 "The end-of-round request is a different request at a different checkpoint, and this " +
-                "milestone produces neither a Wave flip nor a Minion Battle.");
+                "push produced no Minion Battle.");
             Assert.That(
-                session.Projection.Minions.Select(minion => minion.MinionId.Value)
-                    .OrderBy(value => value).ToArray(),
-                Is.EqualTo(minionsBefore),
-                "No minion is removed from the old Battle Zone and none is respawned: milestone 6.11 " +
-                "owns both, and a partial transition is what acceptance check 5 forbids.");
-            Assert.That(minionsBefore, Has.No.Member(target.Value));
+                session.Projection.Minions.Select(minion => minion.MinionId.Value),
+                Has.Member(target.Value),
+                "p.8 removes every minion of the previous Battle Zone into the supply and then respawns " +
+                "from that supply, so the miniature the Remove took is standing again - in the new " +
+                "Battle Zone rather than where it fell.");
+            Assert.That(session.Projection.Minions, Is.Not.Empty,
+                "And the new Battle Zone was filled, so the transition ran to its end rather than " +
+                "stopping two thirds of the way through it.");
         }
 
         [Test]
-        public void APendingRequest_SurvivesASnapshotRestoreWithItsCauseIntact()
+        public void AResolvedPush_SurvivesASnapshotRestoreByteForByte()
         {
             var session = StartRemoveSkillAgainstTheLastMinion(out _, out _);
             var payload = session.Projection.AuthoritativeSnapshot;
@@ -283,20 +283,17 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },
                 session.Projection.Setup.Minions);
-            var request = restored.Round.CurrentTurnAuthority.PendingImmediateLanePush;
 
-            Assert.That(request, Is.Not.Null,
-                "A snapshot taken while the turn is stopped has to restore a turn that is stopped, or " +
-                "the stop would be a property of the running process rather than of the match.");
-            Assert.That(request.Cause, Is.EqualTo(LanePushCauseKind.Removal),
-                "Nothing about the restored board says whether the side was emptied by a Defeat, a " +
-                "Remove, or a push p.8 excludes, so the cause is persisted rather than re-derived.");
-            Assert.That(request.LosingSide, Is.EqualTo(TeamSide.Blue));
-            Assert.That(request.WinningSide, Is.EqualTo(TeamSide.Red));
+            Assert.That(restored.Round.CurrentTurnAuthority.PendingImmediateLanePush, Is.Null,
+                "A snapshot taken after the push restores a turn with nothing outstanding, or the " +
+                "consumption would be a property of the running process rather than of the match.");
+            Assert.That(restored.Round.LanePush.LanePush.RemainingWaveCounters, Is.EqualTo(2),
+                "p.8 spent one of the three Wave counters, and the restore says so rather than handing " +
+                "the match back a full pool.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
                 Is.EqualTo(payload),
-                "The restored match writes the same bytes, so the request round-trips rather than being " +
+                "The restored match writes the same bytes, so the push round-trips rather than being " +
                 "approximated.");
         }
 
@@ -623,6 +620,22 @@ namespace GuardsDigital.Tests.EditMode
             var started = session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId));
             Assert.That(started.Accepted, Is.True, started.Detail);
             return session;
+        }
+
+        /// <summary>Where a turn checkpoint first appears in the round's ordered event stream.</summary>
+        private static int FirstIndexOf(MatchSession session, TurnResolutionEventKind kind)
+        {
+            var events = session.Projection.RoundEvents;
+            for (var index = 0; index < events.Count; index++)
+            {
+                if (events[index].Kind == RoundResolutionEventKind.TurnResolutionProgressed &&
+                    events[index].TurnEvent.Kind == kind)
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
 
         private static void CommitBothSides(MatchSession session)

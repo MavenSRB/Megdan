@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.LanePush;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Timing;
 
@@ -28,6 +29,7 @@ namespace GuardsDigital.Core.Cards
             ActiveEffectLifecycle timing,
             MarkerAttachmentRegister markers,
             SystemTransitionAuthority systemTransitions,
+            LanePushConsumption lanePush,
             EndOfRoundFixtureCapabilities endOfRoundCapabilities,
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers)
         {
@@ -36,6 +38,7 @@ namespace GuardsDigital.Core.Cards
             Timing = timing;
             Markers = markers;
             SystemTransitions = systemTransitions;
+            LanePush = lanePush;
             EndOfRoundCapabilities = endOfRoundCapabilities;
             EndOfRoundHandlers = endOfRoundHandlers;
         }
@@ -62,33 +65,45 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public SystemTransitionAuthority SystemTransitions { get; }
 
+        /// <summary>
+        /// Milestone 6.11's Lane-Push authority: rulebook p.8's shared Wave counters and the stages
+        /// that spend them. It travels beside <see cref="SystemTransitions"/> because the two are one
+        /// mechanism seen from two sides - this owns what p.8's steps do, that owns where the
+        /// transition is - and because the round's snapshot section is where both are persisted.
+        ///
+        /// Milestone 6.10 deliberately left it out of the match, since a push that could run only its
+        /// first two steps would have moved the Battle Zone away from minions nothing removed.
+        /// </summary>
+        public LanePushConsumption LanePush { get; }
+
         public EndOfRoundFixtureCapabilities EndOfRoundCapabilities { get; }
         public IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> EndOfRoundHandlers { get; }
 
         /// <summary>
-        /// A configured match: card actions, a real board, a shared timing lifecycle, and the shared
-        /// marker register.
+        /// A configured match: card actions, a real board, a shared timing lifecycle, the shared
+        /// marker register, and the two halves of the Lane-Push transition.
         /// </summary>
         public static RoundResolutionComposition ForMatch(
             CardActionResolutionAuthority cardActions,
             AdjacentMoveAuthority board,
             ActiveEffectLifecycle timing,
             MarkerAttachmentRegister markers,
-            SystemTransitionAuthority systemTransitions)
+            SystemTransitionAuthority systemTransitions,
+            LanePushConsumption lanePush)
         {
             return new RoundResolutionComposition(
-                cardActions, board, timing, markers, systemTransitions, null, null);
+                cardActions, board, timing, markers, systemTransitions, lanePush, null, null);
         }
 
         /// <summary>
         /// Card actions alone, with the authority substituting its own board-free defaults. The
-        /// shape most focused fixtures need, named so that the four absent collaborators are a
-        /// deliberate choice rather than four omitted arguments.
+        /// shape most focused fixtures need, named so that the five absent collaborators are a
+        /// deliberate choice rather than five omitted arguments.
         /// </summary>
         public static RoundResolutionComposition ForCardActionsOnly(
             CardActionResolutionAuthority cardActions)
         {
-            return new RoundResolutionComposition(cardActions, null, null, null, null, null, null);
+            return new RoundResolutionComposition(cardActions, null, null, null, null, null, null, null);
         }
     }
 }

@@ -264,13 +264,14 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(15),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(16),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved four times, none of them for it: milestone 6.7 for " +
+                "own. The version has since moved five times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
                 "mid-turn Lane-Push request a completed action can leave behind, milestone 6.10 for " +
-                "p.8's Battle Zone itself, and milestone 6.10a for a paused system transition. The " +
-                "decision is still re-derived from the state as it then stands.");
+                "p.8's Battle Zone itself, milestone 6.10a for a paused system transition, and " +
+                "milestone 6.11 for p.8's Wave counters and the push that spends them. The decision " +
+                "is still re-derived from the state as it then stands.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
                 Is.EqualTo(payload),

@@ -6,8 +6,8 @@ using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.LanePush;
 using GuardsDigital.Core.Rules.Transitions;
-using GuardsDigital.Core.Rules.Transitions.Synthetic;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 
@@ -286,11 +286,15 @@ namespace GuardsDigital.Application
             // One register, shared by the dispatcher that gives and returns markers and the round
             // authority whose snapshot section persists them.
             var rebuiltMarkers = new MarkerAttachmentRegister();
-            // Milestone 6.10a. Rebuilt from the trusted catalog rather than carried across, so a
-            // restart and a retained-prefix Undo begin with no transition running and re-derive any
-            // paused one by replaying the commands that paused it.
+            // Milestones 6.10a and 6.11. Rebuilt from the trusted catalog rather than carried across, so
+            // a restart and a retained-prefix Undo begin with a full Wave pool, no push running and no
+            // transition paused, and re-derive any paused one by replaying the commands that paused it.
+            var rebuiltLanePushAuthority = new LanePushTransitionAuthority(
+                rebuiltBoard, initialState.Setup.WaveCount);
             var rebuiltTransitions = new SystemTransitionAuthority(
-                SyntheticSystemTransitions.CreateCatalog());
+                MatchSystemTransitions.CreateCatalog(),
+                MatchSystemTransitions.CreateRules(rebuiltLanePushAuthority));
+            var rebuiltLanePush = new LanePushConsumption(rebuiltLanePushAuthority, rebuiltTransitions);
             var rebuiltCardActions = new CardActionResolutionAuthority(rebuiltBoard, rebuiltMarkers);
             var rebuiltRound = new RoundResolutionAuthority(
                 rebuiltConfiguration.CardDefinitions,
@@ -303,7 +307,8 @@ namespace GuardsDigital.Application
                     rebuiltBoard,
                     initialState.CreateTiming(),
                     rebuiltMarkers,
-                    rebuiltTransitions));
+                    rebuiltTransitions,
+                    rebuiltLanePush));
 
             ReplaceGraphs(MatchGraphSet.ForSetup(
                 rebuiltConfiguration,

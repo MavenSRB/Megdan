@@ -219,8 +219,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.CurrentEndOfRoundStage,
                 Is.EqualTo(EndOfRoundStage.ResolveRequestedLanePush));
             Assert.That(session.Projection.PendingLanePushRequest.RequestId, Is.EqualTo(requestId));
-            AssertAtomicRejection(session, DirectorCommand.AdvanceEndOfRound());
-            Assert.That(session.Projection.PendingLanePushRequest.RequestId, Is.EqualTo(requestId));
+
+            // Milestone 6.11 consumes at this stage what milestone 6.1 recorded and deferred. What this
+            // case still owns is the deferral itself: the request stood through the token and marker
+            // cleanup stage above and is only spent here.
+            Assert.That(session.Execute(DirectorCommand.AdvanceEndOfRound()).Accepted, Is.True);
+            Assert.That(session.Projection.PendingLanePushRequest, Is.Null,
+                "p.8's push is what consumes the request, and it has now run.");
         }
 
         [Test]
@@ -485,7 +490,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(rejected.Accepted, Is.False);
             Assert.That(rejected.RejectionReason,
-                Is.EqualTo(RoundResolutionRejectionReason.UnimplementedLanePushConsumption),
+                Is.EqualTo(RoundResolutionRejectionReason.UnavailableLanePushTransition),
                 "The round stops because nothing consumes a Lane-Push request yet, which is not " +
                 "the same as an end-of-round handler being absent.");
             Assert.That(rejected.Events, Is.Empty);
@@ -922,7 +927,7 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red),
                 1,
                 new RoundResolutionComposition(
-                    cardActions, board, timing, null, null,
+                    cardActions, board, timing, null, null, null,
                     EndOfRoundFixtureCapabilities.ConfiguredMatch(), null));
 
             return new BattleZoneFixture(authority, board, minions, red, blue, blueSpawn);

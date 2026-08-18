@@ -503,6 +503,7 @@ namespace GuardsDigital.Tests.EditMode
                     board,
                     timing,
                     new MarkerAttachmentRegister(),
+                    null,
                     null));
             Assert.That(round.TryCommitCard(red.OwnerId, red.Id).Accepted, Is.True);
             Assert.That(round.TryCommitCard(blue.OwnerId, blue.Id).Accepted, Is.True);
@@ -610,6 +611,7 @@ namespace GuardsDigital.Tests.EditMode
                     board,
                     timing,
                     new MarkerAttachmentRegister(),
+                    null,
                     null));
 
             var payload = AuthoritativeSnapshotSerializer.Serialize(round, board);

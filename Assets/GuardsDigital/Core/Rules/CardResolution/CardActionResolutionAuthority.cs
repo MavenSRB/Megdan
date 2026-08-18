@@ -1068,6 +1068,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// is recorded, so a second cause could only arise inside the same action instance, and p.8
         /// describes one push per emptied side rather than one per piece taken.
         /// </summary>
+        /// <summary>
+        /// Forgets the mid-turn request p.8's transition has just finished (milestone 6.11).
+        ///
+        /// Consuming it is the round's business rather than this authority's - the transition is a
+        /// round-scoped mechanism and the request is only held here because the action that caused it
+        /// was - so this says nothing about when, and only the checkpoint that ran the push calls it.
+        /// A call with nothing held is a no-op rather than a failure, because the end-of-round
+        /// checkpoint clears its own sibling request through the same path.
+        /// </summary>
+        internal void ConsumeImmediateLanePush()
+        {
+            pendingLanePush = null;
+        }
+
         private void RecordImmediateLanePush(
             LanePushCauseKind cause,
             ActionResolutionId resolutionId,

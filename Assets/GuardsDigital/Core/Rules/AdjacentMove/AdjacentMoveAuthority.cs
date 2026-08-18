@@ -831,6 +831,116 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             return true;
         }
 
+        // ---------------------------------------------------------------------------------------
+        // Milestone 6.11: the occupancy half of p.8's Lane Push. Milestone 6.10 left these out on
+        // purpose - a port that could reach them would have exposed half a transition - and this is
+        // the milestone that completes it.
+        // ---------------------------------------------------------------------------------------
+
+        public IReadOnlyList<MinionOccupancy> FindMinionsInZone(ZoneId zoneId)
+        {
+            return minions
+                .Where(minion => TryGetZoneForCoordinate(minion.Coordinate, out var zone) &&
+                    zone.Equals(zoneId))
+                .OrderBy(minion => minion.MinionId.Value, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        public IReadOnlyList<MinionOccupancy> FindMinionSupply() =>
+            reserveMinions
+                .OrderBy(minion => minion.MinionId.Value, StringComparer.Ordinal)
+                .ToArray();
+
+        public bool CommitValidatedLanePushRemoval(MinionId minionId)
+        {
+            if (!minions.Any(minion => minion.MinionId.Equals(minionId)))
+            {
+                return false;
+            }
+
+            CommitValidatedMinionRemoval(minionId);
+            return true;
+        }
+
+        public UnitSpawnCommitResult CommitValidatedRespawnAtSpawnPoint(
+            MinionId minionId, SpawnPointId spawnPointId)
+        {
+            var index = reserveMinions.FindIndex(minion => minion.MinionId.Equals(minionId));
+            if (index < 0)
+            {
+                return UnitSpawnCommitResult.Reject(
+                    minions.Any(minion => minion.MinionId.Equals(minionId))
+                        ? UnitSpawnRejectionReason.UnitAlreadyOnBoard
+                        : UnitSpawnRejectionReason.UnknownUnit);
+            }
+
+            var spawnPoint = new ConfiguredSpawnPointReference(MapDefinition.Id, spawnPointId);
+            if (!TryGetSpawnPointCoordinate(spawnPoint, out var destination))
+            {
+                return UnitSpawnCommitResult.Reject(UnitSpawnRejectionReason.UnknownSpawnPoint);
+            }
+
+            // p.19's clearance, which p.8 restates for exactly this case: "If a Spawn point is occupied
+            // by a token, first remove that token, then respawn the minion." Any other obstacle blocks,
+            // and p.8's sidebar sends that minion to a chosen empty space instead - a decision this
+            // commit reports rather than makes.
+            PlacedToken clearedToken = null;
+            if (occupancyIndex.IsOccupied(destination))
+            {
+                if (!tokens.Any(token => token.Coordinate.Equals(destination)))
+                {
+                    return UnitSpawnCommitResult.Reject(UnitSpawnRejectionReason.SpawnPointOccupied);
+                }
+
+                clearedToken = CommitValidatedTokenRemovalBeforeUnitSpawn(spawnPoint);
+            }
+
+            var reserved = reserveMinions[index];
+            var space = MapDefinition.Spaces.Single(candidate =>
+                candidate.Kind == BoardMapSpaceKind.Playable && candidate.Coordinate.Equals(destination));
+            // Only the position moves. A miniature's declared Spawn point is identity-bound setup
+            // content, and a restore rebuilds the supply as the configured roster minus the restored
+            // positions, so a respawn that rewrote it would be a change no snapshot carries.
+            var spawned = reserved.WithPosition(
+                new ConfiguredSpaceReference(MapDefinition.Id, space.Id), destination);
+            occupancyIndex.Add(destination, BoardOccupant.ForMinion(spawned.MinionId), nameof(minionId));
+            reserveMinions.RemoveAt(index);
+            minions.Add(spawned);
+            return UnitSpawnCommitResult.Accept(spawned, destination, clearedToken);
+        }
+
+        public bool CommitValidatedLanePushPlacement(MinionId minionId, HexCoordinate destination)
+        {
+            var index = reserveMinions.FindIndex(minion => minion.MinionId.Equals(minionId));
+            if (index < 0 || !IsEmptyPlayableSpace(destination))
+            {
+                return false;
+            }
+
+            var reserved = reserveMinions[index];
+            var space = MapDefinition.Spaces.Single(candidate =>
+                candidate.Kind == BoardMapSpaceKind.Playable && candidate.Coordinate.Equals(destination));
+            var placed = reserved.WithPosition(
+                new ConfiguredSpaceReference(MapDefinition.Id, space.Id), destination);
+            occupancyIndex.Add(destination, BoardOccupant.ForMinion(placed.MinionId), nameof(minionId));
+            reserveMinions.RemoveAt(index);
+            minions.Add(placed);
+            return true;
+        }
+
+        public bool HasTokenAt(HexCoordinate coordinate) =>
+            tokens.Any(token => token.Coordinate.Equals(coordinate));
+
+        private bool TryGetZoneForCoordinate(HexCoordinate coordinate, out ZoneId zoneId)
+        {
+            zoneId = default;
+            var space = MapDefinition.Spaces.FirstOrDefault(candidate =>
+                candidate.Kind == BoardMapSpaceKind.Playable && candidate.Coordinate.Equals(coordinate));
+            if (space?.ZoneId == null) return false;
+            zoneId = space.ZoneId.Value;
+            return true;
+        }
+
         public DisplacementCommitResult CommitValidatedDisplacement(
             BoardObjectReference subject,
             HexCoordinate destination)

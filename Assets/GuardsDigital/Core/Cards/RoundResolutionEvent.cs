@@ -33,7 +33,10 @@ namespace GuardsDigital.Core.Cards
         LanePushRequested = 16,
 
         /// <summary>Milestone 6.10a: a system transition began, stopped on a step, or finished.</summary>
-        SystemTransitionProgressed = 17
+        SystemTransitionProgressed = 17,
+
+        /// <summary>Milestone 6.11: one of rulebook p.8's numbered Lane-Push steps ran.</summary>
+        LanePushStageResolved = 18
     }
 
     public readonly struct RoundResolutionEvent
@@ -60,7 +63,8 @@ namespace GuardsDigital.Core.Cards
             LanePushRequestId lanePushRequestId = default,
             MinionBattleChoiceCommandKind minionBattleChoiceCommandKind = MinionBattleChoiceCommandKind.None,
             GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep systemTransitionStep = null,
-            bool systemTransitionCompleted = false)
+            bool systemTransitionCompleted = false,
+            GuardsDigital.Core.Rules.LanePush.LanePushStageOutcome lanePushStageOutcome = default)
         {
             Kind = kind;
             RoundIndex = roundIndex;
@@ -86,6 +90,7 @@ namespace GuardsDigital.Core.Cards
             MinionBattleChoiceCommandKind = minionBattleChoiceCommandKind;
             SystemTransitionStep = systemTransitionStep;
             SystemTransitionCompleted = systemTransitionCompleted;
+            LanePushStageOutcome = lanePushStageOutcome;
         }
 
         public RoundResolutionEventKind Kind { get; }
@@ -114,6 +119,9 @@ namespace GuardsDigital.Core.Cards
         public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep SystemTransitionStep { get; }
 
         public bool SystemTransitionCompleted { get; }
+
+        /// <summary>Milestone 6.11: which p.8 Lane-Push step this event reports, and how it ended.</summary>
+        public GuardsDigital.Core.Rules.LanePush.LanePushStageOutcome LanePushStageOutcome { get; }
 
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
@@ -375,6 +383,49 @@ namespace GuardsDigital.Core.Cards
                 teamSide: result.PendingStep?.ChoosingSide ?? TeamSide.None,
                 systemTransitionStep: result.PendingStep,
                 systemTransitionCompleted: result.TransitionCompleted);
+        }
+
+        /// <summary>
+        /// Milestone 6.11. The same fact reported by a transition its own rules began: where it is now.
+        /// A push begun by a Lane-Push request has no <c>SystemTransitionResult</c> to hand a reader,
+        /// because nothing commanded it into existence.
+        /// </summary>
+        public static RoundResolutionEvent SystemTransitionPaused(
+            int roundIndex,
+            int turnIndex,
+            GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep pendingStep)
+        {
+            if (pendingStep == null)
+            {
+                throw new ArgumentNullException(nameof(pendingStep));
+            }
+
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.SystemTransitionProgressed,
+                roundIndex,
+                turnIndex,
+                teamSide: pendingStep.ChoosingSide,
+                systemTransitionStep: pendingStep,
+                systemTransitionCompleted: false);
+        }
+
+        /// <summary>
+        /// Milestone 6.11: one of rulebook p.8's numbered Lane-Push steps, and how it ended.
+        ///
+        /// Reported per stage rather than once per push, because the page numbers them and because an
+        /// early game-ending sentence leaves the later ones absent - which is what says they did not
+        /// run, rather than that they ran quietly.
+        /// </summary>
+        public static RoundResolutionEvent LanePushStageResolved(
+            int roundIndex,
+            int turnIndex,
+            GuardsDigital.Core.Rules.LanePush.LanePushStageOutcome outcome)
+        {
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.LanePushStageResolved,
+                roundIndex,
+                turnIndex,
+                lanePushStageOutcome: outcome);
         }
     }
 }

@@ -45,6 +45,7 @@ namespace GuardsDigital.Core.Snapshots
             int roundIndex,
             int turnIndex,
             EffectCapabilityCatalog capabilities,
+            GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush,
             out CardActionResolutionAuthority cardActions)
         {
             var started = reader.ReadBoolean();
@@ -72,7 +73,8 @@ namespace GuardsDigital.Core.Snapshots
                     tieBreaker,
                     new InitiativeResolutionRestoreState(pendingChoice, selectedActor),
                     roundIndex,
-                    turnIndex));
+                    turnIndex),
+                lanePush);
         }
 
         private static void WriteTiming(BinaryWriter writer, ActiveEffectLifecycleRestoreState state)

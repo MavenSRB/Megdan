@@ -11,10 +11,11 @@ namespace GuardsDigital.Core.Rules.LanePush
     /// <summary>
     /// Rulebook p.8's three numbered Lane-Push steps, in the order the page numbers them.
     ///
-    /// The third is declared and not executable at milestone 6.10, which is what makes this an ordered
-    /// prefix rather than a transition: naming the step the prefix stops before is how the result can
-    /// say so, rather than reporting a completed transition that quietly did two thirds of the work.
-    /// Milestone 6.11 implements it.
+    /// All three are executable as of milestone 6.11. The page's third step spans two of the
+    /// transition's engine steps - the removal and the respawn - because milestone 6.11's fifth
+    /// acceptance check asks for them to be separately recorded resume locations; this enum stays the
+    /// page's vocabulary rather than the engine's, so a reported outcome can be read against the
+    /// rulebook.
     /// </summary>
     public enum LanePushTransitionStage
     {
@@ -32,7 +33,12 @@ namespace GuardsDigital.Core.Rules.LanePush
         /// <summary>The step ended the game, so no later step runs.</summary>
         GameEnded = 1,
 
-        /// <summary>The step exists in the rules and not yet in the engine (milestone 6.11).</summary>
+        /// <summary>
+        /// The step existed in the rules and not yet in the engine. Retained as the vocabulary
+        /// milestone 6.10's ordered prefix reported with; milestone 6.11 implements every stage, so
+        /// nothing in the engine produces this any more and the conformance rule that proved the prefix
+        /// unreachable now proves the opposite.
+        /// </summary>
         NotImplemented = 2
     }
 
@@ -207,48 +213,21 @@ namespace GuardsDigital.Core.Rules.LanePush
                 gameEndingCause == LanePushGameEndingCause.None ? TeamSide.None : winningSide);
     }
 
-    /// <summary>What the prefix decided, before any of it is applied.</summary>
-    internal sealed class LanePushPrefixPlan
+    /// <summary>What the Zone stage decided, before any of it is applied.</summary>
+    internal sealed class LanePushZoneAdvancePlan
     {
-        private LanePushPrefixPlan(
-            LanePushPrefixRejectionReason rejectionReason,
-            int remainingWaveCounters,
-            bool finalWaveFlipped,
-            ZoneId? advanceTo,
-            bool throneCaptured)
+        public LanePushZoneAdvancePlan(ZoneId advanceTo, bool throneCaptured)
         {
-            RejectionReason = rejectionReason;
-            RemainingWaveCounters = remainingWaveCounters;
-            FinalWaveFlipped = finalWaveFlipped;
             AdvanceTo = advanceTo;
             ThroneCaptured = throneCaptured;
         }
 
-        public LanePushPrefixRejectionReason RejectionReason { get; }
-        public bool Accepted => RejectionReason == LanePushPrefixRejectionReason.None;
-        public int RemainingWaveCounters { get; }
-        public bool FinalWaveFlipped { get; }
-
-        /// <summary>The next Zone, or absent because the final Wave ended the game before the Zone stage.</summary>
-        public ZoneId? AdvanceTo { get; }
-
+        public ZoneId AdvanceTo { get; }
         public bool ThroneCaptured { get; }
-
-        public static LanePushPrefixPlan Reject(LanePushPrefixRejectionReason reason) =>
-            new LanePushPrefixPlan(reason, 0, false, null, false);
-
-        public static LanePushPrefixPlan FinalWave(int remainingWaveCounters) =>
-            new LanePushPrefixPlan(
-                LanePushPrefixRejectionReason.None, remainingWaveCounters, true, null, false);
-
-        public static LanePushPrefixPlan Advance(
-            int remainingWaveCounters, ZoneId advanceTo, bool throneCaptured) =>
-            new LanePushPrefixPlan(
-                LanePushPrefixRejectionReason.None, remainingWaveCounters, false, advanceTo, throneCaptured);
     }
 
     /// <summary>
-    /// Rulebook p.8's ordered Lane-Push prefix, decided and not applied.
+    /// Rulebook p.8's Lane-Push stages, decided and not applied.
     ///
     /// "1. Flip one Wave counter face-down. If the last remaining Wave counter is flipped, the game ends
     /// immediately and the team who won this final push wins the game. 2. The next Zone towards the
@@ -256,20 +235,21 @@ namespace GuardsDigital.Core.Rules.LanePush
     /// Battle Zone, the team who won the push wins the game."
     ///
     /// It is internal, beside <c>MinionBattleRules</c> and for the reason milestone 6.1k recorded there:
-    /// a rule this incomplete has no business being a public engine surface, and the one public seam is
-    /// the authority that owns the Wave counters and drives it. Milestone 6.11 adds p.8's third step
-    /// behind that same seam.
+    /// the one public seam is the authority that owns the Wave counters, and the transition's steps
+    /// reach these through it.
     ///
-    /// Deciding and applying are separate here because the two steps are not independent: the Zone stage
-    /// runs only if the Wave stage did not end the game, so a plan that computed both and let a caller
-    /// apply either would be a partial transition with extra steps. The plan says exactly what will
-    /// happen; the authority makes it happen in the page's order.
+    /// Deciding and applying stay separate, and milestone 6.11 splits the decision the way the
+    /// transition's steps are split. Everything a push needs to be legal at all is decided once, when
+    /// the push begins, because a push that turned out to be illegal after its Wave counter was spent
+    /// could not be taken back; each stage then decides only its own half.
     /// </summary>
     internal static class LanePushPrefixRules
     {
-        public static LanePushPrefixPlan Plan(
+        /// <summary>
+        /// Whether this push can begin at all, decided before p.8's first step spends anything.
+        /// </summary>
+        public static LanePushPrefixRejectionReason Validate(
             ILaneAdvanceAuthority board,
-            int remainingWaveCounters,
             TeamSide winningSide,
             TeamSide losingSide)
         {
@@ -279,45 +259,47 @@ namespace GuardsDigital.Core.Rules.LanePush
                 (winningSide != TeamSide.Red && winningSide != TeamSide.Blue) ||
                 (losingSide != TeamSide.Red && losingSide != TeamSide.Blue))
             {
-                return LanePushPrefixPlan.Reject(LanePushPrefixRejectionReason.UndeclaredSides);
+                return LanePushPrefixRejectionReason.UndeclaredSides;
             }
 
             if (!board.CurrentBattleZoneId.HasValue)
             {
-                return LanePushPrefixPlan.Reject(LanePushPrefixRejectionReason.NoCurrentBattleZone);
+                return LanePushPrefixRejectionReason.NoCurrentBattleZone;
             }
 
             var lane = board.MapDefinition.OrderedLaneZoneIds;
             var currentIndex = IndexOf(lane, board.CurrentBattleZoneId.Value);
             if (currentIndex < 0)
             {
-                return LanePushPrefixPlan.Reject(LanePushPrefixRejectionReason.BattleZoneOffTheLane);
+                return LanePushPrefixRejectionReason.BattleZoneOffTheLane;
             }
 
             if (!ThroneZoneQuery.TryGetThroneZone(board.MapDefinition, losingSide, out var losingThrone))
             {
-                return LanePushPrefixPlan.Reject(LanePushPrefixRejectionReason.UnavailableLosingThrone);
+                return LanePushPrefixRejectionReason.UnavailableLosingThrone;
             }
 
             var throneIndex = IndexOf(lane, losingThrone.Id);
             if (throneIndex < 0)
             {
-                return LanePushPrefixPlan.Reject(LanePushPrefixRejectionReason.UnavailableLosingThrone);
+                return LanePushPrefixRejectionReason.UnavailableLosingThrone;
             }
 
-            if (throneIndex == currentIndex)
-            {
-                return LanePushPrefixPlan.Reject(LanePushPrefixRejectionReason.BattleZoneAlreadyCaptured);
-            }
+            return throneIndex == currentIndex
+                ? LanePushPrefixRejectionReason.BattleZoneAlreadyCaptured
+                : LanePushPrefixRejectionReason.None;
+        }
 
-            // Step 1 first, and its result decides whether step 2 is reached at all. Nothing about the
-            // Zone is inspected before the counter is accounted for, because p.8 numbers them and ends
-            // the game "immediately" on the last one.
-            //
-            // An exhausted pool is an engine defect rather than a rules outcome, so it throws instead of
-            // taking a rejection member no caller could produce: the only caller starts with at least
-            // one counter and stops the moment the last one is flipped, so a zero here means the
-            // authority let a match carry on past its own ending.
+        /// <summary>
+        /// p.8 step 1: the counters left after this flip.
+        ///
+        /// An exhausted pool is an engine defect rather than a rules outcome, so it throws instead of
+        /// taking a rejection member no caller could produce: a push starts with at least one counter
+        /// and the match stops the moment the last one is flipped, so a zero here means the authority
+        /// let a match carry on past its own ending.
+        /// </summary>
+        public static int PlanWaveFlip(int remainingWaveCounters)
+        {
             if (remainingWaveCounters <= 0)
             {
                 throw new ArgumentOutOfRangeException(
@@ -325,18 +307,27 @@ namespace GuardsDigital.Core.Rules.LanePush
                     "A push with no Wave counter left to flip is a match that already ended.");
             }
 
-            var remaining = remainingWaveCounters - 1;
-            if (remaining == 0)
-            {
-                return LanePushPrefixPlan.FinalWave(remaining);
-            }
+            return remainingWaveCounters - 1;
+        }
 
-            // "The next Zone towards the losing team's Throne": one step along the ordered Lane in the
-            // direction that Throne lies, which the Lane's own order supplies. The Throne is at one end
-            // of the sequence and the Battle Zone is somewhere inside it, so the direction is a sign.
+        /// <summary>
+        /// p.8 step 2: "The next Zone towards the losing team's Throne" - one step along the ordered
+        /// Lane in the direction that Throne lies, which the Lane's own order supplies. The Throne is at
+        /// one end of the sequence and the Battle Zone is somewhere inside it, so the direction is a
+        /// sign.
+        /// </summary>
+        public static LanePushZoneAdvancePlan PlanZoneAdvance(
+            ILaneAdvanceAuthority board, TeamSide losingSide)
+        {
+            if (board == null) throw new ArgumentNullException(nameof(board));
+
+            var lane = board.MapDefinition.OrderedLaneZoneIds;
+            var currentIndex = IndexOf(lane, board.CurrentBattleZoneId.Value);
+            ThroneZoneQuery.TryGetThroneZone(board.MapDefinition, losingSide, out var losingThrone);
+            var throneIndex = IndexOf(lane, losingThrone.Id);
             var nextIndex = currentIndex + (throneIndex > currentIndex ? 1 : -1);
             var next = lane[nextIndex];
-            return LanePushPrefixPlan.Advance(remaining, next, next.Equals(losingThrone.Id));
+            return new LanePushZoneAdvancePlan(next, next.Equals(losingThrone.Id));
         }
 
         private static int IndexOf(IReadOnlyList<ZoneId> lane, ZoneId zoneId)

@@ -17,14 +17,15 @@ namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
     /// Milestone 6.10's first and second acceptance checks, stated as rules rather than as sampled
-    /// cases.
+    /// cases - the first of them inverted at milestone 6.11, which is the milestone it was waiting for.
     ///
-    /// The first: the incomplete prefix stays internal and cannot consume a live request. p.8's third
-    /// step - "Remove all minions in the previous Battle Zone. Respawn one minion of the matching type
-    /// in each Spawn point in the new Battle Zone" - is milestone 6.11's, so a match that ran the first
-    /// two steps would have moved its Battle Zone away from minions that were never removed and never
-    /// respawned. Nothing in the engine may reach the prefix, and the way to be sure is a rule that
-    /// audits every Core type rather than a list of the ones that were remembered.
+    /// The first rule was "nothing in the engine reaches p.8's ordered prefix", because the page's third
+    /// step did not exist and a match that ran the first two would have moved its Battle Zone away from
+    /// minions that were never removed and never respawned. Milestone 6.11 implements the third step, so
+    /// the rule turns over rather than being deleted: p.8's stages may be run by the Lane-Push step
+    /// rules and by nothing else. That is the same invariant from the other side - a caller that flipped
+    /// a Wave counter or advanced the Zone on its own would be running a push no continuation was
+    /// recording, which is the partial transition in a new disguise.
     ///
     /// The second: the authoritative <c>CurrentBattleZoneId</c> is what the shared Battle-Zone query
     /// reads. That is held from the other end - nothing but Quick Game setup and the board's own
@@ -37,11 +38,11 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class LanePushPrefixIsolationConformanceTests
     {
         // -------------------------------------------------------------------------------------------
-        // Rule 1: nothing reaches the incomplete prefix
+        // Rule 1: p.8's stages are run by the transition's step rules and by nothing else
         // -------------------------------------------------------------------------------------------
 
         [Test]
-        public void NothingInTheEngine_RunsTheIncompleteLanePushPrefix()
+        public void NothingButTheStepRules_RunsAPageEightStage()
         {
             var subjects = AuditedTypes().ToArray();
 
@@ -49,39 +50,42 @@ namespace GuardsDigital.Tests.EditMode
                 "Unresolved IL tokens mean this scan skipped instructions, so a violation could hide " +
                 "behind one.");
 
-            Assert.That(FindPrefixCallers(subjects), Is.Empty,
-                "Something in the engine drives p.8's ordered prefix. Until milestone 6.11 adds the " +
-                "removal and respawn, running it would leave the Battle Zone somewhere the minions " +
-                "are not, which is exactly the partial transition this milestone must not expose.");
+            Assert.That(FindStageRunners(subjects), Is.Empty,
+                "Something outside the Lane-Push step rules runs one of p.8's stages. A Wave counter " +
+                "flipped or a Zone advanced outside the transition is a push no continuation is " +
+                "recording, so a snapshot taken across it would restore a match that had skipped a " +
+                "step somebody still owed.");
         }
 
         [Test]
-        public void BothLanePushRequests_StillStopAtTheirOwnCheckpoints()
+        public void BothLanePushRequests_NowReachTheTransition()
         {
-            // The vacuity guard for the rule above. An engine that had deleted both consumption
-            // checkpoints would satisfy "nothing drives the prefix" perfectly, so the two refusals are
-            // named here as the thing that is supposed to be standing in the prefix's place.
+            // The vacuity guard for the rule above. An engine in which nothing consumed a Lane-Push
+            // request at all would satisfy "nothing but the step rules runs a stage" perfectly, so the
+            // two consumers are named as the thing that is supposed to be reaching them.
             Assert.That(
-                Enum.IsDefined(
-                    typeof(RoundResolutionRejectionReason),
-                    RoundResolutionRejectionReason.UnimplementedLanePushConsumption),
+                ILConformanceScanner.References(
+                    ILConformanceScanner.WithNestedTypes(typeof(LanePushStepRules)),
+                    ILConformanceScanner.Method(
+                        typeof(LanePushTransitionAuthority),
+                        nameof(LanePushTransitionAuthority.ResolveWaveStage))),
                 Is.True,
-                "The end-of-round request still refuses at its consumption stage.");
-            Assert.That(
-                Enum.IsDefined(
-                    typeof(TurnResolutionRejectionReason),
-                    TurnResolutionRejectionReason.UnimplementedLanePushConsumption),
-                Is.True,
-                "And the mid-turn request still stops the turn at its checkpoint.");
+                "The step rules are what run p.8's stages; a rule permitting only them is worth " +
+                "nothing if they no longer do.");
             Assert.That(
                 ILConformanceScanner.References(
                     ILConformanceScanner.WithNestedTypes(typeof(RoundResolutionAuthority)),
                     ILConformanceScanner.Method(
-                        typeof(LanePushTransitionAuthority),
-                        nameof(LanePushTransitionAuthority.ResolveOrderedPrefix))),
-                Is.False,
-                "The round authority reaches the checkpoint and not the prefix, which is the two " +
-                "halves of this milestone's first acceptance check meeting in one place.");
+                        typeof(LanePushConsumption), nameof(LanePushConsumption.TryConsume))),
+                Is.True,
+                "The end-of-round request reaches the transition at its consumption stage.");
+            Assert.That(
+                ILConformanceScanner.References(
+                    ILConformanceScanner.WithNestedTypes(typeof(TurnResolutionAuthority)),
+                    ILConformanceScanner.Method(
+                        typeof(LanePushConsumption), nameof(LanePushConsumption.TryConsume))),
+                Is.True,
+                "And the mid-turn request reaches it at the Initiative advance p.8 puts it before.");
         }
 
         [Test]
@@ -103,22 +107,22 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ConformanceRule_DistinguishesAllowedAndForbiddenExamples()
         {
-            Assert.That(FindPrefixCallers(new[] { typeof(RequestConsumingSample) }), Is.Not.Empty,
-                "A checkpoint that turned a live request into a push must be reported, or the rule is " +
-                "inert.");
+            Assert.That(FindStageRunners(new[] { typeof(DirectStageSample) }), Is.Not.Empty,
+                "A caller that flips a Wave counter outside the transition must be reported, or the " +
+                "rule is inert.");
 
-            Assert.That(FindPrefixCallers(new[] { typeof(RefusingCheckpointSample) }), Is.Empty,
-                "The compliant twin refuses the same request and must not be reported, or the rule " +
-                "bans the shape that is actually correct today.");
+            Assert.That(FindStageRunners(new[] { typeof(RequestConsumingSample) }), Is.Empty,
+                "The compliant twin hands the request to the transition and must not be reported, or " +
+                "the rule bans the shape that is now correct.");
         }
 
         [Test]
-        public void ThePrefixSeam_CannotBeHandedALiveRequest()
+        public void ThePushSeam_CannotBeHandedALiveRequest()
         {
             var parameters = ILConformanceScanner
                 .Method(
                     typeof(LanePushTransitionAuthority),
-                    nameof(LanePushTransitionAuthority.ResolveOrderedPrefix))
+                    nameof(LanePushTransitionAuthority.TryBeginPush))
                 .GetParameters()
                 .Select(parameter => parameter.ParameterType)
                 .ToArray();
@@ -171,11 +175,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheNamedMembers_Resolve()
         {
-            Assert.That(
-                ILConformanceScanner.Method(
-                    typeof(LanePushTransitionAuthority),
-                    nameof(LanePushTransitionAuthority.ResolveOrderedPrefix)),
-                Is.Not.Null);
+            Assert.That(StageForms(), Is.Not.Empty);
             Assert.That(FlagForms(), Is.Not.Empty,
                 "A rule that names nothing protects nothing.");
         }
@@ -184,18 +184,40 @@ namespace GuardsDigital.Tests.EditMode
         // The rules
         // -------------------------------------------------------------------------------------------
 
-        private static IReadOnlyList<string> FindPrefixCallers(IEnumerable<Type> types)
+        private static IReadOnlyList<string> FindStageRunners(IEnumerable<Type> types)
         {
-            var forbidden = ILConformanceScanner.Method(
-                typeof(LanePushTransitionAuthority),
-                nameof(LanePushTransitionAuthority.ResolveOrderedPrefix));
+            var forbidden = StageForms();
             return types
-                .Where(type => type != typeof(LanePushTransitionAuthority))
-                .Where(type => ILConformanceScanner.References(new[] { type }, forbidden))
-                .Select(type => $"{type.FullName} runs p.8's incomplete ordered prefix")
+                .Where(type => !IsPermittedStageRunner(type))
+                .SelectMany(type => forbidden
+                    .Where(member => ILConformanceScanner.References(new[] { type }, member))
+                    .Select(member => $"{type.FullName} runs {ILConformanceScanner.Describe(member)}"))
                 .OrderBy(value => value, StringComparer.Ordinal)
                 .ToArray();
         }
+
+        /// <summary>
+        /// The step rules, which are what a transition step is, and the authority that declares the
+        /// stages - the rule is about who else may run one, not about their existing.
+        /// </summary>
+        private static bool IsPermittedStageRunner(Type type) =>
+            type == typeof(LanePushStepRules) ||
+            type == typeof(LanePushTransitionAuthority) ||
+            type.DeclaringType == typeof(LanePushStepRules) ||
+            type.DeclaringType == typeof(LanePushTransitionAuthority);
+
+        private static IReadOnlyList<MethodInfo> StageForms() => new[]
+        {
+            ILConformanceScanner.Method(
+                typeof(LanePushTransitionAuthority),
+                nameof(LanePushTransitionAuthority.ResolveWaveStage)),
+            ILConformanceScanner.Method(
+                typeof(LanePushTransitionAuthority),
+                nameof(LanePushTransitionAuthority.ResolveZoneStage)),
+            ILConformanceScanner.Method(
+                typeof(LanePushTransitionAuthority),
+                nameof(LanePushTransitionAuthority.ResolvePreviousZoneRemoval))
+        };
 
         private static IReadOnlyList<string> FindZoneMovers(IEnumerable<Type> types)
         {
@@ -270,21 +292,24 @@ namespace GuardsDigital.Tests.EditMode
         // The samples the rules are measured against
         // -------------------------------------------------------------------------------------------
 
-        /// <summary>A checkpoint that wrongly turns milestone 6.9's live request into a push.</summary>
-        private static class RequestConsumingSample
+        /// <summary>
+        /// A caller that runs one of p.8's stages itself. It compiles, it flips a real Wave counter,
+        /// and no continuation anywhere records that it happened.
+        /// </summary>
+        private static class DirectStageSample
         {
-            public static LanePushPrefixResult Consume(
-                PendingImmediateLanePushRequest request, LanePushTransitionAuthority transition) =>
-                transition.ResolveOrderedPrefix(request.WinningSide, request.LosingSide);
+            public static LanePushStageOutcome Flip(LanePushTransitionAuthority transition) =>
+                transition.ResolveWaveStage();
         }
 
-        /// <summary>The shape that is correct today: say the consumption is not implemented.</summary>
-        private static class RefusingCheckpointSample
+        /// <summary>The shape that is correct: hand the request to the transition and let it run.</summary>
+        private static class RequestConsumingSample
         {
-            public static TurnResolutionRejectionReason Refuse(PendingImmediateLanePushRequest request) =>
-                request == null
-                    ? TurnResolutionRejectionReason.None
-                    : TurnResolutionRejectionReason.UnimplementedLanePushConsumption;
+            public static LanePushConsumptionResult Consume(
+                PendingImmediateLanePushRequest request, LanePushConsumption consumption) =>
+                consumption.TryConsume(
+                    request.RequestId, request.WinningSide, request.LosingSide,
+                    new TieBreakerState(TeamSide.Red));
         }
 
         /// <summary>A caller that moves the Battle Zone without the Wave stage that precedes it.</summary>

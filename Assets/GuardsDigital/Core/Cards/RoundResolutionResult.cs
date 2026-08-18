@@ -34,7 +34,7 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="MissingRequiredEndOfRoundHandler"/>: the handler is not missing by
         /// misconfiguration, the rule it would apply is unimplemented.
         /// </summary>
-        UnimplementedLanePushConsumption = 14,
+        UnavailableLanePushTransition = 14,
 
         /// <summary>Milestone 6.10a: this build supplies no transition definition by that name.</summary>
         UnknownSystemTransition = 15,
@@ -54,7 +54,20 @@ namespace GuardsDigital.Core.Cards
         /// never offered. One reason rather than four, because they are one fact to a caller: the
         /// continuation is exactly as it was.
         /// </summary>
-        IllegalSystemTransitionChoice = 18
+        IllegalSystemTransitionChoice = 18,
+
+        /// <summary>
+        /// Milestone 6.11: p.8's push is already running and stopped on a chooser, so the stage that
+        /// began it is waiting for that answer rather than for another advance.
+        /// </summary>
+        IncompleteLanePushTransition = 19,
+
+        /// <summary>
+        /// Milestone 6.11: p.8's push cannot begin on this board - no Battle Zone, a Battle Zone off
+        /// the ordered Lane, no Throne for the losing side, or a game that has already ended. Every one
+        /// of them leaves the match exactly as it was.
+        /// </summary>
+        RefusedLanePushTransition = 20
     }
 
     public readonly struct RoundResolutionResult

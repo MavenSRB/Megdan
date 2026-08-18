@@ -49,6 +49,7 @@ namespace GuardsDigital.Core.Snapshots
             WritePendingLanePushRequest(writer, pendingLanePushRequest);
             WriteTiming(writer, round.Timing.CaptureRestoreState());
             WriteMarkers(writer, round.Markers.CaptureRestoreState());
+            WriteLanePush(writer, round.LanePush?.LanePush);
             WritePendingSystemTransitionStep(writer, systemTransitions);
 
             var (hasCardActions, roundDefeatRewards) = roundCardActions;
@@ -95,7 +96,19 @@ namespace GuardsDigital.Core.Snapshots
             var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
             var timing = ActiveEffectLifecycle.Restore(ReadTiming(reader, capabilities));
             var markers = MarkerAttachmentRegister.Restore(ReadMarkers(reader, components, participants));
-            var systemTransitions = ReadSystemTransitions(reader, transitions);
+
+            // The Lane Push is read before the continuation that may be paused inside it, because a
+            // paused respawn is re-derived against this board and these Wave counters rather than
+            // trusted from the payload.
+            var lanePushAuthority = ReadLanePush(reader, board);
+            var transitionRules = lanePushAuthority == null
+                ? GuardsDigital.Core.Rules.Transitions.DeclaredSystemTransitionStepRules.Instance
+                : GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateRules(lanePushAuthority);
+            var systemTransitions = ReadSystemTransitions(reader, transitions, transitionRules);
+            var lanePush = lanePushAuthority == null
+                ? null
+                : new GuardsDigital.Core.Rules.LanePush.LanePushConsumption(
+                    lanePushAuthority, systemTransitions);
             var hasRoundCardActions = reader.ReadBoolean();
             var roundDefeatRewards = ReadDefeatRewards(reader);
 
@@ -110,7 +123,7 @@ namespace GuardsDigital.Core.Snapshots
             if (reader.ReadBoolean())
             {
                 turn = ReadTurn(reader, definitions, cards, participants, board, timing, markers,
-                    roundIndex, turnIndex, capabilities, out cardActions);
+                    roundIndex, turnIndex, capabilities, lanePush, out cardActions);
             }
             else if (hasRoundCardActions)
             {
@@ -150,18 +163,105 @@ namespace GuardsDigital.Core.Snapshots
                 timing,
                 markers,
                 board,
-                systemTransitions);
+                systemTransitions,
+                lanePush);
+        }
+
+        /// <summary>
+        /// Milestone 6.11. Rulebook p.8's shared Wave counters, the victory sentence that ended the game
+        /// if either has, and the push now running.
+        ///
+        /// Milestone 6.10 wrote none of this and said why: nothing a live match could reach read a Wave
+        /// counter, so a persisted one would have been a wire field no restore could disagree about.
+        /// The transition is reachable now, so a restore that defaulted the pool would hand a match back
+        /// counters it had already spent, and one that forgot the running push's sides would resume a
+        /// transition that no longer knew who had won it.
+        /// </summary>
+        private static void WriteLanePush(
+            BinaryWriter writer, GuardsDigital.Core.Rules.LanePush.LanePushTransitionAuthority lanePush)
+        {
+            writer.Write(lanePush != null);
+            if (lanePush == null) return;
+
+            var state = lanePush.CaptureRestoreState();
+            state.Deconstruct(
+                out var remainingWaveCounters, out var gameEndingCause, out var winningSide,
+                out var running);
+            writer.Write(remainingWaveCounters);
+            writer.Write((int)gameEndingCause);
+            writer.Write((int)winningSide);
+            writer.Write(running != null);
+            if (running == null) return;
+
+            writer.Write((int)running.WinningSide);
+            writer.Write((int)running.LosingSide);
+            writer.Write((int)running.TieBreakerSide);
+            writer.Write(running.PreviousBattleZoneId.HasValue);
+            if (running.PreviousBattleZoneId.HasValue)
+            {
+                writer.Write(running.PreviousBattleZoneId.Value.Value);
+            }
+
+            writer.Write(running.Outcomes.Count);
+            foreach (var outcome in running.Outcomes)
+            {
+                writer.Write((int)outcome.Stage);
+                writer.Write((int)outcome.Kind);
+                writer.Write((int)outcome.GameEndingCause);
+            }
+        }
+
+        private static GuardsDigital.Core.Rules.LanePush.LanePushTransitionAuthority ReadLanePush(
+            BinaryReader reader, AdjacentMoveAuthority board)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            var remainingWaveCounters = reader.ReadInt32();
+            var gameEndingCause = SnapshotEnumReader.Read<
+                GuardsDigital.Core.Rules.LanePush.LanePushGameEndingCause>(
+                reader, "Lane-Push game-ending cause");
+            var winningSide = SnapshotEnumReader.Read<TeamSide>(reader, "Lane-Push winning side");
+            GuardsDigital.Core.Rules.LanePush.RunningLanePush running = null;
+            if (reader.ReadBoolean())
+            {
+                var runningWinner = SnapshotEnumReader.Read<TeamSide>(reader, "running push winner");
+                var runningLoser = SnapshotEnumReader.Read<TeamSide>(reader, "running push loser");
+                var tieBreakerSide = SnapshotEnumReader.Read<TeamSide>(reader, "running push tie-breaker");
+                ZoneId? previousBattleZoneId = reader.ReadBoolean()
+                    ? new ZoneId(reader.ReadString())
+                    : (ZoneId?)null;
+                var outcomes = ReadMany(reader, "Lane-Push stage outcomes", () =>
+                    new GuardsDigital.Core.Rules.LanePush.LanePushStageOutcome(
+                        SnapshotEnumReader.Read<
+                            GuardsDigital.Core.Rules.LanePush.LanePushTransitionStage>(
+                            reader, "Lane-Push stage"),
+                        SnapshotEnumReader.Read<
+                            GuardsDigital.Core.Rules.LanePush.LanePushStageOutcomeKind>(
+                            reader, "Lane-Push stage outcome"),
+                        SnapshotEnumReader.Read<
+                            GuardsDigital.Core.Rules.LanePush.LanePushGameEndingCause>(
+                            reader, "Lane-Push stage victory cause")));
+                running = new GuardsDigital.Core.Rules.LanePush.RunningLanePush(
+                    runningWinner, runningLoser, tieBreakerSide, previousBattleZoneId, outcomes);
+            }
+
+            return GuardsDigital.Core.Rules.LanePush.LanePushTransitionAuthority.Restore(
+                new GuardsDigital.Core.Rules.LanePush.LanePushRestoreState(
+                    remainingWaveCounters, gameEndingCause, winningSide, running),
+                board);
         }
 
         /// <summary>
         /// Milestone 6.10a. A paused transition writes identity and recorded facts only - which
-        /// transition, which step, who chooses, what they may choose, and which steps have already
-        /// happened. What those steps *are* stays in the catalog, for the reason the Active-effect
-        /// section states at v8 and the marker section repeats: a payload may say which content this is
-        /// and what has happened to it, never what that content means.
+        /// transition, which step, which item of it, who chooses, what they may choose, and which steps
+        /// and items have already happened. What those steps *are* stays in the catalog, for the reason
+        /// the Active-effect section states at v8 and the marker section repeats: a payload may say which
+        /// content this is and what has happened to it, never what that content means.
         ///
-        /// The single leading boolean is the whole cost for a match with no transition running, which
-        /// is every match this build can produce outside the synthetic fixture.
+        /// The single leading boolean is the whole cost for a match with no transition running.
         /// </summary>
         private static void WritePendingSystemTransitionStep(
             BinaryWriter writer,
@@ -174,34 +274,62 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(pending.InstanceId.Value);
             writer.Write(pending.DefinitionId.Value);
             writer.Write(pending.StepId.Value);
+
+            // Milestone 6.11's item, written as a present/absent pair rather than a blank string,
+            // because "this pause is about no item" and "this pause is about an item whose name is
+            // empty" are different claims and only the first is legal.
+            writer.Write(pending.ItemId.IsDefined);
+            if (pending.ItemId.IsDefined)
+            {
+                writer.Write(pending.ItemId.Value);
+            }
+
             writer.Write((int)pending.ChoosingSide);
             WriteStrings(writer, pending.Options.Select(option => option.Value));
             WriteStrings(writer, pending.CompletedStepIds.Select(step => step.Value));
+            WriteStrings(writer, pending.CompletedItemIds.Select(item => item.Value));
         }
 
         private static GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority ReadSystemTransitions(
             BinaryReader reader,
-            GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions)
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions,
+            GuardsDigital.Core.Rules.Transitions.ISystemTransitionStepRules transitionRules)
         {
             GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep pending = null;
             if (reader.ReadBoolean())
             {
+                var instanceId =
+                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionInstanceId(reader.ReadString());
+                var definitionId =
+                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId(reader.ReadString());
+                var stepId =
+                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionStepId(reader.ReadString());
+                var itemId = reader.ReadBoolean()
+                    ? new GuardsDigital.Core.Rules.Transitions.SystemTransitionItemId(reader.ReadString())
+                    : GuardsDigital.Core.Rules.Transitions.SystemTransitionItemId.None;
                 pending = new GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep(
-                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionInstanceId(reader.ReadString()),
-                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId(reader.ReadString()),
-                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionStepId(reader.ReadString()),
+                    instanceId,
+                    definitionId,
+                    stepId,
+                    itemId,
                     SnapshotEnumReader.Read<TeamSide>(reader, "transition choosing side"),
                     ReadStrings(reader, "transition options")
                         .Select(value => new GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId(value)),
                     ReadStrings(reader, "transition completed steps")
-                        .Select(value => new GuardsDigital.Core.Rules.Transitions.SystemTransitionStepId(value)));
+                        .Select(value => new GuardsDigital.Core.Rules.Transitions.SystemTransitionStepId(value)),
+                    ReadStrings(reader, "transition completed items")
+                        .Select(value => new GuardsDigital.Core.Rules.Transitions.SystemTransitionItemId(value)));
             }
 
             // The authority's own restore is what refuses a payload the trusted definitions do not
             // reproduce, so the reader states no second opinion about what a legal continuation is.
+            // The rules travel with it because milestone 6.11's derived steps have no catalog options
+            // to be compared with, and re-deriving them over the restored board is what takes their
+            // place.
             return GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority.Restore(
                 new GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState(pending),
-                transitions);
+                transitions,
+                transitionRules);
         }
 
         /// <summary>

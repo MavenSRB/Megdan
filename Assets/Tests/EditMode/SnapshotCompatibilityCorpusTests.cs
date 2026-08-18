@@ -364,14 +364,14 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v15", "42d0da50bdaf3a16703b9f80a11d1c7f42e965ffd85baa6f3ed93de225e56004"),
-            new CompatibilityFixture("active-turn-v15", "c33d36b5165a2923e243a215e8a0e507d1b8d71e783864acbbff6b38c8b581dd"),
-            new CompatibilityFixture("pending-choice-v15", "bb748f1dfa3625bce84ffbf1e7db43e773978e6c8897bd7d7dac777066e11bb3"),
-            new CompatibilityFixture("end-of-round-v15", "204c16e26f71adfd97dccfd4e3ed7fd21d7e8748c8ad0c846834e02cffdeee7c"),
-            new CompatibilityFixture("pending-minion-battle-v15", "624f9d576947fc5fd52bd5e66e0301c832fab088c926598de51ae18c481bac40"),
-            new CompatibilityFixture("placed-token-v15", "029b26eccc64e0aee742b95a7d0a7ea4d004ff55a7a340d55866ac69501110f4"),
-            new CompatibilityFixture("attached-marker-v15", "0b21a43ac17fd5eaab54a1a617fa4b89a9f395576f04ca545669d5ecd3b98f63"),
-            new CompatibilityFixture("pending-correction-v15", "baea2859c0a1f68a30cefec10cf36eb1f03b7ba4e80f08382ddfe4f236fe3c6d")
+            new CompatibilityFixture("setup-v16", "16d20dbacdfc53d3408f3098b4153a69425d03a8d691e1a9f46d93108197d7bc"),
+            new CompatibilityFixture("active-turn-v16", "08b1cf62cf850609e6c510d27c77dfec813958d9c0ae2905e0a9c21ee85420eb"),
+            new CompatibilityFixture("pending-choice-v16", "50abf7af6040c7eb5b10ef58240726ee1b43a327407dcbaa55ce74d76bd24ff8"),
+            new CompatibilityFixture("end-of-round-v16", "51e1e8156a78db3db655d04933ab74301b9fc896934a0b3dd0ef022b23d81408"),
+            new CompatibilityFixture("pending-minion-battle-v16", "438bc00efb65cc5b302e398efd9a8bc234b208458d235e2cfbecabf64d0d08b7"),
+            new CompatibilityFixture("placed-token-v16", "543ab19be5daf4a94df00c5183b9f2cd1443b09b98f32c4681ac5b7116ce87ab"),
+            new CompatibilityFixture("attached-marker-v16", "f8a532046adf3730872459be007c4caa145f919d22ca8d6911b34e9ebc7e061d"),
+            new CompatibilityFixture("pending-correction-v16", "646e36ea9106cf8878b0834f6d759c916fb4dde6eb34038985bae6f8151e45a2")
         };
 
         [Test]
@@ -454,16 +454,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v15", session.CaptureSnapshot());
+            values.Add("setup-v16", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v15", session.CaptureSnapshot());
+            values.Add("active-turn-v16", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v15", session.CaptureSnapshot());
+            values.Add("pending-choice-v16", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -479,7 +479,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v15", session.CaptureSnapshot());
+            values.Add("end-of-round-v16", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -488,17 +488,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v15", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v16", session.CaptureSnapshot());
 
             // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
             // carry zero components would leave the sections it exists to protect untested, so one
             // payload holds a token on the board and one holds a marker on a hero.
-            values.Add("placed-token-v15", CaptureComponentSnapshot("component-place-branch"));
-            values.Add("attached-marker-v15", CaptureComponentSnapshot("component-give-marker"));
+            values.Add("placed-token-v16", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v16", CaptureComponentSnapshot("component-give-marker"));
 
             // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
             // so the paused after-action correction gets the eighth.
-            values.Add("pending-correction-v15", CapturePendingCorrectionSnapshot());
+            values.Add("pending-correction-v16", CapturePendingCorrectionSnapshot());
             return values;
         }
 

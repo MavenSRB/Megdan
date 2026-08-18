@@ -50,13 +50,16 @@ namespace GuardsDigital.Core.Cards
         SkillCannotApplyAnything = 26,
 
         /// <summary>
-        /// Milestone 6.9: rulebook p.8's mid-turn Lane Push was requested and nothing consumes it yet.
-        /// The turn is stopped at that checkpoint, which is the same statement the end-of-round path
-        /// makes with <c>RoundResolutionRejectionReason.UnimplementedLanePushConsumption</c>. Milestones
-        /// 6.10 and 6.11 own the transition; saying so is better than a rejection that blames a missing
-        /// actor or a resolved card.
+        /// Rulebook p.8's mid-turn Lane Push is requested and unfinished, so "the turn continues in the
+        /// Initiative order as normal" has not been reached yet.
+        ///
+        /// Milestone 6.9 introduced this as the checkpoint nothing consumed; milestone 6.11 consumes it,
+        /// so what stands here now is a push stopped on the page's sidebar Place - answered by its own
+        /// command - or one this composition has no Lane to run. Either way the turn is stopped at the
+        /// checkpoint, and saying so is better than a rejection that blames a missing actor or a
+        /// resolved card.
         /// </summary>
-        UnimplementedLanePushConsumption = 27
+        IncompleteLanePushTransition = 27
     }
 
     public enum TurnResolutionEventKind
@@ -81,7 +84,14 @@ namespace GuardsDigital.Core.Cards
         /// precedes the next Initiative action. It is a turn checkpoint rather than a card-action fact,
         /// because the request outlives the action that caused it and is what the turn stops on.
         /// </summary>
-        ImmediateLanePushRequested = 14
+        ImmediateLanePushRequested = 14,
+
+        /// <summary>
+        /// Milestone 6.11: p.8's mid-turn push has finished, so the turn continues "in the Initiative
+        /// order as normal". It is reported separately from the request because the two are separated by
+        /// everything the transition did, and by any Place the page's sidebar asked a team for.
+        /// </summary>
+        ImmediateLanePushResolved = 15
     }
 
     public readonly struct TurnResolutionEvent
@@ -259,7 +269,8 @@ namespace GuardsDigital.Core.Cards
         {
             if (kind != TurnResolutionEventKind.TurnOnlyEffectsCancellationCheckpoint &&
                 kind != TurnResolutionEventKind.TurnEnded &&
-                kind != TurnResolutionEventKind.ImmediateLanePushRequested)
+                kind != TurnResolutionEventKind.ImmediateLanePushRequested &&
+                kind != TurnResolutionEventKind.ImmediateLanePushResolved)
             {
                 throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -332,6 +343,14 @@ namespace GuardsDigital.Core.Cards
         private InitiativeResolutionAuthority initiative;
         private readonly CardActionResolutionAuthority cardActions;
         private readonly ActiveEffectLifecycle timing;
+
+        /// <summary>
+        /// Milestone 6.11: rulebook p.8's mid-turn push, or <c>null</c> in a composition with no Lane.
+        /// It is the round's collaborator, handed down because the checkpoint p.8 puts the push at is the
+        /// Initiative advance, which is this authority's.
+        /// </summary>
+        private readonly GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush;
+
         private int roundIndex;
         private int turnIndex;
 
@@ -363,7 +382,23 @@ namespace GuardsDigital.Core.Cards
             ActiveEffectLifecycle timing,
             int roundIndex,
             int turnIndex)
+            : this(definitions, instances, participants, initialTieBreakerState, cardActions, timing,
+                roundIndex, turnIndex, null)
         {
+        }
+
+        public TurnResolutionAuthority(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            TieBreakerState initialTieBreakerState,
+            CardActionResolutionAuthority cardActions,
+            ActiveEffectLifecycle timing,
+            int roundIndex,
+            int turnIndex,
+            GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush)
+        {
+            this.lanePush = lanePush;
             this.definitions = Array.AsReadOnly(
                 ActionOfferQuery.BuildDefinitionLookup(definitions).Values.ToArray());
             if (instances == null)
@@ -474,7 +509,8 @@ namespace GuardsDigital.Core.Cards
             MatchParticipants participants,
             CardActionResolutionAuthority cardActions,
             ActiveEffectLifecycle timing,
-            TurnResolutionRestoreState state)
+            TurnResolutionRestoreState state,
+            GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var authority = new TurnResolutionAuthority(
@@ -485,7 +521,8 @@ namespace GuardsDigital.Core.Cards
                 cardActions,
                 timing,
                 state.RoundIndex,
-                state.TurnIndex)
+                state.TurnIndex,
+                lanePush)
             {
                 IsStarted = state.IsStarted,
                 IsEnded = state.IsEnded,
@@ -1274,24 +1311,69 @@ namespace GuardsDigital.Core.Cards
                 pending.ActorId.Equals(initiative.SelectedActor.ActorId);
         }
 
+        /// <summary>
+        /// Hands the turn back to Initiative order once a paused mid-turn push has been answered to its
+        /// end (milestone 6.11).
+        ///
+        /// The round calls this, because the answer that finished the push arrived as a round command.
+        /// There is no "an Initiative advance is owed" flag anywhere: a held request with no push
+        /// running is exactly that fact, and a second record of it could only ever disagree.
+        /// </summary>
+        internal TurnResolutionResult ContinueAfterImmediateLanePush()
+        {
+            var events = new List<TurnResolutionEvent>
+            {
+                TurnResolutionEvent.TurnCheckpoint(TurnResolutionEventKind.ImmediateLanePushResolved)
+            };
+            cardActions?.ConsumeImmediateLanePush();
+            return AdvanceInitiative(events);
+        }
+
         private TurnResolutionResult AdvanceInitiative(IEnumerable<TurnResolutionEvent> priorEvents)
         {
             var events = new List<TurnResolutionEvent>(priorEvents);
 
-            // Milestone 6.9's immediate checkpoint. Rulebook p.8 pushes the Lane in the middle of the
-            // turn and only then does "the turn continue in the Initiative order as normal", so the
-            // request is reached here rather than after the next actor is selected. It stops the turn
-            // because milestones 6.10 and 6.11 own the transition and this milestone may not expose a
-            // partial one - the same stop the end-of-round path makes at its own checkpoint.
+            // Milestone 6.9's immediate checkpoint, which milestone 6.11 turned from a stop into p.8's
+            // transition. The page pushes the Lane in the middle of the turn and only then does "the
+            // turn continue in the Initiative order as normal", so the push runs here rather than after
+            // the next actor is selected.
             //
             // It also has to be here rather than in the round dispatcher: this same advance ends the
-            // turn when no unresolved cards remain, so a stop placed after it would let a mid-turn
+            // turn when no unresolved cards remain, so a push placed after it would let a mid-turn
             // request fall through into end-of-round resolution.
-            if (cardActions?.PendingImmediateLanePush != null)
+            var request = cardActions?.PendingImmediateLanePush;
+            if (request != null)
             {
                 events.Add(TurnResolutionEvent.TurnCheckpoint(
                     TurnResolutionEventKind.ImmediateLanePushRequested));
-                return TurnResolutionResult.Accept(events);
+                if (lanePush == null)
+                {
+                    // No Lane to push: a board with no Battle Zone cannot have produced this request,
+                    // so this is a composition without the transition rather than a rules outcome.
+                    return TurnResolutionResult.Accept(events);
+                }
+
+                var consumption = lanePush.TryConsume(
+                    request.RequestId, request.WinningSide, request.LosingSide,
+                    initiative.TieBreakerState);
+                if (!consumption.Accepted || consumption.IsPaused)
+                {
+                    // A refused push leaves the request standing at its checkpoint, exactly as it stood
+                    // before milestone 6.11; a paused one withholds the Initiative advance until the
+                    // sidebar's Place has been answered. Both are "the turn does not continue yet",
+                    // which is the one thing p.8 requires of an unfinished push.
+                    return TurnResolutionResult.Accept(events);
+                }
+
+                cardActions.ConsumeImmediateLanePush();
+                events.Add(TurnResolutionEvent.TurnCheckpoint(
+                    TurnResolutionEventKind.ImmediateLanePushResolved));
+                if (consumption.Finished.EndedTheGame)
+                {
+                    // p.8: "the game ends immediately". The round authority reads the ended push and
+                    // stops the match; nothing later in this turn runs.
+                    return TurnResolutionResult.Accept(events);
+                }
             }
 
             var result = initiative.TrySelectNextActor(definitions, instances, participants);
@@ -1403,7 +1485,7 @@ namespace GuardsDigital.Core.Cards
             if (cardActions != null && cardActions.PendingImmediateLanePush != null &&
                 !cardActions.HasPendingResolution)
             {
-                return TurnResolutionRejectionReason.UnimplementedLanePushConsumption;
+                return TurnResolutionRejectionReason.IncompleteLanePushTransition;
             }
 
             return IsEnded

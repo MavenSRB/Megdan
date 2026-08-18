@@ -144,6 +144,7 @@ namespace GuardsDigital.Tests.EditMode
                 new SystemTransitionChoiceCommand(
                     pending.InstanceId,
                     pending.StepId,
+                    pending.ItemId,
                     pending.ChoosingSide,
                     new SystemTransitionOptionId("not-offered"))));
 
@@ -165,6 +166,7 @@ namespace GuardsDigital.Tests.EditMode
                 new SystemTransitionChoiceCommand(
                     pending.InstanceId,
                     pending.StepId,
+                    pending.ItemId,
                     TeamSide.Blue,
                     SyntheticSystemTransitions.FirstOptionId)));
 
@@ -188,6 +190,7 @@ namespace GuardsDigital.Tests.EditMode
                 new SystemTransitionChoiceCommand(
                     completed.InstanceId,
                     completed.StepId,
+                    completed.ItemId,
                     completed.ChoosingSide,
                     SyntheticSystemTransitions.SecondOptionId)));
 
@@ -212,6 +215,7 @@ namespace GuardsDigital.Tests.EditMode
                 new SystemTransitionChoiceCommand(
                     pending.InstanceId,
                     SyntheticSystemTransitions.BlueChoiceStepId,
+                    pending.ItemId,
                     TeamSide.Blue,
                     SyntheticSystemTransitions.FirstOptionId)));
 
@@ -235,6 +239,7 @@ namespace GuardsDigital.Tests.EditMode
                 new SystemTransitionChoiceCommand(
                     new SystemTransitionInstanceId("some-other-run"),
                     pending.StepId,
+                    pending.ItemId,
                     pending.ChoosingSide,
                     SyntheticSystemTransitions.FirstOptionId)));
 
@@ -251,6 +256,7 @@ namespace GuardsDigital.Tests.EditMode
                 new SystemTransitionChoiceCommand(
                     new SystemTransitionInstanceId("nothing-running"),
                     SyntheticSystemTransitions.RedChoiceStepId,
+                    SystemTransitionItemId.None,
                     TeamSide.Red,
                     SyntheticSystemTransitions.FirstOptionId)));
 
@@ -347,6 +353,7 @@ namespace GuardsDigital.Tests.EditMode
                 new SystemTransitionChoiceCommand(
                     firstStep.InstanceId,
                     firstStep.StepId,
+                    firstStep.ItemId,
                     firstStep.ChoosingSide,
                     SyntheticSystemTransitions.FirstOptionId)));
 

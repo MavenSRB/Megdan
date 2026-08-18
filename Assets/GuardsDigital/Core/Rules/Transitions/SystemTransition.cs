@@ -104,15 +104,73 @@ namespace GuardsDigital.Core.Rules.Transitions
     }
 
     /// <summary>
-    /// One step of a transition: its stable identity, whether it pauses for a player, and - when it
-    /// does - who chooses and what they may choose.
+    /// The stable identity of one item inside a step that pauses more than once (milestone 6.11).
     ///
-    /// The chooser and the options are declared here and *recorded* on the continuation when the step
-    /// pauses, which is a deliberate boundary rather than an oversight. It is everything this
-    /// milestone's checks need and it is not everything milestone 6.11 will need: a respawn chooses per
-    /// minion and per obstacle, so its chooser depends on live board state. Widening the definition
-    /// side belongs to the milestone that has a second consumer to widen it for; what is fixed here is
-    /// that the continuation records what it paused with rather than re-deriving it from a handler.
+    /// A Lane-Push respawn owes a Place to each minion whose Spawn point an obstacle blocks, and how
+    /// many of those there are is a fact about the live board rather than about the catalog. So the
+    /// step is one declared step and the pauses inside it are items, which is what lets the
+    /// continuation record "which minion is this pause about" without the definition pretending to
+    /// know how many minions there will be.
+    /// </summary>
+    public readonly struct SystemTransitionItemId : IEquatable<SystemTransitionItemId>
+    {
+        public SystemTransitionItemId(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException("A transition item ID must not be blank.", nameof(value));
+            }
+
+            Value = value;
+        }
+
+        /// <summary>The named absence: this pause is about the step as a whole, not about an item.</summary>
+        public static SystemTransitionItemId None => default;
+
+        public string Value { get; }
+        public bool IsDefined => !string.IsNullOrWhiteSpace(Value);
+        public bool Equals(SystemTransitionItemId other) =>
+            string.Equals(Value, other.Value, StringComparison.Ordinal);
+        public override bool Equals(object obj) => obj is SystemTransitionItemId other && Equals(other);
+        public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Value ?? string.Empty);
+        public override string ToString() => Value ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Where a step's chooser and options come from.
+    ///
+    /// Milestone 6.10a had two of these and named the third as owed: the chooser and the options were
+    /// declared in the catalog, which is everything a bounded synthetic transition needs and not
+    /// everything a rule needs whose chooser depends on the board. Milestone 6.11 is the second
+    /// consumer that widening was reserved for.
+    /// </summary>
+    public enum SystemTransitionStepChoiceSource
+    {
+        /// <summary>The step resolves itself. It does work, it asks nobody anything, and it never pauses.</summary>
+        SelfResolving = 0,
+
+        /// <summary>The catalog declares the chooser and the options (milestone 6.10a).</summary>
+        Declared = 1,
+
+        /// <summary>
+        /// The chooser and the options are derived when the step is reached, from live state, by the
+        /// step rules the authority is composed with - and are then recorded on the continuation
+        /// exactly as a declared one is. Such a step may pause once per item, or not at all.
+        /// </summary>
+        Derived = 2
+    }
+
+    /// <summary>
+    /// One step of a transition: its stable identity, whether it pauses for a player, and - when the
+    /// catalog is what decides that - who chooses and what they may choose.
+    ///
+    /// A declared step's chooser and options are declared here and *recorded* on the continuation when
+    /// the step pauses. Milestone 6.10a fixed that boundary and named its limit in the same breath: a
+    /// respawn chooses per minion and per obstacle, so its chooser depends on live board state, and
+    /// widening belonged to the milestone with a second consumer to widen it for. Milestone 6.11 is
+    /// that milestone, and <see cref="SystemTransitionStepChoiceSource.Derived"/> is the widening. What
+    /// did not move is the thing the contract is about: a derived step records what it paused with on
+    /// the continuation too, rather than leaving a handler to re-derive it on resume.
     /// </summary>
     public sealed class SystemTransitionStepDefinition
     {
@@ -125,6 +183,21 @@ namespace GuardsDigital.Core.Rules.Transitions
             SystemTransitionStepId id,
             TeamSide choosingSide,
             IEnumerable<SystemTransitionOptionId> options)
+            : this(
+                id,
+                choosingSide,
+                options,
+                (options ?? throw new ArgumentNullException(nameof(options))).Any()
+                    ? SystemTransitionStepChoiceSource.Declared
+                    : SystemTransitionStepChoiceSource.SelfResolving)
+        {
+        }
+
+        private SystemTransitionStepDefinition(
+            SystemTransitionStepId id,
+            TeamSide choosingSide,
+            IEnumerable<SystemTransitionOptionId> options,
+            SystemTransitionStepChoiceSource choiceSource)
         {
             if (!id.IsDefined)
             {
@@ -138,27 +211,56 @@ namespace GuardsDigital.Core.Rules.Transitions
                 throw new ArgumentException("Transition step options must be defined and unique.", nameof(options));
             }
 
-            var pauses = optionArray.Length > 0;
-            if (pauses != (choosingSide == TeamSide.Red || choosingSide == TeamSide.Blue))
+            var declares = optionArray.Length > 0;
+            if (declares != (choosingSide == TeamSide.Red || choosingSide == TeamSide.Blue))
             {
                 throw new ArgumentException(
                     "A step pauses exactly when it names a chooser and offers options; a step that " +
                     "offered options to nobody, or asked a chooser for nothing, could never be answered.");
             }
 
+            if (declares != (choiceSource == SystemTransitionStepChoiceSource.Declared))
+            {
+                throw new ArgumentException(
+                    "Only a declared step carries a catalog chooser and catalog options.",
+                    nameof(choiceSource));
+            }
+
             Id = id;
             ChoosingSide = choosingSide;
             Options = Array.AsReadOnly(optionArray);
+            ChoiceSource = choiceSource;
         }
+
+        /// <summary>
+        /// A step whose chooser and options the step rules derive when it is reached (milestone 6.11).
+        ///
+        /// It declares nothing about who chooses or how many pauses it will produce, because on the
+        /// consumer this exists for - p.8's respawn - both are answers about the board at the moment
+        /// the step runs. What it does declare is that this step is allowed to stop, which is the part
+        /// the catalog can honestly know.
+        /// </summary>
+        public static SystemTransitionStepDefinition Derived(SystemTransitionStepId id) =>
+            new SystemTransitionStepDefinition(
+                id,
+                TeamSide.None,
+                Array.Empty<SystemTransitionOptionId>(),
+                SystemTransitionStepChoiceSource.Derived);
 
         public SystemTransitionStepId Id { get; }
 
-        /// <summary>The side that answers this step, or the named absence when it resolves itself.</summary>
+        /// <summary>The side that answers a declared step, or the named absence otherwise.</summary>
         public TeamSide ChoosingSide { get; }
 
         public IReadOnlyList<SystemTransitionOptionId> Options { get; }
 
-        public bool PausesForChoice => Options.Count > 0;
+        public SystemTransitionStepChoiceSource ChoiceSource { get; }
+
+        /// <summary>Whether the catalog itself says this step stops and on what.</summary>
+        public bool PausesForChoice => ChoiceSource == SystemTransitionStepChoiceSource.Declared;
+
+        /// <summary>Whether this step may stop, which a derived step decides for itself when it runs.</summary>
+        public bool MayPause => ChoiceSource != SystemTransitionStepChoiceSource.SelfResolving;
     }
 
     /// <summary>
@@ -296,17 +398,27 @@ namespace GuardsDigital.Core.Rules.Transitions
         public SystemTransitionChoiceCommand(
             SystemTransitionInstanceId instanceId,
             SystemTransitionStepId stepId,
+            SystemTransitionItemId itemId,
             TeamSide choosingSide,
             SystemTransitionOptionId optionId)
         {
             InstanceId = instanceId;
             StepId = stepId;
+            ItemId = itemId;
             ChoosingSide = choosingSide;
             OptionId = optionId;
         }
 
         public SystemTransitionInstanceId InstanceId { get; }
         public SystemTransitionStepId StepId { get; }
+
+        /// <summary>
+        /// Which pause of a step that pauses more than once this answers, or the named absence when the
+        /// step pauses once for itself. An answer that named the right step and the wrong item would
+        /// otherwise be indistinguishable from the right one.
+        /// </summary>
+        public SystemTransitionItemId ItemId { get; }
+
         public TeamSide ChoosingSide { get; }
         public SystemTransitionOptionId OptionId { get; }
 
@@ -316,6 +428,7 @@ namespace GuardsDigital.Core.Rules.Transitions
 
         public bool Equals(SystemTransitionChoiceCommand other) =>
             InstanceId.Equals(other.InstanceId) && StepId.Equals(other.StepId) &&
+            ItemId.Equals(other.ItemId) &&
             ChoosingSide == other.ChoosingSide && OptionId.Equals(other.OptionId);
 
         public override bool Equals(object obj) => obj is SystemTransitionChoiceCommand other && Equals(other);
@@ -326,12 +439,15 @@ namespace GuardsDigital.Core.Rules.Transitions
             {
                 var hashCode = InstanceId.GetHashCode();
                 hashCode = (hashCode * 397) ^ StepId.GetHashCode();
+                hashCode = (hashCode * 397) ^ ItemId.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)ChoosingSide;
                 return (hashCode * 397) ^ OptionId.GetHashCode();
             }
         }
 
-        public override string ToString() => $"{InstanceId}/{StepId} -> {OptionId} ({ChoosingSide})";
+        public override string ToString() => ItemId.IsDefined
+            ? $"{InstanceId}/{StepId}/{ItemId} -> {OptionId} ({ChoosingSide})"
+            : $"{InstanceId}/{StepId} -> {OptionId} ({ChoosingSide})";
     }
 
     /// <summary>
@@ -356,9 +472,11 @@ namespace GuardsDigital.Core.Rules.Transitions
             SystemTransitionInstanceId instanceId,
             SystemTransitionDefinitionId definitionId,
             SystemTransitionStepId stepId,
+            SystemTransitionItemId itemId,
             TeamSide choosingSide,
             IEnumerable<SystemTransitionOptionId> options,
-            IEnumerable<SystemTransitionStepId> completedStepIds)
+            IEnumerable<SystemTransitionStepId> completedStepIds,
+            IEnumerable<SystemTransitionItemId> completedItemIds)
         {
             if (!instanceId.IsDefined || !definitionId.IsDefined || !stepId.IsDefined)
             {
@@ -392,25 +510,62 @@ namespace GuardsDigital.Core.Rules.Transitions
                     nameof(completedStepIds));
             }
 
+            var completedItemArray =
+                (completedItemIds ?? throw new ArgumentNullException(nameof(completedItemIds))).ToArray();
+            if (completedItemArray.Any(completed => !completed.IsDefined) ||
+                completedItemArray.Distinct().Count() != completedItemArray.Length ||
+                completedItemArray.Any(completed => completed.Equals(itemId)))
+            {
+                throw new ArgumentException(
+                    "Completed items are unique, defined, and never include the item still pending.",
+                    nameof(completedItemIds));
+            }
+
+            if (!itemId.IsDefined && completedItemArray.Length > 0)
+            {
+                throw new ArgumentException(
+                    "A step that pauses once for itself has no items, so it can have completed none.",
+                    nameof(completedItemIds));
+            }
+
             InstanceId = instanceId;
             DefinitionId = definitionId;
             StepId = stepId;
+            ItemId = itemId;
             ChoosingSide = choosingSide;
             Options = Array.AsReadOnly(optionArray);
             CompletedStepIds = Array.AsReadOnly(completedArray);
+            CompletedItemIds = Array.AsReadOnly(completedItemArray);
             Invocations = Array.AsReadOnly(optionArray
-                .Select(option => new SystemTransitionChoiceCommand(instanceId, stepId, choosingSide, option))
+                .Select(option => new SystemTransitionChoiceCommand(
+                    instanceId, stepId, itemId, choosingSide, option))
                 .ToArray());
         }
 
         public SystemTransitionInstanceId InstanceId { get; }
         public SystemTransitionDefinitionId DefinitionId { get; }
         public SystemTransitionStepId StepId { get; }
+
+        /// <summary>
+        /// Which pause of this step the transition is stopped on, or the named absence when the step
+        /// pauses once for itself. Milestone 6.11's respawn pauses once per minion whose Spawn point an
+        /// obstacle blocks, which is what the acceptance check means by "stable current step/minion
+        /// identity".
+        /// </summary>
+        public SystemTransitionItemId ItemId { get; }
+
         public TeamSide ChoosingSide { get; }
         public IReadOnlyList<SystemTransitionOptionId> Options { get; }
 
         /// <summary>The steps that have already happened. The exact resume location, stated positively.</summary>
         public IReadOnlyList<SystemTransitionStepId> CompletedStepIds { get; }
+
+        /// <summary>
+        /// The items of the current step that have already been answered - the rest of the resume
+        /// location, for a step that stops more than once. Empty for every other step, and for the
+        /// first pause of one that stops many times.
+        /// </summary>
+        public IReadOnlyList<SystemTransitionItemId> CompletedItemIds { get; }
 
         /// <summary>The exact commands that answer this step, in the option order the definition declares.</summary>
         public IReadOnlyList<SystemTransitionChoiceCommand> Invocations { get; }
@@ -439,7 +594,271 @@ namespace GuardsDigital.Core.Rules.Transitions
         WrongChooser = 6,
 
         /// <summary>The option is not one this step offered.</summary>
-        IllegalOption = 7
+        IllegalOption = 7,
+
+        /// <summary>
+        /// The answer names the paused step and a different pause of it - a milestone 6.11 refusal,
+        /// because a step that stops once per minion has a right answer for each one and answering the
+        /// wrong minion is exactly as wrong as answering the wrong step.
+        /// </summary>
+        StaleItem = 8
+    }
+
+    public enum SystemTransitionStepResolutionKind
+    {
+        /// <summary>The step is done; the transition moves on to the next one.</summary>
+        Completed = 0,
+
+        /// <summary>The step stops here, on this chooser, with these options.</summary>
+        Paused = 1,
+
+        /// <summary>
+        /// One item of a step that iterates finished without stopping, and the step is not done.
+        ///
+        /// p.8's respawn needs this: most Spawn points respawn a minion with nobody choosing anything,
+        /// and the ones an obstacle blocks stop on a Place. Both are items of the same step, so both
+        /// have to be recorded the same way - otherwise "which Spawn points have been dealt with" would
+        /// have to be re-derived from a board the respawn has been changing, and a resumed transition
+        /// could respawn into the same point twice.
+        /// </summary>
+        ItemCompleted = 3,
+
+        /// <summary>
+        /// The transition is over and the steps after this one do not run. p.8's final-Wave and
+        /// Throne-capture sentences both end the game mid-transition, and "the game ends immediately"
+        /// means the removal and respawn that would have followed never happen.
+        /// </summary>
+        EndedTransition = 2
+    }
+
+    /// <summary>What running one step of a transition did.</summary>
+    public sealed class SystemTransitionStepResolution
+    {
+        private SystemTransitionStepResolution(
+            SystemTransitionStepResolutionKind kind,
+            SystemTransitionItemId itemId,
+            TeamSide choosingSide,
+            IEnumerable<SystemTransitionOptionId> options)
+        {
+            Kind = kind;
+            ItemId = itemId;
+            ChoosingSide = choosingSide;
+            Options = Array.AsReadOnly(options.ToArray());
+        }
+
+        public SystemTransitionStepResolutionKind Kind { get; }
+        public SystemTransitionItemId ItemId { get; }
+        public TeamSide ChoosingSide { get; }
+        public IReadOnlyList<SystemTransitionOptionId> Options { get; }
+
+        public static SystemTransitionStepResolution Completed { get; } =
+            new SystemTransitionStepResolution(
+                SystemTransitionStepResolutionKind.Completed,
+                SystemTransitionItemId.None,
+                TeamSide.None,
+                Array.Empty<SystemTransitionOptionId>());
+
+        public static SystemTransitionStepResolution EndedTransition { get; } =
+            new SystemTransitionStepResolution(
+                SystemTransitionStepResolutionKind.EndedTransition,
+                SystemTransitionItemId.None,
+                TeamSide.None,
+                Array.Empty<SystemTransitionOptionId>());
+
+        public static SystemTransitionStepResolution ItemCompleted(SystemTransitionItemId itemId)
+        {
+            if (!itemId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "An item that finished is named, or the step could not tell it had.", nameof(itemId));
+            }
+
+            return new SystemTransitionStepResolution(
+                SystemTransitionStepResolutionKind.ItemCompleted,
+                itemId,
+                TeamSide.None,
+                Array.Empty<SystemTransitionOptionId>());
+        }
+
+        public static SystemTransitionStepResolution Paused(
+            SystemTransitionItemId itemId,
+            TeamSide choosingSide,
+            IEnumerable<SystemTransitionOptionId> options)
+        {
+            if (!itemId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A derived pause is about one item of its step; the item is what a later answer " +
+                    "has to match.",
+                    nameof(itemId));
+            }
+
+            return new SystemTransitionStepResolution(
+                SystemTransitionStepResolutionKind.Paused,
+                itemId,
+                choosingSide,
+                options ?? throw new ArgumentNullException(nameof(options)));
+        }
+    }
+
+    /// <summary>Where the transition is, handed to the step rules so they can run the step from there.</summary>
+    public sealed class SystemTransitionStepContext
+    {
+        public SystemTransitionStepContext(
+            SystemTransitionInstanceId instanceId,
+            SystemTransitionDefinition definition,
+            SystemTransitionStepDefinition step,
+            IEnumerable<SystemTransitionStepId> completedStepIds,
+            IEnumerable<SystemTransitionItemId> completedItemIds)
+        {
+            InstanceId = instanceId;
+            Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+            Step = step ?? throw new ArgumentNullException(nameof(step));
+            CompletedStepIds = Array.AsReadOnly(
+                (completedStepIds ?? throw new ArgumentNullException(nameof(completedStepIds))).ToArray());
+            CompletedItemIds = Array.AsReadOnly(
+                (completedItemIds ?? throw new ArgumentNullException(nameof(completedItemIds))).ToArray());
+        }
+
+        public SystemTransitionInstanceId InstanceId { get; }
+        public SystemTransitionDefinition Definition { get; }
+        public SystemTransitionStepDefinition Step { get; }
+        public IReadOnlyList<SystemTransitionStepId> CompletedStepIds { get; }
+
+        /// <summary>The items of this step already answered, which is how the rules know what is left.</summary>
+        public IReadOnlyList<SystemTransitionItemId> CompletedItemIds { get; }
+    }
+
+    /// <summary>One accepted answer, handed to the step rules so they can apply what it chose.</summary>
+    public sealed class SystemTransitionAnswerContext
+    {
+        public SystemTransitionAnswerContext(
+            SystemTransitionInstanceId instanceId,
+            SystemTransitionDefinition definition,
+            SystemTransitionStepDefinition step,
+            SystemTransitionItemId itemId,
+            TeamSide choosingSide,
+            SystemTransitionOptionId optionId)
+        {
+            InstanceId = instanceId;
+            Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+            Step = step ?? throw new ArgumentNullException(nameof(step));
+            ItemId = itemId;
+            ChoosingSide = choosingSide;
+            OptionId = optionId;
+        }
+
+        public SystemTransitionInstanceId InstanceId { get; }
+        public SystemTransitionDefinition Definition { get; }
+        public SystemTransitionStepDefinition Step { get; }
+        public SystemTransitionItemId ItemId { get; }
+        public TeamSide ChoosingSide { get; }
+        public SystemTransitionOptionId OptionId { get; }
+    }
+
+    /// <summary>
+    /// What the steps of a transition actually do (milestone 6.11).
+    ///
+    /// This is the widening milestone 6.10a reserved, and its shape is the whole point. The rules own
+    /// <em>what</em> a step does - flip a counter, move a Zone, derive who may place which minion where
+    /// - and the authority owns <em>where</em> the transition is. Neither half can be written without
+    /// the other and neither may keep the other's state, which is why this is a collaborator the
+    /// authority consults rather than a callback the authority stores: a delegate could close over a
+    /// cursor, and 6.10a's conformance rule exists because that is the failure nobody sees at the call
+    /// site.
+    ///
+    /// An implementation therefore holds board and participant references and no step state at all.
+    /// </summary>
+    public interface ISystemTransitionStepRules
+    {
+        /// <summary>
+        /// Runs the step from where <paramref name="context"/> says the transition is, and reports what
+        /// happened. A self-resolving step may only complete or end the transition; a derived step may
+        /// also stop.
+        /// </summary>
+        SystemTransitionStepResolution ResolveStep(SystemTransitionStepContext context);
+
+        /// <summary>
+        /// Applies one answer the authority has already validated as legal for the paused step.
+        ///
+        /// It returns nothing, and that is deliberate: nothing else in the match can run while a
+        /// transition is paused, so the board the options were derived from is the board they are
+        /// applied to, and an option that could not be applied is an engine defect rather than a rules
+        /// outcome. Implementations throw in that case, as the validated Battle-Zone advance does.
+        /// </summary>
+        void ApplyAnswer(SystemTransitionAnswerContext context);
+    }
+
+    /// <summary>
+    /// The step rules of a build whose transitions declare everything in the catalog - milestone
+    /// 6.10a's behaviour, unchanged and named.
+    ///
+    /// A self-resolving step completes, because a synthetic step that declares no choice also does no
+    /// work; an answered step applies nothing, because the answer was the whole of it. A derived step
+    /// is refused rather than guessed at: a build that registers a definition with one owes the rules
+    /// that run it.
+    /// </summary>
+    public sealed class DeclaredSystemTransitionStepRules : ISystemTransitionStepRules
+    {
+        public static DeclaredSystemTransitionStepRules Instance { get; } =
+            new DeclaredSystemTransitionStepRules();
+
+        public SystemTransitionStepResolution ResolveStep(SystemTransitionStepContext context)
+        {
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (context.Step.ChoiceSource == SystemTransitionStepChoiceSource.Derived)
+            {
+                throw new InvalidOperationException(
+                    $"Transition '{context.Definition.Id}' step '{context.Step.Id}' derives its " +
+                    "chooser, and this build composed no rules that can derive one.");
+            }
+
+            return SystemTransitionStepResolution.Completed;
+        }
+
+        public void ApplyAnswer(SystemTransitionAnswerContext context)
+        {
+            if (context == null) throw new ArgumentNullException(nameof(context));
+        }
+    }
+
+    /// <summary>
+    /// The step rules of a build that runs more than one kind of transition: each definition names its
+    /// own, and anything unnamed falls back to the declared ones.
+    ///
+    /// It is a lookup, not a dispatcher with opinions - the same shape the component and capability
+    /// catalogs already use - so a build's set of transitions and its set of rules stay one composition
+    /// decision rather than a switch somebody has to remember to extend.
+    /// </summary>
+    public sealed class SystemTransitionStepRuleSet : ISystemTransitionStepRules
+    {
+        private readonly IReadOnlyDictionary<SystemTransitionDefinitionId, ISystemTransitionStepRules> rules;
+
+        public SystemTransitionStepRuleSet(
+            IEnumerable<KeyValuePair<SystemTransitionDefinitionId, ISystemTransitionStepRules>> rules)
+        {
+            var pairs = (rules ?? throw new ArgumentNullException(nameof(rules))).ToArray();
+            if (pairs.Any(pair => !pair.Key.IsDefined || pair.Value == null))
+            {
+                throw new ArgumentException(
+                    "Every named transition supplies defined rules.", nameof(rules));
+            }
+
+            this.rules = pairs.ToDictionary(pair => pair.Key, pair => pair.Value);
+        }
+
+        public SystemTransitionStepResolution ResolveStep(SystemTransitionStepContext context) =>
+            For(context?.Definition.Id ?? throw new ArgumentNullException(nameof(context)))
+                .ResolveStep(context);
+
+        public void ApplyAnswer(SystemTransitionAnswerContext context) =>
+            For(context?.Definition.Id ?? throw new ArgumentNullException(nameof(context)))
+                .ApplyAnswer(context);
+
+        private ISystemTransitionStepRules For(SystemTransitionDefinitionId definitionId) =>
+            rules.TryGetValue(definitionId, out var named)
+                ? named
+                : (ISystemTransitionStepRules)DeclaredSystemTransitionStepRules.Instance;
     }
 
     /// <summary>What one attempted begin or resumption did.</summary>

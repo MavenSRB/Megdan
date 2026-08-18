@@ -71,7 +71,7 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 15;
+        public const int CurrentSchemaVersion = 16;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full
@@ -147,8 +147,12 @@ namespace GuardsDigital.Core.Snapshots
             // the real ones.
             capabilities = capabilities ?? SyntheticEffectCapabilities.CreateCatalog();
             components = components ?? SyntheticComponentDefinitions.CreateCatalog();
+            // Milestone 6.11 widened this default from the synthetic transition alone to the set this
+            // build actually supplies, because a real one joined it: a restore that rebound against the
+            // synthetic catalog refused a paused Lane Push as a transition this build no longer has,
+            // which is the right refusal for the wrong reason.
             transitions = transitions ??
-                GuardsDigital.Core.Rules.Transitions.Synthetic.SyntheticSystemTransitions.CreateCatalog();
+                GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateCatalog();
             if (string.IsNullOrWhiteSpace(payload))
             {
                 throw new SnapshotLoadException(

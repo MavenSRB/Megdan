@@ -111,7 +111,11 @@ namespace GuardsDigital.Tests.EditMode
             var insideBefore = BattleZoneQuery.FindEffectiveMinionsInside(board, participants, modifications);
             Assert.That(insideBefore, Is.Not.Empty, "The configured setup fills the starting zone.");
 
-            new LanePushTransitionAuthority(board, 3).ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            // The Zone is moved through the board's own verified commit rather than through a Lane
+            // Push, because what is under test here is which Zone the shared queries read - and since
+            // milestone 6.11 a real push also removes and respawns, which would answer a different
+            // question with the same call.
+            Assert.That(board.CommitValidatedBattleZoneAdvance(BlueApproach), Is.True);
             Assert.That(board.CurrentBattleZoneId, Is.EqualTo(BlueApproach));
 
             Assert.That(
@@ -150,7 +154,11 @@ namespace GuardsDigital.Tests.EditMode
         public void TheStartingFlag_StillAnswersTheSetupQuestionItWasAlwaysAsked()
         {
             var board = CreateOfficialBoard();
-            new LanePushTransitionAuthority(board, 3).ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            // The Zone is moved through the board's own verified commit rather than through a Lane
+            // Push, because what is under test here is which Zone the shared queries read - and since
+            // milestone 6.11 a real push also removes and respawns, which would answer a different
+            // question with the same call.
+            Assert.That(board.CommitValidatedBattleZoneAdvance(BlueApproach), Is.True);
 
             var minion = board.Minions.First();
 
@@ -350,8 +358,7 @@ namespace GuardsDigital.Tests.EditMode
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
                 envelope.AuthoritativePayload, definitions, new[] { map }, setup.Minions);
 
-            new LanePushTransitionAuthority(restored.Board, 3)
-                .ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            Assert.That(restored.Board.CommitValidatedBattleZoneAdvance(BlueApproach), Is.True);
             Assert.That(restored.Board.CurrentBattleZoneId, Is.EqualTo(BlueApproach));
             return AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board);
         }

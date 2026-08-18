@@ -50,11 +50,25 @@ namespace GuardsDigital.Core.Rules.Transitions
     public sealed class SystemTransitionAuthority
     {
         private readonly SystemTransitionCatalog catalog;
+        private readonly ISystemTransitionStepRules rules;
         private readonly List<SystemTransitionStepId> completedStepIds = new List<SystemTransitionStepId>();
+        private readonly List<SystemTransitionItemId> completedItemIds = new List<SystemTransitionItemId>();
 
         public SystemTransitionAuthority(SystemTransitionCatalog catalog)
+            : this(catalog, DeclaredSystemTransitionStepRules.Instance)
+        {
+        }
+
+        /// <summary>
+        /// Milestone 6.11. The rules are a composed collaborator rather than a stored callback: they
+        /// own what a step does and this type owns where the transition is, so there is still exactly
+        /// one record of the position and it is still the one the snapshot carries.
+        /// </summary>
+        public SystemTransitionAuthority(
+            SystemTransitionCatalog catalog, ISystemTransitionStepRules rules)
         {
             this.catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+            this.rules = rules ?? throw new ArgumentNullException(nameof(rules));
         }
 
         /// <summary>Where the running transition is stopped, or <c>null</c> when none is running.</summary>
@@ -64,6 +78,13 @@ namespace GuardsDigital.Core.Rules.Transitions
 
         /// <summary>The steps this transition has completed, in the order they happened.</summary>
         public IReadOnlyList<SystemTransitionStepId> CompletedStepIds => completedStepIds.AsReadOnly();
+
+        /// <summary>
+        /// The items of the current step already answered, for a step that stops more than once
+        /// (milestone 6.11). It is cleared when the step itself completes, because it is part of where
+        /// the transition is inside a step rather than a second history of the transition.
+        /// </summary>
+        public IReadOnlyList<SystemTransitionItemId> CompletedItemIds => completedItemIds.AsReadOnly();
 
         public SystemTransitionCatalog Catalog => catalog;
 
@@ -91,6 +112,7 @@ namespace GuardsDigital.Core.Rules.Transitions
             }
 
             completedStepIds.Clear();
+            completedItemIds.Clear();
             return Advance(catalog.Load(definitionId), instanceId);
         }
 
@@ -124,6 +146,13 @@ namespace GuardsDigital.Core.Rules.Transitions
                 return SystemTransitionResult.Reject(SystemTransitionRejectionReason.StaleStep);
             }
 
+            if (!command.ItemId.Equals(pending.ItemId))
+            {
+                // The same statement one level down, for a step that stops once per minion: an answer
+                // about an already-placed minion, or one not yet reached, is not about this pause.
+                return SystemTransitionResult.Reject(SystemTransitionRejectionReason.StaleItem);
+            }
+
             if (command.ChoosingSide != pending.ChoosingSide)
             {
                 return SystemTransitionResult.Reject(SystemTransitionRejectionReason.WrongChooser);
@@ -134,9 +163,27 @@ namespace GuardsDigital.Core.Rules.Transitions
                 return SystemTransitionResult.Reject(SystemTransitionRejectionReason.IllegalOption);
             }
 
-            completedStepIds.Add(pending.StepId);
+            var definition = catalog.Load(pending.DefinitionId);
+            var step = definition.Steps.Single(candidate => candidate.Id.Equals(pending.StepId));
+            rules.ApplyAnswer(new SystemTransitionAnswerContext(
+                pending.InstanceId, definition, step, pending.ItemId, pending.ChoosingSide,
+                command.OptionId));
+
+            // A declared step is finished by its one answer. A derived step is finished when its rules
+            // say so, because only they know whether another minion is owed a Place, so answering one
+            // of its items completes the item and leaves the step where it is.
+            if (pending.ItemId.IsDefined)
+            {
+                completedItemIds.Add(pending.ItemId);
+            }
+            else
+            {
+                completedStepIds.Add(pending.StepId);
+                completedItemIds.Clear();
+            }
+
             PendingStep = null;
-            return Advance(catalog.Load(pending.DefinitionId), pending.InstanceId);
+            return Advance(definition, pending.InstanceId);
         }
 
         public SystemTransitionRestoreState CaptureRestoreState() =>
@@ -158,10 +205,28 @@ namespace GuardsDigital.Core.Rules.Transitions
             SystemTransitionRestoreState state,
             SystemTransitionCatalog catalog)
         {
+            return Restore(state, catalog, DeclaredSystemTransitionStepRules.Instance);
+        }
+
+        /// <summary>
+        /// The same restore against a build that supplies real step rules (milestone 6.11).
+        ///
+        /// A derived step's options are not in the catalog to be compared with, so they are checked
+        /// against the only other thing that can produce them: the rules, re-run over the restored
+        /// state. That is a stronger check than the declared one rather than a weaker substitute for
+        /// it - a payload whose paused respawn disagrees with the board it was taken from describes a
+        /// transition this build would not have produced, so it is refused.
+        /// </summary>
+        public static SystemTransitionAuthority Restore(
+            SystemTransitionRestoreState state,
+            SystemTransitionCatalog catalog,
+            ISystemTransitionStepRules rules)
+        {
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (catalog == null) throw new ArgumentNullException(nameof(catalog));
+            if (rules == null) throw new ArgumentNullException(nameof(rules));
 
-            var authority = new SystemTransitionAuthority(catalog);
+            var authority = new SystemTransitionAuthority(catalog, rules);
             var pending = state.PendingStep;
             if (pending == null)
             {
@@ -176,9 +241,7 @@ namespace GuardsDigital.Core.Rules.Transitions
             }
 
             var definition = catalog.Load(pending.DefinitionId);
-            if (!definition.TryGetStep(pending.StepId, out var step) || !step.PausesForChoice ||
-                step.ChoosingSide != pending.ChoosingSide ||
-                !step.Options.SequenceEqual(pending.Options))
+            if (!definition.TryGetStep(pending.StepId, out var step) || !step.MayPause)
             {
                 throw new ArgumentException(
                     $"Restored transition step '{pending.StepId}' does not match the definition this build supplies.",
@@ -196,7 +259,35 @@ namespace GuardsDigital.Core.Rules.Transitions
                     nameof(state));
             }
 
+            if (step.ChoiceSource == SystemTransitionStepChoiceSource.Declared)
+            {
+                if (pending.ItemId.IsDefined || step.ChoosingSide != pending.ChoosingSide ||
+                    !step.Options.SequenceEqual(pending.Options))
+                {
+                    throw new ArgumentException(
+                        $"Restored transition step '{pending.StepId}' does not match the definition this build supplies.",
+                        nameof(state));
+                }
+            }
+            else
+            {
+                var derived = rules.ResolveStep(new SystemTransitionStepContext(
+                    pending.InstanceId, definition, step, pending.CompletedStepIds,
+                    pending.CompletedItemIds));
+                if (derived.Kind != SystemTransitionStepResolutionKind.Paused ||
+                    !derived.ItemId.Equals(pending.ItemId) ||
+                    derived.ChoosingSide != pending.ChoosingSide ||
+                    !derived.Options.SequenceEqual(pending.Options))
+                {
+                    throw new ArgumentException(
+                        $"Restored transition step '{pending.StepId}' does not reproduce from the " +
+                        "state this build restored.",
+                        nameof(state));
+                }
+            }
+
             authority.completedStepIds.AddRange(pending.CompletedStepIds);
+            authority.completedItemIds.AddRange(pending.CompletedItemIds);
             authority.PendingStep = pending;
             return authority;
         }
@@ -210,28 +301,81 @@ namespace GuardsDigital.Core.Rules.Transitions
             SystemTransitionDefinition definition,
             SystemTransitionInstanceId instanceId)
         {
-            for (var index = completedStepIds.Count; index < definition.Steps.Count; index++)
+            while (completedStepIds.Count < definition.Steps.Count)
             {
-                var step = definition.Steps[index];
-                if (!step.PausesForChoice)
+                var step = definition.Steps[completedStepIds.Count];
+                if (step.ChoiceSource == SystemTransitionStepChoiceSource.Declared)
                 {
-                    completedStepIds.Add(step.Id);
+                    PendingStep = new PendingSystemTransitionStep(
+                        instanceId,
+                        definition.Id,
+                        step.Id,
+                        SystemTransitionItemId.None,
+                        step.ChoosingSide,
+                        step.Options,
+                        completedStepIds,
+                        Array.Empty<SystemTransitionItemId>());
+                    return SystemTransitionResult.Accept(PendingStep, completedStepIds, false);
+                }
+
+                var resolution = rules.ResolveStep(new SystemTransitionStepContext(
+                    instanceId, definition, step, completedStepIds, completedItemIds));
+                if (resolution.Kind == SystemTransitionStepResolutionKind.Paused)
+                {
+                    if (step.ChoiceSource == SystemTransitionStepChoiceSource.SelfResolving)
+                    {
+                        throw new InvalidOperationException(
+                            $"Transition '{definition.Id}' step '{step.Id}' declares that it resolves " +
+                            "itself and its rules stopped on a chooser; a step that could pause " +
+                            "without saying so would be answerable by a command nothing offered.");
+                    }
+
+                    PendingStep = new PendingSystemTransitionStep(
+                        instanceId,
+                        definition.Id,
+                        step.Id,
+                        resolution.ItemId,
+                        resolution.ChoosingSide,
+                        resolution.Options,
+                        completedStepIds,
+                        completedItemIds);
+                    return SystemTransitionResult.Accept(PendingStep, completedStepIds, false);
+                }
+
+                if (resolution.Kind == SystemTransitionStepResolutionKind.EndedTransition)
+                {
+                    // p.8's "the game ends immediately": the steps after this one do not run, and the
+                    // completed record says which ones did rather than claiming the rest happened.
+                    return Finish();
+                }
+
+                if (resolution.Kind == SystemTransitionStepResolutionKind.ItemCompleted)
+                {
+                    if (completedItemIds.Any(completed => completed.Equals(resolution.ItemId)))
+                    {
+                        throw new InvalidOperationException(
+                            $"Transition '{definition.Id}' step '{step.Id}' reported item " +
+                            $"'{resolution.ItemId}' finished twice; an iterating step that could revisit " +
+                            "an item would never terminate and would repeat what it had already done.");
+                    }
+
+                    completedItemIds.Add(resolution.ItemId);
                     continue;
                 }
 
-                PendingStep = new PendingSystemTransitionStep(
-                    instanceId,
-                    definition.Id,
-                    step.Id,
-                    step.ChoosingSide,
-                    step.Options,
-                    completedStepIds);
-                return SystemTransitionResult.Accept(PendingStep, completedStepIds, false);
+                completedStepIds.Add(step.Id);
+                completedItemIds.Clear();
             }
 
+            return Finish();
+        }
+
+        private SystemTransitionResult Finish()
+        {
             PendingStep = null;
             var completed = completedStepIds.ToArray();
             completedStepIds.Clear();
+            completedItemIds.Clear();
             return SystemTransitionResult.Accept(null, completed, true);
         }
     }

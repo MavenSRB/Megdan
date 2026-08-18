@@ -5,7 +5,10 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.LanePush;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -51,7 +54,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 3);
 
-            var result = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            var result = Push(transition, TeamSide.Red, TeamSide.Blue);
 
             Assert.That(result.Accepted, Is.True, result.RejectionReason.ToString());
             Assert.That(result.RemainingWaveCounters, Is.EqualTo(2),
@@ -66,7 +69,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 1);
 
-            var result = transition.ResolveOrderedPrefix(TeamSide.Blue, TeamSide.Red);
+            var result = Push(transition, TeamSide.Blue, TeamSide.Red);
 
             Assert.That(result.Accepted, Is.True, result.RejectionReason.ToString());
             Assert.That(result.EndedTheGame, Is.True);
@@ -88,7 +91,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 3);
 
-            var result = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            var result = Push(transition, TeamSide.Red, TeamSide.Blue);
 
             Assert.That(result.BattleZoneId, Is.EqualTo(BlueApproach),
                 "Blue lost, so the Lane moves one Zone towards the Blue Throne.");
@@ -102,7 +105,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 3);
 
-            transition.ResolveOrderedPrefix(TeamSide.Blue, TeamSide.Red);
+            Push(transition, TeamSide.Blue, TeamSide.Red);
 
             Assert.That(board.CurrentBattleZoneId, Is.EqualTo(RedApproach),
                 "Red lost this time, so the same starting Zone advances the other way. A Lane that " +
@@ -115,10 +118,10 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 5);
 
-            transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            Push(transition, TeamSide.Red, TeamSide.Blue);
             Assert.That(board.CurrentBattleZoneId, Is.EqualTo(BlueApproach));
 
-            transition.ResolveOrderedPrefix(TeamSide.Blue, TeamSide.Red);
+            Push(transition, TeamSide.Blue, TeamSide.Red);
 
             Assert.That(board.CurrentBattleZoneId, Is.EqualTo(StartingBattleZone),
                 "A push the other way steps back one Zone rather than jumping to the far end, so the " +
@@ -131,8 +134,8 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 5);
 
-            transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
-            var capture = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            Push(transition, TeamSide.Red, TeamSide.Blue);
+            var capture = Push(transition, TeamSide.Red, TeamSide.Blue);
 
             Assert.That(capture.Accepted, Is.True, capture.RejectionReason.ToString());
             Assert.That(board.CurrentBattleZoneId, Is.EqualTo(BlueThrone));
@@ -154,7 +157,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 1);
 
-            var result = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            var result = Push(transition, TeamSide.Red, TeamSide.Blue);
 
             Assert.That(board.CurrentBattleZoneId, Is.EqualTo(StartingBattleZone),
                 "p.8 ends the game 'immediately' on the last Wave counter, so the Battle Zone never " +
@@ -172,9 +175,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 5);
-            transition.ResolveOrderedPrefix(TeamSide.Blue, TeamSide.Red);
+            Push(transition, TeamSide.Blue, TeamSide.Red);
 
-            var capture = transition.ResolveOrderedPrefix(TeamSide.Blue, TeamSide.Red);
+            var capture = Push(transition, TeamSide.Blue, TeamSide.Red);
 
             Assert.That(capture.Outcomes, Is.EqualTo(new[]
             {
@@ -190,9 +193,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 1);
-            transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            Push(transition, TeamSide.Red, TeamSide.Blue);
 
-            var second = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            var second = Push(transition, TeamSide.Red, TeamSide.Blue);
 
             Assert.That(second.Accepted, Is.False);
             Assert.That(second.RejectionReason, Is.EqualTo(LanePushPrefixRejectionReason.GameAlreadyEnded));
@@ -206,24 +209,25 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         [Test]
-        public void AnOrdinaryPush_ReportsThePagesThreeStepsWithTheThirdUnimplemented()
+        public void AnOrdinaryPush_ReportsThePagesThreeStepsCompleted()
         {
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 3);
 
-            var result = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            var result = Push(transition, TeamSide.Red, TeamSide.Blue);
 
             Assert.That(result.Outcomes, Is.EqualTo(new[]
             {
                 LanePushStageOutcome.Completed(LanePushTransitionStage.FlipWaveCounter),
                 LanePushStageOutcome.Completed(LanePushTransitionStage.AdvanceBattleZone),
-                LanePushStageOutcome.NotImplemented(LanePushTransitionStage.RemoveAndRespawnMinions)
-            }), "p.8's steps in the page's order. The third says unimplemented rather than completed, " +
-                "which is the difference between an ordered prefix and a transition that silently did " +
-                "two thirds of the work.");
-            Assert.That(board.Minions.Count, Is.EqualTo(CreateOfficialBoard().Minions.Count),
-                "Nothing was removed and nothing respawned, which is the same statement measured on " +
-                "the board rather than read off the outcome list.");
+                LanePushStageOutcome.Completed(LanePushTransitionStage.RemoveAndRespawnMinions)
+            }), "p.8's three steps, in the page's order and all of them run. Until milestone 6.11 the " +
+                "third reported itself unimplemented, which was the difference between an ordered " +
+                "prefix and a transition.");
+            Assert.That(
+                BattleZoneQuery.FindMinionsInside(board), Is.Not.Empty,
+                "The same statement measured on the board rather than read off the outcome list: the " +
+                "new Battle Zone is filled.");
         }
 
         [Test]
@@ -248,8 +252,8 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateOfficialBoard();
             var transition = new LanePushTransitionAuthority(board, 3);
 
-            var same = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Red);
-            var undefined = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.None);
+            var same = Push(transition, TeamSide.Red, TeamSide.Red);
+            var undefined = Push(transition, TeamSide.Red, TeamSide.None);
 
             Assert.That(same.RejectionReason, Is.EqualTo(LanePushPrefixRejectionReason.UndeclaredSides));
             Assert.That(undefined.RejectionReason, Is.EqualTo(LanePushPrefixRejectionReason.UndeclaredSides));
@@ -269,7 +273,7 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<QuickGameMinionSetupState>());
             var transition = new LanePushTransitionAuthority(board, 3);
 
-            var result = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            var result = Push(transition, TeamSide.Red, TeamSide.Blue);
 
             Assert.That(result.RejectionReason,
                 Is.EqualTo(LanePushPrefixRejectionReason.NoCurrentBattleZone));
@@ -293,7 +297,7 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<QuickGameMinionSetupState>());
             var transition = new LanePushTransitionAuthority(board, 3);
 
-            var result = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            var result = Push(transition, TeamSide.Red, TeamSide.Blue);
 
             Assert.That(result.RejectionReason,
                 Is.EqualTo(LanePushPrefixRejectionReason.BattleZoneOffTheLane));
@@ -311,7 +315,7 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<QuickGameMinionSetupState>());
             var transition = new LanePushTransitionAuthority(board, 3);
 
-            var result = transition.ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            var result = Push(transition, TeamSide.Red, TeamSide.Blue);
 
             Assert.That(result.RejectionReason,
                 Is.EqualTo(LanePushPrefixRejectionReason.UnavailableLosingThrone),
@@ -324,12 +328,12 @@ namespace GuardsDigital.Tests.EditMode
         public void APushIntoAThroneTheLaneHasAlreadyReached_IsRefused()
         {
             var board = CreateOfficialBoard();
-            new LanePushTransitionAuthority(board, 5).ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
-            new LanePushTransitionAuthority(board, 5).ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            Push(new LanePushTransitionAuthority(board, 5), TeamSide.Red, TeamSide.Blue);
+            Push(new LanePushTransitionAuthority(board, 5), TeamSide.Red, TeamSide.Blue);
             Assert.That(board.CurrentBattleZoneId, Is.EqualTo(BlueThrone));
 
-            var afterwards = new LanePushTransitionAuthority(board, 5)
-                .ResolveOrderedPrefix(TeamSide.Red, TeamSide.Blue);
+            var afterwards = Push(
+                new LanePushTransitionAuthority(board, 5), TeamSide.Red, TeamSide.Blue);
 
             Assert.That(afterwards.RejectionReason,
                 Is.EqualTo(LanePushPrefixRejectionReason.BattleZoneAlreadyCaptured),
@@ -367,7 +371,35 @@ namespace GuardsDigital.Tests.EditMode
 
         private static LanePushPrefixResult Resolve(
             AdjacentMoveAuthority board, int waveCounters, TeamSide winning, TeamSide losing) =>
-            new LanePushTransitionAuthority(board, waveCounters).ResolveOrderedPrefix(winning, losing);
+            Push(new LanePushTransitionAuthority(board, waveCounters), winning, losing);
+
+        /// <summary>
+        /// One complete p.8 push, driven the way a live match drives it: through the continuation
+        /// authority, over the composed step rules.
+        ///
+        /// Milestone 6.10 drove the first two steps through a seam nothing else could reach, because
+        /// the third did not exist. Milestone 6.11 implements the third, so there is no prefix left to
+        /// run on its own and these cases exercise the whole transition. The push is asserted not to
+        /// stop, because none of these boards has a Spawn point an obstacle is standing on; the cases
+        /// that do are <c>LanePushTransitionTests</c>.
+        /// </summary>
+        private static LanePushPrefixResult Push(
+            LanePushTransitionAuthority transition, TeamSide winning, TeamSide losing)
+        {
+            var transitions = new SystemTransitionAuthority(
+                MatchSystemTransitions.CreateCatalog(),
+                MatchSystemTransitions.CreateRules(transition));
+            var result = new LanePushConsumption(transition, transitions).TryConsume(
+                new LanePushRequestId("ordered-prefix-fixture"),
+                winning,
+                losing,
+                new TieBreakerState(TeamSide.Red));
+
+            Assert.That(result.IsPaused, Is.False,
+                "None of these boards blocks a Spawn point with a non-token obstacle, so p.8's sidebar " +
+                "asks nobody anything and the push runs to its end.");
+            return result.Finished;
+        }
 
         private static AdjacentMoveAuthority CreateOfficialBoard()
         {

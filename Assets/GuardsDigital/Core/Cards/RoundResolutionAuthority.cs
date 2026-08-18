@@ -41,6 +41,7 @@ namespace GuardsDigital.Core.Cards
         private readonly ActiveEffectLifecycle timing;
         private readonly MarkerAttachmentRegister markers;
         private readonly GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions;
+        private readonly GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush;
 
         public RoundResolutionAuthority(
             IEnumerable<CardDefinition> definitions,
@@ -56,6 +57,7 @@ namespace GuardsDigital.Core.Cards
             var timing = composition.Timing;
             var markers = composition.Markers;
             var compositionTransitions = composition.SystemTransitions;
+            var compositionLanePush = composition.LanePush;
             var endOfRoundCapabilities = composition.EndOfRoundCapabilities;
             var endOfRoundHandlers = composition.EndOfRoundHandlers;
 
@@ -111,6 +113,11 @@ namespace GuardsDigital.Core.Cards
             this.systemTransitions = compositionTransitions ??
                 new GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority(
                     GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog.Empty);
+
+            // Milestone 6.11. Absent outside a configured match, where there is no Lane to push and no
+            // Wave counters to spend; the two consumption checkpoints say so rather than substituting a
+            // push nothing could win.
+            lanePush = compositionLanePush;
             this.endOfRoundCapabilities = endOfRoundCapabilities ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -191,6 +198,11 @@ namespace GuardsDigital.Core.Cards
             systemTransitions;
 
         /// <summary>
+        /// Milestone 6.11's Lane-Push transition, or <c>null</c> in a composition with no Lane to push.
+        /// </summary>
+        public GuardsDigital.Core.Rules.LanePush.LanePushConsumption LanePush => lanePush;
+
+        /// <summary>
         /// Begins a declared multi-step system transition (milestone 6.10a).
         ///
         /// The instance identity is composed from the round cursor and the definition rather than minted
@@ -224,7 +236,10 @@ namespace GuardsDigital.Core.Cards
             });
         }
 
-        /// <summary>Answers the paused step of the running system transition (milestone 6.10a).</summary>
+        /// <summary>
+        /// Answers the paused step of the running system transition (milestone 6.10a), and closes the
+        /// Lane Push behind it when that answer was the last one it was waiting for (milestone 6.11).
+        /// </summary>
         public RoundResolutionResult TryAnswerSystemTransitionStep(
             GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand command)
         {
@@ -233,16 +248,130 @@ namespace GuardsDigital.Core.Cards
                 return RoundResolutionResult.Reject(RoundResolutionRejectionReason.GameAlreadyEnded);
             }
 
+            var wasLanePush = lanePush != null && lanePush.IsPaused;
             var result = systemTransitions.TryAnswer(command);
             if (!result.Accepted)
             {
                 return RoundResolutionResult.Reject(TranslateTransitionRejection(result.RejectionReason));
             }
 
-            return RoundResolutionResult.Accept(new[]
+            var events = new List<RoundResolutionEvent>
             {
                 RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result)
-            });
+            };
+            if (!wasLanePush || !result.TransitionCompleted)
+            {
+                return RoundResolutionResult.Accept(events);
+            }
+
+            return CloseFinishedLanePush(lanePush.ReportAfterAnswer(), events);
+        }
+
+        /// <summary>
+        /// p.8's end-of-round push, at the stage milestone 6.1 built and left refusing.
+        ///
+        /// A push that stops on the sidebar's Place leaves the stage where it is, so the round waits for
+        /// the answer rather than advancing past a transition that has not finished. A second advance
+        /// while one is stopped is refused for the same reason.
+        /// </summary>
+        private RoundResolutionResult ResolveRequestedLanePush(EndOfRoundStage stage)
+        {
+            if (lanePush == null)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.UnavailableLanePushTransition);
+            }
+
+            if (lanePush.IsRunning)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.IncompleteLanePushTransition);
+            }
+
+            var request = PendingLanePushRequest;
+            var consumption = lanePush.TryConsume(
+                request.RequestId, request.WinningSide, request.LosingSide, TieBreakerState);
+            if (!consumption.Accepted)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.RefusedLanePushTransition);
+            }
+
+            var events = new List<RoundResolutionEvent>();
+            if (consumption.IsPaused)
+            {
+                events.Add(RoundResolutionEvent.SystemTransitionPaused(
+                    RoundIndex, TurnIndex, consumption.PendingStep));
+                return CompleteEndOfRoundStage(stage, EndOfRoundStageOutcomeKind.Paused, events);
+            }
+
+            return CloseFinishedLanePush(consumption, events);
+        }
+
+        /// <summary>
+        /// Everything both checkpoints do once a push has finished: forget the request it consumed,
+        /// report p.8's stages, and end the game if one of the page's two victory sentences did.
+        /// </summary>
+        private RoundResolutionResult CloseFinishedLanePush(
+            GuardsDigital.Core.Rules.LanePush.LanePushConsumptionResult consumption,
+            List<RoundResolutionEvent> events)
+        {
+            if (consumption.IsPaused)
+            {
+                events.Add(RoundResolutionEvent.SystemTransitionPaused(
+                    RoundIndex, TurnIndex, consumption.PendingStep));
+                return RoundResolutionResult.Accept(events);
+            }
+
+            var finished = consumption.Finished;
+            events.AddRange(finished.Outcomes.Select(outcome =>
+                RoundResolutionEvent.LanePushStageResolved(RoundIndex, TurnIndex, outcome)));
+
+            var endOfRoundRequest = PendingLanePushRequest;
+            PendingLanePushRequest = null;
+            cardActions?.ConsumeImmediateLanePush();
+
+            if (finished.EndedTheGame)
+            {
+                Phase = RoundResolutionPhase.GameEnded;
+                events.Add(RoundResolutionEvent.EndOfRoundBoundary(
+                    RoundResolutionEventKind.GameEnded,
+                    RoundIndex,
+                    EndOfRoundStage.ResolveRequestedLanePush));
+                return RoundResolutionResult.Accept(events);
+            }
+
+            // An end-of-round push completes the stage it was consumed at; a mid-turn one owes the
+            // Initiative advance p.8 withheld while it ran.
+            if (endOfRoundRequest != null &&
+                CurrentEndOfRoundStage == EndOfRoundStage.ResolveRequestedLanePush)
+            {
+                return CompleteEndOfRoundStage(
+                    EndOfRoundStage.ResolveRequestedLanePush,
+                    EndOfRoundStageOutcomeKind.Completed,
+                    events);
+            }
+
+            if (CurrentTurnAuthority == null)
+            {
+                return RoundResolutionResult.Accept(events);
+            }
+
+            var continued = CurrentTurnAuthority.ContinueAfterImmediateLanePush();
+            if (!continued.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A finished mid-turn Lane Push could not hand the turn back to Initiative order.");
+            }
+
+            events.AddRange(continued.Events.Select(value =>
+                RoundResolutionEvent.FromTurn(RoundIndex, TurnIndex, value)));
+            if (CurrentTurnAuthority.IsEnded)
+            {
+                CompleteCurrentTurn(events);
+            }
+
+            return RoundResolutionResult.Accept(events);
         }
 
         private static RoundResolutionRejectionReason TranslateTransitionRejection(
@@ -292,7 +421,8 @@ namespace GuardsDigital.Core.Cards
             ActiveEffectLifecycle timing,
             MarkerAttachmentRegister markers,
             AdjacentMoveAuthority board,
-            GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions)
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions,
+            GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var roundIndex = state.Cursor.RoundIndex;
@@ -309,7 +439,7 @@ namespace GuardsDigital.Core.Cards
                 tieBreakerState,
                 roundIndex,
                 RoundResolutionComposition.ForMatch(
-                    cardActions, board, timing, markers, systemTransitions));
+                    cardActions, board, timing, markers, systemTransitions, lanePush));
             if (turnIndex < 1 || turnIndex > TurnsPerRound || !Enum.IsDefined(typeof(RoundResolutionPhase), phase))
             {
                 throw new ArgumentException("Restored round cursor is invalid.");
@@ -868,12 +998,12 @@ namespace GuardsDigital.Core.Cards
                     RoundResolutionRejectionReason.IncompleteMinionBattleSelection);
             }
 
-            // Milestone 6.1 records Lane-Push requests without consuming them, so the round stops
-            // here by design until that rule lands. Say that, rather than blaming a missing handler.
+            // Milestone 6.11. p.8's push now runs here rather than stopping the round. A push that
+            // stops on the sidebar's Place is answered by its own command, so a second advance while
+            // one is stopped is refused rather than beginning a second push.
             if (stage == EndOfRoundStage.ResolveRequestedLanePush && PendingLanePushRequest != null)
             {
-                return RoundResolutionResult.Reject(
-                    RoundResolutionRejectionReason.UnimplementedLanePushConsumption);
+                return ResolveRequestedLanePush(stage);
             }
 
             if (stage == EndOfRoundStage.MinionBattle &&
@@ -922,18 +1052,34 @@ namespace GuardsDigital.Core.Cards
                     stage));
             }
 
+            return CompleteEndOfRoundStage(stage, resolution.OutcomeKind, events);
+        }
+
+        /// <summary>
+        /// The tail every end-of-round stage shares: report what the stage did, stop if it paused or
+        /// ended the game, otherwise move to the next stage or close the round.
+        ///
+        /// Extracted at milestone 6.11 because the Lane-Push stage stopped being a refusal and became a
+        /// stage that can pause, end the game, or complete like any other, and a second copy of this
+        /// tail is a second place for the round's own order to drift.
+        /// </summary>
+        private RoundResolutionResult CompleteEndOfRoundStage(
+            EndOfRoundStage stage,
+            EndOfRoundStageOutcomeKind outcomeKind,
+            List<RoundResolutionEvent> events)
+        {
             events.Add(RoundResolutionEvent.EndOfRoundStageOutcome(
                 RoundIndex,
                 stage,
-                resolution.OutcomeKind));
-            if (resolution.OutcomeKind == EndOfRoundStageOutcomeKind.Paused)
+                outcomeKind));
+            if (outcomeKind == EndOfRoundStageOutcomeKind.Paused)
             {
                 return RoundResolutionResult.Accept(events);
             }
 
-            if (resolution.OutcomeKind == EndOfRoundStageOutcomeKind.GameEnded)
+            if (outcomeKind == EndOfRoundStageOutcomeKind.GameEnded)
             {
-                endOfRoundOutcomes.Add(new EndOfRoundStageOutcome(stage, resolution.OutcomeKind));
+                endOfRoundOutcomes.Add(new EndOfRoundStageOutcome(stage, outcomeKind));
                 Phase = RoundResolutionPhase.GameEnded;
                 events.Add(RoundResolutionEvent.EndOfRoundBoundary(
                     RoundResolutionEventKind.GameEnded,
@@ -954,7 +1100,7 @@ namespace GuardsDigital.Core.Cards
                         RoundIndex, TurnsPerRound, value)));
             }
 
-            endOfRoundOutcomes.Add(new EndOfRoundStageOutcome(stage, resolution.OutcomeKind));
+            endOfRoundOutcomes.Add(new EndOfRoundStageOutcome(stage, outcomeKind));
             var nextStage = (EndOfRoundStage)((int)stage + 1);
             if (nextStage != EndOfRoundStage.Complete)
             {
@@ -1078,7 +1224,8 @@ namespace GuardsDigital.Core.Cards
                 cardActions,
                 timing,
                 RoundIndex,
-                TurnIndex);
+                TurnIndex,
+                lanePush);
             Phase = RoundResolutionPhase.ResolvingTurn;
             foreach (var timingEvent in timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
                 TimingCheckpoint.CardsPlayedAndRevealed,

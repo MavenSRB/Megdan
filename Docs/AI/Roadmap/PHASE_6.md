@@ -641,7 +641,7 @@ Non-goals: No Lane Push Wave/Zone/respawn rules (6.10 and 6.11 own those), no mi
 
 Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-610a-establish-the-reusable-system-transition-continuation-contract-completion-evidence).
 
-### [~] 6.11 Complete Lane Push minion respawn and transition
+### [x] 6.11 Complete Lane Push minion respawn and transition
 
 Completes the transition by removing all minions from the previous Battle Zone and respawning the matching type at every verified Spawn point in the new Battle Zone.
 
@@ -657,6 +657,8 @@ Acceptance checks:
 - The continuation is a reusable system-transition contract rather than a Lane-Push handler-local callback or presentation state, so milestone 7.5 can use the same continuation shape for multi-hero and multi-level progression.
 - An immediate transition completes before later Initiative resolution continues.
 - Repeat-boundary integration is deferred until the first verified Repeat implementation.
+
+Historical evidence: [Phase 6 handoff](../Archive/Phase-Handoffs/PHASE_6.md#milestone-611-complete-lane-push-minion-respawn-and-transition-completion-evidence).
 
 ### [ ] 6.12 Remove tokens and return markers at end of round
 
