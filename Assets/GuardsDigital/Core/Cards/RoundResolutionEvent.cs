@@ -42,7 +42,18 @@ namespace GuardsDigital.Core.Cards
         TokenRemovedAtEndOfRound = 19,
 
         /// <summary>Milestone 6.12: p.8's end-of-round cleanup returned one marker to its supply.</summary>
-        MarkerReturnedAtEndOfRound = 20
+        MarkerReturnedAtEndOfRound = 20,
+
+        /// <summary>
+        /// Milestone 7.5: one part of p.8's Level Up step happened - a level bought, a card upgraded,
+        /// an item gained, or an Ultimate unlocked.
+        ///
+        /// One kind rather than four, because the four are one page's one transaction and what
+        /// distinguishes them is typed on the outcome the event carries. A reader that wants only the
+        /// purchases asks the outcome, and nothing has to keep four enum members in agreement with the
+        /// four the rules can report.
+        /// </summary>
+        HeroLevelUpProgressed = 21
     }
 
     public readonly struct RoundResolutionEvent
@@ -72,7 +83,8 @@ namespace GuardsDigital.Core.Cards
             bool systemTransitionCompleted = false,
             GuardsDigital.Core.Rules.LanePush.LanePushStageOutcome lanePushStageOutcome = default,
             GuardsDigital.Core.Components.PlacedToken removedToken = null,
-            GuardsDigital.Core.Components.MarkerAttachment returnedMarker = null)
+            GuardsDigital.Core.Components.MarkerAttachment returnedMarker = null,
+            GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome heroLevelUpOutcome = null)
         {
             Kind = kind;
             RoundIndex = roundIndex;
@@ -101,6 +113,7 @@ namespace GuardsDigital.Core.Cards
             LanePushStageOutcome = lanePushStageOutcome;
             RemovedToken = removedToken;
             ReturnedMarker = returnedMarker;
+            HeroLevelUpOutcome = heroLevelUpOutcome;
         }
 
         public RoundResolutionEventKind Kind { get; }
@@ -138,6 +151,9 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>Milestone 6.12: the attachment p.8's cleanup ended, or <c>null</c>.</summary>
         public GuardsDigital.Core.Components.MarkerAttachment ReturnedMarker { get; }
+
+        /// <summary>Milestone 7.5: what p.15's and p.16's leveling did, or <c>null</c>.</summary>
+        public GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome HeroLevelUpOutcome { get; }
 
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
@@ -505,6 +521,25 @@ namespace GuardsDigital.Core.Cards
                 0,
                 endOfRoundStage: Cards.EndOfRoundStage.RemoveTokensAndReturnMarkers,
                 returnedMarker: attachment);
+        }
+
+        /// <summary>
+        /// Milestone 7.5: one part of p.8's Level Up step. It names the stage as well as the outcome,
+        /// because the whole of leveling happens inside one end-of-round stage and a reader following
+        /// the round's order needs no second lookup to place it.
+        /// </summary>
+        public static RoundResolutionEvent HeroLevelUpProgressed(
+            int roundIndex,
+            int turnIndex,
+            GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome outcome)
+        {
+            if (outcome == null) throw new ArgumentNullException(nameof(outcome));
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.HeroLevelUpProgressed,
+                roundIndex,
+                turnIndex,
+                endOfRoundStage: Cards.EndOfRoundStage.LevelUpAndUpgrade,
+                heroLevelUpOutcome: outcome);
         }
     }
 }

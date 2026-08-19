@@ -292,9 +292,17 @@ namespace GuardsDigital.Application
             // transition paused, and re-derive any paused one by replaying the commands that paused it.
             var rebuiltLanePushAuthority = new LanePushTransitionAuthority(
                 rebuiltBoard, initialState.Setup.WaveCount);
+            // Milestone 7.5. p.15's leveling is the second production consumer of the continuation
+            // contract, and its rules are rebuilt here beside the Lane Push's for the same reason: they
+            // are about this match's own participants, content and cards. The states a purchase moves
+            // are bound by the round authority below, which is what owns them.
+            var rebuiltLevelUp = new GuardsDigital.Core.Rules.Progression.HeroLevelUpStepRules(
+                rebuiltConfiguration.Participants,
+                rebuiltConfiguration.CardDefinitions,
+                rebuiltConfiguration.CardInstances);
             var rebuiltTransitions = new SystemTransitionAuthority(
                 MatchSystemTransitions.CreateCatalog(),
-                MatchSystemTransitions.CreateRules(rebuiltLanePushAuthority));
+                MatchSystemTransitions.CreateRules(rebuiltLanePushAuthority, rebuiltLevelUp));
             var rebuiltLanePush = new LanePushConsumption(rebuiltLanePushAuthority, rebuiltTransitions);
             var rebuiltCardActions = new CardActionResolutionAuthority(rebuiltBoard, rebuiltMarkers);
             var rebuiltRound = new RoundResolutionAuthority(
@@ -310,6 +318,7 @@ namespace GuardsDigital.Application
                     rebuiltMarkers,
                     rebuiltTransitions,
                     rebuiltLanePush,
+                    rebuiltLevelUp,
                     // Milestone 7.4. Rebuilt from the composed setup rather than carried across, for the
                     // reason the Wave pool above it is: a restart and a retained-prefix Undo begin with
                     // the counters the setup states, and re-derive every spend by replaying the Defeats

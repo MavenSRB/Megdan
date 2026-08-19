@@ -28,7 +28,10 @@ namespace GuardsDigital.Core.Participants
 
             TieBreakerState = tieBreakerState;
 
-            var cardInstances = redHand.Instances.Concat(blueHand.Instances).ToArray();
+            // Milestone 7.5. Every card each hand supplies, hand and deck alike: p.15's Upgrade a Card
+            // step searches the deck, so a match composed from the dealt five alone would have had a
+            // mandatory level nobody could complete.
+            var cardInstances = redHand.AllInstances.Concat(blueHand.AllInstances).ToArray();
             foreach (var instance in cardInstances)
             {
                 participants.GetHero(instance.OwnerId);
@@ -114,12 +117,23 @@ namespace GuardsDigital.Core.Participants
                 var ownedReferences = new HashSet<CardDefinitionReference>(
                     ownedInstances.Select(instance => instance.DefinitionReference));
                 var upgradeTargets = UpgradeTargetsOf(ownerId);
+
+                // Milestone 7.5. The dealt/deck split is a setup fact rather than a live one - every
+                // card moves during a match - so it is recovered from the same content relationship
+                // that routes the definitions two lines above: a card whose definition this hero's own
+                // upgrade closure reaches, or its Ultimate, is one p.6 left in the deck, and every other
+                // owned card is one p.6 dealt. Where each card is right now is on the card itself.
+                bool IsDeckCard(CardInstance instance) =>
+                    upgradeTargets.Contains(instance.DefinitionReference.DefinitionId) ||
+                    instance.DefinitionReference.DefinitionId.Equals(ultimateId);
+
                 return PlaceholderMovementHand.Restore(new PlaceholderMovementHandRestoreState(
                     definitionArray.Where(definition =>
                         ownedReferences.Contains(definition.Reference) ||
                         upgradeTargets.Contains(definition.Id) ||
                         definition.Id.Equals(ultimateId)),
-                    ownedInstances));
+                    ownedInstances.Where(instance => !IsDeckCard(instance)),
+                    ownedInstances.Where(IsDeckCard)));
             }
 
             // Milestone 7.1. A hand carries the cards its cards can become, and since the upgrade

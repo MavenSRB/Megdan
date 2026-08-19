@@ -48,6 +48,17 @@ namespace GuardsDigital.Core.Cards
             return new CardInstance(id, definitionReference, ownerId, CardStateFacts.InitialInHand());
         }
 
+        /// <summary>
+        /// Milestone 7.5. A card rulebook p.6's setup leaves in its owner's deck rather than dealing.
+        /// </summary>
+        public static CardInstance CreateInDeck(
+            CardInstanceId id,
+            CardDefinitionReference definitionReference,
+            HeroId ownerId)
+        {
+            return new CardInstance(id, definitionReference, ownerId, CardStateFacts.InitialInDeck());
+        }
+
         internal bool TryApplyLocationTransition(ActionCardStateTransition transition)
         {
             if (!transition.IsDefined || State.Location != transition.RequiredLocation)

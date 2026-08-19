@@ -52,9 +52,13 @@ namespace GuardsDigital.Tests.PlayMode
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
-            Assert.That(runtime.Cards, Has.Count.EqualTo(10),
-                "Five cards per hero. The capability that puts a token on this board rides on one of " +
-                "them rather than on a sixth card dealt beside them.");
+            Assert.That(
+                runtime.Cards.Count(card => card.State.Location == CardLocation.Hand),
+                Is.EqualTo(10),
+                "Five cards per hero in hand. The capability that puts a token on this board rides on " +
+                "one of them rather than on a sixth card dealt beside them.");
+            Assert.That(runtime.Cards, Has.Count.EqualTo(36),
+                "Milestone 7.5 deals rulebook p.6's remaining thirteen cards per hero into the deck.");
             Assert.That(runtime.BoardView.TokenViews, Is.Empty,
                 "Nothing has been placed, so the board has built no token view at all.");
 

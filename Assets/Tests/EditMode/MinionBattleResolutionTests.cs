@@ -920,6 +920,14 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             var cardActions = new CardActionResolutionAuthority(board);
+
+            // Milestone 7.5. This fixture declares the configured stage set, which now includes p.8's
+            // Level Up, so it composes the transition and the rules that run it: a match that says it
+            // runs the stage and cannot is a misconfiguration the round refuses rather than skips.
+            // Nobody levels here - no Defeat has paid anyone a coin - which is exactly the ordinary
+            // round the stage has to cross without asking anything.
+            var levelUp = new GuardsDigital.Core.Rules.Progression.HeroLevelUpStepRules(
+                participants, new[] { redDefinition, blueDefinition }, new[] { red, blue });
             var authority = new RoundResolutionAuthority(
                 new[] { redDefinition, blueDefinition },
                 new[] { red, blue },
@@ -927,8 +935,19 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red),
                 1,
                 new RoundResolutionComposition(
-                    cardActions, board, timing, null, null, null, null,
-                    EndOfRoundStageAvailability.ConfiguredMatch(), null));
+                    cardActions,
+                    board,
+                    timing,
+                    null,
+                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority(
+                        GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateCatalog(),
+                        GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateRules(
+                            null, levelUp)),
+                    null,
+                    levelUp,
+                    null,
+                    EndOfRoundStageAvailability.ConfiguredMatch(),
+                    null));
 
             return new BattleZoneFixture(authority, board, minions, red, blue, blueSpawn);
         }

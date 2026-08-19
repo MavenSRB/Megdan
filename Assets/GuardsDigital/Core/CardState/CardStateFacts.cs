@@ -48,6 +48,26 @@ namespace GuardsDigital.Core.Cards
                 CardFaceOrientation.FaceUp);
         }
 
+        /// <summary>
+        /// Milestone 7.5. The shape a card starts a match in when rulebook p.6 leaves it in the deck
+        /// rather than dealing it: "return the remaining Tier II, Tier III, and Tier IV cards to your
+        /// deck."
+        ///
+        /// Face-up, matching the state <c>CardLifecycleAuthority.TryReturnToDeck</c> gives a card p.15
+        /// returns to the same deck. The two have to agree, or a card would mean something different
+        /// depending on whether it started there or arrived there, and p.15 sends the player to search
+        /// the deck by colour and Tier - which a face-down card's suppressed printed characteristics
+        /// would make unanswerable.
+        /// </summary>
+        public static CardStateFacts InitialInDeck()
+        {
+            return new CardStateFacts(
+                CardLocation.Deck,
+                false,
+                CardResolutionStatus.None,
+                CardFaceOrientation.FaceUp);
+        }
+
         public static CardStateFacts DiscardedUnplayed()
         {
             return new CardStateFacts(
@@ -58,6 +78,9 @@ namespace GuardsDigital.Core.Cards
         }
 
         public bool IsInitialInHand => Equals(InitialInHand());
+
+        /// <summary>Milestone 7.5: whether this is exactly the shape <see cref="InitialInDeck"/> states.</summary>
+        public bool IsInitialInDeck => Equals(InitialInDeck());
 
         public bool Equals(CardStateFacts other)
         {

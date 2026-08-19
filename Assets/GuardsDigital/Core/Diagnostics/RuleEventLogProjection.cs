@@ -196,9 +196,44 @@ namespace GuardsDigital.Core.Diagnostics
                     return;
                 }
 
+                case RoundResolutionEventKind.HeroLevelUpProgressed:
+                {
+                    // Milestone 7.5. One line per thing p.15's and p.16's leveling did, naming the hero
+                    // and the Level it belongs to, because a hero that buys several levels in one stage
+                    // produces several of these and only the Level tells them apart.
+                    var outcome = ruleEvent.HeroLevelUpOutcome;
+                    Add(
+                        $"Round.HeroLevelUp{outcome.Kind}",
+                        JoinReferences(
+                            roundReference,
+                            $"hero={outcome.HeroId.Value}",
+                            $"level={outcome.Level}"),
+                        Detail(outcome));
+                    return;
+                }
+
                 default:
                     Add($"Round.{ruleEvent.Kind}", roundReference, "accepted boundary");
                     return;
+            }
+        }
+
+        /// <summary>Milestone 7.5: what one leveling outcome moved, in that outcome's own vocabulary.</summary>
+        private static string Detail(GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome outcome)
+        {
+            switch (outcome.Kind)
+            {
+                case GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcomeKind.LevelPurchased:
+                    return $"cost={outcome.Spend.Amount};coins={outcome.Spend.BalanceAfter}";
+                case GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcomeKind.CardUpgraded:
+                    return $"returned={outcome.UpgradedCardInstanceId.Value};" +
+                        $"taken={outcome.TakenCardInstanceId.Value};" +
+                        $"setAside={(outcome.SetAsideCardInstanceId.IsDefined ? outcome.SetAsideCardInstanceId.Value : "none")}";
+                case GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcomeKind.ItemGained:
+                    return $"card={outcome.Item.SourceCardInstanceId.Value};" +
+                        $"slot={outcome.Item.Slot};icon={outcome.Item.Icon}";
+                default:
+                    return $"card={outcome.UltimateCardInstanceId.Value}";
             }
         }
 

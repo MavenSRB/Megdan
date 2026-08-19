@@ -4,6 +4,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.LanePush;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Timing;
 
@@ -31,6 +32,7 @@ namespace GuardsDigital.Core.Cards
             MarkerAttachmentRegister markers,
             SystemTransitionAuthority systemTransitions,
             LanePushConsumption lanePush,
+            HeroLevelUpStepRules levelUp,
             TeamLifeState teamLives,
             EndOfRoundStageAvailability endOfRoundStageAvailability,
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers)
@@ -41,6 +43,7 @@ namespace GuardsDigital.Core.Cards
             Markers = markers;
             SystemTransitions = systemTransitions;
             LanePush = lanePush;
+            LevelUp = levelUp;
             TeamLives = teamLives;
             EndOfRoundStageAvailability = endOfRoundStageAvailability;
             EndOfRoundHandlers = endOfRoundHandlers;
@@ -80,6 +83,17 @@ namespace GuardsDigital.Core.Cards
         public LanePushConsumption LanePush { get; }
 
         /// <summary>
+        /// Milestone 7.5: what p.15's and p.16's leveling steps do. It travels beside
+        /// <see cref="LanePush"/> because it is the same arrangement seen twice - these rules own what
+        /// a step does and <see cref="SystemTransitions"/> owns where the transition is - and because
+        /// the round authority is what binds them the Levels, items and coin ledger they move.
+        ///
+        /// Absent outside a match with a coin ledger to spend from, in which case the leveling stage
+        /// finds no rules and refuses rather than substituting a purchase nobody could pay for.
+        /// </summary>
+        public HeroLevelUpStepRules LevelUp { get; }
+
+        /// <summary>
         /// Milestone 7.4: rulebook p.13's Life counters, which a hero Defeat spends. It travels here
         /// rather than being created by the authority because the starting count is a setup decision -
         /// the prototype baseline records five per team, the staged 1v1 fixture composes four - and the
@@ -103,10 +117,12 @@ namespace GuardsDigital.Core.Cards
             MarkerAttachmentRegister markers,
             SystemTransitionAuthority systemTransitions,
             LanePushConsumption lanePush,
+            HeroLevelUpStepRules levelUp = null,
             TeamLifeState teamLives = null)
         {
             return new RoundResolutionComposition(
-                cardActions, board, timing, markers, systemTransitions, lanePush, teamLives, null, null);
+                cardActions, board, timing, markers, systemTransitions, lanePush, levelUp, teamLives,
+                null, null);
         }
 
         /// <summary>
@@ -117,7 +133,8 @@ namespace GuardsDigital.Core.Cards
         public static RoundResolutionComposition ForCardActionsOnly(
             CardActionResolutionAuthority cardActions)
         {
-            return new RoundResolutionComposition(cardActions, null, null, null, null, null, null, null, null);
+            return new RoundResolutionComposition(
+                cardActions, null, null, null, null, null, null, null, null, null);
         }
     }
 }

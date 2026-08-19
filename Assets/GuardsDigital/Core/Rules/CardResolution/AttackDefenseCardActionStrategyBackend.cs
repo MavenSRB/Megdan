@@ -90,6 +90,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         internal DefeatRewardAccounting DefeatRewards => defeatRewards;
 
+        /// <summary>
+        /// Milestone 7.5. The match's coin ledger, created here if a Defeat has not already created it.
+        ///
+        /// It exists because coins stopped being a resource only this backend touches. p.15's level
+        /// purchase spends them, so the round authority asks for the ledger when it composes itself, and
+        /// a second one created later by a Defeat would be a balance no restore could reproduce. The
+        /// creation stays in this type rather than moving to the round for the reason
+        /// <see cref="DefeatRewards"/> lives here at all: the Defeat that fills it is this backend's.
+        /// </summary>
+        internal DefeatRewardAccounting EnsureDefeatRewards(MatchParticipants participants)
+        {
+            if (defeatRewards == null)
+            {
+                defeatRewards = new DefeatRewardAccounting(
+                    participants ?? throw new ArgumentNullException(nameof(participants)));
+            }
+
+            return defeatRewards;
+        }
+
         internal GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems => heroItems;
 
         /// <summary>

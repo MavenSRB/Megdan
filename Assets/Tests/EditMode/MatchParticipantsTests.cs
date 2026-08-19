@@ -42,15 +42,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(configuration.BlueHand.Instances, Has.Count.EqualTo(5));
             Assert.That(configuration.BlueHand.Instances.All(card => card.OwnerId.Equals(blueHeroId)), Is.True);
 
-            // Milestone 7.1. Ten cards are dealt, because each of the six non-Basic Tier I cards
-            // supplies the four same-colour cards p.15 has it upgrade into - two Tier II and the two
-            // Tier III both of those lead to - and none of the twenty-four is dealt: p.15 finds them in
-            // the player's own deck, and milestone 7.5 is the first that moves one.
+            // Milestone 7.1. Each of the six non-Basic Tier I cards supplies the four same-colour cards
+            // p.15 has it upgrade into - two Tier II and the two Tier III both of those lead to.
             //
             // Milestone 7.3 makes each hand eighteen, which is p.6's own count: "Each player takes
             // their hero's deck of 18 Action cards." Seventeen was that count less the Ultimate, and
-            // the eighteenth is it. It is dealt no more than the twenty-four are, and for the same
-            // reason - p.6 returns it to the deck at setup, and p.16 takes it from there.
+            // the eighteenth is it.
             Assert.That(configuration.RedHand.Definitions, Has.Count.EqualTo(18));
             Assert.That(configuration.BlueHand.Definitions, Has.Count.EqualTo(18));
             Assert.That(configuration.CardDefinitions, Has.Count.EqualTo(36));
@@ -59,7 +56,20 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardDefinitions.Count(definition => definition.Progression.IsUltimate),
                 Is.EqualTo(2),
                 "p.16 gives each hero one Ultimate and no hero two.");
-            Assert.That(configuration.CardInstances.Select(card => card.Id).Distinct().Count(), Is.EqualTo(10));
+
+            // Milestone 7.5. Every one of those eighteen is now a card, because p.15's Upgrade a Card
+            // step searches the deck: five per hero start in hand and the remaining thirteen start
+            // where p.6 leaves them, so the configured match holds thirty-six.
+            Assert.That(configuration.RedHand.DeckInstances, Has.Count.EqualTo(13));
+            Assert.That(configuration.BlueHand.DeckInstances, Has.Count.EqualTo(13));
+            Assert.That(
+                configuration.RedHand.DeckInstances.All(card => card.State.IsInitialInDeck), Is.True,
+                "p.6's remaining cards start in the deck, unplayed and face-up.");
+            Assert.That(configuration.CardInstances.Select(card => card.Id).Distinct().Count(), Is.EqualTo(36));
+            Assert.That(
+                configuration.CardInstances.Count(card => card.State.Location == CardLocation.Hand),
+                Is.EqualTo(10),
+                "p.15's hand is five cards per hero, one of each colour.");
 
             foreach (var card in configuration.CardInstances)
             {

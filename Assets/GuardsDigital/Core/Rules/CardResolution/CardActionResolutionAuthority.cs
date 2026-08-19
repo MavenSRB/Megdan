@@ -164,6 +164,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public DefeatRewardAccounting DefeatRewards => attackDefenseBackend.DefeatRewards;
 
         /// <summary>
+        /// Milestone 7.5. The match's one coin ledger, created on first ask. The round authority asks
+        /// when it composes itself, because p.15's level purchase now spends from the same balances
+        /// p.13's Defeat fills and two ledgers would be two answers to what a hero can afford.
+        /// </summary>
+        internal DefeatRewardAccounting EnsureDefeatRewards(MatchParticipants participants) =>
+            attackDefenseBackend.EnsureDefeatRewards(participants);
+
+        /// <summary>
         /// Milestone 7.2. Hands the backends the match's item state, which the round authority owns.
         /// It is a binding rather than a constructor argument because the dispatcher is composed before
         /// the round that owns the state, and the one thing that must not happen is a second copy: a

@@ -1094,7 +1094,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "Respawn hover uses the exact movement destination highlight, not a second visual language.");
 
             var hero = runtime.Setup.Heroes.Single(value => value.TeamSide == TeamSide.Blue).HeroId;
-            var card = runtime.Cards.First(value => value.OwnerId.Equals(hero));
+            var card = runtime.Cards.First(value => value.OwnerId.Equals(hero) &&
+                value.State.Location == CardLocation.Hand);
             var option = new HeroRespawnOptionViewModel(
                 "RESPAWN AT SPAWN #1",
                 destination,

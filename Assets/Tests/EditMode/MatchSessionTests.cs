@@ -599,10 +599,19 @@ namespace GuardsDigital.Tests.EditMode
                 });
         }
 
+        /// <summary>
+        /// One side's cards that a turn can be played from.
+        ///
+        /// Milestone 7.5 dealt p.6's remaining thirteen cards per hero into the deck, so "this side's
+        /// cards" and "this side's playable cards" stopped being the same set: a deck card cannot be
+        /// committed, and it carries the Initiative of the Tier I card it upgrades from, so an
+        /// unfiltered lookup by Initiative would find several.
+        /// </summary>
         private static IReadOnlyList<CardInstance> GetCards(MatchSession session, TeamSide side)
         {
             return session.Projection.Cards
-                .Where(card => session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == side)
+                .Where(card => session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == side &&
+                    card.State.Location != CardLocation.Deck)
                 .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
                 .ToArray();
         }

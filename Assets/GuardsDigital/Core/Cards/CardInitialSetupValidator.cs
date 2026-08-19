@@ -56,9 +56,14 @@ namespace GuardsDigital.Core.Cards
                     throw new ArgumentException("Card instance references an unresolved definition ID or content revision.", nameof(instances));
                 }
 
-                if (!instance.State.IsInitialInHand)
+                // Milestone 7.5. p.6's setup puts a hero's cards in two places, not one: five in hand,
+                // and "the remaining Tier II, Tier III, and Tier IV cards" in the deck. Both shapes are
+                // exact - unplayed, unresolved, face-up - so the widening admits the second resting
+                // place and nothing else; a card starting in the discard pile, the turn area, an item
+                // slot or the Ultimate area is still refused.
+                if (!instance.State.IsInitialInHand && !instance.State.IsInitialInDeck)
                 {
-                    throw new ArgumentException("Initial card instances must start in hand with unplayed, unresolved, face-up state.", nameof(instances));
+                    throw new ArgumentException("Initial card instances must start in hand or in the deck with unplayed, unresolved, face-up state.", nameof(instances));
                 }
             }
 

@@ -49,6 +49,7 @@ namespace GuardsDigital.Core.Cards
         private readonly MarkerAttachmentRegister markers;
         private readonly GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions;
         private readonly GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush;
+        private readonly GuardsDigital.Core.Rules.Progression.HeroLevelUpStepRules levelUp;
 
         public RoundResolutionAuthority(
             IEnumerable<CardDefinition> definitions,
@@ -65,6 +66,7 @@ namespace GuardsDigital.Core.Cards
             var markers = composition.Markers;
             var compositionTransitions = composition.SystemTransitions;
             var compositionLanePush = composition.LanePush;
+            var compositionLevelUp = composition.LevelUp;
             var compositionTeamLives = composition.TeamLives;
             var endOfRoundStageAvailability = composition.EndOfRoundStageAvailability;
             var endOfRoundHandlers = composition.EndOfRoundHandlers;
@@ -154,6 +156,20 @@ namespace GuardsDigital.Core.Cards
             // Milestone 7.4: the same arrangement again, for the two states p.13's Defeat consequences
             // read and write inside the Attack that caused them.
             this.cardActions?.BindDefeatConsequenceState(HeroProgression, TeamLives);
+
+            // Milestone 7.5. p.15's level purchase spends from the same balances p.13's Defeat fills, so
+            // the ledger is asked for here rather than left to be created by whichever rule reaches it
+            // first: two ledgers would be two answers to what a hero can afford, and only one of them
+            // would be on the wire. The leveling rules are then handed the three states a purchase
+            // moves - the Level, the items and those balances - in the shape the two bindings above use
+            // and for the same reason: this authority owns all three and the transition authority the
+            // rules are composed into is built before it.
+            levelUp = compositionLevelUp;
+            levelUp?.Bind(
+                HeroProgression,
+                HeroItems,
+                this.cardActions?.EnsureDefeatRewards(participants) ??
+                    new GuardsDigital.Core.Rules.Consequences.DefeatRewardAccounting(participants));
             this.endOfRoundStageAvailability = endOfRoundStageAvailability ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -322,16 +338,29 @@ namespace GuardsDigital.Core.Cards
             }
 
             var wasLanePush = lanePush != null && lanePush.IsPaused;
+            var wasLevelUp = IsPausedLevelUp();
             var result = systemTransitions.TryAnswer(command);
             if (!result.Accepted)
             {
                 return RoundResolutionResult.Reject(TranslateTransitionRejection(result.RejectionReason));
             }
 
-            var events = new List<RoundResolutionEvent>
+            // Milestone 7.5. What the answered upgrade did is reported before where the transition now
+            // is, so the stream reads in the order the round happened.
+            var events = wasLevelUp ? DrainLevelUpEvents() : new List<RoundResolutionEvent>();
+            events.Add(RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result));
+            if (wasLevelUp)
             {
-                RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result)
-            };
+                return result.TransitionCompleted &&
+                    Phase == RoundResolutionPhase.EndOfRound &&
+                    CurrentEndOfRoundStage == EndOfRoundStage.LevelUpAndUpgrade
+                    ? CompleteEndOfRoundStage(
+                        EndOfRoundStage.LevelUpAndUpgrade,
+                        EndOfRoundStageOutcomeKind.Completed,
+                        events)
+                    : RoundResolutionResult.Accept(events);
+            }
+
             if (!wasLanePush || !result.TransitionCompleted)
             {
                 return RoundResolutionResult.Accept(events);
@@ -498,7 +527,8 @@ namespace GuardsDigital.Core.Cards
             MarkerAttachmentRegister markers,
             AdjacentMoveAuthority board,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions,
-            GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush)
+            GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush,
+            GuardsDigital.Core.Rules.Progression.HeroLevelUpStepRules levelUp)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var roundIndex = state.Cursor.RoundIndex;
@@ -515,7 +545,7 @@ namespace GuardsDigital.Core.Cards
                 tieBreakerState,
                 roundIndex,
                 RoundResolutionComposition.ForMatch(
-                    cardActions, board, timing, markers, systemTransitions, lanePush));
+                    cardActions, board, timing, markers, systemTransitions, lanePush, levelUp));
             if (turnIndex < 1 || turnIndex > TurnsPerRound || !Enum.IsDefined(typeof(RoundResolutionPhase), phase))
             {
                 throw new ArgumentException("Restored round cursor is invalid.");
@@ -532,6 +562,18 @@ namespace GuardsDigital.Core.Cards
             authority.TeamLives = TeamLifeState.Restore(participants, state.TeamLives);
             cardActions?.BindHeroItems(authority.HeroItems);
             cardActions?.BindDefeatConsequenceState(authority.HeroProgression, authority.TeamLives);
+
+            // Milestone 7.5. The constructor above bound the leveling rules the states it created; these
+            // are the ones the payload recorded, so they are bound again over the top rather than
+            // mutated into place - the same replacement the three restores above make, and for the same
+            // reason: a restored match must never pass through a starting value on its way to the one it
+            // saved. The coin ledger is not re-bound because it is the same instance either way: this
+            // authority asked the dispatcher for it, and the dispatcher was restored before it.
+            levelUp?.Bind(
+                authority.HeroProgression,
+                authority.HeroItems,
+                cardActions?.EnsureDefeatRewards(participants) ??
+                    new GuardsDigital.Core.Rules.Consequences.DefeatRewardAccounting(participants));
             authority.RoundIndex = roundIndex;
             authority.TurnIndex = turnIndex;
             authority.Phase = phase;
@@ -1117,6 +1159,17 @@ namespace GuardsDigital.Core.Cards
                 return ResolveComponentCleanup(stage);
             }
 
+            // Milestone 7.5. Handled here rather than through an IEndOfRoundStageHandler for the reason
+            // the two stages above are: its collaborators are the transition authority and the states a
+            // purchase moves, which this authority holds and the handler context deliberately does not
+            // carry. A leveling that stops on p.15's Upgrade a Card leaves the stage where it is, so the
+            // round waits for the answer rather than advancing past a transition that has not finished.
+            if (stage == EndOfRoundStage.LevelUpAndUpgrade &&
+                endOfRoundStageAvailability.IsAvailable(EndOfRoundStage.LevelUpAndUpgrade))
+            {
+                return ResolveLevelUp(stage);
+            }
+
             EndOfRoundStageResolution resolution;
             if (!endOfRoundStageAvailability.IsAvailable(stage))
             {
@@ -1196,6 +1249,64 @@ namespace GuardsDigital.Core.Cards
 
             return CompleteEndOfRoundStage(stage, EndOfRoundStageOutcomeKind.Completed, events);
         }
+
+        /// <summary>
+        /// p.8's "Level Up" step, which p.15 makes mandatory: "If you have enough coins to buy one or
+        /// more level ups, you must do so now."
+        ///
+        /// Every hero's purchases run inside one transition, so the stage either finishes in this one
+        /// command - when nobody could afford a level, or nobody's upgrade needed answering - or stops
+        /// on p.15's Upgrade a Card and is finished by the answer.
+        /// </summary>
+        private RoundResolutionResult ResolveLevelUp(EndOfRoundStage stage)
+        {
+            if (levelUp == null)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.UnavailableLevelUpTransition);
+            }
+
+            var result = systemTransitions.TryBegin(
+                GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId,
+                new GuardsDigital.Core.Rules.Transitions.SystemTransitionInstanceId(
+                    $"round-{RoundIndex}-" +
+                    GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId.Value));
+            if (!result.Accepted)
+            {
+                return RoundResolutionResult.Reject(TranslateTransitionRejection(result.RejectionReason));
+            }
+
+            var events = DrainLevelUpEvents();
+            events.Add(RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result));
+            return CompleteEndOfRoundStage(
+                stage,
+                result.TransitionCompleted
+                    ? EndOfRoundStageOutcomeKind.Completed
+                    : EndOfRoundStageOutcomeKind.Paused,
+                events);
+        }
+
+        /// <summary>
+        /// What the leveling rules have done since they were last asked, as events.
+        ///
+        /// The rules report rather than raise for the reason milestone 6.11's Lane-Push stages do: a
+        /// step rules implementation answers the transition authority and has no event stream, and this
+        /// authority owns the one the round writes to.
+        /// </summary>
+        private List<RoundResolutionEvent> DrainLevelUpEvents() =>
+            (levelUp == null
+                ? Array.Empty<GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome>()
+                : (IReadOnlyList<GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome>)
+                    levelUp.DrainOutcomes())
+                .Select(outcome => RoundResolutionEvent.HeroLevelUpProgressed(
+                    RoundIndex, TurnIndex, outcome))
+                .ToList();
+
+        private bool IsPausedLevelUp() =>
+            levelUp != null &&
+            systemTransitions.PendingStep != null &&
+            systemTransitions.PendingStep.DefinitionId.Equals(
+                GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId);
 
         /// <summary>
         /// The tail every end-of-round stage shares: report what the stage did, stop if it paused or

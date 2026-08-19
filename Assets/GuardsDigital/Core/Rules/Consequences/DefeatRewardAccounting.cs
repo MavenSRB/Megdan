@@ -284,6 +284,82 @@ namespace GuardsDigital.Core.Rules.Consequences
             ResourceOperationFailureBehavior.RejectWithoutMutation;
     }
 
+    /// <summary>
+    /// What a hero spent coins on. Milestone 7.5 adds the first and so far only sink: rulebook p.15's
+    /// mandatory level up, whose price is <c>HeroLevelSchedule.LevelUpCost</c>.
+    ///
+    /// It is named rather than left implicit for the reason <see cref="CoinAwardKind"/> is: the ledger
+    /// records where each coin came from, and a ledger that recorded where they went as an unlabelled
+    /// subtraction would be able to say less about a spend than about a gain.
+    /// </summary>
+    public enum CoinSpendKind
+    {
+        None = 0,
+        LevelUp = 1
+    }
+
+    /// <summary>
+    /// One deduction from a hero's coin balance, in the shape <see cref="CoinResourceOperation"/> gives
+    /// a gain: the hero, what it bought, the amount, and the exact balance transition.
+    ///
+    /// A spend has no Defeat source, which is the whole reason this is a second type rather than a
+    /// negative amount on the first: <see cref="CoinResourceOperation"/> requires a typed Defeat outcome
+    /// and target because every gain in this build has one, and a level purchase would have had to
+    /// invent both to be expressed there.
+    /// </summary>
+    public readonly struct CoinSpendOperation
+    {
+        public CoinSpendOperation(
+            HeroId spendingHeroId,
+            TeamId spendingTeamId,
+            CoinSpendKind spendKind,
+            int amount,
+            int balanceBefore,
+            int balanceAfter)
+        {
+            if (!spendingHeroId.IsDefined || !spendingTeamId.IsDefined)
+            {
+                throw new ArgumentException("Coin spend requires a typed spender and team.");
+            }
+
+            if (spendKind != CoinSpendKind.LevelUp)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(spendKind), spendKind, "Coin spend kind must name what the coins bought.");
+            }
+
+            if (amount <= 0 ||
+                balanceAfter < CoinResourceOperation.MinimumBalance ||
+                balanceAfter != balanceBefore - amount)
+            {
+                throw new ArgumentException(
+                    "Coin spend must be positive, affordable, and preserve its declared balance transition.");
+            }
+
+            SpendingHeroId = spendingHeroId;
+            SpendingTeamId = spendingTeamId;
+            SpendKind = spendKind;
+            Amount = amount;
+            BalanceBefore = balanceBefore;
+            BalanceAfter = balanceAfter;
+        }
+
+        public HeroId SpendingHeroId { get; }
+
+        public TeamId SpendingTeamId { get; }
+
+        public CoinSpendKind SpendKind { get; }
+
+        public int Amount { get; }
+
+        public int BalanceBefore { get; }
+
+        public int BalanceAfter { get; }
+
+        public ResourceOperationFailureBehavior FailureBehavior =>
+            ResourceOperationFailureBehavior.RejectWithoutMutation;
+    }
+
     public enum DefeatRewardRejectionReason
     {
         None = 0,
@@ -328,6 +404,17 @@ namespace GuardsDigital.Core.Rules.Consequences
         }
     }
 
+    /// <summary>
+    /// The match's per-hero coin ledger, plus the record of which Defeat outcomes have already paid out.
+    ///
+    /// Milestone 7.5 makes the name narrower than the type. Every coin in this build still arrives
+    /// through <see cref="Award"/> - rulebook p.13's Defeat and assist coins are the only source
+    /// implemented - but p.15's mandatory level up is now a sink, so the balances are no longer read
+    /// only by the rule that filled them. <see cref="TrySpend"/> lives here rather than beside the level
+    /// purchase because a second writer to a balance is a second answer to what a hero can afford; the
+    /// awarded-outcome set is what stays Defeat-specific, and it is the reason a rename was left to a
+    /// naming pass of its own rather than folded into a progression milestone.
+    /// </summary>
     public sealed class DefeatRewardAccounting
     {
         private readonly MatchParticipants participants;
@@ -399,6 +486,49 @@ namespace GuardsDigital.Core.Rules.Consequences
             }
 
             return coins;
+        }
+
+        /// <summary>
+        /// Spends coins a hero has, refusing without mutation when they do not have them.
+        ///
+        /// It answers one question and states what it refuses to decide: whether this hero has
+        /// <paramref name="amount"/> coins right now. Whether the purchase is owed, what it costs, and
+        /// what it buys belong to the rule that asked - p.15's level up is the only one today - for the
+        /// reason milestone 7.1 gave the card lifecycle's transitions: a ledger that re-derived
+        /// eligibility would give the purchase two answers that nothing keeps in agreement.
+        ///
+        /// The refusal is the affordable/unaffordable one alone. p.15 makes the purchase mandatory when
+        /// the coins are there, so "cannot afford it" is the ordinary end of a hero's leveling rather
+        /// than an error, and it is reported as <c>false</c> with an untouched balance.
+        /// </summary>
+        public bool TrySpend(
+            HeroId heroId,
+            int amount,
+            CoinSpendKind spendKind,
+            out CoinSpendOperation operation)
+        {
+            if (amount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(amount), amount, "A coin spend is a positive number of coins.");
+            }
+
+            var balanceBefore = GetCoins(heroId);
+            if (balanceBefore < amount)
+            {
+                operation = default;
+                return false;
+            }
+
+            operation = new CoinSpendOperation(
+                heroId,
+                participants.GetTeamForHero(heroId).Id,
+                spendKind,
+                amount,
+                balanceBefore,
+                balanceBefore - amount);
+            coinBalances[heroId] = operation.BalanceAfter;
+            return true;
         }
 
         public DefeatRewardResult Award(DefeatOutcome outcome)

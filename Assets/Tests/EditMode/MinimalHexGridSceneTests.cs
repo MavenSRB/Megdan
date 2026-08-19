@@ -302,11 +302,16 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(compositionRoots, Has.Length.EqualTo(1));
             Assert.That(compositionRoots[0].Runtime, Is.Not.Null);
             Assert.That(compositionRoots[0].Session, Is.Not.Null);
-            // Ten again, which is five per hero. Milestone 6.2d had made it twelve by dealing milestone
-            // 6.2's Cache card beside the five ordinary ones, because nothing else could put a token on
-            // this board; Blue Sentinel and Blue Feint carry those capabilities now, so the scene and
-            // the default configuration every pinned digest measures deal the same five.
-            Assert.That(compositionRoots[0].Session.Projection.Cards, Has.Count.EqualTo(10));
+            // Thirty-six, which is rulebook p.6's eighteen cards per hero. Ten of them are the five
+            // dealt into each hand: milestone 6.2d had made that twelve by dealing milestone 6.2's Cache
+            // card beside the five ordinary ones, because nothing else could put a token on this board,
+            // and Blue Sentinel and Blue Feint carry those capabilities now. Milestone 7.5 deals the
+            // remaining thirteen per hero into the deck, because p.15's Upgrade a Card step searches it.
+            Assert.That(compositionRoots[0].Session.Projection.Cards, Has.Count.EqualTo(36));
+            Assert.That(
+                compositionRoots[0].Session.Projection.Cards.Count(card =>
+                    card.State.Location == CardLocation.Hand),
+                Is.EqualTo(10));
             Assert.That(compositionRoots[0].Session.Projection.Heroes, Has.Count.EqualTo(2));
             Assert.That(inputs[0].EventCamera, Is.Not.Null);
             Assert.That(inputs[0].Selectors.Count, Is.EqualTo(2));

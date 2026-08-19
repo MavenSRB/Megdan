@@ -349,7 +349,7 @@ namespace GuardsDigital.Tests.EditMode
                 () => SystemTransitionAuthority.Restore(
                     new SystemTransitionRestoreState(tampered),
                     MatchSystemTransitions.CreateCatalog(),
-                    MatchSystemTransitions.CreateRules(fixture.LanePush)),
+                    MatchSystemTransitions.CreateRules(fixture.LanePush, null)),
                 Throws.ArgumentException,
                 "A derived step has no catalog options to be checked against, so it is re-derived over " +
                 "the restored board instead - and a payload the board does not reproduce is refused " +
@@ -638,7 +638,7 @@ namespace GuardsDigital.Tests.EditMode
                 LanePush = new LanePushTransitionAuthority(board, 3);
                 Transitions = new SystemTransitionAuthority(
                     MatchSystemTransitions.CreateCatalog(),
-                    MatchSystemTransitions.CreateRules(LanePush));
+                    MatchSystemTransitions.CreateRules(LanePush, null));
                 Consumption = new LanePushConsumption(LanePush, Transitions);
             }
 
@@ -679,7 +679,7 @@ namespace GuardsDigital.Tests.EditMode
                 SystemTransitionAuthority.Restore(
                     Transitions.CaptureRestoreState(),
                     MatchSystemTransitions.CreateCatalog(),
-                    MatchSystemTransitions.CreateRules(LanePush));
+                    MatchSystemTransitions.CreateRules(LanePush, null));
 
             public IReadOnlyList<BlockedSpawnPoint> MinionSpawnPointsIn(ZoneId zoneId) =>
                 Board.MapDefinition.SpawnPoints

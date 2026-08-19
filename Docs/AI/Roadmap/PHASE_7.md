@@ -163,7 +163,7 @@ ER2 note (`F-ER2-09`): when this milestone supplies verified reward derivation, 
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-74-resolve-hero-defeat-lives-and-respawn-completion-evidence).
 
-### [~] 7.5 Resolve mandatory end-of-round leveling and upgrades
+### [x] 7.5 Resolve mandatory end-of-round leveling and upgrades
 
 Observable outcome: Every eligible synthetic hero buys as many consecutive levels as it can afford and completes the required upgrade, item, or Ultimate outcome for each level.
 
@@ -177,6 +177,8 @@ Acceptance checks:
 - Leveling adds no progression-specific callback, presentation-owned continuation, or Wasp-specific branch.
 
 Non-goals: No Wasp costs, card identities, item art, or Ultimate text.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-75-resolve-mandatory-end-of-round-leveling-and-upgrades-completion-evidence).
 
 ### [ ] 7.6 Resolve Pity Coin ordering
 

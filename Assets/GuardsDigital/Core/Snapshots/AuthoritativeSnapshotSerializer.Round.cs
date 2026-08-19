@@ -105,9 +105,20 @@ namespace GuardsDigital.Core.Snapshots
             // paused respawn is re-derived against this board and these Wave counters rather than
             // trusted from the payload.
             var lanePushAuthority = ReadLanePush(reader, board);
+
+            // Milestone 7.5. The leveling rules are composed before the continuation is read, for the
+            // reason the Lane Push above them is: a paused level-up step is re-derived against these
+            // cards rather than trusted from the payload. What that re-derivation reads is the hands and
+            // decks alone - a pause exists only while a purchased level is waiting to be spent, and
+            // which card may be upgraded is a question about the cards - so it needs nothing this reader
+            // has not read yet. The three states a purchase moves are bound by the round authority
+            // below, which restores them from this same payload.
+            var levelUpRules = new GuardsDigital.Core.Rules.Progression.HeroLevelUpStepRules(
+                participants, definitions, cards);
             var transitionRules = lanePushAuthority == null
                 ? GuardsDigital.Core.Rules.Transitions.DeclaredSystemTransitionStepRules.Instance
-                : GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateRules(lanePushAuthority);
+                : GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateRules(
+                    lanePushAuthority, levelUpRules);
             var systemTransitions = ReadSystemTransitions(reader, transitions, transitionRules);
             var heroProgression = ReadHeroProgression(reader);
             var heroItems = ReadHeroItems(reader);
@@ -189,7 +200,8 @@ namespace GuardsDigital.Core.Snapshots
                 markers,
                 board,
                 systemTransitions,
-                lanePush);
+                lanePush,
+                lanePushAuthority == null ? null : levelUpRules);
         }
 
         /// <summary>

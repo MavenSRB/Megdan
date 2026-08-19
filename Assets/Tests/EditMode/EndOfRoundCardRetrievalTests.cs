@@ -53,18 +53,24 @@ namespace GuardsDigital.Tests.EditMode
                 retrieved.Any(value => untouchedBefore.Contains(value.CardInstanceId.Value.Value)), Is.False,
                 "A card that stayed in hand all round is not retrieved, because it never left.");
 
+            // Milestone 7.5. p.6 leaves thirteen of each hero's eighteen cards in the deck, and this
+            // stage is about the ones that left the hand, so the claim is that every card is back in
+            // one of setup's two resting places rather than that every card is in a hand.
             Assert.That(
-                session.Projection.Cards.All(card => card.State.Equals(CardStateFacts.InitialInHand())),
+                session.Projection.Cards.All(card =>
+                    card.State.Equals(CardStateFacts.InitialInHand()) || card.State.IsInitialInDeck),
                 Is.True,
                 "p.8 returns them to their owners' hands, and fresh state is what a hand card is.");
             foreach (var hero in session.Projection.Setup.Heroes)
             {
                 Assert.That(
-                    session.Projection.Cards.Count(card => card.OwnerId.Equals(hero.HeroId)),
+                    session.Projection.Cards.Count(card =>
+                        card.OwnerId.Equals(hero.HeroId) &&
+                        card.State.Location != CardLocation.Deck),
                     Is.EqualTo(session.Projection.Cards.Count(card =>
                         card.OwnerId.Equals(hero.HeroId) &&
                         card.State.Location == CardLocation.Hand)),
-                    "Every card a hero owns is in that hero's hand once the stage has run.");
+                    "Every card a hero owns and did not leave in the deck is in that hero's hand once the stage has run.");
             }
         }
 
@@ -86,6 +92,7 @@ namespace GuardsDigital.Tests.EditMode
                 "The stage is deterministic, so it introduces no prompt and no new player command.");
 
             var expected = session.Projection.Cards
+                .Where(card => card.State.Location != CardLocation.Deck)
                 .GroupBy(card => card.OwnerId.Value)
                 .ToDictionary(
                     group => group.Key,
@@ -137,7 +144,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(restored.RestoreSnapshot(after).Accepted, Is.True);
             Assert.That(restored.Projection.AuthoritativeSnapshot, Is.EqualTo(after));
             Assert.That(
-                restored.Projection.Cards.All(card => card.State.Equals(CardStateFacts.InitialInHand())),
+                restored.Projection.Cards.All(card =>
+                    card.State.Equals(CardStateFacts.InitialInHand()) || card.State.IsInitialInDeck),
                 Is.True, "A restored match past retrieval holds the hands the stage produced.");
 
             var replayed = CreateConfiguredSession();

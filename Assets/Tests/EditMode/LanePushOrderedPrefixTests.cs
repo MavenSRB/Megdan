@@ -388,7 +388,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var transitions = new SystemTransitionAuthority(
                 MatchSystemTransitions.CreateCatalog(),
-                MatchSystemTransitions.CreateRules(transition));
+                MatchSystemTransitions.CreateRules(transition, null));
             var result = new LanePushConsumption(transition, transitions).TryConsume(
                 new LanePushRequestId("ordered-prefix-fixture"),
                 winning,

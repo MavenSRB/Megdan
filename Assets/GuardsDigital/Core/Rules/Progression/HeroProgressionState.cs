@@ -56,11 +56,14 @@ namespace GuardsDigital.Core.Rules.Progression
     /// <summary>
     /// Every participating hero's current Level, as authoritative match state.
     ///
-    /// Milestone 7.1 adds the state and its persistence and deliberately adds no way to change it: p.15
-    /// changes a Level by purchasing one at the end of a round, and the purchase - its mandatory
-    /// ordering, its coin cost, the upgrade it forces and the pending choices it opens - is milestone
-    /// 7.5's, which this milestone's non-goals exclude. So in a live match every hero is at Level 1 and
-    /// stays there, and this type is what 7.5 will move rather than introduce.
+    /// Milestone 7.1 added the state and its persistence and deliberately added no way to change it,
+    /// because p.15 changes a Level by purchasing one at the end of a round and the purchase - its
+    /// mandatory ordering, its coin cost, the upgrade it forces and the pending choices it opens - was
+    /// milestone 7.5's. Milestone 7.5 is that milestone, and <see cref="TryRaiseLevel"/> is the one
+    /// transition it adds here: the Level moves by one, upward, and only within p.15's table. Every
+    /// other half of the purchase - whether it is owed, what it costs, what it upgrades - belongs to
+    /// the rules that run p.15's step, exactly as the card lifecycle's three upgrade transitions decide
+    /// only the shape of a move and never whether it is due.
     ///
     /// It is nonetheless persisted now rather than later, because Phase 7's durability rule requires
     /// the milestone that adds authoritative state to close its persistence boundary in the same
@@ -123,6 +126,34 @@ namespace GuardsDigital.Core.Rules.Progression
             }
 
             return level;
+        }
+
+        /// <summary>
+        /// p.15's "slide the Level indicator card up to the corresponding number": one hero's Level
+        /// moves to the next row of the table, and nothing else about the purchase happens here.
+        ///
+        /// It refuses rather than throws in exactly one case - a hero already at p.15's last row - so
+        /// that "there is no level above this one" is an answer the caller can act on, which is what
+        /// p.16's "you cannot gain any additional levels" needs it to be. An unknown hero still throws,
+        /// because that is a caller defect rather than a rules outcome.
+        ///
+        /// One step at a time, by construction. p.15 states the consequence of the alternative outright
+        /// - "You cannot skip a level. A level 1 hero needs 3 coins to reach level 3" - so a method that
+        /// took a destination Level could express the purchase the page forbids, and the caller that
+        /// buys several does so by asking for several.
+        /// </summary>
+        public bool TryRaiseLevel(HeroId heroId, out HeroLevel raisedLevel)
+        {
+            var current = GetLevel(heroId);
+            if (!HeroLevelSchedule.HasNextLevel(current))
+            {
+                raisedLevel = current;
+                return false;
+            }
+
+            raisedLevel = HeroLevelSchedule.NextLevel(current);
+            levels[heroId] = raisedLevel;
+            return true;
         }
 
         public HeroProgressionRestoreState CaptureRestoreState() =>

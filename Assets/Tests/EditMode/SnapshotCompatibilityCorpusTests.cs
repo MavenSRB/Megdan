@@ -608,17 +608,50 @@ namespace GuardsDigital.Tests.EditMode
         /// <c>pending-correction</c>, 5063 in <c>placed-token</c> and 5112 in <c>attached-marker</c>.
         /// 31 is not a multiple of 3, so the base64 the envelope carries grows by 44 characters in the
         /// two fixtures whose length crosses a padding boundary and by 40 in the other six.
+        ///
+        /// Milestone 7.5 keeps schema v20 - the version byte at offset 30 is unchanged and no field
+        /// moved - and re-pins every fixture for two content causes, neither of which is a definition
+        /// revision.
+        /// The first is p.6's own setup, finally dealt: "return the remaining Tier II, Tier III, and
+        /// Tier IV cards to your deck." Milestones 7.1 and 7.3 supplied those thirteen cards per hero as
+        /// definitions with no instance, because nothing could take one; p.15's Upgrade a Card step
+        /// searches the deck for them, so this milestone deals them and the configured match holds
+        /// thirty-six cards where it held ten.
+        /// The second is the coin ledger. p.15's level purchase spends from the balances p.13's Defeat
+        /// fills, so the round authority now asks the dispatcher for that ledger when it composes
+        /// itself rather than leaving it to be created by whichever rule reaches it first - two ledgers
+        /// would be two answers to what a hero can afford - and a section that used to be absent until
+        /// the first Defeat is present from the start.
+        /// The decision is reject rather than migrate, and it is the ordinary one for a content cause. A
+        /// payload written before this milestone names ten card instances for a match this build deals
+        /// thirty-six, and the only reading available for the twenty-six it does not mention is "this
+        /// hero's deck is empty" - which is right for every payload the earlier build could produce, and
+        /// wrong for the first one this milestone writes. There is still no persisted state outside this
+        /// corpus to migrate.
+        /// Measured in a throwaway worktree at pre-change revision <c>a4f76f2</c> rather than assumed,
+        /// and the arithmetic closes exactly. Every payload changes in the same four places and nowhere
+        /// else. One byte is replaced - the card-instance count at offset 3160 (3137 in
+        /// <c>pending-minion-battle</c>, 3395 in the two marker fixtures, 3523 in <c>placed-token</c>,
+        /// which carry more definitions ahead of it), where 10 becomes 36 inside an int32 whose other
+        /// three bytes stay zero. Then 1203 bytes are inserted after the Red hero's five dealt cards and
+        /// 1213 after the Blue hero's: thirteen instances each, every one an id, a definition id, a
+        /// revision, an owner and four state values, and the twenty-byte difference between the two
+        /// heroes is the difference between their card names. Then 46 bytes for the ledger - a
+        /// four-byte balance count, <c>primitive-hero</c> and <c>blue-test-hero</c> with an int32 each,
+        /// and a four-byte awarded-outcome count - which <c>setup</c> carries once and the seven
+        /// mid-turn fixtures carry twice, because a paused card-action section persists its own copy.
+        /// So <c>setup</c> grows by 1203 + 1213 + 46 = 2462 bytes and every other fixture by 2508.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v20", "d5d617144c5da258f19510a30f382b8b5edd9d7ac39a106cdbac283e431e6e75"),
-            new CompatibilityFixture("active-turn-v20", "be032b68ca2ab25732795ccda994ee378e38bf2cf1c75f4387a6e83ec6283de5"),
-            new CompatibilityFixture("pending-choice-v20", "ab6f7ddb13c30a3e10596533a1b42b70ca224189f8963cef027335de67665d5a"),
-            new CompatibilityFixture("end-of-round-v20", "4f80fe8586ec680e412ee991aea57558f69e29304c4dbb19bb52e8b91e410112"),
-            new CompatibilityFixture("pending-minion-battle-v20", "5914aa59c7b1e490c78db993831bbf7ac4c8a5d6d6d850ed98353a2688f2cda9"),
-            new CompatibilityFixture("placed-token-v20", "6af84b5b2bd33d4d9a6af2e0531091f54004f7587fb2f469d00f5cd8461bfe74"),
-            new CompatibilityFixture("attached-marker-v20", "4cb9cea7f5e062dcf0afbebea58360986168bbd00273375fca5e9cee728b0ab3"),
-            new CompatibilityFixture("pending-correction-v20", "aede4770d46546b056b87fbf51ee00848e9634711ced531789c582535254d690")
+            new CompatibilityFixture("setup-v20", "d0f4379c9acd2b6b541a68be03170f4435cebb4effd9dc178841dfa8859b5277"),
+            new CompatibilityFixture("active-turn-v20", "319f454f3ecd304ecf4263437acb11c97cf5b654bbc790d4ba6dcc78a8713796"),
+            new CompatibilityFixture("pending-choice-v20", "549d3d877708d3b07feb71b6907c8943cfab0736fbb198acf9076a5500b54f04"),
+            new CompatibilityFixture("end-of-round-v20", "300da05b1f278130609ff5c7f047a513713c78d25855537bfd6a971049da847e"),
+            new CompatibilityFixture("pending-minion-battle-v20", "44e184f0bd705372d73bb7bf27953f1b4e24afa19d3f80258d788ca025db68c1"),
+            new CompatibilityFixture("placed-token-v20", "6650e680bcf51480f240b305c44fce5b8b069fa7569a97e36fd52b522f4dc713"),
+            new CompatibilityFixture("attached-marker-v20", "ecca0e01ead26ebad03b15f0acc6b30b448d3ebf84f116538ecb0ce0af256ef3"),
+            new CompatibilityFixture("pending-correction-v20", "8935e3ab359a0bc239a226146f703c4e8fd901722ad172d3ab863728d8efa93e")
         };
 
         [Test]

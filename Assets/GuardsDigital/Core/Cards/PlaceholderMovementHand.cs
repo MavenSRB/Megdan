@@ -262,10 +262,13 @@ namespace GuardsDigital.Core.Cards
 
         private PlaceholderMovementHand(
             IReadOnlyList<CardDefinition> definitions,
-            IReadOnlyList<CardInstance> instances)
+            IReadOnlyList<CardInstance> instances,
+            IReadOnlyList<CardInstance> deckInstances)
         {
             Definitions = definitions;
             Instances = instances;
+            DeckInstances = deckInstances;
+            AllInstances = Array.AsReadOnly(instances.Concat(deckInstances).ToArray());
             DealtDefinitions = Array.AsReadOnly(instances
                 .Select(instance => definitions.First(definition =>
                     definition.Reference.Equals(instance.DefinitionReference)))
@@ -280,7 +283,32 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public IReadOnlyList<CardDefinition> Definitions { get; }
 
+        /// <summary>
+        /// The cards this hand deals into its owner's hand: rulebook p.6's five starting cards, plus
+        /// whichever fixture Skill card the naming factory added.
+        /// </summary>
         public IReadOnlyList<CardInstance> Instances { get; }
+
+        /// <summary>
+        /// Milestone 7.5. The cards this hand leaves in its owner's deck - p.6's "return the remaining
+        /// Tier II, Tier III, and Tier IV cards to your deck" - which is every upgrade target the dealt
+        /// cards lead to plus the Ultimate.
+        ///
+        /// They are instances now rather than definitions alone because p.15's Upgrade a Card step
+        /// looks for them there: "Find two Action cards in your deck that have the same color as the
+        /// chosen card but are one Tier higher." A definition with no instance is content a hero could
+        /// never take, so until this milestone the configured scene had a level nobody could complete.
+        /// Together with <see cref="Instances"/> this makes the ordinary hand p.6's eighteen cards.
+        ///
+        /// They are a separate list rather than appended to <see cref="Instances"/> because the two say
+        /// different things: one is what the hero holds at setup and the other is what waits in the
+        /// deck, and <see cref="DealtDefinitions"/> - the set the approved card matrix is about - is
+        /// exactly the first.
+        /// </summary>
+        public IReadOnlyList<CardInstance> DeckInstances { get; }
+
+        /// <summary>Every card this hand supplies, hand then deck. What a match is composed with.</summary>
+        public IReadOnlyList<CardInstance> AllInstances { get; }
 
         /// <summary>
         /// The definitions this hand actually deals, in the order it deals them, one per entry of
@@ -398,22 +426,24 @@ namespace GuardsDigital.Core.Cards
         }
 
         internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
-            new PlaceholderMovementHandRestoreState(Definitions, Instances);
+            new PlaceholderMovementHandRestoreState(Definitions, Instances, DeckInstances);
 
         internal static PlaceholderMovementHand Restore(PlaceholderMovementHandRestoreState state)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var definitionArray = state.Definitions;
             var instanceArray = state.Instances;
+            var deckArray = state.DeckInstances;
+            var allInstances = instanceArray.Concat(deckArray).ToArray();
             if (definitionArray.Count == 0 || instanceArray.Count == 0 ||
-                instanceArray.Select(instance => instance.OwnerId).Distinct().Count() != 1 ||
-                instanceArray.Any(instance => !definitionArray.Any(definition =>
+                allInstances.Select(instance => instance.OwnerId).Distinct().Count() != 1 ||
+                allInstances.Any(instance => !definitionArray.Any(definition =>
                     definition.Reference.Equals(instance.DefinitionReference))))
             {
                 throw new ArgumentException("A restored placeholder hand requires one owner's definition-backed cards.");
             }
 
-            return new PlaceholderMovementHand(definitionArray, instanceArray);
+            return new PlaceholderMovementHand(definitionArray, instanceArray, deckArray);
         }
 
         private static PlaceholderMovementHand Create(
@@ -436,24 +466,35 @@ namespace GuardsDigital.Core.Cards
 
             var definitions = new List<CardDefinition>();
             var instances = new List<CardInstance>();
+            var deckInstances = new List<CardInstance>();
             foreach (var profile in profiles)
             {
                 AddCard(definitions, instances, CreateDefinition(profile), profile.Id, instancePrefix, ownerId);
 
-                // Milestone 7.1. The cards this one upgrades into are definitions and not instances.
-                // p.15 sends the player to their own deck for them, so they are content this hand
-                // supplies; dealing them as deck cards is milestone 7.5's, which is the first milestone
-                // that moves one, and dealing them here would change the five-card hand every pinned
-                // digest, card-matrix fixture and configured scene measures for no behaviour this
-                // milestone adds.
-                definitions.AddRange(SyntheticUpgradeTree.Definitions(profile));
+                // Milestone 7.1 supplied the cards this one upgrades into as definitions with no
+                // instance, because nothing could take one yet. Milestone 7.5 deals them, into the deck
+                // p.15 sends the player to: "Find two Action cards in your deck that have the same color
+                // as the chosen card but are one Tier higher." p.6 put them there at setup - "return the
+                // remaining Tier II, Tier III, and Tier IV cards to your deck" - so this is the page's
+                // own placement rather than a convenience for the level purchase.
+                foreach (var target in SyntheticUpgradeTree.DealtDefinitions(profile))
+                {
+                    AddDeckCard(
+                        definitions, deckInstances, target.Value, target.Key, instancePrefix, ownerId);
+                }
             }
 
-            // Milestone 7.3. p.6 leaves the Tier IV card in the deck alongside the Tier II and Tier III
-            // cards above, so it is supplied here and dealt no more than they are.
+            // Milestone 7.3 supplied the Tier IV card and milestone 7.5 deals it, from the same p.6
+            // sentence and into the same deck. p.16 takes it from there and nowhere else.
             if (ultimateProfile != null)
             {
-                definitions.Add(SyntheticUltimateCard.Definition(ultimateProfile));
+                AddDeckCard(
+                    definitions,
+                    deckInstances,
+                    SyntheticUltimateCard.Definition(ultimateProfile),
+                    ultimateProfile.Id,
+                    instancePrefix,
+                    ownerId);
             }
 
             if (skillProfile != null)
@@ -508,7 +549,35 @@ namespace GuardsDigital.Core.Cards
 
             return new PlaceholderMovementHand(
                 definitions.AsReadOnly(),
-                instances.AsReadOnly());
+                instances.AsReadOnly(),
+                deckInstances.AsReadOnly());
+        }
+
+        /// <summary>
+        /// Milestone 7.5. One card this hand leaves in the deck, in the shape <see cref="AddCard"/>
+        /// gives a dealt one and differing in the one thing that differs: where p.6 puts it.
+        ///
+        /// Face-up, which is the same orientation <c>CardLifecycleAuthority.TryReturnToDeck</c> gives a
+        /// card p.15 returns there. A hero searches their own deck by that page's instruction, so the
+        /// colour and Tier of a deck card are readable to the rule that looks for them; a face-down deck
+        /// card would have its printed characteristics suppressed and could never be found.
+        /// </summary>
+        private static void AddDeckCard(
+            ICollection<CardDefinition> definitions,
+            ICollection<CardInstance> deckInstances,
+            CardDefinition definition,
+            string cardId,
+            string instancePrefix,
+            HeroId ownerId)
+        {
+            definitions.Add(definition);
+            deckInstances.Add(CardInstance.CreateInDeck(
+                new CardInstanceId(
+                    string.IsNullOrWhiteSpace(instancePrefix)
+                        ? $"{cardId}-card"
+                        : $"{instancePrefix}-{cardId}-card"),
+                definition.Reference,
+                ownerId));
         }
 
         private static void AddCard(
@@ -2348,12 +2417,22 @@ namespace GuardsDigital.Core.Cards
                 return branch == 'a' ? PrintedValueChannel.Movement : PrintedValueChannel.Defense;
             }
 
-            public static IEnumerable<CardDefinition> Definitions(SyntheticCardProfile profile)
+            /// <summary>The card id one generated upgrade target is dealt under, matching its definition id.</summary>
+            private static string CardId(string cardId, CardTier tier, char branch) =>
+                $"{cardId}-t{(int)tier}{branch}";
+
+            /// <summary>
+            /// The four upgrade targets one Tier I card leads to, each paired with the card id its deck
+            /// instance is dealt under (milestone 7.5). One statement produces both, so a definition and
+            /// the card that carries it cannot be named differently.
+            /// </summary>
+            public static IEnumerable<KeyValuePair<string, CardDefinition>> DealtDefinitions(
+                SyntheticCardProfile profile)
             {
                 var progression = profile.Progression;
                 if (!progression.IsNonBasic || progression.Tier != CardTier.I)
                 {
-                    return Enumerable.Empty<CardDefinition>();
+                    return Enumerable.Empty<KeyValuePair<string, CardDefinition>>();
                 }
 
                 var tierThree = new[]
@@ -2364,12 +2443,21 @@ namespace GuardsDigital.Core.Cards
 
                 return new[]
                 {
-                    Create(profile, CardTier.II, 'a', tierThree),
-                    Create(profile, CardTier.II, 'b', tierThree),
-                    Create(profile, CardTier.III, 'a', Array.Empty<CardDefinitionId>()),
-                    Create(profile, CardTier.III, 'b', Array.Empty<CardDefinitionId>())
+                    Dealt(profile, CardTier.II, 'a', tierThree),
+                    Dealt(profile, CardTier.II, 'b', tierThree),
+                    Dealt(profile, CardTier.III, 'a', Array.Empty<CardDefinitionId>()),
+                    Dealt(profile, CardTier.III, 'b', Array.Empty<CardDefinitionId>())
                 };
             }
+
+            private static KeyValuePair<string, CardDefinition> Dealt(
+                SyntheticCardProfile profile,
+                CardTier tier,
+                char branch,
+                IReadOnlyList<CardDefinitionId> nextTierCandidateIds) =>
+                new KeyValuePair<string, CardDefinition>(
+                    CardId(profile.Id, tier, branch),
+                    Create(profile, tier, branch, nextTierCandidateIds));
 
             private static CardDefinition Create(
                 SyntheticCardProfile profile,

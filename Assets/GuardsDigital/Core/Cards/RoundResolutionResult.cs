@@ -67,7 +67,16 @@ namespace GuardsDigital.Core.Cards
         /// the ordered Lane, no Throne for the losing side, or a game that has already ended. Every one
         /// of them leaves the match exactly as it was.
         /// </summary>
-        RefusedLanePushTransition = 20
+        RefusedLanePushTransition = 20,
+
+        /// <summary>
+        /// Milestone 7.5: the round reached <see cref="EndOfRoundStage.LevelUpAndUpgrade"/> declaring
+        /// the stage available, and this build composed no rules that can run p.15's purchase. Distinct
+        /// from <see cref="MissingRequiredEndOfRoundHandler"/> for the reason
+        /// <see cref="UnavailableLanePushTransition"/> is: nothing is misconfigured about a handler, the
+        /// collaborator that would spend the coins is absent.
+        /// </summary>
+        UnavailableLevelUpTransition = 21
     }
 
     public readonly struct RoundResolutionResult

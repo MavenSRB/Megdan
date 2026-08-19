@@ -80,7 +80,13 @@ namespace GuardsDigital.Core.Cards
                 // cleanup in every round, but a fixture with no board has no space a token could be on,
                 // and the synthetic round deliberately proves the retrieval stage alone.
                 EndOfRoundStage.RemoveTokensAndReturnMarkers,
-                EndOfRoundStage.RetrieveCardsAndCancelActiveEffects
+                EndOfRoundStage.RetrieveCardsAndCancelActiveEffects,
+
+                // Milestone 7.5. p.8 lists "Level Up" among the end-of-round steps and p.15 makes it
+                // mandatory; the stage has been ordered here since milestone 6.1 and unavailable until
+                // now. It follows retrieval because p.15's Upgrade a Card step chooses from the hand,
+                // and the cards a hero played this round are only back in it once retrieval has run.
+                EndOfRoundStage.LevelUpAndUpgrade
             });
         }
 

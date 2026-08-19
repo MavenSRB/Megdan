@@ -824,6 +824,7 @@ namespace GuardsDigital.Tests.EditMode
                         Markers,
                         null,
                         null,
+                        null,
                         new TeamLifeState(configuration.Participants, lifeCountersPerTeam),
                         null,
                         null));

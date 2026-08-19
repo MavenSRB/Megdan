@@ -341,9 +341,15 @@ namespace GuardsDigital.Tests.EditMode
         private static void HoldCurrentActor(MatchSession session) =>
             Execute(session, DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId));
 
+        /// <summary>
+        /// One side's playable cards. Milestone 7.5 deals p.6's remaining thirteen per hero into the
+        /// deck, and a deck card is neither committable nor distinguishable by Initiative from the Tier
+        /// I card it upgrades from.
+        /// </summary>
         private static IReadOnlyList<CardInstance> GetCards(MatchSession session, TeamSide side) =>
             session.Projection.Cards
-                .Where(card => session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == side)
+                .Where(card => session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == side &&
+                    card.State.Location != CardLocation.Deck)
                 .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
                 .ToArray();
 
@@ -541,8 +547,7 @@ namespace GuardsDigital.Tests.EditMode
                 });
 
         private static CardInstance GetCardByInitiative(MatchSession session, TeamSide side, int initiative) =>
-            session.Projection.Cards
-                .Where(card => session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == side)
+            GetCards(session, side)
                 .Single(card => session.Projection.Definitions.Single(
                     definition => definition.Reference.Equals(card.DefinitionReference)).Initiative.Value == initiative);
 

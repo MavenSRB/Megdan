@@ -103,7 +103,8 @@ namespace GuardsDigital.Tests.PlayMode
             var red = runtime.Cards.Single(card => card.Id.Value == "red-bombard-card");
             var blue = runtime.Cards
                 .Where(card => runtime.Setup.Heroes
-                    .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId.Equals(card.OwnerId))
+                    .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId.Equals(card.OwnerId) &&
+                    card.State.Location == CardLocation.Hand)
                 .OrderBy(card => runtime.Definitions
                     .Single(definition => definition.Reference.Equals(card.DefinitionReference))
                     .Initiative.Value)

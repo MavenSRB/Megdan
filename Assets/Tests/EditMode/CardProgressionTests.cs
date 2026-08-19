@@ -703,21 +703,10 @@ namespace GuardsDigital.Tests.EditMode
                 configuration = PlaceholderOneVsOneTestConfiguration.Create();
                 RedHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
                 BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                // Milestone 7.5 deals p.6's remaining Tier II, Tier III and Tier IV cards into each
+                // hero's deck, so this fixture no longer builds them: the cards p.15's upgrade searches
+                // for are the configuration's own.
                 instances = configuration.CardInstances.ToList();
-
-                foreach (var definition in configuration.CardDefinitions.Where(value =>
-                    value.Progression.IsNonBasic && value.Progression.Tier != CardTier.I))
-                {
-                    var owner = definition.Id.Value.Contains("-red-") ? RedHeroId : BlueHeroId;
-                    var card = new CardInstance(
-                        new CardInstanceId($"{definition.Id.Value}-card"),
-                        definition.Reference,
-                        owner,
-                        new CardStateFacts(
-                            CardLocation.Deck, false, CardResolutionStatus.None,
-                            CardFaceOrientation.FaceUp));
-                    instances.Add(card);
-                }
             }
 
             public HeroId RedHeroId { get; }

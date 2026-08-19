@@ -17,23 +17,35 @@ namespace GuardsDigital.Core.Cards
     {
         public PlaceholderMovementHandRestoreState(
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            IEnumerable<CardInstance> deckInstances)
         {
             Definitions = Array.AsReadOnly(
                 (definitions ?? throw new ArgumentNullException(nameof(definitions))).ToArray());
             Instances = Array.AsReadOnly(
                 (instances ?? throw new ArgumentNullException(nameof(instances))).ToArray());
+            DeckInstances = Array.AsReadOnly(
+                (deckInstances ?? throw new ArgumentNullException(nameof(deckInstances))).ToArray());
         }
 
         public IReadOnlyList<CardDefinition> Definitions { get; }
         public IReadOnlyList<CardInstance> Instances { get; }
 
+        /// <summary>
+        /// Milestone 7.5. The cards p.6's setup left in the deck, kept apart from the dealt ones for
+        /// the reason <c>PlaceholderMovementHand.DeckInstances</c> gives: the split is a setup fact, and
+        /// where each card is right now lives on the card.
+        /// </summary>
+        public IReadOnlyList<CardInstance> DeckInstances { get; }
+
         public void Deconstruct(
             out IReadOnlyList<CardDefinition> definitions,
-            out IReadOnlyList<CardInstance> instances)
+            out IReadOnlyList<CardInstance> instances,
+            out IReadOnlyList<CardInstance> deckInstances)
         {
             definitions = Definitions;
             instances = Instances;
+            deckInstances = DeckInstances;
         }
     }
 }

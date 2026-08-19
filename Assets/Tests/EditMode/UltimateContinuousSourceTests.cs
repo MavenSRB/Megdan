@@ -655,29 +655,33 @@ namespace GuardsDigital.Tests.EditMode
                 new CardStateFacts(
                     location, false, CardResolutionStatus.None, CardFaceOrientation.FaceUp));
 
+        /// <summary>
+        /// Milestone 7.5 deals each hero's Ultimate into their deck, so this moves the dealt card to
+        /// where p.16 puts an unlocked one rather than adding a second copy beside it.
+        /// </summary>
         private static MatchSession CreateSessionWithUnlockedUltimates(bool placeBlueHero = true) =>
             CreateSession(instances =>
             {
-                var configuration = PlaceholderOneVsOneTestConfiguration.Create();
-                var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-                var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
-                return instances.Concat(new[]
-                {
-                    UltimateInstance(
-                        "red-ultimate-card",
-                        configuration.RedHand.Definitions
-                            .Single(definition => definition.Progression.IsUltimate),
-                        redHeroId,
-                        CardLocation.UltimateArea),
-                    UltimateInstance(
-                        "blue-ultimate-card",
-                        configuration.BlueHand.Definitions
-                            .Single(definition => definition.Progression.IsUltimate),
-                        blueHeroId,
-                        CardLocation.UltimateArea)
-                }).ToArray();
+                var ultimateIds = UltimateDefinitionIds();
+                return instances
+                    .Select(card => ultimateIds.Contains(card.DefinitionReference.DefinitionId)
+                        ? new CardInstance(
+                            card.Id,
+                            card.DefinitionReference,
+                            card.OwnerId,
+                            new CardStateFacts(
+                                CardLocation.UltimateArea, false, CardResolutionStatus.None,
+                                CardFaceOrientation.FaceUp))
+                        : card)
+                    .ToArray();
             },
             placeBlueHero);
+
+        private static HashSet<CardDefinitionId> UltimateDefinitionIds() =>
+            new HashSet<CardDefinitionId>(PlaceholderOneVsOneTestConfiguration.Create()
+                .CardDefinitions
+                .Where(definition => definition.Progression.IsUltimate)
+                .Select(definition => definition.Id));
 
         /// <summary>
         /// A configured session whose cards this fixture shapes before the match starts.
@@ -731,11 +735,9 @@ namespace GuardsDigital.Tests.EditMode
                     .Single(definition => definition.Progression.IsUltimate);
                 BlueUltimate = configuration.BlueHand.Definitions
                     .Single(definition => definition.Progression.IsUltimate);
+                // Milestone 7.5 deals the Ultimate into each hero's deck, which is where p.6 leaves it
+                // and where p.16 takes it from, so this fixture no longer builds one.
                 instances = configuration.CardInstances.ToList();
-                instances.Add(UltimateInstance(
-                    "red-ultimate-card", RedUltimate, RedHeroId, CardLocation.Deck));
-                instances.Add(UltimateInstance(
-                    "blue-ultimate-card", BlueUltimate, BlueHeroId, CardLocation.Deck));
             }
 
             public HeroId RedHeroId { get; }
