@@ -70,7 +70,7 @@ Non-goals: No leveling orchestrator, Wasp item values, or final item presentatio
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72-add-generic-item-state-and-printed-icon-bonuses-completion-evidence).
 
 
-### [~] 7.2a Compose the item bonus into every implemented total, and give each hero its dashboard item slots
+### [x] 7.2a Compose the item bonus into every implemented total, and give each hero its dashboard item slots
 
 Observable outcome: A hero's items raise every printed icon this build computes a total for, and each hero's dashboard declares the four item slots rulebook p.16 places items under.
 
@@ -89,6 +89,8 @@ Acceptance checks:
 - Focused tests cover each composed channel with and without a matching item, a card that prints no icon of a channel gaining nothing there, the four-slot declaration, two differently-iconed items sharing the fourth slot, the unaccepted-icon refusal, and the persistence round trip.
 
 Non-goals: No leveling orchestrator, Wasp dashboards, Wasp item values, or item/dashboard presentation. Printed Radius and its consumer are isolated in milestone 7.2b rather than silently folded into this snapshot-schema milestone.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72a-compose-the-item-bonus-into-every-implemented-total-and-give-each-hero-its-dashboard-item-slots-completion-evidence).
 
 ### [ ] 7.2b Add the missing Radius total and make Radius items observable
 

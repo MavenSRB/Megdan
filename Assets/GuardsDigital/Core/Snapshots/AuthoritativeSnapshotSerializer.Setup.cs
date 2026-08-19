@@ -200,7 +200,73 @@ namespace GuardsDigital.Core.Snapshots
             {
                 writer.Write(hero.Id.Value);
                 writer.Write(hero.PlayerId.Value);
+                WriteDashboard(writer, hero.Dashboard);
             }
+        }
+
+        /// <summary>
+        /// Milestone 7.2a. One hero's four p.16 item slots, each with the position it occupies and every
+        /// icon it accepts.
+        ///
+        /// The user decided on 2026-08-19 that the slots ride the wire rather than being rebound from
+        /// configuration at restore. The layout is therefore written per hero and in full - positions
+        /// and icons both - rather than as a named layout id, because a payload that named a layout
+        /// would describe a build's vocabulary instead of the dashboards the match was played with, and
+        /// a later build could give the same name different slots. What the reader does with it is the
+        /// other half of that decision: it refuses a payload whose dashboards are not the ones this
+        /// build supplies, exactly as the definition table refuses one whose card content differs.
+        /// </summary>
+        private static void WriteDashboard(BinaryWriter writer, HeroDashboard dashboard)
+        {
+            writer.Write(dashboard.Slots.Count);
+            foreach (var slot in dashboard.Slots)
+            {
+                writer.Write(slot.Position.Index);
+                writer.Write(slot.AcceptedIcons.Count);
+                foreach (var icon in slot.AcceptedIcons)
+                {
+                    writer.Write((int)icon);
+                }
+            }
+        }
+
+        private static HeroDashboard ReadDashboard(BinaryReader reader)
+        {
+            var slots = ReadMany(reader, "dashboard item slots", () =>
+            {
+                var position = reader.ReadInt32();
+                if (position < 1 || position > HeroDashboard.SlotCount)
+                {
+                    throw Malformed($"Dashboard item slot position {position} is outside the legal range.");
+                }
+
+                var icons = ReadMany(reader, "dashboard slot icons", () =>
+                    SnapshotEnumReader.Read<PrintedValueChannel>(reader, "dashboard slot icon"));
+                if (icons.Any(icon => icon == PrintedValueChannel.None))
+                {
+                    throw Malformed("A dashboard item slot accepts named printed icons.");
+                }
+
+                return new HeroDashboardSlot(new HeroDashboardSlotPosition(position), icons);
+            });
+
+            var dashboard = new HeroDashboard(slots);
+            if (!dashboard.Equals(HeroDashboard.RulebookLayout))
+            {
+                // Every hero this build supplies declares rulebook p.16's layout, so that layout is what
+                // "the current content" means here. When a verified hero declares a different one -
+                // milestone 8.1's content - this comparison becomes a per-hero lookup against the
+                // configured heroes the reader would then be handed, in the way the definition table is
+                // compared against the current definitions rather than against a constant. Until then a
+                // payload written by a build whose dashboards differ is refused rather than restored
+                // into a match whose items would sit under slots this build does not have.
+                throw new SnapshotLoadException(
+                    SnapshotLoadRejectionReason.HeroDashboardMismatch,
+                    "Snapshot hero dashboard [" + dashboard + "] does not match this build's [" +
+                    HeroDashboard.RulebookLayout + "].");
+            }
+
+            return dashboard;
         }
 
         private static MatchParticipants ReadParticipants(BinaryReader reader)
@@ -213,7 +279,8 @@ namespace GuardsDigital.Core.Snapshots
                 new TeamId(reader.ReadString())));
             var heroes = ReadMany(reader, "heroes", () => new Hero(
                 new HeroId(reader.ReadString()),
-                new PlayerId(reader.ReadString())));
+                new PlayerId(reader.ReadString()),
+                ReadDashboard(reader)));
             return new MatchParticipants(teams, players, heroes);
         }
 

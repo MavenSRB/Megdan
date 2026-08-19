@@ -11,6 +11,12 @@ namespace GuardsDigital.Core.Participants
         public const string RedHeroIdValue = "primitive-hero";
         public const string BlueHeroIdValue = "blue-test-hero";
 
+        /// <summary>
+        /// Milestone 7.2a. Both synthetic heroes declare rulebook p.16's dashboard layout. That is
+        /// content this build can state for them - their upgrade trees print four icons - rather than
+        /// the verified hero content milestone 8.1 supplies, and it is stated once per hero through
+        /// the named layout so that a build in which two dashboards differ has to say which.
+        /// </summary>
         public static MatchParticipants Create()
         {
             var redTeamId = new TeamId(RedTeamIdValue);
@@ -31,8 +37,8 @@ namespace GuardsDigital.Core.Participants
                 },
                 new[]
                 {
-                    new Hero(new HeroId(RedHeroIdValue), redPlayerId),
-                    new Hero(new HeroId(BlueHeroIdValue), bluePlayerId)
+                    new Hero(new HeroId(RedHeroIdValue), redPlayerId, HeroDashboard.RulebookLayout),
+                    new Hero(new HeroId(BlueHeroIdValue), bluePlayerId, HeroDashboard.RulebookLayout)
                 });
         }
     }

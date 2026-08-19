@@ -244,6 +244,11 @@ namespace GuardsDigital.Core.Snapshots
         /// consequence to which slot an item was actually placed under, and a re-derived slot is one that
         /// can never disagree with the card - which would make the payload unable to describe the case
         /// the page penalizes.
+        ///
+        /// Milestone 7.2a splits that one field into two, the slot position and the icon the item
+        /// supplies, because the fourth slot accepts three icons and neither field determines the other
+        /// there. The reader checks the pair against the owner's own dashboard rather than accepting it:
+        /// <c>HeroItemState.Restore</c> refuses an item whose slot does not accept its icon.
         /// </summary>
         private static void WriteHeroItems(
             BinaryWriter writer,
@@ -255,7 +260,8 @@ namespace GuardsDigital.Core.Snapshots
             {
                 writer.Write(item.OwnerId.Value);
                 writer.Write(item.SourceCardInstanceId.Value);
-                writer.Write((int)item.Slot);
+                writer.Write(item.Slot.Index);
+                writer.Write((int)item.Icon);
                 writer.Write(item.Order);
             }
         }
@@ -267,11 +273,17 @@ namespace GuardsDigital.Core.Snapshots
                 {
                     var ownerId = new HeroId(reader.ReadString());
                     var sourceCardInstanceId = new CardInstanceId(reader.ReadString());
-                    var slot = SnapshotEnumReader.Read<PrintedValueChannel>(reader, "item slot");
+                    var slot = reader.ReadInt32();
+                    var icon = SnapshotEnumReader.Read<PrintedValueChannel>(reader, "item icon");
                     var order = reader.ReadInt32();
-                    if (slot == PrintedValueChannel.None)
+                    if (slot < 1 || slot > HeroDashboard.SlotCount)
                     {
-                        throw Malformed("An item slot names one of rulebook p.16's six icons.");
+                        throw Malformed($"Item slot {slot} is outside the legal range.");
+                    }
+
+                    if (icon == PrintedValueChannel.None)
+                    {
+                        throw Malformed("An item supplies one of rulebook p.16's six icons.");
                     }
 
                     if (order < 1)
@@ -280,7 +292,11 @@ namespace GuardsDigital.Core.Snapshots
                     }
 
                     return new GuardsDigital.Core.Rules.Progression.HeroItem(
-                        ownerId, sourceCardInstanceId, slot, order);
+                        ownerId,
+                        sourceCardInstanceId,
+                        new HeroDashboardSlotPosition(slot),
+                        icon,
+                        order);
                 }));
 
         /// <summary>

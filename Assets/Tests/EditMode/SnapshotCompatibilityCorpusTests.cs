@@ -489,17 +489,46 @@ namespace GuardsDigital.Tests.EditMode
         /// <c>pending-minion-battle-v18</c> and <c>attached-marker-v18</c>, and the outer envelope by 4,
         /// 8 or 12 - base64 alignment again, and the reason the note above says to decode before
         /// measuring.
+        /// Milestone 7.2a moves schema v18 to v19 and renames every fixture with it, for one cause with
+        /// two parts, both of them the setup section: every hero now writes the four rulebook p.16 item
+        /// slots of its dashboard, and an item writes the slot it occupies and the icon it supplies
+        /// rather than one field naming both. No fixture holds an item, so only the first part appears
+        /// in these bytes. No card definition, capability or component registration moved, and no
+        /// content revision changed: this milestone adds no card content, which is why the definition
+        /// table is byte-identical either side.
+        /// The decision is reject rather than migrate. A v18 payload states no dashboards at all, and
+        /// every hero this build supplies has the same four slots, so reading one as "p.16's layout"
+        /// would be right for every payload that exists - which is exactly the argument v17 and v16
+        /// refused, since the first payload it would be wrong about is the first one a verified hero
+        /// with a different dashboard writes. The reader also refuses a v19 payload whose dashboards are
+        /// not this build's, with its own reason <c>HeroDashboardMismatch</c> rather than a malformed
+        /// payload, and that refusal is proved on a tampered payload in
+        /// <c>DashboardSlotsAndComposedItemTotalsTests</c> rather than here, because it is a content
+        /// mismatch of the kind the definition table already has a case for.
+        /// Measured in a throwaway worktree at pre-change revision <c>6a83b15</c> rather than assumed.
+        /// Every payload grows by exactly 120 bytes, in TWO contiguous insertions of 60 rather than one,
+        /// because the slots are written per hero and the second hero's id and player id sit between
+        /// them: in the five ordinary fixtures the insertions begin at offsets 2502 and 2534, separated
+        /// by exactly the 32 bytes of <c>blue-test-hero</c> and <c>blue-test-player</c> with their
+        /// length prefixes, and in the three Skill-fixture payloads at 2737 and 2769. Each 60-byte block
+        /// is fifteen int32s and decodes to exactly what the layout says: a slot count of 4, then
+        /// (1, 1 icon, Attack), (2, 1 icon, Defense), (3, 1 icon, Initiative), and (4, 3 icons, Range,
+        /// Movement, Radius). Outside those two insertions exactly ONE byte differs in every payload -
+        /// the version field at offset 30, <c>0x12</c> to <c>0x13</c> - and every later section is
+        /// byte-identical, which is the corpus confirming that no item, board, card or round field
+        /// moved. 120 is a multiple of three, so for once base64 alignment adds nothing: each payload
+        /// string grows by exactly 160 characters.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v18", "39b6e40bc32987c1291c30e347a36d2561ca341982ffdcdb299f1327efcc5b8a"),
-            new CompatibilityFixture("active-turn-v18", "527f960e73e68d0be7aa849c1f96bc973fa17ced2d11fab042edc74555b05b6b"),
-            new CompatibilityFixture("pending-choice-v18", "106fb5ad184e33615fb75b0d9b495723d680b501eb2f43db806f11724443ac94"),
-            new CompatibilityFixture("end-of-round-v18", "69cb695dd767afea8768720eb0d02368cf8abde3f961adc20ef5f7322d8de805"),
-            new CompatibilityFixture("pending-minion-battle-v18", "842c18b270a826f0f8af841d8ab27677f5ef4ccaef85588072034dedb4b760d6"),
-            new CompatibilityFixture("placed-token-v18", "5fecc1ca88f52a20c5b684f0941e26bdcebd09d0de7e4bebe59923fb46da252f"),
-            new CompatibilityFixture("attached-marker-v18", "63ef568bbb7578aedc6db31a83195caa6662f07ceaefd32bbc4c7ffa2a4c391e"),
-            new CompatibilityFixture("pending-correction-v18", "2e987c12ec8d4ec63df10ae36857e79d4323e34d800e1e00d8ddf1e665a7067c")
+            new CompatibilityFixture("setup-v19", "358bd00d72d564445b4a95a8013409ec2c0bb1b85f7915bca0624b874daf2ec6"),
+            new CompatibilityFixture("active-turn-v19", "46465d74965318da52653f9409ca5247c2fdf08bd955582cbcc2b1608b3b844a"),
+            new CompatibilityFixture("pending-choice-v19", "0682f987bf80b4453fa458fa29e97bda65b1f5c7158b973c7233be4edf01d388"),
+            new CompatibilityFixture("end-of-round-v19", "19ba0139927da7e6b50f6aaae06d16329f7a338cad86e554c91cd07e0a84540d"),
+            new CompatibilityFixture("pending-minion-battle-v19", "ffc0ab6e7f541b36b123b9c8608c8dcccddfc38f17f3d7e4aaef4db4cd1c13bd"),
+            new CompatibilityFixture("placed-token-v19", "9511a5b515a3f9008dd47a039fe4966ea9912da19e93eb70da3091418cb0465f"),
+            new CompatibilityFixture("attached-marker-v19", "697df7a3fe43bdb93b3fd309cbba33abce64df8f455ea3db0142e799dbeff6e8"),
+            new CompatibilityFixture("pending-correction-v19", "136ea96c0eb1aaa22cf6de8aa52673ea937f6066a29d202bf65a615ffeabc43b")
         };
 
         [Test]
@@ -583,16 +612,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v18", session.CaptureSnapshot());
+            values.Add("setup-v19", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v18", session.CaptureSnapshot());
+            values.Add("active-turn-v19", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v18", session.CaptureSnapshot());
+            values.Add("pending-choice-v19", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -608,7 +637,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v18", session.CaptureSnapshot());
+            values.Add("end-of-round-v19", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -617,17 +646,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v18", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v19", session.CaptureSnapshot());
 
             // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
             // carry zero components would leave the sections it exists to protect untested, so one
             // payload holds a token on the board and one holds a marker on a hero.
-            values.Add("placed-token-v18", CaptureComponentSnapshot("component-place-branch"));
-            values.Add("attached-marker-v18", CaptureComponentSnapshot("component-give-marker"));
+            values.Add("placed-token-v19", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v19", CaptureComponentSnapshot("component-give-marker"));
 
             // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
             // so the paused after-action correction gets the eighth.
-            values.Add("pending-correction-v18", CapturePendingCorrectionSnapshot());
+            values.Add("pending-correction-v19", CapturePendingCorrectionSnapshot());
             return values;
         }
 

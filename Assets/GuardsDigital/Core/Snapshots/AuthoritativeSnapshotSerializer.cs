@@ -26,6 +26,24 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
+        // v19: milestone 7.2a puts every hero's four rulebook p.16 item slots in the setup section,
+        // beside the hero id and player id already there, and splits an item's single slot field into
+        // the slot it occupies and the icon it supplies. The user chose the wire over rebinding the
+        // slots from configuration at restore, so a restore refuses a build whose dashboards differ the
+        // way it already refuses one whose card content differs; the refusal is its own reason,
+        // HeroDashboardMismatch, rather than a malformed payload, because the bytes parse and describe
+        // content this build does not have.
+        // v18 is rejected rather than migrated, and here the reason is not that the absence is
+        // unreadable - a v18 payload has no dashboards at all, and every hero this build supplies has
+        // the same four slots, so reading one as "p.16's layout" would be right for every payload that
+        // exists. It is refused for the reason v17 and v16 were: the guess is a statement about heroes
+        // the payload never made, and the first payload it would be wrong about is the first one a
+        // verified hero with a different dashboard writes, by which time the migration would look
+        // established. The item split is the separable second cause and is unmigratable in the
+        // ordinary way: a v18 item names a slot by its icon, which cannot say which of the fourth
+        // slot's three icons it supplies. No persisted state exists outside the version-controlled
+        // corpus to strand.
+        //
         // v18: milestone 7.2 adds every hero's items to the round section, immediately after the Levels
         // - one count-prefixed list of owner, source card instance, slot icon and order. v17 is rejected
         // rather than migrated, and the reason is not the shape of the absence but what the absence
@@ -94,7 +112,7 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 18;
+        public const int CurrentSchemaVersion = 19;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

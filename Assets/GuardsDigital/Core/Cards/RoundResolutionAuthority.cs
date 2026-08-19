@@ -494,6 +494,11 @@ namespace GuardsDigital.Core.Cards
             authority.CurrentEndOfRoundStage = currentEndOfRoundStage;
             authority.CurrentCommitmentAuthority = commitmentAuthority;
             authority.CurrentTurnAuthority = turnAuthority;
+
+            // Milestone 7.2a. The restored turn reads Initiative through the same items the live one
+            // did. It is bound after the items are restored rather than passed into the turn's own
+            // restore, because the turn is rebuilt by the reader before the round that owns them.
+            turnAuthority?.BindHeroItems(authority.HeroItems);
             authority.PendingMinionBattleChoice = pendingMinionBattleChoice;
             authority.PendingLanePushRequest = pendingLanePushRequest;
 
@@ -1309,6 +1314,10 @@ namespace GuardsDigital.Core.Cards
                 RoundIndex,
                 TurnIndex,
                 lanePush);
+
+            // Milestone 7.2a: the same items the card-action dispatcher holds, so an Initiative item
+            // raises the order this turn resolves in.
+            CurrentTurnAuthority.BindHeroItems(HeroItems);
             Phase = RoundResolutionPhase.ResolvingTurn;
             foreach (var timingEvent in timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
                 TimingCheckpoint.CardsPlayedAndRevealed,

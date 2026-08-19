@@ -1323,10 +1323,10 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 new[]
                 {
-                    new Hero(attackerId, redPlayerId),
-                    new Hero(adjacentEnemyId, bluePlayerId),
-                    new Hero(friendlyId, friendlyPlayerId),
-                    new Hero(nonAdjacentEnemyId, farPlayerId)
+                    new Hero(attackerId, redPlayerId, HeroDashboard.RulebookLayout),
+                    new Hero(adjacentEnemyId, bluePlayerId, HeroDashboard.RulebookLayout),
+                    new Hero(friendlyId, friendlyPlayerId, HeroDashboard.RulebookLayout),
+                    new Hero(nonAdjacentEnemyId, farPlayerId, HeroDashboard.RulebookLayout)
                 });
         }
 

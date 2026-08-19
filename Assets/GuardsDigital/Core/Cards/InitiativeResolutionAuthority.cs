@@ -206,7 +206,8 @@ namespace GuardsDigital.Core.Cards
         public InitiativeResolutionResult TrySelectNextActor(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
         {
             if (SelectedActor.IsDefined)
             {
@@ -219,7 +220,7 @@ namespace GuardsDigital.Core.Cards
                 return InitiativeResolutionResult.Reject(InitiativeResolutionRejectionReason.ChoicePending);
             }
 
-            var selection = QuerySelection(definitions, instances, participants);
+            var selection = QuerySelection(definitions, instances, participants, heroItems);
             if (selection.Candidates.Count == 0)
             {
                 return InitiativeResolutionResult.Accept(new[]
@@ -253,7 +254,8 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId cardInstanceId,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
         {
             if (SelectedActor.IsDefined)
             {
@@ -278,7 +280,7 @@ namespace GuardsDigital.Core.Cards
                     InitiativeResolutionRejectionReason.CardNotInPendingChoice);
             }
 
-            var selection = QuerySelection(definitions, instances, participants);
+            var selection = QuerySelection(definitions, instances, participants, heroItems);
             var queriedIds = selection.Candidates.Select(candidate => candidate.Card.Id).ToArray();
             if (selection.SelectedSide != PendingChoice.OwningSide ||
                 selection.InitiativeTotal != PendingChoice.InitiativeTotal ||
@@ -381,10 +383,19 @@ namespace GuardsDigital.Core.Cards
             return InitiativeResolutionResult.Accept(events);
         }
 
+        /// <param name="heroItems">
+        /// Milestone 7.2a. The match's items, or <c>null</c> in a composition that holds none - the same
+        /// named absence the Defense total expresses. p.16's Item Bonus is decided by
+        /// <see cref="ItemBonusQuery"/> and not here: this query knows the card's printed Initiative and
+        /// whose card it is, which is what that rule needs, and nothing about which items exist. An
+        /// Initiative item raises the value the turn order reads, so it is composed before the highest
+        /// candidate is chosen rather than after.
+        /// </param>
         private SelectionQueryResult QuerySelection(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             if (participants == null)
             {
@@ -398,6 +409,11 @@ namespace GuardsDigital.Core.Cards
             {
                 var side = participants.GetTeamForHero(card.OwnerId).Side;
                 var value = PrintedValueQuery.CalculatePrintedInitiative(card, definitionArray);
+                if (heroItems != null)
+                {
+                    value = ItemBonusQuery.Apply(value, heroItems, card.OwnerId);
+                }
+
                 candidates.Add(new InitiativeCandidate(card, side, value.Total));
             }
 

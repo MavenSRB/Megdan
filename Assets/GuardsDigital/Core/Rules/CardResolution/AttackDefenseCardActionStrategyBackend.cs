@@ -35,6 +35,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <see cref="markers"/> is the same register - a Defense value that consulted a different copy
         /// of a hero's items than the one the match records would be a total nothing could reproduce.
         /// Absent outside a live match, where no hero has any.
+        ///
+        /// Milestone 7.2a: the Attack Total and a Ranged Attack's Range Total now read it too. Both
+        /// were already computed here from the same printed query the Defense total uses, so composing
+        /// them is a field this backend already held rather than any new derivation - which is why
+        /// neither the attack resolution's stored value nor any resolver signature widened.
         /// </summary>
         private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
 
@@ -289,10 +294,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return ResolveMinionTarget(command.TargetMinionId, participants, modifications);
             }
 
-            var attackValue = PrintedValueQuery.CalculatePrintedValue(
-                offer.Value,
-                materializedDefinitions,
-                PrintedValueChannel.Attack);
+            var attackValue = CalculateAttackValue(offer.Value, materializedDefinitions);
             var defenseResolution = new PendingAttackResolution(
                 pendingAttackResolution.ResolutionId,
                 pendingAttackResolution.SourceCardInstanceId,
@@ -522,10 +524,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 participants,
                 modifications);
-            var expectedAttackValue = PrintedValueQuery.CalculatePrintedValue(
-                attackOffer.Value,
-                materializedDefinitions,
-                PrintedValueChannel.Attack);
+            var expectedAttackValue = CalculateAttackValue(attackOffer.Value, materializedDefinitions);
             if (!legalTargets.Contains(AttackTarget.Hero(pendingAttackResolution.TargetHeroId)) ||
                 !PrintedValuesMatch(pendingAttackResolution.AttackValue, expectedAttackValue))
             {
@@ -677,10 +676,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 participants,
                 modifications);
-            var expectedAttackValue = PrintedValueQuery.CalculatePrintedValue(
-                attackOffer.Value,
-                materializedDefinitions,
-                PrintedValueChannel.Attack);
+            var expectedAttackValue = CalculateAttackValue(attackOffer.Value, materializedDefinitions);
             if (!pendingAttackResolution.CurrentStepId.Equals(
                     new ActionResolutionStepId("attack-outcome-comparison")) ||
                 !legalTargets.Contains(AttackTarget.Hero(pendingAttackResolution.TargetHeroId)) ||
@@ -837,10 +833,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     throw new ArgumentException("Pending Attack target is no longer legal.", nameof(pendingResolution));
                 }
 
-                var expectedAttackValue = PrintedValueQuery.CalculatePrintedValue(
-                    offer.Value,
-                    materializedDefinitions,
-                    PrintedValueChannel.Attack);
+                var expectedAttackValue = backend.CalculateAttackValue(offer.Value, materializedDefinitions);
                 if (verifiedTargetChoice != null ||
                     !PrintedValuesMatch(pendingResolution.AttackValue, expectedAttackValue))
                 {
@@ -946,6 +939,40 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     modifications));
         }
 
+        /// <summary>
+        /// The attacker's Attack value: the printed icon with rulebook p.16's item bonuses composed
+        /// onto it (milestone 7.2a).
+        ///
+        /// It is one helper rather than the composition repeated at each site because the sites are not
+        /// alternatives - one computes the value the resolution stores, and the others re-derive it to
+        /// check that the stored one still matches authoritative state. A composition present in some
+        /// of them and absent in others would refuse a continuation for having the total the page
+        /// requires.
+        ///
+        /// The bonus is asked of the printed result, exactly as the Defense total asks it, so p.16's
+        /// "if an Action card has no matching icon, the item has no effect" stays a question about what
+        /// the card prints.
+        /// </summary>
+        private ValueResult CalculateAttackValue(
+            ActionOffer offer,
+            IReadOnlyList<CardDefinition> definitions) =>
+            ComposeItems(offer, definitions, PrintedValueChannel.Attack);
+
+        /// <summary>The attacker's Range value, composed the same way (milestone 7.2a).</summary>
+        private ValueResult RangeValue(ActionOffer offer, IReadOnlyList<CardDefinition> definitions) =>
+            ComposeItems(offer, definitions, PrintedValueChannel.Range);
+
+        private ValueResult ComposeItems(
+            ActionOffer offer,
+            IReadOnlyList<CardDefinition> definitions,
+            PrintedValueChannel channel)
+        {
+            var printed = PrintedValueQuery.CalculatePrintedValue(offer, definitions, channel);
+            return heroItems == null
+                ? printed
+                : ItemBonusQuery.Apply(printed, heroItems, offer.ActorId);
+        }
+
         private IReadOnlyList<AttackTarget> FindLegalAttackTargets(
             HeroId attackerId,
             ActionOffer offer,
@@ -953,11 +980,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications)
         {
+            // Milestone 7.2a. A Ranged Attack's Range Total decides which enemies it may target, so a
+            // +1 Range item reaches one space further - the page's own example of an item that matters
+            // only to a card printing that icon. A non-Ranged Attack has no Range icon and is adjacency
+            // by rule rather than by a Range of one, so nothing is composed onto it.
             var rangeTotal = offer.AttackRange == AttackRangeKind.Ranged
-                ? PrintedValueQuery.CalculatePrintedValue(
-                    offer,
-                    definitions,
-                    PrintedValueChannel.Range).Total
+                ? RangeValue(offer, definitions).Total
                 : 1;
             return AttackTargetQuery.FindLegalEnemyTargets(
                 attackerId,

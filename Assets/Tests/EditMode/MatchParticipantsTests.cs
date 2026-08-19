@@ -97,10 +97,10 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 new[]
                 {
-                    new Hero(new HeroId("red-hero-one"), redOne),
-                    new Hero(new HeroId("red-hero-two"), redTwo),
-                    new Hero(new HeroId("blue-hero-one"), blueOne),
-                    new Hero(new HeroId("blue-hero-two"), blueTwo)
+                    new Hero(new HeroId("red-hero-one"), redOne, HeroDashboard.RulebookLayout),
+                    new Hero(new HeroId("red-hero-two"), redTwo, HeroDashboard.RulebookLayout),
+                    new Hero(new HeroId("blue-hero-one"), blueOne, HeroDashboard.RulebookLayout),
+                    new Hero(new HeroId("blue-hero-two"), blueTwo, HeroDashboard.RulebookLayout)
                 });
 
             Assert.That(participants.GetPlayersForTeam(redTeamId), Has.Count.EqualTo(2));
@@ -124,8 +124,8 @@ namespace GuardsDigital.Tests.EditMode
             var blueTeam = new Team(new TeamId("blue-team"), TeamSide.Blue);
             var redPlayer = new Player(new PlayerId("red-player"), redTeam.Id);
             var bluePlayer = new Player(new PlayerId("blue-player"), blueTeam.Id);
-            var redHero = new Hero(new HeroId("red-hero"), redPlayer.Id);
-            var blueHero = new Hero(new HeroId("blue-hero"), bluePlayer.Id);
+            var redHero = new Hero(new HeroId("red-hero"), redPlayer.Id, HeroDashboard.RulebookLayout);
+            var blueHero = new Hero(new HeroId("blue-hero"), bluePlayer.Id, HeroDashboard.RulebookLayout);
 
             Assert.Throws<ArgumentException>(() => new MatchParticipants(
                 new[] { redTeam, new Team(redTeam.Id, TeamSide.Blue) },
@@ -138,7 +138,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentException>(() => new MatchParticipants(
                 new[] { redTeam, blueTeam },
                 new[] { redPlayer, bluePlayer },
-                new[] { redHero, new Hero(redHero.Id, bluePlayer.Id) }));
+                new[] { redHero, new Hero(redHero.Id, bluePlayer.Id, HeroDashboard.RulebookLayout) }));
         }
 
         [Test]
@@ -150,11 +150,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentException>(() => new MatchParticipants(
                 new[] { redTeam },
                 new[] { new Player(redPlayer.Id, new TeamId("missing-team")) },
-                new[] { new Hero(new HeroId("red-hero"), redPlayer.Id) }));
+                new[] { new Hero(new HeroId("red-hero"), redPlayer.Id, HeroDashboard.RulebookLayout) }));
             Assert.Throws<ArgumentException>(() => new MatchParticipants(
                 new[] { redTeam },
                 new[] { redPlayer },
-                new[] { new Hero(new HeroId("red-hero"), new PlayerId("missing-player")) }));
+                new[] { new Hero(new HeroId("red-hero"), new PlayerId("missing-player"), HeroDashboard.RulebookLayout) }));
         }
 
         [Test]
@@ -169,8 +169,8 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { firstPlayer, secondPlayer },
                 new[]
                 {
-                    new Hero(new HeroId("first-hero"), firstPlayer.Id),
-                    new Hero(new HeroId("second-hero"), firstPlayer.Id)
+                    new Hero(new HeroId("first-hero"), firstPlayer.Id, HeroDashboard.RulebookLayout),
+                    new Hero(new HeroId("second-hero"), firstPlayer.Id, HeroDashboard.RulebookLayout)
                 }));
         }
     }

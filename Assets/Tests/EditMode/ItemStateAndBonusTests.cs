@@ -101,7 +101,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.RejectionReason, Is.EqualTo(HeroItemPlacementRejectionReason.None));
             Assert.That(result.Item.OwnerId, Is.EqualTo(fixture.RedHeroId));
             Assert.That(result.Item.SourceCardInstanceId, Is.EqualTo(setAside.Id));
-            Assert.That(result.Item.Slot, Is.EqualTo(icon));
+            Assert.That(result.Item.Icon, Is.EqualTo(icon));
+            Assert.That(result.Item.Slot, Is.EqualTo(SlotFor(icon)));
             Assert.That(result.Item.Order, Is.EqualTo(1));
 
             // p.16: "tuck it Faceup under your hero dashboard".
@@ -285,7 +286,7 @@ namespace GuardsDigital.Tests.EditMode
                 participants,
                 new HeroItemRestoreState(new[]
                 {
-                    new HeroItem(owner, itemCardId, PrintedValueChannel.Movement, 1)
+                    new HeroItem(owner, itemCardId, SlotFor(PrintedValueChannel.Movement), PrintedValueChannel.Movement, 1)
                 }));
 
             var printed = PrintedIcon(PrintedValueChannel.Movement, 2);
@@ -416,7 +417,7 @@ namespace GuardsDigital.Tests.EditMode
                 participants,
                 new HeroItemRestoreState(new[]
                 {
-                    new HeroItem(new HeroId("nobody"), new CardInstanceId("c1"), PrintedValueChannel.Attack, 1)
+                    new HeroItem(new HeroId("nobody"), new CardInstanceId("c1"), SlotFor(PrintedValueChannel.Attack), PrintedValueChannel.Attack, 1)
                 })));
 
             // One card becomes at most one item.
@@ -424,8 +425,8 @@ namespace GuardsDigital.Tests.EditMode
                 participants,
                 new HeroItemRestoreState(new[]
                 {
-                    new HeroItem(heroes[0], new CardInstanceId("c1"), PrintedValueChannel.Attack, 1),
-                    new HeroItem(heroes[0], new CardInstanceId("c1"), PrintedValueChannel.Defense, 2)
+                    new HeroItem(heroes[0], new CardInstanceId("c1"), SlotFor(PrintedValueChannel.Attack), PrintedValueChannel.Attack, 1),
+                    new HeroItem(heroes[0], new CardInstanceId("c1"), SlotFor(PrintedValueChannel.Defense), PrintedValueChannel.Defense, 2)
                 })));
 
             // A hero's orders are exactly 1..n, so an order the payload never stated cannot be restored.
@@ -433,25 +434,48 @@ namespace GuardsDigital.Tests.EditMode
                 participants,
                 new HeroItemRestoreState(new[]
                 {
-                    new HeroItem(heroes[0], new CardInstanceId("c1"), PrintedValueChannel.Attack, 1),
-                    new HeroItem(heroes[0], new CardInstanceId("c2"), PrintedValueChannel.Attack, 3)
+                    new HeroItem(heroes[0], new CardInstanceId("c1"), SlotFor(PrintedValueChannel.Attack), PrintedValueChannel.Attack, 1),
+                    new HeroItem(heroes[0], new CardInstanceId("c2"), SlotFor(PrintedValueChannel.Attack), PrintedValueChannel.Attack, 3)
                 })));
 
-            // An item names a slot and a positive order at construction.
+            // Milestone 7.2a. An item's slot and its icon agree with the owner's dashboard: a Defense
+            // icon under the Attack slot is a pair no dashboard in this build has, and it is refused
+            // rather than restored as an item that would raise a channel its slot does not carry.
+            Assert.Throws<ArgumentException>(() => HeroItemState.Restore(
+                participants,
+                new HeroItemRestoreState(new[]
+                {
+                    new HeroItem(
+                        heroes[0],
+                        new CardInstanceId("c1"),
+                        SlotFor(PrintedValueChannel.Attack),
+                        PrintedValueChannel.Defense,
+                        1)
+                })));
+
+            // An item names a slot, an icon and a positive order at construction.
             Assert.Throws<ArgumentException>(() =>
-                new HeroItem(heroes[0], new CardInstanceId("c1"), PrintedValueChannel.None, 1));
+                new HeroItem(
+                    heroes[0],
+                    new CardInstanceId("c1"),
+                    SlotFor(PrintedValueChannel.Attack),
+                    PrintedValueChannel.None,
+                    1));
+            Assert.Throws<ArgumentException>(() =>
+                new HeroItem(
+                    heroes[0], new CardInstanceId("c1"), default, PrintedValueChannel.Attack, 1));
             Assert.Throws<ArgumentOutOfRangeException>(() =>
-                new HeroItem(heroes[0], new CardInstanceId("c1"), PrintedValueChannel.Attack, 0));
+                new HeroItem(heroes[0], new CardInstanceId("c1"), SlotFor(PrintedValueChannel.Attack), PrintedValueChannel.Attack, 0));
             Assert.Throws<ArgumentException>(() =>
-                new HeroItem(default, new CardInstanceId("c1"), PrintedValueChannel.Attack, 1));
+                new HeroItem(default, new CardInstanceId("c1"), SlotFor(PrintedValueChannel.Attack), PrintedValueChannel.Attack, 1));
 
             // Two heroes each number their own items from one.
             var shared = HeroItemState.Restore(
                 participants,
                 new HeroItemRestoreState(new[]
                 {
-                    new HeroItem(heroes[1], new CardInstanceId("c2"), PrintedValueChannel.Defense, 1),
-                    new HeroItem(heroes[0], new CardInstanceId("c1"), PrintedValueChannel.Attack, 1)
+                    new HeroItem(heroes[1], new CardInstanceId("c2"), SlotFor(PrintedValueChannel.Defense), PrintedValueChannel.Defense, 1),
+                    new HeroItem(heroes[0], new CardInstanceId("c1"), SlotFor(PrintedValueChannel.Attack), PrintedValueChannel.Attack, 1)
                 }));
             Assert.That(shared.GetItems(heroes[0]), Has.Count.EqualTo(1));
             Assert.That(shared.GetItems(heroes[1]), Has.Count.EqualTo(1));
@@ -530,9 +554,9 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.Participants,
                 new HeroItemRestoreState(new[]
                 {
-                    new HeroItem(heroes[0], new CardInstanceId("item-a"), PrintedValueChannel.Attack, 1),
-                    new HeroItem(heroes[0], new CardInstanceId("item-b"), PrintedValueChannel.Attack, 2),
-                    new HeroItem(heroes[1], new CardInstanceId("item-c"), PrintedValueChannel.Radius, 1)
+                    new HeroItem(heroes[0], new CardInstanceId("item-a"), SlotFor(PrintedValueChannel.Attack), PrintedValueChannel.Attack, 1),
+                    new HeroItem(heroes[0], new CardInstanceId("item-b"), SlotFor(PrintedValueChannel.Attack), PrintedValueChannel.Attack, 2),
+                    new HeroItem(heroes[1], new CardInstanceId("item-c"), SlotFor(PrintedValueChannel.Radius), PrintedValueChannel.Radius, 1)
                 })).CaptureRestoreState();
 
             var round = HeroItemState.Restore(configuration.Participants, captured);
@@ -540,7 +564,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 round.GetItems(heroes[0]).Select(item => item.SourceCardInstanceId.Value),
                 Is.EqualTo(new[] { "item-a", "item-b" }));
-            Assert.That(round.GetItems(heroes[1])[0].Slot, Is.EqualTo(PrintedValueChannel.Radius));
+            Assert.That(round.GetItems(heroes[1])[0].Icon, Is.EqualTo(PrintedValueChannel.Radius));
+            Assert.That(
+                round.GetItems(heroes[1])[0].Slot, Is.EqualTo(SlotFor(PrintedValueChannel.Radius)));
             Assert.That(round.CaptureRestoreState().Items, Is.EqualTo(captured.Items));
         }
 
@@ -563,11 +589,26 @@ namespace GuardsDigital.Tests.EditMode
         private static HeroItemState ItemsHolding(
             MatchParticipants participants,
             HeroId owner,
-            params PrintedValueChannel[] slots) =>
+            params PrintedValueChannel[] icons) =>
             HeroItemState.Restore(
                 participants,
-                new HeroItemRestoreState(slots.Select((slot, index) =>
-                    new HeroItem(owner, new CardInstanceId($"item-{index}"), slot, index + 1))));
+                new HeroItemRestoreState(icons.Select((icon, index) =>
+                    new HeroItem(
+                        owner, new CardInstanceId($"item-{index}"), SlotFor(icon), icon, index + 1))));
+
+        /// <summary>
+        /// The slot rulebook p.16's layout accepts that icon under. Every hero in this build declares
+        /// that layout, so a fixture that wants "an item supplying this icon" asks the dashboard where
+        /// it sits rather than assuming the slot and the icon are the same thing.
+        /// </summary>
+        private static HeroDashboardSlotPosition SlotFor(PrintedValueChannel icon)
+        {
+            Assert.That(
+                HeroDashboard.RulebookLayout.TryFindSlotAccepting(icon, out var slot),
+                Is.True,
+                $"p.16's layout accepts {icon}");
+            return slot.Position;
+        }
 
         private static CardInstance DefenseItemCardFor(
             PlaceholderOneVsOneTestConfiguration configuration,

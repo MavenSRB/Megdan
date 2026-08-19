@@ -150,6 +150,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             attackDefenseBackend.BindHeroItems(heroItems);
+
+            // Milestone 7.2a. The Movement backend joins it, so an item raises the Movement Total that
+            // gates the action and bounds its reachability through the same state and the same query.
+            movementBackend.BindHeroItems(heroItems);
         }
 
         internal AdjacentMoveAuthority Board => board;

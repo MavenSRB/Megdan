@@ -263,9 +263,9 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 new[]
                 {
-                    new Hero(zedHeroId, zedPlayerId),
-                    new Hero(alphaHeroId, alphaPlayerId),
-                    new Hero(middleHeroId, middlePlayerId)
+                    new Hero(zedHeroId, zedPlayerId, HeroDashboard.RulebookLayout),
+                    new Hero(alphaHeroId, alphaPlayerId, HeroDashboard.RulebookLayout),
+                    new Hero(middleHeroId, middlePlayerId, HeroDashboard.RulebookLayout)
                 });
             var definition = new CardDefinitionReference(
                 new CardDefinitionId("three-hero-definition"),

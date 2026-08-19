@@ -351,6 +351,15 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private readonly GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush;
 
+        /// <summary>
+        /// Milestone 7.2a: the same item state the round authority owns, because p.16's Item Bonus
+        /// raises the Initiative icon and Initiative is what orders this turn. It is bound after
+        /// construction, exactly as the card-action dispatcher's is and for the same reason - the round
+        /// creates this authority, so a state created here would be a second copy of what the match
+        /// records. Absent in a composition with no items, where the printed Initiative is the total.
+        /// </summary>
+        private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
+
         private int roundIndex;
         private int turnIndex;
 
@@ -434,6 +443,15 @@ namespace GuardsDigital.Core.Cards
             this.timing = timing ?? new ActiveEffectLifecycle();
             this.roundIndex = roundIndex;
             this.turnIndex = turnIndex;
+        }
+
+        /// <summary>
+        /// Milestone 7.2a. Hands this authority the match's item state, which the round owns, so that
+        /// Initiative composes the same items every other total does.
+        /// </summary>
+        internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState items)
+        {
+            heroItems = items;
         }
 
         public bool IsStarted { get; private set; }
@@ -578,7 +596,8 @@ namespace GuardsDigital.Core.Cards
                 cardInstanceId,
                 definitions,
                 instances,
-                participants);
+                participants,
+                heroItems);
             return result.Accepted
                 ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromInitiative))
                 : TurnResolutionResult.Reject(TurnResolutionRejectionReason.InitiativeCommandRejected);
@@ -1377,7 +1396,7 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
-            var result = initiative.TrySelectNextActor(definitions, instances, participants);
+            var result = initiative.TrySelectNextActor(definitions, instances, participants, heroItems);
             if (!result.Accepted)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.InitiativeCommandRejected);

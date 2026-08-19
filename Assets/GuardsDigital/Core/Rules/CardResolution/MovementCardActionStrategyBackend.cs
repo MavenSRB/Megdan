@@ -16,6 +16,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingCardActionResolution pendingResolution;
         private PendingMovementChoice pendingChoice;
 
+        /// <summary>
+        /// Milestone 7.2a: the same item state the round authority owns, bound by the dispatcher for the
+        /// reason the Attack and Defense backend's is. A Movement item raises the value the action
+        /// starts with, which is what gates the action and bounds its reachability. Absent in a
+        /// composition with no items, where the printed Movement is the total.
+        /// </summary>
+        private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
+
         internal MovementCardActionStrategyBackend(
             AdjacentMoveAuthority adjacentMoveAuthority,
             IMovementActionStartRestrictionEvaluator actionStartRestrictions = null)
@@ -23,6 +31,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             this.adjacentMoveAuthority = adjacentMoveAuthority ?? throw new ArgumentNullException(nameof(adjacentMoveAuthority));
             this.actionStartRestrictions = actionStartRestrictions ??
                 UnrestrictedMovementActionStartEvaluator.Instance;
+        }
+
+        internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState items)
+        {
+            heroItems = items;
         }
 
         internal PendingCardActionResolution PendingResolution => pendingResolution;
@@ -172,10 +185,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            var movementValue = PrintedValueQuery.CalculatePrintedValue(
+            // Milestone 7.2a. p.16's item bonus is composed onto the printed Movement before anything
+            // reads it, so the value the start restriction judges and the value the session spends are
+            // the one Movement Total this card has. Composing after the restriction would let a
+            // prevented action be re-enabled by an item, which is a different rule than the page states.
+            var printedMovement = PrintedValueQuery.CalculatePrintedValue(
                 offer,
                 materializedDefinitions,
                 PrintedValueChannel.Movement);
+            var movementValue = heroItems == null
+                ? printedMovement
+                : ItemBonusQuery.Apply(printedMovement, heroItems, offer.ActorId);
             var restriction = actionStartRestrictions.Evaluate(new MovementActionStartContext(
                 offer.ActorId,
                 offer.SourceCardInstanceId,

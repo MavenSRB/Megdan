@@ -134,7 +134,14 @@ namespace GuardsDigital.Core.Participants
 
     public sealed class Hero
     {
-        public Hero(HeroId id, PlayerId playerId)
+        /// <param name="dashboard">
+        /// Milestone 7.2a. The four item slots rulebook p.16 tucks items under, as this hero's own
+        /// content. It is a required argument with no overload that omits it, for the reason the Item
+        /// icon is a required argument of the card profile that prints one: a hero whose slots were
+        /// left out would be one no placement could refuse an item for, which is precisely the
+        /// correspondence p.16 states and milestone 7.2 could only assume.
+        /// </param>
+        public Hero(HeroId id, PlayerId playerId, HeroDashboard dashboard)
         {
             if (!id.IsDefined)
             {
@@ -148,11 +155,15 @@ namespace GuardsDigital.Core.Participants
 
             Id = id;
             PlayerId = playerId;
+            Dashboard = dashboard ?? throw new ArgumentNullException(nameof(dashboard));
         }
 
         public HeroId Id { get; }
 
         public PlayerId PlayerId { get; }
+
+        /// <summary>This hero's four p.16 item slots.</summary>
+        public HeroDashboard Dashboard { get; }
     }
 
     public sealed class MatchParticipants

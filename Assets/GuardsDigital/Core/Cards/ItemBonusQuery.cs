@@ -13,8 +13,10 @@ namespace GuardsDigital.Core.Cards
     ///
     /// <list type="bullet">
     /// <item>"Each item increases the value of the matching icon on each of your Action cards by +1." The
-    /// amount is always one and is never scaled, and the match is between the item's slot icon and the
-    /// channel being asked for.</item>
+    /// amount is always one and is never scaled, and the match is between the icon the item supplies and
+    /// the channel being asked for. It is the icon rather than the slot since milestone 7.2a: p.16's
+    /// fourth dashboard slot accepts Range, Movement and Radius together, so two items under one slot
+    /// can raise different channels and the slot alone cannot say which.</item>
     /// <item>"If an Action card has no matching icon, the item has no effect on that particular Action
     /// card." This is the condition that makes the query need the printed result rather than just the
     /// channel: a Melee Attack card has no Range icon, so a +1 Range item leaves it with no Range at all
@@ -40,8 +42,8 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>
         /// The item contributions one hero's items add to an already-computed printed value, in the
-        /// hero's own item order. Empty whenever the hero has no item in that slot, or the card prints no
-        /// icon of that channel.
+        /// hero's own item order. Empty whenever the hero has no item supplying that icon, or the card
+        /// prints no icon of that channel.
         /// </summary>
         public static IReadOnlyList<ValueContribution> Contributions(
             ValueResult printedValue,
@@ -69,7 +71,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             return Array.AsReadOnly(items.GetItems(ownerId)
-                .Where(item => item.Slot == printedValue.Channel)
+                .Where(item => item.Icon == printedValue.Channel)
                 .Select(item => new ValueContribution(
                     ValueContributionKind.ItemModifier,
                     item.SourceCardInstanceId,

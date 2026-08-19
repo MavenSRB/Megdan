@@ -9,9 +9,9 @@ namespace GuardsDigital.Core.Rules.Progression
 {
     /// <summary>
     /// One item tucked under one hero dashboard: whose it is, which card became it, which slot it sits
-    /// under, and where it falls in that hero's sequence of gained items.
+    /// under, which icon it supplies, and where it falls in that hero's sequence of gained items.
     ///
-    /// All four are recorded rather than derived, and each for its own reason. The owner and the source
+    /// All five are recorded rather than derived, and each for its own reason. The owner and the source
     /// card are what p.16 physically places - "Take each card set aside during the Upgrade card step and
     /// tuck it Faceup under your hero dashboard". The slot is a placement decision the page attaches a
     /// consequence to: "If your item was not clearly visible or if it was not placed in the appropriate
@@ -22,18 +22,21 @@ namespace GuardsDigital.Core.Rules.Progression
     /// items in one end-of-round step and an ordering the state does not hold is one a later build can
     /// silently change.
     ///
-    /// The slot is identified by its icon rather than by a position index, because that is what p.16
-    /// matches on: the icon on the bottom of the card "matches the icon on one of four slots on the top
-    /// of your hero dashboard". Which four icons a given dashboard prints is hero content that milestone
-    /// 8.1 supplies with the rest of a verified hero; nothing here invents it, and nothing here needs
-    /// it, because the bonus reads the slot's icon and not the dashboard's layout.
+    /// The icon is recorded beside the slot rather than being the slot, and milestone 7.2a is where that
+    /// changed. 7.2 identified a slot by its icon, "because that is what p.16 matches on", which is true
+    /// of the first three slots and false of the fourth: the user's 2026-08-19 layout has Attack,
+    /// Defense and Initiative alone but takes Range, Movement and Radius together, so two items under
+    /// the fourth slot can supply different icons. The consequence is behavioural rather than a naming
+    /// preference - <see cref="GuardsDigital.Core.Cards.ItemBonusQuery"/> raises the icon's channel, and
+    /// a slot with three icons cannot say which one to raise.
     /// </summary>
     public sealed class HeroItem : IEquatable<HeroItem>
     {
         public HeroItem(
             HeroId ownerId,
             CardInstanceId sourceCardInstanceId,
-            PrintedValueChannel slot,
+            HeroDashboardSlotPosition slot,
+            PrintedValueChannel icon,
             int order)
         {
             if (!ownerId.IsDefined)
@@ -47,10 +50,16 @@ namespace GuardsDigital.Core.Rules.Progression
                     "An item requires the card instance that became it.", nameof(sourceCardInstanceId));
             }
 
-            if (slot == PrintedValueChannel.None || !Enum.IsDefined(typeof(PrintedValueChannel), slot))
+            if (!slot.IsDefined)
             {
                 throw new ArgumentException(
-                    "An item occupies a slot named by one of p.16's six icons.", nameof(slot));
+                    "An item occupies one of the four slots on its owner's dashboard.", nameof(slot));
+            }
+
+            if (icon == PrintedValueChannel.None || !Enum.IsDefined(typeof(PrintedValueChannel), icon))
+            {
+                throw new ArgumentException(
+                    "An item supplies one of p.16's six icons.", nameof(icon));
             }
 
             if (order < 1)
@@ -62,6 +71,7 @@ namespace GuardsDigital.Core.Rules.Progression
             OwnerId = ownerId;
             SourceCardInstanceId = sourceCardInstanceId;
             Slot = slot;
+            Icon = icon;
             Order = order;
         }
 
@@ -69,8 +79,11 @@ namespace GuardsDigital.Core.Rules.Progression
 
         public CardInstanceId SourceCardInstanceId { get; }
 
-        /// <summary>The dashboard slot this item is tucked under, named by that slot's icon.</summary>
-        public PrintedValueChannel Slot { get; }
+        /// <summary>The dashboard slot this item is tucked under, named by its position.</summary>
+        public HeroDashboardSlotPosition Slot { get; }
+
+        /// <summary>The printed icon this item raises - the one its source card prints.</summary>
+        public PrintedValueChannel Icon { get; }
 
         /// <summary>This item's 1-based position in its owner's sequence of gained items.</summary>
         public int Order { get; }
@@ -79,7 +92,8 @@ namespace GuardsDigital.Core.Rules.Progression
             other != null &&
             OwnerId.Equals(other.OwnerId) &&
             SourceCardInstanceId.Equals(other.SourceCardInstanceId) &&
-            Slot == other.Slot &&
+            Slot.Equals(other.Slot) &&
+            Icon == other.Icon &&
             Order == other.Order;
 
         public override bool Equals(object obj) => Equals(obj as HeroItem);
@@ -90,14 +104,15 @@ namespace GuardsDigital.Core.Rules.Progression
             {
                 var hashCode = OwnerId.GetHashCode();
                 hashCode = (hashCode * 397) ^ SourceCardInstanceId.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)Slot;
+                hashCode = (hashCode * 397) ^ Slot.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)Icon;
                 hashCode = (hashCode * 397) ^ Order;
                 return hashCode;
             }
         }
 
         public override string ToString() =>
-            $"{OwnerId} item {Order} ({Slot}) from {SourceCardInstanceId}";
+            $"{OwnerId} item {Order} ({Icon} under {Slot}) from {SourceCardInstanceId}";
     }
 
     /// <summary>Why an attempt to place a set-aside card as an item was refused.</summary>
@@ -127,7 +142,17 @@ namespace GuardsDigital.Core.Rules.Progression
         NoItemIcon = 4,
 
         /// <summary>This card instance is already recorded as an item.</summary>
-        AlreadyAnItem = 5
+        AlreadyAnItem = 5,
+
+        /// <summary>
+        /// Milestone 7.2a. The card prints an Item icon, and no slot on its owner's dashboard accepts
+        /// that icon. Distinct from <see cref="NoItemIcon"/> on purpose: one card cannot become an item
+        /// at all, and the other is an item this hero has nowhere to put, which is a fact about the
+        /// dashboard rather than about the card. p.16 matches an icon to "one of four slots on the top
+        /// of your hero dashboard", and a hero whose four slots do not include it has no appropriate
+        /// item slot for the card.
+        /// </summary>
+        NoSlotAcceptsIcon = 6
     }
 
     /// <summary>The outcome of one placement attempt: the item that was placed, or why it was refused.</summary>
@@ -182,6 +207,14 @@ namespace GuardsDigital.Core.Rules.Progression
     {
         private readonly Dictionary<HeroId, List<HeroItem>> itemsByHero;
 
+        /// <summary>
+        /// Milestone 7.2a. Each hero's four p.16 slots, taken from the participants this state is built
+        /// over rather than looked up through them on every read, because the placement asks one
+        /// question of them - "does any slot accept this icon" - and the answer is hero content that
+        /// does not change inside a match.
+        /// </summary>
+        private readonly Dictionary<HeroId, HeroDashboard> dashboardsByHero;
+
         public HeroItemState(MatchParticipants participants)
             : this(participants, null)
         {
@@ -191,6 +224,7 @@ namespace GuardsDigital.Core.Rules.Progression
         {
             if (participants == null) throw new ArgumentNullException(nameof(participants));
             itemsByHero = participants.Heroes.ToDictionary(hero => hero.Id, _ => new List<HeroItem>());
+            dashboardsByHero = participants.Heroes.ToDictionary(hero => hero.Id, hero => hero.Dashboard);
 
             if (restoredItems == null)
             {
@@ -213,6 +247,23 @@ namespace GuardsDigital.Core.Rules.Progression
             {
                 throw new ArgumentException(
                     "One card instance becomes at most one item.", nameof(restoredItems));
+            }
+
+            // Milestone 7.2a. An item's slot and its icon are separate fields, so a payload can state a
+            // pair the owner's dashboard does not have: an icon under a slot that does not accept it.
+            // That is refused here for the reason the three refusals above are - it is a claim about
+            // this match's own heroes that the match can check - and it is what makes the slot worth
+            // persisting at all, since a slot the reader re-derived could never disagree.
+            foreach (var item in restored)
+            {
+                var slot = dashboardsByHero[item.OwnerId].GetSlot(item.Slot);
+                if (!slot.Accepts(item.Icon))
+                {
+                    throw new ArgumentException(
+                        $"Hero '{item.OwnerId}' restores a {item.Icon} item under {slot}, which does " +
+                        "not accept that icon (rulebook p.16).",
+                        nameof(restoredItems));
+                }
             }
 
             foreach (var group in restored.GroupBy(item => item.OwnerId))
@@ -261,6 +312,12 @@ namespace GuardsDigital.Core.Rules.Progression
         /// The definition set is required rather than optional because the icon is definition content: a
         /// card whose definition this build cannot resolve is refused rather than placed under a guessed
         /// slot, which is the misplacement p.16 gives no effect.
+        ///
+        /// Milestone 7.2a adds the last of the refusals: the owner's dashboard is asked which of its
+        /// four slots accepts the card's icon, and a card no slot accepts is refused rather than tucked
+        /// under a slot chosen by the card alone. That is the question p.16 states - the icon "matches
+        /// the icon on one of four slots on the top of your hero dashboard" - and until a hero had
+        /// slots, this placement could only assume the match succeeded.
         /// </summary>
         public HeroItemPlacementResult TryPlaceSetAsideCard(
             CardInstance card,
@@ -298,6 +355,13 @@ namespace GuardsDigital.Core.Rules.Progression
                 return HeroItemPlacementResult.Rejected(HeroItemPlacementRejectionReason.NoItemIcon);
             }
 
+            var icon = definition.Progression.ItemIcon;
+            if (!dashboardsByHero[card.OwnerId].TryFindSlotAccepting(icon, out var slot))
+            {
+                return HeroItemPlacementResult.Rejected(
+                    HeroItemPlacementRejectionReason.NoSlotAcceptsIcon);
+            }
+
             if (!CardLifecycleAuthority.TryPlaceAsItemFromSetAside(card))
             {
                 return HeroItemPlacementResult.Rejected(HeroItemPlacementRejectionReason.NotSetAside);
@@ -306,7 +370,8 @@ namespace GuardsDigital.Core.Rules.Progression
             var item = new HeroItem(
                 card.OwnerId,
                 card.Id,
-                definition.Progression.ItemIcon,
+                slot.Position,
+                icon,
                 owned.Count + 1);
             owned.Add(item);
             return HeroItemPlacementResult.Placed(item);

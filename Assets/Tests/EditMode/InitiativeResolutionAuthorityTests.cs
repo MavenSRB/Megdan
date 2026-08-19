@@ -296,7 +296,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var playerId = new PlayerId($"{prefix}-player-{index}");
                 players.Add(new Player(playerId, teamId));
-                heroes.Add(new Hero(new HeroId($"{prefix}-hero-{index}"), playerId));
+                heroes.Add(new Hero(new HeroId($"{prefix}-hero-{index}"), playerId, HeroDashboard.RulebookLayout));
             }
         }
 

@@ -55,7 +55,16 @@ namespace GuardsDigital.Core.Snapshots
         ComponentDefinitionMissing = 10,
 
         /// <summary>The component is registered, but not at the revision the payload names.</summary>
-        ComponentDefinitionRevisionMismatch = 11
+        ComponentDefinitionRevisionMismatch = 11,
+
+        /// <summary>
+        /// Milestone 7.2a. The payload states a hero dashboard whose four item slots are not the ones
+        /// this build supplies. Kept separate from the card-definition and component mismatches for the
+        /// reason those two are separate from each other: a client resynchronizing after a content
+        /// update needs to know which content differs, and a dashboard is what decides where an item
+        /// may be placed at all rather than what a card or a token does.
+        /// </summary>
+        HeroDashboardMismatch = 12
     }
 
     public sealed class SnapshotLoadException : Exception

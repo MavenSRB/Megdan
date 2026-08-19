@@ -274,9 +274,9 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(index => new Player(new PlayerId($"blue-player-{index}"), blue)))
                 .ToArray();
             var heroes = Enumerable.Range(1, 3)
-                .Select(index => new Hero(new HeroId($"red-{index}"), new PlayerId($"red-player-{index}")))
+                .Select(index => new Hero(new HeroId($"red-{index}"), new PlayerId($"red-player-{index}"), HeroDashboard.RulebookLayout))
                 .Concat(Enumerable.Range(1, 3)
-                    .Select(index => new Hero(new HeroId($"blue-{index}"), new PlayerId($"blue-player-{index}"))))
+                    .Select(index => new Hero(new HeroId($"blue-{index}"), new PlayerId($"blue-player-{index}"), HeroDashboard.RulebookLayout)))
                 .ToArray();
 
             return new MatchParticipants(

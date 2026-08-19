@@ -38,6 +38,14 @@ namespace GuardsDigital.Core.Participants
             if (validateInitialCardState)
             {
                 CardInitialSetupValidator.Validate(cardDefinitions, cardInstances);
+
+                // Milestone 7.2a. The cards and the heroes are both well formed by here; what this adds
+                // is the claim they make together - that every Tier II or Tier III card a hero's own
+                // upgrade tree leads to prints an icon one of that hero's four p.16 slots accepts. It is
+                // asked here rather than inside the card validator because it is the one place a
+                // configuration knows both its heroes and their cards.
+                GuardsDigital.Core.Rules.Progression.HeroItemSlotSetupValidator.Validate(
+                    participants, cardDefinitions, cardInstances);
             }
             CardDefinitions = Array.AsReadOnly(cardDefinitions);
             CardInstances = Array.AsReadOnly(cardInstances);
