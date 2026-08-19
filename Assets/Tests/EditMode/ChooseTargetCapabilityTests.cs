@@ -136,6 +136,7 @@ namespace GuardsDigital.Tests.EditMode
                 Actor,
                 Actor,
                 new CardInstanceId("choose-target-card"),
+                new CardDefinitionReference(new CardDefinitionId("fixture-radius-context"), "fixture-rev-1"),
                 new ActionDefinitionId("choose-target-action"),
                 new Dictionary<string, EffectValue>
                 {
@@ -172,6 +173,7 @@ namespace GuardsDigital.Tests.EditMode
                 Actor,
                 Actor,
                 new CardInstanceId("choose-target-card"),
+                new CardDefinitionReference(new CardDefinitionId("fixture-radius-context"), "fixture-rev-1"),
                 new ActionDefinitionId("choose-target-action"),
                 new Dictionary<string, EffectValue>
                 {

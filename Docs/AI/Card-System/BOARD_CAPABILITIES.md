@@ -31,7 +31,9 @@ Reusable geometry queries include:
 
 Movement path, rulebook distance, Range, Radius, straight line, and zone adjacency are different calculations. A capability selects the required query explicitly.
 
-Milestone 2.3a implements only the hero-Attack subset: axial-coordinate rulebook distance and an inclusive Range Total comparison for enemy heroes, with Range 1 including adjacency and occupied/obstacle spaces creating no line-of-sight restriction. Broader object categories, Range modifiers, Radius, straight-line, immunity, and presence interactions remain specified but unimplemented.
+Milestone 2.3a implements only the hero-Attack subset: axial-coordinate rulebook distance and an inclusive Range Total comparison for enemy heroes, with Range 1 including adjacency and occupied/obstacle spaces creating no line-of-sight restriction. Broader object categories, Range modifiers, straight-line queries, and the wider relationship vocabulary remain specified but unimplemented.
+
+Milestone 7.2b implements `RadiusQuery` against rulebook p.9, which states both the shape and its one exclusion: "the value on the Range/Radius icon determines the maximum Range/Radius of your action", "with a Range/Radius value of 3, your primary action can affect targets up to 3 spaces away", and "there are no 'line of sight' rules. You can target units through obstacles, as long as they are in range/radius." It takes the composed Radius Total rather than an integer and refuses a total of any other channel, so a disk cannot be derived from a Range, an Attack value, or a number an effect's text carried. Its three questions stay separate because the rulebook separates them: the spaces alone, the objects a stated activity may target - immunity filtered through `TargetQuery` - and the units present in the same disk, which count immune units. The targeting answer is the complete eligible set an effect that affects every unit in Radius needs, in a canonical order that is deterministic and is explicitly not a mutation or simultaneous-resolution order; each consuming effect owns its own timing and commit policy.
 
 Milestone 5.3 binds the existing configured standard-minion state directly into authoritative board occupancy. Minions retain stable identity, team, intrinsic type, map-qualified space, and coordinate; they are unit obstacles for construction, Movement projection, route revalidation, and relocation, with no presentation-derived or parallel rules representation.
 
@@ -170,7 +172,7 @@ Every query contract below is specified but not yet implemented as a named type.
 | `AdjacentSpaceQuery` | Specified, not implemented | 6.4 |
 | `AdjacentObjectQuery` | Specified, not implemented | 6.4 |
 | `RangeQuery` | Specified, not implemented | 6.8 |
-| `RadiusQuery` | Specified, not implemented | 7.2b |
+| `RadiusQuery` | Implemented at 7.2b | 7.2b |
 | `DirectionQuery` | Specified, not implemented | 6.4 |
 | `DistanceQuery` | Specified, not implemented | 6.4 |
 | `FartherQuery` | Specified, not implemented | 6.4 |

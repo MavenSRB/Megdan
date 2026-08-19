@@ -28,9 +28,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly EffectCapabilityCatalog catalog;
         private PendingResolution pendingResolution;
 
+        /// <summary>
+        /// Milestone 7.2b: the same item state the round authority owns, bound by the dispatcher for
+        /// the reason the Attack, Defense and Movement backends' is. A capability that reads its card's
+        /// printed Radius composes p.16's Item Bonus onto it, and every one of the frame's five ask
+        /// points takes the state from here, so a paused disk cannot come back derived from a different
+        /// set of items than the one the player was offered. Absent in a composition with no items.
+        /// </summary>
+        private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
+
         internal SkillCardActionStrategyBackend(EffectCapabilityCatalog catalog)
         {
             this.catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+        }
+
+        internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState items)
+        {
+            heroItems = items;
         }
 
         private SkillCardActionStrategyBackend(
@@ -94,7 +108,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), components: components);
+                EffectCardState.Of(materializedDefinitions, instances), components: components,
+                heroItems: heroItems);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 offer.SourceCardInstanceId,
@@ -167,7 +182,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), components: components);
+                EffectCardState.Of(materializedDefinitions, instances), components: components,
+                heroItems: heroItems);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 repeat.SourceCardInstanceId,
@@ -248,7 +264,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), components: components);
+                EffectCardState.Of(materializedDefinitions, instances), components: components,
+                heroItems: heroItems);
             return EffectOptionFeasibilityQuery.CanApplyAnything(
                 EffectResolutionSession.BuildStartFrame(
                     new EffectResolutionId($"probe-{offer.SourceCardInstanceId.Value}-{offer.ActionDefinitionId.Value}"),
@@ -292,7 +309,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), components: components);
+                EffectCardState.Of(materializedDefinitions, instances), components: components,
+                heroItems: heroItems);
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
             {

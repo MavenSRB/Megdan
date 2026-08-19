@@ -518,17 +518,36 @@ namespace GuardsDigital.Tests.EditMode
         /// byte-identical, which is the corpus confirming that no item, board, card or round field
         /// moved. 120 is a multiple of three, so for once base64 alignment adds nothing: each payload
         /// string grows by exactly 160 characters.
+        /// Milestone 7.2b keeps schema v19 and re-pins every fixture for one registration cause: the
+        /// build registers <c>synthetic-radius-target</c>, the target selection bounded by rulebook
+        /// p.9's printed Radius icon rather than by a number a definition writes down. The decision is
+        /// reject rather than migrate, by the same existing <c>ValidateCapabilityRegistrations</c>
+        /// sequence check milestones 6.4, 6.8k, 6.5 and 7.1a relied on: a registration list is a
+        /// statement about the build that wrote the payload rather than state to convert, and a payload
+        /// recording the twenty-nine-reference set describes a build that cannot resolve this card's
+        /// binding.
+        /// Measured in a throwaway worktree at pre-change revision <c>889007c</c> rather than assumed,
+        /// and it is uniform. Every payload grows by exactly 28 bytes - a one-byte length prefix, the
+        /// twenty-three-character id, and the int32 revision - inside one contiguous changed region of
+        /// the registration list that begins at the list's own int32 count, which moves 29 to 30, and
+        /// ends at the new entry. The entry sorts last among the ids that region covers, immediately
+        /// after <c>synthetic-push-target@2</c>. Every byte before the count and after the new entry is
+        /// identical, which is the corpus confirming what this milestone claims about its own content:
+        /// the two cards that print a Radius are dealt only by their own configuration, so no
+        /// definition-table entry, card instance, or content revision moves here. The base64 payload
+        /// string grows by 36 or 40 characters depending on each payload's length modulo three, which
+        /// is alignment alone and is recorded so a later reader comparing by hand is not misled.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v19", "358bd00d72d564445b4a95a8013409ec2c0bb1b85f7915bca0624b874daf2ec6"),
-            new CompatibilityFixture("active-turn-v19", "46465d74965318da52653f9409ca5247c2fdf08bd955582cbcc2b1608b3b844a"),
-            new CompatibilityFixture("pending-choice-v19", "0682f987bf80b4453fa458fa29e97bda65b1f5c7158b973c7233be4edf01d388"),
-            new CompatibilityFixture("end-of-round-v19", "19ba0139927da7e6b50f6aaae06d16329f7a338cad86e554c91cd07e0a84540d"),
-            new CompatibilityFixture("pending-minion-battle-v19", "ffc0ab6e7f541b36b123b9c8608c8dcccddfc38f17f3d7e4aaef4db4cd1c13bd"),
-            new CompatibilityFixture("placed-token-v19", "9511a5b515a3f9008dd47a039fe4966ea9912da19e93eb70da3091418cb0465f"),
-            new CompatibilityFixture("attached-marker-v19", "697df7a3fe43bdb93b3fd309cbba33abce64df8f455ea3db0142e799dbeff6e8"),
-            new CompatibilityFixture("pending-correction-v19", "136ea96c0eb1aaa22cf6de8aa52673ea937f6066a29d202bf65a615ffeabc43b")
+            new CompatibilityFixture("setup-v19", "91c9439c56c0f70264719820823fe1c08b8be65ace8f457546d7e6a581fc8601"),
+            new CompatibilityFixture("active-turn-v19", "64063ef85c5aec676fe45b0be61e7d32afa09439e26de3226abcef6273559fdb"),
+            new CompatibilityFixture("pending-choice-v19", "50902adfde13dd4bde37d9376118d8d7b8bdb32d7ec3aba6351cc80467bd6fd6"),
+            new CompatibilityFixture("end-of-round-v19", "1771713e7e592eca236a6ba507834c7aa84d15119b19a8ef78302abf7b87a0c9"),
+            new CompatibilityFixture("pending-minion-battle-v19", "5930279697196a6323f398313c8952d712d524fd93c5430462c7269dd8b3e8e2"),
+            new CompatibilityFixture("placed-token-v19", "34dd015d9a15d9c1b416ba2549758ddc888f9e9b92f25fd0954daeebf20e4120"),
+            new CompatibilityFixture("attached-marker-v19", "6b3cb5aa7fcaaa2a4776f631b93dc59554aeefe026ce35008f8d9aa1bcb62d01"),
+            new CompatibilityFixture("pending-correction-v19", "6a77a42f5ca24f79228888e6ee41f9f30b8c0e4b7804246d46154d9f327c9745")
         };
 
         [Test]

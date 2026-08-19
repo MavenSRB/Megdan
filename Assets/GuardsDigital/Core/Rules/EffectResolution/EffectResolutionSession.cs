@@ -147,7 +147,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RuleModificationSet modifications,
             EffectCardState cardState,
             HeroId opposingHeroId = default,
-            MatchComponents components = null)
+            MatchComponents components = null,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
         {
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
             Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
@@ -159,6 +160,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             CardState = cardState ?? throw new ArgumentNullException(nameof(cardState));
             OpposingHeroId = opposingHeroId;
             Components = components;
+            HeroItems = heroItems;
         }
 
         public EffectDefinition Definition { get; }
@@ -190,6 +192,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         /// <summary>Milestone 6.2's token and marker collaborators, or <c>null</c> outside a match.</summary>
         public MatchComponents Components { get; }
+
+        /// <summary>
+        /// Milestone 7.2b's items, or <c>null</c> in a composition that holds none. A capability that
+        /// reads a printed value composes p.16's Item Bonus onto it, and must compose the identical one
+        /// at every point it can be asked - Skill start, repeated-Skill start, the option-feasibility
+        /// walk, the choice-answer path, and snapshot restore's candidate re-derivation - or a paused
+        /// Radius would come back a ring smaller than the one the player was offered.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems { get; }
     }
 
     /// <summary>
@@ -863,6 +874,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 frame.ActorId,
                 frame.ControllerId,
                 frame.SourceCardInstanceId,
+                frame.SourceDefinitionReference,
                 frame.ActionDefinitionId,
                 inputs,
                 context.RoundIndex,
@@ -871,7 +883,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.Timing,
                 context.Modifications,
                 context.CardState,
-                context.Components);
+                context.Components,
+                context.HeroItems);
         }
 
         /// <summary>

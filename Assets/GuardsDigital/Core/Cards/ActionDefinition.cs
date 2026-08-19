@@ -162,18 +162,10 @@ namespace GuardsDigital.Core.Cards
 
             else if (Kind == ActionKind.Skill)
             {
-                // A Skill carries no printed combat value: what it does is its effect, and the effect
-                // is data the resolver walks rather than a number an algorithm consumes.
                 if (EffectRoot == null)
                 {
                     throw new ArgumentException(
                         "Skill action definitions require an effect root.", nameof(EffectRoot));
-                }
-
-                if (BaseValues.Count != 0)
-                {
-                    throw new ArgumentException(
-                        "Skill action definitions carry no printed values.", nameof(baseValues));
                 }
 
                 if (Origin != ActionDefinitionOrigin.PrintedPrimary &&
@@ -181,6 +173,43 @@ namespace GuardsDigital.Core.Cards
                 {
                     throw new ArgumentException(
                         "Skill action definitions are printed on their card.", nameof(Origin));
+                }
+
+                // A Skill carries no printed combat value: what it does is its effect, and the effect
+                // is data the resolver walks rather than a number an algorithm consumes. Milestone
+                // 7.2b admits the one exception rulebook p.9 prints, and only that one: "Some primary
+                // actions have a Range or Radius icon and a value on the right side of the card", and
+                // "the value on the Range/Radius icon determines the maximum Range/Radius of your
+                // action". A Radius is not a combat value the Skill's algorithm consumes - a Skill has
+                // none - it is the scope its effect asks about, so it is printed content the effect
+                // reads rather than a number written into the effect's text.
+                if (BaseValues.Any(value => value.Channel != PrintedValueChannel.Radius))
+                {
+                    throw new ArgumentException(
+                        "A Skill action definition prints no value other than rulebook p.9's Radius.",
+                        nameof(baseValues));
+                }
+
+                if (BaseValues.Count > 0)
+                {
+                    // p.9 prints the icon for a primary action, and the same page makes the Ranged
+                    // subtype the Range icon's own: "All other actions are non-ranged, including those
+                    // with a Radius icon." A Skill declares no Attack range classification at all,
+                    // which the whole-definition rule below already enforces, so a Radius-printing
+                    // Skill is non-Ranged by construction.
+                    if (Origin != ActionDefinitionOrigin.PrintedPrimary)
+                    {
+                        throw new ArgumentException(
+                            "Rulebook p.9 prints a Radius icon for a primary action.", nameof(Origin));
+                    }
+
+                    if (BaseValues.Single().Amount < 1)
+                    {
+                        throw new ArgumentException(
+                            "A printed Radius icon states a positive value; p.9's smallest is 1, which " +
+                            "reaches adjacent targets only.",
+                            nameof(baseValues));
+                    }
                 }
             }
 

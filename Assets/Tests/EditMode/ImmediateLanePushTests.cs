@@ -764,6 +764,7 @@ namespace GuardsDigital.Tests.EditMode
                 actor,
                 actor,
                 new CardInstanceId("lane-push-card"),
+                new CardDefinitionReference(new CardDefinitionId("fixture-radius-context"), "fixture-rev-1"),
                 new ActionDefinitionId("lane-push-action"),
                 inputs,
                 1,

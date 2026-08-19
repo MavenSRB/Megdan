@@ -697,6 +697,7 @@ namespace GuardsDigital.Tests.EditMode
                 Actor,
                 Actor,
                 new CardInstanceId("displacement-capability-card"),
+                new CardDefinitionReference(new CardDefinitionId("fixture-radius-context"), "fixture-rev-1"),
                 new ActionDefinitionId("displacement-capability-action"),
                 inputs,
                 1,

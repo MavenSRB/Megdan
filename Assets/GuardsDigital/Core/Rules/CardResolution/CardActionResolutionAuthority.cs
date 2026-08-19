@@ -154,6 +154,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // Milestone 7.2a. The Movement backend joins it, so an item raises the Movement Total that
             // gates the action and bounds its reachability through the same state and the same query.
             movementBackend.BindHeroItems(heroItems);
+
+            // Milestone 7.2b. The Skill backend joins them, so a capability reading its card's printed
+            // Radius composes the same items into the same total every other channel does.
+            skillBackend.BindHeroItems(heroItems);
         }
 
         internal AdjacentMoveAuthority Board => board;

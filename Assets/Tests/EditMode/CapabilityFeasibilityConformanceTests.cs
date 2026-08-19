@@ -93,8 +93,10 @@ namespace GuardsDigital.Tests.EditMode
                 "that names nothing protects nothing.");
             // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
             // object, so the count moves by one. Milestone 7.1a registers the first capability that
-            // reads card state - the chooser-owned in-hand discard - so it moves by one again.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(24),
+            // reads card state - the chooser-owned in-hand discard - so it moves by one again, and
+            // milestone 7.2b registers the first that reads a printed value - the target selection
+            // bounded by rulebook p.9's Radius icon - so it moves by one more.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(25),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

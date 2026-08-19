@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 
@@ -57,12 +58,180 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference ChooseTargetV4 =>
             new EffectCapabilityReference(ChooseTarget, 4);
 
+        /// <summary>
+        /// Milestone 7.2b. The same selection bounded by rulebook p.9's printed Radius icon instead of
+        /// a number the definition writes down.
+        ///
+        /// A second capability ID rather than a third revision of the one above, for the reason the
+        /// named Push is a second ID beside the batch Push: these are two live declarations of
+        /// different content, not two versions of one. Where a card's text says "choose a unit within
+        /// 1 space" the range is card text and the definition states it; where the card prints a Radius
+        /// icon, p.9 says "the value on the Range/Radius icon determines the maximum Range/Radius of
+        /// your action. If the card text mentions Range/Radius, it refers to this value" - so the bound
+        /// is printed content the capability reads, and p.16's items raise it. A card cannot hold both
+        /// readings of one parameter, which is exactly the ambiguity the definition validator refuses.
+        /// </summary>
+        public static EffectCapabilityId RadiusTarget { get; } =
+            new EffectCapabilityId("synthetic-radius-target");
+
+        public static EffectCapabilityReference RadiusTargetV1 =>
+            new EffectCapabilityReference(RadiusTarget, 1);
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
                 new ChooseTargetHandler(ChooseTargetV3, declaresActivity: false),
-                new ChooseTargetHandler(ChooseTargetV4, declaresActivity: true)
+                new ChooseTargetHandler(ChooseTargetV4, declaresActivity: true),
+                new RadiusTargetHandler()
             };
+
+        /// <summary>
+        /// Milestone 7.2b's printed-Radius selection: the same chooser-owned target selection, whose
+        /// bound is the acting card's Radius Total rather than an integer the definition carries.
+        ///
+        /// It states no range parameter at all, which is the whole point - there is nothing for a
+        /// definition to write down, because p.9 puts the value on the card. What it does state is the
+        /// activity it targets under, since p.18 declares immunity per activity and this selection
+        /// filters immunity through the same <see cref="TargetQuery"/> the capability above uses. The
+        /// disk itself comes from <see cref="RadiusQuery"/>, and the total from
+        /// <see cref="RadiusValueQuery"/>, so neither the geometry nor the item composition is repeated
+        /// here.
+        /// </summary>
+        private sealed class RadiusTargetHandler
+            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
+        {
+            public RadiusTargetHandler()
+            {
+                Schema = new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter("includeSelf", EffectValueKind.Boolean),
+                        new EffectCapabilityParameter("activity", EffectValueKind.Integer),
+                        new EffectCapabilityParameter(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValueKind.Node,
+                            isRequired: false)
+                    },
+                    new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
+            }
+
+            public EffectCapabilityReference Reference => RadiusTargetV1;
+
+            public EffectCapabilityParameterSchema Schema { get; }
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var candidates = Candidates(context);
+                if (candidates.Count == 0)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.Actor,
+                    candidates.Select(candidate => EffectValue.Space(candidate)).ToArray(),
+                    1,
+                    1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Coordinate)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var chosen = selected[0].Coordinate;
+                if (!Candidates(context).Contains(chosen))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("chosen", EffectValue.Space(chosen))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Candidates(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
+
+            /// <summary>
+            /// The spaces of every object the acting hero may target inside its card's Radius, in
+            /// canonical axial order.
+            ///
+            /// The total is re-derived on every ask rather than captured, which is what makes the
+            /// offered disk and the disk the answer is checked against the same one: an item gained
+            /// between the two would widen both, and neither is written to the snapshot.
+            /// </summary>
+            private IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components == null || !components.CanDisplace || !context.CardState.IsAvailable)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var activity = (RuleActivity)context.Input("activity").IntegerValue;
+                if (activity == RuleActivity.None || !Enum.IsDefined(typeof(RuleActivity), activity))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var board = components.Board;
+                var selector = BoardObjectReference.ForHero(context.ActorId);
+                if (!board.TryGetObjectCoordinate(selector, out var origin))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var radiusTotal = RadiusValueQuery.Calculate(
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.CardState.Definitions,
+                    context.ActorId,
+                    context.HeroItems);
+                if (radiusTotal.Total <= 0)
+                {
+                    // A card printing no Radius icon has no Radius at all, and p.16 does not give it
+                    // one: an item raises a printed icon and never invents one. The selection is
+                    // therefore impossible rather than adjacent-by-default.
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var targets = RadiusQuery.Targets(
+                    origin,
+                    radiusTotal,
+                    context.Input("includeSelf").BooleanValue,
+                    selector.AsRuleObject(),
+                    activity,
+                    board,
+                    context.Participants,
+                    context.Modifications);
+
+                var spaces = new List<HexCoordinate>(targets.Count);
+                foreach (var target in targets)
+                {
+                    if (board.TryGetObjectCoordinate(target, out var at))
+                    {
+                        spaces.Add(at);
+                    }
+                }
+
+                return spaces;
+            }
+        }
 
         /// <summary>
         /// Offers every targetable object within range of the acting hero as an authoritative

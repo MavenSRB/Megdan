@@ -226,6 +226,22 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// The ordinary configuration plus milestone 7.2b's printed-Radius Skill in each hand.
+        ///
+        /// Separate for the reason the four before it are, and for one more: this pair is the first
+        /// content in the build to print rulebook p.9's Radius icon, so a fixture that measures the
+        /// disk that icon scopes must be the only configuration that can change it.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForRadiusFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                PlaceholderMovementHand.CreateRedWithRadiusSkill,
+                PlaceholderMovementHand.CreateBlueWithRadiusSkill);
+        }
+
+        /// <summary>
         /// Each named configuration says which hand it deals rather than setting a flag another one
         /// reads. Milestone 6.2d needed a third combination and a second boolean would have made the
         /// callers here describe themselves by what they are not. The five-card scene removed that

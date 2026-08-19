@@ -206,7 +206,7 @@ namespace GuardsDigital.Core.Snapshots
                         ReadSkillResolution(
                             reader, definitions, cards, capabilities, participants,
                             CardActionResolutionAuthority.CreateRestoredComponents(board, markers),
-                            modifications),
+                            modifications, heroItems),
                         defeatRewards,
                         lanePush);
                     break;
@@ -416,7 +416,8 @@ namespace GuardsDigital.Core.Snapshots
             EffectCapabilityCatalog capabilities,
             MatchParticipants participants,
             MatchComponents components,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             var common = ReadCommonResolution(reader);
             var controllerId = new HeroId(reader.ReadString());
@@ -517,7 +518,7 @@ namespace GuardsDigital.Core.Snapshots
             // cards are read before any pending action is decoded, which is what makes it possible.
             var resolution = new EffectResolutionContext(
                 trusted, capabilities, participants, null, 1, 1, modifications,
-                EffectCardState.Of(definitions, cards), components: components);
+                EffectCardState.Of(definitions, cards), components: components, heroItems: heroItems);
 
             // Candidates are never written. A control node's options come from the trusted
             // definition; a capability's come from asking the trusted handler again. Either way a
@@ -606,6 +607,7 @@ namespace GuardsDigital.Core.Snapshots
                 restored.ActorId,
                 restored.ControllerId,
                 restored.SourceCardInstanceId,
+                restored.SourceDefinitionReference,
                 restored.ActionDefinitionId,
                 EffectResolutionSession.ResolveInputBindings(node, restored, restored.CompletedOutcomes),
                 1,
@@ -614,7 +616,8 @@ namespace GuardsDigital.Core.Snapshots
                 null,
                 resolution.Modifications,
                 resolution.CardState,
-                resolution.Components));
+                resolution.Components,
+                resolution.HeroItems));
             if (offered.Choice == null)
             {
                 throw Malformed(

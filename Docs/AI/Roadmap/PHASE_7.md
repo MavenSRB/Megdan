@@ -92,7 +92,7 @@ Non-goals: No leveling orchestrator, Wasp dashboards, Wasp item values, or item/
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72a-compose-the-item-bonus-into-every-implemented-total-and-give-each-hero-its-dashboard-item-slots-completion-evidence).
 
-### [~] 7.2b Add the missing Radius total and make Radius items observable
+### [x] 7.2b Add the missing Radius total and make Radius items observable
 
 Observable outcome: A synthetic card's printed Radius determines its inclusive rules-distance scope, and each matching Radius item expands that scope by one through the same Item Bonus query as every other printed icon.
 
@@ -109,6 +109,8 @@ Acceptance checks:
 - Any definition revision, registration, or persisted continuation change receives the phase-wide compatibility, snapshot, replay, Undo, rollback, and projection evidence applicable to what the implementation actually changes.
 
 Non-goals: No Wasp or other verified hero content, no invention of a card-specific effect or ordering rule, no general simultaneous-batch control node, and no production Radius presentation. A later source-reviewed card may consume the complete affected set, but may not reimplement Radius geometry or item composition.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72b-add-the-missing-radius-total-and-make-radius-items-observable-completion-evidence).
 
 ### [ ] 7.3 Add Ultimate continuous-source behavior
 

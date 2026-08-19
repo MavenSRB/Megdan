@@ -206,6 +206,7 @@ namespace GuardsDigital.Tests.EditMode
                 Actor,
                 Actor,
                 new CardInstanceId(cardId),
+                new CardDefinitionReference(new CardDefinitionId("fixture-radius-context"), "fixture-rev-1"),
                 new ActionDefinitionId(actionId),
                 null,
                 roundIndex,

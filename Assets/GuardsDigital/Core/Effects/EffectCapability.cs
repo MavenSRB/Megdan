@@ -104,6 +104,7 @@ namespace GuardsDigital.Core.Effects
             HeroId actorId,
             HeroId controllerId,
             CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
             ActionDefinitionId actionDefinitionId,
             IReadOnlyDictionary<string, EffectValue> inputs,
             int roundIndex,
@@ -112,7 +113,8 @@ namespace GuardsDigital.Core.Effects
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             EffectCardState cardState,
-            MatchComponents components = null)
+            MatchComponents components = null,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
         {
             if (!nodeId.IsDefined)
             {
@@ -129,6 +131,7 @@ namespace GuardsDigital.Core.Effects
             ActorId = actorId;
             ControllerId = controllerId;
             SourceCardInstanceId = sourceCardInstanceId;
+            SourceDefinitionReference = sourceDefinitionReference;
             ActionDefinitionId = actionDefinitionId;
             Inputs = inputs ?? new Dictionary<string, EffectValue>();
             RoundIndex = roundIndex;
@@ -138,6 +141,7 @@ namespace GuardsDigital.Core.Effects
             Modifications = modifications ?? throw new ArgumentNullException(nameof(modifications));
             CardState = cardState ?? throw new ArgumentNullException(nameof(cardState));
             Components = components;
+            HeroItems = heroItems;
         }
 
         public EffectNodeId NodeId { get; }
@@ -145,6 +149,16 @@ namespace GuardsDigital.Core.Effects
         public HeroId ActorId { get; }
         public HeroId ControllerId { get; }
         public CardInstanceId SourceCardInstanceId { get; }
+
+        /// <summary>
+        /// The definition revision this resolution's source card was played at, recorded by the frame
+        /// at start. Milestone 7.2b added it because a capability that reads its own card's printed
+        /// icon has to name the content it is reading, and the frame's own reference is what the
+        /// resolution began from - re-deriving one from the instance list would let a capability read a
+        /// revision the resolution never started under.
+        /// </summary>
+        public CardDefinitionReference SourceDefinitionReference { get; }
+
         public ActionDefinitionId ActionDefinitionId { get; }
         public IReadOnlyDictionary<string, EffectValue> Inputs { get; }
         public int RoundIndex { get; }
@@ -181,6 +195,18 @@ namespace GuardsDigital.Core.Effects
         /// still owns where execution is.
         /// </summary>
         public MatchComponents Components { get; }
+
+        /// <summary>
+        /// Milestone 7.2b: the match's items, or <c>null</c> in a composition that holds none - the
+        /// same absence <see cref="Components"/> expresses. A capability that reads a printed value
+        /// composes rulebook p.16's Item Bonus onto it through the one query every other total uses, so
+        /// the same state the Defense, Attack, Movement, Range and Initiative totals read reaches the
+        /// effect frame too. It is the state the round owns rather than a copy: a Radius derived from
+        /// items other than the ones the match records would be a disk no restore or replay could
+        /// reproduce, which is the same reason the marker register and the item state are bound rather
+        /// than constructed at every seam that needs them.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems { get; }
 
         public EffectValue Input(string parameterName) =>
             Inputs.TryGetValue(parameterName, out var value) ? value : default;

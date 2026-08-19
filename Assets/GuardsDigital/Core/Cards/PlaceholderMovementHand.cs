@@ -180,6 +180,38 @@ namespace GuardsDigital.Core.Cards
         private static readonly SyntheticSkillProfile BlueCardStateSkillProfile =
             new SyntheticSkillProfile("blue-demand", "Blue Demand", 5);
 
+        /// <summary>
+        /// Milestone 7.2b's Skill cards: the first cards in this build that print rulebook p.9's Radius
+        /// icon.
+        ///
+        /// A pair of their own, for the reason every fixture pair before them is separate, and for one
+        /// more that is this milestone's own: a printed Radius is the first printed value a Skill
+        /// carries at all, so adding it to an existing fixture Skill would change what every fixture
+        /// that plays that card measures. The ordinary ten-card hands are untouched, which keeps
+        /// milestone 7.9's card matrix and every pinned digest measuring exactly what they measured
+        /// before.
+        ///
+        /// Red's 17 sits above every ordinary Red card and below 7.1a's 18, so a Radius fixture reaches
+        /// its Skill without steering Initiative and without colliding with the card-state pair, which
+        /// is a different configuration and is never dealt beside it. Blue's 5 is the same free value
+        /// inside Blue's ordinary band that the other fixture pairs reuse for the same reason.
+        /// </summary>
+        private static readonly SyntheticSkillProfile RedRadiusSkillProfile =
+            new SyntheticSkillProfile("red-shockwave", "Red Shockwave", 17);
+
+        private static readonly SyntheticSkillProfile BlueRadiusSkillProfile =
+            new SyntheticSkillProfile("blue-shockwave", "Blue Shockwave", 5);
+
+        /// <summary>
+        /// The printed Radius those two cards carry. p.9's own example values are 1 and 3 - "if your
+        /// card has a Range/Radius value of 1, your primary action can only affect adjacent targets.
+        /// With a Range/Radius value of 3, your primary action can affect targets up to 3 spaces away" -
+        /// and 2 is chosen deliberately between them: it is large enough that a matching item's fourth
+        /// ring is distinguishable from the printed disk, and small enough that the boundary case fits
+        /// inside a focused fixture's board.
+        /// </summary>
+        internal const int RadiusSkillPrintedRadius = 2;
+
         private PlaceholderMovementHand(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances)
@@ -296,6 +328,23 @@ namespace GuardsDigital.Core.Cards
                 cardStateDiscardingHeroId: discardingHeroId);
         }
 
+        /// <summary>
+        /// The five ordinary cards plus milestone 7.2b's printed-Radius Skill alone.
+        ///
+        /// Its own configuration for the reason the four fixture hands before it have one, and because
+        /// this card is the first to print a Radius icon: the value is content, so a fixture that
+        /// measures the disk must be the only thing that can change it.
+        /// </summary>
+        public static PlaceholderMovementHand CreateRedWithRadiusSkill(HeroId ownerId)
+        {
+            return Create(ownerId, RedProfiles, null, radiusSkillProfile: RedRadiusSkillProfile);
+        }
+
+        public static PlaceholderMovementHand CreateBlueWithRadiusSkill(HeroId ownerId)
+        {
+            return Create(ownerId, BlueProfiles, null, radiusSkillProfile: BlueRadiusSkillProfile);
+        }
+
         internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
             new PlaceholderMovementHandRestoreState(Definitions, Instances);
 
@@ -324,7 +373,8 @@ namespace GuardsDigital.Core.Cards
             SyntheticSkillProfile displacementSkillProfile = null,
             SyntheticSkillProfile repeatSkillProfile = null,
             SyntheticSkillProfile cardStateSkillProfile = null,
-            HeroId cardStateDiscardingHeroId = default)
+            HeroId cardStateDiscardingHeroId = default,
+            SyntheticSkillProfile radiusSkillProfile = null)
         {
             if (!ownerId.IsDefined)
             {
@@ -387,6 +437,13 @@ namespace GuardsDigital.Core.Cards
                     definitions, instances,
                     CreateCardStateSkillDefinition(cardStateSkillProfile, cardStateDiscardingHeroId),
                     cardStateSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (radiusSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances, CreateRadiusSkillDefinition(radiusSkillProfile),
+                    radiusSkillProfile.Id, instancePrefix, ownerId);
             }
 
             return new PlaceholderMovementHand(
@@ -1028,6 +1085,99 @@ namespace GuardsDigital.Core.Cards
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
                         Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 7.2b's card: a Skill that prints rulebook p.9's Radius icon, chooses one unit
+        /// inside that Radius, and pushes it one space.
+        ///
+        /// Every part of it already existed except the bound. The selection is the same chooser-owned
+        /// target selection every other card names an object through, and the push is p.18's own named
+        /// Push at distance 1 - what this card adds is that the selection's reach is the printed icon
+        /// rather than a number written into the effect. That is the distinction the milestone exists
+        /// to make representable: p.16 raises a printed icon and never "a number in the card text", so
+        /// an item can widen this card's reach while the push distance of 1 beside it stays 1 whatever
+        /// the hero owns.
+        ///
+        /// The Push is what makes it a card rather than a probe: choosing alone mutates nothing, and a
+        /// consumer that does something is what proves the printed value reached the board.
+        /// </summary>
+        private static CardDefinition CreateRadiusSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("shockwave-root");
+            var selectTarget = new EffectNodeId("shockwave-select");
+            var push = new EffectNodeId("shockwave-push");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-7-2b-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { selectTarget, push }),
+                    new EffectNodeDefinition(
+                        selectTarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.RadiusTargetV1,
+                        inputs: new[]
+                        {
+                            // p.19 keeps self and another distinct, and this card affects another unit.
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                "activity",
+                                EffectValue.Integer((int)Rules.Modifications.RuleActivity.ObjectPush)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(push))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.PushTargetV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "target", selectTarget, "chosen", EffectValueKind.Coordinate),
+                            // Card text, not a printed icon: p.16 never raises this one, whatever
+                            // items the hero owns.
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Displacement.PushEligiblePieceKind.Unit))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("distance", EffectValueKind.Integer),
+                            new EffectOutputBinding("moved", EffectValueKind.Integer)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-7-2b-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-radius-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        new[]
+                        {
+                            new PrintedValueDefinition(
+                                PrintedValueChannel.Radius, RadiusSkillPrintedRadius)
+                        },
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.None,
                         default,
