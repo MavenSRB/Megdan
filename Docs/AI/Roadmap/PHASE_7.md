@@ -92,7 +92,7 @@ Non-goals: No leveling orchestrator, Wasp dashboards, Wasp item values, or item/
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72a-compose-the-item-bonus-into-every-implemented-total-and-give-each-hero-its-dashboard-item-slots-completion-evidence).
 
-### [ ] 7.2b Add the missing Radius total and make Radius items observable
+### [~] 7.2b Add the missing Radius total and make Radius items observable
 
 Observable outcome: A synthetic card's printed Radius determines its inclusive rules-distance scope, and each matching Radius item expands that scope by one through the same Item Bonus query as every other printed icon.
 

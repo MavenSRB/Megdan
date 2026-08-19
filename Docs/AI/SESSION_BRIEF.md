@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.2a**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **7.2a**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.2b**.
 - Next proposed milestone: **7.2b**.
 
 Milestone **7.2a** completed on 2026-08-19 and finished rulebook p.16's items. Every hero declares the page's four item slots as content that rides the snapshot - Attack, Defense, Initiative, and a fourth taking Range, Movement and Radius together - so a slot is not an icon, and an item records both the slot it occupies and the icon it supplies. A card whose icon no slot accepts is refused distinguishably from one printing no icon, and setup refuses content a hero could be forced to set aside and never place. The Item Bonus composes through 7.2's single query into every total this build computes: Initiative, Attack, Defense, Movement, and a Ranged Attack's Range. Schema v19 rejects v18, measured at +120 bytes per payload; evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
