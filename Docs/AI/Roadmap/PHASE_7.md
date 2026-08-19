@@ -69,6 +69,22 @@ Non-goals: No leveling orchestrator, Wasp item values, or final item presentatio
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72-add-generic-item-state-and-printed-icon-bonuses-completion-evidence).
 
+
+### [ ] 7.2a Compose the item bonus into every implemented total, and give each hero its dashboard item slots
+
+Observable outcome: A hero's items raise every printed icon this build computes a total for, and each hero's dashboard declares the four item slots rulebook p.16 places items under.
+
+Context: milestone 7.2 built p.16's Item Bonus as one query answering for all six icons and composed it into the Defense total alone, on the ground that Defense was the build's only value-composition point. That was the wrong boundary rather than a missing one. Four further channels already have authoritative consumers: Initiative orders the turn, the Attack Total drives the outcome comparison, the Movement Total gates the action and its reachability, and a Ranged Attack's Range Total decides its legal targets. Each reaches its printed value through the same query, and each therefore composes the bonus by consulting the item state the round already owns rather than by any new derivation; the attack and defense backend already holds it, so two of the four are a binding away and the other two extend the same binding. Radius is the single channel with nothing to reach: no definition prints a Radius icon and no rule computes a Radius total, so it composes when the first of either exists and this milestone adds neither. Milestone 7.2 also left the dashboard unmodelled, recording which slot an item occupies without anything that states which slots a hero has. p.16 states that an Item icon "matches the icon on one of four slots on the top of your hero dashboard", which is content this build can state now for its synthetic heroes; deferring it to milestone 8.1 would leave the placement unable to refuse an item its owner has nowhere to put. The user approved both parts on 2026-08-19, and chose that the slots ride the snapshot rather than being rebound from configuration, so that a restore refuses a build whose dashboards differ the way it already refuses one whose card content differs. Phase 7's phase-wide durability rule governs the outcome.
+
+Acceptance checks:
+
+- Every value total this build computes composes the item bonus through milestone 7.2's single query: Initiative, Attack, Defense, Movement, and a Ranged Attack's Range. No consumer derives the bonus itself, and no second composition exists beside the query's.
+- Each hero declares exactly four dashboard item slots, each naming one printed icon and no two the same, as authoritative content that survives snapshot round-trip, restore-and-continue, replay, and retained-prefix Undo with the compatibility decision its schema change requires.
+- A set-aside card whose Item icon matches no slot on its owner's dashboard is refused, distinguishably from a card that prints no Item icon at all, and neither refusal moves the card or records an item.
+- Setup validation refuses content in which a hero can reach a Tier II or Tier III card whose Item icon that hero's dashboard has no slot for, so the p.16 correspondence is a checked property of the content rather than an assumption.
+- Focused tests cover each composed channel with and without a matching item, a card that prints no icon of a channel gaining nothing there, the four-slot declaration and its refusals, the unmatched-icon refusal, and the persistence round trip.
+
+Non-goals: No leveling orchestrator, Wasp dashboards, Wasp item values, Radius-printing content or Radius consumer, and no item or dashboard presentation.
 ### [ ] 7.3 Add Ultimate continuous-source behavior
 
 Observable outcome: A synthetic Ultimate can be unlocked as persistent state and supplies its rule only while its hero is on the board.
