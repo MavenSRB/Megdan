@@ -26,6 +26,18 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
+        // v18: milestone 7.2 adds every hero's items to the round section, immediately after the Levels
+        // - one count-prefixed list of owner, source card instance, slot icon and order. v17 is rejected
+        // rather than migrated, and the reason is not the shape of the absence but what the absence
+        // would have to be read as. A v17 payload records no items at all, and reading one as "nobody
+        // has any" is a guess about state the page makes authoritative the moment a hero levels: p.16
+        // gives an item on every ordinary level purchase, so a match restored from a v17 payload written
+        // after milestone 7.5 exists would come back with heroes whose dashboards had been emptied.
+        // That the guess is right for every payload this build can produce - nothing here gains an item,
+        // since the purchase is 7.5's - is exactly why it must not be written into the reader, which is
+        // the same argument v17 made for Level one milestone earlier. No persisted state exists outside
+        // the version-controlled corpus to strand.
+        //
         // v17: milestone 7.1 adds every hero's current Level to the round section, beside the paused
         // system transition - one count-prefixed hero id and Level per participant. v16 is rejected
         // rather than migrated, and the reason is the same one v14 gave for the Battle Zone rather
@@ -82,7 +94,7 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 17;
+        public const int CurrentSchemaVersion = 18;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

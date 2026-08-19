@@ -676,7 +676,7 @@ namespace GuardsDigital.Application
                     .Where(option => option != null)
                     .ToArray()
                 : Array.Empty<ClearOptionProjection>();
-            var defensePreview = CreateDefensePreview(turn, turnModifications);
+            var defensePreview = CreateDefensePreview(turn, turnModifications, round.HeroItems);
             // Reads the aggregate's memo rather than re-serializing state the previous command
             // already encoded. The diagnostic envelope is not built here at all: the projection
             // computes it on demand from these same immutable inputs, so a reader pays for it and a
@@ -730,8 +730,10 @@ namespace GuardsDigital.Application
                 round.SystemTransitions.PendingStep);
         }
 
-        private PendingDefensePreviewProjection CreateDefensePreview(TurnResolutionAuthority turn,
-            RuleModificationSet modifications)
+        private PendingDefensePreviewProjection CreateDefensePreview(
+            TurnResolutionAuthority turn,
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             var choice = turn?.PendingDefenseChoice;
             var attack = turn?.PendingAttackResolution;
@@ -754,7 +756,8 @@ namespace GuardsDigital.Application
                     choice.ChooserId,
                     configuration.Participants,
                     board,
-                    modifications);
+                    modifications,
+                    heroItems);
                 var comparison = AttackOutcomeComparison.Create(
                     attack.AttackTotal,
                     defense.Total,

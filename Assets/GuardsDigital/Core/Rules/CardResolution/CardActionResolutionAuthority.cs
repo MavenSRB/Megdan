@@ -140,6 +140,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public DefeatRewardAccounting DefeatRewards => attackDefenseBackend.DefeatRewards;
 
+        /// <summary>
+        /// Milestone 7.2. Hands the backends the match's item state, which the round authority owns.
+        /// It is a binding rather than a constructor argument because the dispatcher is composed before
+        /// the round that owns the state, and the one thing that must not happen is a second copy: a
+        /// Defense total derived from items other than the ones the match records would be a number no
+        /// restore or replay could reproduce.
+        /// </summary>
+        internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+        {
+            attackDefenseBackend.BindHeroItems(heroItems);
+        }
+
         internal AdjacentMoveAuthority Board => board;
 
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
@@ -715,7 +727,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             MarkerAttachmentRegister markers,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
 
@@ -724,8 +737,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // behind, including none at all.
             var restoredAuthority = RestoreContinuation(
                 adjacentMoveAuthority, state, verifiedMovementChoice, verifiedTargetChoice,
-                verifiedDefenseChoice, definitions, instances, participants, markers, modifications);
+                verifiedDefenseChoice, definitions, instances, participants, markers, modifications,
+                heroItems);
             restoredAuthority.pendingLanePush = state.PendingImmediateLanePush;
+
+            // Every continuation, not only the Attack one that needed the items to verify itself: the
+            // restored dispatcher answers the next command, and that command may be the Defense whose
+            // total the items belong in.
+            restoredAuthority.BindHeroItems(heroItems);
             return restoredAuthority;
         }
 
@@ -739,7 +758,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             MarkerAttachmentRegister markers,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             var defeatRewards = state.DefeatRewards.IsPresent
                 ? DefeatRewardAccounting.Restore(participants, state.DefeatRewards.State)
@@ -775,7 +795,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             participants,
                             defeatRewards,
                             markers,
-                            modifications),
+                            modifications,
+                            heroItems),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),

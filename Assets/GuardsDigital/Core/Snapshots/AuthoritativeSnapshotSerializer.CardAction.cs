@@ -179,6 +179,7 @@ namespace GuardsDigital.Core.Snapshots
             EffectCapabilityCatalog capabilities,
             MarkerAttachmentRegister markers,
             RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             TieBreakerState tieBreaker)
         {
             var kind = reader.ReadInt32();
@@ -221,7 +222,8 @@ namespace GuardsDigital.Core.Snapshots
             // The snapshot never stores the pending choices; they are derived during
             // restore, so no verified choice is supplied here.
             return CardActionResolutionAuthority.Restore(
-                board, state, null, null, null, definitions, cards, participants, markers, modifications);
+                board, state, null, null, null, definitions, cards, participants, markers, modifications,
+                heroItems);
         }
 
         /// <summary>

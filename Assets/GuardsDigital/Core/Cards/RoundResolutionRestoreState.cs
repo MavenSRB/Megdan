@@ -156,7 +156,8 @@ namespace GuardsDigital.Core.Cards
             EndOfRoundRestoreState endOfRound,
             RoundCardActionsRestoreState cardActions,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions,
-            GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression)
+            GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression,
+            GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems)
         {
             Cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
             History = history ?? throw new ArgumentNullException(nameof(history));
@@ -164,6 +165,7 @@ namespace GuardsDigital.Core.Cards
             CardActions = cardActions ?? throw new ArgumentNullException(nameof(cardActions));
             SystemTransitions = systemTransitions ?? throw new ArgumentNullException(nameof(systemTransitions));
             HeroProgression = heroProgression ?? throw new ArgumentNullException(nameof(heroProgression));
+            HeroItems = heroItems ?? throw new ArgumentNullException(nameof(heroItems));
         }
 
         public RoundCursorRestoreState Cursor { get; }
@@ -182,13 +184,22 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState HeroProgression { get; }
 
+        /// <summary>
+        /// Milestone 7.2's per-hero items. Required for the reason the Level beside it is, though the
+        /// two absences differ: a hero with no Level is impossible, while a hero with no items is the
+        /// ordinary case. What is refused here is the payload that carries no item section at all, which
+        /// would be a round whose items nobody wrote rather than a round whose heroes have none.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Progression.HeroItemRestoreState HeroItems { get; }
+
         public void Deconstruct(
             out RoundCursorRestoreState cursor,
             out RoundHistoryRestoreState history,
             out EndOfRoundRestoreState endOfRound,
             out RoundCardActionsRestoreState cardActions,
             out GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions,
-            out GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression)
+            out GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression,
+            out GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems)
         {
             cursor = Cursor;
             history = History;
@@ -196,6 +207,7 @@ namespace GuardsDigital.Core.Cards
             cardActions = CardActions;
             systemTransitions = SystemTransitions;
             heroProgression = HeroProgression;
+            heroItems = HeroItems;
         }
     }
 }

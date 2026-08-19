@@ -82,6 +82,9 @@ namespace GuardsDigital.Core.Cards
             CardProgressionProfile.NonBasicCard(
                 color,
                 CardTier.I,
+                // p.16 prints an Item icon on "every Tier II and Tier III Action card", so a Tier I card
+                // states the absence of one rather than being allowed to omit the argument.
+                PrintedValueChannel.None,
                 SyntheticUpgradeTree.DefinitionId(cardId, CardTier.II, 'a'),
                 SyntheticUpgradeTree.DefinitionId(cardId, CardTier.II, 'b'));
 
@@ -1788,7 +1791,9 @@ namespace GuardsDigital.Core.Cards
             /// Milestone 7.1's revision, and the first one all ten configured cards have shared since
             /// 5.1a: every one of them gains colour and Tier content in the same milestone, so every
             /// one of them moves, and there is nothing left for the per-card strings to distinguish.
-            /// It is also what the generated upgrade-target definitions carry, since they are new here.
+            /// It is also what the generated upgrade-target definitions carried when 7.1 created them;
+            /// milestone 7.2 moved those alone to <see cref="SyntheticUpgradeTree.ItemIconRevision"/>,
+            /// because only they gained content in it.
             /// </summary>
             public const string ProgressionRevision = "phase-7-1-rev-1";
 
@@ -1988,6 +1993,48 @@ namespace GuardsDigital.Core.Cards
             public static CardDefinitionId DefinitionId(string cardId, CardTier tier, char branch) =>
                 new CardDefinitionId($"placeholder-{cardId}-t{(int)tier}{branch}");
 
+            /// <summary>
+            /// Milestone 7.2's revision, carried by these twenty-four definitions and by nothing else.
+            ///
+            /// They are the only definitions the milestone changes: p.16 prints an Item icon on every
+            /// Tier II and Tier III card, and every Tier II and Tier III card in this build is one of
+            /// these. The ten configured cards are Tier I or Basic, print no Item icon, and so keep
+            /// <see cref="SyntheticCardProfile.ProgressionRevision"/> - moving them would have declared a
+            /// content change that did not happen and cost a compatibility cause for nothing.
+            /// </summary>
+            public const string ItemIconRevision = "phase-7-2-rev-1";
+
+            /// <summary>
+            /// Which Item icon each generated upgrade target prints, stated per branch rather than
+            /// derived from anything.
+            ///
+            /// The four are distinct because that is what makes p.15's upgrade a decision with a
+            /// consequence rather than a formality, which is the shape p.16 illustrates with its own
+            /// worked example: the same upgrade offers a card whose item gives +1 Attack and one whose
+            /// item gives +1 Initiative, and taking one sets the other aside. Milestone 7.5 is the first
+            /// that makes a hero choose between them.
+            ///
+            /// Attack is deliberately among them even though these cards print no Attack icon, and that
+            /// is evidence rather than an oversight: p.16's Item icon says what the item gives, not what
+            /// the card it came from does, and an item whose slot an Action card does not print "has no
+            /// effect on that particular Action card". Content that could not express that case would
+            /// leave the page's own worked counter-example provable only in a hand-built fixture.
+            ///
+            /// Range and Radius are the two of the six that no generated card carries. Nothing rules on
+            /// that - <see cref="ItemBonusQuery"/> answers for all six channels alike and is proved for
+            /// all six - and four branches cannot carry six icons without repeating one, which would
+            /// have made the upgrade choice smaller than p.16 draws it.
+            /// </summary>
+            private static PrintedValueChannel ItemIcon(CardTier tier, char branch)
+            {
+                if (tier == CardTier.II)
+                {
+                    return branch == 'a' ? PrintedValueChannel.Attack : PrintedValueChannel.Initiative;
+                }
+
+                return branch == 'a' ? PrintedValueChannel.Movement : PrintedValueChannel.Defense;
+            }
+
             public static IEnumerable<CardDefinition> Definitions(SyntheticCardProfile profile)
             {
                 var progression = profile.Progression;
@@ -2020,12 +2067,12 @@ namespace GuardsDigital.Core.Cards
                 var numeral = tier == CardTier.II ? "II" : "III";
                 return new CardDefinition(
                     DefinitionId(profile.Id, tier, branch),
-                    SyntheticCardProfile.ProgressionRevision,
+                    ItemIconRevision,
                     $"TEST - {profile.DisplayName} {numeral}-{char.ToUpperInvariant(branch)}",
                     new InitiativeValue(profile.Initiative),
                     CardContentAuthority.SyntheticTestFixture,
                     CardProgressionProfile.NonBasicCard(
-                        profile.Progression.Color, tier, nextTierCandidateIds),
+                        profile.Progression.Color, tier, ItemIcon(tier, branch), nextTierCandidateIds),
                     new[]
                     {
                         CreatePrimaryMovementAction(profile.MovementValue),

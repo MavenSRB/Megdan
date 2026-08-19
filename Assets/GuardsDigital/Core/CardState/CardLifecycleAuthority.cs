@@ -137,6 +137,23 @@ namespace GuardsDigital.Core.Cards
             TryMove(card, CardLocation.Deck, CardLocation.SetAside, CardFaceOrientation.FaceDown);
 
         /// <summary>
+        /// p.16's "tuck it Faceup under your hero dashboard, under the slot with a matching icon" - the
+        /// transition milestone 7.1 named and left to this one.
+        ///
+        /// Faceup is the page's own word and is the whole of the orientation change: the card that waited
+        /// Facedown beside the dashboard becomes rules-facing again, which the page requires from the
+        /// other side too ("Your items must be clearly visible to the opposing team"). What this decides
+        /// is only the lifecycle shape, exactly as the three transitions above do. Which slot the card
+        /// goes under, whether it prints an Item icon at all, and where it falls in the hero's sequence
+        /// are <c>HeroItemState.TryPlaceSetAsideCard</c>'s questions, and a mutation that re-derived them
+        /// would give the placement two answers that nothing keeps in agreement - the same division of
+        /// labour milestone 7.1 drew between <see cref="TryDiscardFromHand"/> and the colour-restricted
+        /// discard that chooses what it discards.
+        /// </summary>
+        public static bool TryPlaceAsItemFromSetAside(CardInstance card) =>
+            TryMove(card, CardLocation.SetAside, CardLocation.ItemSlot, CardFaceOrientation.FaceUp);
+
+        /// <summary>
         /// One unplayed card moving between two resting places. Every caller above is a rulebook
         /// sentence; this is the single shape all three share, so none of them can accidentally admit a
         /// played or resolved card.

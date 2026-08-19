@@ -156,7 +156,7 @@ namespace GuardsDigital.Tests.EditMode
             // p.15 names the pair by colour, and the profile refuses any other reading of "Basic".
             Assert.Throws<ArgumentException>(() => CardProgressionProfile.BasicCard(CardColor.Red));
             Assert.Throws<ArgumentException>(() =>
-                CardProgressionProfile.NonBasicCard(CardColor.Red, CardTier.None));
+                CardProgressionProfile.NonBasicCard(CardColor.Red, CardTier.None, PrintedValueChannel.None));
         }
 
         [Test]
@@ -213,12 +213,12 @@ namespace GuardsDigital.Tests.EditMode
             // the set does not supply, and the wrong number of candidates are each refused - which is
             // what makes the relationship explicit content rather than something colour implies.
             var green = Definition("green-i", CardProgressionProfile.NonBasicCard(
-                CardColor.Green, CardTier.I,
+                CardColor.Green, CardTier.I, PrintedValueChannel.None,
                 new CardDefinitionId("wrong-colour"), new CardDefinitionId("wrong-tier")));
             var wrongColour = Definition("wrong-colour",
-                CardProgressionProfile.NonBasicCard(CardColor.Red, CardTier.II));
+                CardProgressionProfile.NonBasicCard(CardColor.Red, CardTier.II, PrintedValueChannel.Attack));
             var wrongTier = Definition("wrong-tier",
-                CardProgressionProfile.NonBasicCard(CardColor.Green, CardTier.III));
+                CardProgressionProfile.NonBasicCard(CardColor.Green, CardTier.III, PrintedValueChannel.Movement));
 
             Assert.Throws<ArgumentException>(() =>
                 CardProgressionValidator.Validate(new[] { green, wrongColour, wrongTier }));
@@ -226,8 +226,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentException>(() => CardProgressionValidator.Validate(new[]
             {
                 Definition("lonely", CardProgressionProfile.NonBasicCard(
-                    CardColor.Green, CardTier.I, new CardDefinitionId("only-one"))),
-                Definition("only-one", CardProgressionProfile.NonBasicCard(CardColor.Green, CardTier.II))
+                    CardColor.Green, CardTier.I, PrintedValueChannel.None,
+                    new CardDefinitionId("only-one"))),
+                Definition("only-one", CardProgressionProfile.NonBasicCard(
+                    CardColor.Green, CardTier.II, PrintedValueChannel.Attack))
             }));
         }
 

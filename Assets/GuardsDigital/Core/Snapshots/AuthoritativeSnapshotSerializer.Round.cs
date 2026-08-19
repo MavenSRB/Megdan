@@ -23,7 +23,8 @@ namespace GuardsDigital.Core.Snapshots
     {
         private static void WriteRound(BinaryWriter writer, RoundResolutionAuthority round)
         {
-            var (cursor, history, endOfRound, roundCardActions, systemTransitions, heroProgression) =
+            var (cursor, history, endOfRound, roundCardActions, systemTransitions, heroProgression,
+                heroItems) =
                 round.CaptureRestoreState();
             var (roundIndex, turnIndex, phase, tieBreakerState) = cursor;
             writer.Write(roundIndex);
@@ -52,6 +53,7 @@ namespace GuardsDigital.Core.Snapshots
             WriteLanePush(writer, round.LanePush?.LanePush);
             WritePendingSystemTransitionStep(writer, systemTransitions);
             WriteHeroProgression(writer, heroProgression);
+            WriteHeroItems(writer, heroItems);
 
             var (hasCardActions, roundDefeatRewards) = roundCardActions;
             writer.Write(hasCardActions);
@@ -107,6 +109,16 @@ namespace GuardsDigital.Core.Snapshots
                 : GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateRules(lanePushAuthority);
             var systemTransitions = ReadSystemTransitions(reader, transitions, transitionRules);
             var heroProgression = ReadHeroProgression(reader);
+            var heroItems = ReadHeroItems(reader);
+
+            // Milestone 7.2. The paused Attack continuation below verifies a recorded Defense total by
+            // re-deriving it, and p.16's item bonus is part of that total, so the items have to exist
+            // before the continuation is read. This instance is exactly that: the one the verification
+            // uses. The round authority restores its own from the same restore state a few lines later
+            // and binds it to the dispatcher, so exactly one instance survives the restore and it is the
+            // one the match owns.
+            var verifyingHeroItems = GuardsDigital.Core.Rules.Progression.HeroItemState.Restore(
+                participants, heroItems);
             var lanePush = lanePushAuthority == null
                 ? null
                 : new GuardsDigital.Core.Rules.LanePush.LanePushConsumption(
@@ -125,7 +137,7 @@ namespace GuardsDigital.Core.Snapshots
             if (reader.ReadBoolean())
             {
                 turn = ReadTurn(reader, definitions, cards, participants, board, timing, markers,
-                    roundIndex, turnIndex, capabilities, lanePush, out cardActions);
+                    roundIndex, turnIndex, capabilities, lanePush, verifyingHeroItems, out cardActions);
             }
             else if (hasRoundCardActions)
             {
@@ -142,7 +154,8 @@ namespace GuardsDigital.Core.Snapshots
                     cards,
                     participants,
                     markers,
-                    RuleModificationQuery.Build(timing, board, participants, tieBreaker));
+                    RuleModificationQuery.Build(timing, board, participants, tieBreaker),
+                    verifyingHeroItems);
             }
 
             return RoundResolutionAuthority.Restore(
@@ -159,7 +172,8 @@ namespace GuardsDigital.Core.Snapshots
                         pendingLanePushRequest),
                     new RoundCardActionsRestoreState(hasRoundCardActions, roundDefeatRewards),
                     systemTransitions.CaptureRestoreState(),
-                    heroProgression),
+                    heroProgression,
+                    heroItems),
                 commitment,
                 turn,
                 cardActions,
@@ -212,6 +226,61 @@ namespace GuardsDigital.Core.Snapshots
 
                     return new KeyValuePair<HeroId, GuardsDigital.Core.Rules.Progression.HeroLevel>(
                         heroId, new GuardsDigital.Core.Rules.Progression.HeroLevel(level));
+                }));
+
+        /// <summary>
+        /// Milestone 7.2. Every item tucked under a hero dashboard, in the state's own canonical order.
+        ///
+        /// It is one flat list rather than a per-hero grouping, and that is the honest shape of what p.16
+        /// creates: a hero with no items is the ordinary case, so a per-hero section would write a count
+        /// of zero for every hero in the match to say nothing at all. The Level section above does group
+        /// per hero, because there the coverage is the point - every hero has a Level and a payload
+        /// missing one is malformed - while here the coverage rule is the opposite, and what the reader
+        /// enforces instead is that every item names a participant, that no card became two items, and
+        /// that each hero's orders are exactly 1..n. <c>HeroItemState.Restore</c> owns all three.
+        ///
+        /// Every field is written rather than derived. The slot in particular is on the wire even though
+        /// this build could re-derive it from the source card's definition, because p.16 attaches a
+        /// consequence to which slot an item was actually placed under, and a re-derived slot is one that
+        /// can never disagree with the card - which would make the payload unable to describe the case
+        /// the page penalizes.
+        /// </summary>
+        private static void WriteHeroItems(
+            BinaryWriter writer,
+            GuardsDigital.Core.Rules.Progression.HeroItemRestoreState state)
+        {
+            state.Deconstruct(out var items);
+            writer.Write(items.Count);
+            foreach (var item in items)
+            {
+                writer.Write(item.OwnerId.Value);
+                writer.Write(item.SourceCardInstanceId.Value);
+                writer.Write((int)item.Slot);
+                writer.Write(item.Order);
+            }
+        }
+
+        private static GuardsDigital.Core.Rules.Progression.HeroItemRestoreState ReadHeroItems(
+            BinaryReader reader) =>
+            new GuardsDigital.Core.Rules.Progression.HeroItemRestoreState(
+                ReadMany(reader, "hero items", () =>
+                {
+                    var ownerId = new HeroId(reader.ReadString());
+                    var sourceCardInstanceId = new CardInstanceId(reader.ReadString());
+                    var slot = SnapshotEnumReader.Read<PrintedValueChannel>(reader, "item slot");
+                    var order = reader.ReadInt32();
+                    if (slot == PrintedValueChannel.None)
+                    {
+                        throw Malformed("An item slot names one of rulebook p.16's six icons.");
+                    }
+
+                    if (order < 1)
+                    {
+                        throw Malformed($"Item order {order} is outside the legal range.");
+                    }
+
+                    return new GuardsDigital.Core.Rules.Progression.HeroItem(
+                        ownerId, sourceCardInstanceId, slot, order);
                 }));
 
         /// <summary>

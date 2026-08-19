@@ -46,6 +46,7 @@ namespace GuardsDigital.Core.Snapshots
             int turnIndex,
             EffectCapabilityCatalog capabilities,
             GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             out CardActionResolutionAuthority cardActions)
         {
             var started = reader.ReadBoolean();
@@ -60,6 +61,7 @@ namespace GuardsDigital.Core.Snapshots
             cardActions = ReadCardAction(
                 reader, board, definitions, cards, participants, capabilities, markers,
                 RuleModificationQuery.Build(timing, board, participants, tieBreaker),
+                heroItems,
                 tieBreaker);
             return TurnResolutionAuthority.Restore(
                 definitions,

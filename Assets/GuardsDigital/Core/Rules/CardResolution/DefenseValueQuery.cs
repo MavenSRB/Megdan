@@ -14,8 +14,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
     public static class DefenseValueQuery
     {
         /// <summary>
-        /// The defender's Defense value: the printed icon, the p.14 minion contributions, and every typed
-        /// modifier currently supplied to that hero.
+        /// The defender's Defense value: the printed icon, the p.14 minion contributions, p.16's item
+        /// bonuses, and every typed modifier currently supplied to that hero.
         /// </summary>
         /// <param name="modifications">
         /// The modifications in effect; <see cref="RuleModificationSet.Empty"/> is the named
@@ -23,13 +23,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// source discriminator, so an Active-effect bonus, a token-owned bonus, and a minion's -1 stay
         /// separately attributable inside one total.
         /// </param>
+        /// <param name="heroItems">
+        /// The match's items (milestone 7.2), or <c>null</c> in a composition that holds no item state -
+        /// the same absence the modification set expresses above. p.16's Item Bonus is decided by
+        /// <see cref="ItemBonusQuery"/> and not here: this query knows the printed result and the
+        /// defender, which is exactly what that rule needs, and nothing about which items exist.
+        /// </param>
         public static ValueResult Calculate(
             ActionOffer defenseOffer,
             IEnumerable<CardDefinition> definitions,
             HeroId defenderId,
             MatchParticipants participants,
             AdjacentMoveAuthority board,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             if (!defenderId.IsDefined)
             {
@@ -51,6 +58,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 definitions,
                 PrintedValueChannel.Defense);
             var contributions = new List<ValueContribution>(printed.Contributions);
+
+            // p.16's item bonus is asked of the printed result rather than of the total, because the
+            // page conditions it on what the card prints: "If an Action card has no matching icon, the
+            // item has no effect on that particular Action card." Adding it here, before the minion and
+            // modifier contributions, keeps that question about the icon alone - a Defense raised to a
+            // positive number by an adjacent friendly melee minion is still a card with no Defense icon.
+            if (heroItems != null)
+            {
+                contributions.AddRange(ItemBonusQuery.Contributions(printed, heroItems, defenderId));
+            }
+
             contributions.AddRange(CalculateMinionContributions(defenderId, participants, board));
             if (modifications != null)
             {

@@ -124,6 +124,16 @@ namespace GuardsDigital.Core.Cards
             // below rather than mutating it, so a restored match never passes through Level 1 on its
             // way to the Levels it recorded.
             HeroProgression = new GuardsDigital.Core.Rules.Progression.HeroProgressionState(participants);
+
+            // Milestone 7.2. p.16 gains an item during the Upgrade a Card step of a level purchase, and
+            // p.15 makes that purchase an end-of-round step, which is this authority's boundary - the
+            // same reason the Level above it lives here. Every hero starts with none, and nothing in this
+            // build gains one, because the purchase that would is milestone 7.5's.
+            HeroItems = new GuardsDigital.Core.Rules.Progression.HeroItemState(participants);
+
+            // One state, shared with the dispatcher whose Defense total reads it - the same arrangement
+            // the marker register has, and for the same reason.
+            this.cardActions?.BindHeroItems(HeroItems);
             this.endOfRoundStageAvailability = endOfRoundStageAvailability ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -202,6 +212,12 @@ namespace GuardsDigital.Core.Cards
         /// restore state already carries the rest of.
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.HeroProgressionState HeroProgression { get; private set; }
+
+        /// <summary>
+        /// Milestone 7.2's per-hero items, held beside <see cref="HeroProgression"/> because p.16 gains
+        /// one as part of the level purchase that Level records.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems { get; private set; }
 
         /// <summary>Milestone 6.2's marker attachments, held beside <see cref="Timing"/>.</summary>
         public MarkerAttachmentRegister Markers => markers;
@@ -421,7 +437,8 @@ namespace GuardsDigital.Core.Cards
                     PendingLanePushRequest),
                 new RoundCardActionsRestoreState(CardActions != null, rewards),
                 systemTransitions.CaptureRestoreState(),
-                HeroProgression.CaptureRestoreState());
+                HeroProgression.CaptureRestoreState(),
+                HeroItems.CaptureRestoreState());
         }
 
         internal static RoundResolutionAuthority Restore(
@@ -461,6 +478,9 @@ namespace GuardsDigital.Core.Cards
 
             authority.HeroProgression = GuardsDigital.Core.Rules.Progression.HeroProgressionState.Restore(
                 participants, state.HeroProgression);
+            authority.HeroItems = GuardsDigital.Core.Rules.Progression.HeroItemState.Restore(
+                participants, state.HeroItems);
+            cardActions?.BindHeroItems(authority.HeroItems);
             authority.RoundIndex = roundIndex;
             authority.TurnIndex = turnIndex;
             authority.Phase = phase;

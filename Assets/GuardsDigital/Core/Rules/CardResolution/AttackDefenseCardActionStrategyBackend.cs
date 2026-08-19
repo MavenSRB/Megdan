@@ -30,6 +30,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private readonly MarkerAttachmentRegister markers;
 
+        /// <summary>
+        /// Milestone 7.2: the same item state the round authority holds, for the same reason
+        /// <see cref="markers"/> is the same register - a Defense value that consulted a different copy
+        /// of a hero's items than the one the match records would be a total nothing could reproduce.
+        /// Absent outside a live match, where no hero has any.
+        /// </summary>
+        private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
+
         internal AttackDefenseCardActionStrategyBackend(AdjacentMoveAuthority adjacentMoveAuthority)
             : this(adjacentMoveAuthority, null, null)
         {
@@ -61,6 +69,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal bool HasPendingResolution => pendingAttackResolution != null;
 
         internal DefeatRewardAccounting DefeatRewards => defeatRewards;
+
+        internal GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems => heroItems;
+
+        /// <summary>
+        /// Hands this backend the match's item state. It arrives after construction because the round
+        /// authority is what owns the state and the dispatcher it composes with is built before it; the
+        /// alternative was a second <see cref="GuardsDigital.Core.Rules.Progression.HeroItemState"/>
+        /// created here, which is the one outcome that must not happen.
+        /// </summary>
+        internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState items)
+        {
+            heroItems = items;
+        }
 
         public AttackActionResolutionResult StartAttack(
             ActionResolutionId resolutionId,
@@ -586,7 +607,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.TargetHeroId,
                 participants,
                 adjacentMoveAuthority,
-                modifications);
+                modifications,
+                heroItems);
             var resumedWithDefense = CreateOutcomeComparisonResolution(defenseOffer, defenseValue);
 
             // Routed through the lifecycle authority rather than transitioning the card directly.
@@ -669,7 +691,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedInstances,
                     participants,
                     adjacentMoveAuthority,
-                    modifications))
+                    modifications,
+                    heroItems))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }
@@ -754,7 +777,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             DefeatRewardAccounting defeatRewards,
             MarkerAttachmentRegister markers,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
         {
             if (state == null)
             {
@@ -770,6 +794,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
             var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers);
+
+            // Bound before the verification below, because a paused Defense comparison is re-derived
+            // against the same items the live one used; a restore that verified it without them would
+            // refuse a legitimate payload as soon as a hero owns one.
+            backend.BindHeroItems(heroItems);
             var offer = FindPendingAttackOffer(pendingResolution, materializedDefinitions, materializedInstances);
             if (!offer.HasValue)
             {
@@ -852,7 +881,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             materializedInstances,
                             participants,
                             adjacentMoveAuthority,
-                            modifications))
+                            modifications,
+                            heroItems))
                     {
                         throw new ArgumentException("Completed Defense response does not match authoritative Attack state.", nameof(state));
                     }
@@ -1020,7 +1050,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardInstance> instances,
             MatchParticipants participants,
             AdjacentMoveAuthority board,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             if (!resolution.DefenseOffer.HasValue)
             {
@@ -1056,7 +1087,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.TargetHeroId,
                 participants,
                 board,
-                modifications);
+                modifications,
+                heroItems);
             return PrintedValuesMatch(resolution.DefenseValue, expectedDefenseValue);
         }
     }

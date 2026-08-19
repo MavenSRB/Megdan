@@ -20,7 +20,8 @@ namespace GuardsDigital.Core.Cards
     /// <item><see cref="BasicCard"/> - p.15's Gold and Silver pair. They "are never upgraded, have no
     /// Tier, and are not considered when checking your lowest card Tier", so this factory refuses a
     /// Tier and refuses candidates outright rather than leaving either merely empty.</item>
-    /// <item><see cref="NonBasicCard"/> - a Tier I, II, or III card. It requires a Tier, and its
+    /// <item><see cref="NonBasicCard"/> - a Tier I, II, or III card. It requires a Tier and p.16's Item
+    /// icon or that page's explicit absence of one, and its
     /// candidates are the explicit next-Tier cards p.15's Upgrade a Card step looks for: "two Action
     /// cards in your deck that have the same color as the chosen card but are one Tier higher". Empty
     /// is legal and means this card has no next Tier in the content set - a Tier III card, since Tier IV
@@ -46,11 +47,13 @@ namespace GuardsDigital.Core.Cards
             CardColor color,
             CardClassification classification,
             CardTier tier,
+            PrintedValueChannel itemIcon,
             IReadOnlyList<CardDefinitionId> nextTierCandidateIds)
         {
             Color = color;
             Classification = classification;
             Tier = tier;
+            ItemIcon = itemIcon;
             NextTierCandidateIds = nextTierCandidateIds;
         }
 
@@ -61,13 +64,36 @@ namespace GuardsDigital.Core.Cards
         /// way a definition acquires this profile is by naming it at construction.
         /// </summary>
         public static CardProgressionProfile NotStated { get; } = new CardProgressionProfile(
-            CardColor.None, CardClassification.None, CardTier.None, Array.AsReadOnly(NoCandidates));
+            CardColor.None, CardClassification.None, CardTier.None, PrintedValueChannel.None,
+            Array.AsReadOnly(NoCandidates));
 
         public CardColor Color { get; }
 
         public CardClassification Classification { get; }
 
         public CardTier Tier { get; }
+
+        /// <summary>
+        /// The Item icon printed on the bottom of this card, or <see cref="PrintedValueChannel.None"/>
+        /// when the card prints none.
+        ///
+        /// p.16 states which cards carry one, and states it exhaustively: "On the bottom of every Tier
+        /// II and Tier III Action card, there is an Item icon." The icon is therefore not an optional
+        /// embellishment on a non-Basic card - it is present on exactly the two Tiers an upgrade can set
+        /// aside, and absent everywhere else, which is what <see cref="NonBasicCard"/> enforces in both
+        /// directions rather than merely permitting.
+        ///
+        /// The channel vocabulary is shared with <see cref="PrintedValueDefinition"/> deliberately. p.16
+        /// closes its Item Bonus box by naming the affected icons - "only the value of the Initiative,
+        /// Attack, Defense, Movement, Range, or Radius icons on a card are affected" - which is
+        /// <see cref="PrintedValueChannel"/>'s exact membership. A second parallel enum for item icons
+        /// would have to be kept in agreement with this one by hand, and the first disagreement would be
+        /// an item matching an icon that no printed value can carry.
+        /// </summary>
+        public PrintedValueChannel ItemIcon { get; }
+
+        /// <summary>Whether this card prints an Item icon at all - p.16's Tier II and Tier III cards.</summary>
+        public bool HasItemIcon => ItemIcon != PrintedValueChannel.None;
 
         public IReadOnlyList<CardDefinitionId> NextTierCandidateIds { get; }
 
@@ -98,18 +124,27 @@ namespace GuardsDigital.Core.Cards
             }
 
             return new CardProgressionProfile(
-                color, CardClassification.Basic, CardTier.None, Array.AsReadOnly(NoCandidates));
+                color, CardClassification.Basic, CardTier.None, PrintedValueChannel.None,
+                Array.AsReadOnly(NoCandidates));
         }
 
         public static CardProgressionProfile NonBasicCard(
             CardColor color,
             CardTier tier,
+            PrintedValueChannel itemIcon,
             params CardDefinitionId[] nextTierCandidateIds) =>
-            NonBasicCard(color, tier, (IEnumerable<CardDefinitionId>)nextTierCandidateIds);
+            NonBasicCard(color, tier, itemIcon, (IEnumerable<CardDefinitionId>)nextTierCandidateIds);
 
+        /// <param name="itemIcon">
+        /// p.16's Item icon, or <see cref="PrintedValueChannel.None"/> for a Tier I card that prints
+        /// none. It is a required argument with no overload that omits it, for the reason the whole
+        /// profile is a required argument of <see cref="CardDefinition"/>: a Tier II card whose icon was
+        /// simply left out would be a card the upgrade step can set aside and then never place.
+        /// </param>
         public static CardProgressionProfile NonBasicCard(
             CardColor color,
             CardTier tier,
+            PrintedValueChannel itemIcon,
             IEnumerable<CardDefinitionId> nextTierCandidateIds)
         {
             if (color == CardColor.None)
@@ -130,6 +165,32 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentOutOfRangeException(nameof(tier), tier, "Unknown card Tier.");
             }
 
+            if (!Enum.IsDefined(typeof(PrintedValueChannel), itemIcon))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(itemIcon), itemIcon, "Unknown Item icon channel.");
+            }
+
+            // p.16 states the presence exhaustively rather than permissively, so both directions are
+            // refused. A Tier II or Tier III card without an icon is one the upgrade step can set aside
+            // and then never place under a matching slot; a Tier I card with one claims an icon the page
+            // does not print on it. The absence a Tier I card carries is therefore stated at the call
+            // site rather than reached by leaving an argument out.
+            var printsItemIcon = tier == CardTier.II || tier == CardTier.III;
+            if (printsItemIcon && itemIcon == PrintedValueChannel.None)
+            {
+                throw new ArgumentException(
+                    $"A Tier {tier} card prints an Item icon (rulebook p.16).", nameof(itemIcon));
+            }
+
+            if (!printsItemIcon && itemIcon != PrintedValueChannel.None)
+            {
+                throw new ArgumentException(
+                    $"Only a Tier II or Tier III card prints an Item icon; Tier {tier} prints none " +
+                    "(rulebook p.16).",
+                    nameof(itemIcon));
+            }
+
             var candidates = (nextTierCandidateIds ?? throw new ArgumentNullException(nameof(nextTierCandidateIds)))
                 .ToArray();
             if (candidates.Any(candidate => !candidate.IsDefined))
@@ -145,7 +206,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             return new CardProgressionProfile(
-                color, CardClassification.NonBasic, tier, Array.AsReadOnly(candidates));
+                color, CardClassification.NonBasic, tier, itemIcon, Array.AsReadOnly(candidates));
         }
     }
 }
