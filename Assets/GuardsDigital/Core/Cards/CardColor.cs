@@ -19,9 +19,15 @@ namespace GuardsDigital.Core.Cards
     /// <see cref="CardDefinition"/> refuses to be constructed without.
     ///
     /// <see cref="None"/> is not a sixth colour and no definition may declare it as one. It exists so
-    /// that <see cref="CardProgressionProfile.NotStated"/> - a definition that states no progression
-    /// content at all - has a value to carry, and the profile is what makes that absence explicit
-    /// rather than defaulted.
+    /// that a definition with no printed colour has a value to carry, and the profile is what makes
+    /// that absence explicit rather than defaulted. Two definitions carry it, for different reasons:
+    /// <see cref="CardProgressionProfile.NotStated"/> states no progression content at all, and
+    /// milestone 7.3's <see cref="CardProgressionProfile.UltimateCard"/> states progression without a
+    /// colour. The Ultimate's printed card carries a swatch of its own that is none of these five, and
+    /// no rule in the source reads it: p.15 matches colours among the cards in a hand - "the same color
+    /// as the chosen card", "exactly 5 cards, 1 of each color, in your hand" - and p.16 keeps the
+    /// Ultimate out of the hand entirely. A sixth member would therefore be a value no rule asks about,
+    /// which is the same objection <see cref="CardTier"/> records against widening itself.
     /// </summary>
     public enum CardColor
     {

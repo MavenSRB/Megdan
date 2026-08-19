@@ -154,6 +154,25 @@ namespace GuardsDigital.Core.Cards
             TryMove(card, CardLocation.SetAside, CardLocation.ItemSlot, CardFaceOrientation.FaceUp);
 
         /// <summary>
+        /// p.16's "Place it Faceup to the left side of your hero dashboard, facing the opposing team" -
+        /// milestone 7.3's transition, and the last resting place a card in this build can reach.
+        ///
+        /// It comes from the deck because that is where p.6's setup leaves it: the player takes their
+        /// five starting cards and returns "the remaining Tier II, Tier III, and Tier IV cards to your
+        /// deck". Faceup is the page's own word, and it matters for the same reason it does for an
+        /// item - the card's Tier and classification become rules-facing at the moment it is placed,
+        /// which is what lets the unlocked Ultimate be found by asking about the card rather than by
+        /// consulting a second record.
+        ///
+        /// This decides the lifecycle shape and nothing else. Whether this hero may unlock yet, whether
+        /// this is that hero's own Ultimate, and whether one is already unlocked are
+        /// <c>UltimateUnlockQuery</c>'s questions, exactly as the slot is <c>HeroItemState</c>'s and the
+        /// colour is the colour-restricted discard's.
+        /// </summary>
+        public static bool TryUnlockUltimateFromDeck(CardInstance card) =>
+            TryMove(card, CardLocation.Deck, CardLocation.UltimateArea, CardFaceOrientation.FaceUp);
+
+        /// <summary>
         /// One unplayed card moving between two resting places. Every caller above is a rulebook
         /// sentence; this is the single shape all three share, so none of them can accidentally admit a
         /// played or resolved card.

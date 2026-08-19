@@ -561,17 +561,39 @@ namespace GuardsDigital.Tests.EditMode
         /// <c>phase-7-1-rev-1</c> drops by exactly two, in all eight. The first differing byte is the
         /// definition table's length prefix for that string, at offset 1270 in the five ordinary
         /// fixtures and 1466 in the three Skill-fixture ones.
+        ///
+        /// Milestone 7.3 keeps schema v19 again and re-pins every fixture for one content cause: each
+        /// hand supplies rulebook p.6's eighteenth card, its Ultimate, at the new revision
+        /// <c>phase-7-3-rev-1</c>. Nothing else moves. The schema is untouched because the milestone adds
+        /// no field to the wire at all - p.16 records the unlock by moving the card, so the state that
+        /// says a hero has one is the card's own location, which every payload has always carried, and
+        /// the rule the Ultimate supplies is re-derived from the trusted definition exactly as a placed
+        /// token's properties are. No existing card's revision moves either: these two definitions are
+        /// new content rather than changed content.
+        /// The decision is reject, by the existing content-revision check and for the reason every
+        /// definition-table change is refused: a payload written without these two describes a build
+        /// whose heroes have no Ultimate to unlock, and reading it as "unlocked nothing" would be a
+        /// guess about state milestone 7.5's level purchase makes authoritative.
+        /// Measured in a throwaway worktree at pre-change revision <c>0957e6f</c> rather than assumed,
+        /// and the arithmetic closes exactly. Every payload grows by 83 bytes in two insertions and one
+        /// changed byte, and no fixture differs anywhere else: the definition count at offset 34 moves
+        /// from 34 to 36, 42 bytes are inserted for <c>placeholder-blue-ultimate</c> - a one-byte length
+        /// prefix, its twenty-five-character id, a one-byte prefix and the fifteen-character revision -
+        /// and 41 for the one-character-shorter <c>placeholder-red-ultimate</c>. The table is ordered by
+        /// definition id, so the two land apart: at offsets 776 and 1497 in the five ordinary fixtures
+        /// and 895 and 1732 in the three Skill-fixture ones, which carry additional Skill-card
+        /// definitions ahead of them.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v19", "e48a9e3278b075a5f4e9a03660065b744e49882d4505f4ea116296dcc6a94a7f"),
-            new CompatibilityFixture("active-turn-v19", "0f249c785073f9ccf20c5f77e41880839323547112a06b82ecc22c3bf41b3b89"),
-            new CompatibilityFixture("pending-choice-v19", "0acb8ba0fa27639d2a0f2ab00b1d704d3c50d6f71c6857f149e2b3a2b474067f"),
-            new CompatibilityFixture("end-of-round-v19", "241ddd472d202a79b03a2a77b4aa0f11429b52cd4e5c6aead1d9f74ef86a6d84"),
-            new CompatibilityFixture("pending-minion-battle-v19", "2547d480fed2e64b9e3107ac45895ca3e99c537f3b1bf3e3ae1affcb114f81cd"),
-            new CompatibilityFixture("placed-token-v19", "b674adeb58e8a86eea9e3149eb68255b81cbd4a6b32f689451d29c5fd7834720"),
-            new CompatibilityFixture("attached-marker-v19", "92ce28b0dc45d15cdbc9f8a63f6c322e7d0c26a239ac61ef6161ca57383f8412"),
-            new CompatibilityFixture("pending-correction-v19", "203f1a10946ebc97f6ab38faae638be06e94b2800b2319ad55a1cfe64fd25d3f")
+            new CompatibilityFixture("setup-v19", "1d12df71a860970a6e64113223b8742aeec45982ad8c87f2b9f0a7cbeaa3e0ab"),
+            new CompatibilityFixture("active-turn-v19", "ff31ac2a7e02121e7f976a021c18eb5095afd81490e5ea955aaeffd79c7222c4"),
+            new CompatibilityFixture("pending-choice-v19", "7b2a71f6f8bb4fa75c90cbb0ff09b94f1eddeaa15552f61bd922e423df073df8"),
+            new CompatibilityFixture("end-of-round-v19", "8d900c0e11e3223d9a0cbaf3d97f6a76115122772ef10a05fa4625183a5f5133"),
+            new CompatibilityFixture("pending-minion-battle-v19", "9388d4673bb7dc988ecab19056e3c60627ed9e35028fd11f0c03e1c21e938d2e"),
+            new CompatibilityFixture("placed-token-v19", "1d37c1d25ada71d4969498f47aadee39e679426742aa98eb35f13179ff68d851"),
+            new CompatibilityFixture("attached-marker-v19", "25795d9414a24f4e5991bedceb275a64b1bf89559ac1e54aa15ba3bbd69331c8"),
+            new CompatibilityFixture("pending-correction-v19", "edcc3319feac5199a34e7eb83fbfba040040fa707da704224e7cfb0bd56e5a97")
         };
 
         [Test]
@@ -641,7 +663,8 @@ namespace GuardsDigital.Tests.EditMode
                 original.Initiative,
                 original.ContentAuthority,
                 original.Progression,
-                original.ActionDefinitions);
+                original.ActionDefinitions,
+                original.UltimateRule);
             var contentException = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
                     envelope.AuthoritativePayload,

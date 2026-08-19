@@ -131,7 +131,7 @@ Non-goals: No change to the Push branch, to which modes this card carries, to an
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72c-bind-red-needles-place-to-a-printed-radius-icon-completion-evidence).
 
-### [~] 7.3 Add Ultimate continuous-source behavior
+### [x] 7.3 Add Ultimate continuous-source behavior
 
 Observable outcome: A synthetic Ultimate can be unlocked as persistent state and supplies its rule only while its hero is on the board.
 
@@ -142,6 +142,8 @@ Acceptance checks:
 - Unlock eligibility can require completion of the Tier III upgrade state without hard-coding a hero name.
 
 Non-goals: No Wasp Ultimate text or final visual treatment.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-73-add-ultimate-continuous-source-behavior-completion-evidence).
 
 ### [ ] 7.4 Resolve hero defeat, Lives, and respawn
 

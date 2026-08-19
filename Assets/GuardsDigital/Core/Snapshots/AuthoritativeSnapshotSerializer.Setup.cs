@@ -472,7 +472,7 @@ namespace GuardsDigital.Core.Snapshots
             MatchParticipants participants)
         {
             var knownReferences = new HashSet<CardDefinitionReference>(definitions.Select(value => value.Reference));
-            return ReadMany(reader, "card instances", () =>
+            var cards = ReadMany(reader, "card instances", () =>
             {
                 var id = new CardInstanceId(reader.ReadString());
                 var reference = ReadDefinitionReference(reader);
@@ -495,6 +495,59 @@ namespace GuardsDigital.Core.Snapshots
                         SnapshotEnumReader.Read<CardResolutionStatus>(reader, "card resolution status"),
                         SnapshotEnumReader.Read<CardFaceOrientation>(reader, "card face orientation")));
             });
+
+            ValidateUnlockedUltimates(cards, definitions);
+            return cards;
+        }
+
+        /// <summary>
+        /// Milestone 7.3. Rulebook p.16 places one Ultimate, and only an Ultimate, to the left of a hero
+        /// dashboard, so a payload that describes anything else there describes a match this build
+        /// cannot accept.
+        ///
+        /// The unlock is recorded by the card's position alone - there is one place the card goes, so a
+        /// second per-hero record beside it could only agree or be wrong - and this is the check that
+        /// arrangement owes. <c>UltimateUnlockQuery</c> answers what is unlocked and deliberately skips
+        /// content it cannot resolve rather than throwing, because a query is not the place to fail a
+        /// match; the reader is, and it fails here so that no query downstream has to.
+        /// </summary>
+        private static void ValidateUnlockedUltimates(
+            IReadOnlyList<CardInstance> cards,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            var byReference = new Dictionary<CardDefinitionReference, CardDefinition>();
+            foreach (var definition in definitions)
+            {
+                if (!byReference.ContainsKey(definition.Reference))
+                {
+                    byReference.Add(definition.Reference, definition);
+                }
+            }
+
+            var owners = new HashSet<HeroId>();
+            foreach (var card in cards)
+            {
+                if (card.State.Location != CardLocation.UltimateArea)
+                {
+                    continue;
+                }
+
+                if (!byReference.TryGetValue(card.DefinitionReference, out var definition) ||
+                    !definition.Progression.IsUltimate)
+                {
+                    throw new SnapshotLoadException(
+                        SnapshotLoadRejectionReason.UnlockedUltimateMismatch,
+                        $"Card '{card.Id}' sits beside hero '{card.OwnerId}''s dashboard without being " +
+                        "an Ultimate (rulebook p.16).");
+                }
+
+                if (!owners.Add(card.OwnerId))
+                {
+                    throw new SnapshotLoadException(
+                        SnapshotLoadRejectionReason.UnlockedUltimateMismatch,
+                        $"Hero '{card.OwnerId}' has more than one unlocked Ultimate; p.16 unlocks one.");
+                }
+            }
         }
 
         // Every Write* below destructures a restore state rather than reading authority

@@ -108,7 +108,7 @@ namespace GuardsDigital.Core.Participants
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
             var blueHero = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue).Id;
-            PlaceholderMovementHand BuildHand(HeroId ownerId)
+            PlaceholderMovementHand BuildHand(HeroId ownerId, CardDefinitionId ultimateId)
             {
                 var ownedInstances = instanceArray.Where(instance => instance.OwnerId.Equals(ownerId)).ToArray();
                 var ownedReferences = new HashSet<CardDefinitionReference>(
@@ -117,7 +117,8 @@ namespace GuardsDigital.Core.Participants
                 return PlaceholderMovementHand.Restore(new PlaceholderMovementHandRestoreState(
                     definitionArray.Where(definition =>
                         ownedReferences.Contains(definition.Reference) ||
-                        upgradeTargets.Contains(definition.Id)),
+                        upgradeTargets.Contains(definition.Id) ||
+                        definition.Id.Equals(ultimateId)),
                     ownedInstances));
             }
 
@@ -162,10 +163,15 @@ namespace GuardsDigital.Core.Participants
                 return reached;
             }
 
+            // Milestone 7.3. The Ultimate each hand supplies is named rather than derived, because
+            // p.16 attaches it to the hero rather than to any card and so leaves no relationship for the
+            // upgrade closure above to follow. Naming it here is the same thing the Create factories do
+            // when they build these hands, and the sides are already re-identified from the restored
+            // teams two statements above, so nothing new is being decided.
             return new PlaceholderOneVsOneTestConfiguration(
                 participants,
-                BuildHand(redHero),
-                BuildHand(blueHero),
+                BuildHand(redHero, PlaceholderMovementHand.RedUltimateDefinitionId),
+                BuildHand(blueHero, PlaceholderMovementHand.BlueUltimateDefinitionId),
                 state.TieBreakerState,
                 false);
         }

@@ -212,6 +212,54 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         internal const int RadiusSkillPrintedRadius = 2;
 
+        /// <summary>
+        /// Milestone 7.3's Ultimate cards, one per hand - the eighteenth definition each hand's deck
+        /// owes rulebook p.6.
+        ///
+        /// Unlike every fixture pair above, these are supplied by every hand rather than by a
+        /// configuration of their own, and that is p.6's arrangement rather than a convenience: setup
+        /// deals five cards and returns "the remaining Tier II, Tier III, and Tier IV cards to your
+        /// deck", so a hero's content is not complete without one. Milestone 7.1 supplied the Tier II
+        /// and Tier III cards and recorded the gap in those words - seventeen definitions per hand,
+        /// "p.6's eighteen-card deck less the Ultimate this milestone does not add" - and this is the
+        /// milestone that adds it.
+        ///
+        /// Neither is dealt, for the reason none of milestone 7.1's twenty-four is: p.15 and p.16 find
+        /// these cards in the player's own deck, and milestone 7.5 is the first milestone that moves
+        /// one. So no hand grows, no card matrix changes, and the only thing this content moves is the
+        /// definition table every payload carries.
+        ///
+        /// The two declare the same ability, which is deliberate. The synthetic content gives the two
+        /// teams matched cards throughout, and the alternative here would be inventing a second power
+        /// for one side out of a permission vocabulary whose only member is p.18's - so the pair states
+        /// one sourced rule twice rather than one sourced rule and one invented one. That the ability is
+        /// card content rather than something every hero simply has is proved from the other side, by a
+        /// card that declares none being refused an Ultimate's classification outright.
+        /// </summary>
+        private static readonly SyntheticUltimateProfile RedUltimateProfile =
+            new SyntheticUltimateProfile("red-ultimate", "Red Ultimate");
+
+        private static readonly SyntheticUltimateProfile BlueUltimateProfile =
+            new SyntheticUltimateProfile("blue-ultimate", "Blue Ultimate");
+
+        /// <summary>
+        /// Which Ultimate each hand supplies, named for the configuration that reassembles a restored
+        /// pair of hands out of one flat definition list.
+        ///
+        /// Milestone 7.1's upgrade targets are routed back to their hand by the relationship the content
+        /// states - each card names the cards it upgrades into - and that comment records the rule that
+        /// routing must not be "a second rule about names or ids". An Ultimate has no such relationship
+        /// to state and the rulebook gives it none: p.16 attaches it to the hero rather than to any
+        /// card, placing it beside the hero dashboard. So it is routed the way a configuration routes
+        /// everything it owns - by naming it - which is exactly what the Red and Blue factories above do
+        /// when they build the hands in the first place.
+        /// </summary>
+        internal static CardDefinitionId RedUltimateDefinitionId =>
+            SyntheticUltimateCard.DefinitionId(RedUltimateProfile);
+
+        internal static CardDefinitionId BlueUltimateDefinitionId =>
+            SyntheticUltimateCard.DefinitionId(BlueUltimateProfile);
+
         private PlaceholderMovementHand(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances)
@@ -247,17 +295,17 @@ namespace GuardsDigital.Core.Cards
 
         public static PlaceholderMovementHand Create(HeroId ownerId)
         {
-            return Create(ownerId, RedProfiles, ownerId.Value);
+            return Create(ownerId, RedProfiles, RedUltimateProfile, ownerId.Value);
         }
 
         public static PlaceholderMovementHand CreateRed(HeroId ownerId)
         {
-            return Create(ownerId, RedProfiles, null);
+            return Create(ownerId, RedProfiles, RedUltimateProfile, null);
         }
 
         public static PlaceholderMovementHand CreateBlue(HeroId ownerId)
         {
-            return Create(ownerId, BlueProfiles, null);
+            return Create(ownerId, BlueProfiles, BlueUltimateProfile, null);
         }
 
         /// <summary>
@@ -273,14 +321,14 @@ namespace GuardsDigital.Core.Cards
         public static PlaceholderMovementHand CreateRedWithSkill(HeroId ownerId)
         {
             return Create(
-                ownerId, RedProfiles, null, RedSkillProfile, RedComponentSkillProfile,
+                ownerId, RedProfiles, RedUltimateProfile, null, RedSkillProfile, RedComponentSkillProfile,
                 RedDisplacementSkillProfile);
         }
 
         public static PlaceholderMovementHand CreateBlueWithSkill(HeroId ownerId)
         {
             return Create(
-                ownerId, BlueProfiles, null, BlueSkillProfile, BlueComponentSkillProfile,
+                ownerId, BlueProfiles, BlueUltimateProfile, null, BlueSkillProfile, BlueComponentSkillProfile,
                 BlueDisplacementSkillProfile);
         }
 
@@ -293,12 +341,14 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public static PlaceholderMovementHand CreateRedWithRepeatSkill(HeroId ownerId)
         {
-            return Create(ownerId, RedProfiles, null, repeatSkillProfile: RedRepeatSkillProfile);
+            return Create(
+                ownerId, RedProfiles, RedUltimateProfile, null, repeatSkillProfile: RedRepeatSkillProfile);
         }
 
         public static PlaceholderMovementHand CreateBlueWithRepeatSkill(HeroId ownerId)
         {
-            return Create(ownerId, BlueProfiles, null, repeatSkillProfile: BlueRepeatSkillProfile);
+            return Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null, repeatSkillProfile: BlueRepeatSkillProfile);
         }
 
         /// <summary>
@@ -314,7 +364,7 @@ namespace GuardsDigital.Core.Cards
             HeroId ownerId, HeroId discardingHeroId)
         {
             return Create(
-                ownerId, RedProfiles, null,
+                ownerId, RedProfiles, RedUltimateProfile, null,
                 cardStateSkillProfile: RedCardStateSkillProfile,
                 cardStateDiscardingHeroId: discardingHeroId);
         }
@@ -323,7 +373,7 @@ namespace GuardsDigital.Core.Cards
             HeroId ownerId, HeroId discardingHeroId)
         {
             return Create(
-                ownerId, BlueProfiles, null,
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
                 cardStateSkillProfile: BlueCardStateSkillProfile,
                 cardStateDiscardingHeroId: discardingHeroId);
         }
@@ -337,12 +387,14 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public static PlaceholderMovementHand CreateRedWithRadiusSkill(HeroId ownerId)
         {
-            return Create(ownerId, RedProfiles, null, radiusSkillProfile: RedRadiusSkillProfile);
+            return Create(
+                ownerId, RedProfiles, RedUltimateProfile, null, radiusSkillProfile: RedRadiusSkillProfile);
         }
 
         public static PlaceholderMovementHand CreateBlueWithRadiusSkill(HeroId ownerId)
         {
-            return Create(ownerId, BlueProfiles, null, radiusSkillProfile: BlueRadiusSkillProfile);
+            return Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null, radiusSkillProfile: BlueRadiusSkillProfile);
         }
 
         internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
@@ -367,6 +419,7 @@ namespace GuardsDigital.Core.Cards
         private static PlaceholderMovementHand Create(
             HeroId ownerId,
             IReadOnlyList<SyntheticCardProfile> profiles,
+            SyntheticUltimateProfile ultimateProfile,
             string instancePrefix,
             SyntheticSkillProfile skillProfile = null,
             SyntheticSkillProfile componentSkillProfile = null,
@@ -394,6 +447,13 @@ namespace GuardsDigital.Core.Cards
                 // digest, card-matrix fixture and configured scene measures for no behaviour this
                 // milestone adds.
                 definitions.AddRange(SyntheticUpgradeTree.Definitions(profile));
+            }
+
+            // Milestone 7.3. p.6 leaves the Tier IV card in the deck alongside the Tier II and Tier III
+            // cards above, so it is supplied here and dealt no more than they are.
+            if (ultimateProfile != null)
+            {
+                definitions.Add(SyntheticUltimateCard.Definition(ultimateProfile));
             }
 
             if (skillProfile != null)
@@ -2144,6 +2204,71 @@ namespace GuardsDigital.Core.Cards
 
             /// <summary>Milestone 7.1's printed colour, Tier, classification and upgrade candidates.</summary>
             public CardProgressionProfile Progression { get; }
+        }
+
+        /// <summary>
+        /// One hand's Ultimate, as the two things that vary between two heroes' Ultimates: which card
+        /// it is, and what it is called. Everything else p.16 fixes for all of them.
+        /// </summary>
+        private sealed class SyntheticUltimateProfile
+        {
+            public SyntheticUltimateProfile(string id, string displayName)
+            {
+                Id = id;
+                DisplayName = displayName;
+            }
+
+            public string Id { get; }
+
+            public string DisplayName { get; }
+        }
+
+        /// <summary>
+        /// Milestone 7.3's synthetic Ultimate: rulebook p.16's "special Tier IV card", built from a
+        /// hand's own profile rather than written out twice.
+        ///
+        /// What it prints is exactly what p.16 shows and nothing more. There is no Initiative, because
+        /// the printed card carries no value column and is never played into a turn. There are no
+        /// action definitions, because the card is not an action - it is placed beside the dashboard and
+        /// its ability "is always in effect". There is no Item icon, because that belongs to "every
+        /// Tier II and Tier III Action card". And there is no colour, because the printed swatch is none
+        /// of p.15's five and no rule reads it.
+        ///
+        /// What it does print is the permanent ability, and that ability is p.18's Move Through grant
+        /// rather than something invented for the occasion. The permission vocabulary has exactly one
+        /// member, and it has one deliberately: <c>RulePermissionKind</c> records that a permission
+        /// "names a grant, not an activity" and is not widened ahead of the verified text that requires
+        /// it. A synthetic Ultimate that granted a second, unsourced permission - or a numeric bonus
+        /// chosen out of the air - would be the rebalancing milestone 7.1's generated cards go out of
+        /// their way to avoid. Granting a rule the rulebook already defines, permanently and to its own
+        /// hero, is the smallest content that makes p.16's sentence observable.
+        /// </summary>
+        private static class SyntheticUltimateCard
+        {
+            /// <summary>
+            /// The revision these two definitions carry, and nothing else does. They are new content
+            /// rather than changed content, so no existing card's revision moves with them.
+            /// </summary>
+            public const string UltimateRevision = "phase-7-3-rev-1";
+
+            public static CardDefinitionId DefinitionId(SyntheticUltimateProfile profile) =>
+                new CardDefinitionId($"placeholder-{profile.Id}");
+
+            public static CardDefinition Definition(SyntheticUltimateProfile profile) =>
+                new CardDefinition(
+                    DefinitionId(profile),
+                    UltimateRevision,
+                    $"TEST - {profile.DisplayName}",
+                    default,
+                    CardContentAuthority.SyntheticTestFixture,
+                    CardProgressionProfile.UltimateCard(),
+                    Array.Empty<ActionDefinition>(),
+                    new UltimateRuleDefinition(
+                        "permanent-move-through",
+                        "SyntheticPermission",
+                        GuardsDigital.Core.Rules.Modifications.RuleModification.ForPermission(
+                            GuardsDigital.Core.Rules.Modifications.RulePermissionKind
+                                .MoveThroughObstacles)));
         }
 
         /// <summary>

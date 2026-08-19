@@ -32,6 +32,28 @@ namespace GuardsDigital.Core.Cards
             CardContentAuthority contentAuthority,
             CardProgressionProfile progression,
             IEnumerable<ActionDefinition> actionDefinitions)
+            : this(id, contentRevision, displayName, initiative, contentAuthority, progression,
+                actionDefinitions, null)
+        {
+        }
+
+        /// <summary>
+        /// Milestone 7.3's overload, and the only one that can build rulebook p.16's Ultimate.
+        ///
+        /// <paramref name="ultimateRule"/> is the permanent ability the Ultimate prints, and it is
+        /// required for an Ultimate and refused for everything else. Both directions matter: an
+        /// Ultimate with no ability is a card whose entire printed content is missing, and an ordinary
+        /// card with one would supply a rule from a card the page gives no permanent ability to.
+        /// </summary>
+        public CardDefinition(
+            CardDefinitionId id,
+            string contentRevision,
+            string displayName,
+            InitiativeValue initiative,
+            CardContentAuthority contentAuthority,
+            CardProgressionProfile progression,
+            IEnumerable<ActionDefinition> actionDefinitions,
+            UltimateRuleDefinition ultimateRule)
         {
             if (!id.IsDefined)
             {
@@ -46,11 +68,6 @@ namespace GuardsDigital.Core.Cards
             if (string.IsNullOrWhiteSpace(displayName))
             {
                 throw new ArgumentException("Card definition requires a display name.", nameof(displayName));
-            }
-
-            if (!initiative.IsDefined)
-            {
-                throw new ArgumentException("Card definition requires a positive Initiative value.", nameof(initiative));
             }
 
             if (!Enum.IsDefined(typeof(CardContentAuthority), contentAuthority) ||
@@ -71,6 +88,36 @@ namespace GuardsDigital.Core.Cards
                     "CardProgressionProfile.NotStated when the definition carries no colour or Tier.");
             }
 
+            // Milestone 7.3. Initiative is required of every card except p.16's Ultimate, which prints
+            // none: the printed card carries no value column at all, and it never enters the Initiative
+            // order because it is never played - the page places it "to the left side of your hero
+            // dashboard" and its ability "is always in effect". Giving one an Initiative would print a
+            // value the card does not have, which is the mistake milestone 7.2c corrected elsewhere.
+            if (progression.IsUltimate)
+            {
+                if (initiative.IsDefined)
+                {
+                    throw new ArgumentException(
+                        "An Ultimate prints no Initiative; it is never played (rulebook p.16).",
+                        nameof(initiative));
+                }
+            }
+            else if (!initiative.IsDefined)
+            {
+                throw new ArgumentException(
+                    "Card definition requires a positive Initiative value.", nameof(initiative));
+            }
+
+            if (progression.IsUltimate == (ultimateRule == null))
+            {
+                throw new ArgumentException(
+                    progression.IsUltimate
+                        ? "An Ultimate states the permanent ability it supplies (rulebook p.16)."
+                        : "Only an Ultimate carries a permanent ability; this card is " +
+                          $"{progression.Classification}.",
+                    nameof(ultimateRule));
+            }
+
             if (actionDefinitions == null)
             {
                 throw new ArgumentNullException(nameof(actionDefinitions));
@@ -82,6 +129,7 @@ namespace GuardsDigital.Core.Cards
             Initiative = initiative;
             ContentAuthority = contentAuthority;
             Progression = progression;
+            UltimateRule = ultimateRule;
             var materializedActionDefinitions = actionDefinitions.ToArray();
             ActionDefinitions = Array.AsReadOnly(materializedActionDefinitions);
 
@@ -112,6 +160,13 @@ namespace GuardsDigital.Core.Cards
         /// substituting an absence of its own.
         /// </summary>
         public CardProgressionProfile Progression { get; }
+
+        /// <summary>
+        /// Milestone 7.3's permanent ability, on an Ultimate and on nothing else. The constructor
+        /// refuses both mismatches, so a non-null value here is a card p.16 gives an always-on rule to
+        /// and a null one is a card it does not.
+        /// </summary>
+        public UltimateRuleDefinition UltimateRule { get; }
 
         public IReadOnlyList<ActionDefinition> ActionDefinitions { get; }
 

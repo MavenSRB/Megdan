@@ -13,6 +13,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Timing;
@@ -698,7 +699,7 @@ namespace GuardsDigital.Tests.EditMode
                 restored.Round.Timing,
                 restored.Board,
                 restored.Participants,
-                restored.Round.TieBreakerState);
+                restored.Round.TieBreakerState, UnlockedUltimateSet.None);
         }
 
         private static ActiveEffectLifecycle RestoreTiming(MatchSession session) =>

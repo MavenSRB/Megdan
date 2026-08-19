@@ -57,10 +57,17 @@ namespace GuardsDigital.Core.Snapshots
             var selectedActor = ReadSelectedActor(reader);
             // Milestone 6.8: the restored continuation is cross-checked against the modifications the
             // restored effects and tokens supply, so a Defense total or a target list that a modifier
-            // produced live is reproduced here rather than looking like tampering.
+            // produced live is reproduced here rather than looking like tampering. Milestone 7.3 adds
+            // the unlocked Ultimates to that cross-check, derived from the same restored cards the live
+            // match derived them from, so a total an always-on ability raised is reproduced too.
             cardActions = ReadCardAction(
                 reader, board, definitions, cards, participants, capabilities, markers,
-                RuleModificationQuery.Build(timing, board, participants, tieBreaker),
+                RuleModificationQuery.Build(
+                    timing,
+                    board,
+                    participants,
+                    tieBreaker,
+                    GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, cards)),
                 heroItems,
                 tieBreaker);
             return TurnResolutionAuthority.Restore(

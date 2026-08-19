@@ -43,7 +43,17 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(definition.Progression, Is.Not.Null, definition.Id.Value);
                 Assert.That(definition.Progression.StatesProgression, Is.True, definition.Id.Value);
-                Assert.That(definition.Progression.Color, Is.Not.EqualTo(CardColor.None), definition.Id.Value);
+
+                // Milestone 7.3. The Ultimate is the one definition that states progression and no
+                // colour, and it is an exception the source states rather than one this build permits:
+                // p.15 matches colours among the cards in a hand, and p.16 keeps the Ultimate out of
+                // the hand. Every other definition still carries one of the five.
+                Assert.That(
+                    definition.Progression.Color,
+                    definition.Progression.IsUltimate
+                        ? Is.EqualTo(CardColor.None)
+                        : Is.Not.EqualTo(CardColor.None),
+                    definition.Id.Value);
             }
 
             // The absence is reachable and is a statement, not a default: the constructor refuses a

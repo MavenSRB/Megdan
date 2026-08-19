@@ -11,6 +11,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -246,7 +247,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var set = RuleModificationQuery.Build(
                 timing, null, PlaceholderOneVsOneParticipants.Create(),
-                new TieBreakerState(TeamSide.Red));
+                new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
             Assert.That(
                 set.IsImmuneTo(RuleObject.ForHero(heroId), RuleActivity.Skill, RuleObject.ForHero(Actor)),
                 Is.True,

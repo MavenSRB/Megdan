@@ -226,14 +226,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>
         /// The modifications in effect right now, derived from the supplied timing state and this
-        /// authority's board. Built per command rather than cached: an Active effect can expire and a
-        /// token can be removed between two commands, and a cached set would answer for the wrong moment.
+        /// authority's board. Built per command rather than cached: an Active effect can expire, a
+        /// token can be removed, and milestone 7.3's hero can leave the board between two commands, and
+        /// a cached set would answer for the wrong moment.
+        ///
+        /// The unlocked Ultimates arrive from the caller rather than being derived here, because they
+        /// are read off the match's card instances and this authority holds none; the callers that do
+        /// pass what they hold.
         /// </summary>
         public RuleModificationSet CurrentModifications(
             GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
             MatchParticipants participants,
-            TieBreakerState tieBreaker) =>
-            RuleModificationQuery.Build(timing, board, participants, tieBreaker);
+            TieBreakerState tieBreaker,
+            GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates) =>
+            RuleModificationQuery.Build(timing, board, participants, tieBreaker, ultimates);
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
@@ -470,7 +476,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // was removed, and reading the board after it would answer a question about a later moment.
             RecordImmediateLanePush(
                 lanePushCause, resolutionId, boundary.Participants,
-                CurrentModifications(boundary.Timing, boundary.Participants, boundary.TieBreaker));
+                CurrentModifications(
+                    boundary.Timing,
+                    boundary.Participants,
+                    boundary.TieBreaker,
+                    GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                        boundary.Definitions, boundary.Instances)));
 
             pendingRepeat = repeat;
             var steps = new List<ResolutionStep>(result.Steps);
@@ -518,7 +529,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 boundary.Instances,
                 boundary.Participants,
                 boundary.Timing,
-                CurrentModifications(boundary.Timing, boundary.Participants, boundary.TieBreaker),
+                CurrentModifications(
+                    boundary.Timing,
+                    boundary.Participants,
+                    boundary.TieBreaker,
+                    GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                        boundary.Definitions, boundary.Instances)),
                 components,
                 boundary.RoundIndex,
                 boundary.TurnIndex,

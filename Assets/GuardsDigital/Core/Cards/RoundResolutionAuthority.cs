@@ -219,6 +219,18 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems { get; private set; }
 
+        /// <summary>
+        /// Milestone 7.3's unlocked Ultimates, derived from this match's own card instances whenever a
+        /// modification set is built.
+        ///
+        /// Unlike Level and items, this is a query rather than a held state, because rulebook p.16
+        /// records the unlock by moving the card - "Place it Faceup to the left side of your hero
+        /// dashboard" - and the card's position is already authoritative and already persisted. A second
+        /// per-hero record beside it could only agree with the card or be wrong about it.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet CurrentUltimates() =>
+            GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances);
+
         /// <summary>Milestone 6.2's marker attachments, held beside <see cref="Timing"/>.</summary>
         public MarkerAttachmentRegister Markers => markers;
 
@@ -530,7 +542,8 @@ namespace GuardsDigital.Core.Cards
                     roundIndex,
                     board,
                     participants,
-                    cardActions?.CurrentModifications(timing, participants, tieBreakerState) ??
+                    cardActions?.CurrentModifications(
+                        timing, participants, tieBreakerState, authority.CurrentUltimates()) ??
                         GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
                 if (expectedPlan.PendingChoice == null)
                 {
@@ -800,7 +813,8 @@ namespace GuardsDigital.Core.Cards
                 RoundIndex,
                 board,
                 participants,
-                cardActions?.CurrentModifications(timing, participants, TieBreakerState) ??
+                cardActions?.CurrentModifications(
+                        timing, participants, TieBreakerState, CurrentUltimates()) ??
                     GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
             if (plan.PendingChoice != null)
             {
@@ -851,7 +865,8 @@ namespace GuardsDigital.Core.Cards
                     RoundResolutionRejectionReason.IneligibleMinionBattleSelection);
             }
 
-            var modifications = cardActions?.CurrentModifications(timing, participants, TieBreakerState) ??
+            var modifications = cardActions?.CurrentModifications(
+                timing, participants, TieBreakerState, CurrentUltimates()) ??
                 GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty;
             var candidates = units.Select(unit => ResolveBattleCandidate(unit, modifications)).ToArray();
             if (candidates.Any(value => !value.HasValue) || candidates.Any(value =>
@@ -903,7 +918,7 @@ namespace GuardsDigital.Core.Cards
 
             PendingMinionBattleChoice = null;
             var postRoundModifications = cardActions?.CurrentModifications(
-                timing, participants, TieBreakerState) ??
+                timing, participants, TieBreakerState, CurrentUltimates()) ??
                 GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty;
             if (losingTeam != null && ordered.Length > 0 &&
                 !HasEffectiveMinionInBattleZone(losingTeam.Side, postRoundModifications))

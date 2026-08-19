@@ -12,6 +12,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -258,7 +259,7 @@ namespace GuardsDigital.Tests.EditMode
             PlaceHazard(board, NextTo);
             var participants = PlaceholderOneVsOneParticipants.Create();
             var before = RuleModificationQuery.Build(
-                null, board, participants, TieBreakerState.Unrevealed);
+                null, board, participants, TieBreakerState.Unrevealed, UnlockedUltimateSet.None);
             Assert.That(before.Modifications.Count, Is.EqualTo(1),
                 "The Hazard supplies its declared property while it remains placed (p.19).");
 
@@ -266,7 +267,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Execute(Context(board, RedActor, SubjectInput(NextTo)));
 
             var after = RuleModificationQuery.Build(
-                null, board, participants, TieBreakerState.Unrevealed);
+                null, board, participants, TieBreakerState.Unrevealed, UnlockedUltimateSet.None);
             Assert.That(after.Modifications, Is.Empty,
                 "p.19 ties a token's properties to the instance, so a no-transfer substitution ends " +
                 "them rather than handing them to an object whose definition never declared them.");

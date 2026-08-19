@@ -10,6 +10,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
@@ -247,7 +248,7 @@ namespace GuardsDigital.Tests.EditMode
                 restored.Round.Timing,
                 restored.Board,
                 restored.Participants,
-                restored.Round.TieBreakerState);
+                restored.Round.TieBreakerState, UnlockedUltimateSet.None);
         }
 
         private static GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority RestoreBoard(

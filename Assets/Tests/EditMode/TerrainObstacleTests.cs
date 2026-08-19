@@ -6,6 +6,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
@@ -329,7 +330,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var participants = PlaceholderOneVsOneParticipants.Create();
             var set = RuleModificationQuery.Build(
-                timing, null, participants, new TieBreakerState(TeamSide.Red));
+                timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
             Assert.That(
                 set.HasPermission(RuleObject.ForHero(heroId), RulePermissionKind.MoveThroughObstacles),
                 Is.True,

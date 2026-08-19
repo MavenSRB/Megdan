@@ -25,7 +25,13 @@ namespace GuardsDigital.Core.Cards
     /// candidates are the explicit next-Tier cards p.15's Upgrade a Card step looks for: "two Action
     /// cards in your deck that have the same color as the chosen card but are one Tier higher". Empty
     /// is legal and means this card has no next Tier in the content set - a Tier III card, since Tier IV
-    /// is the Ultimate that milestone 7.3 owns.</item>
+    /// is the Ultimate, which is unlocked rather than upgraded into.</item>
+    /// <item><see cref="UltimateCard"/> - milestone 7.3's, and p.16's "special Tier IV card". It states
+    /// a Tier and no colour, prints no Item icon, and names no candidates, and each of those three is
+    /// the page's own: the Tier is stated outright, the printed swatch is none of p.15's five hand
+    /// colours and no rule reads it, the Item icon belongs to "every Tier II and Tier III Action card"
+    /// and to no other, and the level that unlocks it happens "instead of upgrading a card and gaining
+    /// an item", so there is nothing above it to name.</item>
     /// <item><see cref="NotStated"/> - the definition carries no progression content. Every query in
     /// this milestone excludes such a definition by classification rather than by a colour comparison,
     /// so a fixture card that models no progression can never satisfy a colour predicate by accident.
@@ -105,6 +111,14 @@ namespace GuardsDigital.Core.Cards
         public bool IsNonBasic => Classification == CardClassification.NonBasic;
 
         /// <summary>
+        /// Whether this is p.16's Ultimate. Deliberately not implied by <see cref="Tier"/>: the Tier is
+        /// printed content and the classification is what the rules read, and a query that asked
+        /// "is this Tier IV" instead would be answering the upgrade and lowest-Tier questions off a
+        /// numeral rather than off the page's own exclusion.
+        /// </summary>
+        public bool IsUltimate => Classification == CardClassification.Ultimate;
+
+        /// <summary>
         /// Whether this definition has a Tier at all. False for a Basic card and for a definition that
         /// states nothing, which are exactly the two kinds p.15 excludes from the lowest-Tier reading.
         /// </summary>
@@ -127,6 +141,22 @@ namespace GuardsDigital.Core.Cards
                 color, CardClassification.Basic, CardTier.None, PrintedValueChannel.None,
                 Array.AsReadOnly(NoCandidates));
         }
+
+        /// <summary>
+        /// p.16's Ultimate. It takes no arguments because the page leaves nothing to choose: the Tier
+        /// is IV, there is no Item icon, there are no next-Tier candidates, and the printed swatch is
+        /// none of p.15's five colours. A factory with parameters would invite a caller to state one of
+        /// those differently, and every such statement would be an invention.
+        ///
+        /// What varies between two heroes' Ultimates is the ability itself, and that is not progression
+        /// content: <see cref="CardDefinition"/> carries it as an <see cref="UltimateRuleDefinition"/>
+        /// and refuses an Ultimate that states none.
+        /// </summary>
+        public static CardProgressionProfile UltimateCard() => Ultimate;
+
+        private static readonly CardProgressionProfile Ultimate = new CardProgressionProfile(
+            CardColor.None, CardClassification.Ultimate, CardTier.IV, PrintedValueChannel.None,
+            Array.AsReadOnly(NoCandidates));
 
         public static CardProgressionProfile NonBasicCard(
             CardColor color,
@@ -163,6 +193,16 @@ namespace GuardsDigital.Core.Cards
             if (!Enum.IsDefined(typeof(CardTier), tier))
             {
                 throw new ArgumentOutOfRangeException(nameof(tier), tier, "Unknown card Tier.");
+            }
+
+            // Milestone 7.3. Tier IV belongs to the Ultimate alone. p.16 gives it a classification of
+            // its own, so a non-Basic card claiming the numeral would be an ordinary upgradeable card
+            // that the lowest-Tier reading and the upgrade choice would both have to consider.
+            if (tier == CardTier.IV)
+            {
+                throw new ArgumentException(
+                    "Tier IV is the Ultimate's; state it through UltimateCard (rulebook p.16).",
+                    nameof(tier));
             }
 
             if (!Enum.IsDefined(typeof(PrintedValueChannel), itemIcon))

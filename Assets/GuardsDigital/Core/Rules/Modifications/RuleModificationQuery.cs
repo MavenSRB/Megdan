@@ -13,10 +13,12 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// Derives the modifications currently in effect from authoritative state.
     ///
     /// Nothing is stored: an Active effect supplies its declaration only while its instance is
-    /// <see cref="ActiveEffectPhase.Active"/>, and a token supplies its property declarations only while
-    /// that instance is on the board. Both meanings come from the trusted catalog objects the instances
-    /// already hold, which is why milestone 6.8 needed no snapshot payload change - a restored effect or
-    /// token rebinds to its definition and produces the same modifications again.
+    /// <see cref="ActiveEffectPhase.Active"/>, a token supplies its property declarations only while
+    /// that instance is on the board, and milestone 7.3's unlocked Ultimate supplies its permanent
+    /// ability only while its hero is. All three meanings come from the trusted catalog objects the
+    /// instances already hold, which is why milestone 6.8 needed no snapshot payload change and 7.3
+    /// needs none either - a restored effect, token, or Ultimate rebinds to its definition and produces
+    /// the same modifications again.
     /// </summary>
     public static class RuleModificationQuery
     {
@@ -25,18 +27,43 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// 6.8i: it orders p.17's simultaneous modifications, so a caller that omitted it silently
         /// derived a differently ordered set. A genuinely order-free caller passes
         /// <see cref="TieBreakerState.Unrevealed"/>.
+        ///
+        /// Milestone 7.3 adds the third source family and requires it for the same reason: a caller
+        /// with genuinely no card content to read writes
+        /// <see cref="GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet.None"/> rather than
+        /// leaving it to a default.
         /// </summary>
         public static RuleModificationSet Build(
             ActiveEffectLifecycle timing,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            TieBreakerState tieBreaker)
+            TieBreakerState tieBreaker,
+            GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates)
         {
             if (board != null && participants == null)
             {
                 throw new ArgumentNullException(
                     nameof(participants),
                     "A token-owned modification needs its controller's team to be ordered against the Tie Breaker.");
+            }
+
+            if (ultimates == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(ultimates),
+                    "An unlocked Ultimate supplies a rule; state UnlockedUltimateSet.None when there is none.");
+            }
+
+            if (!ultimates.IsEmpty && board == null)
+            {
+                // Rulebook p.16 makes the board the whole of an Ultimate's applicability. A caller that
+                // supplies unlocked Ultimates and no board is asking a question that cannot be answered,
+                // and answering it as "none apply" would be the silent substitution milestone 7.1a's
+                // acceptance check forbids elsewhere for exactly this reason.
+                throw new ArgumentNullException(
+                    nameof(board),
+                    "An unlocked Ultimate applies while its hero is on the board (rulebook p.16), " +
+                    "which cannot be decided without one.");
             }
 
             var applied = new List<AppliedRuleModification>();
@@ -48,6 +75,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             if (board != null)
             {
                 applied.AddRange(FromPlacedTokens(board, participants));
+                applied.AddRange(FromUnlockedUltimates(ultimates, board, participants));
             }
 
             return applied.Count == 0
@@ -184,6 +212,44 @@ namespace GuardsDigital.Core.Rules.Modifications
                         controllerSide,
                         tokenIndex);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Milestone 7.3. Rulebook p.16's Ultimate: "a powerful permanent ability that is always in
+        /// effect (as long as your hero is on the board)."
+        ///
+        /// The parenthesis is the whole of this method's condition, and it is asked of the board rather
+        /// than of any defeat, respawn, or removal record. That is deliberate: a hero leaves the board
+        /// by more than one route in this build and will leave it by more again once milestone 7.4
+        /// resolves Defeat, and a list of causes would have to be extended by every one of them, while
+        /// "is this hero on the board" is the single question the page actually asks. The unlocked
+        /// source itself is untouched by the answer - it is the card beside the dashboard, which no
+        /// removal moves - so applicability is suppressed and restored without anything being deleted or
+        /// recreated.
+        ///
+        /// The affected object is the controller. p.16 says "It provides <em>you</em> with" the ability,
+        /// which is the same object a token property affects and for the same reason.
+        /// </summary>
+        private static IEnumerable<AppliedRuleModification> FromUnlockedUltimates(
+            GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants)
+        {
+            for (var index = 0; index < ultimates.Ultimates.Count; index++)
+            {
+                var ultimate = ultimates.Ultimates[index];
+                if (!board.TryGetHeroCoordinate(ultimate.OwnerId, out _))
+                {
+                    continue;
+                }
+
+                yield return AppliedRuleModification.FromContinuousSource(
+                    ultimate.Rule.Modification,
+                    RuleObject.ForHero(ultimate.OwnerId),
+                    ultimate.Source,
+                    participants.GetTeamForHero(ultimate.OwnerId).Side,
+                    index);
             }
         }
     }

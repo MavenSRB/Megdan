@@ -510,7 +510,16 @@ namespace GuardsDigital.Core.Cards
         public RuleModificationSet CurrentModifications() =>
             cardActions == null
                 ? RuleModificationSet.Empty
-                : cardActions.CurrentModifications(timing, participants, TieBreakerState);
+                : cardActions.CurrentModifications(
+                    timing, participants, TieBreakerState, CurrentUltimates());
+
+        /// <summary>
+        /// Milestone 7.3's unlocked Ultimates, read off this turn's own card instances at the moment
+        /// they are asked for. Derived rather than held for the reason the modification set itself is:
+        /// a hero can unlock one, and the state that says so is where the card is.
+        /// </summary>
+        private GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet CurrentUltimates() =>
+            GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances);
 
         internal TurnResolutionRestoreState CaptureRestoreState() =>
             new TurnResolutionRestoreState(

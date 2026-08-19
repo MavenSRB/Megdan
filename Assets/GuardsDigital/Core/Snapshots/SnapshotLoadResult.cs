@@ -64,7 +64,20 @@ namespace GuardsDigital.Core.Snapshots
         /// update needs to know which content differs, and a dashboard is what decides where an item
         /// may be placed at all rather than what a card or a token does.
         /// </summary>
-        HeroDashboardMismatch = 12
+        HeroDashboardMismatch = 12,
+
+        /// <summary>
+        /// Milestone 7.3. The payload places a card beside a hero dashboard that rulebook p.16 could
+        /// not have put there: one that is not an Ultimate, or a second one for a hero who already has
+        /// one. Both are claims about this match's own cards rather than about content this build
+        /// lacks, which is why they are one reason of their own rather than a card-definition mismatch.
+        ///
+        /// It exists because the unlock is recorded by the card's position and nothing else. That is
+        /// what keeps a single record of it, and the price of a single record is that the reader owes
+        /// the check the record would otherwise have carried - so the position is verified on the way
+        /// in rather than trusted.
+        /// </summary>
+        UnlockedUltimateMismatch = 13
     }
 
     public sealed class SnapshotLoadException : Exception

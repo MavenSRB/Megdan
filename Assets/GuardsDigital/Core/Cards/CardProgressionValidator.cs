@@ -103,9 +103,18 @@ namespace GuardsDigital.Core.Cards
                 var candidateProgression = candidate.Progression;
                 if (!candidateProgression.IsNonBasic)
                 {
+                    // Milestone 7.3 splits this refusal's two reasons, because they are two different
+                    // sentences in the source and a single message named only the first. A Basic card
+                    // "is never upgraded" (p.15) and so is never upgraded into either; the Ultimate is
+                    // reached the other way, since the level that gives it happens "instead of
+                    // upgrading a card" (p.16) rather than as an upgrade one Tier higher.
                     throw new ArgumentException(
-                        $"Card definition '{definition.Id}' names '{candidateId}' as a next-Tier " +
-                        "candidate, but a Basic card is never upgraded into (rulebook p.15).",
+                        candidateProgression.IsUltimate
+                            ? $"Card definition '{definition.Id}' names '{candidateId}' as a next-Tier " +
+                              "candidate, but the Ultimate is unlocked instead of upgraded into " +
+                              "(rulebook p.16)."
+                            : $"Card definition '{definition.Id}' names '{candidateId}' as a next-Tier " +
+                              "candidate, but a Basic card is never upgraded into (rulebook p.15).",
                         parameterName);
                 }
 

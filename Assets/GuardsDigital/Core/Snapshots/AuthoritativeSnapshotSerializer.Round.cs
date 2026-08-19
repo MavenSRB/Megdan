@@ -154,7 +154,12 @@ namespace GuardsDigital.Core.Snapshots
                     cards,
                     participants,
                     markers,
-                    RuleModificationQuery.Build(timing, board, participants, tieBreaker),
+                    RuleModificationQuery.Build(
+                        timing,
+                        board,
+                        participants,
+                        tieBreaker,
+                        GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, cards)),
                     verifyingHeroItems);
             }
 
