@@ -170,7 +170,7 @@ Every query contract below is specified but not yet implemented as a named type.
 | `AdjacentSpaceQuery` | Specified, not implemented | 6.4 |
 | `AdjacentObjectQuery` | Specified, not implemented | 6.4 |
 | `RangeQuery` | Specified, not implemented | 6.8 |
-| `RadiusQuery` | Specified, not implemented | 6.8 |
+| `RadiusQuery` | Specified, not implemented | 7.2b |
 | `DirectionQuery` | Specified, not implemented | 6.4 |
 | `DistanceQuery` | Specified, not implemented | 6.4 |
 | `FartherQuery` | Specified, not implemented | 6.4 |
