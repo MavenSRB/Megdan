@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.1a**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **7.1a**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.2**.
 - Next proposed milestone: **7.2**.
 
 Milestone **7.1a** completed on 2026-08-19 and made milestone 7.1's `ColorRestrictedDiscard` reachable from a card. The effect frame now carries card state, as a required `EffectCardState` whose absence is named and throws when read rather than defaulting to an empty hand, because an empty hand is a legal answer meaning the chooser has nothing to give. All five points a capability can be asked from supply it: Skill start, repeated-Skill start, the option-feasibility walk, the choice-answer path, and snapshot restore's candidate re-derivation. One registered capability binds the 7.1 composition rather than duplicating it, so no orphan remains. A Skill can now require another hero to discard a card of their own choosing: the pending choice records whose decision it is, an answer submitted for any other hero is refused as `WrongChooser` with the choice still standing, a chooser with no legal card declines without failing the action, and candidates are re-derived when the answer arrives so a card that left the hand is refused. Schema stays v17 and no card definition moves; the only compatibility cause is the registered capability set, measured at +34 bytes per payload. It is proved on a fixture Skill card, as 6.2, 6.4 and 6.7 proved theirs. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).

@@ -55,7 +55,7 @@ Non-goals: No verified hero definition, card text, or values; the hero inventory
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-71a-reach-card-state-from-an-effect-definition-completion-evidence).
 
-### [ ] 7.2 Add generic item state and printed-icon bonuses
+### [~] 7.2 Add generic item state and printed-icon bonuses
 
 Observable outcome: A synthetic set-aside card can become an item in the matching dashboard slot and contribute through typed printed-value queries.
 
