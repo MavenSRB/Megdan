@@ -131,7 +131,7 @@ Non-goals: No change to the Push branch, to which modes this card carries, to an
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72c-bind-red-needles-place-to-a-printed-radius-icon-completion-evidence).
 
-### [ ] 7.3 Add Ultimate continuous-source behavior
+### [~] 7.3 Add Ultimate continuous-source behavior
 
 Observable outcome: A synthetic Ultimate can be unlocked as persistent state and supplies its rule only while its hero is on the board.
 

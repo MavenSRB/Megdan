@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.2c**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **7.2c**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.3**.
 - Next proposed milestone: **7.3**.
 
 Milestone **7.2c** completed on 2026-08-19 and put a printed Radius on the one configured card whose text already named one. Red Needle prints p.9's icon at the 4 its 6.5a text stated, and its Place branch binds the composed Radius Total a small publishing capability supplies rather than a number written into the effect - so p.16's matching item widens where the hero may be placed by exactly one ring, while the Push's 3 spaces beside it stays card text and does not move. A card printing no icon publishes nothing rather than a zero. Schema stays v19; the causes are the registered capability and this one card's revision, measured at +28 bytes per payload with the other nine cards untouched. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
