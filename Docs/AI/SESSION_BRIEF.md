@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.2b**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **7.2b**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.2c**.
 - Next proposed milestone: **7.2c**.
 
 Milestone **7.2b** completed on 2026-08-19 and gave Radius the total it lacked. A primary Skill action can print rulebook p.9's Radius icon - the one printed value a Skill carries - `RadiusValueQuery` composes it with matching items through 7.2's query, and `RadiusQuery` derives the page's inclusive disk from that total alone, filtering immunity for targeting while presence over the same disk counts it and returning the complete deterministic set. A fixture Skill pair proves it end to end: a matching item reaches exactly one ring further while the card-text distance beside it does not move. Schema stays v19; the only compatibility cause is the registered capability, measured at +28 bytes per payload. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).

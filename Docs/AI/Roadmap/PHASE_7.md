@@ -112,7 +112,7 @@ Non-goals: No Wasp or other verified hero content, no invention of a card-specif
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72b-add-the-missing-radius-total-and-make-radius-items-observable-completion-evidence).
 
-### [ ] 7.2c Bind Red Needle's Place to a printed Radius icon
+### [~] 7.2c Bind Red Needle's Place to a printed Radius icon
 
 Observable outcome: The configured Red Needle card prints rulebook p.9's Radius icon, and the Place branch of its Skill offers exactly the spaces that printed value scopes, so a matching item widens where the acting hero may be placed.
 
