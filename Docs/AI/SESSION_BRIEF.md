@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.2**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **7.2**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.2a**.
 - Next proposed milestone: **7.2a**.
 
 Milestone **7.2** completed on 2026-08-19 and added rulebook p.16's items. Every Tier II and Tier III definition prints an Item icon and no other may, enforced both ways; only the twenty-four generated upgrade targets changed content, so only they advance, to `phase-7-2-rev-1`. A set-aside card becomes an item through one placement that records owner, source card, slot and order and refuses before anything moves. `ItemBonusQuery` decides the Item Bonus for all six icons, and schema v18 rejects v17, measured at +4 bytes per payload. Nothing gains an item in a live match until 7.5; evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).

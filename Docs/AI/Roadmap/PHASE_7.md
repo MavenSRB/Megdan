@@ -70,7 +70,7 @@ Non-goals: No leveling orchestrator, Wasp item values, or final item presentatio
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72-add-generic-item-state-and-printed-icon-bonuses-completion-evidence).
 
 
-### [ ] 7.2a Compose the item bonus into every implemented total, and give each hero its dashboard item slots
+### [~] 7.2a Compose the item bonus into every implemented total, and give each hero its dashboard item slots
 
 Observable outcome: A hero's items raise every printed icon this build computes a total for, and each hero's dashboard declares the four item slots rulebook p.16 places items under.
 
