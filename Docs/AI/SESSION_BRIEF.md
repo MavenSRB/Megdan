@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.3**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **7.3**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.4**.
 - Next proposed milestone: **7.4**.
 
 Milestone **7.3** completed on 2026-08-19 and added rulebook p.16's Ultimate. Each hand now supplies p.6's eighteenth card, a Tier IV Ultimate of its own classification that prints no colour, no Initiative, no action and no Item icon, and states instead the permanent ability it supplies. Unlocking one is p.16's placement and nothing else - the card leaves the deck for the left of its owner's dashboard - so the unlock is the card's own position and no second record can disagree with it, and one query derives the ability from there and applies it exactly while that hero is on the board. Off the board it supplies nothing while the card stays where it was, and a legal respawn restores it without unlocking anything again. Eligibility is p.16's own condition, read through 7.1's lowest-Tier query over a scope the caller states, and it names no hero. Schema stays v19 because nothing new reaches the wire; the one cause is the two new definitions, measured at +83 bytes per payload. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).

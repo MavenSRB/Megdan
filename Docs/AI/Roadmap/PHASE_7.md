@@ -145,7 +145,7 @@ Non-goals: No Wasp Ultimate text or final visual treatment.
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-73-add-ultimate-continuous-source-behavior-completion-evidence).
 
-### [ ] 7.4 Resolve hero defeat, Lives, and respawn
+### [~] 7.4 Resolve hero defeat, Lives, and respawn
 
 Observable outcome: A successful synthetic Hero Attack resolves the complete general defeat consequences and later legal respawn.
 
