@@ -34,7 +34,7 @@ Non-goals: No coin spending, level purchase, item bonus, Ultimate, Wasp definiti
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-71-add-synthetic-card-colors-tiers-and-upgrade-relationships-completion-evidence).
 
-### [ ] 7.1a Reach card state from an effect definition
+### [~] 7.1a Reach card state from an effect definition
 
 Observable outcome: A synthetic Skill requires another hero to discard one card of their own choosing; the choice is owned by that hero, declines without failing the action when they have none, and survives snapshot, replay, and retained-prefix Undo.
 

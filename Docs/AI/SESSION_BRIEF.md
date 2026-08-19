@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.1**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **7.1**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.1a**.
 - Next proposed milestone: **7.1a**.
 
 Milestone **7.1** completed on 2026-08-18 and opened Phase 7: synthetic cards now carry rulebook p.15's progression content, and every hero has a Level. All ten configured definitions advance to `phase-7-1-rev-1`, and the colour assignment is deliberately unreproducible from team, name, hand slot or printed icon, because both teams hold a Red-coloured and a Blue-coloured card. `CardCharacteristicQuery` is the one place a colour is read, `CardProgressionValidator` checks every stated upgrade against the colour and Tier rules over the whole set so the relationship stays explicit content, and `ColorRestrictedDiscard` composes the query with the effect frame's own typed pending choice and with `DiscardCard`, renamed from its Defense-specific name and deciding nothing about colour, ownership or chooser. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
