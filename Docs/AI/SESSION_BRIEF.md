@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.4**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **7.4**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.5**.
 - Next proposed milestone: **7.5**.
 
 Milestone **7.4** completed on 2026-08-19 and resolved rulebook p.13's "When a Hero is Defeated" list in full. Every line runs inside the Attack that caused it and in the page's printed order, which p.14's numbered Attack/Defense order fixes at its step 6, ahead of the card's After-the-attack text. The three numbers are declared content read from p.13's own table: coins equal to the defeated hero's Level, assist coins and Life counters equal to its lowest non-Basic card Tier, taken over every card it owns rather than over one location. Spending a team's last counter ends the match, the third victory path beside p.8's two, observed once at the round's turn-command boundary. The same milestone discharged ER2 note `F-ER2-09` by moving the standard-minion coin values and p.14's Defense modifier table into declared content with every number unchanged, and widened p.7's respawn fallback to the nearest empty space on the whole map. Schema moves to v20 for the counters alone, measured at +31 bytes per payload. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).

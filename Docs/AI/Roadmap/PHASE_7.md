@@ -163,7 +163,7 @@ ER2 note (`F-ER2-09`): when this milestone supplies verified reward derivation, 
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-74-resolve-hero-defeat-lives-and-respawn-completion-evidence).
 
-### [ ] 7.5 Resolve mandatory end-of-round leveling and upgrades
+### [~] 7.5 Resolve mandatory end-of-round leveling and upgrades
 
 Observable outcome: Every eligible synthetic hero buys as many consecutive levels as it can afford and completes the required upgrade, item, or Ultimate outcome for each level.
 
