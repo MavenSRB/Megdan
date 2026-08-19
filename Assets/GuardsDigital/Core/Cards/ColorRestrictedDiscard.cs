@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -93,9 +94,10 @@ namespace GuardsDigital.Core.Cards
             CardCharacteristicCriteria criteria,
             EffectChooserRole chooser,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            HeroId chooserHeroId = default)
         {
-            if (chooser == EffectChooserRole.None)
+            if (chooser == EffectChooserRole.None && !chooserHeroId.IsDefined)
             {
                 throw new ArgumentException("A discard choice requires a chooser.", nameof(chooser));
             }
@@ -110,7 +112,8 @@ namespace GuardsDigital.Core.Cards
                 chooser,
                 candidates.Select(EffectValue.Card).ToArray(),
                 1,
-                1);
+                1,
+                chooserHeroId);
         }
 
         /// <summary>

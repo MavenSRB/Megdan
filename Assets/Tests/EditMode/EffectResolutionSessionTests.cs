@@ -130,7 +130,9 @@ namespace GuardsDigital.Tests.EditMode
             var forged = new EffectChoiceCommand(
                 paused.Frame.ResolutionId,
                 paused.Frame.PendingChoice.ChoiceId,
-                EffectChoiceCommandKind.Confirm);
+                EffectChoiceCommandKind.Confirm,
+                default,
+                paused.Frame.PendingChoice.ChooserId);
 
             var rejected = EffectResolutionSession.Answer(paused.Frame, forged, Context(definition));
 
@@ -258,7 +260,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static EffectResolutionContext Context(EffectDefinition definition) =>
             new EffectResolutionContext(
-                definition, SyntheticEffectCapabilities.CreateCatalog(), null, null, 1, 1, RuleModificationSet.Empty);
+                definition, SyntheticEffectCapabilities.CreateCatalog(), null, null, 1, 1, RuleModificationSet.Empty, EffectCardState.Absent);
 
         private static IReadOnlyList<string> Nodes(EffectResolutionStepResult result) =>
             result.Events.Select(value => value.NodeId.Value).ToArray();

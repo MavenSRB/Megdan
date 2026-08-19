@@ -22,6 +22,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         ClearTokenSelectionUnavailable = 17,
         NoPendingCorrection = 18,
         StaleCorrectionChoice = 19,
-        IllegalCorrectionChoice = 20
+        IllegalCorrectionChoice = 20,
+
+        /// <summary>
+        /// Milestone 7.1a: the answer was submitted for a hero whose decision this is not. Distinct
+        /// from <see cref="InvalidChoice"/> because the choice itself was legal and still stands; what
+        /// was wrong is who sent it.
+        /// </summary>
+        WrongChooser = 21
     }
 }

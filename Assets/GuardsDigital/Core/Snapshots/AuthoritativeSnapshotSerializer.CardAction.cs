@@ -203,7 +203,7 @@ namespace GuardsDigital.Core.Snapshots
                 case CardActionContinuationKind.Skill:
                     state = CardActionResolutionRestoreState.WithPendingSkill(
                         ReadSkillResolution(
-                            reader, definitions, capabilities, participants,
+                            reader, definitions, cards, capabilities, participants,
                             CardActionResolutionAuthority.CreateRestoredComponents(board, markers),
                             modifications),
                         defeatRewards,
@@ -410,6 +410,7 @@ namespace GuardsDigital.Core.Snapshots
         private static PendingResolution ReadSkillResolution(
             BinaryReader reader,
             IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> cards,
             EffectCapabilityCatalog capabilities,
             MatchParticipants participants,
             MatchComponents components,
@@ -508,8 +509,13 @@ namespace GuardsDigital.Core.Snapshots
                 throw Malformed($"Snapshot pending effect choice names unknown node '{nodeId}'.");
             }
 
+            // Milestone 7.1a: the restored instances, not an empty view. A capability whose candidates
+            // come from a hand must be re-asked against the cards this same payload just restored, for
+            // the same reason milestone 6.2 re-asks a board capability against the restored board. The
+            // cards are read before any pending action is decoded, which is what makes it possible.
             var resolution = new EffectResolutionContext(
-                trusted, capabilities, participants, null, 1, 1, modifications, components: components);
+                trusted, capabilities, participants, null, 1, 1, modifications,
+                EffectCardState.Of(definitions, cards), components: components);
 
             // Candidates are never written. A control node's options come from the trusted
             // definition; a capability's come from asking the trusted handler again. Either way a
@@ -605,6 +611,7 @@ namespace GuardsDigital.Core.Snapshots
                 resolution.Participants,
                 null,
                 resolution.Modifications,
+                resolution.CardState,
                 resolution.Components));
             if (offered.Choice == null)
             {

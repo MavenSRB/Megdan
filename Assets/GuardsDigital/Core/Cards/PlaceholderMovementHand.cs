@@ -156,6 +156,27 @@ namespace GuardsDigital.Core.Cards
         private static readonly SyntheticSkillProfile BlueRepeatSkillProfile =
             new SyntheticSkillProfile("blue-volley", "Blue Volley", 5);
 
+        /// <summary>
+        /// Milestone 7.1a's Skill cards: require the other hero to discard one card of their choosing.
+        ///
+        /// A pair of their own, for the reason every fixture pair before them is separate: this is the
+        /// first Skill whose chooser is not the actor, so every fixture that plays an existing Skill
+        /// would gain a prompt belonging to someone else, and several of them count the facts their
+        /// action emits and assert whose turn continues. They are dealt only by the card-state
+        /// configuration, so the Shove, component and Volley hands and every digest measured against
+        /// them are untouched.
+        ///
+        /// Red's 18 is the highest Initiative in any fixture hand, so the Red hero reliably acts first
+        /// and a discard fixture never has to steer Initiative to reach the Skill. Blue reuses 5, the
+        /// one value free inside Blue's ordinary band; it collides with nothing, because the Volley
+        /// hand that also uses it is a different configuration and the two are never dealt together.
+        /// </summary>
+        private static readonly SyntheticSkillProfile RedCardStateSkillProfile =
+            new SyntheticSkillProfile("red-demand", "Red Demand", 18);
+
+        private static readonly SyntheticSkillProfile BlueCardStateSkillProfile =
+            new SyntheticSkillProfile("blue-demand", "Blue Demand", 5);
+
         private PlaceholderMovementHand(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances)
@@ -245,6 +266,33 @@ namespace GuardsDigital.Core.Cards
             return Create(ownerId, BlueProfiles, null, repeatSkillProfile: BlueRepeatSkillProfile);
         }
 
+        /// <summary>
+        /// The five ordinary cards plus milestone 7.1a's card-state Skill alone.
+        ///
+        /// It takes the hero who must discard rather than deriving one, because there is nothing to
+        /// derive it from: a hand is built for its owner and knows nothing about who is across the
+        /// board, and "the opposing hero" is not a fact a 3v3 match has a single answer to. The
+        /// configuration that deals these hands knows both heroes and names them, which is exactly
+        /// where a card's own text would name its subject.
+        /// </summary>
+        public static PlaceholderMovementHand CreateRedWithCardStateSkill(
+            HeroId ownerId, HeroId discardingHeroId)
+        {
+            return Create(
+                ownerId, RedProfiles, null,
+                cardStateSkillProfile: RedCardStateSkillProfile,
+                cardStateDiscardingHeroId: discardingHeroId);
+        }
+
+        public static PlaceholderMovementHand CreateBlueWithCardStateSkill(
+            HeroId ownerId, HeroId discardingHeroId)
+        {
+            return Create(
+                ownerId, BlueProfiles, null,
+                cardStateSkillProfile: BlueCardStateSkillProfile,
+                cardStateDiscardingHeroId: discardingHeroId);
+        }
+
         internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
             new PlaceholderMovementHandRestoreState(Definitions, Instances);
 
@@ -271,7 +319,9 @@ namespace GuardsDigital.Core.Cards
             SyntheticSkillProfile skillProfile = null,
             SyntheticSkillProfile componentSkillProfile = null,
             SyntheticSkillProfile displacementSkillProfile = null,
-            SyntheticSkillProfile repeatSkillProfile = null)
+            SyntheticSkillProfile repeatSkillProfile = null,
+            SyntheticSkillProfile cardStateSkillProfile = null,
+            HeroId cardStateDiscardingHeroId = default)
         {
             if (!ownerId.IsDefined)
             {
@@ -319,6 +369,21 @@ namespace GuardsDigital.Core.Cards
                 AddCard(
                     definitions, instances, CreateRepeatSkillDefinition(repeatSkillProfile),
                     repeatSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (cardStateSkillProfile != null)
+            {
+                if (!cardStateDiscardingHeroId.IsDefined)
+                {
+                    throw new ArgumentException(
+                        "A card-state Skill names the hero who must discard.",
+                        nameof(cardStateDiscardingHeroId));
+                }
+
+                AddCard(
+                    definitions, instances,
+                    CreateCardStateSkillDefinition(cardStateSkillProfile, cardStateDiscardingHeroId),
+                    cardStateSkillProfile.Id, instancePrefix, ownerId);
             }
 
             return new PlaceholderMovementHand(
@@ -890,6 +955,73 @@ namespace GuardsDigital.Core.Cards
                 {
                     new ActionDefinition(
                         new ActionDefinitionId("primary-repeat-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 7.1a's fixture Skill: the named hero discards one card of their own choosing.
+        ///
+        /// One capability node under a Sequence root, deliberately - the milestone is about a
+        /// capability reaching card state, not about control flow, and a card that did anything else
+        /// as well would make every assertion about the discard read past something unrelated.
+        ///
+        /// The node is Mandatory and the `if able` behaviour still comes from the capability rather
+        /// than from the policy. A hero with no card to give reports a declined step, which the
+        /// resolver continues past whatever the policy says, so the action ends without failing; the
+        /// policy is what would matter if the capability reported that the discard was impossible,
+        /// and it never does.
+        /// </summary>
+        private static CardDefinition CreateCardStateSkillDefinition(
+            SyntheticSkillProfile profile,
+            HeroId discardingHeroId)
+        {
+            var root = new EffectNodeId("demand-root");
+            var discard = new EffectNodeId("demand-discard");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-7-1a-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { discard }),
+                    new EffectNodeDefinition(
+                        discard, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticCardStateCapabilities.HeroParameter,
+                                EffectValue.Hero(discardingHeroId))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticCardStateCapabilities.DiscardedOutput,
+                                EffectValueKind.CardInstance)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-7-1a-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-card-state-skill"),
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
                         Array.Empty<PrintedValueDefinition>(),

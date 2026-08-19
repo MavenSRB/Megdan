@@ -92,8 +92,9 @@ namespace GuardsDigital.Tests.EditMode
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
             // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
-            // object, so the count moves by one.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(23),
+            // object, so the count moves by one. Milestone 7.1a registers the first capability that
+            // reads card state - the chooser-owned in-hand discard - so it moves by one again.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(24),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

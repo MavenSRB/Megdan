@@ -94,7 +94,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                components: components);
+                EffectCardState.Of(materializedDefinitions, instances), components: components);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 offer.SourceCardInstanceId,
@@ -137,6 +137,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionId resolutionId,
             PendingRepeatedAction repeat,
             IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
@@ -166,7 +167,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                components: components);
+                EffectCardState.Of(materializedDefinitions, instances), components: components);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 repeat.SourceCardInstanceId,
@@ -230,6 +231,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public bool CanApplyAnything(
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
@@ -246,7 +248,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                components: components);
+                EffectCardState.Of(materializedDefinitions, instances), components: components);
             return EffectOptionFeasibilityQuery.CanApplyAnything(
                 EffectResolutionSession.BuildStartFrame(
                     new EffectResolutionId($"probe-{offer.SourceCardInstanceId.Value}-{offer.ActionDefinitionId.Value}"),
@@ -263,6 +265,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public CardActionResolutionResult AnswerEffectChoice(
             EffectChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
@@ -289,13 +292,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                components: components);
+                EffectCardState.Of(materializedDefinitions, instances), components: components);
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
             {
-                return Reject(step.RejectionReason == EffectResolutionRejectionReason.StaleChoice
-                    ? CardActionResolutionRejectionReason.StaleChoice
-                    : CardActionResolutionRejectionReason.InvalidChoice);
+                switch (step.RejectionReason)
+                {
+                    case EffectResolutionRejectionReason.StaleChoice:
+                        return Reject(CardActionResolutionRejectionReason.StaleChoice);
+                    case EffectResolutionRejectionReason.WrongChooser:
+                        return Reject(CardActionResolutionRejectionReason.WrongChooser);
+                    default:
+                        return Reject(CardActionResolutionRejectionReason.InvalidChoice);
+                }
             }
 
             if (step.RepeatRequested)

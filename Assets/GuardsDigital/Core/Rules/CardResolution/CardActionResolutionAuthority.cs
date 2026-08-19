@@ -254,7 +254,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 result, repeat, lanePushCause, resolutionId, offer.SourceCardInstanceId,
                 offer.ActionDefinitionId, offer.ActorId,
                 new ActionBoundaryContext(
-                    prepared.Definitions, participants, timing, tieBreaker, roundIndex, turnIndex));
+                    prepared.Definitions, prepared.Instances, participants, timing, tieBreaker,
+                    roundIndex, turnIndex));
         }
 
         /// <summary>
@@ -265,18 +266,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public bool CanSkillApplyAnything(
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             int roundIndex,
             int turnIndex) =>
             skillBackend.CanApplyAnything(
-                offer, definitions, participants, timing, modifications, components,
+                offer, definitions, instances, participants, timing, modifications, components,
                 roundIndex, turnIndex);
 
         public CardActionResolutionResult AnswerEffectChoice(
             GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
@@ -289,9 +292,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var frame = skillBackend.PendingResolution;
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
             var result = skillBackend.AnswerEffectChoice(
-                command, materializedDefinitions, participants, timing, modifications, components,
-                roundIndex, turnIndex, out var repeat, out var lanePushCause);
+                command, materializedDefinitions, materializedInstances, participants, timing,
+                modifications, components, roundIndex, turnIndex, out var repeat, out var lanePushCause);
             if (frame == null)
             {
                 return result;
@@ -301,7 +306,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 result, repeat, lanePushCause, new ActionResolutionId(frame.ResolutionId.Value),
                 frame.SourceCardInstanceId, frame.ActionDefinitionId, frame.ActorId,
                 new ActionBoundaryContext(
-                    materializedDefinitions, participants, timing, tieBreaker, roundIndex, turnIndex));
+                    materializedDefinitions, materializedInstances, participants, timing, tieBreaker,
+                    roundIndex, turnIndex));
         }
 
         /// <summary>
@@ -489,6 +495,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 repeat.ResolutionId,
                 repeat,
                 boundary.Definitions,
+                boundary.Instances,
                 boundary.Participants,
                 boundary.Timing,
                 CurrentModifications(boundary.Timing, boundary.Participants, boundary.TieBreaker),

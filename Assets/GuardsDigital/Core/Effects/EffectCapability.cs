@@ -111,6 +111,7 @@ namespace GuardsDigital.Core.Effects
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
+            EffectCardState cardState,
             MatchComponents components = null)
         {
             if (!nodeId.IsDefined)
@@ -135,6 +136,7 @@ namespace GuardsDigital.Core.Effects
             Participants = participants;
             Timing = timing;
             Modifications = modifications ?? throw new ArgumentNullException(nameof(modifications));
+            CardState = cardState ?? throw new ArgumentNullException(nameof(cardState));
             Components = components;
         }
 
@@ -157,6 +159,20 @@ namespace GuardsDigital.Core.Effects
         /// <see cref="RuleModificationSet.Empty"/> is the named absence.
         /// </summary>
         public RuleModificationSet Modifications { get; }
+
+        /// <summary>
+        /// The card state this handler may read. Required since milestone 7.1a: a capability that
+        /// derives candidates from a hand needs the instances, and needs them identically at every
+        /// point it can be asked - Skill start, repeated-Skill start, the option-feasibility walk, the
+        /// choice-answer path, and snapshot restore's candidate re-derivation.
+        ///
+        /// <see cref="EffectCardState.Absent"/> is the named absence and throws when read, so a
+        /// capability handed no card state fails loudly instead of reporting the empty candidate set
+        /// that an ordinary, legal "the chooser holds nothing eligible" also produces. Those two mean
+        /// opposite things to the enclosing node, and nothing may quietly turn the first into the
+        /// second.
+        /// </summary>
+        public EffectCardState CardState { get; }
 
         /// <summary>
         /// Milestone 6.2's token and marker collaborators, or <c>null</c> outside a live match. Like
@@ -253,9 +269,10 @@ namespace GuardsDigital.Core.Effects
             EffectChooserRole chooser,
             IEnumerable<EffectValue> candidates,
             int minimumSelections,
-            int maximumSelections)
+            int maximumSelections,
+            HeroId chooserHeroId = default)
         {
-            if (chooser == EffectChooserRole.None)
+            if (chooser == EffectChooserRole.None && !chooserHeroId.IsDefined)
             {
                 throw new ArgumentException("An effect choice requires a chooser.", nameof(chooser));
             }
@@ -282,12 +299,26 @@ namespace GuardsDigital.Core.Effects
             }
 
             Chooser = chooser;
+            ChooserHeroId = chooserHeroId;
             Candidates = new ReadOnlyCollection<EffectValue>(options);
             MinimumSelections = minimumSelections;
             MaximumSelections = maximumSelections;
         }
 
         public EffectChooserRole Chooser { get; }
+
+        /// <summary>
+        /// The exact hero whose decision this is, when the handler already knows. Milestone 7.1a: a
+        /// capability told which hero must discard has that hero in a typed input, so naming them is
+        /// reporting a fact rather than re-deriving one. It takes precedence over
+        /// <see cref="Chooser"/>, which stays the definition-level way to say the same thing when the
+        /// node rather than the handler decides.
+        ///
+        /// This is what keeps "another hero discards" out of the resolution-scoped opposing-hero seam,
+        /// which cannot express it: with three opponents on a side there is no single opposing hero,
+        /// and the handler's own input is the only place the answer actually exists.
+        /// </summary>
+        public HeroId ChooserHeroId { get; }
         public IReadOnlyList<EffectValue> Candidates { get; }
         public int MinimumSelections { get; }
         public int MaximumSelections { get; }

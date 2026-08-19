@@ -194,6 +194,30 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// The ordinary configuration plus milestone 7.1a's card-state Skill in each hand.
+        ///
+        /// Separate for the reason the three before it are, and for one more: this Skill's chooser is
+        /// the other hero, so dealing it into an existing fixture hand would give every fixture that
+        /// plays a Skill a decision belonging to someone who is not acting.
+        ///
+        /// It is the only configuration that has to tell a hand about a hero other than its owner. A
+        /// card that makes another hero discard has to name that hero, a hand is built for its owner
+        /// alone, and "the opposing hero" is not something a 3v3 match can be asked for, so the
+        /// configuration - which is the one place both heroes are known - names them.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForCardStateFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                owner => PlaceholderMovementHand.CreateRedWithCardStateSkill(owner, blueHeroId),
+                owner => PlaceholderMovementHand.CreateBlueWithCardStateSkill(owner, redHeroId));
+        }
+
+        /// <summary>
         /// Each named configuration says which hand it deals rather than setting a flag another one
         /// reads. Milestone 6.2d needed a third combination and a second boolean would have made the
         /// callers here describe themselves by what they are not. The five-card scene removed that

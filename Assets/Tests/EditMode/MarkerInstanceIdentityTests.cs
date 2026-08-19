@@ -213,6 +213,7 @@ namespace GuardsDigital.Tests.EditMode
                 PlaceholderOneVsOneParticipants.Create(),
                 null,
                 RuleModificationSet.Empty,
+                EffectCardState.Absent,
                 components);
     }
 }

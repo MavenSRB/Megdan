@@ -771,6 +771,7 @@ namespace GuardsDigital.Tests.EditMode
                 PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red).Participants,
                 null,
                 RuleModificationSet.Empty,
+                EffectCardState.Absent,
                 new MatchComponents(
                     SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
                     board, board, board));

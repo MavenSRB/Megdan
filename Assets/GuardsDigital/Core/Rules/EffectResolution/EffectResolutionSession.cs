@@ -145,6 +145,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             int roundIndex,
             int turnIndex,
             RuleModificationSet modifications,
+            EffectCardState cardState,
             HeroId opposingHeroId = default,
             MatchComponents components = null)
         {
@@ -155,6 +156,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
             Modifications = modifications ?? throw new ArgumentNullException(nameof(modifications));
+            CardState = cardState ?? throw new ArgumentNullException(nameof(cardState));
             OpposingHeroId = opposingHeroId;
             Components = components;
         }
@@ -175,6 +177,16 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// no-modification value, so a genuinely rule-free caller states it rather than inheriting it.
         /// </summary>
         public RuleModificationSet Modifications { get; }
+
+        /// <summary>
+        /// The card definitions and instances this resolution may read. Required since milestone 7.1a,
+        /// which added the first capability that reads card state rather than only card identities: a
+        /// discard derives its candidates from the chooser's actual hand, and must derive them again
+        /// when the answer arrives, when the option walk asks what the node would do, and when a
+        /// snapshot restores the paused choice. <see cref="EffectCardState.Absent"/> is the named
+        /// no-card-state value, so a caller with none states it rather than inheriting an empty hand.
+        /// </summary>
+        public EffectCardState CardState { get; }
 
         /// <summary>Milestone 6.2's token and marker collaborators, or <c>null</c> outside a match.</summary>
         public MatchComponents Components { get; }
@@ -275,6 +287,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             {
                 return EffectResolutionStepResult.Reject(
                     EffectResolutionRejectionReason.StaleChoice, frame);
+            }
+
+            // Milestone 7.1a: whose decision this is, asked before what the decision was.
+            //
+            // Until a chooser could be someone other than the actor there was nobody to mistake, and
+            // this reason was declared but unreachable. Now that a Skill can require another hero to
+            // discard, the actor submitting that hero's answer is a real command to refuse, and it is
+            // refused as the wrong chooser rather than as an invalid choice, because the difference is
+            // exactly what a player needs told. The frame is returned untouched, so the choice still
+            // stands and the hero whose decision it is can still make it.
+            if (!command.AnsweringHeroId.Equals(choice.ChooserId))
+            {
+                return EffectResolutionStepResult.Reject(
+                    EffectResolutionRejectionReason.WrongChooser, frame);
             }
 
             switch (command.Kind)
@@ -661,7 +687,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         offered.Select(EffectChoiceCandidate.Value_).ToArray(),
                         result.Choice.MinimumSelections,
                         Math.Min(result.Choice.MaximumSelections, offered.Count),
-                        result.Choice.Chooser));
+                        result.Choice.Chooser,
+                        chooserHeroOverride: result.Choice.ChooserHeroId));
 
                 case EffectExecutionResultKind.ImpossibleMandatory:
                     return RefuseCapability(
@@ -731,15 +758,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             int maximumSelections,
             EffectChooserRole chooserOverride = EffectChooserRole.None,
             IReadOnlyList<EffectChoiceCandidate> unavailableCandidates = null,
-            bool canStop = false) =>
+            bool canStop = false,
+            HeroId chooserHeroOverride = default) =>
             new PendingEffectChoice(
                 frame.ResolutionId,
                 new EffectChoiceId($"node-{node.Id.Value}"),
                 node.Id,
-                ResolveChooser(
-                    chooserOverride != EffectChooserRole.None ? chooserOverride : node.Chooser,
-                    frame,
-                    context),
+                // Milestone 7.1a: a handler that names the exact hero has already answered this, and
+                // a role would only re-derive a worse version of the same answer.
+                chooserHeroOverride.IsDefined
+                    ? chooserHeroOverride
+                    : ResolveChooser(
+                        chooserOverride != EffectChooserRole.None ? chooserOverride : node.Chooser,
+                        frame,
+                        context),
                 kind,
                 candidates,
                 minimumSelections,
@@ -838,6 +870,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.Participants,
                 context.Timing,
                 context.Modifications,
+                context.CardState,
                 context.Components);
         }
 

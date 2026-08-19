@@ -1046,7 +1046,7 @@ namespace GuardsDigital.Core.Cards
         private bool CanStartSkill(ActionOffer offer) =>
             cardActions == null ||
             cardActions.CanSkillApplyAnything(
-                offer, definitions, participants, timing, CurrentModifications(),
+                offer, definitions, instances, participants, timing, CurrentModifications(),
                 roundIndex, turnIndex);
 
         public TurnResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
@@ -1079,8 +1079,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             var answered = cardActions.AnswerEffectChoice(
-                command, definitions, participants, timing, CurrentModifications(), TieBreakerState,
-                roundIndex, turnIndex);
+                command, definitions, instances, participants, timing, CurrentModifications(),
+                TieBreakerState, roundIndex, turnIndex);
             if (!answered.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
             return CompleteSkillStep(answered);
@@ -1128,7 +1128,8 @@ namespace GuardsDigital.Core.Cards
             var answered = cardActions.AnswerDisplacedMinionCorrection(
                 command,
                 new GuardsDigital.Core.Rules.CardResolution.ActionBoundaryContext(
-                    definitions, participants, timing, TieBreakerState, roundIndex, turnIndex));
+                    definitions, instances, participants, timing, TieBreakerState,
+                    roundIndex, turnIndex));
             if (!answered.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CorrectionCommandRejected);
             return CompleteSkillStep(answered);

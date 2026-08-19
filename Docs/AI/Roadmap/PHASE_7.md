@@ -34,7 +34,7 @@ Non-goals: No coin spending, level purchase, item bonus, Ultimate, Wasp definiti
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-71-add-synthetic-card-colors-tiers-and-upgrade-relationships-completion-evidence).
 
-### [~] 7.1a Reach card state from an effect definition
+### [x] 7.1a Reach card state from an effect definition
 
 Observable outcome: A synthetic Skill requires another hero to discard one card of their own choosing; the choice is owned by that hero, declines without failing the action when they have none, and survives snapshot, replay, and retained-prefix Undo.
 
@@ -52,6 +52,8 @@ Acceptance checks:
 - Focused tests cover the five reach points, the opposing chooser, the wrong-hero refusal, the empty-candidate decline, the stale answer, and the persistence round trip.
 
 Non-goals: No verified hero definition, card text, or values; the hero inventory remains milestone 8.1's. No card-state mutation beyond the in-hand discard - retrieve, swap, set aside, and upgrade from an effect stay with their owning milestones. No configured showcase card gains new printed text, so the ten-card matrix milestone 7.9 gates is untouched and the capability is proved on a fixture Skill card, as milestones 6.2, 6.4, and 6.7 proved theirs before any configured card exposed them. No per-player information filtering or hidden-hand presentation; the online track owns that, and this milestone requires only that the choice records whose it is. No change to the leveling, item, or system-transition seams.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-71a-reach-card-state-from-an-effect-definition-completion-evidence).
 
 ### [ ] 7.2 Add generic item state and printed-icon bonuses
 

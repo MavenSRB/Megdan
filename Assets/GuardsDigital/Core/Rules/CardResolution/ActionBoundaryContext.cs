@@ -17,11 +17,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
     /// question - what is true right now - and because the repeated instance must read them at the
     /// moment it starts rather than inherit anything the finished instance was given. That is what
     /// makes an Active effect the first instance created restrict the second.
+    ///
+    /// Milestone 7.1a adds the card instances for the same reason it added the definitions: a repeated
+    /// Skill whose effect reads card state must read the hands as they stand when the second instance
+    /// starts, including any card the first instance discarded.
     /// </summary>
     public readonly struct ActionBoundaryContext
     {
         public ActionBoundaryContext(
             IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
             TieBreakerState tieBreaker,
@@ -29,6 +34,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int turnIndex)
         {
             Definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
+            Instances = instances ?? throw new ArgumentNullException(nameof(instances));
             Participants = participants;
             Timing = timing;
             TieBreaker = tieBreaker;
@@ -38,6 +44,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public ActionBoundaryContext(
             IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
             TieBreakerState tieBreaker,
@@ -45,6 +52,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int turnIndex)
             : this(
                 definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions)),
+                instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances)),
                 participants,
                 timing,
                 tieBreaker,
@@ -54,6 +62,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         public IReadOnlyList<CardDefinition> Definitions { get; }
+        public IReadOnlyList<CardInstance> Instances { get; }
         public MatchParticipants Participants { get; }
         public ActiveEffectLifecycle Timing { get; }
         public TieBreakerState TieBreaker { get; }

@@ -69,7 +69,7 @@ namespace GuardsDigital.Tests.EditMode
                 paused.Frame,
                 new EffectChoiceCommand(
                     choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Select,
-                    EffectChoiceCandidate.Option(First)),
+                    EffectChoiceCandidate.Option(First), choice.ChooserId),
                 Context(definition));
 
             Assert.That(refused.Accepted, Is.False);
@@ -260,7 +260,7 @@ namespace GuardsDigital.Tests.EditMode
                     paused.Frame,
                     new EffectChoiceCommand(
                         choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Select,
-                        EffectChoiceCandidate.Option(option)),
+                        EffectChoiceCandidate.Option(option), choice.ChooserId),
                     Context(definition));
 
                 Assert.That(refused.Accepted, Is.False);
@@ -274,7 +274,7 @@ namespace GuardsDigital.Tests.EditMode
             var confirmed = EffectResolutionSession.Answer(
                 paused.Frame,
                 new EffectChoiceCommand(
-                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Confirm),
+                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Confirm, default, choice.ChooserId),
                 Context(definition));
             Assert.That(confirmed.Accepted, Is.False,
                 "Nothing is selected and nothing may be, so there is nothing to confirm either.");
@@ -293,7 +293,7 @@ namespace GuardsDigital.Tests.EditMode
             var forged = EffectResolutionSession.Answer(
                 paused.Frame,
                 new EffectChoiceCommand(
-                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Stop),
+                    choice.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Stop, default, choice.ChooserId),
                 Context(definition));
 
             Assert.That(forged.Accepted, Is.False,
@@ -503,7 +503,7 @@ namespace GuardsDigital.Tests.EditMode
                 ActionInvocationContext.PrintedPrimary,
                 new EffectResolutionContext(
                     definition, SyntheticEffectCapabilities.CreateCatalog(), participants, timing,
-                    1, 1, RuleModificationSet.Empty));
+                    1, 1, RuleModificationSet.Empty, EffectCardState.Absent));
 
             Assert.That(paused.Frame.PendingChoice.UnavailableCandidates
                     .Select(candidate => candidate.OptionNodeId),
@@ -531,7 +531,7 @@ namespace GuardsDigital.Tests.EditMode
         private static EffectResolutionContext Context(EffectDefinition definition) =>
             new EffectResolutionContext(
                 definition, SyntheticEffectCapabilities.CreateCatalog(), null, null, 1, 1,
-                RuleModificationSet.Empty);
+                RuleModificationSet.Empty, EffectCardState.Absent);
 
         private static IReadOnlyList<string> Kinds(EffectResolutionStepResult result) =>
             result.Events.Select(value => $"{value.NodeId}={value.ResultKind}").ToArray();

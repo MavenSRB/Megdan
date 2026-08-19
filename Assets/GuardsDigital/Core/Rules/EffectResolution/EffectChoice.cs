@@ -114,7 +114,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectResolutionId resolutionId,
             EffectChoiceId choiceId,
             EffectChoiceCommandKind kind,
-            EffectChoiceCandidate candidate = default)
+            EffectChoiceCandidate candidate = default,
+            HeroId answeringHeroId = default)
         {
             if (!resolutionId.IsDefined || !choiceId.IsDefined)
             {
@@ -139,6 +140,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             ChoiceId = choiceId;
             Kind = kind;
             Candidate = candidate;
+            AnsweringHeroId = answeringHeroId;
         }
 
         public EffectResolutionId ResolutionId { get; }
@@ -146,18 +148,31 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public EffectChoiceCommandKind Kind { get; }
         public EffectChoiceCandidate Candidate { get; }
 
+        /// <summary>
+        /// Milestone 7.1a: the hero this answer is submitted for.
+        ///
+        /// Every legitimate command is minted by <see cref="PendingEffectChoice"/> carrying its own
+        /// <see cref="PendingEffectChoice.ChooserId"/>, so presentation forwards the projected
+        /// invocation and never composes an identity of its own. The field exists so that a command
+        /// built by hand for a hero whose decision this is not can be refused as exactly that, rather
+        /// than as a generic invalid choice: once a chooser may be someone other than the actor, "who
+        /// sent this" is a question the resolver has to be able to ask.
+        /// </summary>
+        public HeroId AnsweringHeroId { get; }
+
         public bool Equals(EffectChoiceCommand other) =>
             other != null &&
             ResolutionId.Equals(other.ResolutionId) &&
             ChoiceId.Equals(other.ChoiceId) &&
             Kind == other.Kind &&
-            Candidate.Equals(other.Candidate);
+            Candidate.Equals(other.Candidate) &&
+            AnsweringHeroId.Equals(other.AnsweringHeroId);
 
         public override bool Equals(object obj) => Equals(obj as EffectChoiceCommand);
 
         public override int GetHashCode() =>
             (ResolutionId.GetHashCode() * 397) ^ ChoiceId.GetHashCode() ^
-            ((int)Kind * 31) ^ Candidate.GetHashCode();
+            ((int)Kind * 31) ^ Candidate.GetHashCode() ^ AnsweringHeroId.GetHashCode();
 
         public override string ToString() => $"{Kind} {Candidate} @{ResolutionId}/{ChoiceId}";
     }
@@ -278,20 +293,23 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 .Where(candidate => !refused.Contains(candidate))
                 .Where(candidate => !chosen.Contains(candidate) && chosen.Length < maximumSelections)
                 .Select(candidate => new EffectChoiceCommand(
-                    resolutionId, choiceId, EffectChoiceCommandKind.Select, candidate))
+                    resolutionId, choiceId, EffectChoiceCommandKind.Select, candidate, chooserId))
                 .ToArray());
             DeselectInvocations = new ReadOnlyCollection<EffectChoiceCommand>(chosen
                 .Select(candidate => new EffectChoiceCommand(
-                    resolutionId, choiceId, EffectChoiceCommandKind.Deselect, candidate))
+                    resolutionId, choiceId, EffectChoiceCommandKind.Deselect, candidate, chooserId))
                 .ToArray());
             ConfirmInvocation = chosen.Length >= minimumSelections
-                ? new EffectChoiceCommand(resolutionId, choiceId, EffectChoiceCommandKind.Confirm)
+                ? new EffectChoiceCommand(
+                    resolutionId, choiceId, EffectChoiceCommandKind.Confirm, default, chooserId)
                 : null;
             DeclineInvocation = kind == EffectChoiceKind.ConfirmOrDecline
-                ? new EffectChoiceCommand(resolutionId, choiceId, EffectChoiceCommandKind.Decline)
+                ? new EffectChoiceCommand(
+                    resolutionId, choiceId, EffectChoiceCommandKind.Decline, default, chooserId)
                 : null;
             StopInvocation = canStop
-                ? new EffectChoiceCommand(resolutionId, choiceId, EffectChoiceCommandKind.Stop)
+                ? new EffectChoiceCommand(
+                    resolutionId, choiceId, EffectChoiceCommandKind.Stop, default, chooserId)
                 : null;
         }
 

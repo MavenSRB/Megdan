@@ -439,17 +439,40 @@ namespace GuardsDigital.Tests.EditMode
         /// not, because theirs are the fixture-only Skill cards, whose revisions this milestone leaves
         /// alone. The common prefix is 30 bytes in every fixture, which is where the version field
         /// itself sits.
+        /// Milestone 7.1a re-pins all eight for a registration cause and no schema or content cause at
+        /// all: <c>CurrentSchemaVersion</c> stays 17, no card definition or revision moves, and the
+        /// fixture names keep their <c>-v17</c> suffix because there is no new version to name. What
+        /// changed is the registered capability set, which every payload records so a restore can
+        /// refuse a build whose capabilities differ - the same cause as milestones 6.4 and 6.8k.
+        /// Measured in a throwaway worktree at pre-change revision <c>d3a3aa4</c> rather than assumed.
+        /// Every payload grows by exactly 34 bytes: a one-byte length prefix, the twenty-nine-character
+        /// <c>synthetic-discard-chosen-card</c> id, and the int32 revision. The registration count is a
+        /// fixed int32 and does not move when it goes from 23 to 24. Nothing else in any payload
+        /// changes, which is what makes the delta identical across all eight rather than varying with
+        /// what each fixture holds.
+        /// The decision is reject, and the existing registration check already makes it: a payload
+        /// written by a build without this capability describes a match whose effects could not have
+        /// required a hero to discard, and a build with it must not silently accept one - that
+        /// mismatch is exactly what the check exists to catch. Migration is not available and should
+        /// not be, because a registration list is a statement about the build that wrote the payload
+        /// rather than state to convert.
+        /// Note for a later reader comparing these numbers by hand: a fixture string is the outer
+        /// envelope, which base64-encodes the payload, so the outer length moves by 44 or 48 characters
+        /// rather than by 34. That is base64 alignment and nothing else - 34 is eleven groups of three
+        /// plus one, so the outer length grows by 48 for the two fixtures whose payload length is a
+        /// multiple of three (<c>setup-v17</c> at 3843 bytes and <c>pending-choice-v17</c> at 4218) and
+        /// by 44 for the other six.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v17", "6e2513ca440d962ac2041667622e34c3ee58fc16513e750917d9a8bc0ee6b880"),
-            new CompatibilityFixture("active-turn-v17", "26129e97e56cd68040c46983b08daf799551339b4885c645ff6a567ac4615f33"),
-            new CompatibilityFixture("pending-choice-v17", "ed227e2bba3608b746dd7d8c60155b3214ca86df8104bfb7414db0302403c021"),
-            new CompatibilityFixture("end-of-round-v17", "4a1acce01c78824a3e3771ffbbc07f6376ea61f36fa65cb58d4d08f2dbebded8"),
-            new CompatibilityFixture("pending-minion-battle-v17", "48849d7099d24a92e31f81ce72b5ec3d541823a7ac6d471ea14591955e18d21b"),
-            new CompatibilityFixture("placed-token-v17", "12c755d883f0a146ff17824196fc32b26cf66a5a3653c34a49638351a82f5721"),
-            new CompatibilityFixture("attached-marker-v17", "5b964387fce1d678a48cf006bd02cad2360ffb653ffdb0ae630d41c02b36f493"),
-            new CompatibilityFixture("pending-correction-v17", "a07503251451ca3a36f2fd0575f775ca35a37bc450ad2e9e7b0b1c7c9149c80a")
+            new CompatibilityFixture("setup-v17", "27562a9de2f53f72338422db99e33561f012e2f562d81a65cfdfdb0da1da71c9"),
+            new CompatibilityFixture("active-turn-v17", "d02f0ab2bf1d7f04f4461a0f1eb0912c0a6ec42e203502d92898c1fa07c2ca0e"),
+            new CompatibilityFixture("pending-choice-v17", "11ff5b2e8f45a8e817733629887e5887bfb9ef6448665247ec5095cfbc3c3de4"),
+            new CompatibilityFixture("end-of-round-v17", "684bbfb93fe8fbfca6fc242964f33c21a0e5200ba6932413aba82cad9666aeea"),
+            new CompatibilityFixture("pending-minion-battle-v17", "9e9d73b385f60e7c1a419b1dbe21ce4174d597e4d49cd3fe435af663df8f1c51"),
+            new CompatibilityFixture("placed-token-v17", "f51148ff89c11a9625873d729c89311ca6782c977c220216870bb303288b6561"),
+            new CompatibilityFixture("attached-marker-v17", "5bc584ebd2c89116d69e0c489a3356f701ef2cdfe0a8000b5fdbd50c191ac180"),
+            new CompatibilityFixture("pending-correction-v17", "016e2ec76b252e87a33b22df4f7eb9aa29e07d4e43a9829756640bf2855a1443")
         };
 
         [Test]

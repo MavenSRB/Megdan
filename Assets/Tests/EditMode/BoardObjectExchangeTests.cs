@@ -760,6 +760,7 @@ namespace GuardsDigital.Tests.EditMode
                 PlaceholderOneVsOneParticipants.Create(),
                 null,
                 RuleModificationSet.Empty,
+                EffectCardState.Absent,
                 new MatchComponents(
                     SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
                     board, board, board));

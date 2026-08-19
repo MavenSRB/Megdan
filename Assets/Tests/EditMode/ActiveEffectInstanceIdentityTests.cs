@@ -173,6 +173,6 @@ namespace GuardsDigital.Tests.EditMode
                 turnIndex,
                 participants,
                 timing,
-                RuleModificationSet.Empty);
+                RuleModificationSet.Empty, EffectCardState.Absent);
     }
 }

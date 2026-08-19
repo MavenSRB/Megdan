@@ -93,7 +93,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticDisplacementCapabilities.Handlers())
                 .Concat(SyntheticTargetingCapabilities.Handlers())
                 .Concat(SyntheticPlacementCapabilities.Handlers())
-                .Concat(SyntheticExchangeCapabilities.Handlers()));
+                .Concat(SyntheticExchangeCapabilities.Handlers())
+                .Concat(SyntheticCardStateCapabilities.Handlers()));
 
         /// <summary>
         /// Creates one Active effect on the actor. This is the capability that gives acceptance check 5
