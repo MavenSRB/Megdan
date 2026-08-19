@@ -112,6 +112,23 @@ Non-goals: No Wasp or other verified hero content, no invention of a card-specif
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72b-add-the-missing-radius-total-and-make-radius-items-observable-completion-evidence).
 
+### [ ] 7.2c Bind Red Needle's Place to a printed Radius icon
+
+Observable outcome: The configured Red Needle card prints rulebook p.9's Radius icon, and the Place branch of its Skill offers exactly the spaces that printed value scopes, so a matching item widens where the acting hero may be placed.
+
+Context: milestone 6.5a wrote Red Needle's Skill as `Choose one: choose another adjacent unit and Push it 3 spaces; or Place your hero in a different empty space within Radius 4`, and implemented that bound as a literal integer input to the Place capability. p.9 states that "if the card text mentions Range/Radius, it refers to this value" - the value on the printed Range/Radius icon - so a card whose text names a Radius while printing no Radius icon states a bound the page does not give it, and p.16 cannot raise it because there is no icon to raise. Milestone 7.2b built everything needed to state it correctly: a primary action may print a Radius, one query composes that printed value with matching items, and one named query derives the disk. The user approved the correction on 2026-08-19 and chose this card over the configured direct-Move card, on two grounds recorded here rather than inferred: this is the card whose own text already claims a Radius, and its showcase mode map does not change, where replacing a branch of the direct-Move card would have removed the build's only configured consumer of an operation milestone 7.9's matrix gate expects to find. The acting hero remains the placed subject, so no new targeting shape appears and no immunity question is added. Phase 7's phase-wide durability rule governs the outcome.
+
+Acceptance checks:
+
+- Red Needle's Skill action prints exactly one Radius icon, valued at the 4 its text already names, and everything else the card prints is unchanged: identity, Initiative 13, Secondary Movement 2, the Defense 1 reaction, ownership, and its hand slot.
+- The Place branch's bound is the composed Radius Total rather than a number the definition carries. The total is published as a fact by a capability and bound through the ordinary node-output binding, as the actor's-space capability already publishes the actor's coordinate, so the Place reads the same total any other consumer would and no second derivation appears beside milestone 7.2b's.
+- A matching Radius item widens that branch's offered destinations by exactly one ring, while the Push branch's fixed 3 spaces stays card text and does not move.
+- A definition that asks for a card's Radius where the card prints none fails loudly rather than bounding anything at zero.
+- Only Red Needle's content revision advances; the other nine configured cards keep theirs, and the compatibility-corpus decision the change requires is recorded with a byte-level delta measured at the pre-change revision.
+- Focused tests cover the printed icon, the item-widened destination set at its boundary, the unchanged Push distance, the absent-icon refusal, and the snapshot, replay and retained-prefix Undo evidence applicable to what actually changes.
+
+Non-goals: No change to the Push branch, to which modes this card carries, to any other configured card, to the Place operation itself, or to the ten-card matrix milestone 7.9 gates beyond this one bound's provenance. No new targeting shape, since the acting hero remains the subject; no Wasp content; no Radius presentation.
+
 ### [ ] 7.3 Add Ultimate continuous-source behavior
 
 Observable outcome: A synthetic Ultimate can be unlocked as persistent state and supplies its rule only while its hero is on the board.
