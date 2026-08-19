@@ -1478,6 +1478,7 @@ namespace GuardsDigital.Core.Cards
             var push = new EffectNodeId("needle-push");
             var placeBranch = new EffectNodeId("needle-place-branch");
             var actorSpace = new EffectNodeId("needle-actor-space");
+            var cardRadius = new EffectNodeId("needle-card-radius");
             var place = new EffectNodeId("needle-place");
 
             var effect = new EffectDefinition(
@@ -1532,11 +1533,24 @@ namespace GuardsDigital.Core.Cards
                         }),
                     new EffectNodeDefinition(
                         placeBranch, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { actorSpace, place }),
+                        childNodeIds: new[] { actorSpace, cardRadius, place }),
                     new EffectNodeDefinition(
                         actorSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticPlacementCapabilities.ActorSpaceV1,
                         outputs: new[] { new EffectOutputBinding("space", EffectValueKind.Coordinate) }),
+                    // Milestone 7.2c. The bound is the card's own printed Radius icon, published as a
+                    // fact and bound below, rather than the literal 4 this branch carried since 6.5a.
+                    // p.9 is explicit that a card text mentioning Radius "refers to this value", so a
+                    // card that says "within Radius" and writes its own number down states a bound the
+                    // page does not give it - and leaves p.16's Item Bonus no icon to raise.
+                    new EffectNodeDefinition(
+                        cardRadius, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticValueCapabilities.CardRadiusV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticValueCapabilities.RadiusOutput, EffectValueKind.Integer)
+                        }),
                     new EffectNodeDefinition(
                         place, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticPlacementCapabilities.PlaceV1,
@@ -1544,7 +1558,11 @@ namespace GuardsDigital.Core.Cards
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "subject", actorSpace, "space", EffectValueKind.Coordinate),
-                            EffectInputBinding.FromLiteral("radius", EffectValue.Integer(4))
+                            EffectInputBinding.FromNodeOutput(
+                                "radius",
+                                cardRadius,
+                                SyntheticValueCapabilities.RadiusOutput,
+                                EffectValueKind.Integer)
                         },
                         outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) })
                 });
@@ -1553,12 +1571,22 @@ namespace GuardsDigital.Core.Cards
                 new ActionDefinitionId("primary-push-place-skill"),
                 ActionKind.Skill,
                 ActionDefinitionOrigin.PrintedPrimary,
-                Array.Empty<PrintedValueDefinition>(),
+                // Milestone 7.2c. The Radius this card's text has named since 6.5a, printed where p.9
+                // puts it: "some primary actions have a Range or Radius icon and a value on the right
+                // side of the card". The value is the 4 the text already stated, so no rule changes -
+                // what changes is that the number is now the card's printed icon, which p.16's items
+                // raise and which the Place branch reads instead of carrying its own copy.
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Radius, PushPlaceRadius) },
                 new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                 AttackRangeKind.None,
                 default,
                 effect);
         }
+
+        /// <summary>
+        /// Red Needle's printed Radius, and the exact value milestone 6.5a's card text named.
+        /// </summary>
+        internal const int PushPlaceRadius = 4;
 
         /// <summary>
         /// Milestone 6.5b's conversion: the modal Skill `Choose one: directly Move another adjacent
@@ -2028,7 +2056,17 @@ namespace GuardsDigital.Core.Cards
                     ProgressionRevision, AttackRangeKind.None, 0, 0, movementValue, defenseValue,
                     progression);
 
-            /// <summary>Milestone 6.5a's converted card, on the same terms as the two before it.</summary>
+            /// <summary>
+            /// Milestone 6.5a's converted card, on the same terms as the two before it, and the one
+            /// configured card whose revision milestone 7.2c moves.
+            ///
+            /// It advances alone rather than through <see cref="ProgressionRevision"/>, which the ten
+            /// configured cards otherwise share. Moving the shared constant would declare a
+            /// compatibility cause for nine cards that did not change, which is the reasoning milestone
+            /// 7.2 recorded when it left all ten alone and moved only the generated upgrade targets.
+            /// </summary>
+            public const string PushPlaceRadiusRevision = "phase-7-2c-rev-1";
+
             public static SyntheticCardProfile WithPushPlaceSkill(
                 string id,
                 string displayName,
@@ -2038,7 +2076,7 @@ namespace GuardsDigital.Core.Cards
                 CardProgressionProfile progression) =>
                 new SyntheticCardProfile(
                     id, displayName, initiative, SyntheticPrintedPrimaryKind.PushPlaceSkill,
-                    ProgressionRevision, AttackRangeKind.None, 0, 0, movementValue, defenseValue,
+                    PushPlaceRadiusRevision, AttackRangeKind.None, 0, 0, movementValue, defenseValue,
                     progression);
 
             /// <summary>Milestone 6.5b's converted card, on the same terms as the three before it.</summary>

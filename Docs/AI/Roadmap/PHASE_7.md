@@ -112,7 +112,7 @@ Non-goals: No Wasp or other verified hero content, no invention of a card-specif
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72b-add-the-missing-radius-total-and-make-radius-items-observable-completion-evidence).
 
-### [~] 7.2c Bind Red Needle's Place to a printed Radius icon
+### [x] 7.2c Bind Red Needle's Place to a printed Radius icon
 
 Observable outcome: The configured Red Needle card prints rulebook p.9's Radius icon, and the Place branch of its Skill offers exactly the spaces that printed value scopes, so a matching item widens where the acting hero may be placed.
 
@@ -128,6 +128,8 @@ Acceptance checks:
 - Focused tests cover the printed icon, the item-widened destination set at its boundary, the unchanged Push distance, the absent-icon refusal, and the snapshot, replay and retained-prefix Undo evidence applicable to what actually changes.
 
 Non-goals: No change to the Push branch, to which modes this card carries, to any other configured card, to the Place operation itself, or to the ten-card matrix milestone 7.9 gates beyond this one bound's provenance. No new targeting shape, since the acting hero remains the subject; no Wasp content; no Radius presentation.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-72c-bind-red-needles-place-to-a-printed-radius-icon-completion-evidence).
 
 ### [ ] 7.3 Add Ultimate continuous-source behavior
 

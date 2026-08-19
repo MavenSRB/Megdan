@@ -102,9 +102,16 @@ namespace GuardsDigital.Tests.EditMode
             // for the per-card strings to distinguish. The evidence that this is a content addition
             // rather than a conversion moved to the matrix fixture below, which still pins each card's
             // printed values, action set and Initiative unchanged.
+            // Milestone 7.2c moves exactly one of the ten: Red Needle prints the Radius icon its own
+            // text has named since 6.5a, so it alone advances and the other nine keep the shared
+            // string. A revision that moved with it would declare a content change that did not happen.
             Assert.That(
                 redHand.DealtDefinitions.Select(definition => definition.ContentRevision),
-                Is.EqualTo(Enumerable.Repeat("phase-7-1-rev-1", 5)));
+                Is.EqualTo(new[]
+                {
+                    "phase-7-2c-rev-1", "phase-7-1-rev-1", "phase-7-1-rev-1", "phase-7-1-rev-1",
+                    "phase-7-1-rev-1"
+                }));
             Assert.That(
                 blueHand.DealtDefinitions.Select(definition => definition.ContentRevision),
                 Is.EqualTo(Enumerable.Repeat("phase-7-1-rev-1", 5)));
@@ -393,8 +400,21 @@ namespace GuardsDigital.Tests.EditMode
                         action.Origin == ActionDefinitionOrigin.PrintedPrimary);
                     Assert.That(definition.ActionDefinitions.Any(action => action.Kind == ActionKind.Attack), Is.False,
                         "A converted card's printed Primary Attack is replaced, not kept alongside its Skill.");
-                    Assert.That(converted.BaseValues, Is.Empty,
-                        "A Skill prints no value channel of its own.");
+                    // Milestone 7.2c: a Skill prints no combat value of its own, and rulebook p.9's
+                    // Radius icon is the one exception, carried by the one card whose text names a
+                    // Radius. Everything else on the matrix is unchanged, which is what this asserts.
+                    Assert.That(
+                        converted.BaseValues.Where(value =>
+                            value.Channel != PrintedValueChannel.Radius),
+                        Is.Empty,
+                        "A Skill prints no value channel of its own beyond p.9's Radius icon.");
+                    Assert.That(
+                        converted.BaseValues
+                            .Where(value => value.Channel == PrintedValueChannel.Radius)
+                            .Select(value => value.Amount)
+                            .SingleOrDefault(),
+                        Is.EqualTo(names[index] == "Red Needle" ? 4 : 0),
+                        "Only Red Needle prints a Radius, and it is the 4 its text has always named.");
                     Assert.That(converted.AttackRange, Is.EqualTo(AttackRangeKind.None));
                 }
 

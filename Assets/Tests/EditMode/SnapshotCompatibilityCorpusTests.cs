@@ -537,17 +537,41 @@ namespace GuardsDigital.Tests.EditMode
         /// definition-table entry, card instance, or content revision moves here. The base64 payload
         /// string grows by 36 or 40 characters depending on each payload's length modulo three, which
         /// is alignment alone and is recorded so a later reader comparing by hand is not misled.
+        /// Milestone 7.2c keeps schema v19 and re-pins every fixture for two causes, one registration
+        /// and one content. The build registers <c>synthetic-card-radius</c>, which publishes a card's
+        /// composed Radius Total as a fact a definition can bind, and Red Needle advances from
+        /// <c>phase-7-1-rev-1</c> to <c>phase-7-2c-rev-1</c> because it now prints rulebook p.9's Radius
+        /// icon at the value 4 its own text has named since milestone 6.5a. The other nine configured
+        /// cards deliberately keep <c>phase-7-1-rev-1</c>: they share one revision constant, and moving
+        /// it would declare a compatibility cause for nine cards that did not change, which is the
+        /// reasoning milestone 7.2 recorded when it left all ten alone.
+        /// Both decisions are reject. The registration is refused by the existing
+        /// <c>ValidateCapabilityRegistrations</c> sequence check, for the reason a registration list is
+        /// always refused: it states which contracts the writing build had. The content is refused by
+        /// the existing content-revision check, and should be: a payload naming Red Needle at
+        /// <c>phase-7-1-rev-1</c> describes a card whose Place is bounded by a number written into its
+        /// effect rather than by a printed icon, which is exactly the reading p.9 contradicts and which
+        /// p.16's items cannot raise.
+        /// Measured in a throwaway worktree at pre-change revision <c>570ba0e</c> rather than assumed,
+        /// and the arithmetic closes exactly. Every payload grows by 28 bytes: 26 for the registration
+        /// entry - a one-byte length prefix, the twenty-one-character id, and the int32 revision - plus
+        /// 1 byte for each of the two places Red Needle's revision string appears, the definition table
+        /// and that card instance's own definition reference. The count is measured rather than
+        /// reasoned: <c>phase-7-2c-rev-1</c> occurs exactly twice in every payload afterwards and
+        /// <c>phase-7-1-rev-1</c> drops by exactly two, in all eight. The first differing byte is the
+        /// definition table's length prefix for that string, at offset 1270 in the five ordinary
+        /// fixtures and 1466 in the three Skill-fixture ones.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v19", "91c9439c56c0f70264719820823fe1c08b8be65ace8f457546d7e6a581fc8601"),
-            new CompatibilityFixture("active-turn-v19", "64063ef85c5aec676fe45b0be61e7d32afa09439e26de3226abcef6273559fdb"),
-            new CompatibilityFixture("pending-choice-v19", "50902adfde13dd4bde37d9376118d8d7b8bdb32d7ec3aba6351cc80467bd6fd6"),
-            new CompatibilityFixture("end-of-round-v19", "1771713e7e592eca236a6ba507834c7aa84d15119b19a8ef78302abf7b87a0c9"),
-            new CompatibilityFixture("pending-minion-battle-v19", "5930279697196a6323f398313c8952d712d524fd93c5430462c7269dd8b3e8e2"),
-            new CompatibilityFixture("placed-token-v19", "34dd015d9a15d9c1b416ba2549758ddc888f9e9b92f25fd0954daeebf20e4120"),
-            new CompatibilityFixture("attached-marker-v19", "6b3cb5aa7fcaaa2a4776f631b93dc59554aeefe026ce35008f8d9aa1bcb62d01"),
-            new CompatibilityFixture("pending-correction-v19", "6a77a42f5ca24f79228888e6ee41f9f30b8c0e4b7804246d46154d9f327c9745")
+            new CompatibilityFixture("setup-v19", "e48a9e3278b075a5f4e9a03660065b744e49882d4505f4ea116296dcc6a94a7f"),
+            new CompatibilityFixture("active-turn-v19", "0f249c785073f9ccf20c5f77e41880839323547112a06b82ecc22c3bf41b3b89"),
+            new CompatibilityFixture("pending-choice-v19", "0acb8ba0fa27639d2a0f2ab00b1d704d3c50d6f71c6857f149e2b3a2b474067f"),
+            new CompatibilityFixture("end-of-round-v19", "241ddd472d202a79b03a2a77b4aa0f11429b52cd4e5c6aead1d9f74ef86a6d84"),
+            new CompatibilityFixture("pending-minion-battle-v19", "2547d480fed2e64b9e3107ac45895ca3e99c537f3b1bf3e3ae1affcb114f81cd"),
+            new CompatibilityFixture("placed-token-v19", "b674adeb58e8a86eea9e3149eb68255b81cbd4a6b32f689451d29c5fd7834720"),
+            new CompatibilityFixture("attached-marker-v19", "92ce28b0dc45d15cdbc9f8a63f6c322e7d0c26a239ac61ef6161ca57383f8412"),
+            new CompatibilityFixture("pending-correction-v19", "203f1a10946ebc97f6ab38faae638be06e94b2800b2319ad55a1cfe64fd25d3f")
         };
 
         [Test]

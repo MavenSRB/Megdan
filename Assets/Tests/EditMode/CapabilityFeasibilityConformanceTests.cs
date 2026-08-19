@@ -95,8 +95,9 @@ namespace GuardsDigital.Tests.EditMode
             // object, so the count moves by one. Milestone 7.1a registers the first capability that
             // reads card state - the chooser-owned in-hand discard - so it moves by one again, and
             // milestone 7.2b registers the first that reads a printed value - the target selection
-            // bounded by rulebook p.9's Radius icon - so it moves by one more.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(25),
+            // bounded by rulebook p.9's Radius icon - and 7.2c the first that publishes one, so it
+            // moves by one more twice.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(26),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

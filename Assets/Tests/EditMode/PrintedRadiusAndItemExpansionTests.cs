@@ -383,19 +383,24 @@ namespace GuardsDigital.Tests.EditMode
                         GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.RadiusTarget)),
                 Is.True);
 
-            // The two cards that print a Radius are dealt by their own configuration alone, so the
-            // ordinary hands every pinned digest and card-matrix fixture measures are untouched.
+            // This milestone's own two Radius cards are dealt by their own configuration alone, which is
+            // why 7.2b's corpus moved for the registration alone.
             var ordinary = PlaceholderOneVsOneTestConfiguration.Create();
             Assert.That(
                 ordinary.CardDefinitions.Any(definition =>
                     definition.Id.Value.Contains("shockwave")),
                 Is.False);
-            Assert.That(
-                ordinary.CardDefinitions.Any(definition => definition.ActionDefinitions.Any(action =>
-                    action.BaseValues.Any(value => value.Channel == PrintedValueChannel.Radius))),
-                Is.False,
-                "No ordinary or generated card prints a Radius icon, which is why the corpus moves for " +
-                "the registration alone.");
+
+            // Milestone 7.2c then printed the icon on one configured card, deliberately: Red Needle's
+            // text has named a Radius since 6.5a, and p.9 says such text refers to the printed value.
+            // It is the only configured card that prints one, and the count is asserted rather than the
+            // absence, so a second one arriving silently is a failure rather than a surprise.
+            var printed = ordinary.CardDefinitions
+                .Where(definition => definition.ActionDefinitions.Any(action =>
+                    action.BaseValues.Any(value => value.Channel == PrintedValueChannel.Radius)))
+                .Select(definition => definition.Id.Value)
+                .ToArray();
+            Assert.That(printed, Is.EqualTo(new[] { "placeholder-red-needle" }));
         }
 
         // ----- Helpers -----

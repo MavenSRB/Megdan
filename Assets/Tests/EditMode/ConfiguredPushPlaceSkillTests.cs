@@ -53,6 +53,7 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly EffectNodeId TokenPlaceBranch =
             new EffectNodeId("component-place-branch");
         private static readonly EffectNodeId ActorSpace = new EffectNodeId("needle-actor-space");
+        private static readonly EffectNodeId CardRadius = new EffectNodeId("needle-card-radius");
         private static readonly EffectNodeId Place = new EffectNodeId("needle-place");
 
         private static readonly HexCoordinate RedAt = new HexCoordinate(-2, -5);
@@ -73,7 +74,8 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(definition.Id, Is.EqualTo(new CardDefinitionId("placeholder-red-needle")),
                 "The conversion advances the revision, never the card's identity.");
-            Assert.That(definition.ContentRevision, Is.EqualTo("phase-7-1-rev-1"));
+            Assert.That(definition.ContentRevision, Is.EqualTo("phase-7-2c-rev-1"),
+                "Milestone 7.2c advances this card alone, for the Radius icon it now prints.");
             Assert.That(definition.ContentAuthority,
                 Is.EqualTo(CardContentAuthority.SyntheticTestFixture));
             Assert.That(definition.Initiative.Value, Is.EqualTo(13));
@@ -158,9 +160,26 @@ namespace GuardsDigital.Tests.EditMode
 
             var place = effect.Nodes.Single(node => node.Id.Equals(Place));
             Assert.That(place.Capability, Is.EqualTo(SyntheticPlacementCapabilities.PlaceV1));
+
+            // Milestone 7.2c. The bound is the card's printed Radius icon, published by its own node
+            // and bound here, rather than a number this table carries. p.9: a card text that mentions
+            // Radius "refers to this value", and p.16 raises the icon it refers to.
             Assert.That(
-                place.Inputs.Single(input => input.ParameterName == "radius").Literal.IntegerValue,
-                Is.EqualTo(4));
+                place.Inputs.Single(input => input.ParameterName == "radius").SourceNodeId,
+                Is.EqualTo(CardRadius));
+            Assert.That(
+                effect.Nodes.Single(node => node.Id.Equals(CardRadius)).Capability,
+                Is.EqualTo(SyntheticValueCapabilities.CardRadiusV1));
+            Assert.That(
+                PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"))
+                    .Definitions
+                    .Single(candidate => candidate.DisplayName == "TEST - Red Needle")
+                    .ActionDefinitions
+                    .Single(action => action.Id.Equals(NeedleSkill))
+                    .BaseValues
+                    .Single(value => value.Channel == PrintedValueChannel.Radius).Amount,
+                Is.EqualTo(4),
+                "The printed value is the 4 the card text already named.");
             Assert.That(
                 place.Inputs.Single(input => input.ParameterName == "subject").SourceNodeId,
                 Is.EqualTo(ActorSpace),
