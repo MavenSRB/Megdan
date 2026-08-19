@@ -133,25 +133,27 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return Array.AsReadOnly(contributions.ToArray());
         }
 
+        /// <summary>
+        /// Finding `F-ER2-09`: p.14's <em>Minion Defense Modifiers</em> box is read from the declared
+        /// standard-minion content rather than restated here as three branches. Every number and every
+        /// distance is unchanged; what moved is where the rule is written down.
+        ///
+        /// A distance of zero cannot occur - a minion and the defender cannot share a space - but is
+        /// not special-cased, because the declared rows are maxima and a nearer piece is covered by the
+        /// row that reaches past it.
+        /// </summary>
         private static int GetMinionDefenseModifier(
             TeamSide defenderTeam,
             TeamSide minionTeam,
             StandardMinionType minionType,
             int distance)
         {
-            var isFriendly = defenderTeam == minionTeam;
-            if (distance == 1 &&
-                (minionType == StandardMinionType.Melee || minionType == StandardMinionType.Heavy))
-            {
-                return isFriendly ? 1 : -1;
-            }
-
-            if (!isFriendly && minionType == StandardMinionType.Ranged && distance <= 2)
-            {
-                return -1;
-            }
-
-            return 0;
+            var relationship = defenderTeam == minionTeam
+                ? GuardsDigital.Core.Rules.Consequences.MinionDefenseRelationship.Friendly
+                : GuardsDigital.Core.Rules.Consequences.MinionDefenseRelationship.Enemy;
+            return GuardsDigital.Core.Rules.Consequences.StandardMinionProfileCatalog.Rulebook
+                .Get(minionType)
+                .DefenseModifierAt(relationship, distance);
         }
     }
 }

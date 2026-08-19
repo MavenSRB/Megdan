@@ -45,6 +45,30 @@ namespace GuardsDigital.Core.Rules.CardResolution
         MinionRemovalPrevented = 40,
 
         /// <summary>Milestone 6.12: rulebook p.13 returned one marker a defeated hero held.</summary>
-        MarkerReturnedOnHeroDefeat = 41
+        MarkerReturnedOnHeroDefeat = 41,
+
+        /// <summary>Milestone 7.4: p.13's "Remove the defeated hero from the board" was attempted.</summary>
+        HeroRemovalAttempted = 42,
+
+        /// <summary>Milestone 7.4: the defeated hero left the board.</summary>
+        HeroRemovalCompleted = 43,
+
+        /// <summary>Milestone 7.4: the removal was stopped and the defeated hero is still standing.</summary>
+        HeroRemovalPrevented = 44,
+
+        /// <summary>
+        /// Milestone 7.4: p.13's "If the defeated hero had an unresolved card, it is resolved, without
+        /// performing an action."
+        /// </summary>
+        HeroUnresolvedCardResolved = 45,
+
+        /// <summary>Milestone 7.4: p.13's Defeat coins and assist coins were collected.</summary>
+        HeroDefeatRewardAwarded = 46,
+
+        /// <summary>Milestone 7.4: the defeated hero's team spent p.13's Life counters.</summary>
+        TeamLifeSpent = 47,
+
+        /// <summary>Milestone 7.4: p.13's last counter was spent, so that team loses the game.</summary>
+        TeamEliminated = 48
     }
 }

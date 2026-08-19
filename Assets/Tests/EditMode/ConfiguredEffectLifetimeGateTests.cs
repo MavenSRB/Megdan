@@ -97,7 +97,7 @@ namespace GuardsDigital.Tests.EditMode
                     definition.CancellationConditions.OrderBy(condition => condition),
                     Is.EqualTo(new[]
                     {
-                        ActiveEffectCancellationCondition.AffectedHeroDefeated,
+                        ActiveEffectCancellationCondition.ControllerHeroDefeated,
                         ActiveEffectCancellationCondition.CardsRetrieved
                     }),
                     definition.DefinitionId + " must declare exactly p.17's two applicable cancellations.");

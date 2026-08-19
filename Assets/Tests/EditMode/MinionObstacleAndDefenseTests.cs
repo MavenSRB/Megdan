@@ -119,7 +119,7 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 Array.Empty<ObstacleOccupancy>(),
                 minions);
-            var authority = new CardActionResolutionAuthority(board);
+            var authority = DefeatConsequenceComposition.Dispatcher(board, configuration.Participants);
             var attackOffer = ActionOfferQuery.GetAvailableOffers(
                     configuration.CardDefinitions,
                     configuration.CardInstances,
@@ -189,7 +189,15 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardDefinitions,
                 configuration.CardInstances,
                 configuration.Participants,
-                new MarkerAttachmentRegister(), RuleModificationSet.Empty);
+                new MarkerAttachmentRegister(),
+                RuleModificationSet.Empty,
+                null,
+                // Milestone 7.4: the restored dispatcher resumes an Attack whose outcome defeats a hero,
+                // so it is handed the two states p.13 prices that Defeat against - the same pair a round
+                // rebinds when it restores a whole match.
+                new GuardsDigital.Core.Rules.Progression.HeroProgressionState(configuration.Participants),
+                new GuardsDigital.Core.Rules.Consequences.TeamLifeState(
+                    configuration.Participants, RoundResolutionAuthority.BaselineLifeCountersPerTeam));
             var outcome = restored.ResolveAttackOutcome(
                 configuration.CardDefinitions,
                 configuration.CardInstances,

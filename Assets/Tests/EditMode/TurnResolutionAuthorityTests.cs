@@ -374,7 +374,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void SelectedActor_AttackPausesForDefenseThenResolvesOnlyItsCardAndYields()
+        public void SelectedActor_AttackPausesForDefenseThenResolvesBothCardsWhenTheDefenderIsDefeated()
         {
             var fixture = CreateAttackFixture(false);
             Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
@@ -426,19 +426,26 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.BlueDefense.State.Location, Is.EqualTo(CardLocation.DiscardPile));
             Assert.That(fixture.BlueDefense.State.HasBeenPlayed, Is.False);
             Assert.That(fixture.RedPlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
-            Assert.That(fixture.BluePlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
             Assert.That(fixture.Authority.PendingAttackResolution, Is.Null);
-            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
+
+            // Milestone 7.4. The defender's Defense total is lower, so the Attack succeeds and p.13's
+            // consequences run: "If the defeated hero had an unresolved card, it is resolved, without
+            // performing an action." Before this milestone the defender kept its card and took the next
+            // turn slot, which is what this case used to assert; the Defeat now takes both away, and the
+            // discarded Defense card is unaffected either way because a Defense is a reaction rather than
+            // that hero's own action.
+            Assert.That(fixture.BluePlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved),
+                "p.13 resolves the defeated hero's unresolved card without performing an action.");
+            Assert.That(fixture.Authority.SelectedActor.IsDefined, Is.False);
+            Assert.That(fixture.Authority.IsEnded, Is.True,
+                "Both cards are resolved, so the turn has nothing left to select.");
 
             var kinds = completed.Events.Select(ruleEvent => ruleEvent.Kind).ToArray();
             Assert.That(System.Array.IndexOf(kinds, TurnResolutionEventKind.CardResolved),
                 Is.GreaterThan(System.Array.LastIndexOf(kinds, TurnResolutionEventKind.AttackActionProgressed)));
             Assert.That(completed.Events.Last(ruleEvent =>
                     ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed)
-                .InitiativeEvent.Kind, Is.EqualTo(InitiativeResolutionEventKind.NextActorSelected));
-
-            Assert.That(fixture.Authority.TryPerformHold(fixture.BluePlayed.Id).Accepted, Is.True,
-                "The defender's reaction must not consume its selected card's normal action.");
+                .InitiativeEvent.Kind, Is.EqualTo(InitiativeResolutionEventKind.NoUnresolvedCardsRemaining));
         }
 
         [Test]
@@ -495,7 +502,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.RedPlayed.State.ResolutionStatus,
                 Is.EqualTo(CardResolutionStatus.Resolved),
                 "A rejected command changed nothing, and the real one still completes the Attack.");
-            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
+
+            // Milestone 7.4: the declined Defense makes the Attack successful, so p.13 defeats the Blue
+            // hero and resolves its unresolved card without an action. The stale-command half of this
+            // case is unchanged - what moved is where the turn stands afterwards.
+            Assert.That(fixture.Authority.SelectedActor.IsDefined, Is.False);
+            Assert.That(fixture.BluePlayed.State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved));
         }
 
         [Test]
@@ -556,8 +569,12 @@ namespace GuardsDigital.Tests.EditMode
                 defense.ChoiceId)).Accepted, Is.True);
 
             Assert.That(fixture.RedPlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
-            Assert.That(fixture.BluePlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
-            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
+
+            // Milestone 7.4: the declined Defense makes the Ranged Attack successful, so p.13 defeats
+            // the target and resolves its unresolved card. What this case is about - that the Ranged
+            // primary is the offer the turn used, and that the Attack completed - is unchanged.
+            Assert.That(fixture.BluePlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(fixture.Authority.SelectedActor.IsDefined, Is.False);
         }
 
         [Test]
@@ -586,7 +603,7 @@ namespace GuardsDigital.Tests.EditMode
                     new[]
                     {
                         ActiveEffectCancellationCondition.SourceCardStateChanged,
-                        ActiveEffectCancellationCondition.AffectedHeroDefeated,
+                        ActiveEffectCancellationCondition.ControllerHeroDefeated,
                         ActiveEffectCancellationCondition.CardsRetrieved,
                         ActiveEffectCancellationCondition.Explicit
                     },
@@ -938,7 +955,7 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     configuration.Participants,
                     configuration.TieBreakerState,
-                    new CardActionResolutionAuthority(board),
+                    DefeatConsequenceComposition.Dispatcher(board, configuration.Participants),
                     timing,
                     1,
                     1));

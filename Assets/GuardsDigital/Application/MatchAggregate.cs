@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Diagnostics;
@@ -308,7 +309,16 @@ namespace GuardsDigital.Application
                     initialState.CreateTiming(),
                     rebuiltMarkers,
                     rebuiltTransitions,
-                    rebuiltLanePush));
+                    rebuiltLanePush,
+                    // Milestone 7.4. Rebuilt from the composed setup rather than carried across, for the
+                    // reason the Wave pool above it is: a restart and a retained-prefix Undo begin with
+                    // the counters the setup states, and re-derive every spend by replaying the Defeats
+                    // that spent them. The setup's per-team `LifeCount` is the one record of the number.
+                    new GuardsDigital.Core.Rules.Consequences.TeamLifeState(
+                        rebuiltConfiguration.Participants,
+                        initialState.Setup.Teams.Select(team =>
+                            new System.Collections.Generic.KeyValuePair<TeamId, int>(
+                                team.TeamId, team.LifeCount)))));
 
             ReplaceGraphs(MatchGraphSet.ForSetup(
                 rebuiltConfiguration,

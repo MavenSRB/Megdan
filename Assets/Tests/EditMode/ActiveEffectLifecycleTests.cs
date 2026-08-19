@@ -143,7 +143,7 @@ namespace GuardsDigital.Tests.EditMode
                 TimingCheckpoint.SourceCardStateChanged, 1, 1, sourceCardInstanceId: SourceCard),
                 new TieBreakerState(TeamSide.Red));
             Assert.That(cancellation.Single().Kind, Is.EqualTo(ActiveEffectLifecycleEventKind.Cancelled));
-            Assert.That(Apply(lifecycle, TimingCheckpoint.AffectedHeroDefeated, 1, 1, RedHero), Is.Empty);
+            Assert.That(Apply(lifecycle, TimingCheckpoint.ControllerHeroDefeated, 1, 1, RedHero), Is.Empty);
             Assert.That(Apply(lifecycle, TimingCheckpoint.RoundEnd, 1, 4, RedHero), Is.Empty);
         }
 
@@ -449,9 +449,14 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void AffectedHeroDefeated_CancellationStillRequiresTheMatchingHero()
+        public void ControllerHeroDefeated_CancellationRequiresTheControllerRatherThanTheDeclaredScope()
         {
-            // Guard: unfiltering expiration must not widen identity-targeted cancellation.
+            // Guard: unfiltering expiration must not widen identity-targeted cancellation - and, since
+            // milestone 7.4 gave this checkpoint its first producer, the identity it targets is the
+            // controller. Rulebook p.13 cancels "Defeated hero's actions with Active effects" and p.17
+            // ends an Active effect on your card when "you are defeated", so both name the hero whose
+            // action made it. The effect below is Hero-scoped at the Blue hero and controlled by the
+            // Red one, which is exactly the pair the two readings disagree about.
             var lifecycle = new ActiveEffectLifecycle();
             lifecycle.Create(new ActiveEffectId("blue-anchored"), Definition(
                 ActiveEffectDurationKind.ThisRound,
@@ -460,16 +465,44 @@ namespace GuardsDigital.Tests.EditMode
                 TimingCheckpoint.RoundEnd,
                 false,
                 id: "blue-anchored",
+                controller: RedHero,
                 scope: ActiveEffectAffectedScopeKind.Hero,
                 affectedHero: BlueHero), SourceCard, SourceAction, 1, 1);
 
-            var wrongHero = Apply(lifecycle, TimingCheckpoint.AffectedHeroDefeated, 1, 2, RedHero);
-            Assert.That(wrongHero, Is.Empty,
-                "Another hero's defeat must not cancel a Hero-scoped effect anchored to a different hero.");
+            var affectedHero = Apply(lifecycle, TimingCheckpoint.ControllerHeroDefeated, 1, 2, BlueHero);
+            Assert.That(affectedHero, Is.Empty,
+                "The hero this effect is aimed at was defeated, but its owner is alive and its card " +
+                "is untouched, so neither page ends it.");
             Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Active));
 
-            var matchingHero = Apply(lifecycle, TimingCheckpoint.AffectedHeroDefeated, 1, 2, BlueHero);
-            Assert.That(matchingHero.Select(value => value.Kind),
+            var controllingHero = Apply(lifecycle, TimingCheckpoint.ControllerHeroDefeated, 1, 2, RedHero);
+            Assert.That(controllingHero.Select(value => value.Kind),
+                Is.EqualTo(new[] { ActiveEffectLifecycleEventKind.Cancelled }));
+        }
+
+        [Test]
+        public void ControllerHeroDefeated_LeavesAGlobalEffectAnotherHeroCreated()
+        {
+            // The other half of the same correction. A Global effect is relevant to every hero, so the
+            // scope-based reading cancelled one whichever hero was defeated - including the many
+            // Defeats that have nothing to do with the hero who created it.
+            var lifecycle = new ActiveEffectLifecycle();
+            lifecycle.Create(new ActiveEffectId("red-global"), Definition(
+                ActiveEffectDurationKind.ThisRound,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.AfterAttack,
+                TimingCheckpoint.RoundEnd,
+                false,
+                id: "red-global",
+                controller: RedHero,
+                scope: ActiveEffectAffectedScopeKind.Global), SourceCard, SourceAction, 1, 1);
+
+            Assert.That(Apply(lifecycle, TimingCheckpoint.ControllerHeroDefeated, 1, 2, BlueHero),
+                Is.Empty);
+            Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Active));
+            Assert.That(
+                Apply(lifecycle, TimingCheckpoint.ControllerHeroDefeated, 1, 2, RedHero)
+                    .Select(value => value.Kind),
                 Is.EqualTo(new[] { ActiveEffectLifecycleEventKind.Cancelled }));
         }
 
@@ -499,7 +532,7 @@ namespace GuardsDigital.Tests.EditMode
         private static ActiveEffectCancellationCondition[] Conditions() => new[]
         {
             ActiveEffectCancellationCondition.SourceCardStateChanged,
-            ActiveEffectCancellationCondition.AffectedHeroDefeated,
+            ActiveEffectCancellationCondition.ControllerHeroDefeated,
             ActiveEffectCancellationCondition.CardsRetrieved,
             ActiveEffectCancellationCondition.Explicit
         };

@@ -145,7 +145,7 @@ Non-goals: No Wasp Ultimate text or final visual treatment.
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-73-add-ultimate-continuous-source-behavior-completion-evidence).
 
-### [~] 7.4 Resolve hero defeat, Lives, and respawn
+### [x] 7.4 Resolve hero defeat, Lives, and respawn
 
 Observable outcome: A successful synthetic Hero Attack resolves the complete general defeat consequences and later legal respawn.
 
@@ -160,6 +160,8 @@ Acceptance checks:
 - The Defense exception remains distinct.
 
 ER2 note (`F-ER2-09`): when this milestone supplies verified reward derivation, relocate the hard-coded Melee/Ranged/Heavy coin literals and the standard-minion Defense modifier table out of the combat backend and defense query into configured content carrying their source citations; see the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2).
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-74-resolve-hero-defeat-lives-and-respawn-completion-evidence).
 
 ### [ ] 7.5 Resolve mandatory end-of-round leveling and upgrades
 

@@ -366,7 +366,8 @@ namespace GuardsDigital.Application
             GuardsDigital.Core.Rules.CardResolution.PendingImmediateLanePushRequest
                 pendingImmediateLanePush = null,
             GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
-                pendingSystemTransitionStep = null)
+                pendingSystemTransitionStep = null,
+            IEnumerable<KeyValuePair<TeamId, int>> teamLifeCounters = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -430,6 +431,14 @@ namespace GuardsDigital.Application
                 .ToArray());
             AvailableClearOptions = Array.AsReadOnly((availableClearOptions ??
                 Enumerable.Empty<ClearOptionProjection>()).ToArray());
+
+            // Milestone 7.4. Rulebook p.13's Life counters as they now stand, rather than the count the
+            // setup states. Before this milestone the two were always the same number and the HUD read
+            // the setup's; a Defeat now spends one, so a reader that kept reading the setup would show a
+            // pile that never empties. An empty list is the honest absence for a composition with no
+            // round authority behind it rather than a substituted full pile.
+            TeamLifeCounters = Array.AsReadOnly((teamLifeCounters ??
+                Enumerable.Empty<KeyValuePair<TeamId, int>>()).ToArray());
             if (AvailableClearOptions.Select(option => option.ReplacedAttackActionDefinitionId)
                     .Distinct().Count() != AvailableClearOptions.Count)
             {
@@ -552,6 +561,12 @@ namespace GuardsDigital.Application
         public PendingDefensePreviewProjection PendingDefensePreview { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
+
+        /// <summary>
+        /// Milestone 7.4: every team's remaining p.13 Life counters, ordered by team id. Empty in a
+        /// composition that has no round authority to read them from.
+        /// </summary>
+        public IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters { get; }
         public PendingLanePushRequest PendingLanePushRequest { get; }
 
         /// <summary>

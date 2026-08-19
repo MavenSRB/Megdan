@@ -218,8 +218,9 @@ namespace GuardsDigital.Core.Timing
 
         // Every live effect is visited at every checkpoint; the hero named by the context narrows
         // only the identity-targeted concerns (activation targeting, triggers, and the
-        // AffectedHeroDefeated cancellation). An effect's own expiration window and its
-        // non-identity cancellations must not depend on which hero happens to be acting.
+        // ControllerHeroDefeated cancellation, which reads the controller rather than the declared
+        // scope since milestone 7.4). An effect's own expiration window and its non-identity
+        // cancellations must not depend on which hero happens to be acting.
         private IEnumerable<ActiveEffectInstance> OrderForCheckpoint(
             ActiveEffectCheckpointContext context,
             TieBreakerState tieBreaker)
@@ -310,9 +311,25 @@ namespace GuardsDigital.Core.Timing
                     condition = ActiveEffectCancellationCondition.SourceCardStateChanged;
                     if (!context.SourceCardInstanceId.Equals(effect.SourceCardInstanceId)) return false;
                     break;
-                case TimingCheckpoint.AffectedHeroDefeated:
-                    condition = ActiveEffectCancellationCondition.AffectedHeroDefeated;
-                    if (!IsRelevantHero(effect, context.AffectedHeroId)) return false;
+                case TimingCheckpoint.ControllerHeroDefeated:
+                    condition = ActiveEffectCancellationCondition.ControllerHeroDefeated;
+
+                    // Milestone 7.4 gave this checkpoint its first producer and, with it, its first
+                    // real reading. Rulebook p.13 cancels "Defeated hero's actions with Active
+                    // effects", and p.17 says the same thing from the effect's own side - an Active
+                    // effect on your card ends when "you are defeated" - so both name the hero whose
+                    // action created the effect, which is the controller.
+                    //
+                    // It is deliberately not the scope-aware <see cref="IsRelevantHero"/> reading this
+                    // used before, and both directions of that difference matter. A Global effect one
+                    // hero created would have been cancelled by *any* hero's Defeat, including the
+                    // Defeat of the hero who created it being the only one that should - and a
+                    // Hero-scoped effect a surviving hero aimed at the defeated one would have been
+                    // cancelled although its owner is alive and its card is untouched. Neither is what
+                    // either page says. The condition was named `AffectedHeroDefeated` until this
+                    // milestone; the rename is the same correction seen from the declaration.
+                    if (!context.AffectedHeroId.IsDefined ||
+                        !effect.ControllerHeroId.Equals(context.AffectedHeroId)) return false;
                     break;
                 case TimingCheckpoint.CardsRetrieved:
                     condition = ActiveEffectCancellationCondition.CardsRetrieved;

@@ -52,18 +52,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
     }
 
-    public sealed class HeroDefeatResolution
-    {
-        public HeroDefeatResolution(DefeatOutcome defeat)
-        {
-            Defeat = defeat ?? throw new ArgumentNullException(nameof(defeat));
-            if (defeat.HasRewardAmounts)
-                throw new ArgumentException("A staged Hero Defeat must defer Level/Tier reward derivation.", nameof(defeat));
-        }
-
-        public DefeatOutcome Defeat { get; }
-    }
-
     public sealed class AttackActionResolutionResult
     {
         private AttackActionResolutionResult(

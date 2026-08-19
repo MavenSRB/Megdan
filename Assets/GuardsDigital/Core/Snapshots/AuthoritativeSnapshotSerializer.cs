@@ -26,6 +26,21 @@ namespace GuardsDigital.Core.Snapshots
         private const string Magic = "GUARDS-AUTHORITATIVE-SNAPSHOT";
         private const int MaximumDecodedBytes = 4 * 1024 * 1024;
         private const int MaximumBase64Characters = ((MaximumDecodedBytes + 2) / 3) * 4;
+        // v20: milestone 7.4 puts every team's remaining Life counters in the round section, immediately
+        // after the items - one count-prefixed team id and counter total per participating team. It is
+        // the first milestone in which a Life counter can change: p.13's "Defeated hero's team spends
+        // the number of Life counters, equal to that hero's lowest card Tier" is the only rule that
+        // moves one, and until this milestone the count existed solely as the setup constant
+        // `QuickGameTeamSetupState.LifeCount` that the HUD renderer printed.
+        // v19 is rejected rather than migrated, and here the reason is the sharpest of the series: a
+        // v19 payload records no counters, and the only reading available for their absence is "nobody
+        // has spent any", which is a statement about a resource whose exhaustion loses the game. It is
+        // right for every payload a v19 build could produce, because no v19 rule spends one - and that
+        // is precisely why it must not be written into the reader, since the first payload it would be
+        // wrong about is the first one this milestone writes, and a restored match would come back with
+        // a full pile and a team that had already lost. No persisted state exists outside the
+        // version-controlled corpus to strand.
+        //
         // v19: milestone 7.2a puts every hero's four rulebook p.16 item slots in the setup section,
         // beside the hero id and player id already there, and splits an item's single slot field into
         // the slot it occupies and the icon it supplies. The user chose the wire over rebinding the
@@ -112,7 +127,7 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 19;
+        public const int CurrentSchemaVersion = 20;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

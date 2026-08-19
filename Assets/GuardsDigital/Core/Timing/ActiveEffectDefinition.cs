@@ -31,7 +31,12 @@ namespace GuardsDigital.Core.Timing
     {
         None = 0,
         SourceCardStateChanged = 1,
-        AffectedHeroDefeated = 2,
+        /// <summary>
+        /// p.17: an Active effect on your card ends when "you are defeated" - the hero whose action
+        /// created it, which p.13 states from the other side as "Defeated hero's actions with Active
+        /// effects are canceled". Named `AffectedHeroDefeated` until milestone 7.4.
+        /// </summary>
+        ControllerHeroDefeated = 2,
         CardsRetrieved = 3,
         Explicit = 4
     }

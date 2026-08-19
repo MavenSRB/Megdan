@@ -29,6 +29,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// from <see cref="InvalidChoice"/> because the choice itself was legal and still stands; what
         /// was wrong is who sent it.
         /// </summary>
-        WrongChooser = 21
+        WrongChooser = 21,
+
+        /// <summary>
+        /// Milestone 7.4: the successful Attack defeated a hero, and the state rulebook p.13's
+        /// consequences read - the defeated hero's Level, and its team's Life counters - is not bound to
+        /// this dispatcher. Distinct from <see cref="InvalidChoice"/> because nothing about the Attack
+        /// or its target is wrong: the composition cannot price the Defeat, so it refuses the outcome
+        /// rather than recording one whose coins and counters it made up. The refusal happens before
+        /// anything is removed, resolved, cancelled or spent.
+        /// </summary>
+        DefeatConsequenceStateUnavailable = 22
     }
 }

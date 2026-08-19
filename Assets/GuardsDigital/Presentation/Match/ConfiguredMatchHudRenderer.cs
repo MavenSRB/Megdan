@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
@@ -8,11 +9,21 @@ namespace GuardsDigital.Presentation.Match
 {
     public sealed class MatchHudHeaderViewModel
     {
-        public MatchHudHeaderViewModel(TieBreakerState tieBreaker, QuickGameSetupState setup)
+        /// <param name="teamLifeCounters">
+        /// Milestone 7.4: rulebook p.13's Life counters as the match now has them. Before this
+        /// milestone nothing could spend one, so the header read the setup's starting count; a Defeat
+        /// spends them now, and a header still reading the setup would show a pile that never empties.
+        /// An empty or absent list falls back to the setup's count, which is what a composition with no
+        /// round authority behind it honestly knows.
+        /// </param>
+        public MatchHudHeaderViewModel(
+            TieBreakerState tieBreaker,
+            QuickGameSetupState setup,
+            IReadOnlyList<KeyValuePair<TeamId, int>> teamLifeCounters = null)
         {
             TieBreaker = tieBreaker;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
-            Text = Format(tieBreaker, setup);
+            Text = Format(tieBreaker, setup, teamLifeCounters);
             Color = tieBreaker.IsDefined
                 ? tieBreaker.RevealedSide == TeamSide.Red
                     ? new Color(0.72f, 0.16f, 0.12f)
@@ -25,10 +36,33 @@ namespace GuardsDigital.Presentation.Match
         public string Text { get; }
         public Color Color { get; }
 
-        private static string Format(TieBreakerState state, QuickGameSetupState setup)
+        private static int Counters(
+            QuickGameSetupState setup,
+            IReadOnlyList<KeyValuePair<TeamId, int>> counters,
+            TeamSide side)
         {
-            var redLives = setup.Teams.Single(value => value.TeamSide == TeamSide.Red).LifeCount;
-            var blueLives = setup.Teams.Single(value => value.TeamSide == TeamSide.Blue).LifeCount;
+            var team = setup.Teams.Single(value => value.TeamSide == side);
+            if (counters != null)
+            {
+                foreach (var entry in counters)
+                {
+                    if (entry.Key.Equals(team.TeamId))
+                    {
+                        return entry.Value;
+                    }
+                }
+            }
+
+            return team.LifeCount;
+        }
+
+        private static string Format(
+            TieBreakerState state,
+            QuickGameSetupState setup,
+            IReadOnlyList<KeyValuePair<TeamId, int>> counters)
+        {
+            var redLives = Counters(setup, counters, TeamSide.Red);
+            var blueLives = Counters(setup, counters, TeamSide.Blue);
             var tieBreaker = !state.IsDefined
                 ? "TIE BREAKER  [?] UNKNOWN"
                 : state.RevealedSide == TeamSide.Red

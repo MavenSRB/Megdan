@@ -221,7 +221,7 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var checkpoint in new[]
                      {
                          TimingCheckpoint.SourceCardStateChanged,
-                         TimingCheckpoint.AffectedHeroDefeated,
+                         TimingCheckpoint.ControllerHeroDefeated,
                          TimingCheckpoint.CardsRetrieved,
                          TimingCheckpoint.ExplicitCancellation,
                          TimingCheckpoint.RoundEnd

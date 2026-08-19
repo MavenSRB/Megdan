@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.LanePush;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Timing;
@@ -30,6 +31,7 @@ namespace GuardsDigital.Core.Cards
             MarkerAttachmentRegister markers,
             SystemTransitionAuthority systemTransitions,
             LanePushConsumption lanePush,
+            TeamLifeState teamLives,
             EndOfRoundStageAvailability endOfRoundStageAvailability,
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers)
         {
@@ -39,6 +41,7 @@ namespace GuardsDigital.Core.Cards
             Markers = markers;
             SystemTransitions = systemTransitions;
             LanePush = lanePush;
+            TeamLives = teamLives;
             EndOfRoundStageAvailability = endOfRoundStageAvailability;
             EndOfRoundHandlers = endOfRoundHandlers;
         }
@@ -76,6 +79,16 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public LanePushConsumption LanePush { get; }
 
+        /// <summary>
+        /// Milestone 7.4: rulebook p.13's Life counters, which a hero Defeat spends. It travels here
+        /// rather than being created by the authority because the starting count is a setup decision -
+        /// the prototype baseline records five per team, the staged 1v1 fixture composes four - and the
+        /// composed setup is the one record of it. An absent one is substituted by the authority with
+        /// the baseline count, in the shape <see cref="Markers"/> is substituted, so a board-free
+        /// fixture still has counters to spend rather than a null to check.
+        /// </summary>
+        public TeamLifeState TeamLives { get; }
+
         public EndOfRoundStageAvailability EndOfRoundStageAvailability { get; }
         public IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> EndOfRoundHandlers { get; }
 
@@ -89,10 +102,11 @@ namespace GuardsDigital.Core.Cards
             ActiveEffectLifecycle timing,
             MarkerAttachmentRegister markers,
             SystemTransitionAuthority systemTransitions,
-            LanePushConsumption lanePush)
+            LanePushConsumption lanePush,
+            TeamLifeState teamLives = null)
         {
             return new RoundResolutionComposition(
-                cardActions, board, timing, markers, systemTransitions, lanePush, null, null);
+                cardActions, board, timing, markers, systemTransitions, lanePush, teamLives, null, null);
         }
 
         /// <summary>
@@ -103,7 +117,7 @@ namespace GuardsDigital.Core.Cards
         public static RoundResolutionComposition ForCardActionsOnly(
             CardActionResolutionAuthority cardActions)
         {
-            return new RoundResolutionComposition(cardActions, null, null, null, null, null, null, null);
+            return new RoundResolutionComposition(cardActions, null, null, null, null, null, null, null, null);
         }
     }
 }

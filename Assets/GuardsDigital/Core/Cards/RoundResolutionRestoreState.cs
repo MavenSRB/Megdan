@@ -157,7 +157,8 @@ namespace GuardsDigital.Core.Cards
             RoundCardActionsRestoreState cardActions,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions,
             GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression,
-            GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems,
+            GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState teamLives)
         {
             Cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
             History = history ?? throw new ArgumentNullException(nameof(history));
@@ -166,6 +167,7 @@ namespace GuardsDigital.Core.Cards
             SystemTransitions = systemTransitions ?? throw new ArgumentNullException(nameof(systemTransitions));
             HeroProgression = heroProgression ?? throw new ArgumentNullException(nameof(heroProgression));
             HeroItems = heroItems ?? throw new ArgumentNullException(nameof(heroItems));
+            TeamLives = teamLives ?? throw new ArgumentNullException(nameof(teamLives));
         }
 
         public RoundCursorRestoreState Cursor { get; }
@@ -192,6 +194,14 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.HeroItemRestoreState HeroItems { get; }
 
+        /// <summary>
+        /// Milestone 7.4's per-team Life counters. Required and with no absent form, for the reason the
+        /// Level is: every match has teams and p.13 gives every team counters from setup, so a payload
+        /// carrying no counter section would be a round whose Life nobody wrote rather than a round
+        /// whose teams have none. A team recorded at zero is a legal value and the one p.13 produces.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState TeamLives { get; }
+
         public void Deconstruct(
             out RoundCursorRestoreState cursor,
             out RoundHistoryRestoreState history,
@@ -199,7 +209,8 @@ namespace GuardsDigital.Core.Cards
             out RoundCardActionsRestoreState cardActions,
             out GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions,
             out GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression,
-            out GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems)
+            out GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems,
+            out GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState teamLives)
         {
             cursor = Cursor;
             history = History;
@@ -208,6 +219,7 @@ namespace GuardsDigital.Core.Cards
             systemTransitions = SystemTransitions;
             heroProgression = HeroProgression;
             heroItems = HeroItems;
+            teamLives = TeamLives;
         }
     }
 }

@@ -727,7 +727,8 @@ namespace GuardsDigital.Application
                 turn?.DescribePendingEffectChoice(configuration.CardDefinitions, turnModifications),
                 availableClearOptions,
                 turn?.PendingImmediateLanePush,
-                round.SystemTransitions.PendingStep);
+                round.SystemTransitions.PendingStep,
+                round.TeamLives.Counters);
         }
 
         private PendingDefensePreviewProjection CreateDefensePreview(

@@ -54,6 +54,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
         }
 
+        /// <summary>
+        /// Milestone 7.4. A dispatcher composed without a round authority, stating the two states
+        /// rulebook p.13's hero-Defeat consequences read and write.
+        ///
+        /// A configured match never uses this: there the round owns both, is composed after this
+        /// dispatcher, and binds them down. This exists for the compositions that have no round at all,
+        /// and it takes them at construction rather than through a setter so such a composition states
+        /// what a Defeat is priced against once and cannot silently exchange it later. A dispatcher
+        /// built through any other overload and never bound refuses to resolve a hero Defeat rather
+        /// than pricing one against Levels and counters nobody records.
+        /// </summary>
+        public CardActionResolutionAuthority(
+            AdjacentMoveAuthority adjacentMoveAuthority,
+            MarkerAttachmentRegister markers,
+            GuardsDigital.Core.Rules.Progression.HeroProgressionState heroLevels,
+            GuardsDigital.Core.Rules.Consequences.TeamLifeState teamLives)
+            : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, markers)
+        {
+            if (heroLevels == null) throw new ArgumentNullException(nameof(heroLevels));
+            if (teamLives == null) throw new ArgumentNullException(nameof(teamLives));
+            BindDefeatConsequenceState(heroLevels, teamLives);
+        }
+
         public CardActionResolutionAuthority(
             AdjacentMoveAuthority adjacentMoveAuthority,
             IMovementActionStartRestrictionEvaluator movementActionStartRestrictions,
@@ -158,6 +181,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // Milestone 7.2b. The Skill backend joins them, so a capability reading its card's printed
             // Radius composes the same items into the same total every other channel does.
             skillBackend.BindHeroItems(heroItems);
+        }
+
+        /// <summary>
+        /// Milestone 7.4. Hands the Attack backend the two states rulebook p.13's hero-Defeat
+        /// consequences read and write: every hero's Level and every team's Life counters. Only that
+        /// backend needs them, because a hero Defeat can only be produced by an Attack - p.19's Remove
+        /// is explicitly not a Defeat and "Do not collect any coins" - so binding them more widely would
+        /// hand two other backends state no rule of theirs reads.
+        /// </summary>
+        internal void BindDefeatConsequenceState(
+            GuardsDigital.Core.Rules.Progression.HeroProgressionState levels,
+            GuardsDigital.Core.Rules.Consequences.TeamLifeState lives)
+        {
+            attackDefenseBackend.BindDefeatConsequenceState(levels, lives);
         }
 
         internal AdjacentMoveAuthority Board => board;
@@ -752,7 +789,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             MarkerAttachmentRegister markers,
             RuleModificationSet modifications,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
+            GuardsDigital.Core.Rules.Progression.HeroProgressionState heroLevels = null,
+            GuardsDigital.Core.Rules.Consequences.TeamLifeState teamLives = null)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
 
@@ -769,6 +808,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // restored dispatcher answers the next command, and that command may be the Defense whose
             // total the items belong in.
             restoredAuthority.BindHeroItems(heroItems);
+
+            // Milestone 7.4. Same reason, one milestone later: the restored dispatcher answers the next
+            // command, and that command may be the Attack outcome whose Defeat p.13 prices. A round
+            // restoring a whole match rebinds both from its own restored state a few lines later, so
+            // this argument is for the compositions that restore a dispatcher alone.
+            if (heroLevels != null && teamLives != null)
+            {
+                restoredAuthority.BindDefeatConsequenceState(heroLevels, teamLives);
+            }
+
             return restoredAuthority;
         }
 

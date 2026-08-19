@@ -24,7 +24,7 @@ namespace GuardsDigital.Core.Snapshots
         private static void WriteRound(BinaryWriter writer, RoundResolutionAuthority round)
         {
             var (cursor, history, endOfRound, roundCardActions, systemTransitions, heroProgression,
-                heroItems) =
+                heroItems, teamLives) =
                 round.CaptureRestoreState();
             var (roundIndex, turnIndex, phase, tieBreakerState) = cursor;
             writer.Write(roundIndex);
@@ -54,6 +54,7 @@ namespace GuardsDigital.Core.Snapshots
             WritePendingSystemTransitionStep(writer, systemTransitions);
             WriteHeroProgression(writer, heroProgression);
             WriteHeroItems(writer, heroItems);
+            WriteTeamLives(writer, teamLives);
 
             var (hasCardActions, roundDefeatRewards) = roundCardActions;
             writer.Write(hasCardActions);
@@ -110,6 +111,7 @@ namespace GuardsDigital.Core.Snapshots
             var systemTransitions = ReadSystemTransitions(reader, transitions, transitionRules);
             var heroProgression = ReadHeroProgression(reader);
             var heroItems = ReadHeroItems(reader);
+            var teamLives = ReadTeamLives(reader);
 
             // Milestone 7.2. The paused Attack continuation below verifies a recorded Defense total by
             // re-deriving it, and p.16's item bonus is part of that total, so the items have to exist
@@ -178,7 +180,8 @@ namespace GuardsDigital.Core.Snapshots
                     new RoundCardActionsRestoreState(hasRoundCardActions, roundDefeatRewards),
                     systemTransitions.CaptureRestoreState(),
                     heroProgression,
-                    heroItems),
+                    heroItems,
+                    teamLives),
                 commitment,
                 turn,
                 cardActions,
@@ -302,6 +305,46 @@ namespace GuardsDigital.Core.Snapshots
                         new HeroDashboardSlotPosition(slot),
                         icon,
                         order);
+                }));
+
+        /// <summary>
+        /// Milestone 7.4. Every team's remaining Life counters, ordered by team id.
+        ///
+        /// It rides beside the Levels rather than beside the setup's team states for the reason those
+        /// Levels do: this is the count as the match has it now, and p.13 changes it - "Defeated hero's
+        /// team spends the number of Life counters" - while the setup's <c>LifeCount</c> is the count
+        /// the match began with and never moves. A payload that recorded only the starting number would
+        /// restore a team the counters it had already spent.
+        ///
+        /// Zero is a legal recorded value and the one p.13's last sentence produces, so the reader
+        /// refuses a negative rather than a zero; <c>TeamLifeState.Restore</c> owns the coverage rule
+        /// that every participating team appears exactly once.
+        /// </summary>
+        private static void WriteTeamLives(
+            BinaryWriter writer,
+            GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState state)
+        {
+            writer.Write(state.Counters.Count);
+            foreach (var entry in state.Counters)
+            {
+                writer.Write(entry.Key.Value);
+                writer.Write(entry.Value);
+            }
+        }
+
+        private static GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState ReadTeamLives(
+            BinaryReader reader) =>
+            new GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState(
+                ReadMany(reader, "team Life counters", () =>
+                {
+                    var teamId = new TeamId(reader.ReadString());
+                    var counters = reader.ReadInt32();
+                    if (counters < 0)
+                    {
+                        throw Malformed($"Team Life counter total {counters} is outside the legal range.");
+                    }
+
+                    return new KeyValuePair<TeamId, int>(teamId, counters);
                 }));
 
         /// <summary>

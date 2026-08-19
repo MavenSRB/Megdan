@@ -26,6 +26,13 @@ namespace GuardsDigital.Core.Cards
     {
         public const int TurnsPerRound = 4;
 
+        /// <summary>
+        /// The Life counters a team begins with when no composed setup states otherwise. It is the
+        /// prototype baseline in <c>RULES_LEDGER.md</c> - "Five Life counters per team" - rather than a
+        /// number invented here, and it applies only to a composition that supplied no setup at all.
+        /// </summary>
+        public const int BaselineLifeCountersPerTeam = 5;
+
         private readonly IReadOnlyList<CardDefinition> definitions;
         private readonly IReadOnlyList<CardInstance> instances;
         private readonly MatchParticipants participants;
@@ -58,6 +65,7 @@ namespace GuardsDigital.Core.Cards
             var markers = composition.Markers;
             var compositionTransitions = composition.SystemTransitions;
             var compositionLanePush = composition.LanePush;
+            var compositionTeamLives = composition.TeamLives;
             var endOfRoundStageAvailability = composition.EndOfRoundStageAvailability;
             var endOfRoundHandlers = composition.EndOfRoundHandlers;
 
@@ -131,9 +139,21 @@ namespace GuardsDigital.Core.Cards
             // build gains one, because the purchase that would is milestone 7.5's.
             HeroItems = new GuardsDigital.Core.Rules.Progression.HeroItemState(participants);
 
+            // Milestone 7.4. p.13's Life counters, which a hero Defeat spends and whose exhaustion ends
+            // the game. An absent composition is substituted with the prototype baseline's five per
+            // team, the count `RULES_LEDGER.md` records for the official setup, in the shape the marker
+            // register and the timing lifecycle are substituted: a fixture without a composed setup
+            // still has counters, rather than a null every consumer would have to check.
+            TeamLives = compositionTeamLives ?? new GuardsDigital.Core.Rules.Consequences.TeamLifeState(
+                participants, BaselineLifeCountersPerTeam);
+
             // One state, shared with the dispatcher whose Defense total reads it - the same arrangement
             // the marker register has, and for the same reason.
             this.cardActions?.BindHeroItems(HeroItems);
+
+            // Milestone 7.4: the same arrangement again, for the two states p.13's Defeat consequences
+            // read and write inside the Attack that caused them.
+            this.cardActions?.BindDefeatConsequenceState(HeroProgression, TeamLives);
             this.endOfRoundStageAvailability = endOfRoundStageAvailability ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -218,6 +238,18 @@ namespace GuardsDigital.Core.Cards
         /// one as part of the level purchase that Level records.
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems { get; private set; }
+
+        /// <summary>
+        /// Milestone 7.4's per-team Life counters. Held here for the reason Level and items are: it is
+        /// match-scoped authoritative state whose only writer is a rule the round's own graph reaches,
+        /// and the round's snapshot section is where it is persisted.
+        ///
+        /// p.13's losing team is not a field beside it. A team at zero counters <em>is</em> that fact,
+        /// and <see cref="Phase"/> records that the game ended, so a third record could only agree with
+        /// the counters or be wrong about them - milestone 7.3's argument for deriving the unlocked
+        /// Ultimate from the card's own position.
+        /// </summary>
+        public TeamLifeState TeamLives { get; private set; }
 
         /// <summary>
         /// Milestone 7.3's unlocked Ultimates, derived from this match's own card instances whenever a
@@ -450,7 +482,8 @@ namespace GuardsDigital.Core.Cards
                 new RoundCardActionsRestoreState(CardActions != null, rewards),
                 systemTransitions.CaptureRestoreState(),
                 HeroProgression.CaptureRestoreState(),
-                HeroItems.CaptureRestoreState());
+                HeroItems.CaptureRestoreState(),
+                TeamLives.CaptureRestoreState());
         }
 
         internal static RoundResolutionAuthority Restore(
@@ -492,7 +525,13 @@ namespace GuardsDigital.Core.Cards
                 participants, state.HeroProgression);
             authority.HeroItems = GuardsDigital.Core.Rules.Progression.HeroItemState.Restore(
                 participants, state.HeroItems);
+
+            // Milestone 7.4. The counters the payload recorded, replacing the composed starting ones
+            // rather than mutating them, so a restored match never passes through a full pile on its way
+            // to the count it saved.
+            authority.TeamLives = TeamLifeState.Restore(participants, state.TeamLives);
             cardActions?.BindHeroItems(authority.HeroItems);
+            cardActions?.BindDefeatConsequenceState(authority.HeroProgression, authority.TeamLives);
             authority.RoundIndex = roundIndex;
             authority.TurnIndex = turnIndex;
             authority.Phase = phase;
@@ -1296,6 +1335,22 @@ namespace GuardsDigital.Core.Cards
                     TurnIndex,
                     ruleEvent))
                 .ToList();
+
+            // Milestone 7.4. p.13: "If the last counter is spent, the game ends and the team with no
+            // Life counters left, loses the game." The check is here, once, at the boundary every turn
+            // command crosses, rather than inside the Attack that spent them: a hero Defeat is the only
+            // thing that spends a counter today, but the page ends the game on the counters being gone
+            // rather than on which rule took the last one, and asking the state is what keeps that true
+            // for the next rule that spends one. "The game ends" is taken literally - nothing later in
+            // the turn runs, so the turn is not completed and the round does not advance.
+            if (TeamLives.HasEliminatedTeam)
+            {
+                Phase = RoundResolutionPhase.GameEnded;
+                events.Add(RoundResolutionEvent.GameEndedInTurn(
+                    RoundIndex, TurnIndex, TeamLives.EliminatedTeamId));
+                return RoundResolutionResult.Accept(events);
+            }
+
             if (CurrentTurnAuthority.IsEnded)
             {
                 CompleteCurrentTurn(events);

@@ -43,6 +43,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
 
+        /// <summary>
+        /// Milestone 7.4: the same per-hero Levels the round authority holds. p.13 prices a hero Defeat
+        /// at "coins equal to that hero's level", so the reward cannot be derived without them, and a
+        /// second copy would price a Defeat against a Level the match does not record.
+        /// </summary>
+        private GuardsDigital.Core.Rules.Progression.HeroProgressionState heroLevels;
+
+        /// <summary>
+        /// Milestone 7.4: the same Life counters the round authority holds. p.13's spend happens inside
+        /// the Attack that caused the Defeat - p.14's numbered order puts the removal at step 6, before
+        /// the Attack card's "After the attack" text at step 7 - so the counters are spent here rather
+        /// than at a later checkpoint that would have to rediscover who was defeated.
+        /// </summary>
+        private TeamLifeState teamLives;
+
         internal AttackDefenseCardActionStrategyBackend(AdjacentMoveAuthority adjacentMoveAuthority)
             : this(adjacentMoveAuthority, null, null)
         {
@@ -86,6 +101,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState items)
         {
             heroItems = items;
+        }
+
+        /// <summary>
+        /// Milestone 7.4. Hands this backend the two states rulebook p.13's hero-Defeat consequences
+        /// read and write - every hero's Level, which prices the Defeat, and every team's Life counters,
+        /// which the defeated hero's team spends. It is a binding for exactly the reason
+        /// <see cref="BindHeroItems"/> is: both are owned by the round authority, which is composed
+        /// after this dispatcher, and a second copy of either would produce a coin total or a counter
+        /// count that no restore or replay could reproduce.
+        ///
+        /// Absent outside a live match. A composition that binds neither still records the Defeat, the
+        /// removal and the marker returns; what it cannot do is price the reward, so the resolver
+        /// refuses the outcome rather than inventing a Level of one.
+        /// </summary>
+        internal void BindDefeatConsequenceState(
+            GuardsDigital.Core.Rules.Progression.HeroProgressionState levels,
+            TeamLifeState lives)
+        {
+            heroLevels = levels;
+            teamLives = lives;
         }
 
         public AttackActionResolutionResult StartAttack(
@@ -370,7 +405,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AttackResolutionPhase.ResolveMinionDefeat,
                 AttackTarget.Minion(targetMinionId),
                 null);
-            var coins = target.MinionType == StandardMinionType.Heavy ? 4 : 2;
+            // Finding `F-ER2-09`: p.13's coin values are read from the declared standard-minion content
+            // rather than restated here as a Heavy-versus-other literal. The number is unchanged.
+            var coins = StandardMinionProfileCatalog.Rulebook.Get(target.MinionType).DefeatCoins;
             var outcome = new DefeatOutcome(
                 new DefeatOutcomeId($"{resolution.ResolutionId.Value}:minion-defeat"),
                 new DefeatTargetId(targetMinionId.Value),
@@ -707,27 +744,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             };
             if (outcome == AttackResolutionOutcome.AttackSuccessful)
             {
-                var defeatedTeamId = participants.GetTeamForHero(completedResolution.TargetHeroId).Id;
-                heroDefeat = new HeroDefeatResolution(new DefeatOutcome(
-                    new DefeatOutcomeId($"{completedResolution.ResolutionId.Value}:hero-defeat"),
-                    new DefeatTargetId(completedResolution.TargetHeroId.Value),
-                    defeatedTeamId,
-                    completedResolution.ActorId));
-                events.Add(ResolutionStep.FromFact(
-                    CardActionResolutionEvent.HeroDefeatRecorded(completedResolution, heroDefeat)));
-
-                // Milestone 6.12. Rulebook p.13: "Any markers they had are returned." It follows the
-                // recorded Defeat because that is the sentence's own order, and it is the only p.13
-                // consequence this milestone owns - the removal, the cancellation, the Life counters and
-                // the rewards are still deferred. p.19's "tokens are not removed when the hero who
-                // placed them is defeated" is why nothing here touches the board.
-                foreach (var attachment in ComponentCleanupRules.MarkersReturnedOnDefeat(
-                             markers?.Attachments ?? Array.Empty<MarkerAttachment>(),
-                             completedResolution.TargetHeroId))
+                heroDefeat = ResolveHeroDefeat(
+                    completedResolution,
+                    materializedDefinitions,
+                    materializedInstances,
+                    participants,
+                    modifications,
+                    events);
+                if (heroDefeat == null)
                 {
-                    events.Add(ResolutionStep.FromFact(
-                        CardActionResolutionEvent.MarkerReturnedOnHeroDefeat(
-                            completedResolution, markers.Return(attachment.Id))));
+                    return RejectAttack(
+                        CardActionResolutionRejectionReason.DefeatConsequenceStateUnavailable);
                 }
             }
 
@@ -749,6 +776,187 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 heroDefeat: heroDefeat);
         }
 
+
+        /// <summary>
+        /// Rulebook p.13's "When a Hero is Defeated" list, performed in the page's printed order and
+        /// reported as it happens. Returns <c>null</c>, having changed nothing, when this composition
+        /// cannot price the Defeat.
+        ///
+        /// Where it runs is p.14's, not a choice made here. That page prints the numbered
+        /// <em>Attack/Defense Detailed Order</em>, whose step 6 is "Check if the attack was successful;
+        /// if it was, remove the defending hero" and whose step 7 is "Apply 'After the attack:' text on
+        /// the Attack card" - so the whole list belongs inside the Attack action and ahead of the
+        /// after-attack checkpoint, which is exactly where the caller raises it.
+        ///
+        /// Every derivation the list needs is read and every refusal is taken before the first mutation,
+        /// so a composition that cannot finish the list never starts it: the hero is still standing, its
+        /// card is still unresolved, its team still has its counters, and the command is refused whole.
+        /// </summary>
+        private HeroDefeatResolution ResolveHeroDefeat(
+            PendingAttackResolution completedResolution,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            ICollection<ResolutionStep> events)
+        {
+            if (heroLevels == null || teamLives == null)
+            {
+                return null;
+            }
+
+            var defeatedHeroId = completedResolution.TargetHeroId;
+            var defeatedTeamId = participants.GetTeamForHero(defeatedHeroId).Id;
+
+            // p.13's two readings of the defeated hero, taken before anything moves. The Level is
+            // authoritative state; the lowest Tier is read from the hero's own cards, over every
+            // location they are in. p.15 asks the same question of the hand alone because it is
+            // choosing a card there to upgrade; p.13 attaches no location to "that hero's lowest card
+            // Tier", and only the whole-pool reading gives its table's answer whatever the hero has
+            // played, discarded or is still holding when it is defeated.
+            var defeatedLevel = heroLevels.GetLevel(defeatedHeroId);
+            var hasTier = CardCharacteristicQuery.TryGetLowestNonBasicTier(
+                new CardCharacteristicCriteria(ownerId: defeatedHeroId),
+                definitions,
+                instances,
+                out var lowestTier);
+            var defeatCoins = HeroDefeatRewardSchedule.DefeatCoins(defeatedLevel);
+            var assistCoins = hasTier ? HeroDefeatRewardSchedule.AssistCoins(lowestTier) : 0;
+            var lifeCounters = hasTier ? HeroDefeatRewardSchedule.LifeCounters(lowestTier) : 0;
+
+            var outcome = new DefeatOutcome(
+                new DefeatOutcomeId($"{completedResolution.ResolutionId.Value}:hero-defeat"),
+                new DefeatTargetId(defeatedHeroId.Value),
+                defeatedTeamId,
+                completedResolution.ActorId,
+                defeatCoins,
+                assistCoins);
+            if (defeatRewards == null) defeatRewards = new DefeatRewardAccounting(participants);
+
+            // p.13, first line: "Remove the defeated hero from the board." The prevention question is
+            // asked through milestone 6.6's shared decision rather than answered here, so the hero path
+            // and the minion path cannot disagree about whether a removal can be stopped - the exact
+            // disagreement 6.6b closed. p.8's cause is asked from where the miniature still stands.
+            var subject = BoardObjectReference.ForHero(defeatedHeroId);
+            var removalStage = new RemovalStageDecision(
+                RuleActivity.Attack,
+                RuleObject.ForHero(completedResolution.ActorId),
+                adjacentMoveAuthority,
+                adjacentMoveAuthority,
+                participants,
+                modifications,
+                LanePushCauseKind.Defeat);
+            var removalAttempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
+            var prevented = removalStage.IsPrevented(subject);
+            var origin = adjacentMoveAuthority.Occupancies
+                .Where(occupancy => occupancy.HeroId.Equals(defeatedHeroId))
+                .Select(occupancy => occupancy.Coordinate)
+                .FirstOrDefault();
+            var removedHero = default(HeroOccupancy);
+            if (!prevented)
+            {
+                removedHero = adjacentMoveAuthority.CommitValidatedHeroRemoval(defeatedHeroId);
+            }
+
+            var lanePush = removalStage.QualifyLanePush(subject, origin);
+
+            // p.13, second line: "If the defeated hero had an unresolved card, it is resolved, without
+            // performing an action." The Initiative order reads the card instances themselves, so a card
+            // resolved here is simply never offered again - there is no separate acknowledgement to
+            // make, and making one would require the defeated hero to be the selected actor, which it
+            // never is: p.13 forbids attacking a friendly hero, so the target is always someone else.
+            var unresolvedCard = instances.FirstOrDefault(candidate =>
+                candidate != null &&
+                candidate.OwnerId.Equals(defeatedHeroId) &&
+                candidate.State.Location == CardLocation.TurnArea &&
+                candidate.State.HasBeenPlayed &&
+                candidate.State.ResolutionStatus == CardResolutionStatus.Unresolved);
+            var resolvedCardId = default(CardInstanceId);
+            if (unresolvedCard != null && CardLifecycleAuthority.TryResolveAfterAction(unresolvedCard))
+            {
+                resolvedCardId = unresolvedCard.Id;
+            }
+
+            // p.13, third line, second half: "Any markers they had are returned." Milestone 6.12's
+            // per-attachment returns, unchanged. p.19's "tokens are not removed when the hero who placed
+            // them is defeated" is why nothing here touches a token. The attachments are returned now
+            // and reported below, so the mutations stay in the page's order while the stream does too.
+            var returnedMarkers = ComponentCleanupRules.MarkersReturnedOnDefeat(
+                    markers?.Attachments ?? Array.Empty<MarkerAttachment>(),
+                    defeatedHeroId)
+                .Select(attachment => markers.Return(attachment.Id))
+                .ToArray();
+
+            // p.13, fourth line: the coins. The accounting refuses a second award for the same outcome
+            // id, so a re-execution inside one resolution collects nothing twice.
+            var reward = defeatRewards.Award(outcome);
+            if (!reward.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A prevalidated hero Defeat could not award its p.13 reward: " + reward.RejectionReason + ".");
+            }
+
+            // p.13, fifth line: the Life counters, and the game end when the last one goes.
+            var lifeSpend = default(TeamLifeSpend);
+            var hasLifeSpend = false;
+            if (lifeCounters > 0)
+            {
+                var spend = teamLives.TrySpend(defeatedTeamId, lifeCounters);
+                if (!spend.Accepted)
+                {
+                    throw new InvalidOperationException(
+                        "A prevalidated hero Defeat could not spend its p.13 Life counters: " +
+                        spend.RejectionReason + ".");
+                }
+
+                lifeSpend = spend.Spend;
+                hasLifeSpend = true;
+            }
+
+            var resolved = prevented
+                ? HeroDefeatResolution.Prevented(
+                    outcome, reward, removalAttempt,
+                    new DefeatRemovalResult(
+                        outcome.Id, outcome.TargetId, DefeatRemovalResultKind.RemovalPrevented),
+                    resolvedCardId, lifeSpend, hasLifeSpend, lanePush)
+                : HeroDefeatResolution.Removed(
+                    outcome, reward, removalAttempt,
+                    new DefeatRemovalResult(
+                        outcome.Id, outcome.TargetId, DefeatRemovalResultKind.Removed),
+                    removedHero, resolvedCardId, lifeSpend, hasLifeSpend, lanePush);
+
+            // The stream, in p.13's printed order - the same order the mutations above ran in. The
+            // cancellation checkpoint and the marker returns belong to the page's third line and are
+            // spliced in at exactly that point, between the resolved card and the coins.
+            foreach (var fact in resolved.Facts)
+            {
+                if (fact == HeroDefeatFactKind.RewardAwarded)
+                {
+                    // p.13, third line, first half: "Defeated hero's actions with Active effects are
+                    // canceled." p.17 states the same cancellation from the effect's own side - it ends
+                    // when "you are defeated" - and the lifecycle has carried that condition since
+                    // milestone 6.1q with nothing raising it. This is what raises it: the checkpoint
+                    // names the defeated hero, and the turn authority applies it to every effect that
+                    // declared the condition.
+                    events.Add(ResolutionStep.AtCheckpoint(
+                        TimingCheckpoint.ControllerHeroDefeated, defeatedHeroId));
+                    foreach (var attachment in returnedMarkers)
+                    {
+                        events.Add(ResolutionStep.FromFact(
+                            CardActionResolutionEvent.MarkerReturnedOnHeroDefeat(
+                                completedResolution, attachment)));
+                    }
+                }
+
+                events.Add(fact == HeroDefeatFactKind.DefeatRecorded
+                    ? ResolutionStep.FromFact(
+                        CardActionResolutionEvent.HeroDefeatRecorded(completedResolution, resolved))
+                    : ResolutionStep.FromFact(
+                        CardActionResolutionEvent.HeroDefeatFact(completedResolution, resolved, fact)));
+            }
+
+            return resolved;
+        }
 
         internal AttackDefenseBackendRestoreState CaptureRestoreState() =>
             new AttackDefenseBackendRestoreState(pendingAttackResolution);

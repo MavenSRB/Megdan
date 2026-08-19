@@ -198,7 +198,8 @@ namespace GuardsDigital.Presentation.Match
                 MinionChoicePresenter,
                 projection => hud.RenderHeader(new MatchHudHeaderViewModel(
                     projection.TieBreakerState,
-                    projection.Setup)));
+                    projection.Setup,
+                    projection.TeamLifeCounters)));
             RefreshAll();
         }
 
@@ -240,7 +241,8 @@ namespace GuardsDigital.Presentation.Match
         {
             hud.RenderHeader(new MatchHudHeaderViewModel(
                 session.Projection.TieBreakerState,
-                session.Projection.Setup));
+                session.Projection.Setup,
+                session.Projection.TeamLifeCounters));
             coordinator.RefreshAll();
         }
 

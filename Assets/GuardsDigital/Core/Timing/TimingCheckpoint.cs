@@ -14,7 +14,11 @@ namespace GuardsDigital.Core.Timing
         RoundEnd = 9,
         CardsRetrieved = 10,
         SourceCardStateChanged = 11,
-        AffectedHeroDefeated = 12,
+        /// <summary>
+        /// p.13's hero Defeat, raised naming the defeated hero. Milestone 7.4 gave it its producer and
+        /// its controller-based reading; it was called `AffectedHeroDefeated` before that.
+        /// </summary>
+        ControllerHeroDefeated = 12,
         ExplicitCancellation = 13,
         DefenseResponse = 14,
         AttackResultComparison = 15

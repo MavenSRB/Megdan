@@ -159,14 +159,51 @@ namespace GuardsDigital.Core.Cards
                 return new PendingHeroRespawnChoice(heroId, cardInstanceId, emptySpawns);
             }
 
-            var fallback = heroSpawns
-                .SelectMany(value => value.Coordinate.GetNeighbors()
-                    .Where(board.IsEmptyPlayableSpace)
-                    .Select(coordinate => new HeroRespawnDestination(
-                        coordinate, value.Spawn.Id, true)))
-                .GroupBy(value => value.Coordinate)
-                .Select(group => group.OrderBy(value => value.AdjacentSpawnPointId.Value,
-                    StringComparer.Ordinal).First())
+            // Milestone 7.4. The nearest empty space, read over the whole map rather than over the
+            // spawn point's own six neighbours.
+            //
+            // p.7 sends a respawning hero to an empty spawn point and, when none is empty, to the
+            // nearest empty space to one - and "nearest" is a distance rather than a ring. Until this
+            // milestone the fallback searched the adjacent ring alone, which answered the same thing
+            // whenever any neighbour was free and answered *nothing* when none was: a hero with all
+            // its spawn points and every neighbouring space occupied was offered no destination at
+            // all, on a Phase 4 map with dozens of empty spaces on it. The search now widens ring by
+            // ring and stops at the first distance that has an empty playable space, so it offers
+            // every space tied at that distance and never more than one ring's worth.
+            //
+            // Distance is measured to the spawn point rather than to the hero's last position, which
+            // is what the page says and is also the only reading available: a hero being offered a
+            // respawn is off the board and has no position to measure from.
+            var candidates = board.MapDefinition.Spaces
+                .Select(space => space.Coordinate)
+                .Where(board.IsEmptyPlayableSpace)
+                .Select(coordinate => new
+                {
+                    Coordinate = coordinate,
+                    Nearest = heroSpawns
+                        .Select(spawn => new
+                        {
+                            spawn.Spawn.Id,
+                            Distance = GuardsDigital.Core.Board.HexDistanceQuery.Calculate(
+                                coordinate, spawn.Coordinate)
+                        })
+                        .OrderBy(value => value.Distance)
+                        .ThenBy(value => value.Id.Value, StringComparer.Ordinal)
+                        .FirstOrDefault()
+                })
+                .Where(value => value.Nearest != null && value.Nearest.Distance > 0)
+                .ToArray();
+            if (candidates.Length == 0)
+            {
+                return new PendingHeroRespawnChoice(
+                    heroId, cardInstanceId, Array.Empty<HeroRespawnDestination>());
+            }
+
+            var nearestDistance = candidates.Min(value => value.Nearest.Distance);
+            var fallback = candidates
+                .Where(value => value.Nearest.Distance == nearestDistance)
+                .Select(value => new HeroRespawnDestination(
+                    value.Coordinate, value.Nearest.Id, true))
                 .ToArray();
             return new PendingHeroRespawnChoice(heroId, cardInstanceId, fallback);
         }

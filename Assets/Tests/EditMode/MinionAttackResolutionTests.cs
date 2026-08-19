@@ -127,7 +127,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(19));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(20));
             Assert.That(restored.Board.Minions, Is.Empty);
             Assert.That(restored.CardActions.DefeatRewards.GetCoins(fixture.AttackerId), Is.EqualTo(2));
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board), Is.EqualTo(payload));

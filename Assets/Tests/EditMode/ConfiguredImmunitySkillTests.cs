@@ -216,7 +216,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(ActiveEffectAffectedScopeKind.ControllerHero),
                 "The affected object is the acting hero, never the source card.");
             Assert.That(definition.CancellationConditions,
-                Has.Member(ActiveEffectCancellationCondition.AffectedHeroDefeated),
+                Has.Member(ActiveEffectCancellationCondition.ControllerHeroDefeated),
                 "p.17 cancels an Active effect on your card when you are defeated.");
         }
 

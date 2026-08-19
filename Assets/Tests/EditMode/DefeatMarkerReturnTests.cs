@@ -17,10 +17,11 @@ namespace GuardsDigital.Tests.EditMode
     /// Milestone 6.12's second cleanup checkpoint: rulebook p.13, "When a Hero is Defeated" -
     /// "Defeated hero's actions with Active effects are canceled. Any markers they had are returned."
     ///
-    /// Only the marker clause is this milestone's. The hero's removal from the board, the effect
-    /// cancellation beside it, the Life counters, the coins, and the respawn all remain deferred, and
-    /// the cases below assert the return without asserting any of them - which is the honest shape,
-    /// because the Defeat outcome is recorded today and those consequences are not.
+    /// Only the marker clause is this fixture's. Milestone 7.4 supplied every other line of the page -
+    /// the removal, the unresolved card, the effect cancellation, the coins and the Life counters - and
+    /// `HeroDefeatConsequenceTests` owns those; what is asserted here is that the marker return still
+    /// happens, still names the holder rather than the owner, and still sits in the page's own position
+    /// among them.
     ///
     /// The token half of the page is a negative and it is asserted too: p.19 says outright that "tokens
     /// are not removed when the hero who placed them is defeated", so a defeat that cleared the board
@@ -42,9 +43,16 @@ namespace GuardsDigital.Tests.EditMode
             {
                 CardActionResolutionEventKind.AttackSuccessful,
                 CardActionResolutionEventKind.HeroDefeatRecorded,
+                CardActionResolutionEventKind.HeroRemovalAttempted,
+                CardActionResolutionEventKind.HeroRemovalCompleted,
                 CardActionResolutionEventKind.MarkerReturnedOnHeroDefeat,
+                CardActionResolutionEventKind.HeroDefeatRewardAwarded,
+                CardActionResolutionEventKind.TeamLifeSpent,
                 CardActionResolutionEventKind.AttackResolutionCompleted
-            }), "p.13 returns the markers after the Defeat it is a consequence of.");
+            }),
+                "p.13 returns the markers in the page's own order: after the Defeat and the removal it " +
+                "is a consequence of, and before the coins. Milestone 7.4 supplied every other line; " +
+                "this fixture still owns the marker one.");
 
             var returned = outcome.Events.Single(ruleEvent =>
                 ruleEvent.Kind == CardActionResolutionEventKind.MarkerReturnedOnHeroDefeat);
@@ -216,7 +224,7 @@ namespace GuardsDigital.Tests.EditMode
                 configuration,
                 attackerId,
                 defenderId,
-                new CardActionResolutionAuthority(board, markers),
+                DefeatConsequenceComposition.Dispatcher(board, configuration.Participants, markers),
                 offer);
         }
 

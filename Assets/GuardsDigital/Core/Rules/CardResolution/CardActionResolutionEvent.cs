@@ -79,7 +79,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HexCoordinate targetTokenCoordinate = default,
             DisplacedMinionCorrectionEvent correctionEvent = default,
             MarkerInstanceId returnedMarkerInstanceId = default,
-            MarkerDefinitionReference returnedMarkerDefinitionReference = default)
+            MarkerDefinitionReference returnedMarkerDefinitionReference = default,
+            HeroDefeatFactKind heroDefeatFactKind = HeroDefeatFactKind.None,
+            CardInstanceId resolvedCardInstanceId = default,
+            int lifeCountersSpent = 0,
+            int remainingLifeCounters = 0)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -135,6 +139,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CorrectionEvent = correctionEvent;
             ReturnedMarkerInstanceId = returnedMarkerInstanceId;
             ReturnedMarkerDefinitionReference = returnedMarkerDefinitionReference;
+            HeroDefeatFactKind = heroDefeatFactKind;
+            ResolvedCardInstanceId = resolvedCardInstanceId;
+            LifeCountersSpent = lifeCountersSpent;
+            RemainingLifeCounters = remainingLifeCounters;
         }
 
         public CardActionResolutionEventKind Kind { get; }
@@ -178,6 +186,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public MarkerDefinitionReference ReturnedMarkerDefinitionReference { get; }
         public DisplacedMinionCorrectionEvent CorrectionEvent { get; }
+
+        /// <summary>Milestone 7.4: which line of p.13's hero-Defeat list this fact is.</summary>
+        public HeroDefeatFactKind HeroDefeatFactKind { get; }
+
+        /// <summary>
+        /// Milestone 7.4: the defeated hero's unresolved card that p.13 resolved without an action,
+        /// or <c>default</c> on every other fact.
+        /// </summary>
+        public CardInstanceId ResolvedCardInstanceId { get; }
+
+        /// <summary>Milestone 7.4: the Life counters p.13 actually took, or zero.</summary>
+        public int LifeCountersSpent { get; }
+
+        /// <summary>Milestone 7.4: what that team has left afterwards, or zero.</summary>
+        public int RemainingLifeCounters { get; }
 
         public static CardActionResolutionEvent MovementActionStarted(
             PendingCardActionResolution resolution)
@@ -464,6 +487,96 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 factKind, resolution.TargetMinionId, defeat.Defeat.Id);
         }
 
+        /// <summary>
+        /// Milestone 7.4. One line of rulebook p.13's "When a Hero is Defeated" list, reported in the
+        /// page's own order from the staged resolution that performed it.
+        ///
+        /// <see cref="HeroDefeatFactKind.DefeatRecorded"/> is deliberately not routed here: it has been
+        /// <see cref="HeroDefeatRecorded"/> since milestone 5.8, carries the Attack totals that make the
+        /// Defeat readable, and rewriting it would have changed an event the projections already read.
+        /// </summary>
+        public static CardActionResolutionEvent HeroDefeatFact(
+            PendingAttackResolution resolution,
+            HeroDefeatResolution defeat,
+            HeroDefeatFactKind factKind)
+        {
+            if (resolution == null || defeat == null ||
+                !defeat.Facts.Contains(factKind) || !resolution.TargetHeroId.IsDefined)
+            {
+                throw new ArgumentException("Hero Defeat event requires one recorded typed fact.");
+            }
+
+            CardActionResolutionEventKind eventKind;
+            switch (factKind)
+            {
+                case HeroDefeatFactKind.RemovalAttempted: eventKind = CardActionResolutionEventKind.HeroRemovalAttempted; break;
+                case HeroDefeatFactKind.RemovalCompleted: eventKind = CardActionResolutionEventKind.HeroRemovalCompleted; break;
+                case HeroDefeatFactKind.RemovalPrevented: eventKind = CardActionResolutionEventKind.HeroRemovalPrevented; break;
+                case HeroDefeatFactKind.UnresolvedCardResolved: eventKind = CardActionResolutionEventKind.HeroUnresolvedCardResolved; break;
+                case HeroDefeatFactKind.RewardAwarded: eventKind = CardActionResolutionEventKind.HeroDefeatRewardAwarded; break;
+                case HeroDefeatFactKind.LifeSpent: eventKind = CardActionResolutionEventKind.TeamLifeSpent; break;
+                case HeroDefeatFactKind.TeamEliminated: eventKind = CardActionResolutionEventKind.TeamEliminated; break;
+                default: throw new ArgumentOutOfRangeException(nameof(factKind));
+            }
+
+            var spent = factKind == HeroDefeatFactKind.LifeSpent || factKind == HeroDefeatFactKind.TeamEliminated
+                ? defeat.LifeSpend.Spent
+                : 0;
+            var remaining = factKind == HeroDefeatFactKind.LifeSpent || factKind == HeroDefeatFactKind.TeamEliminated
+                ? defeat.LifeSpend.CountersAfter
+                : 0;
+            return new CardActionResolutionEvent(
+                eventKind,
+                resolution.ResolutionId,
+                resolution.SourceCardInstanceId,
+                resolution.ActionDefinitionId,
+                default,
+                resolution.ActorId,
+                resolution.TargetHeroId,
+                new ActionResolutionStepId($"hero-defeat-{FactStepSuffix(factKind)}"),
+                0,
+                resolution.AttackTotal,
+                // The comparison that produced the Defeat, carried on every line of its list exactly as
+                // HeroDefeatRecorded carries it, so a reader of any one fact can see what caused it.
+                resolution.DefenseOffer.HasValue
+                    ? resolution.DefenseOffer.Value.SourceCardInstanceId
+                    : default,
+                resolution.DefenseTotal ?? 0,
+                AttackResolutionOutcome.AttackSuccessful,
+                default,
+                default,
+                MinionDefeatFactKind.None,
+                default,
+                defeat.Defeat.Id,
+                default,
+                default,
+                default,
+                default,
+                default,
+                default,
+                factKind,
+                factKind == HeroDefeatFactKind.UnresolvedCardResolved
+                    ? defeat.ResolvedUnresolvedCardId
+                    : default,
+                spent,
+                remaining);
+        }
+
+        private static string FactStepSuffix(HeroDefeatFactKind factKind)
+        {
+            switch (factKind)
+            {
+                case HeroDefeatFactKind.RemovalAttempted: return "removal-attempted";
+                case HeroDefeatFactKind.RemovalCompleted: return "removal-completed";
+                case HeroDefeatFactKind.RemovalPrevented: return "removal-prevented";
+                case HeroDefeatFactKind.UnresolvedCardResolved: return "unresolved-card-resolved";
+                case HeroDefeatFactKind.RewardAwarded: return "reward-awarded";
+                case HeroDefeatFactKind.LifeSpent: return "life-spent";
+                case HeroDefeatFactKind.TeamEliminated: return "team-eliminated";
+                default: throw new ArgumentOutOfRangeException(nameof(factKind));
+            }
+        }
+
         public bool Equals(CardActionResolutionEvent other)
         {
             return Kind == other.Kind &&
@@ -487,7 +600,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 TargetTokenInstanceId.Equals(other.TargetTokenInstanceId) &&
                 TargetTokenDefinitionReference.Equals(other.TargetTokenDefinitionReference) &&
                 TargetTokenCoordinate.Equals(other.TargetTokenCoordinate) &&
-                CorrectionEvent.Equals(other.CorrectionEvent);
+                CorrectionEvent.Equals(other.CorrectionEvent) &&
+                HeroDefeatFactKind == other.HeroDefeatFactKind &&
+                ResolvedCardInstanceId.Equals(other.ResolvedCardInstanceId) &&
+                LifeCountersSpent == other.LifeCountersSpent &&
+                RemainingLifeCounters == other.RemainingLifeCounters;
         }
 
         public override bool Equals(object obj)
@@ -520,7 +637,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ TargetTokenInstanceId.GetHashCode();
                 hashCode = (hashCode * 397) ^ TargetTokenDefinitionReference.GetHashCode();
                 hashCode = (hashCode * 397) ^ TargetTokenCoordinate.GetHashCode();
-                return (hashCode * 397) ^ CorrectionEvent.GetHashCode();
+                hashCode = (hashCode * 397) ^ CorrectionEvent.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)HeroDefeatFactKind;
+                hashCode = (hashCode * 397) ^ ResolvedCardInstanceId.GetHashCode();
+                hashCode = (hashCode * 397) ^ LifeCountersSpent;
+                return (hashCode * 397) ^ RemainingLifeCounters;
             }
         }
 

@@ -313,7 +313,16 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.TryAnswerDefenseResponse(DefenseResponseChoiceCommand.Decline(
                 defenseChoice.ResolutionId,
                 defenseChoice.ChoiceId)).Accepted, Is.True);
-            Assert.That(authority.TryPerformHold(blueSecondCard.Id).Accepted, Is.True);
+
+            // Milestone 7.4. The declined Defense defeats the Blue hero, and p.13 resolves its
+            // unresolved card without an action - so there is no Hold left for it to perform and the
+            // turn closes on the Attack itself. Before this milestone the Blue hero closed turn 3 by
+            // Holding, which is the line this replaces; the round still advances to turn 4 with both
+            // cards resolved, which is what the case is about.
+            var refusedHold = authority.TryPerformHold(blueSecondCard.Id);
+            Assert.That(refusedHold.Accepted, Is.False);
+            Assert.That(refusedHold.RejectionReason,
+                Is.EqualTo(RoundResolutionRejectionReason.NotResolvingTurn));
 
             Assert.That(authority.TurnIndex, Is.EqualTo(4));
             Assert.That(authority.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
@@ -615,7 +624,7 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red),
                 1,
                 new RoundResolutionComposition(
-                    null, null, null, null, null, null, capabilities, handlers));
+                    null, null, null, null, null, null, null, capabilities, handlers));
             return new OneCardFixture(red, blue, authority);
         }
 

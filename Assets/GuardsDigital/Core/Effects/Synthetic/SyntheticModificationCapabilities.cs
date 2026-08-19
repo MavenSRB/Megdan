@@ -64,7 +64,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private static readonly ActiveEffectCancellationCondition[] GeneralCancellations =
         {
-            ActiveEffectCancellationCondition.AffectedHeroDefeated,
+            ActiveEffectCancellationCondition.ControllerHeroDefeated,
             ActiveEffectCancellationCondition.CardsRetrieved
         };
 

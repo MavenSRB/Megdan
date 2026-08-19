@@ -247,6 +247,34 @@ namespace GuardsDigital.Core.Cards
                 endOfRoundStage: stage);
         }
 
+        /// <summary>
+        /// Milestone 7.4. Rulebook p.13's third victory path, reached in the middle of a turn rather
+        /// than at an end-of-round stage: "If the last counter is spent, the game ends and the team with
+        /// no Life counters left, loses the game."
+        ///
+        /// It is its own factory rather than a call to <see cref="EndOfRoundBoundary"/> because that one
+        /// requires the stage it ended at, and this game end has none - the counters run out inside an
+        /// Attack. It names the losing team, which p.8's two Lane-Push endings do not have to, since
+        /// there the winner is the side that pushed.
+        /// </summary>
+        public static RoundResolutionEvent GameEndedInTurn(
+            int roundIndex,
+            int turnIndex,
+            TeamId losingTeamId)
+        {
+            if (!losingTeamId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "p.13's game end names the team with no Life counters left.", nameof(losingTeamId));
+            }
+
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.GameEnded,
+                roundIndex,
+                turnIndex,
+                teamId: losingTeamId);
+        }
+
         public static RoundResolutionEvent CompletedRoundBoundary(
             RoundResolutionEventKind kind,
             CompletedRoundRecord completedRound,

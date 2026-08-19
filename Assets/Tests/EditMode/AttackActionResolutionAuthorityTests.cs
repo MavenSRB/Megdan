@@ -921,12 +921,18 @@ namespace GuardsDigital.Tests.EditMode
             {
                 CardActionResolutionEventKind.AttackSuccessful,
                 CardActionResolutionEventKind.HeroDefeatRecorded,
+                CardActionResolutionEventKind.HeroRemovalAttempted,
+                CardActionResolutionEventKind.HeroRemovalCompleted,
+                CardActionResolutionEventKind.HeroDefeatRewardAwarded,
+                CardActionResolutionEventKind.TeamLifeSpent,
                 CardActionResolutionEventKind.AttackResolutionCompleted
-            }));
+            }),
+                "No unresolved-card line: this fixture resolves an Attack directly rather than inside " +
+                "a turn, so the defender has no played card for p.13's second line to resolve.");
             Assert.That(outcome.OutcomeComparison.BlockResult, Is.EqualTo(DefenseBlockResult.None));
             Assert.That(outcome.HeroDefeat.Defeat.TargetId.Value, Is.EqualTo(fixture.DefenderId.Value));
-            Assert.That(outcome.HeroDefeat.Defeat.HasRewardAmounts, Is.False,
-                "Hero Level/Tier reward derivation remains deferred to Phase 7.");
+            Assert.That(outcome.HeroDefeat.Defeat.HasRewardAmounts, Is.True,
+                "Milestone 7.4 derives p.13's Level and Tier reward amounts at the Defeat.");
             Assert.That(outcome.Events.All(ruleEvent =>
                 ruleEvent.AttackTotal == 4 &&
                 ruleEvent.DefenseTotal == 2 &&
@@ -1248,7 +1254,7 @@ namespace GuardsDigital.Tests.EditMode
                 attackerId,
                 defenderId,
                 boardAuthority,
-                new CardActionResolutionAuthority(boardAuthority),
+                DefeatConsequenceComposition.Dispatcher(boardAuthority, configuration.Participants),
                 GetAttackOffer(configuration, attackerId, attackCardInstanceId));
         }
 
