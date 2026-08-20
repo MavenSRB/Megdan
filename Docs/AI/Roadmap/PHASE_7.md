@@ -343,7 +343,7 @@ ER2 note (`F-ER2-08`): `Undo`/`Restart` reconstruct by full-prefix replay, so th
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79-complete-a-deterministic-test-card-core-match-completion-evidence).
 
-### [ ] 7.9b Reduce what a complete match costs to refresh and to undo
+### [~] 7.9b Reduce what a complete match costs to refresh and to undo
 
 Blocked by: nothing. It runs after milestone 7.9 and before milestone 7.9a, which is where `RISK-PERF-001`'s recorded disposition places the smallest corrective milestone a measured crossing schedules.
 
