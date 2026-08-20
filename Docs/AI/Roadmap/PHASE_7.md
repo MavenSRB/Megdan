@@ -387,7 +387,7 @@ Hard-gate roadmap audit: As part of milestone 7.9a, audit readiness for verified
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79a-independently-review-the-complete-synthetic-core-completion-evidence).
 
-### [~] 7.9c Close the four confirmed rules-surface defects from the 7.9a review
+### [x] 7.9c Close the four confirmed rules-surface defects from the 7.9a review
 
 Blocked by: nothing; it is the gate-blocking corrective milestone 7.9a proposed, and the Phase 8 hard gate stays closed until it completes.
 
@@ -404,6 +404,8 @@ Acceptance checks:
 - T2 validation: the four named fixtures, the complete-loop suite, and directly affected Lane-Push, hero-Defeat, system-transition, and presenter regressions. The corrective sequence's complete unfiltered sweep is milestone 7.9d's closing validation, by the user's recorded decision.
 
 Non-goals: no publishing of a projected turn-ending offer (the recorded root cause of F-PRES-01's class, Phase 8-scale work); no change to the Minion Battle, the Lane-Push stages, or the continuation contract itself; no schema move; no correction of any other 7.9a finding.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79c-close-the-four-confirmed-rules-surface-defects-from-the-79a-review-completion-evidence).
 
 ### [ ] 7.9d Restore the guards verified content will lean on
 

@@ -359,6 +359,42 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void RoundPresenter_WithholdsEndTurnWhileAHeroRespawnChoiceStands()
+        {
+            // Milestone 7.9c, finding F-PRES-01. A defeated hero whose next card is revealed while it is
+            // off board owes p.7's respawn answer before the turn can end. The authority knows: it
+            // refuses `PerformHold` with `HeroRespawnChoicePending` and publishes no turn action while
+            // the choice stands. The presenter drew END TURN beside the respawn options anyway, because
+            // it derived the Hold itself past a second, hand-maintained list of mandatory choices that
+            // had drifted from its sibling by exactly this one entry - a control that could only ever
+            // produce a rejection, which is the class milestones 6.5ac and 6.5af exist to prevent.
+            var session = CreateSessionWithBlueHeroOffBoard();
+            CommitBlueFirstTurnRevealingTheOffBoardHero(session);
+
+            var pending = session.Projection.PendingHeroRespawnChoice;
+            Assert.That(pending, Is.Not.Null,
+                "The fixture is only the fixture while the respawn choice actually stands.");
+            Assert.That(session.Projection.AvailableTurnActions, Is.Empty,
+                "The authority already withholds every offer-derived control here, which is why the " +
+                "one control the presenter derives itself was the only one that escaped.");
+
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+
+            Assert.That(model.EndTurnInvocation, Is.Null,
+                "p.7's respawn answer is mandatory, so no control may offer to end the turn instead.");
+            Assert.That(model.Actions, Is.Empty,
+                "And nothing else offers to start an action while the choice holds the turn open.");
+
+            // The other half of what makes it a defect rather than a cosmetic slip: the command that
+            // control carried is refused, so drawing it could only ever waste a click.
+            var refused = session.Execute(
+                DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId));
+            Assert.That(refused.Accepted, Is.False);
+            Assert.That(refused.TurnRejectionReason,
+                Is.EqualTo(TurnResolutionRejectionReason.HeroRespawnChoicePending));
+        }
+
+        [Test]
         public void RoundPresenter_ProjectsContextualEndTurnAsExactTypedInvocation()
         {
             var holdSession = CreateSession();
@@ -1466,6 +1502,46 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 Array.Empty<ObstacleOccupancy>());
             return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        /// <summary>
+        /// Milestone 7.9c. The Blue hero starts off board, exactly as a Defeat leaves it, so revealing
+        /// its next card opens p.7's respawn choice. Built here rather than shared with
+        /// <c>HeroRespawnTests</c> for the reason every session builder in this suite is fixture-local:
+        /// a shared one makes an unrelated milestone's fixture change reach across suites.
+        /// </summary>
+        private static MatchSession CreateSessionWithBlueHeroOffBoard()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                setup.Heroes
+                    .Where(hero => hero.TeamSide == TeamSide.Red)
+                    .Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        private static void CommitBlueFirstTurnRevealingTheOffBoardHero(MatchSession session)
+        {
+            var red = session.Projection.Cards.Single(card =>
+                card.Id.Value.Contains("bombard") && card.State.Location == CardLocation.Hand);
+            var blue = session.Projection.Cards.Single(card =>
+                card.Id.Value.Contains("feint") && card.State.Location == CardLocation.Hand);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(blue.Id),
+                "The off-board hero's card takes the turn, which is what opens the respawn choice.");
         }
 
         /// <summary>One fewer Red miniature, so p.8's Minion Battle removes a Red one and fills the supply.</summary>

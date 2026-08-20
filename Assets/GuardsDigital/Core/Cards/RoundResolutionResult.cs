@@ -92,7 +92,17 @@ namespace GuardsDigital.Core.Cards
         /// sibling of <see cref="IncompleteLanePushTransition"/>, and reachable for the first time now
         /// that p.8's Pity Coin can leave a hero able to afford a level in the next round.
         /// </summary>
-        IncompleteLevelUpTransition = 23
+        IncompleteLevelUpTransition = 23,
+
+        /// <summary>
+        /// Milestone 7.9c: the named transition is one the rules begin for themselves, so a director
+        /// command may not begin it. p.8's push begins from the request an action recorded and p.15's
+        /// leveling from the end-of-round stage that owns it; beginning either by command would run a
+        /// rulebook step outside the sequence that owns its bookkeeping. Distinct from
+        /// <see cref="UnknownSystemTransition"/>, which says this build has no such definition: these
+        /// two exist, and are exactly the ones a command must not name.
+        /// </summary>
+        SystemTransitionNotBegunByCommand = 24
     }
 
     public readonly struct RoundResolutionResult

@@ -2195,6 +2195,29 @@ namespace GuardsDigital.Presentation.Match
         public static RoundActionViewModel CreateViewModel(MatchSessionProjection projection) =>
             CreateViewModel(projection, default, Array.Empty<TokenInstanceId>());
 
+        /// <summary>
+        /// Whether the match is waiting on a decision inside this turn, asked in one place.
+        ///
+        /// A paused Skill frame counts here for the same reason paused Movement and Attack do: Core
+        /// refuses a second action while one is in progress, so an offer shown during the pause is a
+        /// control that can only produce a rejection.
+        ///
+        /// Milestone 7.9c, finding F-PRES-01. Two lists asked this, and they had drifted by one entry:
+        /// the End Turn derivation's copy omitted <c>PendingHeroRespawnChoice</c>, so a defeated hero's
+        /// mandatory respawn answer was the one decision beside which the HUD still drew END TURN - a
+        /// control the turn authority refuses with <c>HeroRespawnChoicePending</c> every time. Adding the
+        /// missing entry to the second list would have left the next pending kind free to drift the same
+        /// way, so there is now one list and no second place to forget.
+        /// </summary>
+        private static bool HasPendingDecision(MatchSessionProjection projection) =>
+            projection.PendingInitiativeChoice != null ||
+            projection.PendingHeroRespawnChoice != null ||
+            projection.PendingMovementChoice != null || projection.PendingMovementResolution != null ||
+            projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
+            projection.PendingAttackResolution != null ||
+            projection.PendingSkillResolution != null || projection.PendingEffectChoice != null ||
+            projection.PendingDisplacedMinionCorrection != null;
+
         private static RoundActionViewModel CreateViewModel(
             MatchSessionProjection projection,
             ActionDefinitionId openClearActionDefinitionId,
@@ -2205,16 +2228,7 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentNullException(nameof(projection));
             }
 
-            // A paused Skill frame counts here for the same reason paused Movement and Attack do:
-            // Core refuses a second action while one is in progress, so an offer shown during the
-            // pause is a control that can only produce a rejection.
-            var hasPendingResolution = projection.PendingInitiativeChoice != null ||
-                projection.PendingHeroRespawnChoice != null ||
-                projection.PendingMovementChoice != null || projection.PendingMovementResolution != null ||
-                projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
-                projection.PendingAttackResolution != null ||
-                projection.PendingSkillResolution != null || projection.PendingEffectChoice != null ||
-                projection.PendingDisplacedMinionCorrection != null;
+            var hasPendingResolution = HasPendingDecision(projection);
             var offered = projection.IsTurnActive && !hasPendingResolution
                 ? projection.AvailableTurnActions
                 : Array.Empty<ActionOffer>();
@@ -2736,13 +2750,8 @@ namespace GuardsDigital.Presentation.Match
                     DirectorCommand.AnswerEffectChoice(effectChoice.StopInvocation));
             }
 
-            var hasMandatoryChoice = projection.PendingInitiativeChoice != null ||
-                projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
-                projection.PendingAttackResolution != null || projection.PendingMovementChoice != null ||
-                projection.PendingMovementResolution != null ||
-                projection.PendingSkillResolution != null || projection.PendingEffectChoice != null ||
-                projection.PendingDisplacedMinionCorrection != null;
-            if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined || hasMandatoryChoice)
+            if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined ||
+                HasPendingDecision(projection))
             {
                 return null;
             }

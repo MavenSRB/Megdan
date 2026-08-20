@@ -157,6 +157,20 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                 return LanePushQualification.None;
             }
 
+            // Milestone 7.9c, finding F-BOARD-02. p.8's subject is "the last remaining enemy minion",
+            // so what was taken has to have been one. Every minion miniature answers yes intrinsically,
+            // which is why this changes nothing for the path that has always worked; a hero answers yes
+            // only while p.17's replacement makes it count as a minion, and no otherwise. Without this
+            // the query read an emptied side as a qualifying one whoever had just left it, so an
+            // ordinary hero's Defeat in a Battle Zone its side had already emptied would have spent a
+            // Wave and advanced the Zone - the exact reading `HeroDefeatResolution.LanePush` says it
+            // routes here to avoid, and the reason milestone 7.9c corrects this before giving that
+            // record its consumer.
+            if (!EffectiveUnitKindQuery.Is(removedUnit, EffectiveUnitKind.Minion, modifications))
+            {
+                return LanePushQualification.None;
+            }
+
             if (!BattleZoneQuery.TryGetCurrentBattleZone(board, out var battleZone))
             {
                 // A board with no current Battle Zone - every synthetic one - has no lane to push,

@@ -19,6 +19,7 @@ using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Board;
@@ -118,6 +119,83 @@ namespace GuardsDigital.Tests.EditMode
                 "p.8's push has a winner - 'the team with one or more minions still remaining in the " +
                 "Battle Zone' - and with neither side holding one there is no team to win it. Reporting " +
                 "nothing is honest; awarding the push to nobody would not be.");
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 7.9c, findings F-BOARD-01 and F-BOARD-02: p.8 counts what is effectively a minion
+        //
+        // A hero is not a minion, so its Defeat qualifies nothing on its own - unless p.17's replacement
+        // has made it count as one, which is the single case where the hero path and the minion path
+        // must agree. The two cases below are the same Attack on the same board, differing only in
+        // whether that declaration is live, so together they say "exactly then, and never otherwise".
+        //
+        // Before this milestone each half was wrong in an opposite direction, and the two cancelled: the
+        // Attack's hero arm recorded a qualification nothing consumed, and the qualification itself never
+        // asked whether the removed piece counted as a minion. Routing the record without the guard
+        // would have turned a skipped consequence into a fabricated one.
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void HeroDefeatOfTheLastCountsAsMinion_EmitsTheMidTurnRequest()
+        {
+            var fixture = CreateHeroDefeatFixture(
+                Minion("red-holder", TeamSide.Red, new HexCoordinate(-1, 0)));
+            var countsAsMinion = CountsAsMinion(BlueHero);
+
+            Assert.That(
+                BattleZoneQuery.FindEffectiveMinionsInside(
+                        fixture.Board, fixture.Configuration.Participants, countsAsMinion)
+                    .Where(minion => minion.TeamSide == TeamSide.Blue)
+                    .Select(minion => minion.Unit),
+                Is.EqualTo(new[] { RuleObject.ForHero(BlueHero) }),
+                "The declaration is what puts the hero in the set p.8 counts, so the case is only the " +
+                "case while it holds: Blue's last effective Battle-Zone minion is the hero itself.");
+
+            var defeat = DefeatTheBlueHero(fixture, countsAsMinion);
+
+            Assert.That(defeat.HeroDefeat, Is.Not.Null);
+            Assert.That(defeat.HeroDefeat.LanePush.Cause, Is.EqualTo(LanePushCauseKind.Defeat),
+                "The shared removal stage answers for the hero path exactly as it does for the minion " +
+                "path - this half was already true before milestone 7.9c, and nothing read it.");
+            var request = fixture.Authority.PendingImmediateLanePush;
+            Assert.That(request, Is.Not.Null,
+                "p.8: 'If you defeat, or remove, the last remaining enemy minion in the Battle Zone, " +
+                "the Lane is immediately Pushed.' A hero that counts as a minion is that minion, so the " +
+                "completed Attack owes the request rather than dropping the cause it just recorded.");
+            Assert.That(request.Cause, Is.EqualTo(LanePushCauseKind.Defeat));
+            Assert.That(request.LosingSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(request.WinningSide, Is.EqualTo(TeamSide.Red),
+                "p.8: 'The team with one or more minions still remaining in the Battle Zone wins the " +
+                "push' - here the Red holder, which is why this board has one.");
+            Assert.That(
+                request.BattleZoneId,
+                Is.EqualTo(BattleZoneQuery.GetCurrentBattleZone(fixture.Board).Id));
+        }
+
+        [Test]
+        public void HeroDefeatOfAnOrdinaryHero_RecordsNoCause_EvenInAnEmptiedBattleZone()
+        {
+            var fixture = CreateHeroDefeatFixture(
+                Minion("red-holder", TeamSide.Red, new HexCoordinate(-1, 0)));
+
+            Assert.That(
+                BattleZoneQuery.FindEffectiveMinionsInside(
+                        fixture.Board, fixture.Configuration.Participants, RuleModificationSet.Empty)
+                    .Any(minion => minion.TeamSide == TeamSide.Blue),
+                Is.False,
+                "Blue holds no effective minion in the zone, so this is the board on which an emptied " +
+                "side is most tempting to read as a qualifying one.");
+
+            var defeat = DefeatTheBlueHero(fixture, RuleModificationSet.Empty);
+
+            Assert.That(defeat.HeroDefeat, Is.Not.Null);
+            Assert.That(defeat.HeroDefeat.LanePush.Qualifies, Is.False,
+                "p.8 asks about the last remaining enemy *minion*. An ordinary hero is not one, however " +
+                "empty of minions its side's Battle Zone already was, so the removal of the hero " +
+                "records no cause at all - the property's own contract, which the query did not keep.");
+            Assert.That(fixture.Authority.PendingImmediateLanePush, Is.Null,
+                "And with no cause there is no request: no Wave is spent and the Battle Zone does not " +
+                "advance for a Defeat p.8 never named.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -514,6 +592,122 @@ namespace GuardsDigital.Tests.EditMode
             return new AttackFixture(
                 configuration, board, new CardActionResolutionAuthority(board), offer);
         }
+
+        /// <summary>
+        /// Milestone 7.9c. The same flagged-Battle-Zone board as the minion cases, with the two heroes
+        /// adjacent so the configured non-Ranged Attack can reach, and composed through the hero-Defeat
+        /// dispatcher because the Attack refuses to resolve a Defeat it cannot price.
+        /// </summary>
+        private static HeroDefeatFixture CreateHeroDefeatFixture(
+            params QuickGameMinionSetupState[] minions)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var board = new AdjacentMoveAuthority(
+                CreateFlaggedBattleZoneMap(),
+                new[]
+                {
+                    new HeroOccupancy(RedHero, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(BlueHero, new HexCoordinate(1, 0))
+                },
+                Array.Empty<ObstacleOccupancy>(),
+                minions);
+            var offer = ActionOfferQuery.GetAvailableOffers(
+                    configuration.CardDefinitions,
+                    configuration.CardInstances,
+                    RedHero,
+                    ActionOfferWindow.NormalPlay)
+                .Single(value => value.SourceCardInstanceId.Value == "red-pursuit-card" &&
+                    value.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
+            return new HeroDefeatFixture(
+                configuration,
+                board,
+                DefeatConsequenceComposition.Dispatcher(board, configuration.Participants),
+                offer);
+        }
+
+        private sealed class HeroDefeatFixture
+        {
+            public HeroDefeatFixture(
+                PlaceholderOneVsOneTestConfiguration configuration,
+                AdjacentMoveAuthority board,
+                CardActionResolutionAuthority authority,
+                ActionOffer offer)
+            {
+                Configuration = configuration;
+                Board = board;
+                Authority = authority;
+                Offer = offer;
+            }
+
+            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public AdjacentMoveAuthority Board { get; }
+            public CardActionResolutionAuthority Authority { get; }
+            public ActionOffer Offer { get; }
+        }
+
+        /// <summary>
+        /// Drives the Attack to a Defeat through the defender's weakest Defense, the route
+        /// <c>DefeatMarkerReturnTests</c> uses. The modification set is carried through every step,
+        /// because the declaration that makes the hero count as a minion has to be live at the removal
+        /// as well as at the target choice.
+        /// </summary>
+        private static AttackActionResolutionResult DefeatTheBlueHero(
+            HeroDefeatFixture fixture,
+            RuleModificationSet modifications)
+        {
+            var start = fixture.Authority.StartAttackResolution(
+                new ActionResolutionId("lane-push-hero-defeat"),
+                fixture.Offer,
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants,
+                modifications);
+            Assert.That(start.Accepted, Is.True);
+            var opened = fixture.Authority.AnswerAttackTarget(
+                new AttackTargetChoiceCommand(
+                    start.PendingTargetChoice.ResolutionId,
+                    start.PendingTargetChoice.ChoiceId,
+                    BlueHero),
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants,
+                modifications);
+            Assert.That(opened.Accepted, Is.True);
+            var weakest = opened.PendingDefenseChoice.LegalDefenseOffers
+                .OrderBy(offer => PrintedValueQuery.CalculatePrintedValue(
+                    offer, fixture.Configuration.CardDefinitions, PrintedValueChannel.Defense).Total)
+                .First();
+            fixture.Authority.AnswerDefenseResponse(
+                DefenseResponseChoiceCommand.SelectCards(
+                    opened.PendingDefenseChoice.ResolutionId,
+                    opened.PendingDefenseChoice.ChoiceId,
+                    weakest.SourceCardInstanceId),
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants,
+                modifications);
+
+            return fixture.Authority.ResolveAttackOutcome(
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants,
+                modifications);
+        }
+
+        /// <summary>p.17's replacement, declared on one hero by an Active effect, as a live set.</summary>
+        private static RuleModificationSet CountsAsMinion(HeroId heroId) =>
+            new RuleModificationSet(
+                new[]
+                {
+                    AppliedRuleModification.FromActiveEffect(
+                        RuleModification.ForCountsAs(EffectiveUnitKind.Minion),
+                        RuleObject.ForHero(heroId),
+                        new ActiveEffectId("lane-push-counts-as-minion"),
+                        heroId,
+                        TeamSide.Blue,
+                        0)
+                },
+                TieBreakerState.Unrevealed);
 
         private static QuickGameMinionSetupState Minion(string id, TeamSide side, HexCoordinate at) =>
             new QuickGameMinionSetupState(

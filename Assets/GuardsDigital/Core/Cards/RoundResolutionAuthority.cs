@@ -386,6 +386,21 @@ namespace GuardsDigital.Core.Cards
                 return RoundResolutionResult.Reject(RoundResolutionRejectionReason.GameAlreadyEnded);
             }
 
+            // Milestone 7.9c, finding F-PROG-01. The paragraph above says these two do not reach this
+            // path; until now nothing made that true, and a command naming either ran a rulebook step
+            // outside the sequence that owns its bookkeeping - p.15's purchase without
+            // `DrainLevelUpEvents`, so `RoundLeveling` never learned of it and p.8's Pity Coin was then
+            // paid to the hero that had just levelled and withheld from it a round later. The Lane-Push
+            // arm faulted instead, which the aggregate rolled back; a rule that holds is better than a
+            // throw that is caught.
+            if (definitionId.Equals(GuardsDigital.Core.Rules.LanePush.LanePushSystemTransition.DefinitionId) ||
+                definitionId.Equals(
+                    GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId))
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.SystemTransitionNotBegunByCommand);
+            }
+
             var instanceId = new GuardsDigital.Core.Rules.Transitions.SystemTransitionInstanceId(
                 $"round-{RoundIndex}-turn-{TurnIndex}-{definitionId.Value}");
             var result = systemTransitions.TryBegin(definitionId, instanceId);

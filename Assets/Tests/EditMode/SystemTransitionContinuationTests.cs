@@ -7,6 +7,8 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.LanePush;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Rules.Transitions.Synthetic;
 using GuardsDigital.Core.Setup;
@@ -290,6 +292,47 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(unknown.RoundRejectionReason,
                 Is.EqualTo(RoundResolutionRejectionReason.UnknownSystemTransition));
             Assert.That(idle.Projection.PendingSystemTransitionStep, Is.Null);
+        }
+
+        [Test]
+        public void BeginningAProductionTransitionByCommand_IsRefused()
+        {
+            // Milestone 7.9c, finding F-PROG-01. The synthetic transition above exists to be begun by a
+            // command, because a bounded fixture has no rules of its own to begin it. The two production
+            // transitions are the opposite: p.8's push begins from a request an action recorded, and
+            // p.15's leveling from the end-of-round stage that owns its bookkeeping. Beginning either by
+            // command ran a rulebook step outside the sequence that accounts for it - a level bought
+            // where `RoundLeveling` never hears about it, so p.8's Pity Coin is then paid to the hero
+            // that just levelled and withheld from it a round later.
+            foreach (var definitionId in new[]
+            {
+                HeroLevelUpSystemTransition.DefinitionId,
+                LanePushSystemTransition.DefinitionId
+            })
+            {
+                var session = CreateSession();
+                var before = session.Projection.HeroProgression
+                    .Select(hero => (hero.HeroId, hero.Level, hero.Coins))
+                    .ToArray();
+
+                var result = session.Execute(DirectorCommand.BeginSystemTransition(definitionId));
+
+                Assert.That(result.Accepted, Is.False,
+                    $"'{definitionId.Value}' is begun by its own rules, so a command may not begin it.");
+                Assert.That(result.RoundRejectionReason,
+                    Is.EqualTo(RoundResolutionRejectionReason.SystemTransitionNotBegunByCommand),
+                    "And the refusal says why rather than claiming the build has no such transition: " +
+                    "it has one, and that is the point.");
+                Assert.That(session.Projection.PendingSystemTransitionStep, Is.Null,
+                    "Nothing is paused, so no resume location was created.");
+                Assert.That(
+                    session.Projection.HeroProgression
+                        .Select(hero => (hero.HeroId, hero.Level, hero.Coins))
+                        .ToArray(),
+                    Is.EqualTo(before),
+                    "And no hero's Level or coin balance moved - the refusal that matters, because " +
+                    "the accepted command spent coins and raised Levels outside p.8's step.");
+            }
         }
 
         // -------------------------------------------------------------------------------------------

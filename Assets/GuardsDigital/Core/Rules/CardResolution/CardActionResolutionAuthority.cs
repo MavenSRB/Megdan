@@ -1163,6 +1163,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// instead, and this is where that record becomes p.8's request. An Attack has no after-action
         /// correction boundary of its own - nothing it does displaces a minion - so the completion of
         /// its outcome is the boundary.
+        ///
+        /// Milestone 7.9c, finding F-BOARD-01: both Defeat arms are read. Only the minion arm was, so a
+        /// hero Defeat's qualification was computed by the shared removal stage, recorded on the
+        /// resolution, and consumed by nothing - and a hero that p.17 makes count as a minion is exactly
+        /// the case where p.8's sentence applies to the hero arm. Each arm is asked separately rather
+        /// than by picking one: an Attack resolves against a single target, so at most one is present,
+        /// and <see cref="RecordImmediateLanePush"/> keeps the first request either way.
         /// </summary>
         private AttackActionResolutionResult RecordAttackLanePush(
             AttackActionResolutionResult result,
@@ -1170,10 +1177,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications)
         {
-            if (result.Accepted && result.MinionDefeat != null)
+            if (!result.Accepted)
+            {
+                return result;
+            }
+
+            if (result.MinionDefeat != null)
             {
                 RecordImmediateLanePush(
                     result.MinionDefeat.LanePush.Cause, resolutionId, participants, modifications);
+            }
+
+            if (result.HeroDefeat != null)
+            {
+                RecordImmediateLanePush(
+                    result.HeroDefeat.LanePush.Cause, resolutionId, participants, modifications);
             }
 
             return result;
