@@ -278,7 +278,7 @@ Non-goals: No change to what a legal Attack target is; no new rejection reason; 
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78a1-decide-an-attack-offers-availability-the-way-a-skills-is-decided-completion-evidence).
 
-### [ ] 7.8d Rename the coin ledger for what it now is
+### [~] 7.8d Rename the coin ledger for what it now is
 
 Observable outcome: The type that owns every hero's coin balance is named for the balances rather than for one of the three separate rules that move them, and nothing else changes.
 

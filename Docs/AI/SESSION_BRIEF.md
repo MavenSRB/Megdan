@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.8a1**. The configured v
 ## Current authorization and next route
 
 - Current completed milestone: **7.8a1**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.8d**.
 - Next proposed milestone: **7.8d**.
 
 Milestone **7.8a1** completed on 2026-08-20 and gave an Attack the decided availability a Skill has had since milestone 6.5af, asked of the same target query the start uses so the two cannot disagree. The start still refuses, atomically. A Clear is no longer gated on it, because p.13 gives a Clear its own legality.
