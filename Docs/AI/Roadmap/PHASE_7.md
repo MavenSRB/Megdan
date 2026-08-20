@@ -180,7 +180,7 @@ Non-goals: No Wasp costs, card identities, item art, or Ultimate text.
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-75-resolve-mandatory-end-of-round-leveling-and-upgrades-completion-evidence).
 
-### [ ] 7.6 Resolve Pity Coin ordering
+### [~] 7.6 Resolve Pity Coin ordering
 
 Observable outcome: After all leveling finishes, each hero that did not level this round receives exactly one Pity Coin.
 

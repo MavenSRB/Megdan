@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.5**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **7.5**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.6**.
 - Next proposed milestone: **7.6**.
 
 Milestone **7.5** completed on 2026-08-20 and made rulebook p.8's "Level Up" step real, which is the whole of p.15 and the first two thirds of p.16. The Hero Level table is declared content - a level costs the Level it leaves, and the printed Max card Tier row is a consequence of always choosing the lowest Tier rather than a second constraint - and the purchase is mandatory, consecutive, and paid from the same coins p.13's Defeat awards. Each purchased level either upgrades one chosen lowest-Tier card, returning it to the deck, taking one of its two next-Tier cards into the hand and tucking the other under the dashboard slot its icon matches, or unlocks p.16's Ultimate once every non-Basic card is Tier III and ends that hero's leveling. All of it runs as the second production consumer of 6.10a's intra-stage continuation, so the one question a level asks survives snapshot, replay, Undo and every stale answer without repeating a purchase, a cost, an item or an unlock. p.6's remaining thirteen cards per hero are dealt into the deck at last, because that page's deck is where p.15 searches; schema stays v20, and the corpus moves +2462 bytes per payload for that content alone. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
