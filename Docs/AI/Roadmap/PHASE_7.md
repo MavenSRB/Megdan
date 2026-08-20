@@ -258,6 +258,24 @@ Non-goals: No rules, progression, continuation, card-lifecycle, item, history, d
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78a-add-card-colour-controls-and-compact-hero-overview-overlays-completion-evidence).
 
+### [~] 7.8a1 Decide an Attack offer's availability the way a Skill's is decided
+
+Observable outcome: An Attack the rules can prove has no legal target is projected unavailable and drawn as the same disabled control an unstartable Skill is, instead of being drawn as an action that could be taken.
+
+Context: milestone 6.5af gave `ActionOffer.IsAvailable` its meaning and produced the first `false`, for a Skill whose effect can apply nothing. `TurnResolutionAuthority.GetTurnActionOffers` still stamps only a Skill, so an Attack with nothing in range is offered enabled. Measured at milestone 7.8a: `StartAttackResolution` builds the target set, finds it empty, unwinds its own pending state and rejects as `TargetUnavailable`, leaving the turn active and the offers intact - so the control is dead rather than dangerous. 6.5af's own reason applies unchanged all the same: a player reads an enabled control as an action they may take, and this one is not. Found by the user in the milestone 7.8a HUD, where every offer is drawn from the projected flag.
+
+Acceptance checks:
+
+- The offer set and command resolution consult one statement of the judgement, so the two cannot disagree. Both reach the same `FindLegalAttackTargets`, and no second reading of Range, allegiance, adjacency, or immunity is introduced anywhere.
+- An Attack whose legal-target set is empty is projected `IsAvailable = false`; an Attack with at least one legal target is unchanged. Every non-Attack offer is unchanged, and a Skill keeps the answer its own existing judgement gives.
+- The judgement answers `true` wherever it cannot be asked at all, exactly as the Skill one does, so an offer is refused for being proven empty and never for being unjudgeable.
+- The start command still refuses an Attack with no legal target, and still refuses it atomically. The rule does not move to the offer set: the offer becomes the earlier of two agreeing answers rather than the only one.
+- Presentation changes nothing. The greyed control is milestone 6.5af's existing `UnavailableActionViewModel` path, and the round presenter's existing refusal of a start naming an unavailable action already covers a command surviving on an older model.
+- Focused scenarios cover a non-Ranged Attack with an adjacent enemy and with none; a Ranged Attack in Range and out of it; a Ranged Attack whose availability changes with a p.16 Range item; an Attack whose only candidate is immune; and a Skill offer plus a Movement offer proving both are untouched.
+- The same state produces the same offer set, and restore, replay, and retained-prefix Undo project the same availability.
+
+Non-goals: No change to what a legal Attack target is; no new rejection reason; no change to Movement, Fast Travel, Clear, or Hold availability; no presentation change beyond what the projected flag already drives; no schema, wire, or command change.
+
 ### [ ] 7.8b Add bounded board camera controls
 
 Observable outcome: The configured match camera can pan, orbit, and zoom around the board within explicit bounds, and one visible reset control restores the deterministic whole-board framing without interfering with board or HUD interaction.

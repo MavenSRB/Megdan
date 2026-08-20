@@ -13,14 +13,16 @@ The project has completed roadmap milestones through **7.8a**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **7.8a**.
-- Active authorized milestone: **none**.
-- Next proposed milestone: **7.8b**.
+- Active authorized milestone: **7.8a1**.
+- Next proposed milestone: **7.8a1**.
 
 Milestone **7.8a** completed on 2026-08-20 and gave the configured match a player-facing UI, on one runtime UI Toolkit panel by the user's recorded decision. The migration stopped at the `I*View` seam, so every presenter, view model and typed invocation is the one that was there before. [Project/MATCH_HUD.md](Project/MATCH_HUD.md) owns what a player now sees and why. It also draws the pause no view drew: rulebook p.15's Upgrade a Card and p.8's blocked-Spawn Place describe themselves as typed facts through `IDescribingSystemTransitionStepRules`, so a player reads which card is returned, which is taken, which is set aside and what item it becomes, and answers with the invocation the continuation itself projected. Nothing about the rules moved; schema stays v21. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
 
 Milestones 7.1 through 7.8 are complete and addressed by SHA from the same archive: card colour, Tier, upgrade candidates and hero Level; the colour-restricted discard reachable from a card; p.16's items, dashboards and bonus composition; p.9's printed Radius with its total, disk and target/presence boundary, bound to one configured card's Place; p.16's Ultimate with the continuous ability it supplies; p.13's whole Defeat list, with its coins and its Life counters; and p.8's whole end of round, from p.15's mandatory Level Up over the deck p.6 leaves it to search to the Pity Coin every hero that did not level collects; and the three victory sentences under one derived outcome naming winner, loser and cause.
 
-The remaining route is **7.8b onward**; 7.8b requires exact approval to execute. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone left inside it.
+The remaining route is **7.8a1 onward**; each item requires exact approval. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone inside it.
+
+Roadmap amendment 2026-08-20: milestone **7.8a1** was added and authorized together. The user found in the 7.8a HUD that an Attack with nothing in range is offered enabled, because `GetTurnActionOffers` stamps only a Skill unavailable; starting it is refused atomically. Extending milestone 6.5af's decided availability to an Attack is a rules change 7.8a's non-goals excluded, so it is its own milestone.
 
 The user-approved mechanics-showcase amendment is finished; which card carries which modes, and why, lives in [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md). Two constraints still bind: Red Lancer, Red Pursuit, Blue Scout Shot and Blue Hammer keep the printed Attacks holding one non-Ranged and one Ranged per team, now the floor rather than a margin; and a resolving Skill's hero is the affected rules object, the card only the stable source. Milestone 7.9 later gates the ten-card matrix.
 
