@@ -387,7 +387,7 @@ Hard-gate roadmap audit: As part of milestone 7.9a, audit readiness for verified
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79a-independently-review-the-complete-synthetic-core-completion-evidence).
 
-### [ ] 7.9c Close the four confirmed rules-surface defects from the 7.9a review
+### [~] 7.9c Close the four confirmed rules-surface defects from the 7.9a review
 
 Blocked by: nothing; it is the gate-blocking corrective milestone 7.9a proposed, and the Phase 8 hard gate stays closed until it completes.
 
