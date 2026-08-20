@@ -14,7 +14,7 @@ The project has completed roadmap milestones through **7.8a1**. The configured v
 
 - Current completed milestone: **7.8a1**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **7.8b**.
+- Next proposed milestone: **7.8d**.
 
 Milestone **7.8a1** completed on 2026-08-20 and gave an Attack the decided availability a Skill has had since milestone 6.5af, asked of the same target query the start uses so the two cannot disagree. The start still refuses, atomically. A Clear is no longer gated on it, because p.13 gives a Clear its own legality.
 
@@ -22,7 +22,7 @@ Milestone **7.8a** completed on 2026-08-20 and gave the configured match a playe
 
 Milestones 7.1 through 7.8 are complete and addressed by SHA from the same archive: card colour, Tier, upgrade candidates and hero Level; the colour-restricted discard reachable from a card; p.16's items, dashboards and bonus composition; p.9's printed Radius with its total, disk and target/presence boundary, bound to one configured card's Place; p.16's Ultimate with the continuous ability it supplies; p.13's whole Defeat list, with its coins and its Life counters; and p.8's whole end of round, from p.15's mandatory Level Up over the deck p.6 leaves it to search to the Pity Coin every hero that did not level collects; and the three victory sentences under one derived outcome naming winner, loser and cause.
 
-The remaining route is **7.8b onward**; each item requires exact approval. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone inside it.
+The remaining route is **7.8d onward**; each item requires exact approval. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone inside it.
 
 The user-approved mechanics-showcase amendment is finished; which card carries which modes, and why, lives in [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md). Two constraints still bind: Red Lancer, Red Pursuit, Blue Scout Shot and Blue Hammer keep the printed Attacks holding one non-Ranged and one Ranged per team, now the floor rather than a margin; and a resolving Skill's hero is the affected rules object, the card only the stable source. Milestone 7.9 later gates the ten-card matrix.
 

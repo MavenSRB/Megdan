@@ -16,7 +16,7 @@ Each visible milestone runs focused Play Mode checks for the affected presentati
 
 Production minion miniatures preserve the milestone 4.4 atlas-derived circular minion tokens as each unit's 2D representation rather than replacing or redrawing that source.
 
-The bounded pan/orbit/zoom/reset camera was rescheduled by user approval to [milestone 7.8b](PHASE_7.md#78b-add-bounded-board-camera-controls), where it can support the configured synthetic-match UI before the Phase 7 gate. Phase 9 does not repeat that implementation.
+### [ ] 9.4 Bounded pan, orbit, zoom, and reset camera
 
 ### [ ] 9.5 Automatic 3D miniature / 2D token switching
 

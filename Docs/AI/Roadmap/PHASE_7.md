@@ -278,21 +278,6 @@ Non-goals: No change to what a legal Attack target is; no new rejection reason; 
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78a1-decide-an-attack-offers-availability-the-way-a-skills-is-decided-completion-evidence).
 
-### [ ] 7.8b Add bounded board camera controls
-
-Observable outcome: The configured match camera can pan, orbit, and zoom around the board within explicit bounds, and one visible reset control restores the deterministic whole-board framing without interfering with board or HUD interaction.
-
-Acceptance checks:
-
-- Desktop controls provide pointer/keyboard-accessible pan, orbit, and zoom with one documented binding per operation; a visible `RESET CAMERA` control restores the exact configured whole-board center, orientation, and zoom established at scene setup.
-- Pan bounds derive from the configured map's presented extents plus bounded padding, zoom has explicit minimum and maximum framing, and orbit has explicit pitch/azimuth bounds that prevent inversion, travel beneath the board, or movement far outside it. Bounds are presentation geometry and never enter match authority.
-- Camera input is suppressed while the pointer is consumed by the card tray, hero overview, Director drawer, contextual prompts, event log, or another HUD surface. A drag that begins on HUD cannot leak into camera motion, and camera motion cannot submit a gameplay command.
-- Moving the camera preserves current coordinate-to-view binding, hero/minion/token pointer selection, destination clicks, highlights, and every board-facing cue. Raycasts use the current camera rather than setup-time assumptions, and cues that must face the viewer remain readable throughout the allowed orbit.
-- Reset, scene restart, and first load produce deterministic framing for the same map and viewport. Camera pose is local presentation state: snapshot, replay, Undo, and network command history neither serialize nor mutate it.
-- Focused Edit Mode tests prove clamping, deterministic reset framing, and HUD input exclusion. Saved-scene Play Mode tests exercise pan/orbit/zoom/reset together with hero selection and one board destination interaction at bound extremes. A targeted visible inspection covers the validated desktop viewport and a compact fallback without clipping the camera-reset control.
-
-Non-goals: No automatic action-follow camera, cinematic shots, animation-driven camera motion, fog or visibility rules, 3D-miniature/2D-token switching, touch gestures, per-player persisted camera settings, production environment work, or match-authority change.
-
 ### [ ] 7.8d Rename the coin ledger for what it now is
 
 Observable outcome: The type that owns every hero's coin balance is named for the balances rather than for one of the three separate rules that move them, and nothing else changes.
