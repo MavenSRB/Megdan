@@ -95,7 +95,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
             var red = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var ledger = new DefeatRewardAccounting(participants);
+            var ledger = new HeroCoinLedger(participants);
 
             Assert.That(ledger.TryGrant(red, 1, CoinGrantKind.PityCoin, out var granted), Is.True);
             Assert.That(granted.RecipientHeroId, Is.EqualTo(red));

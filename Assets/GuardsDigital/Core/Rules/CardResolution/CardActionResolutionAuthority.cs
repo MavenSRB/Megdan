@@ -161,15 +161,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public PendingDefenseResponseChoice PendingDefenseChoice => attackDefenseBackend.PendingDefenseChoice;
 
-        public DefeatRewardAccounting DefeatRewards => attackDefenseBackend.DefeatRewards;
+        public HeroCoinLedger CoinLedger => attackDefenseBackend.CoinLedger;
 
         /// <summary>
         /// Milestone 7.5. The match's one coin ledger, created on first ask. The round authority asks
         /// when it composes itself, because p.15's level purchase now spends from the same balances
         /// p.13's Defeat fills and two ledgers would be two answers to what a hero can afford.
         /// </summary>
-        internal DefeatRewardAccounting EnsureDefeatRewards(MatchParticipants participants) =>
-            attackDefenseBackend.EnsureDefeatRewards(participants);
+        internal HeroCoinLedger EnsureCoinLedger(MatchParticipants participants) =>
+            attackDefenseBackend.EnsureCoinLedger(participants);
 
         /// <summary>
         /// Milestone 7.2. Hands the backends the match's item state, which the round authority owns.
@@ -752,31 +752,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public CardActionResolutionRestoreState CaptureRestoreState()
         {
-            var rewards = DefeatRewards == null
-                ? DefeatRewardRestoreStateHolder.Absent()
-                : DefeatRewardRestoreStateHolder.Present(DefeatRewards.CaptureRestoreState());
+            var ledger = CoinLedger == null
+                ? HeroCoinLedgerRestoreStateHolder.Absent()
+                : HeroCoinLedgerRestoreStateHolder.Present(CoinLedger.CaptureRestoreState());
             if (PendingResolution != null)
             {
                 return CardActionResolutionRestoreState.WithPendingMovement(
-                    PendingResolution, rewards, pendingLanePush);
+                    PendingResolution, ledger, pendingLanePush);
             }
 
             if (PendingAttackResolution != null)
             {
                 return CardActionResolutionRestoreState.WithPendingAttack(
-                    PendingAttackResolution, rewards, pendingLanePush);
+                    PendingAttackResolution, ledger, pendingLanePush);
             }
 
             if (PendingSkillResolution != null)
             {
                 return CardActionResolutionRestoreState.WithPendingSkill(
-                    PendingSkillResolution, rewards, pendingLanePush);
+                    PendingSkillResolution, ledger, pendingLanePush);
             }
 
             return pendingCorrection != null
                 ? CardActionResolutionRestoreState.WithPendingCorrection(
-                    pendingCorrection, rewards, pendingRepeat, pendingLanePush)
-                : CardActionResolutionRestoreState.WithoutPendingAction(rewards, pendingLanePush);
+                    pendingCorrection, ledger, pendingRepeat, pendingLanePush)
+                : CardActionResolutionRestoreState.WithoutPendingAction(ledger, pendingLanePush);
         }
 
         /// <summary>
@@ -854,8 +854,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
-            var defeatRewards = state.DefeatRewards.IsPresent
-                ? DefeatRewardAccounting.Restore(participants, state.DefeatRewards.State)
+            var coinLedger = state.CoinLedger.IsPresent
+                ? HeroCoinLedger.Restore(participants, state.CoinLedger.State)
                 : null;
             var components = CreateComponents(adjacentMoveAuthority, markers);
 
@@ -868,7 +868,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             new MovementBackendRestoreState(state.PendingMovementResolution),
                             verifiedMovementChoice,
                             modifications),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
@@ -886,7 +886,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             definitions,
                             instances,
                             participants,
-                            defeatRewards,
+                            coinLedger,
                             markers,
                             modifications,
                             heroItems),
@@ -899,7 +899,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case CardActionContinuationKind.Skill:
                     return new CardActionResolutionAuthority(
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         SkillCardActionStrategyBackend.Restore(
@@ -911,7 +911,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case CardActionContinuationKind.Correction:
                     var restored = new CardActionResolutionAuthority(
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
@@ -924,7 +924,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 default:
                     return new CardActionResolutionAuthority(
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),

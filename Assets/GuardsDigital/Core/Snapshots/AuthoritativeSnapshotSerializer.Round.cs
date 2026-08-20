@@ -57,9 +57,9 @@ namespace GuardsDigital.Core.Snapshots
             WriteTeamLives(writer, teamLives);
             WriteRoundLeveling(writer, roundLeveling);
 
-            var (hasCardActions, roundDefeatRewards) = roundCardActions;
+            var (hasCardActions, roundCoinLedger) = roundCardActions;
             writer.Write(hasCardActions);
-            WriteDefeatRewards(writer, roundDefeatRewards);
+            WriteCoinLedger(writer, roundCoinLedger);
 
             writer.Write(round.CurrentCommitmentAuthority != null);
             if (round.CurrentCommitmentAuthority != null)
@@ -139,7 +139,7 @@ namespace GuardsDigital.Core.Snapshots
                 : new GuardsDigital.Core.Rules.LanePush.LanePushConsumption(
                     lanePushAuthority, systemTransitions);
             var hasRoundCardActions = reader.ReadBoolean();
-            var roundDefeatRewards = ReadDefeatRewards(reader);
+            var roundCoinLedger = ReadCoinLedger(reader);
 
             TurnCardCommitmentAuthority commitment = null;
             if (reader.ReadBoolean())
@@ -161,7 +161,7 @@ namespace GuardsDigital.Core.Snapshots
                 // path does; if this arm ever gains a consumer it is already correct.
                 cardActions = CardActionResolutionAuthority.Restore(
                     board,
-                    CardActionResolutionRestoreState.WithoutPendingAction(roundDefeatRewards),
+                    CardActionResolutionRestoreState.WithoutPendingAction(roundCoinLedger),
                     null,
                     null,
                     null,
@@ -210,7 +210,7 @@ namespace GuardsDigital.Core.Snapshots
                         outcomes,
                         pendingMinionBattleChoice,
                         pendingLanePushRequest),
-                    new RoundCardActionsRestoreState(hasRoundCardActions, roundDefeatRewards),
+                    new RoundCardActionsRestoreState(hasRoundCardActions, roundCoinLedger),
                     systemTransitions.CaptureRestoreState(),
                     heroProgression,
                     heroItems,

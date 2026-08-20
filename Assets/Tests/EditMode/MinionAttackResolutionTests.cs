@@ -43,7 +43,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.MinionDefeat.Reward.Operations, Has.Count.EqualTo(1));
             Assert.That(result.MinionDefeat.Reward.Operations.Single().AwardKind, Is.EqualTo(CoinAwardKind.Defeat));
             Assert.That(result.MinionDefeat.Reward.Operations.Single().Amount, Is.EqualTo(expectedCoins));
-            Assert.That(fixture.Authority.DefeatRewards.GetCoins(fixture.AttackerId), Is.EqualTo(expectedCoins));
+            Assert.That(fixture.Authority.CoinLedger.GetCoins(fixture.AttackerId), Is.EqualTo(expectedCoins));
             Assert.That(fixture.Board.Minions, Is.Empty);
             Assert.That(result.Events.Select(value => value.Kind), Is.EqualTo(new[]
             {
@@ -89,7 +89,7 @@ namespace GuardsDigital.Tests.EditMode
             var heavyDefeat = AttackMinion(fixture, "blue-heavy", "second-attack");
             Assert.That(heavyDefeat.Accepted, Is.True);
             Assert.That(heavyDefeat.MinionDefeat.Reward.Operations.Single().Amount, Is.EqualTo(4));
-            Assert.That(fixture.Authority.DefeatRewards.GetCoins(fixture.AttackerId), Is.EqualTo(6));
+            Assert.That(fixture.Authority.CoinLedger.GetCoins(fixture.AttackerId), Is.EqualTo(6));
         }
 
         [Test]
@@ -129,7 +129,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(21));
             Assert.That(restored.Board.Minions, Is.Empty);
-            Assert.That(restored.CardActions.DefeatRewards.GetCoins(fixture.AttackerId), Is.EqualTo(2));
+            Assert.That(restored.CardActions.CoinLedger.GetCoins(fixture.AttackerId), Is.EqualTo(2));
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board), Is.EqualTo(payload));
         }
 

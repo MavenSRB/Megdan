@@ -33,7 +33,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
     /// <remarks>
     /// This replaces five separate restore entry points - two <c>Restore</c> overloads, two
     /// <c>RestoreAttack</c> overloads, and <c>RestoreWithoutPendingAction</c> - four of
-    /// which defaulted <c>defeatRewards</c> to <c>null</c> and so silently discarded every
+    /// which defaulted <c>coinLedger</c> to <c>null</c> and so silently discarded every
     /// hero's coin balance and awarded-Defeat record when a caller forgot it.
     ///
     /// The continuation kind is explicit rather than inferred from which field happens to
@@ -47,7 +47,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingCardActionResolution pendingMovementResolution,
             PendingAttackResolution pendingAttackResolution,
             PendingResolution pendingSkillResolution,
-            DefeatRewardRestoreStateHolder defeatRewards,
+            HeroCoinLedgerRestoreStateHolder coinLedger,
             PendingDisplacedMinionCorrection pendingCorrection = null,
             PendingRepeatedAction pendingRepeat = null,
             PendingImmediateLanePushRequest pendingLanePush = null)
@@ -56,7 +56,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingSkillResolution = pendingSkillResolution;
             PendingMovementResolution = pendingMovementResolution;
             PendingAttackResolution = pendingAttackResolution;
-            DefeatRewards = defeatRewards;
+            CoinLedger = coinLedger;
             PendingCorrection = pendingCorrection;
             PendingRepeat = pendingRepeat;
             PendingImmediateLanePush = pendingLanePush;
@@ -98,49 +98,48 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public PendingImmediateLanePushRequest PendingImmediateLanePush { get; }
 
         /// <summary>
-        /// The Defeat-reward accounting to restore. Never omitted: an authority with no
-        /// recorded rewards carries an explicitly absent holder rather than a missing
-        /// argument.
+        /// The coin ledger to restore. Never omitted: an authority with no recorded
+        /// balances carries an explicitly absent holder rather than a missing argument.
         /// </summary>
-        public DefeatRewardRestoreStateHolder DefeatRewards { get; }
+        public HeroCoinLedgerRestoreStateHolder CoinLedger { get; }
 
         public static CardActionResolutionRestoreState WithoutPendingAction(
-            DefeatRewardRestoreStateHolder defeatRewards,
+            HeroCoinLedgerRestoreStateHolder coinLedger,
             PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.None,
                 null,
                 null,
                 null,
-                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                coinLedger ?? throw new ArgumentNullException(nameof(coinLedger)),
                 null,
                 null,
                 pendingLanePush);
 
         public static CardActionResolutionRestoreState WithPendingMovement(
             PendingCardActionResolution pendingResolution,
-            DefeatRewardRestoreStateHolder defeatRewards,
+            HeroCoinLedgerRestoreStateHolder coinLedger,
             PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.Movement,
                 pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
                 null,
                 null,
-                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                coinLedger ?? throw new ArgumentNullException(nameof(coinLedger)),
                 null,
                 null,
                 pendingLanePush);
 
         public static CardActionResolutionRestoreState WithPendingAttack(
             PendingAttackResolution pendingResolution,
-            DefeatRewardRestoreStateHolder defeatRewards,
+            HeroCoinLedgerRestoreStateHolder coinLedger,
             PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.Attack,
                 null,
                 pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
                 null,
-                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                coinLedger ?? throw new ArgumentNullException(nameof(coinLedger)),
                 null,
                 null,
                 pendingLanePush);
@@ -150,32 +149,32 @@ namespace GuardsDigital.Core.Rules.CardResolution
             out PendingCardActionResolution pendingMovementResolution,
             out PendingAttackResolution pendingAttackResolution,
             out PendingResolution pendingSkillResolution,
-            out DefeatRewardRestoreStateHolder defeatRewards)
+            out HeroCoinLedgerRestoreStateHolder coinLedger)
         {
             continuationKind = ContinuationKind;
             pendingMovementResolution = PendingMovementResolution;
             pendingAttackResolution = PendingAttackResolution;
             pendingSkillResolution = PendingSkillResolution;
-            defeatRewards = DefeatRewards;
+            coinLedger = CoinLedger;
         }
 
         public static CardActionResolutionRestoreState WithPendingSkill(
             PendingResolution pendingResolution,
-            DefeatRewardRestoreStateHolder defeatRewards,
+            HeroCoinLedgerRestoreStateHolder coinLedger,
             PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
                 CardActionContinuationKind.Skill,
                 null,
                 null,
                 pendingResolution ?? throw new ArgumentNullException(nameof(pendingResolution)),
-                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                coinLedger ?? throw new ArgumentNullException(nameof(coinLedger)),
                 null,
                 null,
                 pendingLanePush);
 
         public static CardActionResolutionRestoreState WithPendingCorrection(
             PendingDisplacedMinionCorrection pendingCorrection,
-            DefeatRewardRestoreStateHolder defeatRewards,
+            HeroCoinLedgerRestoreStateHolder coinLedger,
             PendingRepeatedAction pendingRepeat = null,
             PendingImmediateLanePushRequest pendingLanePush = null) =>
             new CardActionResolutionRestoreState(
@@ -183,7 +182,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 null,
                 null,
                 null,
-                defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards)),
+                coinLedger ?? throw new ArgumentNullException(nameof(coinLedger)),
                 pendingCorrection ?? throw new ArgumentNullException(nameof(pendingCorrection)),
                 pendingRepeat,
                 pendingLanePush);

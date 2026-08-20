@@ -406,7 +406,7 @@ namespace GuardsDigital.Core.Rules.Progression
         private readonly List<HeroLevelUpOutcome> outcomes = new List<HeroLevelUpOutcome>();
         private HeroProgressionState levels;
         private HeroItemState items;
-        private DefeatRewardAccounting coins;
+        private HeroCoinLedger coins;
 
         public HeroLevelUpStepRules(
             MatchParticipants participants,
@@ -430,7 +430,7 @@ namespace GuardsDigital.Core.Rules.Progression
         /// internal so a focused fixture can compose the rules directly against states it owns, which is
         /// the only way to prove one step without a whole match around it.
         /// </summary>
-        public void Bind(HeroProgressionState levels, HeroItemState items, DefeatRewardAccounting coins)
+        public void Bind(HeroProgressionState levels, HeroItemState items, HeroCoinLedger coins)
         {
             this.levels = levels ?? throw new ArgumentNullException(nameof(levels));
             this.items = items ?? throw new ArgumentNullException(nameof(items));

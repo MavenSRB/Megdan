@@ -73,7 +73,7 @@ namespace GuardsDigital.Core.Rules.Progression
     /// and the round-trip carries whatever Level each hero has rather than re-deriving Level 1 - which
     /// is the difference between persisting state and persisting a default.
     ///
-    /// Shaped after <c>DefeatRewardAccounting</c>'s coin balances, which is the closest existing thing:
+    /// Shaped after <c>HeroCoinLedger</c>'s coin balances, which is the closest existing thing:
     /// per-hero authoritative numbers, covered exactly once, ordered by hero id so the wire is stable.
     /// </summary>
     public sealed class HeroProgressionState

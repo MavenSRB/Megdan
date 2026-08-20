@@ -182,7 +182,7 @@ namespace GuardsDigital.Tests.EditMode
                 board,
                 CardActionResolutionRestoreState.WithPendingAttack(
                     answered.PendingResolution,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 null,
                 null,
                 null,

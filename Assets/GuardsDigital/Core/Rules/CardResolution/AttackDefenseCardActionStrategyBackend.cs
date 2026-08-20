@@ -20,7 +20,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingAttackResolution pendingAttackResolution;
         private PendingAttackTargetChoice pendingAttackTargetChoice;
         private PendingDefenseResponseChoice pendingDefenseChoice;
-        private DefeatRewardAccounting defeatRewards;
+        private HeroCoinLedger coinLedger;
 
         /// <summary>
         /// Milestone 6.12: the same register the round authority holds, so rulebook p.13's "Any markers
@@ -65,18 +65,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         internal AttackDefenseCardActionStrategyBackend(
             AdjacentMoveAuthority adjacentMoveAuthority,
-            DefeatRewardAccounting defeatRewards)
-            : this(adjacentMoveAuthority, defeatRewards, null)
+            HeroCoinLedger coinLedger)
+            : this(adjacentMoveAuthority, coinLedger, null)
         {
         }
 
         internal AttackDefenseCardActionStrategyBackend(
             AdjacentMoveAuthority adjacentMoveAuthority,
-            DefeatRewardAccounting defeatRewards,
+            HeroCoinLedger coinLedger,
             MarkerAttachmentRegister markers)
         {
             this.adjacentMoveAuthority = adjacentMoveAuthority ?? throw new ArgumentNullException(nameof(adjacentMoveAuthority));
-            this.defeatRewards = defeatRewards;
+            this.coinLedger = coinLedger;
             this.markers = markers;
         }
 
@@ -88,7 +88,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         internal bool HasPendingResolution => pendingAttackResolution != null;
 
-        internal DefeatRewardAccounting DefeatRewards => defeatRewards;
+        internal HeroCoinLedger CoinLedger => coinLedger;
 
         /// <summary>
         /// Milestone 7.5. The match's coin ledger, created here if a Defeat has not already created it.
@@ -97,17 +97,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// purchase spends them, so the round authority asks for the ledger when it composes itself, and
         /// a second one created later by a Defeat would be a balance no restore could reproduce. The
         /// creation stays in this type rather than moving to the round for the reason
-        /// <see cref="DefeatRewards"/> lives here at all: the Defeat that fills it is this backend's.
+        /// <see cref="CoinLedger"/> lives here at all: the Defeat that fills it is this backend's.
         /// </summary>
-        internal DefeatRewardAccounting EnsureDefeatRewards(MatchParticipants participants)
+        internal HeroCoinLedger EnsureCoinLedger(MatchParticipants participants)
         {
-            if (defeatRewards == null)
+            if (coinLedger == null)
             {
-                defeatRewards = new DefeatRewardAccounting(
+                coinLedger = new HeroCoinLedger(
                     participants ?? throw new ArgumentNullException(nameof(participants)));
             }
 
-            return defeatRewards;
+            return coinLedger;
         }
 
         internal GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems => heroItems;
@@ -435,8 +435,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.ActorId,
                 coins,
                 0);
-            if (defeatRewards == null) defeatRewards = new DefeatRewardAccounting(participants);
-            var reward = defeatRewards.Award(outcome);
+            if (coinLedger == null) coinLedger = new HeroCoinLedger(participants);
+            var reward = coinLedger.Award(outcome);
             if (!reward.Accepted)
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
@@ -851,7 +851,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 completedResolution.ActorId,
                 defeatCoins,
                 assistCoins);
-            if (defeatRewards == null) defeatRewards = new DefeatRewardAccounting(participants);
+            if (coinLedger == null) coinLedger = new HeroCoinLedger(participants);
 
             // p.13, first line: "Remove the defeated hero from the board." The prevention question is
             // asked through milestone 6.6's shared decision rather than answered here, so the hero path
@@ -909,7 +909,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             // p.13, fourth line: the coins. The accounting refuses a second award for the same outcome
             // id, so a re-execution inside one resolution collects nothing twice.
-            var reward = defeatRewards.Award(outcome);
+            var reward = coinLedger.Award(outcome);
             if (!reward.Accepted)
             {
                 throw new InvalidOperationException(
@@ -999,7 +999,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            DefeatRewardAccounting defeatRewards,
+            HeroCoinLedger coinLedger,
             MarkerAttachmentRegister markers,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
@@ -1017,7 +1017,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var pendingResolution = state.PendingResolution;
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, defeatRewards, markers);
+            var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers);
 
             // Bound before the verification below, because a paused Defense comparison is re-derived
             // against the same items the live one used; a restore that verified it without them would

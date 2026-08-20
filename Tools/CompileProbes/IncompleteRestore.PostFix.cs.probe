@@ -54,7 +54,7 @@ namespace GuardsDigital.Core.CompileProbe
 
                     new RoundCardActionsRestoreState(
                         true,
-                        DefeatRewardRestoreStateHolder.Absent())),
+                        HeroCoinLedgerRestoreStateHolder.Absent())),
                 commitmentAuthority,
                 turnAuthority,
                 cardActions,

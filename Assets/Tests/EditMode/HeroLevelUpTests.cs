@@ -554,7 +554,7 @@ namespace GuardsDigital.Tests.EditMode
                 BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
                 Levels = new HeroProgressionState(configuration.Participants);
                 Items = new HeroItemState(configuration.Participants);
-                CoinLedger = new DefeatRewardAccounting(configuration.Participants);
+                CoinLedger = new HeroCoinLedger(configuration.Participants);
                 Rules = new HeroLevelUpStepRules(
                     configuration.Participants,
                     configuration.CardDefinitions,
@@ -573,7 +573,7 @@ namespace GuardsDigital.Tests.EditMode
             public HeroId BlueHeroId { get; }
             public HeroProgressionState Levels { get; }
             public HeroItemState Items { get; }
-            public DefeatRewardAccounting CoinLedger { get; }
+            public HeroCoinLedger CoinLedger { get; }
             public HeroLevelUpStepRules Rules { get; }
             public SystemTransitionAuthority Transitions { get; }
 

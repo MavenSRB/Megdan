@@ -344,7 +344,7 @@ namespace GuardsDigital.Tests.EditMode
                     }),
                 CardActionResolutionRestoreState.WithPendingAttack(
                     start.PendingResolution,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 null,
                 start.PendingTargetChoice,
                 null,
@@ -371,7 +371,7 @@ namespace GuardsDigital.Tests.EditMode
                     }),
                 CardActionResolutionRestoreState.WithPendingAttack(
                     answer.PendingResolution,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 null,
                 null,
                 answer.PendingDefenseChoice,
@@ -480,7 +480,7 @@ namespace GuardsDigital.Tests.EditMode
                 restoredBoard,
                 CardActionResolutionRestoreState.WithPendingAttack(
                     answer.PendingResolution,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 null,
                 null,
                 answer.PendingDefenseChoice,
@@ -504,7 +504,7 @@ namespace GuardsDigital.Tests.EditMode
                 CreateBoardAuthority(fixture.AttackerId, fixture.DefenderId),
                 CardActionResolutionRestoreState.WithPendingAttack(
                     answer.PendingResolution,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 null,
                 null,
                 tamperedChoice,
@@ -775,7 +775,7 @@ namespace GuardsDigital.Tests.EditMode
                 CreateBoardAuthority(fixture.AttackerId, fixture.DefenderId),
                 CardActionResolutionRestoreState.WithPendingAttack(
                     answered.PendingResolution,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 null,
                 null,
                 null,

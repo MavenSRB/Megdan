@@ -7,13 +7,13 @@ using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
 {
-    public sealed class DefeatRewardAccountingTests
+    public sealed class HeroCoinLedgerTests
     {
         [Test]
         public void RewardDeferredHeroDefeatCannotAwardInventedAmounts()
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
-            var accounting = new DefeatRewardAccounting(participants);
+            var accounting = new HeroCoinLedger(participants);
             var outcome = new DefeatOutcome(
                 new DefeatOutcomeId("hero-defeat-awaiting-progression"),
                 new DefeatTargetId(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
@@ -34,7 +34,7 @@ namespace GuardsDigital.Tests.EditMode
         public void OneVsOneDefeatAwardsTheActingHeroAndNotTheEnemy()
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
-            var accounting = new DefeatRewardAccounting(participants);
+            var accounting = new HeroCoinLedger(participants);
             var result = accounting.Award(Outcome(
                 "defeat-1",
                 PlaceholderOneVsOneParticipants.RedHeroIdValue,
@@ -64,7 +64,7 @@ namespace GuardsDigital.Tests.EditMode
         public void FriendlyHeroesReceiveAssistCoinsInStableParticipantOrder()
         {
             var participants = CreateThreeVsThreeParticipants();
-            var accounting = new DefeatRewardAccounting(participants);
+            var accounting = new HeroCoinLedger(participants);
             var outcome = new DefeatOutcome(
                 new DefeatOutcomeId("defeat-team"),
                 new DefeatTargetId("blue-target"),
@@ -91,7 +91,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ZeroAssistAmountProducesOnlyTheDefeatOperation()
         {
-            var accounting = new DefeatRewardAccounting(CreateThreeVsThreeParticipants());
+            var accounting = new HeroCoinLedger(CreateThreeVsThreeParticipants());
 
             var result = accounting.Award(new DefeatOutcome(
                 new DefeatOutcomeId("no-assist"),
@@ -112,7 +112,7 @@ namespace GuardsDigital.Tests.EditMode
         public void PreventedRemovalDoesNotEraseOrDuplicateAnAwardedDefeatReward()
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
-            var accounting = new DefeatRewardAccounting(participants);
+            var accounting = new HeroCoinLedger(participants);
             var outcome = Outcome(
                 "prevented-removal",
                 PlaceholderOneVsOneParticipants.RedHeroIdValue,
@@ -139,7 +139,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SeparateDefeatOutcomesAccumulateDeterministically()
         {
-            var accounting = new DefeatRewardAccounting(PlaceholderOneVsOneParticipants.Create());
+            var accounting = new HeroCoinLedger(PlaceholderOneVsOneParticipants.Create());
             var actorId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
 
             var first = accounting.Award(Outcome(
@@ -164,7 +164,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OverflowIsRejectedAtomicallyAndDoesNotConsumeTheOutcomeId()
         {
-            var accounting = new DefeatRewardAccounting(PlaceholderOneVsOneParticipants.Create());
+            var accounting = new HeroCoinLedger(PlaceholderOneVsOneParticipants.Create());
             var actorId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var first = Outcome(
                 "maximum",
@@ -193,7 +193,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void FriendlyDefeatIsRejectedWithoutMutation()
         {
-            var accounting = new DefeatRewardAccounting(PlaceholderOneVsOneParticipants.Create());
+            var accounting = new HeroCoinLedger(PlaceholderOneVsOneParticipants.Create());
             var actorId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
 
             var result = accounting.Award(Outcome(
@@ -212,7 +212,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void UnknownActorOrTeamIsRejectedWithoutMutation()
         {
-            var accounting = new DefeatRewardAccounting(PlaceholderOneVsOneParticipants.Create());
+            var accounting = new HeroCoinLedger(PlaceholderOneVsOneParticipants.Create());
             var knownActor = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
 
             var unknownActor = accounting.Award(Outcome(

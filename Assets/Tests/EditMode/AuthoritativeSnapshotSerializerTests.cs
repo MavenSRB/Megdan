@@ -270,7 +270,7 @@ namespace GuardsDigital.Tests.EditMode
                 board,
                 CardActionResolutionRestoreState.WithPendingSkill(
                     live.Frame,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 null,
                 null,
                 null,

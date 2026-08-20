@@ -824,7 +824,7 @@ namespace GuardsDigital.Tests.EditMode
                 restoredMovementAuthority,
                 CardActionResolutionRestoreState.WithPendingMovement(
                     start.PendingResolution,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 tamperedChoice,
                 null,
                 null,
@@ -837,7 +837,7 @@ namespace GuardsDigital.Tests.EditMode
                 restoredMovementAuthority,
                 CardActionResolutionRestoreState.WithPendingMovement(
                     start.PendingResolution,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 start.PendingChoice,
                 null,
                 null,
@@ -886,7 +886,7 @@ namespace GuardsDigital.Tests.EditMode
                 movementAuthority,
                 CardActionResolutionRestoreState.WithPendingMovement(
                     partial.PendingResolution,
-                    DefeatRewardRestoreStateHolder.Absent()),
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
                 partial.PendingChoice,
                 null,
                 null,

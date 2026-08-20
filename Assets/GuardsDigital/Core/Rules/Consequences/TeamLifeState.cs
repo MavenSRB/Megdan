@@ -105,7 +105,7 @@ namespace GuardsDigital.Core.Rules.Consequences
     }
 
     /// <summary>
-    /// The counters a restore hands back, in the shape <c>DefeatRewardRestoreState</c> established for
+    /// The counters a restore hands back, in the shape <c>HeroCoinLedgerRestoreState</c> established for
     /// the coin balances beside them.
     /// </summary>
     public sealed class TeamLifeRestoreState
@@ -135,7 +135,7 @@ namespace GuardsDigital.Core.Rules.Consequences
     /// composed setup - and this state is initialised from that record rather than from a constant that
     /// could disagree with it.
     ///
-    /// Shaped after <c>DefeatRewardAccounting</c>'s coin balances and <c>HeroProgressionState</c>'s
+    /// Shaped after <c>HeroCoinLedger</c>'s coin balances and <c>HeroProgressionState</c>'s
     /// Levels, which are the two closest existing things: per-participant authoritative numbers,
     /// covered exactly once, ordered by id so the wire is stable.
     /// </summary>

@@ -110,27 +110,27 @@ namespace GuardsDigital.Core.Cards
 
     /// <summary>
     /// The round-level card-action block: whether the round owns a card-action authority
-    /// at all, and the Defeat rewards recorded against it.
+    /// at all, and the coin ledger recorded against it.
     /// </summary>
     public sealed class RoundCardActionsRestoreState
     {
         public RoundCardActionsRestoreState(
             bool hasCardActions,
-            DefeatRewardRestoreStateHolder defeatRewards)
+            HeroCoinLedgerRestoreStateHolder coinLedger)
         {
             HasCardActions = hasCardActions;
-            DefeatRewards = defeatRewards ?? throw new ArgumentNullException(nameof(defeatRewards));
+            CoinLedger = coinLedger ?? throw new ArgumentNullException(nameof(coinLedger));
         }
 
         public bool HasCardActions { get; }
-        public DefeatRewardRestoreStateHolder DefeatRewards { get; }
+        public HeroCoinLedgerRestoreStateHolder CoinLedger { get; }
 
         public void Deconstruct(
             out bool hasCardActions,
-            out DefeatRewardRestoreStateHolder defeatRewards)
+            out HeroCoinLedgerRestoreStateHolder coinLedger)
         {
             hasCardActions = HasCardActions;
-            defeatRewards = DefeatRewards;
+            coinLedger = CoinLedger;
         }
     }
 

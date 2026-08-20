@@ -168,7 +168,7 @@ namespace GuardsDigital.Tests.EditMode
                 RedHero,
                 2,
                 0);
-            var accounting = new DefeatRewardAccounting(configuration.Participants);
+            var accounting = new HeroCoinLedger(configuration.Participants);
             var qualification = LanePushQualification.For(
                 LanePushCauseKind.Defeat, TeamSide.Blue, new ZoneId("battle-zone"));
 

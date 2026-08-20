@@ -222,7 +222,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(defeat.Reward.Operations.Single().AwardKind, Is.EqualTo(CoinAwardKind.Defeat),
                 "The configured slice is one hero per team, so the Defeat coin is the only operation " +
                 "there is a recipient for; the assist half is asserted at its own derivation below and " +
-                "its distribution is owned by DefeatRewardAccountingTests.");
+                "its distribution is owned by HeroCoinLedgerTests.");
         }
 
         [Test]
@@ -241,7 +241,7 @@ namespace GuardsDigital.Tests.EditMode
             // derived; only the participants differ, which is what isolates the derivation from the
             // accounting that already owned the sharing rule.
             var participants = TwoAgainstOne();
-            var accounting = new DefeatRewardAccounting(participants);
+            var accounting = new HeroCoinLedger(participants);
             var shared = new DefeatOutcome(
                 new DefeatOutcomeId("assist-distribution"),
                 new DefeatTargetId("blue-hero"),
@@ -846,9 +846,9 @@ namespace GuardsDigital.Tests.EditMode
             public TeamId AttackerTeamId => configuration.Participants.GetTeamForHero(AttackerId).Id;
             public TeamId DefenderTeamId => configuration.Participants.GetTeamForHero(DefenderId).Id;
 
-            public int Coins(HeroId heroId) => cardActions.DefeatRewards == null
+            public int Coins(HeroId heroId) => cardActions.CoinLedger == null
                 ? 0
-                : cardActions.DefeatRewards.GetCoins(heroId);
+                : cardActions.CoinLedger.GetCoins(heroId);
 
             public CardTier LowestNonBasicTier(HeroId heroId)
             {

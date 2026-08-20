@@ -480,31 +480,32 @@ namespace GuardsDigital.Core.Rules.Consequences
     /// <summary>
     /// The match's per-hero coin ledger, plus the record of which Defeat outcomes have already paid out.
     ///
-    /// Milestone 7.5 made the name narrower than the type, and milestone 7.6 makes it narrower still.
-    /// Three operations now move a balance and only the first is about a Defeat: <see cref="Award"/> is
+    /// Three operations move a balance and only the first is about a Defeat: <see cref="Award"/> is
     /// rulebook p.13's Defeat and assist coins, <see cref="TrySpend"/> is p.15's mandatory level up, and
     /// <see cref="TryGrant"/> is p.8's Pity Coin. All three live here because a second writer to a
     /// balance is a second answer to what a hero can afford, which is the one thing that must not
     /// happen. What stays genuinely Defeat-specific is the awarded-outcome set, which exists so a
     /// Defeat cannot pay out twice.
     ///
-    /// **The rename is now overdue and is deliberately not done here.** Milestone 6.13's audit is the
-    /// precedent for it - a qualifier that has stopped describing the type gets corrected in a pass of
-    /// its own - and folding a mechanical rename across every call site into a progression milestone
-    /// would have buried this milestone's actual behaviour in it.
+    /// Milestone 7.8d renamed this from <c>DefeatRewardAccounting</c> and changed nothing else. That
+    /// name was accurate while p.13's Defeat was the only rule that touched a coin; milestone 7.5's
+    /// spend and milestone 7.6's grant made it name one of three operations instead of the balances
+    /// they all move, and both of those milestones deferred the correction rather than bury a
+    /// mechanical rename inside a progression milestone. Milestone 6.13's naming audit is the
+    /// precedent - a qualifier that has stopped describing its type is corrected in a pass of its own.
     /// </summary>
-    public sealed class DefeatRewardAccounting
+    public sealed class HeroCoinLedger
     {
         private readonly MatchParticipants participants;
         private readonly Dictionary<HeroId, int> coinBalances;
         private readonly HashSet<DefeatOutcomeId> awardedOutcomeIds;
 
-        public DefeatRewardAccounting(MatchParticipants participants)
+        public HeroCoinLedger(MatchParticipants participants)
             : this(participants, null, null)
         {
         }
 
-        private DefeatRewardAccounting(
+        private HeroCoinLedger(
             MatchParticipants participants,
             IEnumerable<KeyValuePair<HeroId, int>> restoredBalances,
             IEnumerable<DefeatOutcomeId> restoredOutcomeIds)
@@ -542,15 +543,15 @@ namespace GuardsDigital.Core.Rules.Consequences
         public IReadOnlyList<DefeatOutcomeId> AwardedOutcomeIds => Array.AsReadOnly(
             awardedOutcomeIds.OrderBy(value => value.Value, StringComparer.Ordinal).ToArray());
 
-        public DefeatRewardRestoreState CaptureRestoreState() =>
-            new DefeatRewardRestoreState(CoinBalances, AwardedOutcomeIds);
+        public HeroCoinLedgerRestoreState CaptureRestoreState() =>
+            new HeroCoinLedgerRestoreState(CoinBalances, AwardedOutcomeIds);
 
-        public static DefeatRewardAccounting Restore(
+        public static HeroCoinLedger Restore(
             MatchParticipants participants,
-            DefeatRewardRestoreState state)
+            HeroCoinLedgerRestoreState state)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
-            return new DefeatRewardAccounting(
+            return new HeroCoinLedger(
                 participants,
                 state.CoinBalances,
                 state.AwardedOutcomeIds);

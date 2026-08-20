@@ -180,8 +180,8 @@ namespace GuardsDigital.Core.Cards
             levelUp?.Bind(
                 HeroProgression,
                 HeroItems,
-                this.cardActions?.EnsureDefeatRewards(participants) ??
-                    new GuardsDigital.Core.Rules.Consequences.DefeatRewardAccounting(participants));
+                this.cardActions?.EnsureCoinLedger(participants) ??
+                    new GuardsDigital.Core.Rules.Consequences.HeroCoinLedger(participants));
             this.endOfRoundStageAvailability = endOfRoundStageAvailability ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -363,7 +363,7 @@ namespace GuardsDigital.Core.Cards
         /// actions behind it, which is the honest answer for a fixture that has no ledger at all.
         /// </summary>
         public IReadOnlyList<KeyValuePair<HeroId, int>> CoinBalances =>
-            cardActions?.DefeatRewards?.CoinBalances ??
+            cardActions?.CoinLedger?.CoinBalances ??
             (IReadOnlyList<KeyValuePair<HeroId, int>>)Array.Empty<KeyValuePair<HeroId, int>>();
 
         /// <summary>
@@ -613,9 +613,9 @@ namespace GuardsDigital.Core.Cards
 
         internal RoundResolutionRestoreState CaptureRestoreState()
         {
-            var rewards = CardActions?.DefeatRewards == null
-                ? DefeatRewardRestoreStateHolder.Absent()
-                : DefeatRewardRestoreStateHolder.Present(CardActions.DefeatRewards.CaptureRestoreState());
+            var ledger = CardActions?.CoinLedger == null
+                ? HeroCoinLedgerRestoreStateHolder.Absent()
+                : HeroCoinLedgerRestoreStateHolder.Present(CardActions.CoinLedger.CaptureRestoreState());
             return new RoundResolutionRestoreState(
                 new RoundCursorRestoreState(RoundIndex, TurnIndex, Phase, TieBreakerState),
                 new RoundHistoryRestoreState(TurnSlots, CompletedRounds),
@@ -624,7 +624,7 @@ namespace GuardsDigital.Core.Cards
                     EndOfRoundOutcomes,
                     PendingMinionBattleChoice,
                     PendingLanePushRequest),
-                new RoundCardActionsRestoreState(CardActions != null, rewards),
+                new RoundCardActionsRestoreState(CardActions != null, ledger),
                 systemTransitions.CaptureRestoreState(),
                 HeroProgression.CaptureRestoreState(),
                 HeroItems.CaptureRestoreState(),
@@ -695,8 +695,8 @@ namespace GuardsDigital.Core.Cards
             levelUp?.Bind(
                 authority.HeroProgression,
                 authority.HeroItems,
-                cardActions?.EnsureDefeatRewards(participants) ??
-                    new GuardsDigital.Core.Rules.Consequences.DefeatRewardAccounting(participants));
+                cardActions?.EnsureCoinLedger(participants) ??
+                    new GuardsDigital.Core.Rules.Consequences.HeroCoinLedger(participants));
             authority.RoundIndex = roundIndex;
             authority.TurnIndex = turnIndex;
             authority.Phase = phase;
@@ -1489,7 +1489,7 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private RoundResolutionResult ResolvePityCoins(EndOfRoundStage stage)
         {
-            var ledger = cardActions?.DefeatRewards;
+            var ledger = cardActions?.CoinLedger;
             if (ledger == null)
             {
                 return RoundResolutionResult.Reject(

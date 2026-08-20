@@ -41,7 +41,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = CreateFixture(
                 CreateMinion("blue-target", TeamSide.Blue, StandardMinionType.Melee, new HexCoordinate(1, 0)));
-            var accounting = new DefeatRewardAccounting(fixture.Configuration.Participants);
+            var accounting = new HeroCoinLedger(fixture.Configuration.Participants);
             var outcome = MinionDefeatOutcome(fixture, "blue-target", 2);
             var reward = accounting.Award(outcome);
 
@@ -97,7 +97,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = CreateFixture(
                 CreateMinion("blue-target", TeamSide.Blue, StandardMinionType.Melee, new HexCoordinate(1, 0)));
-            var accounting = new DefeatRewardAccounting(fixture.Configuration.Participants);
+            var accounting = new HeroCoinLedger(fixture.Configuration.Participants);
             var outcome = MinionDefeatOutcome(fixture, "blue-target", 2);
             var reward = accounting.Award(outcome);
             var attempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
@@ -299,7 +299,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MinionDefeatResolution PreventedDefeat(Fixture fixture, string minionId)
         {
             var outcome = MinionDefeatOutcome(fixture, minionId, 2);
-            var accounting = new DefeatRewardAccounting(fixture.Configuration.Participants);
+            var accounting = new HeroCoinLedger(fixture.Configuration.Participants);
             return MinionDefeatResolution.Prevented(
                 outcome,
                 accounting.Award(outcome),

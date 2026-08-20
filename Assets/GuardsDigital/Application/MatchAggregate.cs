@@ -188,7 +188,7 @@ namespace GuardsDigital.Application
     /// assembly where an event can reach them.
     ///
     /// The rollback is a restore from a serialized pre-image rather than a deferred write: the
-    /// authorities below this root mutate in place, unlike <c>DefeatRewardAccounting.Award</c>,
+    /// authorities below this root mutate in place, unlike <c>HeroCoinLedger.Award</c>,
     /// whose plan-validate-commit shape this boundary is modelled on. The guarantee to the caller is
     /// the same - a refused operation leaves no partial state - but the mechanism differs, and
     /// converting the authorities to plan-only is deeper work than 6.1f; `RISK-STATE-002` records
