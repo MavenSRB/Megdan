@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Snapshots;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -102,6 +103,48 @@ namespace GuardsDigital.Tests.EditMode
         /// mechanism returning rather than on the match being late-game-shaped.
         /// </remarks>
         private const long MaximumAllocationGrowthAcrossACompleteMatch = 64 * 1024;
+
+        /// <summary>
+        /// How much more one command kind's median authoritative serialization may write at
+        /// complete-match history length than at an empty one.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 7.9d, finding F-CORE-02. The allocation line above is the sharp instrument and it
+        /// reads on the cross-platform harness alone, because `GC.GetAllocatedBytesForCurrentThread`
+        /// returns a constant zero on Unity's Mono. That left the two Windows tiers guarding
+        /// `RISK-PERF-001`'s mechanism with an absolute 25 ms ceiling, and the recorded pre-7.9b runs
+        /// show what that was worth: with full-history copying still in place the late median measured
+        /// 2.64-2.72 ms, so the exact regression this case exists to catch was present and this fixture
+        /// passed on both Unity tiers.
+        ///
+        /// A median-*time* ratio was the obvious repair and was measured before being adopted, on two
+        /// deliberately reintroduced mechanisms in a throwaway tree. It does not work, and the figures
+        /// are worth keeping so nobody proposes it again: the time signature is unchanged across the
+        /// fix - 1.33-1.47 before 7.9b, 1.33-1.46 after - because what 7.9b removed was almost entirely
+        /// allocation rather than elapsed time, and on the harness tier JIT warm-up makes the early
+        /// median the *slower* one, so the ratio there reads below 1 whatever the mechanism does.
+        ///
+        /// What does read the same on every tier is the serializer's own counter. `CapturedByteCount`
+        /// is incremented by the writer rather than by the runtime, and re-encoding a growing
+        /// completed-round history is precisely a write that grows with the match.
+        ///
+        /// Both sides of this line are measured rather than declared, which is what the 7.9 re-baseline
+        /// of the sibling allocation row exists to warn about. At the closing revision one command
+        /// kind's median capture moves 6,852 -> 7,552 bytes between history 0-13 and 487-496: +700, and
+        /// it is state size rather than history length. Against a deliberately reintroduced re-encode -
+        /// a fresh `CompletedRoundsSerializationCache` per capture, so every completed round is written
+        /// again every command - the same medians measure 6,852 -> 15,082: +8,230 at twenty rounds, and
+        /// unbounded in a longer match. 4 KiB sits about six times above the residual and half of what
+        /// the mechanism costs at this length, so it discriminates between them with room on both
+        /// sides.
+        ///
+        /// Its limits, stated rather than left to be discovered: a copy that never reaches the
+        /// serializer - the projection's own `ToArray`, about a fifth of the original term - is
+        /// invisible to this counter, and a deliberately reintroduced one was observed passing this
+        /// line while failing the allocation line on the harness tier. This closes the larger half of
+        /// the gap on the tiers that could measure nothing at all; it does not close all of it.
+        /// </remarks>
+        private const long MaximumCapturedByteGrowthAcrossACompleteMatch = 4 * 1024;
 
         /// <summary>
         /// The history lengths each sample is taken at: empty, short, and then powers of two up to the
@@ -250,13 +293,16 @@ namespace GuardsDigital.Tests.EditMode
             var lateBytes = Median(late.Select(sample => (double)sample.AllocatedBytes));
             var earlyMilliseconds = Median(early.Select(sample => sample.Milliseconds));
             var lateMilliseconds = Median(late.Select(sample => sample.Milliseconds));
+            var earlyCaptured = Median(early.Select(sample => (double)sample.CapturedBytes));
+            var lateCaptured = Median(late.Select(sample => (double)sample.CapturedBytes));
 
             TestContext.WriteLine(
                 "COMPLETE_MATCH_GROWTH " +
                 $"earlyHistory={early[0].HistoryLength}-{early[early.Length - 1].HistoryLength} " +
                 $"lateHistory={late[0].HistoryLength}-{late[late.Length - 1].HistoryLength} " +
                 $"medianEarlyBytes={earlyBytes:F0} medianLateBytes={lateBytes:F0} " +
-                $"medianEarlyMs={earlyMilliseconds:F4} medianLateMs={lateMilliseconds:F4}");
+                $"medianEarlyMs={earlyMilliseconds:F4} medianLateMs={lateMilliseconds:F4} " +
+                $"medianEarlyCapturedBytes={earlyCaptured:F0} medianLateCapturedBytes={lateCaptured:F0}");
 
             Assert.That(late[0].HistoryLength, Is.GreaterThan(early[early.Length - 1].HistoryLength),
                 "The two halves must not overlap, or the comparison is between a set and itself.");
@@ -264,6 +310,17 @@ namespace GuardsDigital.Tests.EditMode
                 Is.LessThanOrEqualTo(MaximumAcceptedCommandRefreshMilliseconds),
                 "The late half must not cross the standing refresh-time threshold. This half of the " +
                 "case is measured on every runtime, because time is reported everywhere.");
+            Assert.That(earlyCaptured, Is.GreaterThan(0.0),
+                "The measurement must observe real serialization work, or the growth line below is " +
+                "comparing nothing with nothing.");
+            Assert.That(lateCaptured,
+                Is.LessThanOrEqualTo(earlyCaptured + MaximumCapturedByteGrowthAcrossACompleteMatch),
+                $"One command kind's median authoritative serialization moved from {earlyCaptured:F0} " +
+                $"bytes over history lengths {early[0].HistoryLength}-{early[early.Length - 1].HistoryLength} " +
+                $"to {lateCaptured:F0} over {late[0].HistoryLength}-{late[late.Length - 1].HistoryLength}. " +
+                "Re-encoding the growing completed-round history every command is exactly what this " +
+                "catches coming back, and unlike the allocation line above it reads on every runtime, " +
+                "which is what the two Windows tiers had no growth guard without.");
 
             if (!RuntimeReportsManagedAllocation())
             {
@@ -314,18 +371,31 @@ namespace GuardsDigital.Tests.EditMode
 
         private sealed class Sample
         {
-            public Sample(int historyLength, DirectorCommandKind kind, double milliseconds, long allocatedBytes)
+            public Sample(
+                int historyLength,
+                DirectorCommandKind kind,
+                double milliseconds,
+                long allocatedBytes,
+                long capturedBytes)
             {
                 HistoryLength = historyLength;
                 Kind = kind;
                 Milliseconds = milliseconds;
                 AllocatedBytes = allocatedBytes;
+                CapturedBytes = capturedBytes;
             }
 
             public int HistoryLength { get; }
             public DirectorCommandKind Kind { get; }
             public double Milliseconds { get; }
             public long AllocatedBytes { get; }
+
+            /// <summary>
+            /// What the authoritative serialization wrote for this one command, counted by the
+            /// serializer itself rather than by the runtime. Milestone 7.9d: this is the only growth
+            /// instrument that reads the same on every tier, which is what the Windows tiers needed.
+            /// </summary>
+            public long CapturedBytes { get; }
         }
 
         /// <summary>
@@ -352,14 +422,17 @@ namespace GuardsDigital.Tests.EditMode
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
+            AuthoritativeSnapshotSerializer.ResetSerializeCallCount();
             var before = GC.GetAllocatedBytesForCurrentThread();
             var timer = Stopwatch.StartNew();
             var result = session.Execute(command);
             timer.Stop();
             var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            var captured = AuthoritativeSnapshotSerializer.CapturedByteCount;
 
             Assert.That(result.Accepted, Is.True, result.Detail);
-            return new Sample(historyLength, command.Kind, timer.Elapsed.TotalMilliseconds, allocated);
+            return new Sample(
+                historyLength, command.Kind, timer.Elapsed.TotalMilliseconds, allocated, captured);
         }
 
         /// <summary>

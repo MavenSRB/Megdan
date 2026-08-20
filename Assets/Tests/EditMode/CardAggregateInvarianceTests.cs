@@ -824,6 +824,20 @@ namespace GuardsDigital.Tests.EditMode
                 Sha256(projection.DiagnosticSnapshot));
         }
 
+        /// <summary>
+        /// Writes the measured digests beside the repository so a mismatch can be diffed rather than
+        /// transcribed out of an assertion message.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 7.9d, finding F-TEST-01. This convenience was the fixture's only Unity dependency
+        /// - one <c>UnityEngine.Application.dataPath</c> - and it kept the project's only
+        /// version-controlled snapshot-digest pin out of the cross-platform harness, so nothing
+        /// anywhere compared these payloads across the two runtimes. The root is now found by walking
+        /// up from wherever the test assembly runs, which answers the same directory under Unity and
+        /// under <c>dotnet test</c>, and a failed write is swallowed on purpose: this is a diagnostic
+        /// aid, and a read-only or relocated output directory must not turn a passing digest
+        /// comparison into a failing one. The comparison itself is the test and asserts above.
+        /// </remarks>
         private static void WriteMeasuredDigests(IReadOnlyList<ScenarioDigest> measured)
         {
             var builder = new StringBuilder();
@@ -833,13 +847,57 @@ namespace GuardsDigital.Tests.EditMode
                     $"new ScenarioDigest(\"{digest.Name}\", \"{digest.AuthoritativeSha256}\", \"{digest.DiagnosticSha256}\"),");
             }
 
-            var directory = Path.Combine(
-                Directory.GetParent(UnityEngine.Application.dataPath).FullName, "tmp");
-            Directory.CreateDirectory(directory);
-            File.WriteAllText(
-                Path.Combine(directory, "milestone-6-1f-measured-digests.txt"),
-                builder.ToString(),
-                new UTF8Encoding(false));
+            if (!TryFindRepositoryRoot(out var root))
+            {
+                return;
+            }
+
+            try
+            {
+                var directory = Path.Combine(root, "tmp");
+                Directory.CreateDirectory(directory);
+                File.WriteAllText(
+                    Path.Combine(directory, "milestone-6-1f-measured-digests.txt"),
+                    builder.ToString(),
+                    new UTF8Encoding(false));
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+
+        /// <summary>
+        /// The repository root, identified by the two directories every checkout has, from the test
+        /// assembly's own location and then from the working directory. Both runtimes reach it: Unity
+        /// runs the assembly out of <c>Library/ScriptAssemblies</c> and the harness out of
+        /// <c>Tools/DotnetTests/bin</c>, and both are inside the checkout.
+        /// </summary>
+        private static bool TryFindRepositoryRoot(out string root)
+        {
+            foreach (var start in new[]
+            {
+                AppDomain.CurrentDomain.BaseDirectory,
+                Directory.GetCurrentDirectory()
+            })
+            {
+                for (var directory = string.IsNullOrEmpty(start) ? null : new DirectoryInfo(start);
+                    directory != null;
+                    directory = directory.Parent)
+                {
+                    if (Directory.Exists(Path.Combine(directory.FullName, "Assets")) &&
+                        Directory.Exists(Path.Combine(directory.FullName, "Tools")))
+                    {
+                        root = directory.FullName;
+                        return true;
+                    }
+                }
+            }
+
+            root = null;
+            return false;
         }
 
         private static string Sha256(string payload)

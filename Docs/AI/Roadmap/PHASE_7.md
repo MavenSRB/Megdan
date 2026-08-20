@@ -407,7 +407,7 @@ Non-goals: no publishing of a projected turn-ending offer (the recorded root cau
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79c-close-the-four-confirmed-rules-surface-defects-from-the-79a-review-completion-evidence).
 
-### [~] 7.9d Restore the guards verified content will lean on
+### [x] 7.9d Restore the guards verified content will lean on
 
 Blocked by: milestone 7.9c, so the corrective sequence ends on this milestone's complete unfiltered sweep.
 
@@ -425,3 +425,5 @@ Acceptance checks:
 - Closing validation, by the user's recorded decision: both complete unfiltered Unity suites and the cross-platform harness green at the closing revision, with the known-good baseline table in `Testing/PLAYMODE_AND_SUITES.md` updated and the moved totals explained by the tests 7.9c and this milestone added.
 
 Non-goals: no work on the three general card-text seams (F-CARD-01, F-CARD-02, F-CARD-03 - sequenced at milestone 8.2 from Wasp's verified text); no harness NUnit-version alignment; no schema move; no correction of any other 7.9a finding.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79d-restore-the-guards-verified-content-will-lean-on-completion-evidence).

@@ -453,6 +453,61 @@ namespace GuardsDigital.Tests.EditMode
                     .ToArray()));
         }
 
+        [Test]
+        public void AHeroWhoseDeckIsMissingANamedNextTierCard_IsRefusedAtSetup()
+        {
+            // Milestone 7.9d, finding F-PROG-02. p.15's Level Up is mandatory and is carried out by
+            // searching the levelling hero's own deck for the named card. A hero that owns no instance
+            // of a candidate its cards name cannot complete that purchase - and the engine's response
+            // to an impossible purchase is silence: no coins spent, no Level raised, no event emitted,
+            // and p.8 then pays that hero a Pity Coin for not having levelled. Nothing about that is
+            // reachable with the generated showcase content, whose decks are complete by construction;
+            // it is what a hand-transcribed verified hero deck gets wrong one card at a time.
+            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+
+            Assert.DoesNotThrow(() => HeroItemSlotSetupValidator.Validate(
+                configuration.Participants, configuration.CardDefinitions, configuration.CardInstances),
+                "The configured content owns every candidate its own cards name.");
+
+            var red = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var named = configuration.CardInstances
+                .Where(instance => instance.OwnerId.Equals(red))
+                .Select(instance => configuration.CardDefinitions
+                    .Single(definition => definition.Id.Equals(instance.DefinitionReference.DefinitionId)))
+                .SelectMany(definition => definition.Progression.NextTierCandidateIds)
+                .Distinct()
+                .ToArray();
+            Assert.That(named, Is.Not.Empty,
+                "The Red hero's cards must name at least one next-Tier candidate, or the removal below " +
+                "takes nothing away and this proves nothing.");
+
+            var missing = named[0];
+            var withoutOneDeckCard = configuration.CardInstances
+                .Where(instance => !(instance.OwnerId.Equals(red) &&
+                    instance.DefinitionReference.DefinitionId.Equals(missing)))
+                .ToArray();
+            Assert.That(withoutOneDeckCard, Has.Length.LessThan(configuration.CardInstances.Count),
+                "One of the Red hero's own instances of that candidate must actually have been removed.");
+
+            var exception = Assert.Throws<ArgumentException>(() => HeroItemSlotSetupValidator.Validate(
+                configuration.Participants, configuration.CardDefinitions, withoutOneDeckCard));
+            Assert.That(exception.Message, Does.Contain(missing.Value),
+                "The refusal names the candidate the deck cannot supply, because that is the card a " +
+                "content author has to go and add.");
+
+            // The same card removed from the *other* hero is not this hero's problem: the deck a
+            // purchase searches is the levelling hero's own.
+            var blue = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            Assert.That(configuration.CardInstances.Any(instance => instance.OwnerId.Equals(blue)), Is.True);
+            Assert.DoesNotThrow(() => HeroItemSlotSetupValidator.Validate(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances
+                    .Where(instance => !instance.OwnerId.Equals(blue))
+                    .ToArray()),
+                "Dropping a hero entirely leaves the remaining hero's own deck complete.");
+        }
+
         // ----- The phase-wide durability rule -----
 
         [Test]

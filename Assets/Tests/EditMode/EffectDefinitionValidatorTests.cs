@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using NUnit.Framework;
@@ -328,6 +329,78 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentException>(
                 () => new EffectOutcomeFact("consumer", EffectValue.Node(new EffectNodeId("move"))),
                 "Nor publish one as a produced fact.");
+        }
+
+        [Test]
+        public void AMalformedEffectDefinition_IsRefusedBeforeTheMatchStarts()
+        {
+            // Milestone 7.9d, finding F-CARD-04 - the 6.2b review's F62B-05. This validator has been
+            // complete since 6.2a and, until this milestone, had no production caller: every rule it
+            // enforces was a guarantee the docs claimed and no load path asked for, so an unregistered
+            // capability or an unguaranteed binding would have surfaced as a mid-resolution fault after
+            // the card was spent. The link assertion is the half a behavioral case cannot state: the
+            // configuration type itself must reach Validate, so removing the call fails here rather
+            // than passing vacuously while the behavioral half tests the validator directly.
+            Assert.That(
+                ILConformanceScanner.References(
+                    ILConformanceScanner.WithNestedTypes(
+                        typeof(GuardsDigital.Core.Participants.PlaceholderOneVsOneTestConfiguration)),
+                    ILConformanceScanner.Method(
+                        typeof(EffectDefinitionValidator), nameof(EffectDefinitionValidator.Validate))),
+                Is.True,
+                "The configuration is where definitions enter a match, so it is the load path that " +
+                "must ask; a fixture calling the validator on its own content is not enforcement.");
+
+            // And the refusal itself, through the configuration's own private load-path helper, with a
+            // definition whose capability nothing registers - the exact shape that used to load
+            // cleanly and fault mid-resolution.
+            var malformed = new CardDefinition(
+                new CardDefinitionId("validator-load-path-card"),
+                "rev-1",
+                "TEST - Validator Load Path",
+                new InitiativeValue(30),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("validator-load-path-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        System.Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        new EffectDefinition(
+                            new EffectDefinitionId("validator-load-path-effect"),
+                            "rev-1",
+                            new EffectNodeId("root"),
+                            new[]
+                            {
+                                new EffectNodeDefinition(
+                                    new EffectNodeId("root"),
+                                    EffectNodeKind.Capability,
+                                    EffectFailurePolicy.Mandatory,
+                                    new EffectCapabilityReference(
+                                        new EffectCapabilityId("not-registered-anywhere"), 1))
+                            }))
+                });
+
+            var loadPath = typeof(GuardsDigital.Core.Participants.PlaceholderOneVsOneTestConfiguration)
+                .GetMethod(
+                    "ValidateEffectDefinitions",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            Assert.That(loadPath, Is.Not.Null,
+                "The load-path helper the link assertion proved reachable must exist to be exercised.");
+
+            var thrown = Assert.Throws<System.Reflection.TargetInvocationException>(() =>
+                loadPath.Invoke(null, new object[] { new[] { malformed } }));
+            Assert.That(thrown.InnerException, Is.InstanceOf<System.ArgumentException>());
+            Assert.That(thrown.InnerException.Message,
+                Does.Contain(nameof(EffectDefinitionRejectionReason.UnregisteredCapability)),
+                "The refusal carries the typed rejection, because that is what a content author acts on.");
+            Assert.That(thrown.InnerException.Message, Does.Contain("validator-load-path-card"),
+                "And it names the card, because a load failure over 24 definitions is otherwise a hunt.");
         }
 
         private static System.Collections.Generic.IReadOnlyList<EffectDefinitionRejection> Validate(

@@ -49,6 +49,22 @@ namespace GuardsDigital.Core.Participants
                 // configuration knows both its heroes and their cards.
                 GuardsDigital.Core.Rules.Progression.HeroItemSlotSetupValidator.Validate(
                     participants, cardDefinitions, cardInstances);
+
+                // Milestone 7.9d, finding F-CARD-04 - the 6.2b review's F62B-05, unclosed since. The
+                // effect-definition validator has always been complete and has never had a production
+                // caller: its only invocations were its own fixture and the configured Skill tests, so
+                // the guarantees its own summary describes - children resolve, the graph is acyclic and
+                // reachable, every capability is registered at the exact revision named, every input
+                // matches its handler's declared type, and no node reads an output from a branch that
+                // may not have run - were enforced nowhere on a path a match takes.
+                //
+                // That is inert while every definition is compile-time C# a fixture already validates,
+                // and wrong the moment content stops being written that way. Unvalidated, each of those
+                // rules fails as a mid-resolution fault instead: the card is spent, the turn is open,
+                // and the engine throws where a rule should have refused. Asked here because this is
+                // where a configuration first holds both its definitions and the catalog the match will
+                // compose them against.
+                ValidateEffectDefinitions(cardDefinitions);
             }
             CardDefinitions = Array.AsReadOnly(cardDefinitions);
             CardInstances = Array.AsReadOnly(cardInstances);
@@ -282,6 +298,38 @@ namespace GuardsDigital.Core.Participants
                 redHand(redHeroId),
                 blueHand(blueHeroId),
                 tieBreakerState);
+        }
+
+        /// <summary>
+        /// Every effect root every configured card carries, validated against the same catalog
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.CardActionResolutionAuthority"/> composes
+        /// for the match, with the typed rejection list surfaced whole so a content author fixes one
+        /// load failure rather than one rejection per attempt.
+        /// </summary>
+        private static void ValidateEffectDefinitions(IEnumerable<CardDefinition> definitions)
+        {
+            var catalog = GuardsDigital.Core.Effects.Synthetic.SyntheticEffectCapabilities.CreateCatalog();
+            foreach (var definition in definitions)
+            {
+                foreach (var action in definition.ActionDefinitions)
+                {
+                    if (action.EffectRoot == null)
+                    {
+                        continue;
+                    }
+
+                    var rejections = GuardsDigital.Core.Effects.EffectDefinitionValidator.Validate(
+                        action.EffectRoot, catalog);
+                    if (rejections.Count > 0)
+                    {
+                        throw new ArgumentException(
+                            $"Card definition '{definition.Id}' action '{action.Id}' carries an effect " +
+                            "definition the match would fault on mid-resolution: " +
+                            string.Join("; ", rejections.Select(rejection => rejection.ToString())),
+                            nameof(definitions));
+                    }
+                }
+            }
         }
     }
 }

@@ -77,8 +77,39 @@ namespace GuardsDigital.Core.Rules.Progression
                     continue;
                 }
 
+                var ownedIds = new HashSet<CardDefinitionId>(owned);
                 foreach (var reachable in Reachable(owned, definitionsById))
                 {
+                    // Milestone 7.9d, finding F-PROG-02. p.15's Level Up is mandatory - "Leveling up is
+                    // not optional" - and it is carried out by searching the levelling hero's own deck
+                    // for the card the upgrade names. A hero whose deck holds no instance of a named
+                    // candidate cannot complete that purchase, and the rules engine's answer to a
+                    // purchase it cannot complete is to make none: no coins are spent, no Level is
+                    // raised, no outcome is recorded, and because the round then sees a hero that did
+                    // not level, p.8 pays that hero a Pity Coin as well. Nothing is refused and nothing
+                    // is logged, so the only visible symptom is a hero that quietly never levels.
+                    //
+                    // The synthetic showcase content cannot expose this: it generates every upgrade
+                    // target mechanically, so its decks are complete by construction. Verified hero
+                    // decks are transcribed by hand, one instance at a time, which is where a missing
+                    // or mis-owned card comes from - and this is the composition seam that already
+                    // walks exactly the definitions it would have to be missing from.
+                    foreach (var candidateId in reachable.Progression.NextTierCandidateIds)
+                    {
+                        if (ownedIds.Contains(candidateId))
+                        {
+                            continue;
+                        }
+
+                        throw new ArgumentException(
+                            $"Hero '{hero.Id}' can reach card definition '{reachable.Id}', which names " +
+                            $"next-Tier candidate '{candidateId}' that the hero owns no instance of. " +
+                            "p.15's mandatory Level Up searches the levelling hero's own deck for the " +
+                            "card it upgrades to, so a candidate with no instance there is a purchase " +
+                            "that silently cannot happen.",
+                            nameof(instances));
+                    }
+
                     var icon = reachable.Progression.ItemIcon;
                     if (!reachable.Progression.HasItemIcon || hero.Dashboard.Accepts(icon))
                     {
