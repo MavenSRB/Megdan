@@ -1,0 +1,239 @@
+<div id="guards-hero-overview-mockup" class="gd-mockup">
+  <div class="gd-topbar">
+    <div><span class="gd-game-title">GUARDS DIGITAL</span><span class="gd-round">ROUND 2 · TURN 3</span></div>
+    <div class="gd-score"><span class="gd-red-team">RED  ♥ ♥ ♥ ♥</span><span>WAVE 2 / 3</span><span class="gd-blue-team">♥ ♥ ♥ ♥  BLUE</span></div>
+  </div>
+
+  <div class="gd-playfield">
+    <button type="button" class="gd-director-toggle" aria-expanded="false"><i data-lucide="sliders-horizontal" aria-hidden="true"></i> DIRECTOR</button>
+    <div class="gd-director-drawer" hidden>
+      <button type="button"><i data-lucide="undo-2" aria-hidden="true"></i> UNDO</button>
+      <button type="button"><i data-lucide="rotate-ccw" aria-hidden="true"></i> RESET</button>
+      <button type="button"><i data-lucide="scroll-text" aria-hidden="true"></i> EVENT LOG</button>
+    </div>
+    <aside class="gd-hero-rail gd-hero-rail-red" aria-label="Red hero overview">
+      <div class="gd-hero-head">
+        <span class="gd-hero-icon gd-red-icon" aria-hidden="true"><i data-lucide="shield"></i></span>
+        <span><span class="gd-team-label">RED HERO</span><span class="gd-hero-name">Red Wasp</span></span>
+      </div>
+      <div class="gd-bonus-strip" aria-label="Item bonuses: Attack plus one, Movement plus one">
+        <span data-tooltip="Attack item bonus +1"><i data-lucide="swords" aria-hidden="true"></i><b>+1</b></span>
+        <span data-tooltip="Movement item bonus +1"><i data-lucide="move" aria-hidden="true"></i><b>+1</b></span>
+      </div>
+      <div class="gd-turn-slots">
+        <div class="gd-slot gd-silver" aria-label="Turn 1: Silver card"></div>
+        <div class="gd-slot gd-blue-card" aria-label="Turn 2: Blue card"></div>
+        <div class="gd-slot gd-gold" aria-label="Turn 3: Gold card"></div>
+        <div class="gd-slot gd-empty" aria-label="Turn 4: Empty"></div>
+      </div>
+      <div class="gd-discard gd-red-card"><span><i data-lucide="layers-3" aria-hidden="true"></i> DISCARD</span><b>RED · 1</b></div>
+    </aside>
+
+    <main class="gd-board" aria-label="Game board preview">
+      <div class="gd-board-status"><span>ACTIVE HERO</span><strong>Red Wasp</strong></div>
+      <div class="gd-hex-map" aria-hidden="true">
+        <div class="gd-hex-row"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="gd-hex-row gd-offset"><span></span><span></span><button type="button" class="gd-red-unit gd-map-hero" data-hero="red" aria-pressed="true" aria-label="Select Red Wasp">R</button><span></span><span></span></div>
+        <div class="gd-hex-row"><span></span><span></span><span class="gd-objective">◆</span><span></span><span></span></div>
+        <div class="gd-hex-row gd-offset"><span></span><span></span><button type="button" class="gd-blue-unit gd-map-hero" data-hero="blue" aria-pressed="false" aria-label="Select Blue Wasp">B</button><span></span><span></span></div>
+        <div class="gd-hex-row"><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="gd-prompt">SELECT A CARD FOR RED WASP</div>
+    </main>
+
+    <aside class="gd-hero-rail gd-hero-rail-blue" aria-label="Blue hero overview">
+      <div class="gd-hero-head gd-blue-head">
+        <span><span class="gd-team-label">BLUE HERO</span><span class="gd-hero-name">Blue Wasp</span></span>
+        <span class="gd-hero-icon gd-blue-icon" aria-hidden="true"><i data-lucide="shield"></i></span>
+      </div>
+      <div class="gd-bonus-strip gd-bonus-strip-blue" aria-label="Item bonuses: Defense plus one, Range plus one">
+        <span data-tooltip="Defense item bonus +1"><i data-lucide="shield-check" aria-hidden="true"></i><b>+1</b></span>
+        <span data-tooltip="Range item bonus +1"><i data-lucide="crosshair" aria-hidden="true"></i><b>+1</b></span>
+      </div>
+      <div class="gd-turn-slots">
+        <div class="gd-slot gd-blue-card" aria-label="Turn 1: Blue card"></div>
+        <div class="gd-slot gd-red-card" aria-label="Turn 2: Red card"></div>
+        <div class="gd-slot gd-silver" aria-label="Turn 3: Silver card"></div>
+        <div class="gd-slot gd-empty" aria-label="Turn 4: Empty"></div>
+      </div>
+      <div class="gd-discard gd-green"><span><i data-lucide="layers-3" aria-hidden="true"></i> DISCARD</span><b>GREEN · 1</b></div>
+    </aside>
+  </div>
+
+  <section class="gd-card-tray" aria-label="Red Wasp card selection">
+    <div class="gd-tray-label"><span class="gd-selected-hand">RED WASP · HAND</span><small>Select a hero on the map to change hands</small></div>
+    <div class="gd-card-buttons">
+      <button type="button" class="gd-card-choice gd-blue-card" data-color="BLUE"><span class="gd-color-name">BLUE</span><strong>Bulwark</strong><small>MOVE 2 · DEF 3</small><span class="gd-card-history">PLAYED · TURN 1</span></button>
+      <button type="button" class="gd-card-choice gd-silver" data-color="SILVER"><span class="gd-color-name">SILVER</span><strong>Needle</strong><small>MOVE 2 · DEF 1</small><span class="gd-card-history">PLAYED · TURN 2</span></button>
+      <button type="button" class="gd-card-choice gd-gold gd-card-available" data-color="GOLD"><span class="gd-color-name">GOLD</span><strong>Lancer</strong><small>MOVE 2 · DEF 2</small><span class="gd-card-history">AVAILABLE</span></button>
+      <button type="button" class="gd-card-choice gd-green gd-card-available" data-color="GREEN"><span class="gd-color-name">GREEN</span><strong>Pursuit</strong><small>MOVE 2 · DEF 2</small><span class="gd-card-history">AVAILABLE</span></button>
+      <button type="button" class="gd-card-choice gd-red-card" data-color="RED"><span class="gd-color-name">RED</span><strong>Bombard</strong><small>MOVE 2 · DEF 2</small><span class="gd-card-history">DISCARDED</span></button>
+    </div>
+    <div class="gd-selection-status" aria-live="polite">Choose a card to preview its selected state.</div>
+  </section>
+</div>
+
+<style>
+  #guards-hero-overview-mockup { color-scheme: light dark; }
+  .gd-mockup { overflow: hidden; background: light-dark(#e8e2d5, #111315); color: light-dark(#1e2328, #eef1f3); border: 1px solid light-dark(#aea89c, #3a4147); font-family: Inter, system-ui, sans-serif; box-shadow: 0 18px 42px light-dark(rgba(31,25,18,.18), rgba(0,0,0,.45)); }
+  .gd-topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 14px; background: light-dark(#292d31, #080a0b); color: #f1f2f3; border-bottom: 1px solid light-dark(#44494d, #343a3f); }
+  .gd-game-title { font-weight: 500; letter-spacing: .12em; margin-right: 18px; }
+  .gd-round { color: #bfc5c9; }
+  .gd-score { display: flex; gap: 18px; align-items: center; font-size: .86em; }
+  .gd-red-team { color: #ff8177; }
+  .gd-blue-team { color: #7fb8ff; }
+  .gd-playfield { position: relative; min-height: 430px; }
+  .gd-director-toggle { position: absolute; z-index: 5; left: 10px; bottom: 12px; display: inline-flex; align-items: center; gap: 5px; padding: 7px 9px; border: 1px solid light-dark(#6f7477, #596168); border-radius: 4px; background: light-dark(#252a2e, #0d1012); color: #eef1f3; font: inherit; font-size: .69em; letter-spacing: .07em; cursor: pointer; }
+  .gd-director-toggle svg, .gd-director-drawer svg { width: 14px; height: 14px; }
+  .gd-director-drawer { position: absolute; z-index: 4; left: 10px; bottom: 48px; width: 126px; padding: 6px; background: light-dark(rgba(244,240,232,.98), rgba(23,27,30,.98)); border-left: 4px solid light-dark(#555b5f, #858e94); box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+  .gd-director-drawer button { width: 100%; display: flex; align-items: center; gap: 6px; margin: 3px 0; padding: 6px; border: 0; border-radius: 3px; background: light-dark(#ded9cf, #292f33); color: light-dark(#22272a, #eef1f3); font: inherit; font-size: .68em; cursor: pointer; }
+  .gd-hero-rail { position: absolute; z-index: 3; top: 12px; width: 154px; padding: 9px; background: light-dark(rgba(244,240,232,.96), rgba(23,27,30,.96)); box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+  .gd-hero-rail-red { left: 10px; border-left: 4px solid #b8362e; }
+  .gd-hero-rail-blue { right: 10px; border-right: 4px solid #347ac4; }
+  .gd-hero-head { width: 100%; display: flex; align-items: center; gap: 7px; padding: 0 0 7px; border-bottom: 1px solid light-dark(#c9c2b7, #3a4147); }
+  .gd-blue-head { justify-content: flex-end; text-align: right; }
+  .gd-hero-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #f5f7f8; }
+  .gd-hero-icon svg { width: 18px; height: 18px; }
+  .gd-red-icon { background: #9e2c27; }
+  .gd-blue-icon { background: #286aaa; }
+  .gd-team-label, .gd-history-label, .gd-tray-label, .gd-board-status span { color: light-dark(#646a6f, #a9b0b5); font-size: .66em; letter-spacing: .08em; }
+  .gd-team-label, .gd-hero-name { display: block; }
+  .gd-hero-name { font-size: .88em; font-weight: 500; }
+  .gd-bonus-strip { display: flex; gap: 7px; align-items: center; margin-top: 7px; }
+  .gd-bonus-strip-blue { justify-content: flex-end; }
+  .gd-bonus-strip span { display: inline-flex; gap: 2px; align-items: center; color: light-dark(#30363a, #e3e7e9); font-size: .7em; }
+  .gd-bonus-strip svg { width: 13px; height: 13px; }
+  .gd-history-label { display: flex; justify-content: space-between; margin-top: 8px; margin-bottom: 5px; }
+  .gd-turn-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px; }
+  .gd-slot { min-width: 0; height: 42px; padding: 4px 2px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.23); }
+  .gd-slot span { align-self: flex-start; font-size: .68em; opacity: .78; }
+  .gd-slot b { font-size: .52em; letter-spacing: .02em; overflow: hidden; }
+  .gd-discard { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; padding: 6px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.23); font-size: .61em; }
+  .gd-discard span { display: flex; gap: 5px; align-items: center; }
+  .gd-discard svg { width: 14px; height: 14px; }
+  .gd-board { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 14px; background: radial-gradient(circle at 50% 45%, light-dark(#cbd1c3, #39433c), light-dark(#8e998b, #222a25)); overflow: hidden; }
+  .gd-board-status { align-self: stretch; display: flex; justify-content: center; gap: 8px; align-items: baseline; }
+  .gd-hex-map { width: min(330px, 90%); transform: rotate(-3deg); }
+  .gd-hex-row { display: flex; justify-content: center; gap: 5px; margin-top: -7px; }
+  .gd-hex-row span, .gd-hex-row button { width: 52px; height: 46px; display: grid; place-items: center; border: 0; padding: 0; background: light-dark(#d2d0bd, #555849); color: #fff; font: inherit; font-weight: 500; clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); box-shadow: inset 0 0 0 2px rgba(0,0,0,.3); }
+  .gd-map-hero { cursor: pointer; }
+  .gd-map-hero[aria-pressed="true"] { filter: brightness(1.22); box-shadow: inset 0 0 0 3px #fff; }
+  .gd-hex-row.gd-offset { transform: translateX(29px); }
+  .gd-hex-row .gd-red-unit { background: #9e2c27; }
+  .gd-hex-row .gd-blue-unit { background: #286aaa; }
+  .gd-hex-row .gd-objective { background: light-dark(#c19a3e, #9a792d); }
+  .gd-prompt { padding: 8px 14px; background: light-dark(rgba(31,35,39,.88), rgba(6,8,9,.9)); color: #fff; border-radius: 4px; font-size: .78em; letter-spacing: .07em; }
+  .gd-card-tray { padding: 12px 14px 14px; background: light-dark(#34383c, #0b0d0f); color: #eef1f3; border-top: 1px solid light-dark(#4c5155, #343a3f); }
+  .gd-tray-label { display: flex; justify-content: space-between; margin-bottom: 8px; color: #c8cdd1; }
+  .gd-tray-label small { letter-spacing: normal; }
+  .gd-card-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .gd-card-choice { min-width: 0; min-height: 90px; padding: 7px 9px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; border: 2px solid transparent; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,.25); cursor: pointer; color: inherit; font: inherit; }
+  .gd-card-choice:hover { filter: brightness(1.08); }
+  .gd-card-choice:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .gd-card-choice[aria-pressed="true"] { border-color: #fff; transform: translateY(-3px); box-shadow: 0 6px 14px rgba(0,0,0,.38); }
+  .gd-card-choice.gd-card-available { transform: translateY(-12px); box-shadow: 0 9px 16px rgba(0,0,0,.36); }
+  .gd-card-choice.gd-card-available[aria-pressed="true"] { transform: translateY(-15px); }
+  .gd-card-choice strong { font-size: .96em; }
+  .gd-card-choice small { font-size: .65em; opacity: .85; }
+  .gd-color-name { font-size: .64em; letter-spacing: .12em; font-weight: 500; }
+  .gd-card-history { align-self: stretch; padding-top: 4px; border-top: 1px solid rgba(0,0,0,.22); font-size: .61em; font-weight: 500; text-align: left; }
+  .gd-selection-status { min-height: 1.3em; margin-top: 8px; color: #c8cdd1; font-size: .75em; text-align: center; }
+  .gd-gold { background: light-dark(#d7b34d, #a98222); color: #1a1710; }
+  .gd-silver { background: light-dark(#d8dde0, #9ba4aa); color: #171a1c; }
+  .gd-red-card { background: light-dark(#cf5148, #a52f29); color: #fff; }
+  .gd-green { background: light-dark(#54a96c, #287c42); color: #fff; }
+  .gd-blue-card { background: light-dark(#4d91d5, #286cad); color: #fff; }
+  .gd-empty { background: light-dark(#d8d3c9, #30363a); color: light-dark(#777b7e, #9da4a9); border: 1px dashed light-dark(#98928a, #5a6268); box-shadow: none; }
+  @media (max-width: 640px) {
+    .gd-topbar, .gd-score, .gd-tray-label { align-items: flex-start; flex-direction: column; gap: 5px; }
+    .gd-playfield { min-height: 520px; }
+    .gd-board { bottom: 205px; }
+    .gd-hero-rail { top: auto; bottom: 10px; width: calc(50% - 24px); }
+    .gd-card-buttons { grid-template-columns: repeat(2, 1fr); }
+    .gd-card-choice:last-child { grid-column: 1 / -1; }
+  }
+  @media (max-width: 420px) {
+    .gd-playfield { min-height: 675px; }
+    .gd-board { bottom: 365px; }
+    .gd-hero-rail { width: auto; left: 10px; right: 10px; }
+    .gd-hero-rail-red { bottom: 188px; }
+    .gd-hero-rail-blue { bottom: 10px; }
+    .gd-turn-slots { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+</style>
+
+<script>
+  (() => {
+    const root = document.getElementById('guards-hero-overview-mockup');
+    const buttons = Array.from(root.querySelectorAll('.gd-card-choice'));
+    const status = root.querySelector('.gd-selection-status');
+    const trayLabel = root.querySelector('.gd-selected-hand');
+    const activeHero = root.querySelector('.gd-board-status strong');
+    const prompt = root.querySelector('.gd-prompt');
+    const heroButtons = Array.from(root.querySelectorAll('.gd-map-hero'));
+    const directorToggle = root.querySelector('.gd-director-toggle');
+    const directorDrawer = root.querySelector('.gd-director-drawer');
+    const colorClasses = ['gd-gold', 'gd-silver', 'gd-red-card', 'gd-green', 'gd-blue-card'];
+    const hands = {
+      red: {
+        label: 'RED WASP',
+        cards: [
+          ['BLUE', 'gd-blue-card', 'Bulwark', 'MOVE 2 · DEF 3', 'PLAYED · TURN 1'],
+          ['SILVER', 'gd-silver', 'Needle', 'MOVE 2 · DEF 1', 'PLAYED · TURN 2'],
+          ['GOLD', 'gd-gold', 'Lancer', 'MOVE 2 · DEF 2', 'AVAILABLE'],
+          ['GREEN', 'gd-green', 'Pursuit', 'MOVE 2 · DEF 2', 'AVAILABLE'],
+          ['RED', 'gd-red-card', 'Bombard', 'MOVE 2 · DEF 2', 'DISCARDED']
+        ]
+      },
+      blue: {
+        label: 'BLUE WASP',
+        cards: [
+          ['BLUE', 'gd-blue-card', 'Feint', 'MOVE 3 · DEF 2', 'PLAYED · TURN 1'],
+          ['RED', 'gd-red-card', 'Sentinel', 'MOVE 2 · DEF 4', 'PLAYED · TURN 2'],
+          ['GOLD', 'gd-gold', 'Longbow', 'MOVE 3 · DEF 2', 'PLAYED · TURN 4'],
+          ['SILVER', 'gd-silver', 'Scout Shot', 'MOVE 2 · DEF 1', 'AVAILABLE'],
+          ['GREEN', 'gd-green', 'Hammer', 'MOVE 2 · DEF 3', 'DISCARDED']
+        ]
+      }
+    };
+
+    const showHand = (heroKey) => {
+      const hand = hands[heroKey];
+      heroButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.hero === heroKey)));
+      trayLabel.textContent = `${hand.label} · HAND`;
+      activeHero.textContent = hand.label.replace(' WASP', ' Wasp');
+      prompt.textContent = `SELECT A CARD FOR ${hand.label}`;
+      buttons.forEach((button, index) => {
+        const [color, colorClass, name, values, history] = hand.cards[index];
+        colorClasses.forEach((candidate) => button.classList.remove(candidate));
+        button.classList.add(colorClass);
+        button.classList.toggle('gd-card-available', history === 'AVAILABLE');
+        button.dataset.color = color;
+        button.querySelector('.gd-color-name').textContent = color;
+        button.querySelector('strong').textContent = name;
+        button.querySelector('small').textContent = values;
+        button.querySelector('.gd-card-history').textContent = history;
+        button.setAttribute('aria-pressed', 'false');
+      });
+      status.textContent = `${hand.label} selected.`;
+    };
+
+    buttons.forEach((button) => {
+      button.setAttribute('aria-pressed', 'false');
+      button.addEventListener('click', () => {
+        buttons.forEach((candidate) => candidate.setAttribute('aria-pressed', String(candidate === button)));
+        status.textContent = `${button.dataset.color} card selected — this is the proposed button treatment.`;
+      });
+    });
+    heroButtons.forEach((button) => button.addEventListener('click', () => showHand(button.dataset.hero)));
+    directorToggle.addEventListener('click', () => {
+      const isOpen = directorToggle.getAttribute('aria-expanded') === 'true';
+      directorToggle.setAttribute('aria-expanded', String(!isOpen));
+      directorDrawer.hidden = isOpen;
+    });
+    directorDrawer.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => {
+      status.textContent = `${button.textContent.trim()} selected from Director controls.`;
+    }));
+  })();
+</script>
+
