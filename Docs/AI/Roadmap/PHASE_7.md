@@ -364,7 +364,7 @@ Non-goals: No change to what a command means, to the schema, to the projection's
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79b-reduce-what-a-complete-match-costs-to-refresh-and-to-undo-completion-evidence).
 
-### [!] 7.9a Independently review the complete synthetic core
+### [~] 7.9a Independently review the complete synthetic core
 
 Blocked by: Milestone 7.9 must pass its deterministic synthetic-match T3 gate, and milestone 7.9b must close the two threshold crossings that gate measured, so the review reads the corrected figures rather than the crossing ones.
 
