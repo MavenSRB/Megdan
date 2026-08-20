@@ -204,7 +204,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-77-integrate-and-verify-all-three-victory-paths-completion-evidence).
 
-### [ ] 7.8 Integrate the exact end-of-round sequence
+### [~] 7.8 Integrate the exact end-of-round sequence
 
 Observable outcome: The milestone 3.8c end-of-round state machine has every required handler populated, executes the completed systems in source order, and arrives at a valid next round or game-ended state without any synthetic unavailable-stage declarations.
 

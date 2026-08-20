@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.7**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **7.7**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.8**.
 - Next proposed milestone: **7.8**.
 
 Milestone **7.7** completed on 2026-08-20 and gave the rulebook's three victory sentences one contract. All three already ended the match, and none of them answered the same question: p.8's Final Wave and Throne capture recorded a cause and a winning side on the Lane-Push transition and reported a stage naming no team, while p.13's exhausted Life counters reported the losing team and no stage, so nothing in a finished match said who had won it. The ending is now derived rather than recorded - that push cause and side, the Life counters and the round phase already carry every fact and are already persisted, so a fourth record could only agree with them or be wrong - and it names the winner, the loser and which sentence decided it. One seam does everything an ending does, and one event reports it. An ended match offers no decision and refuses every later command as `GameAlreadyEnded`, while discarding nothing, so an Undo truncated across the ending replays back into it. The single record's price is the reader's: a payload claiming two endings, two eliminated teams, sides this match lacks, or a phase disagreeing with both paths is refused. It also closed a defect of milestone 7.4's own: a payload taken after the last Life counter was spent could not be restored at all. Schema stays v21 with no compatibility cause of any kind. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
