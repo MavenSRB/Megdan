@@ -364,7 +364,7 @@ Non-goals: No change to what a command means, to the schema, to the projection's
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79b-reduce-what-a-complete-match-costs-to-refresh-and-to-undo-completion-evidence).
 
-### [~] 7.9a Independently review the complete synthetic core
+### [x] 7.9a Independently review the complete synthetic core
 
 Blocked by: Milestone 7.9 must pass its deterministic synthetic-match T3 gate, and milestone 7.9b must close the two threshold crossings that gate measured, so the review reads the corrected figures rather than the crossing ones.
 
@@ -384,3 +384,5 @@ Non-goals: No Wasp inventory, source interpretation, card implementation, runtim
 Hard gate: The complete Wasp inventory and Wasp-specific implementation do not begin until milestone 7.9a and every gate-blocking corrective milestone are reviewed and approved.
 
 Hard-gate roadmap audit: As part of milestone 7.9a, audit readiness for verified Wasp content before authorizing the next milestone. Confirm that the synthetic core loop has retired the intended architecture and integration risks, identify unresolved prerequisites that must remain ahead of Wasp implementation, recommend any justified changes to Phase 8's inventory/mapping entry sequence, and record the remaining-effort range. This audit cannot waive milestones 8.1 or 8.2 or authorize Wasp-specific implementation.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79a-independently-review-the-complete-synthetic-core-completion-evidence).

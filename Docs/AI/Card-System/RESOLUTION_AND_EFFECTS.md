@@ -222,5 +222,5 @@ See [CORE_MODEL.md](CORE_MODEL.md#contract-implementation-status) for what this 
 
 | Contract | State | Owning milestone |
 | --- | --- | --- |
-| `DistanceQuery` | Specified, not implemented | 6.4 |
-| `RangeQuery` | Specified, not implemented | 6.8 |
+| `DistanceQuery` | Implemented as `HexDistanceQuery`; no type carries this contract name | 6.4 |
+| `RangeQuery` | Implemented across the offer-bound Range checks, `RadiusQuery`, and `TargetQuery`; no type carries this contract name | 6.8 |
