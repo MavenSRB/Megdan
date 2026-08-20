@@ -120,11 +120,24 @@ namespace GuardsDigital.Core.Diagnostics
                         $"completedRound={ruleEvent.CompletedRound.RoundIndex}");
                     return;
                 case RoundResolutionEventKind.ActiveEffectCancellationCheckpoint:
-                case RoundResolutionEventKind.GameEnded:
                     Add(
                         $"Round.{ruleEvent.Kind}",
                         roundReference,
                         $"stage={ruleEvent.EndOfRoundStage}");
+                    return;
+                case RoundResolutionEventKind.GameEnded:
+                    // Milestone 7.7. The stage is still reported, and is now the part that can be
+                    // absent: p.13's ending happens inside a turn. What is never absent is who won and
+                    // why, which is what an ended match is read for.
+                    Add(
+                        "Round.GameEnded",
+                        JoinReferences(
+                            roundReference,
+                            $"winner={ruleEvent.MatchOutcome.WinningTeamId.Value}",
+                            $"loser={ruleEvent.MatchOutcome.LosingTeamId.Value}"),
+                        ruleEvent.EndOfRoundStage.HasValue
+                            ? $"cause={ruleEvent.MatchOutcome.Cause};stage={ruleEvent.EndOfRoundStage}"
+                            : $"cause={ruleEvent.MatchOutcome.Cause}");
                     return;
                 case RoundResolutionEventKind.TimingProgressed:
                     AppendTiming(roundReference, ruleEvent.ActiveEffectEvent);

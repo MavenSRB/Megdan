@@ -728,7 +728,8 @@ namespace GuardsDigital.Application
                 availableClearOptions,
                 turn?.PendingImmediateLanePush,
                 round.SystemTransitions.PendingStep,
-                round.TeamLives.Counters);
+                round.TeamLives.Counters,
+                round.Outcome);
         }
 
         private PendingDefensePreviewProjection CreateDefensePreview(

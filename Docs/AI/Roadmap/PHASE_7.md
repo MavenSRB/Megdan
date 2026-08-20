@@ -192,7 +192,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-76-resolve-pity-coin-ordering-completion-evidence).
 
-### [~] 7.7 Integrate and verify all three victory paths
+### [x] 7.7 Integrate and verify all three victory paths
 
 Observable outcome: Final Wave, Throne capture, and loss of the final Life all end the match through one authoritative game-ending contract.
 
@@ -201,6 +201,8 @@ Acceptance checks:
 - Final-Wave and Throne outcomes reuse milestone 6.10; final-Life loss reuses milestone 7.4.
 - Each path records the winning team and exact reason, stops pending resolution, and prevents later rule steps.
 - Focused scenarios prove each path independently and reject duplicate or conflicting winners.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-77-integrate-and-verify-all-three-victory-paths-completion-evidence).
 
 ### [ ] 7.8 Integrate the exact end-of-round sequence
 

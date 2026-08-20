@@ -367,7 +367,8 @@ namespace GuardsDigital.Application
                 pendingImmediateLanePush = null,
             GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
                 pendingSystemTransitionStep = null,
-            IEnumerable<KeyValuePair<TeamId, int>> teamLifeCounters = null)
+            IEnumerable<KeyValuePair<TeamId, int>> teamLifeCounters = null,
+            GuardsDigital.Core.Rules.Victory.MatchOutcome outcome = default)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -439,6 +440,14 @@ namespace GuardsDigital.Application
             // round authority behind it rather than a substituted full pile.
             TeamLifeCounters = Array.AsReadOnly((teamLifeCounters ??
                 Enumerable.Empty<KeyValuePair<TeamId, int>>()).ToArray());
+            Outcome = outcome;
+            if (outcome.HasEnded != (phase == RoundResolutionPhase.GameEnded))
+            {
+                throw new ArgumentException(
+                    "A projected match outcome agrees with the projected phase about whether the " +
+                    "match has ended.",
+                    nameof(outcome));
+            }
             if (AvailableClearOptions.Select(option => option.ReplacedAttackActionDefinitionId)
                     .Distinct().Count() != AvailableClearOptions.Count)
             {
@@ -567,6 +576,19 @@ namespace GuardsDigital.Application
         /// composition that has no round authority to read them from.
         /// </summary>
         public IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters { get; }
+
+        /// <summary>
+        /// Milestone 7.7: who won this match and which of the rulebook's three victory sentences ended
+        /// it, or <see cref="GuardsDigital.Core.Rules.Victory.MatchOutcome.Unfinished"/> while it is
+        /// still being played.
+        ///
+        /// Read from the round authority, which derives it, rather than accumulated here from the event
+        /// stream: a restored match has no event stream to accumulate from and must project the same
+        /// answer, which is the durability rule's "projection reconstruction from restored and replayed
+        /// authority" applied to the one fact a finished match is read for.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome { get; }
+
         public PendingLanePushRequest PendingLanePushRequest { get; }
 
         /// <summary>

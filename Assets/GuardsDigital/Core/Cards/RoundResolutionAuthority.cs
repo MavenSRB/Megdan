@@ -236,9 +236,15 @@ namespace GuardsDigital.Core.Cards
 
         public PendingLanePushRequest PendingLanePushRequest { get; private set; }
 
-        /// <summary>Milestone 6.4a's paused after-action correction, or <c>null</c>.</summary>
+        /// <summary>
+        /// Milestone 6.4a's paused after-action correction, or <c>null</c>. Milestone 7.7: and
+        /// <c>null</c> once the match has ended, beside the turn's own stopped decisions - p.18's
+        /// correction belongs to an action that will never finish.
+        /// </summary>
         public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
-            PendingDisplacedMinionCorrection => CardActions?.PendingDisplacedMinionCorrection;
+            PendingDisplacedMinionCorrection => Phase == RoundResolutionPhase.GameEnded
+                ? null
+                : CardActions?.PendingDisplacedMinionCorrection;
 
         public TurnCardCommitmentAuthority CurrentCommitmentAuthority { get; private set; }
 
@@ -301,6 +307,40 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet CurrentUltimates() =>
             GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances);
+
+        /// <summary>
+        /// Milestone 7.7. Who won this match, and which of the rulebook's three victory sentences
+        /// decided it - or <see cref="MatchOutcome.Unfinished"/> while it is still being played.
+        ///
+        /// Derived, like <see cref="CurrentUltimates"/> and for the same reason: p.8's ending is
+        /// already recorded on the Lane-Push transition and p.13's is already recorded in the Life
+        /// counters, both of them persisted, so a fourth record could only agree with them or be wrong.
+        /// <see cref="Phase"/> supplies the one thing neither of them says, which is whether the match
+        /// has stopped.
+        ///
+        /// It throws rather than reporting a fault, because every fault the reading can produce is a
+        /// claim about state this authority owns: a live match ends once, at one of three seams that
+        /// all run through <see cref="EndGame"/>, so a second ending or an unexplained one would be an
+        /// engine defect. A payload can still claim one, and the snapshot reader rejects it there.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome => ReadOutcome().Outcome;
+
+        private GuardsDigital.Core.Rules.Victory.MatchOutcomeReading ReadOutcome(
+            bool gameIsRecordedAsEnded)
+        {
+            var reading = GuardsDigital.Core.Rules.Victory.MatchOutcomeQuery.Read(
+                participants, lanePush?.LanePush, TeamLives, gameIsRecordedAsEnded);
+            if (!reading.IsCoherent)
+            {
+                throw new InvalidOperationException(
+                    $"Authoritative state describes no single ending for this match ({reading.Fault}).");
+            }
+
+            return reading;
+        }
+
+        private GuardsDigital.Core.Rules.Victory.MatchOutcomeReading ReadOutcome() =>
+            ReadOutcome(Phase == RoundResolutionPhase.GameEnded);
 
         /// <summary>Milestone 6.2's marker attachments, held beside <see cref="Timing"/>.</summary>
         public MarkerAttachmentRegister Markers => markers;
@@ -458,11 +498,13 @@ namespace GuardsDigital.Core.Cards
 
             if (finished.EndedTheGame)
             {
-                Phase = RoundResolutionPhase.GameEnded;
-                events.Add(RoundResolutionEvent.EndOfRoundBoundary(
-                    RoundResolutionEventKind.GameEnded,
-                    RoundIndex,
-                    EndOfRoundStage.ResolveRequestedLanePush));
+                // Milestone 7.7. The stage is reported only when the push was the end-of-round one:
+                // p.8's mid-turn push ends the game in the middle of a turn, and naming a stage it
+                // never reached was the last thing left in this build that answered "where did the
+                // match end" with something other than where it ended.
+                events.Add(EndGame(endOfRoundRequest != null
+                    ? EndOfRoundStage.ResolveRequestedLanePush
+                    : (EndOfRoundStage?)null));
                 return RoundResolutionResult.Accept(events);
             }
 
@@ -497,6 +539,30 @@ namespace GuardsDigital.Core.Cards
             }
 
             return RoundResolutionResult.Accept(events);
+        }
+
+        /// <summary>
+        /// The one seam every ending crosses, milestone 7.7.
+        ///
+        /// It exists because the three victory sentences are reached by two unrelated rules - p.8's two
+        /// by the Lane-Push transition and p.13's by an Attack that spends the last Life counter - and
+        /// before this milestone each of them stopped the match its own way, with its own event shape
+        /// and its own idea of what "the game ends" leaves behind. Everything that is true of an ended
+        /// match is stated here once: the outcome is read, the phase records that the match stopped, the
+        /// turn stops offering the decisions it was in the middle of, and one event says who won and
+        /// why.
+        ///
+        /// The turn authority is stopped rather than discarded, and nothing is cleared. "The game ends
+        /// immediately" is about what may still happen, not about forgetting what had; the position the
+        /// match ended in is the only honest record of where it ended, it is what the payload keeps, and
+        /// a retained-prefix Undo truncated before the ending needs it to still be there.
+        /// </summary>
+        private RoundResolutionEvent EndGame(EndOfRoundStage? stage)
+        {
+            var outcome = ReadOutcome(gameIsRecordedAsEnded: true).Outcome;
+            Phase = RoundResolutionPhase.GameEnded;
+            CurrentTurnAuthority?.StopResolutionForGameEnd();
+            return RoundResolutionEvent.GameEnded(RoundIndex, TurnIndex, outcome, stage);
         }
 
         private static RoundResolutionRejectionReason TranslateTransitionRejection(
@@ -625,15 +691,41 @@ namespace GuardsDigital.Core.Cards
             authority.PendingMinionBattleChoice = pendingMinionBattleChoice;
             authority.PendingLanePushRequest = pendingLanePushRequest;
 
+            // Milestone 7.7. A restored ended match stops offering the decisions it stopped offering
+            // when it ended. The flag is re-applied from the phase rather than written to the payload,
+            // because the phase already says the match is over and a second record of that could only
+            // agree with it - the same argument the outcome itself is derived by.
+            if (phase == RoundResolutionPhase.GameEnded)
+            {
+                turnAuthority?.StopResolutionForGameEnd();
+            }
+
             var awaitingShape = phase == RoundResolutionPhase.AwaitingCommitments &&
                 commitmentAuthority != null && turnAuthority == null && !currentEndOfRoundStage.HasValue;
             var resolvingShape = phase == RoundResolutionPhase.ResolvingTurn &&
                 commitmentAuthority != null && turnAuthority != null && !turnAuthority.IsEnded &&
                 !currentEndOfRoundStage.HasValue;
-            var endShape = (phase == RoundResolutionPhase.EndOfRound || phase == RoundResolutionPhase.GameEnded) &&
+            var endShape = phase == RoundResolutionPhase.EndOfRound &&
                 commitmentAuthority != null && turnAuthority != null && turnAuthority.IsEnded &&
                 currentEndOfRoundStage.HasValue;
-            if (!awaitingShape && !resolvingShape && !endShape)
+
+            // Milestone 7.7. A match that ended keeps whichever shape it ended in, and there are two of
+            // them: p.8's two endings stop an end-of-round stage, and p.13's stops inside a turn that
+            // never completed. Until this milestone only the first was admitted, so a payload taken
+            // after the last Life counter was spent - the one state milestone 7.4's own victory path can
+            // leave a match in - was refused as malformed by the reader that had just written it.
+            //
+            // The turn's own ended flag is deliberately not constrained on the second shape. p.13's
+            // ending happens inside an Attack, and whether the turn had any card left to resolve
+            // afterwards is a fact about that turn rather than about the ending: a defeated hero's card
+            // is auto-resolved, so an ending that defeats the last unresolved hero leaves a turn that
+            // is finished and was never completed. What the ending does constrain is the other
+            // direction, which the stage cursor states: a round standing at an end-of-round stage is a
+            // round whose turns are all over.
+            var gameEndedShape = phase == RoundResolutionPhase.GameEnded &&
+                commitmentAuthority != null && turnAuthority != null &&
+                (!currentEndOfRoundStage.HasValue || turnAuthority.IsEnded);
+            if (!awaitingShape && !resolvingShape && !endShape && !gameEndedShape)
             {
                 throw new ArgumentException("Restored round phase does not match its active authority or cursor.");
             }
@@ -1445,11 +1537,7 @@ namespace GuardsDigital.Core.Cards
             if (outcomeKind == EndOfRoundStageOutcomeKind.GameEnded)
             {
                 endOfRoundOutcomes.Add(new EndOfRoundStageOutcome(stage, outcomeKind));
-                Phase = RoundResolutionPhase.GameEnded;
-                events.Add(RoundResolutionEvent.EndOfRoundBoundary(
-                    RoundResolutionEventKind.GameEnded,
-                    RoundIndex,
-                    stage));
+                events.Add(EndGame(stage));
                 return RoundResolutionResult.Accept(events);
             }
 
@@ -1507,6 +1595,15 @@ namespace GuardsDigital.Core.Cards
 
         private RoundResolutionResult ExecuteCommitment(Func<TurnCardCommitmentResult> command)
         {
+            // Milestone 7.7. Before this milestone a command arriving after the match ended was refused
+            // here by the phase check below, which reported "not awaiting commitments" - true, and not
+            // the reason. p.8 and p.13 both say the game ends, so that is what a refused command is
+            // told, at every seam rather than only at the three that already said it.
+            if (Phase == RoundResolutionPhase.GameEnded)
+            {
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.GameAlreadyEnded);
+            }
+
             if (Phase == RoundResolutionPhase.EndOfRound)
             {
                 return RoundResolutionResult.Reject(RoundResolutionRejectionReason.RoundAlreadyEnded);
@@ -1541,6 +1638,12 @@ namespace GuardsDigital.Core.Cards
 
         private RoundResolutionResult ExecuteTurnCommand(Func<TurnResolutionResult> command)
         {
+            // Milestone 7.7: the same exact reason the commitment seam above now gives.
+            if (Phase == RoundResolutionPhase.GameEnded)
+            {
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.GameAlreadyEnded);
+            }
+
             if (Phase == RoundResolutionPhase.EndOfRound)
             {
                 return RoundResolutionResult.Reject(RoundResolutionRejectionReason.RoundAlreadyEnded);
@@ -1575,9 +1678,10 @@ namespace GuardsDigital.Core.Cards
             // the turn runs, so the turn is not completed and the round does not advance.
             if (TeamLives.HasEliminatedTeam)
             {
-                Phase = RoundResolutionPhase.GameEnded;
-                events.Add(RoundResolutionEvent.GameEndedInTurn(
-                    RoundIndex, TurnIndex, TeamLives.EliminatedTeamId));
+                // Milestone 7.7: through the same seam p.8's two endings cross, so this one names its
+                // winner as well as the team the page names, and stops the turn it ended in the middle
+                // of rather than leaving its decisions standing where nothing could answer them.
+                events.Add(EndGame(null));
                 return RoundResolutionResult.Accept(events);
             }
 

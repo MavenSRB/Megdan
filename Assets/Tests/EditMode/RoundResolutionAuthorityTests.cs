@@ -6,6 +6,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -450,12 +451,15 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EndOfRound_GameEndingHandlerStopsCursorAndLaterCommands()
         {
+            var teamLives = new TeamLifeState(PlaceholderOneVsOneParticipants.Create(), 1);
+            var losingTeamId = new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue);
             var fixture = CreateOneCardPerSideFixture(
                 new EndOfRoundStageAvailability(new[] { EndOfRoundStage.MinionBattle }),
                 new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
                 {
-                    { EndOfRoundStage.MinionBattle, new GameEndingHandler() }
-                });
+                    { EndOfRoundStage.MinionBattle, new GameEndingHandler(teamLives, losingTeamId) }
+                },
+                teamLives);
             CompleteOneCardRound(fixture);
 
             var ended = fixture.Authority.TryAdvanceEndOfRound();
@@ -467,6 +471,12 @@ namespace GuardsDigital.Tests.EditMode
                 RoundResolutionEventKind.GameEnded
             }));
             Assert.That(fixture.Authority.Phase, Is.EqualTo(RoundResolutionPhase.GameEnded));
+            Assert.That(fixture.Authority.Outcome.Cause,
+                Is.EqualTo(GuardsDigital.Core.Rules.Victory.MatchVictoryCause.LifeCountersExhausted),
+                "Milestone 7.7: a stage that stops the match reports the ending through the one " +
+                "contract, so the stage cursor stopping and the match having a winner are the same " +
+                "event rather than two.");
+            Assert.That(fixture.Authority.Outcome.LosingTeamId, Is.EqualTo(losingTeamId));
             Assert.That(fixture.Authority.CurrentEndOfRoundStage,
                 Is.EqualTo(EndOfRoundStage.MinionBattle));
             Assert.That(fixture.Authority.CompletedRounds, Is.Empty);
@@ -544,6 +554,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EndOfRound_AGameEndingStageBeforeRetrieval_RetrievesNoCardAtAll()
         {
+            var teamLives = new TeamLifeState(PlaceholderOneVsOneParticipants.Create(), 1);
+            var losingTeamId = new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue);
             var fixture = CreateOneCardPerSideFixture(
                 new EndOfRoundStageAvailability(new[]
                 {
@@ -552,9 +564,13 @@ namespace GuardsDigital.Tests.EditMode
                 }),
                 new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
                 {
-                    { EndOfRoundStage.ResolveRequestedLanePush, new GameEndingHandler() },
+                    {
+                        EndOfRoundStage.ResolveRequestedLanePush,
+                        new GameEndingHandler(teamLives, losingTeamId)
+                    },
                     { EndOfRoundStage.RetrieveCardsAndCancelActiveEffects, new CardRetrievalHandler() }
-                });
+                },
+                teamLives);
             CompleteOneCardRound(fixture);
             AdvanceToStage(fixture, EndOfRoundStage.ResolveRequestedLanePush);
 
@@ -604,7 +620,8 @@ namespace GuardsDigital.Tests.EditMode
 
         private static OneCardFixture CreateOneCardPerSideFixture(
             EndOfRoundStageAvailability capabilities = null,
-            IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> handlers = null)
+            IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> handlers = null,
+            TeamLifeState teamLives = null)
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
             var redDefinition = CreateDefinition("red", 7);
@@ -624,7 +641,7 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red),
                 1,
                 new RoundResolutionComposition(
-                    null, null, null, null, null, null, null, null, capabilities, handlers));
+                    null, null, null, null, null, null, null, teamLives, capabilities, handlers));
             return new OneCardFixture(red, blue, authority);
         }
 
@@ -816,10 +833,32 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// A stage that ends the game, by spending the last of one team's rulebook p.13 Life counters
+        /// before it says so.
+        ///
+        /// Milestone 7.7 is why it spends rather than simply reporting <c>GameEnded</c>: every ending
+        /// now goes through one contract that names the winner and the reason, and that contract reads
+        /// the two authorities the rules already record an ending in. A stage that stopped the match
+        /// while nothing accounted for it would be an ending with no winner, which is exactly what the
+        /// authority now refuses to produce. p.13's counters are the ending available to a fixture with
+        /// no Lane to push, and the round holds them.
+        /// </summary>
         private sealed class GameEndingHandler : IEndOfRoundStageHandler
         {
+            private readonly TeamLifeState teamLives;
+            private readonly TeamId losingTeamId;
+
+            public GameEndingHandler(TeamLifeState teamLives, TeamId losingTeamId)
+            {
+                this.teamLives = teamLives;
+                this.losingTeamId = losingTeamId;
+            }
+
             public EndOfRoundStageResolution TryResolve(EndOfRoundStageContext context)
             {
+                var spend = teamLives.TrySpend(losingTeamId, teamLives.GetCounters(losingTeamId));
+                Assert.That(spend.Accepted, Is.True, spend.RejectionReason.ToString());
                 return EndOfRoundStageResolution.GameEnded();
             }
         }

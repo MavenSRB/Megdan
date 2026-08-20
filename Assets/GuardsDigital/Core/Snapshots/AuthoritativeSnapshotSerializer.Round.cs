@@ -178,6 +178,26 @@ namespace GuardsDigital.Core.Snapshots
                     verifyingHeroItems);
             }
 
+            // Milestone 7.7. The match's ending is derived from the two authorities that hold its facts
+            // rather than recorded a fourth time, so this is the check that single record costs - the
+            // same bargain milestone 7.3 struck for the unlocked Ultimate. A payload claiming two
+            // endings, two eliminated teams, an ending whose sides this match does not have, or a phase
+            // that disagrees with both paths is refused here, because none of those states is one a live
+            // match could have reached: the phase stops every later command the moment an ending is
+            // recorded, so the second ending would have had nothing left to end.
+            var outcomeReading = GuardsDigital.Core.Rules.Victory.MatchOutcomeQuery.Read(
+                participants,
+                lanePushAuthority,
+                GuardsDigital.Core.Rules.Consequences.TeamLifeState.Restore(participants, teamLives),
+                phase == RoundResolutionPhase.GameEnded);
+            if (!outcomeReading.IsCoherent)
+            {
+                throw new SnapshotLoadException(
+                    SnapshotLoadRejectionReason.IncoherentGameOutcome,
+                    "Snapshot does not describe one ending for this match " +
+                    $"({outcomeReading.Fault}).");
+            }
+
             return RoundResolutionAuthority.Restore(
                 definitions,
                 cards,

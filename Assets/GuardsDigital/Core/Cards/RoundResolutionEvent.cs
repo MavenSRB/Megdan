@@ -92,7 +92,8 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Components.PlacedToken removedToken = null,
             GuardsDigital.Core.Components.MarkerAttachment returnedMarker = null,
             GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome heroLevelUpOutcome = null,
-            GuardsDigital.Core.Rules.Consequences.CoinGrantOperation pityCoinGrant = default)
+            GuardsDigital.Core.Rules.Consequences.CoinGrantOperation pityCoinGrant = default,
+            GuardsDigital.Core.Rules.Victory.MatchOutcome matchOutcome = default)
         {
             Kind = kind;
             RoundIndex = roundIndex;
@@ -123,6 +124,7 @@ namespace GuardsDigital.Core.Cards
             ReturnedMarker = returnedMarker;
             HeroLevelUpOutcome = heroLevelUpOutcome;
             PityCoinGrant = pityCoinGrant;
+            MatchOutcome = matchOutcome;
         }
 
         public RoundResolutionEventKind Kind { get; }
@@ -166,6 +168,13 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>Milestone 7.6: the p.8 Pity Coin one hero collected, with its balance transition.</summary>
         public GuardsDigital.Core.Rules.Consequences.CoinGrantOperation PityCoinGrant { get; }
+
+        /// <summary>
+        /// Milestone 7.7: who won the match and which sentence ended it, on the one event that reports
+        /// an ending. <see cref="GuardsDigital.Core.Rules.Victory.MatchOutcome.Unfinished"/> on every
+        /// other event, because no other event is about the match ending.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Victory.MatchOutcome MatchOutcome { get; }
 
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
@@ -262,8 +271,7 @@ namespace GuardsDigital.Core.Cards
             int roundIndex,
             EndOfRoundStage stage)
         {
-            if (kind != RoundResolutionEventKind.ActiveEffectCancellationCheckpoint &&
-                kind != RoundResolutionEventKind.GameEnded)
+            if (kind != RoundResolutionEventKind.ActiveEffectCancellationCheckpoint)
             {
                 throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -276,31 +284,34 @@ namespace GuardsDigital.Core.Cards
         }
 
         /// <summary>
-        /// Milestone 7.4. Rulebook p.13's third victory path, reached in the middle of a turn rather
-        /// than at an end-of-round stage: "If the last counter is spent, the game ends and the team with
-        /// no Life counters left, loses the game."
+        /// Milestone 7.7. The match ended, by whichever of the rulebook's three victory sentences ended
+        /// it, and this is the one event that says so.
         ///
-        /// It is its own factory rather than a call to <see cref="EndOfRoundBoundary"/> because that one
-        /// requires the stage it ended at, and this game end has none - the counters run out inside an
-        /// Attack. It names the losing team, which p.8's two Lane-Push endings do not have to, since
-        /// there the winner is the side that pushed.
+        /// It replaces two: milestone 6.10's stage boundary, which named the stage the push ended at and
+        /// no team at all, and milestone 7.4's <c>GameEndedInTurn</c>, which named the losing team and no
+        /// stage. The two shapes were the whole difficulty - a reader had to know which rule had ended
+        /// the match before it could ask who won - so both facts are carried here and the stage is the
+        /// optional one, because p.13's ending has none: its counters run out inside an Attack.
         /// </summary>
-        public static RoundResolutionEvent GameEndedInTurn(
+        public static RoundResolutionEvent GameEnded(
             int roundIndex,
             int turnIndex,
-            TeamId losingTeamId)
+            GuardsDigital.Core.Rules.Victory.MatchOutcome outcome,
+            EndOfRoundStage? stage)
         {
-            if (!losingTeamId.IsDefined)
+            if (!outcome.HasEnded)
             {
                 throw new ArgumentException(
-                    "p.13's game end names the team with no Life counters left.", nameof(losingTeamId));
+                    "A game-ended event names the sentence that ended the match.", nameof(outcome));
             }
 
             return new RoundResolutionEvent(
                 RoundResolutionEventKind.GameEnded,
                 roundIndex,
                 turnIndex,
-                teamId: losingTeamId);
+                endOfRoundStage: stage,
+                teamId: outcome.LosingTeamId,
+                matchOutcome: outcome);
         }
 
         public static RoundResolutionEvent CompletedRoundBoundary(

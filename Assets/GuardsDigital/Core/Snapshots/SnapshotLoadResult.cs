@@ -77,7 +77,25 @@ namespace GuardsDigital.Core.Snapshots
         /// the check the record would otherwise have carried - so the position is verified on the way
         /// in rather than trusted.
         /// </summary>
-        UnlockedUltimateMismatch = 13
+        UnlockedUltimateMismatch = 13,
+
+        /// <summary>
+        /// Milestone 7.7. The payload does not describe exactly one ending: two of the rulebook's three
+        /// victory sentences claim to have ended it, two teams have run out of Life counters, the ending
+        /// names sides this match does not have, or the recorded phase and the victory paths disagree
+        /// about whether the match is over at all.
+        ///
+        /// It is one reason rather than four for the reason milestone 6.10a's
+        /// <see cref="Cards.RoundResolutionRejectionReason.IllegalSystemTransitionChoice"/> is one: they
+        /// are a single fact to a caller, which is that this payload has no single winner to restore to.
+        /// Which of them it was is in the message, because it is a diagnostic rather than a decision.
+        ///
+        /// Like milestone 7.3's ultimate mismatch, it exists because the ending is derived from state
+        /// this match already holds instead of recorded again beside it. A live match cannot produce one
+        /// of these - the authorities throw instead, since a second ending there would be an engine
+        /// defect - so every payload that carries one was written by something other than this build.
+        /// </summary>
+        IncoherentGameOutcome = 14
     }
 
     public sealed class SnapshotLoadException : Exception

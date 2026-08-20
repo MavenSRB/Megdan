@@ -458,14 +458,37 @@ namespace GuardsDigital.Core.Cards
 
         public bool IsEnded { get; private set; }
 
+        /// <summary>
+        /// Milestone 7.7. Whether the match ended in the middle of this turn, so the decisions it was
+        /// waiting on are no longer offered.
+        ///
+        /// It is distinct from <see cref="IsEnded"/> on purpose. An ended turn is a turn that finished
+        /// and hands the round on to the next one; this turn did not finish and never will, and the
+        /// round does not advance past it. What the two have in common is the only thing this flag is
+        /// about: nothing further is asked of anyone.
+        ///
+        /// Nothing is discarded. The continuation the turn stopped in the middle of is still held, still
+        /// captured by <see cref="CaptureRestoreState"/>, and still written to the payload, so a
+        /// restored ended match is the match as it ended and a retained-prefix Undo truncated before the
+        /// ending replays back into it.
+        /// </summary>
+        public bool IsResolutionStoppedByGameEnd { get; private set; }
+
+        internal void StopResolutionForGameEnd()
+        {
+            IsResolutionStoppedByGameEnd = true;
+        }
+
         public TieBreakerState TieBreakerState => initiative.TieBreakerState;
 
-        public PendingInitiativeChoice PendingChoice => initiative.PendingChoice;
+        public PendingInitiativeChoice PendingChoice =>
+            IsResolutionStoppedByGameEnd ? null : initiative.PendingChoice;
 
         public SelectedInitiativeActor SelectedActor => initiative.SelectedActor;
 
         public PendingHeroRespawnChoice PendingHeroRespawnChoice =>
-            !IsStarted || IsEnded || !initiative.SelectedActor.IsDefined || cardActions?.Board == null
+            !IsStarted || IsEnded || IsResolutionStoppedByGameEnd ||
+            !initiative.SelectedActor.IsDefined || cardActions?.Board == null
                 ? null
                 : HeroRespawnRules.CreateChoice(
                     initiative.SelectedActor.ActorId,
@@ -473,20 +496,26 @@ namespace GuardsDigital.Core.Cards
                     participants,
                     cardActions.Board);
 
-        public PendingCardActionResolution PendingMovementResolution => cardActions?.PendingResolution;
+        public PendingCardActionResolution PendingMovementResolution =>
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingResolution;
 
-        public PendingMovementChoice PendingMovementChoice => cardActions?.PendingChoice;
+        public PendingMovementChoice PendingMovementChoice =>
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingChoice;
 
-        public PendingAttackResolution PendingAttackResolution => cardActions?.PendingAttackResolution;
+        public PendingAttackResolution PendingAttackResolution =>
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingAttackResolution;
 
-        public PendingAttackTargetChoice PendingAttackTargetChoice => cardActions?.PendingAttackTargetChoice;
+        public PendingAttackTargetChoice PendingAttackTargetChoice =>
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingAttackTargetChoice;
 
-        public PendingDefenseResponseChoice PendingDefenseChoice => cardActions?.PendingDefenseChoice;
+        public PendingDefenseResponseChoice PendingDefenseChoice =>
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingDefenseChoice;
 
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
-            cardActions?.PendingSkillResolution;
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingSkillResolution;
 
-        public PendingEffectChoice PendingEffectChoice => cardActions?.PendingEffectChoice;
+        public PendingEffectChoice PendingEffectChoice =>
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingEffectChoice;
 
         /// <summary>
         /// Milestone 6.5c: the board meaning of the pending effect choice's space-valued candidates,
@@ -1049,7 +1078,7 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public IReadOnlyList<ActionOffer> GetTurnActionOffers()
         {
-            if (!initiative.SelectedActor.IsDefined)
+            if (!initiative.SelectedActor.IsDefined || IsResolutionStoppedByGameEnd)
             {
                 return Array.Empty<ActionOffer>();
             }
@@ -1116,7 +1145,8 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>Milestone 6.4a's paused after-action correction, or <c>null</c>.</summary>
         public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
-            PendingDisplacedMinionCorrection => cardActions?.PendingDisplacedMinionCorrection;
+            PendingDisplacedMinionCorrection =>
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingDisplacedMinionCorrection;
 
         /// <summary>
         /// Milestone 6.9's mid-turn Lane-Push request, or <c>null</c>. The turn reads it rather than
@@ -1124,7 +1154,8 @@ namespace GuardsDigital.Core.Cards
         /// turn adds is the checkpoint no later Initiative action gets past while it is set.
         /// </summary>
         public GuardsDigital.Core.Rules.CardResolution.PendingImmediateLanePushRequest
-            PendingImmediateLanePush => cardActions?.PendingImmediateLanePush;
+            PendingImmediateLanePush =>
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingImmediateLanePush;
 
         /// <summary>
         /// Answers milestone 6.4a's paused after-action correction. The gate is the pending choice's
