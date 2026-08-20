@@ -5,6 +5,8 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 ## Canonical active shards
 
 - [Current implementation inventory](Project/CURRENT_IMPLEMENTATION.md)
+- [Combat and its consequences](Project/COMBAT_AND_CONSEQUENCES.md)
+- [Hero progression](Project/HERO_PROGRESSION.md)
 - [Foundation corrections and governance state](Project/FOUNDATION_CORRECTIONS.md)
 - [Configured presentation surfaces](Project/CONFIGURED_PRESENTATION.md)
 - [Player-facing match HUD](Project/MATCH_HUD.md)

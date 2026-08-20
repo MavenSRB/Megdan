@@ -48,6 +48,8 @@ Milestone 6.2 implements the attachment, its finite supply, its explicit return 
 
 Terrain is a space classification and obstacle, not a token or unit. Effects that add/remove terrain-like properties do so through explicit continuous characteristics without replacing the underlying space ID.
 
+Terrain is a passable obstacle distinct from off-board: the official map's 82 declared terrain cells cost a Move-Through mover nothing extra, and no unit may end a Movement or be placed there. That sentence was `SESSION_BRIEF.md`'s until milestone 7.8e moved it here, which is the section that owns it; the cell count itself is inventoried in [../Maps/README.md](../Maps/README.md).
+
 ## Card-state and progression capabilities
 
 ### Card-characteristic queries

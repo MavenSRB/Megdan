@@ -296,7 +296,7 @@ Non-goals: No behaviour change of any kind; no new coin source or sink; no chang
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78d-rename-the-coin-ledger-for-what-it-now-is-completion-evidence).
 
-### [~] 7.8e Shard the three living documents that sit at their thresholds
+### [x] 7.8e Shard the three living documents that sit at their thresholds
 
 Observable outcome: `SESSION_BRIEF.md`, `Project/CURRENT_IMPLEMENTATION.md`, and `Rules/RULE_SYSTEMS.md` are each comfortably under their thresholds because authority moved to indexed shards, not because prose was compressed again.
 
@@ -312,6 +312,8 @@ Acceptance checks:
 - The living-document validator and `Validate-BoardMapSpecification.ps1` both pass; no Unity validation is launched, because no source, test, scene, or asset changes.
 
 Non-goals: No content deletion or weakening; no threshold change or governance amendment; no rule, behaviour, or test change; no archive rewriting beyond append-only routing; no renumbering or rescoping of any milestone.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78e-shard-the-three-living-documents-that-sit-at-their-thresholds-completion-evidence).
 
 ### [ ] 7.9 Complete a deterministic test-card core match
 
