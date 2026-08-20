@@ -341,9 +341,28 @@ Acceptance checks:
 
 ER2 note (`F-ER2-08`): `Undo`/`Restart` reconstruct by full-prefix replay, so their cost grows with match length; this gate's runtime baseline must measure Undo at complete-match length and record a bound. `RISK-PERF-001` is also open because projection construction copies growing command/current-round histories. Neither mechanism schedules optimization by inspection: milestone 7.9 records the pitch-scale measurements, and a separately approved corrective milestone is proposed only for a measured threshold crossing.
 
+### [ ] 7.9b Reduce what a complete match costs to refresh and to undo
+
+Blocked by: nothing. It runs after milestone 7.9 and before milestone 7.9a, which is where `RISK-PERF-001`'s recorded disposition places the smallest corrective milestone a measured crossing schedules.
+
+Observable outcome: an accepted command costs the same at the end of a complete match as at the start of one, and an Undo at complete-match length costs a bounded fraction of what a full-prefix replay costs today.
+
+Context: milestone 7.9 measured the two mechanisms that had only ever been reasoned about, and both crossed. `RISK-PERF-001` predicted that projection construction copies a growing accepted-command history; holding one command kind fixed across a 502-command match, median managed allocation rises from 281,424 B over history lengths 0-13 to 387,008 B over 487-496, about 210 bytes per command of retained history. `F-ER2-08` predicted that `Undo` and `Restart` reconstruct by full-prefix replay; that measures 429 ms on Unity's Mono at complete-match length against 28.203 ms over the two-round flow the 250 ms threshold was set from. Neither is a playability problem at 1v1 scale - an accepted command refresh is 0.4 ms on the same runtime - and neither authorized a fix by inspection, which is why nothing was optimized inside 7.9. What discharges the interim acceptance is the measurement, and the user approved scheduling this on 2026-08-19+1 rather than accepting the figures outright. `RISK-SCALE-001` owns the separate question of what six heroes do to the same two numbers, and this milestone must not pre-empt it by optimizing for a scale nothing has run at.
+
+Acceptance checks:
+
+- The per-accepted-command growth term is removed or bounded: one command kind's median managed allocation at complete-match history length is within the noise of its median at an empty history, measured by the existing `CompleteMatchRuntimeCaptureTests` sampler and its recorded seed.
+- An Undo at complete-match history length no longer replays the whole prefix. Its cost is recorded against the 4.4d two-round figure and the 7.9 complete-match figure, and `Testing/FUTURE_GATES.md` carries the new baseline with the superseded rows kept.
+- Every determinism guarantee the complete-loop gate proves still holds exactly: live, replayed, restored-and-continued, Undo-truncated and restarted paths produce matching command, event, projection, snapshot and history evidence, and the retained-prefix Undo contract is unchanged in what it means.
+- The authoritative-state and immutable-projection contracts are preserved. A retained intermediate state is a derived cache that a restore, a replay and a rollback can each discard and rebuild; it is never a second answer to what the match is.
+- The `RISK-PERF-001` row reopened after its 6.1o retirement, and `F-ER2-08`, are retired with their recorded bounds, or the residual is accepted explicitly with its measurement.
+- T2 validation: focused runtime-capture and determinism regressions plus the complete-loop suite; both unfiltered suites only if affectedness or the risk triggers require them.
+
+Non-goals: No change to what a command means, to the schema, to the projection's public shape, or to any rule. No 3v3-scale optimization, which is `RISK-SCALE-001`'s and milestone 8.27's. No speculative work on any figure milestone 7.9 measured as inside its threshold - refresh time, snapshot capture, and the steady-state frame metrics are not this milestone's subject.
+
 ### [!] 7.9a Independently review the complete synthetic core
 
-Blocked by: Milestone 7.9 must pass its deterministic synthetic-match T3 gate.
+Blocked by: Milestone 7.9 must pass its deterministic synthetic-match T3 gate, and milestone 7.9b must close the two threshold crossings that gate measured, so the review reads the corrected figures rather than the crossing ones.
 
 Observable outcome: A fresh analysis-only review determines whether the complete synthetic rules loop is correct, maintainable, deterministic, performant enough for the prototype, and architecturally ready for verified hero content.
 
