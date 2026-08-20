@@ -220,7 +220,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78-integrate-the-exact-end-of-round-sequence-completion-evidence).
 
-### [ ] 7.8a Add card-colour controls and compact hero overview overlays
+### [~] 7.8a Add card-colour controls and compact hero overview overlays
 
 Observable outcome: The configured match keeps the board dominant while a hero selected on the map opens that hero's colour-coded, current-round card tray; compact Red-left and Blue-right overviews show hero identity, item bonuses, four played-card colour slots, and discard state; one side `DIRECTOR` drawer contains the existing Undo, Reset, and Event Log tools; and every existing player-facing action, response, target, and mandatory choice is rehoused in the same coherent visual system with at most one usable interaction context on screen.
 

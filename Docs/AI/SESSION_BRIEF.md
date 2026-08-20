@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.8**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **7.8**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.8a**.
 - Next proposed milestone: **7.8a**.
 
 Milestone **7.8** completed on 2026-08-20 and made rulebook p.8's end of round one sequence rather than six separately proved steps. Every system the page names now exists, so the configured match declares all six ordered steps and no round of it can report one unavailable: a round with nothing to push completes the push step having pushed nothing, which is that step's own answer rather than a claim about the match. A push that ends the game now leaves through the same tail every other step leaves through, so the ordered stream no longer skips the step the match ended at. The milestone also closed a defect of the projection's own: the stream named the current round's events was never emptied at a round boundary and had quietly become a second whole-match log, although the whole-match log and the completed-round history each keep that round anyway. Schema stays v21; two payload causes were measured and no corpus fixture reaches either state. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
