@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.6**. The configured ver
 ## Current authorization and next route
 
 - Current completed milestone: **7.6**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.7**.
 - Next proposed milestone: **7.7**.
 
 Milestone **7.6** completed on 2026-08-20 and finished rulebook p.8's end of round: Collect a Pity Coin was the last ordered stage that had never been available. Every hero that did not level up that round collects one coin - the page's own wording rather than p.15's reminder about not having had enough coins, so a hero that could afford a level and did not buy one still collects. Eligibility is read from a round-scoped record of who bought a level, emptied when the round closes and persisted because the answer is produced one stage before it is read. Schema moves to v21 for that record alone, measured at exactly +4 bytes per payload. p.8's closing sentence needs no rule of its own: the stage cursor only moves forward, so a coin collected after Level Up cannot buy a level until the next round's. The milestone also closed a defect it made reachable - a second advance while leveling is stopped is refused rather than beginning a second one - and gave the scene a director command for a paused transition. Evidence lives in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
