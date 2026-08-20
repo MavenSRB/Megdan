@@ -285,6 +285,51 @@ namespace GuardsDigital.Tests.EditMode
                 Is.False);
         }
 
+        /// <summary>
+        /// Milestone 7.8a1. The availability of a Ranged Attack follows the same targets a p.16 Range
+        /// item extends, because it is the same query: an Attack that reaches nobody is offered
+        /// unavailable, and the item that brings the defender into reach makes it available again.
+        ///
+        /// It lives here rather than beside the other availability cases because the thing it proves is
+        /// this file's subject - what an item changes - and because the fixture that can place one is
+        /// this file's. The case above it proves the targets move; this proves the offer moved with
+        /// them, which is what stops the two from being separate readings of Range.
+        /// </summary>
+        [Test]
+        public void ARangeItem_MakesAnOtherwiseUnavailableRangedAttackAvailable()
+        {
+            var printedRange = new CompositionFixture().PrintedValueOf(
+                new CompositionFixture().AttackOffer(AttackRangeKind.Ranged), PrintedValueChannel.Range);
+
+            var withoutItem = new CompositionFixture(printedRange + 1);
+            Assert.That(withoutItem.AttackHasATarget(withoutItem.AttackOffer(AttackRangeKind.Ranged)),
+                Is.False,
+                "The only enemy stands one space beyond the printed Range, so the Attack has nobody.");
+
+            var withItem = new CompositionFixture(printedRange + 1);
+            withItem.PlaceRangeItem(withItem.RedHeroId);
+            Assert.That(withItem.AttackHasATarget(withItem.AttackOffer(AttackRangeKind.Ranged)), Is.True,
+                "p.16's item brings the defender into reach, so the same offer is available again.");
+
+            var stillOutOfReach = new CompositionFixture(printedRange + 2);
+            stillOutOfReach.PlaceRangeItem(stillOutOfReach.RedHeroId);
+            Assert.That(
+                stillOutOfReach.AttackHasATarget(stillOutOfReach.AttackOffer(AttackRangeKind.Ranged)),
+                Is.False,
+                "One space and no further, exactly as the target set moves.");
+
+            // A non-Ranged Attack prints no Range icon, so p.16 leaves it alone here too: adjacency is
+            // a rule rather than a Range of one, and the item changes neither its targets nor its offer.
+            var adjacent = new CompositionFixture();
+            adjacent.PlaceRangeItem(adjacent.RedHeroId);
+            Assert.That(adjacent.AttackHasATarget(adjacent.AttackOffer(AttackRangeKind.NonRanged)), Is.True);
+            Assert.That(
+                new CompositionFixture(2).AttackHasATarget(
+                    new CompositionFixture(2).AttackOffer(AttackRangeKind.NonRanged)),
+                Is.False,
+                "and a non-adjacent enemy leaves a non-Ranged Attack with nobody, item or not.");
+        }
+
         [Test]
         public void AMovementItem_RaisesTheAllowanceTheMovementActionStartsWith()
         {
@@ -811,6 +856,11 @@ namespace GuardsDigital.Tests.EditMode
             /// nothing in reach is refused as <c>TargetUnavailable</c> rather than started with an empty
             /// choice, so that refusal is the "no legal target" answer.
             /// </summary>
+            /// <summary>Milestone 7.8a1's judgement, asked of the same composition.</summary>
+            public bool AttackHasATarget(ActionOffer offer) =>
+                CardActions.CanAttackFindTarget(
+                    offer, definitions, configuration.Participants, RuleModificationSet.Empty);
+
             public IReadOnlyList<HeroId> LegalHeroTargets(ActionOffer offer)
             {
                 var result = CardActions.StartAttackResolution(

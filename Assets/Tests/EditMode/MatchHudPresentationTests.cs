@@ -440,6 +440,64 @@ namespace GuardsDigital.Tests.EditMode
                 "and no ordinary action offer is drawn beside the response.");
         }
 
+        /// <summary>
+        /// Milestone 7.8a1's half of the greyed control. That the offer is projected unavailable is
+        /// proved on the cross-platform tier in <see cref="AttackOfferAvailabilityTests"/>; what this
+        /// adds is that presentation does with an unavailable Attack exactly what milestone 6.5af made
+        /// it do with an unstartable Skill, and infers nothing of its own.
+        /// </summary>
+        [Test]
+        public void AnUnavailableAttack_IsDrawnAsADisabledControlThatCarriesNoCommand()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.First(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.State.Location == CardLocation.Hand &&
+                    session.Projection.Definitions
+                        .Single(definition => definition.Reference.Equals(candidate.DefinitionReference))
+                        .ActionDefinitions.Any(action => action.Kind == ActionKind.Attack));
+                ConfiguredMatchFixtures.Accept(
+                    session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseTiedActor(
+                    tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+            }
+
+            var attack = session.Projection.AvailableTurnActions.First(offer =>
+                session.Projection.Definitions
+                    .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
+                    .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId))
+                    .Kind == ActionKind.Attack);
+            Assert.That(attack.IsAvailable, Is.False,
+                "The configured setup starts the heroes far apart, so this Attack reaches nobody.");
+
+            var view = new RoundActionUnityView();
+            var presenter = new RoundActionPresenter(session, view);
+            presenter.Refresh();
+
+            Assert.That(
+                view.Model.UnavailableActions.Any(action =>
+                    action.ActionDefinitionId.Equals(attack.ActionDefinitionId)),
+                Is.True,
+                "Milestone 6.5af's greyed control, reached by an Attack for the first time.");
+            Assert.That(
+                view.Model.Actions.Any(action =>
+                    action.Command.ActionDefinitionId.Equals(attack.ActionDefinitionId)),
+                Is.False,
+                "and it carries no command at all rather than a refused one.");
+            Assert.That(
+                presenter.Submit(new TypedInvocationViewModel(
+                    "STALE", DirectorCommand.StartAction(attack.ActionDefinitionId))),
+                Is.False,
+                "The round presenter refuses a start naming it even from an older model.");
+        }
+
         // -------------------------------------------------------------------------------------------
         // The paused system transition, both kinds
         // -------------------------------------------------------------------------------------------

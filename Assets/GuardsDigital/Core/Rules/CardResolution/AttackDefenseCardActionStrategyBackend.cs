@@ -1201,6 +1201,44 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 : ItemBonusQuery.Apply(printed, heroItems, offer.ActorId);
         }
 
+        /// <summary>
+        /// Milestone 7.8a1: whether this Attack has anything it could legally target right now.
+        ///
+        /// It asks <see cref="FindLegalAttackTargets"/>, which is the method
+        /// <see cref="StartAttackResolution"/> builds its candidates with, so the offer set and the
+        /// start cannot disagree about the same position. Nothing is stored and no pending state is
+        /// touched: this is the same set, counted instead of kept.
+        ///
+        /// An offer that is not an Attack answers <c>true</c>, exactly as
+        /// <c>SkillCardActionStrategyBackend.CanApplyAnything</c> answers <c>true</c> for anything that
+        /// is not a Skill. So does an Attack whose action definition this build cannot resolve, or whose
+        /// Range kind the start would refuse for its own reason: this judgement refuses an Attack proven
+        /// to have no target, and never one that could not be judged.
+        /// </summary>
+        public bool CanFindLegalTarget(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            if (!ActionOfferQuery.TryFindActionDefinition(offer, materializedDefinitions, out var action) ||
+                action.Kind != ActionKind.Attack ||
+                (offer.AttackRange != AttackRangeKind.NonRanged &&
+                    offer.AttackRange != AttackRangeKind.Ranged) ||
+                !offer.ActorId.IsDefined ||
+                !adjacentMoveAuthority.Occupancies.Any(occupancy =>
+                    occupancy.HeroId.Equals(offer.ActorId)))
+            {
+                return true;
+            }
+
+            return FindLegalAttackTargets(
+                offer.ActorId, offer, materializedDefinitions, participants, modifications).Count > 0;
+        }
+
         private IReadOnlyList<AttackTarget> FindLegalAttackTargets(
             HeroId attackerId,
             ActionOffer offer,

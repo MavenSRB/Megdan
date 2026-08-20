@@ -258,7 +258,7 @@ Non-goals: No rules, progression, continuation, card-lifecycle, item, history, d
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78a-add-card-colour-controls-and-compact-hero-overview-overlays-completion-evidence).
 
-### [~] 7.8a1 Decide an Attack offer's availability the way a Skill's is decided
+### [x] 7.8a1 Decide an Attack offer's availability the way a Skill's is decided
 
 Observable outcome: An Attack the rules can prove has no legal target is projected unavailable and drawn as the same disabled control an unstartable Skill is, instead of being drawn as an action that could be taken.
 
@@ -275,6 +275,8 @@ Acceptance checks:
 - The same state produces the same offer set, and restore, replay, and retained-prefix Undo project the same availability.
 
 Non-goals: No change to what a legal Attack target is; no new rejection reason; no change to Movement, Fast Travel, Clear, or Hold availability; no presentation change beyond what the projected flag already drives; no schema, wire, or command change.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78a1-decide-an-attack-offers-availability-the-way-a-skills-is-decided-completion-evidence).
 
 ### [ ] 7.8b Add bounded board camera controls
 

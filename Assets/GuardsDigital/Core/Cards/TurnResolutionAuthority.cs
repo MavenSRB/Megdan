@@ -1089,11 +1089,21 @@ namespace GuardsDigital.Core.Cards
                 initiative.SelectedActor.ActorId,
                 initiative.SelectedActor.CardInstanceId);
             return Array.AsReadOnly(offers
-                .Select(offer => offer.IsAvailable && !CanStartSkill(offer)
+                .Select(offer => offer.IsAvailable && !CanStart(offer)
                     ? offer.WithAvailability(false)
                     : offer)
                 .ToArray());
         }
+
+        /// <summary>
+        /// Whether this offer can be started at all, as the offer set reports it.
+        ///
+        /// Two rules answer it, each for its own kind and each returning true for the other's: milestone
+        /// 6.5af's Skill whose effect can apply nothing, and milestone 7.8a1's Attack with no legal
+        /// target. They are asked together here so that adding a third kind is one more clause rather
+        /// than one more place the offer set is post-processed.
+        /// </summary>
+        private bool CanStart(ActionOffer offer) => CanStartSkill(offer) && CanStartAttack(offer);
 
         /// <summary>
         /// One statement of the judgement, so the offer set and the start command cannot disagree.
@@ -1105,6 +1115,22 @@ namespace GuardsDigital.Core.Cards
             cardActions.CanSkillApplyAnything(
                 offer, definitions, instances, participants, timing, CurrentModifications(),
                 roundIndex, turnIndex);
+
+        /// <summary>
+        /// Milestone 7.8a1: the same statement for an Attack. Rulebook p.12 lets a player Hold rather
+        /// than act, so an Attack the rules can prove has nothing to target is drawn as an action that
+        /// exists and cannot be taken - milestone 6.5af's treatment, on the other kind of offer it
+        /// always applied to.
+        ///
+        /// It asks the backend that builds the candidates when the Attack starts, so the greyed control
+        /// and the refusal that would follow a start are the same answer read at two moments rather than
+        /// two readings that could drift. Answered <c>true</c> wherever it cannot be asked, for the
+        /// reason the Skill one is.
+        /// </summary>
+        private bool CanStartAttack(ActionOffer offer) =>
+            cardActions == null ||
+            cardActions.CanAttackFindTarget(
+                offer, definitions, participants, CurrentModifications());
 
         public TurnResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
         {

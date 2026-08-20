@@ -686,13 +686,28 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadScene();
             var runtime = Root().Runtime;
             CommitNextAttackTurn(runtime);
-            var attack = runtime.RoundView.Model.Actions.Single(value =>
-                ActionKind(runtime, value.Command.ActionDefinitionId) ==
+
+            // Milestone 7.8a1 changed where this Attack is drawn without changing what it does. The
+            // configured heroes start far apart, so the authority now judges the Attack unstartable and
+            // it keeps its label among the greyed controls instead of sitting in the row of actions that
+            // can be taken. What this case has always protected is unchanged and asserted below: a start
+            // naming it mutates nothing.
+            var unavailable = runtime.RoundView.Model.UnavailableActions.Single(value =>
+                ActionKind(runtime, value.ActionDefinitionId) ==
                 GuardsDigital.Core.Cards.ActionKind.Attack);
+            Assert.That(
+                runtime.RoundView.Model.Actions.Any(value =>
+                    value.Command.ActionDefinitionId.Equals(unavailable.ActionDefinitionId)),
+                Is.False,
+                "An action the authority judged unstartable carries no command at all.");
+
             var snapshot = runtime.CaptureSnapshot();
             var commandCount = runtime.AcceptedCommands.Count;
 
-            Assert.That(runtime.RoundPresenter.Submit(attack), Is.False);
+            // The stale invocation a view could still be holding from an older model.
+            var stale = new TypedInvocationViewModel(
+                unavailable.Label, DirectorCommand.StartAction(unavailable.ActionDefinitionId));
+            Assert.That(runtime.RoundPresenter.Submit(stale), Is.False);
             Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(snapshot));
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandCount));
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null);

@@ -637,9 +637,16 @@ namespace GuardsDigital.Application
             // rather than by both being written to agree. An option with no adjacent token is kept:
             // p.13 permits clearing none, and milestone 6.3 accepts the empty selection, so an
             // available replaceable Attack always offers the replacement.
+            // Milestone 7.8a1: the Attack's own availability is deliberately not consulted here. A
+            // Clear replaces an Attack, but its legality is its own - rulebook p.13 lets a Clear take
+            // any number of adjacent tokens including none - so an Attack that currently has nobody to
+            // target is still an Attack a Clear may replace, and dropping the replacement with it would
+            // take away a legal action for a reason that is not about it. `GetAvailableClearOffer`
+            // re-derives from the card's own state and answers null when the action is not offered at
+            // all, which is the question that does belong here.
             var availableClearOptions = turn != null &&
                 turn.SelectedActor.IsDefined && !hasPendingAction
-                ? availableActions.Where(offer => offer.IsAvailable).Select(offer =>
+                ? availableActions.Select(offer =>
                     {
                         var definition = configuration.CardDefinitions.Single(value =>
                             value.Reference.Equals(offer.SourceDefinitionReference));

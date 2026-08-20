@@ -347,6 +347,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer, definitions, instances, participants, timing, modifications, components,
                 roundIndex, turnIndex);
 
+        /// <summary>
+        /// Milestone 7.8a1: whether an Attack offer has a legal target, asked of the same backend that
+        /// builds the target set when the Attack starts. The counterpart of
+        /// <see cref="CanSkillApplyAnything"/>, and true for anything that is not an Attack.
+        /// </summary>
+        public bool CanAttackFindTarget(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            MatchParticipants participants,
+            RuleModificationSet modifications) =>
+            attackDefenseBackend.CanFindLegalTarget(offer, definitions, participants, modifications);
+
         public CardActionResolutionResult AnswerEffectChoice(
             GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
