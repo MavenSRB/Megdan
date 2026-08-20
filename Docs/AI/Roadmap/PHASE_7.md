@@ -407,7 +407,7 @@ Non-goals: no publishing of a projected turn-ending offer (the recorded root cau
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79c-close-the-four-confirmed-rules-surface-defects-from-the-79a-review-completion-evidence).
 
-### [ ] 7.9d Restore the guards verified content will lean on
+### [~] 7.9d Restore the guards verified content will lean on
 
 Blocked by: milestone 7.9c, so the corrective sequence ends on this milestone's complete unfiltered sweep.
 

@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.9c**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **7.9c**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.9d**.
 - Next proposed milestone: **7.9d**.
 
 Milestone **7.9** completed on 2026-08-20 and closed Phase 7's T3 hard gate: the configured ten-card hands play complete matches under fixed reported seeds, reaching all three victory paths by playing rather than by staging, with a bounded eight-seed soak beside them. It found two defects nothing else could - a Defense preview that threw on a placed token's contribution, and a built player whose text shaper crashed for want of ICU data - and measured `RISK-PERF-001` and `F-ER2-08` for the first time, which is what scheduled 7.9b.
