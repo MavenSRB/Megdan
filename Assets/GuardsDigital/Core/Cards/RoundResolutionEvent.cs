@@ -176,6 +176,20 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public GuardsDigital.Core.Rules.Victory.MatchOutcome MatchOutcome { get; }
 
+        /// <summary>
+        /// Milestone 7.8: whether this event opens a new round's stream of events.
+        ///
+        /// Exactly one event does - the boundary event that reports the next round beginning, and the
+        /// first event of that round that any observer sees - so a reader keeping "this round's
+        /// events" has one thing to ask rather than a rule of its own about which kinds end a round.
+        /// It is asked at the commit boundary, which is the only place events are appended.
+        ///
+        /// A round the match ended inside opens no new one, which is why this is the beginning rather
+        /// than <see cref="RoundResolutionEventKind.RoundCompleted"/>, the end: the completed round's
+        /// own events belong to the round that produced them right up to the moment the next begins.
+        /// </summary>
+        public bool BeginsCurrentRoundEvents => Kind == RoundResolutionEventKind.NextRoundStarted;
+
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
             int turnIndex,

@@ -502,9 +502,24 @@ namespace GuardsDigital.Core.Cards
                 // p.8's mid-turn push ends the game in the middle of a turn, and naming a stage it
                 // never reached was the last thing left in this build that answered "where did the
                 // match end" with something other than where it ended.
-                events.Add(EndGame(endOfRoundRequest != null
-                    ? EndOfRoundStage.ResolveRequestedLanePush
-                    : (EndOfRoundStage?)null));
+                //
+                // Milestone 7.8. An end-of-round ending now leaves through the same tail every other
+                // stage outcome leaves through, rather than past it. It ended the step it was in, and
+                // `GameEnded` is the outcome the stage vocabulary has always had for exactly that -
+                // declared at 3.8c and, until this milestone, never once produced. Going around the
+                // tail meant the ordered stage stream skipped the step that ended the match, which is
+                // a second way out of a stage and the one thing this milestone's integration is
+                // supposed not to leave behind.
+                if (endOfRoundRequest != null &&
+                    CurrentEndOfRoundStage == EndOfRoundStage.ResolveRequestedLanePush)
+                {
+                    return CompleteEndOfRoundStage(
+                        EndOfRoundStage.ResolveRequestedLanePush,
+                        EndOfRoundStageOutcomeKind.GameEnded,
+                        events);
+                }
+
+                events.Add(EndGame(null));
                 return RoundResolutionResult.Accept(events);
             }
 
@@ -1263,6 +1278,26 @@ namespace GuardsDigital.Core.Cards
             if (stage == EndOfRoundStage.ResolveRequestedLanePush && PendingLanePushRequest != null)
             {
                 return ResolveRequestedLanePush(stage);
+            }
+
+            // Milestone 7.8. The other half of that step, and the reason the availability list did not
+            // name it until now: a round whose Minion Battle awarded no push still runs p.8's push
+            // step, and the step's honest answer is that there was nothing to push. Before this it
+            // fell through to the generic arm, was found undeclared, and reported the step
+            // *unavailable* - a claim about this match rather than about this round.
+            //
+            // A composed handler for this stage still wins, and the check is here rather than implied:
+            // a configured match composes none, while the milestone 6.13 cursor fixtures deliberately
+            // stage a pause and a game-ending at this stage through one, because what they are about
+            // is the cursor's promise rather than p.8's transition.
+            if (stage == EndOfRoundStage.ResolveRequestedLanePush &&
+                endOfRoundStageAvailability.IsAvailable(EndOfRoundStage.ResolveRequestedLanePush) &&
+                !endOfRoundHandlers.ContainsKey(EndOfRoundStage.ResolveRequestedLanePush))
+            {
+                return CompleteEndOfRoundStage(
+                    stage,
+                    EndOfRoundStageOutcomeKind.Completed,
+                    new List<RoundResolutionEvent>());
             }
 
             if (stage == EndOfRoundStage.MinionBattle &&

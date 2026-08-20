@@ -434,8 +434,24 @@ namespace GuardsDigital.Application
 
             // The commit. The graphs kept this operation's state, so the events that state produced
             // are appended here, and this is the only place they can be: both streams are private.
+            //
+            // Milestone 7.8. The round-scoped stream is emptied when a round boundary crosses it, which
+            // is what makes it the *current* round's events rather than a second whole-match log under
+            // a name that says otherwise. It happens inside this loop rather than around it because a
+            // single accepted command routinely carries a round's last events and the next round's
+            // first: the advance that runs p.8's last step reports that step, freezes the completed
+            // round and opens the new one, all in one batch. The whole-match log beside it appends
+            // unconditionally, and the completed-round history keeps the frozen record, so nothing the
+            // round produced is lost by this - it stops being *current*, which is the only claim this
+            // stream makes. `Reset` leaves every outstanding snapshot of the old contents readable, so
+            // the pre-image a refused command rolls back to is unaffected.
             foreach (var ruleEvent in planned.Events)
             {
+                if (ruleEvent.BeginsCurrentRoundEvents)
+                {
+                    roundEvents.Reset();
+                }
+
                 roundEvents.Add(ruleEvent);
             }
 

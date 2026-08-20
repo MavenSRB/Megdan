@@ -20,6 +20,17 @@ namespace GuardsDigital.Core.Cards
     public enum EndOfRoundStageOutcomeKind
     {
         Completed = 0,
+
+        /// <summary>
+        /// This match does not run the step at all - not "the step ran and had nothing to do", which
+        /// is <see cref="Completed"/>.
+        ///
+        /// Milestone 3.8c introduced it for the systems p.8 names and the build did not have yet, and
+        /// milestone 7.8 built the last of them. No configured match can report it any more:
+        /// <see cref="EndOfRoundStageAvailability.ConfiguredMatch"/> declares all six ordered steps.
+        /// It remains reachable, and meant, for the board-free synthetic round, which has no Lane, no
+        /// board and no space a token could stand on.
+        /// </summary>
         NotApplicable = 1,
         Paused = 2,
         GameEnded = 3
@@ -80,6 +91,14 @@ namespace GuardsDigital.Core.Cards
                 // cleanup in every round, but a fixture with no board has no space a token could be on,
                 // and the synthetic round deliberately proves the retrieval stage alone.
                 EndOfRoundStage.RemoveTokensAndReturnMarkers,
+
+                // Milestone 7.8. p.8's push step, which milestone 6.11 implemented and this
+                // declaration then contradicted: the stage ran whenever the Minion Battle had asked
+                // for a push, because the cursor routed it on the request rather than on this list,
+                // and a round that awarded none reported the step *unavailable* instead. A configured
+                // match has a Lane, Wave counters and a push rule, so the step is available in every
+                // round of it; whether there is a push to resolve is the step's own answer.
+                EndOfRoundStage.ResolveRequestedLanePush,
                 EndOfRoundStage.RetrieveCardsAndCancelActiveEffects,
 
                 // Milestone 7.5. p.8 lists "Level Up" among the end-of-round steps and p.15 makes it

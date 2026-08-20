@@ -204,7 +204,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-77-integrate-and-verify-all-three-victory-paths-completion-evidence).
 
-### [~] 7.8 Integrate the exact end-of-round sequence
+### [x] 7.8 Integrate the exact end-of-round sequence
 
 Observable outcome: The milestone 3.8c end-of-round state machine has every required handler populated, executes the completed systems in source order, and arrives at a valid next round or game-ended state without any synthetic unavailable-stage declarations.
 
@@ -217,6 +217,8 @@ Acceptance checks:
 - The same state and choices produce the same state and ordered events.
 - A focused two-round regression proves that completing a round removes that round's events from the current-round projection while retaining them in the whole-match event log and completed-round history; events accepted in the new round then append to a fresh current-round sequence. Restore, replay, and retained-prefix Undo reproduce the same boundary.
 - Integration preserves the established resumable cursor, completed-round history, round-local reset, snapshot, Undo, and event-log contracts rather than introducing a second round-transition path.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78-integrate-the-exact-end-of-round-sequence-completion-evidence).
 
 ### [ ] 7.8a Add card-colour controls and compact hero overview overlays
 
