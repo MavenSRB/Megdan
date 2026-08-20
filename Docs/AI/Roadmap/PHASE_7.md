@@ -220,7 +220,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78-integrate-the-exact-end-of-round-sequence-completion-evidence).
 
-### [~] 7.8a Add card-colour controls and compact hero overview overlays
+### [x] 7.8a Add card-colour controls and compact hero overview overlays
 
 Observable outcome: The configured match keeps the board dominant while a hero selected on the map opens that hero's colour-coded, current-round card tray; compact Red-left and Blue-right overviews show hero identity, item bonuses, four played-card colour slots, and discard state; one side `DIRECTOR` drawer contains the existing Undo, Reset, and Event Log tools; and every existing player-facing action, response, target, and mandatory choice is rehoused in the same coherent visual system with at most one usable interaction context on screen.
 
@@ -255,6 +255,8 @@ Acceptance checks:
 - Focused presentation tests cover map-selected hero switching, Director drawer forwarding, all five card colours, team/card-colour separation, turn-order sorting, raised available cards, discarded-card placement, zero and multiple item bonuses, empty and four-card histories, single-context exclusivity, every existing contextual-control family named above, both paused transition kinds, an option the authority refuses, suppression of incompatible controls and End Turn, round reset, restore/replay/Undo reconstruction, and layout at the validated desktop and compact fallback sizes. Saved-scene Play Mode tests drive representative card/action/board-target, Defense, effect-choice, Minion-Battle, correction/Respawn, and leveling flows entirely through the restyled player-facing surfaces. A visible non-batch Game View sweep confirms readable contrast, no overlap, no clipped guaranteed information, and the approved reference composition across the standing HUD and contextual states.
 
 Non-goals: No rules, progression, continuation, card-lifecycle, item, history, discard, action-offer, targeting, response, or pending-choice behavior changes; no new pending-choice kind, command, or second answer path beside projected invocations; no new hero-selection control outside the map; no camera controls; no production card art; no Wasp-specific card data; no animation, audio, tooltip card preview, final pitch polish, six-hero HUD, or private-hand networking work.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78a-add-card-colour-controls-and-compact-hero-overview-overlays-completion-evidence).
 
 ### [ ] 7.8b Add bounded board camera controls
 

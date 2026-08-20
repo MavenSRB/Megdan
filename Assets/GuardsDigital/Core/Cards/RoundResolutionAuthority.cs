@@ -355,6 +355,18 @@ namespace GuardsDigital.Core.Cards
         public GuardsDigital.Core.Rules.LanePush.LanePushConsumption LanePush => lanePush;
 
         /// <summary>
+        /// Milestone 7.8a. Every hero's current coin balance, ordered by hero id, as a read.
+        ///
+        /// The balances alone, not the ledger. p.13's award, p.15's spend and p.8's grant are the only
+        /// three things that may move a coin, and all three already live behind this authority; a reader
+        /// that could reach the ledger itself could become a fourth. Empty in a composition with no card
+        /// actions behind it, which is the honest answer for a fixture that has no ledger at all.
+        /// </summary>
+        public IReadOnlyList<KeyValuePair<HeroId, int>> CoinBalances =>
+            cardActions?.DefeatRewards?.CoinBalances ??
+            (IReadOnlyList<KeyValuePair<HeroId, int>>)Array.Empty<KeyValuePair<HeroId, int>>();
+
+        /// <summary>
         /// Begins a declared multi-step system transition (milestone 6.10a).
         ///
         /// The instance identity is composed from the round cursor and the definition rather than minted

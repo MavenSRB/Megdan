@@ -830,7 +830,8 @@ namespace GuardsDigital.Core.Rules.Transitions
     /// catalogs already use - so a build's set of transitions and its set of rules stay one composition
     /// decision rather than a switch somebody has to remember to extend.
     /// </summary>
-    public sealed class SystemTransitionStepRuleSet : ISystemTransitionStepRules
+    public sealed class SystemTransitionStepRuleSet
+        : ISystemTransitionStepRules, IDescribingSystemTransitionStepRules
     {
         private readonly IReadOnlyDictionary<SystemTransitionDefinitionId, ISystemTransitionStepRules> rules;
 
@@ -854,6 +855,17 @@ namespace GuardsDigital.Core.Rules.Transitions
         public void ApplyAnswer(SystemTransitionAnswerContext context) =>
             For(context?.Definition.Id ?? throw new ArgumentNullException(nameof(context)))
                 .ApplyAnswer(context);
+
+        /// <summary>
+        /// Routes a description to the rules of the transition that is actually paused, and answers null
+        /// when those rules cannot describe themselves. It is the same lookup that ran the step, so a
+        /// pause is never described by rules that did not produce it.
+        /// </summary>
+        public SystemTransitionStepDescription Describe(PendingSystemTransitionStep pendingStep) =>
+            pendingStep != null &&
+            For(pendingStep.DefinitionId) is IDescribingSystemTransitionStepRules describing
+                ? describing.Describe(pendingStep)
+                : null;
 
         private ISystemTransitionStepRules For(SystemTransitionDefinitionId definitionId) =>
             rules.TryGetValue(definitionId, out var named)

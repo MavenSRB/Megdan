@@ -90,8 +90,183 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(panel.yMax, Is.LessThanOrEqualTo(Screen.height));
             Assert.That(panel.width,
                 Is.EqualTo(Mathf.Min(1280f, Mathf.Max(0f, Screen.width - 24f))).Within(0.01f));
+            // Milestone 7.8a: the tray also clears the standing status strip, so the two never claim
+            // the same pixels and neither guaranteed surface can hide behind the other. Its height
+            // bound is 360 or a third of a tall viewport, whichever is larger, and never more than the
+            // space left below the strip.
             Assert.That(panel.height,
-                Is.EqualTo(Mathf.Min(360f, Mathf.Max(0f, Screen.height - 24f))).Within(0.01f));
+                Is.EqualTo(Mathf.Min(
+                    Mathf.Max(360f, Screen.height * 0.34f),
+                    Mathf.Max(0f, Screen.height - 24f - ConfiguredMatchHudRenderer.StatusBarHeight)))
+                    .Within(0.01f));
+            Assert.That(panel.yMin,
+                Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
+        }
+
+        /// <summary>
+        /// Milestone 7.8a: the HUD is one live UI Toolkit panel in the running scene, the two hero rails
+        /// and the tray are on it, and the pointer is blocked over each of them.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_BuildsTheRuntimeHudPanelWithBothHeroRailsAndBlocksThePointerOverThem()
+        {
+            yield return LoadScene();
+            var root = Root();
+            var hud = root.Hud;
+
+            Assert.That(hud.RootElement, Is.Not.Null, "The configured HUD builds a runtime panel.");
+            Assert.That(hud.RootElement.panel, Is.Not.Null);
+            Assert.That(Named(hud.RootElement, "gd-topbar"), Is.Not.Null);
+            Assert.That(Named(hud.RootElement, "gd-tray-region"), Is.Not.Null);
+            Assert.That(Named(hud.RootElement, "gd-director-toggle"), Is.Not.Null);
+
+            var rails = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToArray();
+            Assert.That(rails, Has.Length.EqualTo(root.Runtime.Setup.Heroes.Count),
+                "One overview per projected hero, drawn as a repeated component.");
+
+            foreach (var rect in new[] { hud.CardPanelRect, hud.TieBreakerIndicatorRect })
+            {
+                var guiPoint = rect.center;
+                Assert.That(
+                    hud.BlocksPointerAt(new Vector2(guiPoint.x, Screen.height - guiPoint.y)),
+                    Is.True,
+                    $"The HUD consumes the pointer over {rect}.");
+            }
+
+            Assert.That(hud.IsDirectorDrawerOpen, Is.False);
+            var acceptedBefore = root.Runtime.AcceptedCommands.Count;
+            var roundBefore = root.Runtime.RoundIndex;
+            root.Runtime.ToggleDirectorDrawer();
+            Assert.That(hud.IsDirectorDrawerOpen, Is.True);
+            Assert.That(root.Runtime.AcceptedCommands, Has.Count.EqualTo(acceptedBefore),
+                "Opening the drawer submits no command.");
+            Assert.That(root.Runtime.RoundIndex, Is.EqualTo(roundBefore));
+            root.Runtime.ToggleDirectorDrawer();
+            Assert.That(hud.IsDirectorDrawerOpen, Is.False);
+        }
+
+        /// <summary>
+        /// Milestone 7.8a's visible Game View sweep: the standing HUD, the HUD with the `DIRECTOR`
+        /// drawer open, and the contextual region drawing a paused leveling prompt.
+        ///
+        /// The prompt is rendered into the scene's own view from a presentation-shaped model, which is
+        /// how milestone 6.1a's removal prompt and milestone 5.8b's Defense preview are captured here
+        /// too: the configured symmetric setup reaches neither state in one round, and what a capture is
+        /// evidence for is contrast, overlap, and clipping rather than authority. Whether the options are
+        /// the authority's own is proved in <c>MatchHudPresentationTests</c> against a live pause.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_CapturesTheStandingHudAndOneContextualStateForGameViewInspection()
+        {
+            yield return LoadScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            yield return null;
+
+            yield return Capture("tmp/milestone-7-8a-standing-hud.png");
+
+            runtime.ToggleDirectorDrawer();
+            yield return null;
+            yield return Capture("tmp/milestone-7-8a-director-drawer.png");
+            runtime.ToggleDirectorDrawer();
+            yield return null;
+
+            var current = runtime.RoundView.Model;
+            var upgrade = new SystemTransitionPromptViewModel(
+                GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind.LevelUpUpgrade,
+                "LEVEL UP",
+                "RED WASP REACHED LEVEL 2 - UPGRADE A CARD",
+                "PAID 1 COIN - 1 REMAINING",
+                // Three upgradable cards with p.15's two candidates each, which is the shape the
+                // configured hand actually produces: the grid breaks a row per card, and each row
+                // comes out one colour because the page finds both candidates at the chosen card's
+                // own colour.
+                UpgradeOptions(CardColor.Red, "RED BOMBARD", "red-bombard-card")
+                    .Concat(UpgradeOptions(CardColor.Blue, "RED BULWARK", "red-bulwark-card"))
+                    .Concat(UpgradeOptions(CardColor.Green, "RED PURSUIT", "red-pursuit-card")));
+            runtime.RoundView.Render(new RoundActionViewModel(
+                current.Version + 1,
+                current.RoundIndex,
+                current.TurnIndex,
+                current.Phase,
+                "End of round - rulebook p.15 is waiting on an upgrade.",
+                System.Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                System.Array.Empty<TypedInvocationViewModel>(),
+                System.Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                upgrade));
+            root.Hud.ApplyExclusiveContext();
+            yield return null;
+            Assert.That(runtime.RoundView.HasExclusiveDecision, Is.True,
+                "A paused transition is a decision the tray steps aside for.");
+            yield return Capture("tmp/milestone-7-8a-leveling-prompt.png");
+        }
+
+        /// <summary>p.15's two answers for one card, both at that card's own colour.</summary>
+        private static IEnumerable<SystemTransitionOptionViewModel> UpgradeOptions(
+            CardColor color, string name, string instanceId)
+        {
+            foreach (var variant in new[] { "A", "B" })
+            {
+                var sibling = variant == "A" ? "B" : "A";
+                yield return new SystemTransitionOptionViewModel(
+                    $"UPGRADE TEST - {name} INTO TEST - {name} II-{variant}",
+                    $"SETS TEST - {name} II-{sibling} ASIDE AS A ATK +1 ITEM",
+                    DirectorCommand.AdvanceEndOfRound(),
+                    color,
+                    new CardInstanceId(instanceId));
+            }
+        }
+
+        private static IEnumerator Capture(string relativePath)
+        {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                yield break;
+            }
+
+            var path = Path.GetFullPath(relativePath);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+
+            ScreenCapture.CaptureScreenshot(path);
+            yield return new WaitForEndOfFrame();
+            yield return null;
+            yield return null;
+            Assert.That(File.Exists(path), Is.True,
+                $"The targeted Game View visual evidence must be captured at {relativePath}.");
+        }
+
+        private static UnityEngine.UIElements.VisualElement Named(
+            UnityEngine.UIElements.VisualElement root, string name) =>
+            Descendants(root).FirstOrDefault(element => element.name == name);
+
+        private static IEnumerable<UnityEngine.UIElements.VisualElement> Descendants(
+            UnityEngine.UIElements.VisualElement element)
+        {
+            yield return element;
+            foreach (var child in element.Children())
+            {
+                foreach (var nested in Descendants(child))
+                {
+                    yield return nested;
+                }
+            }
         }
 
         [UnityTest]

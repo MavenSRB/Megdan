@@ -85,15 +85,23 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartView = new UndoRestartUnityView();
             DiagnosticView = new DiagnosticLogUnityView();
             MinionChoiceView = new MinionChoiceUnityView();
+            HeroOverviewsView = new HeroOverviewsUnityView();
             BoardPresenter = new BoardInteractionPresenter(session, BoardView);
             HandsPresenter = new DirectorHandsPresenter(session, HandsView);
+            HeroOverviewsPresenter = new HeroOverviewsPresenter(
+                session, HeroOverviewsView, () => HandsPresenter.ViewedHeroId);
             RoundPresenter = new RoundActionPresenter(session, RoundView);
             UndoRestartPresenter = new UndoRestartPresenter(session, UndoRestartView);
             DiagnosticPresenter = new DiagnosticLogPresenter(session, DiagnosticView);
             MinionChoicePresenter = new MinionChoicePresenter(session, MinionChoiceView);
 
             BoardView.BindIntentHandlers(
-                BoardPresenter.SubmitHero,
+                // Milestone 7.8a: the map pointer is the only hero-selection control there is. A click
+                // is first offered to the authority, because a hero the current choice makes a legal
+                // Attack target is a spatial decision and must stay one; only when the authority offers
+                // nothing does the same click become what it now also means - point the tray at that
+                // hero. That path submits no command and changes no authoritative state.
+                heroId => BoardPresenter.SubmitHero(heroId) || SelectViewedHero(heroId),
                 BoardPresenter.SubmitMinion,
                 BoardPresenter.SubmitDestination);
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
@@ -188,7 +196,9 @@ namespace GuardsDigital.Presentation.Match
                 }
             };
 
-            hud.Configure(HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView);
+            hud.Configure(
+                HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView,
+                HeroOverviewsView);
             coordinator = new MatchFeatureCoordinator(
                 BoardPresenter,
                 HandsPresenter,
@@ -199,9 +209,33 @@ namespace GuardsDigital.Presentation.Match
                 projection => hud.RenderHeader(new MatchHudHeaderViewModel(
                     projection.TieBreakerState,
                     projection.Setup,
-                    projection.TeamLifeCounters)));
+                    projection.TeamLifeCounters,
+                    projection.RoundIndex,
+                    projection.TurnIndex)),
+                HeroOverviewsPresenter);
             RefreshAll();
         }
+
+        /// <summary>
+        /// Points the tray at one hero (milestone 7.8a). Local presentation state: no command is
+        /// submitted, nothing authoritative moves, and nothing about it is serialized.
+        /// </summary>
+        public bool SelectViewedHero(HeroId heroId)
+        {
+            if (!HandsPresenter.SelectViewedHero(heroId))
+            {
+                return false;
+            }
+
+            HeroOverviewsPresenter.Refresh();
+            return true;
+        }
+
+        /// <summary>The hero whose tray is currently drawn.</summary>
+        public HeroId ViewedHeroId => HandsPresenter.ViewedHeroId;
+
+        /// <summary>Opens or closes the compact `DIRECTOR` drawer. It changes no match state.</summary>
+        public void ToggleDirectorDrawer() => hud.ToggleDirectorDrawer();
 
         public IMatchSession Session => session;
         public MatchSessionProjection Projection => session.Projection;
@@ -229,6 +263,8 @@ namespace GuardsDigital.Presentation.Match
         public UndoRestartUnityView UndoRestartView { get; }
         public DiagnosticLogUnityView DiagnosticView { get; }
         public MinionChoiceUnityView MinionChoiceView { get; }
+        public HeroOverviewsUnityView HeroOverviewsView { get; }
+        public HeroOverviewsPresenter HeroOverviewsPresenter { get; }
         public BoardInteractionPresenter BoardPresenter { get; }
         public DirectorHandsPresenter HandsPresenter { get; }
         public RoundActionPresenter RoundPresenter { get; }
@@ -242,8 +278,11 @@ namespace GuardsDigital.Presentation.Match
             hud.RenderHeader(new MatchHudHeaderViewModel(
                 session.Projection.TieBreakerState,
                 session.Projection.Setup,
-                session.Projection.TeamLifeCounters));
+                session.Projection.TeamLifeCounters,
+                session.Projection.RoundIndex,
+                session.Projection.TurnIndex));
             coordinator.RefreshAll();
+            hud.ApplyExclusiveContext();
         }
 
         public bool SelectCommitmentCard(CardInstanceId cardId) =>
@@ -275,15 +314,39 @@ namespace GuardsDigital.Presentation.Match
             RoundPresenter.Submit(RoundView.Model?.ContinueEndOfRoundInvocation);
 
         /// <summary>
+        /// The paused transition's decision as the player-facing region draws it, or <c>null</c> when
+        /// nothing is paused (milestone 7.8a).
+        /// </summary>
+        public SystemTransitionPromptViewModel SystemTransitionPrompt =>
+            RoundView.Model?.SystemTransitionPrompt;
+
+        /// <summary>
+        /// Answers the paused transition through the projected control at <paramref name="optionIndex"/>,
+        /// which is the path a player takes. It goes through the round presenter's own legality check, so
+        /// an option from a superseded prompt executes nothing.
+        /// </summary>
+        public bool SubmitSystemTransitionOption(int optionIndex)
+        {
+            var prompt = SystemTransitionPrompt;
+            if (prompt == null || optionIndex < 0 || optionIndex >= prompt.Options.Count)
+            {
+                return false;
+            }
+
+            var option = prompt.Options[optionIndex];
+            return RoundPresenter.Submit(new TypedInvocationViewModel(option.Label, option.Command));
+        }
+
+        /// <summary>
         /// The options a paused multi-step system transition is waiting on, or an empty list when none
         /// is paused (milestone 7.6).
         ///
-        /// This is a director command surface rather than a rendered one: no view draws a paused
-        /// transition yet, which has been true since milestone 6.11's Lane-Push respawn and which
-        /// milestone 7.6 makes reachable in ordinary play, because p.8's Pity Coin leaves a hero able to
-        /// afford a level and p.15's Upgrade a Card then stops the end of round on a real choice. Until
-        /// a presenter projects it, this is what lets the configured scene get past its own end of round
-        /// rather than stall on a question nothing can answer.
+        /// Milestone 7.8a draws that pause, so this is no longer the only way to answer one: the
+        /// contextual region now projects a labelled control per option and forwards the same command.
+        /// This surface is nonetheless retained, explicitly, as the director and headless path - the
+        /// build-smoke driver and every fixture without a pointer answer through it, and they must be
+        /// able to reach a pause by identity rather than by finding a control. It still names an option
+        /// rather than choosing one, which is the property that made it safe to keep.
         /// </summary>
         public IReadOnlyList<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>
             PausedSystemTransitionOptions =>

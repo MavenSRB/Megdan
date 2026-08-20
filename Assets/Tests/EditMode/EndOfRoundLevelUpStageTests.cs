@@ -259,235 +259,33 @@ namespace GuardsDigital.Tests.EditMode
         // Helpers
         // ---------------------------------------------------------------------------------------
 
+
+        // Milestone 7.8a moved these to ConfiguredMatchFixtures, where the player-facing surfaces read
+        // the same paused match from. They stay here as forwarders so every case above reads exactly as
+        // it did, and so there is still only one definition of "a round that earned a coin".
+
         private static CardLocation LocationOf(MatchSession session, CardInstanceId cardInstanceId) =>
-            session.Projection.Cards.Single(card => card.Id.Equals(cardInstanceId)).State.Location;
+            ConfiguredMatchFixtures.LocationOf(session, cardInstanceId);
 
-        private static MatchCommandResult Accept(MatchSession session, DirectorCommand command)
-        {
-            var result = session.Execute(command);
-            Assert.That(result.Accepted, Is.True, result.Detail);
-            return result;
-        }
+        private static MatchCommandResult Accept(MatchSession session, DirectorCommand command) =>
+            ConfiguredMatchFixtures.Accept(session, command);
 
-        /// <summary>
-        /// Crosses p.8's earlier end-of-round steps, answering the Minion Battle when it asks. The
-        /// relocated minion this fixture defeats stood outside the Battle Zone, so its team is one short
-        /// there and p.8 makes them remove the difference before the round can go on.
-        /// </summary>
-        private static void AdvanceToStage(MatchSession session, EndOfRoundStage stage)
-        {
-            while (session.Projection.CurrentEndOfRoundStage != stage)
-            {
-                Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound),
-                    "The round left the end of round before reaching the stage under test.");
-                var battle = session.Projection.PendingMinionBattleChoice;
-                if (battle != null)
-                {
-                    while (session.Projection.PendingMinionBattleChoice.SelectInvocations.Count > 0)
-                    {
-                        Accept(session, DirectorCommand.SelectMinionBattleRemoval(
-                            session.Projection.PendingMinionBattleChoice.SelectInvocations[0]));
-                    }
+        private static void AdvanceToStage(MatchSession session, EndOfRoundStage stage) =>
+            ConfiguredMatchFixtures.AdvanceToStage(session, stage);
 
-                    Accept(session, DirectorCommand.ConfirmMinionBattleRemovals(
-                        session.Projection.PendingMinionBattleChoice.ConfirmInvocation));
-                    continue;
-                }
+        private static void FinishEndOfRound(MatchSession session) =>
+            ConfiguredMatchFixtures.FinishEndOfRound(session);
 
-                Accept(session, DirectorCommand.AdvanceEndOfRound());
-            }
-        }
+        private static MatchSession CreateSessionWithACoinEarningRound(out HeroId redHeroId) =>
+            ConfiguredMatchFixtures.CreateSessionWithACoinEarningRound(out redHeroId);
 
-        private static void FinishEndOfRound(MatchSession session)
-        {
-            while (session.Projection.Phase == RoundResolutionPhase.EndOfRound)
-            {
-                Accept(session, DirectorCommand.AdvanceEndOfRound());
-            }
-        }
-
-        /// <summary>
-        /// A configured match in which the Red hero defeats one enemy melee minion in the first turn and
-        /// then plays the round out, so it reaches p.8's Level Up step holding p.13's two coins.
-        ///
-        /// Coins are earned rather than granted, because a Defeat is the only source this build has and a
-        /// fixture that reached into the ledger would prove the stage against a balance no match could
-        /// have.
-        /// </summary>
-        private static MatchSession CreateSessionWithACoinEarningRound(out HeroId redHeroId)
-        {
-            var session = CreateSessionWithAnAdjacentEnemyMinion(out redHeroId, out var target);
-            var redCard = session.Projection.Cards.Single(card => card.Id.Value == "red-pursuit-card");
-            var blueCard = session.Projection.Cards.Single(card => card.Id.Value == "blue-longbow-card");
-            Accept(session, DirectorCommand.CommitCard(redCard.OwnerId, redCard.Id));
-            Accept(session, DirectorCommand.CommitCard(blueCard.OwnerId, blueCard.Id));
-            Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(redHeroId),
-                "Red Pursuit's Initiative 7 acts before Blue Longbow's 4.");
-
-            var attack = session.Projection.AvailableTurnActions.Single(offer =>
-                offer.IsAvailable &&
-                session.Projection.Definitions
-                    .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
-                    .ActionDefinitions
-                    .Single(action => action.Id.Equals(offer.ActionDefinitionId))
-                    .Kind == ActionKind.Attack);
-            Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));
-
-            var choice = session.Projection.PendingAttackTargetChoice;
-            Assert.That(choice.LegalTargetMinionIds, Has.Member(target));
-            Accept(session, DirectorCommand.ChooseAttackTarget(
-                choice.ResolutionId, choice.ChoiceId, target));
-            Assert.That(session.Projection.Minions.Any(minion => minion.MinionId.Equals(target)),
-                Is.False, "The Attack has to defeat the minion, or the round collects no coin.");
-
-            PlayOutTheRestOfTheRound(session);
-            return session;
-        }
-
-        /// <summary>
-        /// The official-map configured match with one Blue melee minion standing beside the Red hero's
-        /// spawn point.
-        ///
-        /// The minion is relocated rather than added, and it is relocated out of the Battle Zone rather
-        /// than to any free space: Blue keeps every other minion, so defeating this one triggers no
-        /// immediate Lane Push, and the Battle Zone's counts are the same either way, so p.8's Minion
-        /// Battle ends with no effect and this fixture stays about the Level Up stage.
-        /// </summary>
-        private static MatchSession CreateSessionWithAnAdjacentEnemyMinion(
-            out HeroId redHeroId, out MinionId target)
-        {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var setup = QuickGameSetupAuthority.Create(
-                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
-                configuration.Participants,
-                map,
-                configuration.TieBreakerState);
-
-            var redHero = setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
-            redHeroId = redHero.HeroId;
-            var occupied = new HashSet<HexCoordinate>(
-                setup.Heroes.Select(hero => hero.Coordinate)
-                    .Concat(setup.Minions.Select(minion => minion.Coordinate)));
-            var beside = redHero.Coordinate.GetNeighbors()
-                .First(coordinate => !occupied.Contains(coordinate) &&
-                    map.Spaces.Any(space =>
-                        space.Kind == BoardMapSpaceKind.Playable &&
-                        space.Coordinate.Equals(coordinate)));
-
-            var moved = setup.Minions.First(minion =>
-                minion.TeamSide == TeamSide.Blue && minion.MinionType == StandardMinionType.Melee);
-            target = moved.MinionId;
-            var relocatedTarget = target;
-            var relocatedBeside = beside;
-            var minions = setup.Minions
-                .Select(minion => minion.MinionId.Equals(relocatedTarget)
-                    ? new QuickGameMinionSetupState(
-                        minion.MinionId,
-                        minion.TeamId,
-                        minion.TeamSide,
-                        minion.MinionType,
-                        minion.SpawnPoint,
-                        map.Spaces.Single(space =>
-                            space.Kind == BoardMapSpaceKind.Playable &&
-                            space.Coordinate.Equals(relocatedBeside)).Id is var spaceId
-                            ? new ConfiguredSpaceReference(map.Id, spaceId)
-                            : throw new InvalidOperationException(),
-                        relocatedBeside)
-                    : minion)
-                .ToArray();
-            var relocatedSetup = new QuickGameSetupState(
-                setup.SelectedMap, setup.WaveCount, setup.TieBreakerState, setup.Teams, setup.Heroes,
-                minions);
-
-            var scenario = new InitialScenarioDescription(
-                configuration.Participants,
-                configuration.CardDefinitions,
-                configuration.CardInstances,
-                configuration.TieBreakerState,
-                map.Reference,
-                relocatedSetup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
-                Array.Empty<ObstacleOccupancy>());
-            return new MatchSession(
-                new MatchSessionInitialState(scenario, relocatedSetup, new[] { map }));
-        }
-
-        /// <summary>The ordinary configured match on the official map, with nobody earning a coin.</summary>
-        private static MatchSession CreateConfiguredSession()
-        {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var setup = QuickGameSetupAuthority.Create(
-                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
-                configuration.Participants,
-                map,
-                configuration.TieBreakerState);
-            var scenario = new InitialScenarioDescription(
-                configuration.Participants,
-                configuration.CardDefinitions,
-                configuration.CardInstances,
-                configuration.TieBreakerState,
-                map.Reference,
-                setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
-                Array.Empty<ObstacleOccupancy>());
-            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
-        }
+        private static MatchSession CreateConfiguredSession() =>
+            ConfiguredMatchFixtures.CreateConfiguredSession();
 
         private static MatchSession CreateRestoreTarget() =>
-            CreateSessionWithAnAdjacentEnemyMinion(out _, out _);
+            ConfiguredMatchFixtures.CreateRestoreTarget();
 
-        private static void PlayOneOrdinaryRound(MatchSession session)
-        {
-            while (session.Projection.Phase == RoundResolutionPhase.AwaitingCommitments)
-            {
-                CommitAndHoldOneTurn(session);
-            }
-
-            Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
-        }
-
-        private static void PlayOutTheRestOfTheRound(MatchSession session)
-        {
-            while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn)
-            {
-                Accept(session, DirectorCommand.PerformHold(
-                    session.Projection.SelectedActor.CardInstanceId));
-            }
-
-            PlayOneOrdinaryRound(session);
-        }
-
-        private static void CommitAndHoldOneTurn(MatchSession session)
-        {
-            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
-            {
-                var card = session.Projection.Cards.FirstOrDefault(candidate =>
-                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
-                    candidate.State.Location == CardLocation.Hand);
-                if (card == null)
-                {
-                    var hero = session.Projection.Setup.Heroes.Single(value => value.TeamSide == side).HeroId;
-                    Accept(session, DirectorCommand.Pass(hero));
-                    continue;
-                }
-
-                Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
-            }
-
-            var tie = session.Projection.PendingInitiativeChoice;
-            if (tie != null)
-            {
-                Accept(session, DirectorCommand.ChooseTiedActor(
-                    tie.OwningSide, tie.CandidateCardInstanceIds[0]));
-            }
-
-            var turnIndex = session.Projection.TurnIndex;
-            while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn &&
-                session.Projection.TurnIndex == turnIndex)
-            {
-                Accept(session, DirectorCommand.PerformHold(
-                    session.Projection.SelectedActor.CardInstanceId));
-            }
-        }
+        private static void PlayOneOrdinaryRound(MatchSession session) =>
+            ConfiguredMatchFixtures.PlayOneOrdinaryRound(session);
     }
 }

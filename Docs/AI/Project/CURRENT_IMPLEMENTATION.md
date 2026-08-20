@@ -6,7 +6,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ### Application, configured presentation, and governance
 
-The project has completed roadmap milestones through **7.8**. Earlier phases established the corrected and independently verified Phase 4 architecture/performance gate, deterministic command-replay Director Undo, the internal rule-event log, the reviewed `official-single-lane` revision 1 map and exact setup, map-bound snapshots, authoritative zone/Lane queries, the pure application port, distinct Movement/Attack-Defense/Fast-Travel/Clear handlers, cached feature projections, bounded diagnostics, and configured saved-scene MVP/input cutover. The configured scene has no legacy controller: its composition root creates the bounded session, peer presenters/passive views, authority-free HUD, and passive board callbacks.
+The project has completed roadmap milestones through **7.8a**. Earlier phases established the corrected and independently verified Phase 4 architecture/performance gate, deterministic command-replay Director Undo, the internal rule-event log, the reviewed `official-single-lane` revision 1 map and exact setup, map-bound snapshots, authoritative zone/Lane queries, the pure application port, distinct Movement/Attack-Defense/Fast-Travel/Clear handlers, cached feature projections, bounded diagnostics, and configured saved-scene MVP/input cutover. The configured scene has no legacy controller: its composition root creates the bounded session, peer presenters/passive views, authority-free HUD, and passive board callbacks.
 
 One dispatcher owns live typed commands, replay, Undo/restart, restore, ordered events, and immutable projections, while five concrete backends own handler-specific pending state and mutation and are reached by direct composition rather than through a registry. Action-kind dispatch is that direct composition; capability dispatch alone is data-driven lookup through `EffectCapabilityCatalog`, because a capability reference arrives as data inside the definition the resolver is walking and cannot be named at compile time. The contextual End Turn control forwards only a projected stop - the Hold, the Movement Stop, or an effect choice's own - and is suppressed during every mandatory choice that projects none. Action offers carry a decided availability rather than an assumed one: the turn authority stamps a Skill unavailable where the feasibility walk proves its whole effect can apply nothing, which both the offer set and the start command consult, so an action the rules can prove would do nothing is drawn greyed and cannot be started. p.12 is the source - Hold exists so a player is never forced to act - and the turn stays spendable on the card's other actions.
 
@@ -18,7 +18,7 @@ Per-milestone outcome, validation, and review evidence lives once in each commit
 
 ### Configured presentation surfaces
 
-The configured passive views, presenters, and board cues - the HUD card panel and Defense controls, the Defense-preview popup, minion Defense-modifier cues, Attack-target highlighting, reload-safe minion views, and the Minion Battle removal-choice surface - are maintained in [CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md). Split out at 6.1aq on this file's size threshold. The boundary itself stays here: presentation is passive, forwards only projected typed invocations, and withholds what the authority would refuse.
+The configured passive views, presenters, and board cues - the Defense-preview popup, minion Defense-modifier cues, Attack-target highlighting, reload-safe minion views, and the Minion Battle removal-choice surface - are maintained in [CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md). Split out at 6.1aq on this file's size threshold. The player-facing HUD is [MATCH_HUD.md](MATCH_HUD.md)'s since 7.8a. The boundary itself stays here: presentation is passive, forwards only projected typed invocations, and withholds what the authority would refuse.
 
 ### Movement and action architecture
 
@@ -71,7 +71,7 @@ The 2026-08-13 out-of-band foundation audit, the corrective milestones 6.1c thro
 
 The project does not yet implement the final official six-player Quick Game setup, real Wasp content, general card-text effects, networking, production animation/audio, or build/distribution work.
 
-No presenter draws a paused multi-step system transition, which milestone 7.6 makes reachable in ordinary play; what the scene does instead, and what a presentation milestone still owes, is maintained in [CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md).
+Milestone 7.8a draws a paused system transition: the rules that paused describe it as typed facts through `IDescribingSystemTransitionStepRules`, and the projection carries that description beside the pause, plus every hero's Level, coins and per-icon item counts; the surface is [MATCH_HUD.md](MATCH_HUD.md)'s.
 
 ## Maintenance rule
 

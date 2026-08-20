@@ -89,6 +89,18 @@ namespace GuardsDigital.Core.Rules.Transitions
         public SystemTransitionCatalog Catalog => catalog;
 
         /// <summary>
+        /// What the current pause means, described by the rules that produced it, or <c>null</c> when
+        /// nothing is paused or those rules do not describe themselves (milestone 7.8a).
+        ///
+        /// A read. It asks the composed rules a question about state they already hold and changes
+        /// nothing, so calling it never moves the transition and calling it twice answers twice.
+        /// </summary>
+        public SystemTransitionStepDescription DescribePendingStep() =>
+            PendingStep != null && rules is IDescribingSystemTransitionStepRules describing
+                ? describing.Describe(PendingStep)
+                : null;
+
+        /// <summary>
         /// Begins a declared transition and runs it until it stops on a step or finishes.
         ///
         /// The instance identity is composed from the definition and the caller's occasion rather than

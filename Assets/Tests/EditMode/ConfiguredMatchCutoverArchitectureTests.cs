@@ -69,12 +69,19 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(hudFields.Any(value => value.FieldType == typeof(IMatchSession)), Is.False);
             Assert.That(pointerFields.Any(value => value.FieldType == typeof(IMatchSession)), Is.False);
             Assert.That(rootFields, Is.Not.Empty);
+            // Milestone 7.8a moved the HUD from immediate mode onto a runtime UI Toolkit panel, so the
+            // pin that used to require an `OnGUI` now requires the panel host instead. What it protects
+            // is unchanged: the HUD component, and only the HUD component, owns the drawing surface.
             Assert.That(
                 typeof(ConfiguredMatchHudRenderer).GetMethod("OnGUI", BindingFlags.Instance | BindingFlags.NonPublic),
+                Is.Null); // absence-intended: nothing in this scene draws in immediate mode any more.
+            Assert.That(
+                typeof(ConfiguredMatchHudRenderer).GetProperty(
+                    nameof(ConfiguredMatchHudRenderer.RootElement)),
                 Is.Not.Null);
             Assert.That(
                 typeof(MatchSceneCompositionRoot).GetMethod("OnGUI", BindingFlags.Instance | BindingFlags.NonPublic),
-                Is.Null); // absence-intended: the composition root must not own an OnGUI.
+                Is.Null); // absence-intended: the composition root must not own a drawing surface.
         }
 
         [Test]

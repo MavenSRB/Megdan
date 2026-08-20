@@ -974,8 +974,11 @@ namespace GuardsDigital.Presentation.Match
             CardInstance revealedCard,
             IEnumerable<CardInstance> cards,
             IEnumerable<CardDefinition> definitions,
-            CardInstanceId? selectedCardInstanceId)
+            CardInstanceId? selectedCardInstanceId,
+            IEnumerable<TrayCardViewModel> trayCards = null)
         {
+            TrayCards = Array.AsReadOnly((trayCards ??
+                Enumerable.Empty<TrayCardViewModel>()).ToArray());
             TeamSide = teamSide;
             HeroId = heroId;
             HeroDisplayName = heroDisplayName ?? throw new ArgumentNullException(nameof(heroDisplayName));
@@ -1014,6 +1017,16 @@ namespace GuardsDigital.Presentation.Match
         public string CommitmentLabel { get; }
         public IReadOnlyDictionary<CardInstanceId, string> CardButtonLabels { get; }
 
+        /// <summary>
+        /// Milestone 7.8a: this hero's whole current round, left to right - already played cards in
+        /// ascending turn order, then the ones still available, then the discarded ones.
+        ///
+        /// It is a superset of <see cref="Cards"/>, which is the hand alone and remains what a
+        /// commitment is chosen from. The extra entries carry no command; they are how a player reads
+        /// what this hero has already spent the round on.
+        /// </summary>
+        public IReadOnlyList<TrayCardViewModel> TrayCards { get; }
+
         private string FormatCommitmentLabel()
         {
             switch (CommitmentStatus)
@@ -1041,14 +1054,32 @@ namespace GuardsDigital.Presentation.Match
 
     public sealed class DirectorHandsViewModel
     {
-        public DirectorHandsViewModel(long version, IEnumerable<DirectorHandViewModel> hands)
+        public DirectorHandsViewModel(
+            long version,
+            IEnumerable<DirectorHandViewModel> hands,
+            HeroId viewedHeroId = default)
         {
             Version = version;
             Hands = Array.AsReadOnly((hands ?? throw new ArgumentNullException(nameof(hands))).ToArray());
+            ViewedHeroId = viewedHeroId;
+            ViewedHand = Hands.FirstOrDefault(hand => hand.HeroId.Equals(viewedHeroId)) ??
+                Hands.FirstOrDefault();
         }
 
         public long Version { get; }
         public IReadOnlyList<DirectorHandViewModel> Hands { get; }
+
+        /// <summary>
+        /// Milestone 7.8a: the hero whose tray is on screen. Local presentation state - it submits no
+        /// command, is not serialized, and is not part of any authoritative record.
+        /// </summary>
+        public HeroId ViewedHeroId { get; }
+
+        /// <summary>
+        /// That hero's hand, or the first one when the viewed hero names none. One tray is drawn, never
+        /// a stack of every hand at once.
+        /// </summary>
+        public DirectorHandViewModel ViewedHand { get; }
     }
 
     public interface IDirectorHandsView
@@ -1064,6 +1095,9 @@ namespace GuardsDigital.Presentation.Match
         private MatchSessionProjection lastProjection;
         private CardInstanceId? lastSelectedCardInstanceId;
         private DirectorHandsViewModel lastViewModel;
+        private HeroId pinnedHeroId;
+        private HeroId pinnedAgainstAwaitedHeroId;
+        private HeroId lastViewedHeroId;
 
         public DirectorHandsPresenter(IMatchSession session, IDirectorHandsView view)
         {
@@ -1072,6 +1106,82 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public event Action<MatchSessionProjection> SessionProjectionChanged;
+
+        /// <summary>
+        /// The hero whose tray is currently drawn (milestone 7.8a).
+        ///
+        /// By default it is the hero the match is waiting on - the one still owing a commitment, or the
+        /// one resolving a turn. A map selection pins another hero, and the pin lasts exactly as long as
+        /// that awaited hero does: when the match moves on to somebody else, the tray follows, because a
+        /// tray left on the wrong hero would be showing a hand nothing can be played from.
+        ///
+        /// It is local presentation state throughout. Nothing here submits a command or reads back into
+        /// authority, which is why <see cref="SelectViewedHero"/> can be answered from a board click that
+        /// the authority itself refused.
+        /// </summary>
+        public HeroId ViewedHeroId => Resolve(session.Projection);
+
+        /// <summary>The hero the current projection is waiting on, or the first configured hero.</summary>
+        public HeroId AwaitedHeroId => Awaited(session.Projection);
+
+        /// <summary>
+        /// Points the tray at one hero. Answers false for a hero this match does not have, so a stale
+        /// board identity changes nothing.
+        /// </summary>
+        public bool SelectViewedHero(HeroId heroId)
+        {
+            var projection = session.Projection;
+            if (!heroId.IsDefined ||
+                !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)))
+            {
+                return false;
+            }
+
+            pinnedHeroId = heroId;
+            pinnedAgainstAwaitedHeroId = Awaited(projection);
+            Refresh();
+            return true;
+        }
+
+        private HeroId Resolve(MatchSessionProjection projection)
+        {
+            var awaited = Awaited(projection);
+            if (pinnedHeroId.IsDefined && pinnedAgainstAwaitedHeroId.Equals(awaited))
+            {
+                return pinnedHeroId;
+            }
+
+            pinnedHeroId = default;
+            pinnedAgainstAwaitedHeroId = default;
+            return awaited;
+        }
+
+        private static HeroId Awaited(MatchSessionProjection projection)
+        {
+            if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
+            {
+                var owing = projection.Setup.Heroes
+                    .OrderBy(hero => hero.TeamSide)
+                    .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                    .FirstOrDefault(hero => projection.GetCommitment(hero.HeroId).Status ==
+                        TurnCardCommitmentStatus.AwaitingResponse);
+                if (owing != null)
+                {
+                    return owing.HeroId;
+                }
+            }
+
+            if (projection.SelectedActor.IsDefined)
+            {
+                return projection.SelectedActor.ActorId;
+            }
+
+            var first = projection.Setup.Heroes
+                .OrderBy(hero => hero.TeamSide)
+                .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                .FirstOrDefault();
+            return first?.HeroId ?? default;
+        }
 
         public void Refresh()
         {
@@ -1082,8 +1192,11 @@ namespace GuardsDigital.Presentation.Match
                 selectedCardInstanceId = null;
             }
 
+            var viewedHeroId = Resolve(projection);
             if (!ReferenceEquals(projection, lastProjection) ||
-                !Nullable.Equals(selectedCardInstanceId, lastSelectedCardInstanceId))
+                !Nullable.Equals(selectedCardInstanceId, lastSelectedCardInstanceId) ||
+                !viewedHeroId.Equals(lastViewedHeroId) ||
+                lastViewModel == null)
             {
                 var hands = projection.Setup.Heroes
                     .OrderBy(hero => hero.TeamSide)
@@ -1105,14 +1218,79 @@ namespace GuardsDigital.Presentation.Match
                             projection.Cards.Where(card =>
                                 card.OwnerId.Equals(hero.HeroId) && card.State.Location == CardLocation.Hand),
                             projection.Definitions,
-                            selectedCardInstanceId);
+                            selectedCardInstanceId,
+                            BuildTray(projection, hero.HeroId, selectedCardInstanceId));
                     });
                 lastProjection = projection;
                 lastSelectedCardInstanceId = selectedCardInstanceId;
-                lastViewModel = new DirectorHandsViewModel(projection.Version, hands);
+                lastViewedHeroId = viewedHeroId;
+                lastViewModel = new DirectorHandsViewModel(projection.Version, hands, viewedHeroId);
             }
 
             view.Render(lastViewModel);
+        }
+
+        /// <summary>
+        /// Milestone 7.8a: one hero's current-round cards in the tray's own order - played in ascending
+        /// turn order, then available, then discarded.
+        ///
+        /// The three groups are read from projected card lifecycle state and the round's own assignment
+        /// history; nothing here decides that a card was retrieved, discarded by a Defense, or cleared by
+        /// a round reset. A card the hero owns that is in neither the hand, the turn area, nor the
+        /// discard pile - a deck card, a set-aside card, an item, an unlocked Ultimate - is not part of
+        /// this round's five and does not appear.
+        /// </summary>
+        private static IReadOnlyList<TrayCardViewModel> BuildTray(
+            MatchSessionProjection projection,
+            HeroId heroId,
+            CardInstanceId? selectedCardInstanceId)
+        {
+            var canSelect = projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
+                projection.GetCommitment(heroId).Status == TurnCardCommitmentStatus.AwaitingResponse;
+            var entries = new List<TrayCardViewModel>();
+            foreach (var card in projection.Cards.Where(card => card.OwnerId.Equals(heroId)))
+            {
+                var group = card.State.Location == CardLocation.Hand
+                    ? TrayCardGroup.Available
+                    : card.State.Location == CardLocation.DiscardPile
+                        ? TrayCardGroup.Discarded
+                        : card.State.Location == CardLocation.TurnArea
+                            ? TrayCardGroup.Played
+                            : TrayCardGroup.None;
+                if (group == TrayCardGroup.None)
+                {
+                    continue;
+                }
+
+                var playedTurnIndex = CurrentRoundCards.PlayedTurnIndex(projection, heroId, card.Id);
+                if (group == TrayCardGroup.Played && playedTurnIndex == 0)
+                {
+                    // A card in the turn area that this round's history does not name is the facedown
+                    // commitment of a turn that has not been revealed yet. It is the hero's own card and
+                    // is no longer choosable, so it reads as spent rather than as available.
+                    group = TrayCardGroup.Discarded;
+                }
+
+                var definition = projection.Definitions
+                    .FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference));
+                entries.Add(new TrayCardViewModel(
+                    card.Id,
+                    definition?.DisplayName ?? card.Id.Value,
+                    definition?.Progression.Color ?? CardColor.None,
+                    CurrentRoundCards.ValueLine(definition),
+                    group,
+                    group == TrayCardGroup.Played ? playedTurnIndex : 0,
+                    group == TrayCardGroup.Available && canSelect,
+                    selectedCardInstanceId.HasValue && selectedCardInstanceId.Value.Equals(card.Id)));
+            }
+
+            return Array.AsReadOnly(entries
+                .OrderBy(entry => entry.Group == TrayCardGroup.Played
+                    ? 0
+                    : entry.Group == TrayCardGroup.Available ? 1 : 2)
+                .ThenBy(entry => entry.PlayedTurnIndex)
+                .ThenBy(entry => entry.CardInstanceId.Value, StringComparer.Ordinal)
+                .ToArray());
         }
 
         public bool SelectCommitmentCard(CardInstanceId cardInstanceId)
@@ -1509,8 +1687,10 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<UnavailableEffectChoiceViewModel> unavailableEffectChoices = null,
             IEnumerable<UnavailableActionViewModel> unavailableActions = null,
             IEnumerable<ClearOfferViewModel> clearOffers = null,
-            ClearSelectionViewModel clearSelection = null)
+            ClearSelectionViewModel clearSelection = null,
+            SystemTransitionPromptViewModel systemTransitionPrompt = null)
         {
+            SystemTransitionPrompt = systemTransitionPrompt;
             Version = version;
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
@@ -1616,7 +1796,121 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public ClearSelectionViewModel ClearSelection { get; }
 
+        /// <summary>
+        /// Milestone 7.8a: the decision a paused multi-step system transition is waiting on, or
+        /// <c>null</c> when none is paused. It shares the one contextual region with every other
+        /// decision, because the match asks exactly one thing at a time.
+        /// </summary>
+        public SystemTransitionPromptViewModel SystemTransitionPrompt { get; }
+
         public string HudHeader { get; }
+    }
+
+    /// <summary>
+    /// One option of a paused system transition, labelled from the projected description and carrying
+    /// the exact invocation the continuation already built.
+    ///
+    /// Milestone 7.8a. The label is composed here from typed facts - card instances, definition
+    /// references, a printed icon, a space - and never by decoding the option identity: this type has no
+    /// access to one beyond the command it forwards unchanged.
+    /// </summary>
+    public sealed class SystemTransitionOptionViewModel
+    {
+        public SystemTransitionOptionViewModel(
+            string label,
+            string detail,
+            DirectorCommand command,
+            CardColor color = CardColor.None,
+            CardInstanceId sourceCardInstanceId = default)
+        {
+            SourceCardInstanceId = sourceCardInstanceId;
+            Label = string.IsNullOrWhiteSpace(label)
+                ? throw new ArgumentException("A transition option requires a label.", nameof(label))
+                : label;
+            Detail = detail ?? string.Empty;
+            Command = command ?? throw new ArgumentNullException(nameof(command));
+            Color = color;
+            ColorName = color == CardColor.None ? string.Empty : MatchHudTheme.ColorName(color);
+        }
+
+        public string Label { get; }
+
+        /// <summary>What else taking this option does - the sibling set aside, and the item it becomes.</summary>
+        public string Detail { get; }
+
+        public DirectorCommand Command { get; }
+
+        /// <summary>
+        /// The printed colour of the card this option is about, or <see cref="CardColor.None"/> for an
+        /// option that is not about a card at all - p.8's Place names a space.
+        ///
+        /// For p.15's upgrade it is the upgraded card's own projected colour, which is also the taken
+        /// card's: the page's own rule is that the two cards found in the deck "have the same color as
+        /// the chosen card". So the control can wear that colour the way the tray's cards do, and a
+        /// player matches the option to the card in their hand by the same swatch rather than by
+        /// reading two names. It is paired with <see cref="ColorName"/> wherever it is drawn.
+        /// </summary>
+        public CardColor Color { get; }
+
+        public string ColorName { get; }
+
+        /// <summary>
+        /// The card this option is one of the answers for, or undefined when the decision is not about a
+        /// card. p.15 asks two questions in one option - which card to upgrade, and which of the two
+        /// next-Tier cards to take - so several consecutive options share one upgraded card.
+        ///
+        /// It exists so a surface can group what the projection has already grouped, by breaking a line
+        /// where this changes. That is a line break rather than a sort: the options stay in the order the
+        /// pause offered them, which is the rule presentation must not bend.
+        /// </summary>
+        public CardInstanceId SourceCardInstanceId { get; }
+    }
+
+    /// <summary>
+    /// The decision a paused multi-step system transition is waiting on, as a surface.
+    ///
+    /// Milestone 7.8a builds this because no view drew one: rulebook p.8's Lane-Push respawn Place has
+    /// been reachable since milestone 6.11 and p.15's Upgrade a Card since milestone 7.6, and the
+    /// configured scene could only pass them through a director command that named an option without
+    /// being able to say what it was.
+    ///
+    /// The options are the projection's own, in the projection's order. This adds none, removes none,
+    /// reorders none, and chooses none.
+    /// </summary>
+    public sealed class SystemTransitionPromptViewModel
+    {
+        public SystemTransitionPromptViewModel(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind kind,
+            string sectionLabel,
+            string promptLabel,
+            string statusLabel,
+            IEnumerable<SystemTransitionOptionViewModel> options)
+        {
+            Kind = kind;
+            SectionLabel = sectionLabel ?? throw new ArgumentNullException(nameof(sectionLabel));
+            PromptLabel = promptLabel ?? throw new ArgumentNullException(nameof(promptLabel));
+            StatusLabel = statusLabel ?? string.Empty;
+            Options = Array.AsReadOnly((options ?? throw new ArgumentNullException(nameof(options))).ToArray());
+            if (Options.Count == 0)
+            {
+                throw new ArgumentException(
+                    "A paused step offers at least one option, so a prompt for one is never empty.",
+                    nameof(options));
+            }
+        }
+
+        public GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind Kind { get; }
+
+        /// <summary>The family the shared contextual gutter names - `LEVEL UP` or `LANE PUSH`.</summary>
+        public string SectionLabel { get; }
+
+        /// <summary>Who is deciding and what they are deciding.</summary>
+        public string PromptLabel { get; }
+
+        /// <summary>What the decision has already cost and what is left, for a purchase that has one.</summary>
+        public string StatusLabel { get; }
+
+        public IReadOnlyList<SystemTransitionOptionViewModel> Options { get; }
     }
 
     public sealed class HeroRespawnOptionViewModel
@@ -1723,6 +2017,12 @@ namespace GuardsDigital.Presentation.Match
                 .Any(value => value.Command.Equals(invocation.Command)) ||
                 current.EffectChoiceTargets.Any(value => value.Command.Equals(invocation.Command)) ||
                 current.HeroRespawnOptions.Any(value => value.Command.Equals(invocation.Command)) ||
+                // Milestone 7.8a: a paused transition's options join the same legality decision as
+                // everything else this presenter projects. An option from an older prompt - one the
+                // pause has since moved past, or one a restore replaced - is refused here and never
+                // reaches the authority, which would refuse it too and for the same reason.
+                current.SystemTransitionPrompt?.Options
+                    .Any(value => value.Command.Equals(invocation.Command)) == true ||
                 // Milestone 6.3a: the open Clear's confirm joins the same legality decision, because
                 // this presenter refuses anything it did not project and a Clear confirm is projected
                 // like every other control here. What it refuses in practice is a confirm left over
@@ -1995,9 +2295,12 @@ namespace GuardsDigital.Presentation.Match
                 actions,
                 CreateEndTurnInvocation(projection),
                 // A pending removal choice is mandatory: the authority rejects an advance while it
-                // stands, so the control that would produce that rejection is not offered.
+                // stands, so the control that would produce that rejection is not offered. Milestone
+                // 7.8a adds the second such pause on the same terms - a paused system transition is
+                // answered by answering it, and an advance offered beside it could only be refused.
                 projection.Phase == RoundResolutionPhase.EndOfRound &&
-                    projection.PendingMinionBattleChoice == null
+                    projection.PendingMinionBattleChoice == null &&
+                    projection.PendingSystemTransitionStep == null
                     ? new TypedInvocationViewModel("CONTINUE END OF ROUND", DirectorCommand.AdvanceEndOfRound())
                     : null,
                 initiativeChoices,
@@ -2015,8 +2318,112 @@ namespace GuardsDigital.Presentation.Match
                 unavailableEffectChoices,
                 unavailableActions,
                 clearOffers,
-                clearSelection);
+                clearSelection,
+                CreateSystemTransitionPrompt(projection));
         }
+
+        /// <summary>
+        /// Milestone 7.8a: the paused transition as a prompt, or <c>null</c> when nothing is paused or
+        /// the rules that paused it describe nothing.
+        ///
+        /// Every option is built from the description's typed content and carries the invocation the
+        /// continuation itself projected, forwarded unchanged. An undescribed pause draws no prompt
+        /// rather than a prompt of option identities, because a control a player cannot read is worse
+        /// than the absence the milestone is fixing.
+        /// </summary>
+        public static SystemTransitionPromptViewModel CreateSystemTransitionPrompt(
+            MatchSessionProjection projection) =>
+            CreateSystemTransitionPrompt(
+                projection?.PendingSystemTransitionDescription,
+                projection?.Definitions,
+                projection?.Setup?.Heroes);
+
+        public static SystemTransitionPromptViewModel CreateSystemTransitionPrompt(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription description,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<QuickGameHeroSetupState> heroes)
+        {
+            if (description == null || description.Options.Count == 0)
+            {
+                return null;
+            }
+
+            var side = description.PendingStep.ChoosingSide == TeamSide.Red ? "RED" : "BLUE";
+            if (description.Kind ==
+                GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind.LevelUpUpgrade)
+            {
+                var heroName = HeroDisplayName(heroes, description.HeroId);
+                return new SystemTransitionPromptViewModel(
+                    description.Kind,
+                    "LEVEL UP",
+                    $"{side} {heroName} REACHED LEVEL {description.Level} - UPGRADE A CARD",
+                    $"PAID {description.PaidCoins} COIN{(description.PaidCoins == 1 ? string.Empty : "S")} - " +
+                        $"{description.RemainingCoins} REMAINING",
+                    description.Options.Select(option => new SystemTransitionOptionViewModel(
+                        $"UPGRADE {DefinitionName(definitions, option.UpgradedCard)} " +
+                            $"INTO {DefinitionName(definitions, option.TakenCard)}",
+                        FormatUpgradeDetail(definitions, option),
+                        DirectorCommand.AnswerSystemTransitionStep(Invocation(description, option)),
+                        DefinitionColor(definitions, option.UpgradedCard),
+                        option.UpgradedCardInstanceId)));
+            }
+
+            return new SystemTransitionPromptViewModel(
+                description.Kind,
+                "LANE PUSH",
+                $"{side} PLACES THE RESPAWNING MINION",
+                "ITS SPAWN POINT IS BLOCKED - CHOOSE A NEAREST EMPTY SPACE",
+                description.Options.Select(option => new SystemTransitionOptionViewModel(
+                    $"PLACE AT {option.DestinationSpaceId.Value}",
+                    $"({option.Destination.Q}, {option.Destination.R})",
+                    DirectorCommand.AnswerSystemTransitionStep(Invocation(description, option)))));
+        }
+
+        private static GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand Invocation(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription description,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionDescription option) =>
+            description.PendingStep.Invocations.Single(candidate =>
+                candidate.OptionId.Equals(option.OptionId));
+
+        private static string FormatUpgradeDetail(
+            IReadOnlyList<CardDefinition> definitions,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionDescription option)
+        {
+            if (!option.SetAsideCardInstanceId.IsDefined)
+            {
+                return "NOTHING IS SET ASIDE - NO ITEM";
+            }
+
+            var setAside = DefinitionName(definitions, option.SetAsideCard);
+            return option.ItemIcon == PrintedValueChannel.None
+                ? $"SETS {setAside} ASIDE - NO MATCHING ITEM SLOT"
+                : $"SETS {setAside} ASIDE AS A " +
+                    $"{MatchHudTheme.ChannelToken(option.ItemIcon)} {MatchHudTheme.Signed(1)} ITEM";
+        }
+
+        /// <summary>
+        /// The card's own printed colour, read from its definition exactly as the tray reads one, so a
+        /// transition option and a card in hand can never disagree about what colour a card is.
+        /// </summary>
+        private static CardColor DefinitionColor(
+            IReadOnlyList<CardDefinition> definitions,
+            CardDefinitionReference reference) =>
+            (definitions ?? Array.Empty<CardDefinition>())
+                .FirstOrDefault(definition => definition.Reference.Equals(reference))
+                ?.Progression.Color ?? CardColor.None;
+
+        private static string DefinitionName(
+            IReadOnlyList<CardDefinition> definitions,
+            CardDefinitionReference reference) =>
+            (definitions ?? Array.Empty<CardDefinition>())
+                .FirstOrDefault(definition => definition.Reference.Equals(reference))?.DisplayName
+                ?? reference.DefinitionId.Value;
+
+        private static string HeroDisplayName(
+            IReadOnlyList<QuickGameHeroSetupState> heroes, HeroId heroId) =>
+            (heroes ?? Array.Empty<QuickGameHeroSetupState>())
+                .FirstOrDefault(hero => hero.HeroId.Equals(heroId))?.DisplayName.ToUpperInvariant()
+                ?? heroId.Value;
 
         /// <summary>
         /// Milestone 6.3a: the open Clear's controls, or <c>null</c> when none is open.
@@ -3204,6 +3611,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly UndoRestartPresenter undoRestart;
         private readonly DiagnosticLogPresenter diagnostics;
         private readonly MinionChoicePresenter minionChoice;
+        private readonly HeroOverviewsPresenter heroOverviews;
 
         public MatchFeatureCoordinator(
             BoardInteractionPresenter board,
@@ -3212,8 +3620,10 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartPresenter undoRestart,
             DiagnosticLogPresenter diagnostics,
             MinionChoicePresenter minionChoice,
-            Action<MatchSessionProjection> afterSessionChange = null)
+            Action<MatchSessionProjection> afterSessionChange = null,
+            HeroOverviewsPresenter heroOverviews = null)
         {
+            this.heroOverviews = heroOverviews;
             this.board = board ?? throw new ArgumentNullException(nameof(board));
             this.hands = hands ?? throw new ArgumentNullException(nameof(hands));
             this.round = round ?? throw new ArgumentNullException(nameof(round));
@@ -3242,6 +3652,7 @@ namespace GuardsDigital.Presentation.Match
             undoRestart.Refresh();
             diagnostics.Refresh();
             minionChoice.Refresh();
+            heroOverviews?.Refresh();
         }
     }
 }

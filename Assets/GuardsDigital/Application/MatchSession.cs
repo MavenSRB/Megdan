@@ -729,7 +729,42 @@ namespace GuardsDigital.Application
                 turn?.PendingImmediateLanePush,
                 round.SystemTransitions.PendingStep,
                 round.TeamLives.Counters,
-                round.Outcome);
+                round.Outcome,
+                CreateHeroProgression(round),
+                // Milestone 7.8a. The pause and what it means are read in the same breath, from the same
+                // authority, so a reader can never hold a description of one pause beside another one.
+                round.SystemTransitions.DescribePendingStep());
+        }
+
+        /// <summary>
+        /// Milestone 7.8a. Every hero's Level, coins and items as the round authority currently holds
+        /// them, ordered by hero id so the sequence is a fact rather than an iteration accident.
+        ///
+        /// Items are reduced to a count per icon here rather than in presentation, because "how many
+        /// items raise Attack" is a question about authoritative item state and its answer must not
+        /// depend on who asked. Nothing about p.16's composition into a card's total happens here.
+        /// </summary>
+        private static IReadOnlyList<HeroProgressionProjection> CreateHeroProgression(
+            RoundResolutionAuthority round)
+        {
+            if (round == null)
+            {
+                return Array.Empty<HeroProgressionProjection>();
+            }
+
+            var coins = round.CoinBalances;
+            return Array.AsReadOnly(round.HeroProgression.Levels
+                .Select(entry => new HeroProgressionProjection(
+                    entry.Key,
+                    entry.Value.Value,
+                    coins.FirstOrDefault(balance => balance.Key.Equals(entry.Key)).Value,
+                    round.RoundLeveling.HasLeveled(entry.Key),
+                    round.HeroItems.GetItems(entry.Key)
+                        .GroupBy(item => item.Icon)
+                        .OrderBy(group => (int)group.Key)
+                        .Select(group => new KeyValuePair<PrintedValueChannel, int>(
+                            group.Key, group.Count()))))
+                .ToArray());
         }
 
         private PendingDefensePreviewProjection CreateDefensePreview(

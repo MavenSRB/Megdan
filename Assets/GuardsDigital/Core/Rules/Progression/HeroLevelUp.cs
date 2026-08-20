@@ -397,7 +397,8 @@ namespace GuardsDigital.Core.Rules.Progression
     /// call that mutated on its way to stopping would apply a purchased level twice for every restore.
     /// It is the same invariant the Lane-Push respawn keeps.
     /// </summary>
-    public sealed class HeroLevelUpStepRules : ISystemTransitionStepRules
+    public sealed class HeroLevelUpStepRules
+        : ISystemTransitionStepRules, IDescribingSystemTransitionStepRules
     {
         private readonly MatchParticipants participants;
         private readonly IReadOnlyList<CardDefinition> definitions;
@@ -651,6 +652,85 @@ namespace GuardsDigital.Core.Rules.Progression
             resolution = SystemTransitionStepResolution.ItemCompleted(
                 new HeroLevelUpItem(heroId, raised, HeroLevelUpItemKind.Purchase).ToItemId());
             return true;
+        }
+
+        /// <summary>
+        /// Milestone 7.8a. What p.15's Upgrade a Card is asking, described from the state that produced
+        /// the pause: whose level it is, which level was reached, what it cost, what is left, and for
+        /// each option the three cards p.15 moves plus the icon p.16 files the third one under.
+        ///
+        /// Every card is named by its instance and its definition reference rather than by a display
+        /// name, so the words belong to whichever surface draws them and none of them is produced by
+        /// decoding an option identity. The sibling is found by <see cref="FindSibling"/> - the same
+        /// method <see cref="ApplyAnswer"/> sets aside - so a described option and an applied one cannot
+        /// disagree about which card the player is about to lose.
+        ///
+        /// The paid cost is p.15's table read one row back. A purchase raises the Level and then pauses,
+        /// so the level the pause names is the one already bought, and its price is the cost printed for
+        /// the level the hero was on before it.
+        /// </summary>
+        public SystemTransitionStepDescription Describe(PendingSystemTransitionStep pendingStep)
+        {
+            if (pendingStep == null ||
+                !pendingStep.DefinitionId.Equals(HeroLevelUpSystemTransition.DefinitionId) ||
+                !pendingStep.StepId.Equals(HeroLevelUpSystemTransition.PurchaseAndUpgradeStepId) ||
+                !pendingStep.ItemId.IsDefined ||
+                levels == null || items == null || coins == null)
+            {
+                return null;
+            }
+
+            var item = HeroLevelUpItem.Read(pendingStep.ItemId);
+            if (item.Kind != HeroLevelUpItemKind.Upgrade || !item.Level.IsDefined ||
+                item.Level.Value <= HeroLevel.Minimum)
+            {
+                return null;
+            }
+
+            var dashboard = participants.Heroes
+                .FirstOrDefault(hero => hero.Id.Equals(item.HeroId))?.Dashboard;
+            if (dashboard == null)
+            {
+                return null;
+            }
+
+            var described = new List<SystemTransitionOptionDescription>();
+            foreach (var optionId in pendingStep.Options)
+            {
+                var option = HeroLevelUpOption.Read(optionId);
+                var upgraded = Card(option.UpgradedCardInstanceId);
+                var taken = Card(option.TakenCardInstanceId);
+                var setAside = FindSibling(item.HeroId, upgraded, taken);
+                var icon = PrintedValueChannel.None;
+                var slot = default(HeroDashboardSlotPosition);
+                var setAsideDefinition = setAside == null ? null : DefinitionOf(setAside);
+                if (setAsideDefinition != null && setAsideDefinition.Progression.HasItemIcon &&
+                    dashboard.TryFindSlotAccepting(setAsideDefinition.Progression.ItemIcon, out var accepting))
+                {
+                    icon = setAsideDefinition.Progression.ItemIcon;
+                    slot = accepting.Position;
+                }
+
+                described.Add(SystemTransitionOptionDescription.Upgrade(
+                    optionId,
+                    upgraded.Id,
+                    upgraded.DefinitionReference,
+                    taken.Id,
+                    taken.DefinitionReference,
+                    setAside?.Id ?? default,
+                    setAside?.DefinitionReference ?? default,
+                    icon,
+                    slot));
+            }
+
+            return new SystemTransitionStepDescription(
+                SystemTransitionPromptKind.LevelUpUpgrade,
+                pendingStep,
+                item.HeroId,
+                described,
+                item.Level.Value,
+                HeroLevelSchedule.LevelUpCost(new HeroLevel(item.Level.Value - 1)),
+                coins.GetCoins(item.HeroId));
         }
 
         private bool CanCompletePurchase(HeroId heroId) =>

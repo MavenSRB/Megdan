@@ -7,6 +7,7 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 - [Current implementation inventory](Project/CURRENT_IMPLEMENTATION.md)
 - [Foundation corrections and governance state](Project/FOUNDATION_CORRECTIONS.md)
 - [Configured presentation surfaces](Project/CONFIGURED_PRESENTATION.md)
+- [Player-facing match HUD](Project/MATCH_HUD.md)
 - [Rule modifications and their consumers](Project/RULE_MODIFICATIONS.md)
 - [Board operations](Project/BOARD_OPERATIONS.md)
 - [Product scope and durable constraints](Project/PRODUCT.md)

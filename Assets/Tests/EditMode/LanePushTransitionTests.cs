@@ -192,6 +192,40 @@ namespace GuardsDigital.Tests.EditMode
                 "space further away, and not one outside the Zone.");
         }
 
+        /// <summary>
+        /// Milestone 7.8a: the pause says what it is asking, so the surface that draws it never decodes
+        /// an option identity. The space is found exactly as <c>ApplyAnswer</c> finds it, which is what
+        /// keeps a described option and an applied one about the same space.
+        /// </summary>
+        [Test]
+        public void APausedPlacement_DescribesEveryOptionsDestinationSpace()
+        {
+            var fixture = CreateBoardFixture(blockedSpawnPointOwners: TeamSide.Red);
+            var paused = fixture.Push(TeamSide.Red, TeamSide.Blue);
+
+            var description = fixture.Transitions.DescribePendingStep();
+            Assert.That(description, Is.Not.Null);
+            Assert.That(description.Kind,
+                Is.EqualTo(GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind
+                    .LanePushRespawnPlace));
+            Assert.That(description.PendingStep, Is.SameAs(paused.PendingStep));
+            Assert.That(description.HeroId.IsDefined, Is.False,
+                "p.8's sidebar Place belongs to a team and a minion, not to a hero.");
+            Assert.That(description.Level, Is.Zero);
+
+            Assert.That(
+                description.Options.Select(option => option.OptionId.Value),
+                Is.EqualTo(paused.PendingStep.Options.Select(option => option.Value)));
+            foreach (var option in description.Options)
+            {
+                var space = fixture.Board.MapDefinition.Spaces.Single(candidate =>
+                    candidate.Kind == BoardMapSpaceKind.Playable &&
+                    candidate.Id.Equals(option.DestinationSpaceId));
+                Assert.That(option.Destination, Is.EqualTo(space.Coordinate),
+                    "Each option names a real playable space of this map and its coordinate.");
+            }
+        }
+
         [Test]
         public void AnAnsweredPlacement_PutsTheMinionOnTheChosenSpaceAndFinishesThePush()
         {

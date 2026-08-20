@@ -28,9 +28,18 @@ namespace GuardsDigital.Tests.EditMode
         {
             var panel = ConfiguredMatchHudRenderer.CalculateCardPanelRect(778f, 300f);
 
-            Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(12f, 12f, 754f, 276f)));
+            // Milestone 7.8a: the tray also clears the standing status strip, so the bar and the tray
+            // cannot both claim the same pixels on a short viewport and hide one of two guaranteed
+            // surfaces behind the other.
+            Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(12f, 68f, 754f, 220f)));
             Assert.That(panel.xMax, Is.LessThanOrEqualTo(778f));
             Assert.That(panel.yMax, Is.LessThanOrEqualTo(300f));
+            Assert.That(
+                panel.yMin,
+                Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateStatusBarRect(778f, 300f).yMax,
+                Is.LessThanOrEqualTo(panel.yMin));
         }
 
         [Test]
@@ -38,44 +47,93 @@ namespace GuardsDigital.Tests.EditMode
         {
             var panel = ConfiguredMatchHudRenderer.CalculateCardPanelRect(2048f, 1152f);
 
-            Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(12f, 780f, 1280f, 360f)));
+            // Milestone 5.1c's 1280 is still the width the Defense row was sized against. The height is
+            // 360 as a floor rather than a ceiling since milestone 7.8a: p.15's Upgrade a Card can ask
+            // six options at once, and on a tall screen the tray may take a third of it rather than
+            // putting a row of a mandatory choice behind a scrollbar. The tray sizes to its content, so
+            // this is the region it may use and not the region it does use.
+            Assert.That(panel.x, Is.EqualTo(12f));
+            Assert.That(panel.width, Is.EqualTo(1280f));
+            Assert.That(panel.height, Is.GreaterThanOrEqualTo(360f));
+            Assert.That(panel.height, Is.EqualTo(1152f * 0.34f).Within(0.01f));
+            Assert.That(panel.yMax, Is.EqualTo(1152f - 12f).Within(0.01f));
+            Assert.That(panel.yMin,
+                Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
         }
 
+        /// <summary>
+        /// Milestone 5.1c's guarantee, restated for the surface milestone 7.8a moved it onto: a Defense
+        /// control carries its complete label and nothing narrows it.
+        ///
+        /// It used to be a measurement, because an immediate-mode control was given an explicit width
+        /// and the case existed to prove that width was not the clipping one. A retained control is
+        /// content-sized unless something sets a width, so the guarantee is now structural and this
+        /// reads it that way: the complete label is on the control, the label wraps rather than
+        /// truncates, and no width, max-width, or text-overflow was assigned anywhere on it.
+        /// </summary>
         [Test]
-        public void DefenseChoiceLayout_AllocatesAtLeastTheMeasuredFullLabelWidth()
+        public void DefenseChoiceLayout_CarriesTheCompleteLabelOnAControlNothingNarrows()
         {
             const string longestCurrentLabel =
                 "DISCARD TEST - BLUE SCOUT SHOT\nPRINTED DEFENSE 1";
-            var style = new UnityEngine.GUIStyle
+            var view = new RoundActionUnityView();
+            view.Render(TestRoundModel(defenseChoices: new[]
             {
-                font = UnityEngine.Resources.GetBuiltinResource<UnityEngine.Font>("LegacyRuntime.ttf"),
-                fontSize = 12,
-                padding = new UnityEngine.RectOffset(6, 6, 4, 4),
-                wordWrap = false
-            };
+                new TypedInvocationViewModel(
+                    longestCurrentLabel,
+                    DirectorCommand.DeclineDefense(
+                        new ActionResolutionId("r"), new ActionResolutionStepId("s"))),
+                new TypedInvocationViewModel(
+                    "DECLINE DEFENSE",
+                    DirectorCommand.DeclineDefense(
+                        new ActionResolutionId("r"), new ActionResolutionStepId("s2")))
+            }));
 
-            var measuredWidth = style.CalcSize(new UnityEngine.GUIContent(longestCurrentLabel)).x;
-            var allocatedMinimumWidth = RoundActionUnityView.CalculateContentWidth(
-                longestCurrentLabel,
-                style);
-
-            Assert.That(allocatedMinimumWidth, Is.GreaterThanOrEqualTo(measuredWidth));
-            Assert.That(allocatedMinimumWidth, Is.GreaterThan(150f),
-                "The longest current Defense label must not regress to the clipping fixed width.");
-
-            var turnOneLabels = new[]
+            var controls = Buttons(view.Root).ToArray();
+            Assert.That(controls.Select(button => button.text),
+                Is.EquivalentTo(new[] { longestCurrentLabel, "DECLINE DEFENSE" }),
+                "Every projected Defense choice is drawn, carrying its complete label.");
+            foreach (var control in controls)
             {
-                "DISCARD TEST - BLUE FEINT\nPRINTED DEFENSE 2",
-                "DISCARD TEST - BLUE SENTINEL\nPRINTED DEFENSE 4",
-                longestCurrentLabel,
-                "DISCARD TEST - BLUE HAMMER\nPRINTED DEFENSE 1",
-                "DECLINE DEFENSE"
-            };
-            var completeRowWidth = 54f + turnOneLabels.Sum(label =>
-                RoundActionUnityView.CalculateContentWidth(label, style));
-            Assert.That(completeRowWidth, Is.LessThanOrEqualTo(1256f),
-                "The expanded desktop panel must fit four Defense cards plus Decline without horizontal scrolling.");
+                Assert.That(control.style.width.keyword, Is.EqualTo(UnityEngine.UIElements.StyleKeyword.Null),
+                    "A Defense control that was given a width could clip the label the model carries.");
+                Assert.That(control.style.maxWidth.keyword, Is.EqualTo(UnityEngine.UIElements.StyleKeyword.Null));
+                Assert.That(control.style.whiteSpace.value,
+                    Is.EqualTo(UnityEngine.UIElements.WhiteSpace.Normal),
+                    "A long label wraps rather than being cut off.");
+            }
         }
+
+        private static IEnumerable<UnityEngine.UIElements.Button> Buttons(
+            UnityEngine.UIElements.VisualElement element)
+        {
+            if (element is UnityEngine.UIElements.Button button)
+            {
+                yield return button;
+            }
+
+            foreach (var child in element.Children())
+            {
+                foreach (var nested in Buttons(child))
+                {
+                    yield return nested;
+                }
+            }
+        }
+
+        private static RoundActionViewModel TestRoundModel(
+            IEnumerable<TypedInvocationViewModel> defenseChoices = null) =>
+            new RoundActionViewModel(
+                1L,
+                1,
+                1,
+                RoundResolutionPhase.ResolvingTurn,
+                "STATUS",
+                Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                defenseChoices ?? Array.Empty<TypedInvocationViewModel>());
 
         [Test]
         public void FeaturePresenters_DependOnlyOnSessionAndTheirViewPort()

@@ -377,6 +377,64 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Transitions.TryAnswer(legal).Accepted, Is.True);
         }
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 7.8a: the pause describes itself, so a reader never decodes an option identity
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void APausedUpgrade_DescribesItsHeroLevelPriceCoinsAndEveryOptionsThreeCards()
+        {
+            var fixture = new LevelUpFixture(redCoins: 2);
+            fixture.Begin();
+
+            var pending = fixture.Transitions.PendingStep;
+            var description = fixture.Transitions.DescribePendingStep();
+            Assert.That(description, Is.Not.Null);
+            Assert.That(description.Kind, Is.EqualTo(SystemTransitionPromptKind.LevelUpUpgrade));
+            Assert.That(description.PendingStep, Is.SameAs(pending),
+                "A description belongs to the pause it describes, so a reader cannot hold one beside " +
+                "another.");
+            Assert.That(description.HeroId, Is.EqualTo(fixture.RedHeroId));
+            Assert.That(description.Level, Is.EqualTo(2));
+            Assert.That(description.PaidCoins, Is.EqualTo(1),
+                "p.15's table prices the first level at 1, read one row back from the level reached.");
+            Assert.That(description.RemainingCoins, Is.EqualTo(fixture.Coins(fixture.RedHeroId)));
+
+            Assert.That(
+                description.Options.Select(option => option.OptionId.Value),
+                Is.EqualTo(pending.Options.Select(option => option.Value)),
+                "Exactly the options the step offered, in the step's own order.");
+            foreach (var option in description.Options)
+            {
+                var read = HeroLevelUpOption.Read(option.OptionId);
+                Assert.That(option.UpgradedCardInstanceId, Is.EqualTo(read.UpgradedCardInstanceId));
+                Assert.That(option.TakenCardInstanceId, Is.EqualTo(read.TakenCardInstanceId));
+                Assert.That(option.UpgradedCard,
+                    Is.EqualTo(fixture.CardOf(read.UpgradedCardInstanceId.Value).DefinitionReference));
+                Assert.That(option.TakenCard,
+                    Is.EqualTo(fixture.CardOf(read.TakenCardInstanceId.Value).DefinitionReference));
+                Assert.That(option.SetAsideCardInstanceId.IsDefined, Is.True,
+                    "This content always leaves a second candidate in the deck for p.15 to set aside.");
+                Assert.That(option.SetAsideCardInstanceId,
+                    Is.Not.EqualTo(option.TakenCardInstanceId));
+                Assert.That(option.ItemIcon, Is.Not.EqualTo(PrintedValueChannel.None),
+                    "and p.16 files it under the slot its own printed icon matches.");
+                Assert.That(option.ItemSlot.IsDefined, Is.True);
+            }
+        }
+
+        [Test]
+        public void AnUnpausedLeveling_DescribesNothing()
+        {
+            var fixture = new LevelUpFixture(redCoins: 0);
+            fixture.Begin();
+
+            Assert.That(fixture.Transitions.PendingStep, Is.Null,
+                "Nobody could afford a level, so the step completed without asking.");
+            Assert.That(fixture.Transitions.DescribePendingStep(), Is.Null,
+                "There is no pause to describe, which is an answer rather than a defect.");
+        }
+
         [Test]
         public void APausedLeveling_ReproducesItselfFromTheCardsAndRefusesAPayloadItCouldNotHaveProduced()
         {

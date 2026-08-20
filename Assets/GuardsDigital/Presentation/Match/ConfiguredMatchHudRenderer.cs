@@ -1,12 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Presentation.Match
 {
+    /// <summary>
+    /// The standing status the top bar shows: round and turn, both teams' Life counters, the Wave
+    /// counter, and the Tie Breaker.
+    ///
+    /// Milestone 7.8a folds the Tie Breaker into this one strip, retiring the separate top-right box.
+    /// <see cref="Text"/> is unchanged and still carries every one of those facts as one line, which is
+    /// what the chip's own assistive reading uses: relocating the indicator must not lose anything the
+    /// old surface guaranteed.
+    /// </summary>
     public sealed class MatchHudHeaderViewModel
     {
         /// <param name="teamLifeCounters">
@@ -19,7 +30,9 @@ namespace GuardsDigital.Presentation.Match
         public MatchHudHeaderViewModel(
             TieBreakerState tieBreaker,
             QuickGameSetupState setup,
-            IReadOnlyList<KeyValuePair<TeamId, int>> teamLifeCounters = null)
+            IReadOnlyList<KeyValuePair<TeamId, int>> teamLifeCounters = null,
+            int roundIndex = 0,
+            int turnIndex = 0)
         {
             TieBreaker = tieBreaker;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -29,12 +42,36 @@ namespace GuardsDigital.Presentation.Match
                     ? new Color(0.72f, 0.16f, 0.12f)
                     : new Color(0.12f, 0.32f, 0.72f)
                 : new Color(0.3f, 0.3f, 0.3f);
+            RoundIndex = roundIndex;
+            TurnIndex = turnIndex;
+            RoundTurnLabel = roundIndex <= 0
+                ? "ROUND -"
+                : $"ROUND {roundIndex} · TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound}";
+            RedLifeLabel = "RED " + Counters(setup, teamLifeCounters, TeamSide.Red)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+            BlueLifeLabel = "BLUE " + Counters(setup, teamLifeCounters, TeamSide.Blue)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+            WaveLabel = "WAVES " +
+                setup.WaveCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            TieBreakerLabel = !tieBreaker.IsDefined
+                ? "TIE ?"
+                : tieBreaker.RevealedSide == TeamSide.Red ? "TIE [R] RED" : "TIE [B] BLUE";
         }
 
         public TieBreakerState TieBreaker { get; }
         public QuickGameSetupState Setup { get; }
+
+        /// <summary>Every fact in this bar as one line, and the Tie Breaker chip's assistive reading.</summary>
         public string Text { get; }
+
         public Color Color { get; }
+        public int RoundIndex { get; }
+        public int TurnIndex { get; }
+        public string RoundTurnLabel { get; }
+        public string RedLifeLabel { get; }
+        public string BlueLifeLabel { get; }
+        public string WaveLabel { get; }
+        public string TieBreakerLabel { get; }
 
         private static int Counters(
             QuickGameSetupState setup,
@@ -72,6 +109,19 @@ namespace GuardsDigital.Presentation.Match
         }
     }
 
+    /// <summary>
+    /// The configured match HUD, hosted on one runtime UI Toolkit panel.
+    ///
+    /// Milestone 7.8a replaced this component's immediate-mode drawing with a retained visual tree, by
+    /// the recorded user decision. What did not change is what it is: a passive host. It holds no
+    /// session, decides no legality, and owns no match state - it lays out the surfaces the presenters
+    /// render into, and answers where the pointer is blocked.
+    ///
+    /// The panel and its settings are created here rather than authored as assets, for the reason the
+    /// rest of the configured scene composes in code: the saved scene carries this component and nothing
+    /// else about the HUD, so there is no asset for an import to lose and no second place the layout
+    /// lives.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class ConfiguredMatchHudRenderer : MonoBehaviour
     {
@@ -79,121 +129,396 @@ namespace GuardsDigital.Presentation.Match
         private const float CardPanelWidth = 1280f;
         private const float CardPanelHeight = 360f;
         private const float TieBreakerWidth = 200f;
-        private const float TieBreakerHeight = 96f;
         private const float EventLogPreferredWidth = 720f;
         private const float EventLogPreferredHeight = 360f;
 
+        /// <summary>The standing status strip's height. The Tie Breaker chip sits inside it.</summary>
+        public const float StatusBarHeight = 56f;
+
+        /// <summary>A hero overview rail's width. Compact by intent: the board is the dominant surface.</summary>
+        public const float HeroRailWidth = 172f;
+
+        private const float DirectorToggleWidth = 122f;
+        private const float DirectorToggleHeight = 30f;
+        private const float DirectorDrawerWidth = 134f;
+        private const float DirectorDrawerHeight = 112f;
+
+        private UIDocument document;
+        private PanelSettings panelSettings;
+        private VisualElement root;
+        private VisualElement trayRegion;
+        private VisualElement directorDrawer;
+        private Button directorToggle;
+        private MatchStatusBarUnityView statusBar;
         private DirectorHandsUnityView hands;
         private RoundActionUnityView round;
         private UndoRestartUnityView undoRestart;
         private DiagnosticLogUnityView diagnostics;
         private MinionChoiceUnityView minionChoice;
+        private HeroOverviewsUnityView heroOverviews;
         private MatchHudHeaderViewModel header;
-        private GUIStyle tieBreakerStyle;
-        private Vector2 cardPanelScrollPosition;
 
         public MatchHudHeaderViewModel Header => header;
         public Rect CardPanelRect => GetCardPanelRect();
         public Rect TieBreakerIndicatorRect => GetTieBreakerIndicatorRect();
         public Rect RuleEventLogPanelRect => GetRuleEventLogRect();
+        public Rect StatusBarRect => CalculateStatusBarRect(Screen.width, Screen.height);
+        public Rect RedHeroRailRect => CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Red);
+        public Rect BlueHeroRailRect => CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Blue);
+
+        /// <summary>Whether the compact `DIRECTOR` drawer is open. Local state; it changes no match state.</summary>
+        public bool IsDirectorDrawerOpen { get; private set; }
+
+        /// <summary>The panel this HUD draws on, for a test that needs to look at the built tree.</summary>
+        public VisualElement RootElement => root;
 
         public void Configure(
             DirectorHandsUnityView handsView,
             RoundActionUnityView roundView,
             UndoRestartUnityView undoRestartView,
             DiagnosticLogUnityView diagnosticView,
-            MinionChoiceUnityView minionChoiceView)
+            MinionChoiceUnityView minionChoiceView,
+            HeroOverviewsUnityView heroOverviewsView = null)
         {
             hands = handsView ?? throw new ArgumentNullException(nameof(handsView));
             round = roundView ?? throw new ArgumentNullException(nameof(roundView));
             undoRestart = undoRestartView ?? throw new ArgumentNullException(nameof(undoRestartView));
             diagnostics = diagnosticView ?? throw new ArgumentNullException(nameof(diagnosticView));
             minionChoice = minionChoiceView ?? throw new ArgumentNullException(nameof(minionChoiceView));
+            heroOverviews = heroOverviewsView;
+            Build();
         }
 
         public void RenderHeader(MatchHudHeaderViewModel model)
         {
             header = model ?? throw new ArgumentNullException(nameof(model));
+            statusBar?.Render(header);
+            Layout();
         }
 
+        /// <summary>
+        /// Opens or closes the `DIRECTOR` drawer. It submits nothing: the tools inside it forward the
+        /// existing Undo, Restart, and event-log operations exactly as they always have, and opening or
+        /// closing the drawer itself changes no match state at all.
+        /// </summary>
+        public void ToggleDirectorDrawer()
+        {
+            IsDirectorDrawerOpen = !IsDirectorDrawerOpen;
+            ApplyDirectorDrawerState();
+        }
+
+        /// <summary>
+        /// Whether the HUD consumes the pointer at this screen position, so the board does not also act
+        /// on it. Live element bounds are preferred where the panel has laid out, because a rail's
+        /// height follows its content; the deterministic rects are the fallback and are what an Edit Mode
+        /// fixture with no live panel reads.
+        /// </summary>
         public bool BlocksPointerAt(Vector2 screenPosition)
         {
             var guiPosition = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
-            return GetCardPanelRect().Contains(guiPosition) ||
+            var tray = TryLiveRect(trayRegion, out var liveTray) ? liveTray : GetCardPanelRect();
+            if (tray.Contains(guiPosition) ||
                 GetTieBreakerIndicatorRect().Contains(guiPosition) ||
-                diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(guiPosition);
+                CalculateStatusBarRect(Screen.width, Screen.height).Contains(guiPosition) ||
+                GetDirectorToggleRect().Contains(guiPosition) ||
+                (IsDirectorDrawerOpen && GetDirectorDrawerRect().Contains(guiPosition)) ||
+                (diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(guiPosition)))
+            {
+                return true;
+            }
+
+            foreach (var region in HeroRailRegions())
+            {
+                if (region.Contains(guiPosition))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
-        private void OnGUI()
+        private IEnumerable<Rect> HeroRailRegions()
         {
-            // The minion-choice view is checked for presence only: its model is null whenever no
-            // minion choice is pending, which is the ordinary state and must not blank the HUD.
-            if (header == null || hands?.Model == null || round?.Model == null ||
-                undoRestart?.Model == null || diagnostics?.Model == null || minionChoice == null)
+            if (heroOverviews != null)
+            {
+                foreach (var element in heroOverviews.BlockingRegions)
+                {
+                    if (TryLiveRect(element, out var live))
+                    {
+                        yield return live;
+                    }
+                }
+
+                yield break;
+            }
+
+            yield return CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Red);
+            yield return CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Blue);
+        }
+
+        private static bool TryLiveRect(VisualElement element, out Rect rect)
+        {
+            rect = default;
+            if (element == null || element.panel == null ||
+                element.resolvedStyle.display == DisplayStyle.None)
+            {
+                return false;
+            }
+
+            var bounds = element.worldBound;
+            if (float.IsNaN(bounds.width) || float.IsNaN(bounds.height) ||
+                bounds.width <= 0f || bounds.height <= 0f)
+            {
+                return false;
+            }
+
+            rect = bounds;
+            return true;
+        }
+
+        private void Build()
+        {
+            if (root != null)
             {
                 return;
             }
 
-            DrawTieBreaker();
-            var panel = GetCardPanelRect();
-            GUI.Box(panel, GUIContent.none);
-            GUILayout.BeginArea(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, panel.height - 16f));
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(round.Model.HudHeader);
-            undoRestart.Draw();
-            diagnostics.DrawToggle();
-            GUILayout.EndHorizontal();
-            cardPanelScrollPosition = GUILayout.BeginScrollView(cardPanelScrollPosition);
-            hands.Draw();
-            round.Draw();
-            minionChoice.Draw();
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
-            round.DrawDefensePreviewOverlay();
-            diagnostics.DrawPanel(GetRuleEventLogRect());
-        }
+            document = GetComponent<UIDocument>();
+            if (document == null)
+            {
+                document = gameObject.AddComponent<UIDocument>();
+            }
 
-        private void DrawTieBreaker()
-        {
-            if (!header.TieBreaker.IsDefined)
+            panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+            panelSettings.name = "Guards Configured Match Panel";
+            panelSettings.hideFlags = HideFlags.HideAndDontSave;
+            panelSettings.scaleMode = PanelScaleMode.ConstantPixelSize;
+            panelSettings.scale = 1f;
+            panelSettings.clearColor = false;
+            panelSettings.sortingOrder = 100f;
+            var theme = Resources.Load<ThemeStyleSheet>(RuntimeThemeResourcePath);
+            if (theme != null)
+            {
+                panelSettings.themeStyleSheet = theme;
+            }
+
+            document.panelSettings = panelSettings;
+            root = document.rootVisualElement;
+            if (root == null)
+            {
+                // A component added while its GameObject was already enabled can miss the panel's own
+                // enable pass. Cycling it is the supported way to ask for one, and it happens once.
+                document.enabled = false;
+                document.enabled = true;
+                root = document.rootVisualElement;
+            }
+
+            if (root == null)
             {
                 return;
             }
 
-            var indicator = GetTieBreakerIndicatorRect();
-            var previousColor = GUI.color;
-            var previousContentColor = GUI.contentColor;
-            GUI.color = header.Color;
-            GUI.DrawTexture(indicator, Texture2D.whiteTexture, ScaleMode.StretchToFill);
-            GUI.color = previousColor;
-            GUI.Box(indicator, GUIContent.none);
-            tieBreakerStyle ??= new GUIStyle(GUI.skin.label)
+            root.Clear();
+            root.name = "gd-root";
+            root.pickingMode = PickingMode.Ignore;
+            root.style.position = Position.Absolute;
+            root.style.left = 0f;
+            root.style.top = 0f;
+            root.style.right = 0f;
+            root.style.bottom = 0f;
+
+            statusBar = new MatchStatusBarUnityView();
+            root.Add(statusBar.Root);
+
+            if (heroOverviews != null)
             {
-                alignment = TextAnchor.MiddleCenter,
-                fontStyle = FontStyle.Bold,
-                wordWrap = true,
-                fontSize = 14
-            };
-            GUI.contentColor = Color.white;
-            GUI.Label(indicator, header.Text, tieBreakerStyle);
-            GUI.contentColor = previousContentColor;
+                root.Add(heroOverviews.Root);
+            }
+
+            directorToggle = HudElements.Control("DIRECTOR", ToggleDirectorDrawer, DirectorToggleHeight);
+            directorToggle.name = "gd-director-toggle";
+            directorToggle.style.position = Position.Absolute;
+            root.Add(directorToggle);
+
+            directorDrawer = HudElements.Panel(MatchHudTheme.RailBackground);
+            directorDrawer.name = "gd-director-drawer";
+            directorDrawer.style.position = Position.Absolute;
+            directorDrawer.style.flexDirection = FlexDirection.Column;
+            HudElements.Padding(directorDrawer, 6f);
+            HudElements.Border(directorDrawer, MatchHudTheme.PanelBorder, 1f, 4f);
+            directorDrawer.Add(undoRestart.Root);
+            diagnostics.ToggleRoot.style.marginTop = 4f;
+            directorDrawer.Add(diagnostics.ToggleRoot);
+            root.Add(directorDrawer);
+            root.Add(diagnostics.PanelRoot);
+
+            trayRegion = HudElements.Panel(MatchHudTheme.PanelBackground);
+            trayRegion.name = "gd-tray-region";
+            trayRegion.style.position = Position.Absolute;
+            trayRegion.style.flexDirection = FlexDirection.Column;
+            HudElements.Padding(trayRegion, 12f);
+            HudElements.Border(trayRegion, MatchHudTheme.PanelBorder, 1f, 4f);
+            var scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll.style.flexGrow = 1f;
+            scroll.Add(round.Root);
+            scroll.Add(minionChoice.Root);
+            scroll.Add(hands.Root);
+            trayRegion.Add(scroll);
+            root.Add(trayRegion);
+            root.Add(round.PreviewRoot);
+
+            ApplyDirectorDrawerState();
+            Layout();
         }
 
-        private static Rect GetCardPanelRect()
+        /// <summary>
+        /// Where the runtime theme lives. Its absence is tolerated - every element in this HUD sets its
+        /// own colours, sizes, and borders - so a build that cannot resolve it still draws a readable,
+        /// if plainer, panel rather than nothing.
+        /// </summary>
+        public const string RuntimeThemeResourcePath = "UI/GuardsRuntimeTheme";
+
+        /// <summary>
+        /// Applies the current viewport to every absolutely-placed region. Called on every header
+        /// render, which is every projection refresh, so a resized Game View is followed.
+        /// </summary>
+        public void Layout()
         {
-            return CalculateCardPanelRect(Screen.width, Screen.height);
+            if (root == null)
+            {
+                return;
+            }
+
+            var width = Screen.width;
+            var height = Screen.height;
+            var bar = CalculateStatusBarRect(width, height);
+            statusBar?.Layout(bar, GetTieBreakerIndicatorRect());
+            // The tray is anchored to the bottom edge and grows upward only as far as its content
+            // needs, bounded by the region it may occupy. A fixed height would reserve the whole
+            // 360 pixels for a commitment row that uses two hundred of them, and every pixel it did
+            // not use would be board it covered for nothing.
+            // The tray is anchored to the bottom-left corner of the region it may occupy and sized to
+            // its own content in both directions, bounded by that region. A fixed 1280-by-360 box was
+            // reserving the whole of it for a commitment row that needs a third of the width and half
+            // the height, and every pixel it did not use was board it covered for nothing. The bound is
+            // what keeps milestone 5.1c's guarantee: four content-sized Defense choices plus Decline
+            // still have 1280 pixels to lay out in before anything has to scroll.
+            var tray = GetCardPanelRect();
+            trayRegion.style.left = tray.x;
+            trayRegion.style.top = StyleKeyword.Auto;
+            trayRegion.style.right = StyleKeyword.Auto;
+            trayRegion.style.width = StyleKeyword.Auto;
+            trayRegion.style.height = StyleKeyword.Auto;
+            trayRegion.style.bottom = Mathf.Max(0f, height - tray.yMax);
+            trayRegion.style.maxWidth = tray.width;
+            trayRegion.style.maxHeight = tray.height;
+            var playfield = CalculatePlayfieldRect(width, height);
+            heroOverviews?.Layout(
+                CalculateHeroRailRect(width, height, TeamSide.Red),
+                CalculateHeroRailRect(width, height, TeamSide.Blue),
+                playfield);
+            var toggle = GetDirectorToggleRect();
+            directorToggle.style.left = toggle.x;
+            directorToggle.style.top = toggle.y;
+            directorToggle.style.width = toggle.width;
+            var drawer = GetDirectorDrawerRect();
+            directorDrawer.style.left = drawer.x;
+            directorDrawer.style.top = drawer.y;
+            directorDrawer.style.width = drawer.width;
+            diagnostics?.Layout(GetRuleEventLogRect());
         }
+
+        /// <summary>
+        /// Keeps exactly one interaction context usable: while a mandatory decision stands, the ordinary
+        /// card tray is not merely inert but absent, so there is nothing on screen that looks choosable
+        /// and is not.
+        /// </summary>
+        public void ApplyExclusiveContext()
+        {
+            if (hands == null || round == null)
+            {
+                return;
+            }
+
+            hands.SetHidden(round.HasExclusiveDecision || minionChoice?.Model != null);
+        }
+
+        private void ApplyDirectorDrawerState()
+        {
+            if (directorDrawer == null || directorToggle == null)
+            {
+                return;
+            }
+
+            directorDrawer.style.display = IsDirectorDrawerOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            directorToggle.text = IsDirectorDrawerOpen ? "DIRECTOR ▾" : "DIRECTOR";
+        }
+
+        private void LateUpdate()
+        {
+            ApplyExclusiveContext();
+            round?.UpdateDefensePreviewDismissal(Time.realtimeSinceStartupAsDouble);
+        }
+
+        private void OnDestroy()
+        {
+            if (panelSettings != null)
+            {
+                Destroy(panelSettings);
+                panelSettings = null;
+            }
+        }
+
+        public static Rect CalculateStatusBarRect(float viewportWidth, float viewportHeight) =>
+            new Rect(0f, 0f, Mathf.Max(0f, viewportWidth), Mathf.Min(StatusBarHeight, Mathf.Max(0f, viewportHeight)));
+
+        /// <summary>
+        /// The share of a tall viewport the tray may use when its content needs it.
+        ///
+        /// <see cref="CardPanelHeight"/> alone is milestone 5.1c's number, chosen so a Defense row of
+        /// four cards plus Decline fits. p.15's Upgrade a Card is a different shape - up to two options
+        /// per upgradable card - and six of them ran past 360 on a 1440-pixel screen, putting a whole
+        /// row of a mandatory choice behind a scrollbar with most of the screen empty above it. So 360
+        /// is the floor rather than the ceiling, and the ceiling follows the viewport. The tray still
+        /// sizes to its own content, so nothing here makes a small tray larger.
+        /// </summary>
+        private const float CardPanelTallViewportShare = 0.34f;
 
         public static Rect CalculateCardPanelRect(float viewportWidth, float viewportHeight)
         {
             var width = Mathf.Min(CardPanelWidth, Mathf.Max(0f, viewportWidth - (Margin * 2f)));
-            var height = Mathf.Min(CardPanelHeight, Mathf.Max(0f, viewportHeight - (Margin * 2f)));
+            var height = Mathf.Min(
+                Mathf.Max(CardPanelHeight, viewportHeight * CardPanelTallViewportShare),
+                Mathf.Max(0f, viewportHeight - (Margin * 2f) - StatusBarHeight));
             return new Rect(
                 Margin,
                 Mathf.Max(Margin, viewportHeight - height - Margin),
                 width,
                 height);
         }
+
+        public static Rect CalculatePlayfieldRect(float viewportWidth, float viewportHeight)
+        {
+            var tray = CalculateCardPanelRect(viewportWidth, viewportHeight);
+            return new Rect(
+                0f,
+                StatusBarHeight,
+                Mathf.Max(0f, viewportWidth),
+                Mathf.Max(0f, tray.yMin - StatusBarHeight));
+        }
+
+        public static Rect CalculateHeroRailRect(float viewportWidth, float viewportHeight, TeamSide side)
+        {
+            var playfield = CalculatePlayfieldRect(viewportWidth, viewportHeight);
+            var width = Mathf.Min(HeroRailWidth, Mathf.Max(0f, (viewportWidth / 2f) - (Margin * 2f)));
+            var x = side == TeamSide.Red
+                ? Margin
+                : Mathf.Max(Margin, viewportWidth - width - Margin);
+            return new Rect(x, playfield.yMin + Margin, width, Mathf.Max(0f, playfield.height - (Margin * 2f)));
+        }
+
+        private static Rect GetCardPanelRect() => CalculateCardPanelRect(Screen.width, Screen.height);
 
         private static Rect GetTieBreakerIndicatorRect()
         {
@@ -202,7 +527,27 @@ namespace GuardsDigital.Presentation.Match
                 Mathf.Max(Margin, Screen.width - width - Margin),
                 Margin,
                 width,
-                TieBreakerHeight);
+                Mathf.Max(0f, StatusBarHeight - (Margin * 2f)));
+        }
+
+        private static Rect GetDirectorToggleRect()
+        {
+            var playfield = CalculatePlayfieldRect(Screen.width, Screen.height);
+            return new Rect(
+                Margin,
+                Mathf.Max(Margin, playfield.yMax - DirectorToggleHeight - Margin),
+                DirectorToggleWidth,
+                DirectorToggleHeight);
+        }
+
+        private static Rect GetDirectorDrawerRect()
+        {
+            var toggle = GetDirectorToggleRect();
+            return new Rect(
+                toggle.x,
+                Mathf.Max(Margin, toggle.yMin - DirectorDrawerHeight - 6f),
+                DirectorDrawerWidth,
+                DirectorDrawerHeight);
         }
 
         private static Rect GetRuleEventLogRect()
@@ -214,19 +559,19 @@ namespace GuardsDigital.Presentation.Match
                 var width = Mathf.Min(EventLogPreferredWidth, availableRightWidth);
                 var height = Mathf.Min(
                     EventLogPreferredHeight,
-                    Mathf.Max(160f, Screen.height - TieBreakerHeight - (Margin * 3f)));
+                    Mathf.Max(160f, Screen.height - StatusBarHeight - (Margin * 3f)));
                 return new Rect(
                     Screen.width - width - Margin,
-                    TieBreakerHeight + (Margin * 2f),
+                    StatusBarHeight + (Margin * 2f),
                     width,
                     height);
             }
 
-            var availableAboveHeight = Mathf.Max(140f, cardPanel.y - (Margin * 2f));
+            var availableAboveHeight = Mathf.Max(140f, cardPanel.y - StatusBarHeight - (Margin * 2f));
             var aboveHeight = Mathf.Min(EventLogPreferredHeight, availableAboveHeight);
             return new Rect(
                 cardPanel.x,
-                Mathf.Max(Margin, cardPanel.y - aboveHeight - Margin),
+                Mathf.Max(StatusBarHeight + Margin, cardPanel.y - aboveHeight - Margin),
                 cardPanel.width,
                 aboveHeight);
         }

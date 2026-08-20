@@ -293,6 +293,68 @@ namespace GuardsDigital.Application
         }
     }
 
+    /// <summary>
+    /// One hero's rulebook p.15/p.16 progression as it currently stands: the Level, the coins, and the
+    /// items, with each item reduced to the icon it raises and the dashboard slot it sits under.
+    ///
+    /// Milestone 7.8a. Before it, nothing about progression reached a reader at all - a hero's Level,
+    /// coins and items were authoritative, persisted, and invisible - so the player-facing overview had
+    /// nothing to draw and the leveling prompt had no coins to report. This is that missing projection,
+    /// and it is a projection rather than a calculation: <see cref="ItemBonuses"/> counts the items a
+    /// hero holds per icon and stops there. p.16's "+1 to the matching icon on each of your Action
+    /// cards" is <c>ItemBonusQuery</c>'s, which composes it into a card's total from the printed value
+    /// that card actually has; a reader that multiplied these counts into a card would be answering that
+    /// question a second time and would get the answer wrong for every card with no matching icon.
+    /// </summary>
+    public sealed class HeroProgressionProjection
+    {
+        public HeroProgressionProjection(
+            HeroId heroId,
+            int level,
+            int coins,
+            bool leveledThisRound,
+            IEnumerable<KeyValuePair<PrintedValueChannel, int>> itemBonuses)
+        {
+            if (!heroId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A projected progression names the hero it belongs to.", nameof(heroId));
+            }
+
+            var bonuses = (itemBonuses ?? throw new ArgumentNullException(nameof(itemBonuses))).ToArray();
+            if (bonuses.Any(entry => entry.Key == PrintedValueChannel.None || entry.Value <= 0) ||
+                bonuses.Select(entry => entry.Key).Distinct().Count() != bonuses.Length)
+            {
+                throw new ArgumentException(
+                    "Item bonuses name each raised icon once, with a positive count.",
+                    nameof(itemBonuses));
+            }
+
+            HeroId = heroId;
+            Level = level;
+            Coins = coins;
+            LeveledThisRound = leveledThisRound;
+            ItemBonuses = Array.AsReadOnly(bonuses);
+        }
+
+        public HeroId HeroId { get; }
+
+        /// <summary>p.15's Hero Level, between 1 and 8.</summary>
+        public int Level { get; }
+
+        /// <summary>What this hero currently has to spend, from the one ledger p.13, p.15 and p.8 share.</summary>
+        public int Coins { get; }
+
+        /// <summary>Whether this hero bought a level this round, which is what p.8's Pity Coin reads.</summary>
+        public bool LeveledThisRound { get; }
+
+        /// <summary>
+        /// How many items this hero holds for each icon they raise, in icon order. An icon with no item
+        /// is absent rather than present with a zero, so a reader draws the strip it is given.
+        /// </summary>
+        public IReadOnlyList<KeyValuePair<PrintedValueChannel, int>> ItemBonuses { get; }
+    }
+
     public readonly struct MatchCommitmentProjection
     {
         public MatchCommitmentProjection(
@@ -368,7 +430,10 @@ namespace GuardsDigital.Application
             GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
                 pendingSystemTransitionStep = null,
             IEnumerable<KeyValuePair<TeamId, int>> teamLifeCounters = null,
-            GuardsDigital.Core.Rules.Victory.MatchOutcome outcome = default)
+            GuardsDigital.Core.Rules.Victory.MatchOutcome outcome = default,
+            IEnumerable<HeroProgressionProjection> heroProgression = null,
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
+                pendingSystemTransitionDescription = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -441,6 +506,26 @@ namespace GuardsDigital.Application
             TeamLifeCounters = Array.AsReadOnly((teamLifeCounters ??
                 Enumerable.Empty<KeyValuePair<TeamId, int>>()).ToArray());
             Outcome = outcome;
+            HeroProgression = Array.AsReadOnly((heroProgression ??
+                Enumerable.Empty<HeroProgressionProjection>()).ToArray());
+            if (HeroProgression.Select(entry => entry.HeroId).Distinct().Count() != HeroProgression.Count)
+            {
+                throw new ArgumentException(
+                    "One hero carries at most one projected progression.", nameof(heroProgression));
+            }
+
+            PendingSystemTransitionDescription = pendingSystemTransitionDescription;
+            if (pendingSystemTransitionDescription != null &&
+                !ReferenceEquals(
+                    pendingSystemTransitionDescription.PendingStep, pendingSystemTransitionStep))
+            {
+                // A description of some other pause would be a second answer to what the match is
+                // waiting on, and the surface built from it would offer options the authority refuses.
+                throw new ArgumentException(
+                    "A projected transition description describes the pause this projection carries.",
+                    nameof(pendingSystemTransitionDescription));
+            }
+
             if (outcome.HasEnded != (phase == RoundResolutionPhase.GameEnded))
             {
                 throw new ArgumentException(
@@ -588,6 +673,25 @@ namespace GuardsDigital.Application
         /// authority" applied to the one fact a finished match is read for.
         /// </summary>
         public GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome { get; }
+
+        /// <summary>
+        /// Milestone 7.8a: every hero's Level, coins and items, ordered by hero id. Empty for a
+        /// composition with no round authority behind it, which is the same honest absence
+        /// <see cref="TeamLifeCounters"/> reports.
+        /// </summary>
+        public IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
+
+        /// <summary>
+        /// Milestone 7.8a: what <see cref="PendingSystemTransitionStep"/> is actually asking, described
+        /// by the rules that paused it, or <c>null</c> when nothing is paused or those rules describe
+        /// nothing.
+        ///
+        /// It carries the pause it describes rather than a copy of its identities, so a reader answering
+        /// from a description is answering the step the projection carries and cannot drift onto another
+        /// one. Every option it names is one of that step's own, in that step's order.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
+            PendingSystemTransitionDescription { get; }
 
         public PendingLanePushRequest PendingLanePushRequest { get; }
 

@@ -159,7 +159,8 @@ namespace GuardsDigital.Core.Rules.LanePush
     /// and nothing else does. This one keeps a board reference and a Wave-counter authority, asks them
     /// questions, and is told by its caller which step it is being asked about.
     /// </summary>
-    public sealed class LanePushStepRules : ISystemTransitionStepRules
+    public sealed class LanePushStepRules
+        : ISystemTransitionStepRules, IDescribingSystemTransitionStepRules
     {
         private readonly LanePushTransitionAuthority lanePush;
 
@@ -223,6 +224,49 @@ namespace GuardsDigital.Core.Rules.LanePush
                     $"A validated Lane-Push placement of '{minionId}' on '{context.OptionId}' could not " +
                     "be committed.");
             }
+        }
+
+        /// <summary>
+        /// Milestone 7.8a. What p.8's sidebar Place is asking: one destination per option, named by the
+        /// space itself rather than by the option identity a reader would otherwise have to decode.
+        ///
+        /// The space is found exactly as <see cref="ApplyAnswer"/> finds it, because describing an option
+        /// and applying it must never disagree about which space it means. Nothing else about the pause
+        /// is described: p.8's Place belongs to a team and a minion rather than to a hero, so it carries
+        /// no hero, level, or coins.
+        /// </summary>
+        public SystemTransitionStepDescription Describe(PendingSystemTransitionStep pendingStep)
+        {
+            if (pendingStep == null ||
+                !pendingStep.DefinitionId.Equals(LanePushSystemTransition.DefinitionId) ||
+                !pendingStep.StepId.Equals(LanePushSystemTransition.RespawnStepId))
+            {
+                return null;
+            }
+
+            var described = new List<SystemTransitionOptionDescription>();
+            foreach (var optionId in pendingStep.Options)
+            {
+                var space = Board.MapDefinition.Spaces.SingleOrDefault(candidate =>
+                    candidate.Kind == BoardMapSpaceKind.Playable &&
+                    candidate.Id.Value == optionId.Value);
+                if (space == null)
+                {
+                    // An option naming no space of this map cannot be described, and describing the rest
+                    // would offer a shorter list than the pause actually holds. Answering null keeps the
+                    // reader on the undescribed surface rather than on a partial one.
+                    return null;
+                }
+
+                described.Add(SystemTransitionOptionDescription.Place(
+                    optionId, space.Coordinate, space.Id));
+            }
+
+            return new SystemTransitionStepDescription(
+                SystemTransitionPromptKind.LanePushRespawnPlace,
+                pendingStep,
+                default,
+                described);
         }
 
         private static SystemTransitionStepResolution FromStageOutcome(LanePushStageOutcome outcome) =>
