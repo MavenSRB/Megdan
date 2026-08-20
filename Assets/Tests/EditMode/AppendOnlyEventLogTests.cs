@@ -57,6 +57,35 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 7.9b's prefix view, on the terms the full snapshot states: taken for free,
+        /// correct forever. A retained-prefix Undo reads the history without its latest entry, and
+        /// materializing that prefix as a copy would be a per-command cost on the path that exists
+        /// to remove one.
+        /// </summary>
+        [Test]
+        public void PrefixEntries_IsAnImmutableViewOnTheSnapshotTerms()
+        {
+            var log = new AppendOnlyEventLog<string>();
+            log.Add("one");
+            log.Add("two");
+            log.Add("three");
+
+            var prefix = log.PrefixEntries(2);
+            Assert.That(prefix, Is.EqualTo(new[] { "one", "two" }));
+            Assert.That(log.PrefixEntries(3), Is.SameAs(log.Entries),
+                "The whole log as a prefix is the snapshot itself, not a second instance.");
+
+            log.Add("four");
+            log.Reset(new[] { "replaced" });
+            Assert.That(prefix, Is.EqualTo(new[] { "one", "two" }),
+                "A prefix view keeps reading the buffer it was handed across appends and resets.");
+
+            Assert.That(() => log.PrefixEntries(2), Throws.InstanceOf<System.ArgumentOutOfRangeException>(),
+                "A prefix longer than the log describes nothing and must be refused.");
+            Assert.That(() => log.PrefixEntries(-1), Throws.InstanceOf<System.ArgumentOutOfRangeException>());
+        }
+
+        /// <summary>
         /// The case that rules out the cheaper "remember the length and truncate" pre-image. A
         /// restore replaces the log wholesale, and it can do so inside a command that is later
         /// rolled back, so a snapshot must be readable after its contents have been replaced rather

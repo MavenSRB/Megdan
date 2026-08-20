@@ -131,7 +131,11 @@ namespace GuardsDigital.Tests.EditMode
 
             // Never authoritative: supplied at construction, or derived from state that is.
             var constructionInputs = new[] { "initialState" };
-            var derivedCaches = new[] { "memoizedAuthoritative" };
+            // The memoized capture, and milestone 7.9b's completed-round fragment cache it reads
+            // through: both are re-derivable from the graphs, and the cache re-validates itself
+            // against the round authority's own records on every capture, so a rollback that
+            // ignores both is exactly as correct as one that rebuilds them.
+            var derivedCaches = new[] { "memoizedAuthoritative", "completedRoundsCache" };
 
             var classified = new HashSet<string>(
                 serializedGraphs.Concat(carriedStreams).Concat(constructionInputs).Concat(derivedCaches),

@@ -26,6 +26,25 @@ namespace GuardsDigital.Application
         private readonly DirectorCommandHistory history = new DirectorCommandHistory();
         private readonly bool deferAcceptedProjectionRefresh;
 
+        /// <summary>
+        /// Milestone 7.9b. Every this many accepted commands, the live session retains the
+        /// aggregate's pre-image, so an Undo replays at most this many commands from the nearest
+        /// retained point instead of the whole prefix - which is `F-ER2-08`'s fix. Retaining one
+        /// costs three references: the pre-image is the memoized capture and the two stream
+        /// snapshots, all of which already exist.
+        /// </summary>
+        internal const int UndoCheckpointInterval = 32;
+
+        /// <summary>
+        /// The retained points, ascending by command count. A derived cache in the acceptance
+        /// checks' sense: each entry is a serialized description of a prefix state, never a second
+        /// answer to what the match is - a reconstruction that starts from one deserializes it
+        /// through the same restore path a rollback uses, and discarding them all would change the
+        /// cost of the next Undo and nothing else. A snapshot restore discards them with the
+        /// history; an adopted reconstruction truncates them to the surviving prefix.
+        /// </summary>
+        private readonly List<UndoCheckpoint> checkpoints = new List<UndoCheckpoint>();
+
         private long version;
         private bool canRecordHistory;
 
@@ -113,6 +132,14 @@ namespace GuardsDigital.Application
             if (!deferAcceptedProjectionRefresh)
             {
                 Projection = CreateProjection();
+                // After the refresh, so the pre-image reads the memoized capture the projection
+                // just took rather than serializing again. Replay candidates defer their
+                // projections and take no checkpoints: an adopted candidate's prefix states are
+                // already covered by the checkpoints the live session kept.
+                if (canRecordHistory && history.Count % UndoCheckpointInterval == 0)
+                {
+                    checkpoints.Add(new UndoCheckpoint(history.Count, aggregate.CapturePreImage()));
+                }
             }
             return new MatchCommandResult(
                 true,
@@ -156,6 +183,7 @@ namespace GuardsDigital.Application
                 // captured, because a refused operation must leave that stream as it found it.
                 aggregate.Restore(payload);
                 history.Clear();
+                checkpoints.Clear();
                 canRecordHistory = false;
                 version++;
                 Projection = CreateProjection();
@@ -493,12 +521,18 @@ namespace GuardsDigital.Application
             string operation)
         {
             var rollback = aggregate.CapturePreImage();
-            var rollbackHistory = history.Commands.ToArray();
+            // The history's snapshot survives any replacement, so holding it is the rollback copy.
+            var rollbackHistory = history.Commands;
             var oldVersion = version;
             try
             {
-                var first = Replay(commands);
-                var second = Replay(commands);
+                // Milestone 7.9b: reconstruct from the latest retained point at or before the
+                // surviving prefix, so the replay is bounded by the checkpoint interval instead of
+                // by the match length. Both candidates start from the same retained point, so the
+                // determinism comparison still proves the replayed segment reproduces itself.
+                var checkpoint = LatestCheckpointCovering(commands.Count);
+                var first = Replay(commands, checkpoint);
+                var second = Replay(commands, checkpoint);
                 if (!string.Equals(first.Snapshot, second.Snapshot, StringComparison.Ordinal) ||
                     !first.Commands.SequenceEqual(second.Commands))
                 {
@@ -507,6 +541,7 @@ namespace GuardsDigital.Application
                 }
 
                 Adopt(first);
+                checkpoints.RemoveAll(retained => retained.CommandCount > commands.Count);
                 version = oldVersion + 1;
                 Projection = CreateProjection();
                 return new MatchSessionOperationResult(
@@ -527,19 +562,46 @@ namespace GuardsDigital.Application
             }
         }
 
-        private ReplayCandidate Replay(IEnumerable<DirectorCommand> commands)
+        private UndoCheckpoint LatestCheckpointCovering(int commandCount)
+        {
+            for (var index = checkpoints.Count - 1; index >= 0; index--)
+            {
+                if (checkpoints[index].CommandCount <= commandCount)
+                {
+                    return checkpoints[index];
+                }
+            }
+
+            return null;
+        }
+
+        private ReplayCandidate Replay(
+            IReadOnlyList<DirectorCommand> commands,
+            UndoCheckpoint checkpoint)
         {
             // Replay still traverses the normal typed Execute path and retains its atomic rollback
             // checks. Its intermediate immutable projections are private and unobserved, so defer
             // rebuilding them until the adopted live session publishes the final projection.
             var candidate = new MatchSession(initialState, false, true);
-            foreach (var command in commands)
+            var start = 0;
+            if (checkpoint != null)
             {
-                var result = candidate.Execute(command);
+                // The retained point is a serialized pre-image, so starting from one is the same
+                // restore path a rollback takes: the graphs are rebuilt by deserializing, and both
+                // event streams are installed exactly as they stood - which restore-and-continue
+                // equivalence proves indistinguishable from having replayed to it.
+                candidate.aggregate.Rollback(checkpoint.State);
+                candidate.history.ReplaceWith(commands.Take(checkpoint.CommandCount));
+                start = checkpoint.CommandCount;
+            }
+
+            for (var index = start; index < commands.Count; index++)
+            {
+                var result = candidate.Execute(commands[index]);
                 if (!result.Accepted)
                 {
                     throw new InvalidOperationException(
-                        $"Accepted command {candidate.history.Count + 1} ({command.Kind}) was rejected: {result.Detail}");
+                        $"Accepted command {candidate.history.Count + 1} ({commands[index].Kind}) was rejected: {result.Detail}");
                 }
             }
 
@@ -685,10 +747,10 @@ namespace GuardsDigital.Application
                 : Array.Empty<ClearOptionProjection>();
             var defensePreview = CreateDefensePreview(turn, turnModifications, round.HeroItems);
             // Reads the aggregate's memo rather than re-serializing state the previous command
-            // already encoded. The diagnostic envelope is not built here at all: the projection
-            // computes it on demand from these same immutable inputs, so a reader pays for it and a
-            // command does not.
-            var authoritative = aggregate.CaptureAuthoritativeSnapshot();
+            // already captured. Neither the payload string nor the diagnostic envelope is built
+            // here at all: the projection assembles each on demand from the same immutable capture,
+            // so a reader pays for what it reads and a command does not.
+            var authoritative = aggregate.CaptureAuthoritative();
             return new MatchSessionProjection(
                 version,
                 initialState.Setup,
@@ -982,12 +1044,25 @@ namespace GuardsDigital.Application
             }
         }
 
+        /// <summary>One retained point: the state after its first <see cref="CommandCount"/> accepted commands.</summary>
+        private sealed class UndoCheckpoint
+        {
+            public UndoCheckpoint(int commandCount, MatchPreImage state)
+            {
+                CommandCount = commandCount;
+                State = state ?? throw new ArgumentNullException(nameof(state));
+            }
+
+            public int CommandCount { get; }
+            public MatchPreImage State { get; }
+        }
+
         private sealed class ReplayCandidate
         {
             public ReplayCandidate(MatchSession source)
             {
                 Graphs = source.aggregate.Capture();
-                Commands = source.history.Commands.ToArray();
+                Commands = source.history.Commands;
                 Snapshot = source.CaptureSnapshot();
             }
 

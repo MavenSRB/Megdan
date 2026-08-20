@@ -378,6 +378,7 @@ namespace GuardsDigital.Application
     public sealed class MatchSessionProjection
     {
         private readonly Lazy<string> diagnosticSnapshot;
+        private readonly AuthoritativeSnapshotCapture authoritativeCapture;
 
         public MatchSessionProjection(
             long version,
@@ -409,7 +410,7 @@ namespace GuardsDigital.Application
             IEnumerable<DirectorCommand> acceptedCommands,
             IEnumerable<RoundResolutionEvent> roundEvents,
             IReadOnlyList<RuleEventLogEntry> diagnosticEvents,
-            string authoritativeSnapshot,
+            AuthoritativeSnapshotCapture authoritativeSnapshot,
             bool isHistoryAvailable,
             IEnumerable<MinionOccupancy> minions,
             IEnumerable<PlacedToken> placedTokens,
@@ -466,19 +467,19 @@ namespace GuardsDigital.Application
             PendingSkillResolution = pendingSkillResolution;
             PendingEffectChoice = pendingEffectChoice;
             AvailableTurnActions = Array.AsReadOnly((availableTurnActions ?? throw new ArgumentNullException(nameof(availableTurnActions))).ToArray());
-            AcceptedCommands = Array.AsReadOnly((acceptedCommands ?? throw new ArgumentNullException(nameof(acceptedCommands))).ToArray());
-            RoundEvents = Array.AsReadOnly((roundEvents ?? throw new ArgumentNullException(nameof(roundEvents))).ToArray());
-            // This is the whole accumulated rule-event log, so copying it on every refresh is a
-            // per-command cost that grows with session length - the surviving half of finding
-            // `F613-08`. The aggregate hands over a snapshot that cannot change, and copying one of
-            // those defends against nothing. The copy is kept for every other input, because this
-            // constructor is public and a projection that shares a caller's mutable list is not
+            // These three are the growing sequences a refresh hands over: the accepted-command
+            // history and the whole accumulated rule-event log grow for the match, and the current
+            // round's events grow until the round boundary. Copying any of them on every refresh is
+            // a per-command cost that grows with session length - the surviving half of finding
+            // `F613-08` for the log, and `RISK-PERF-001`'s measured growth term for the other two,
+            // closed at milestone 7.9b. Each arrives as a snapshot that cannot change, and copying
+            // one of those defends against nothing. The copy is kept for every other input, because
+            // this constructor is public and a projection that shares a caller's mutable list is not
             // immutable.
-            if (diagnosticEvents == null) throw new ArgumentNullException(nameof(diagnosticEvents));
-            DiagnosticEvents = diagnosticEvents is IImmutableEventSnapshot
-                ? diagnosticEvents
-                : Array.AsReadOnly(diagnosticEvents.ToArray());
-            AuthoritativeSnapshot = authoritativeSnapshot ?? throw new ArgumentNullException(nameof(authoritativeSnapshot));
+            AcceptedCommands = ImmutableOrCopied(acceptedCommands, nameof(acceptedCommands));
+            RoundEvents = ImmutableOrCopied(roundEvents, nameof(roundEvents));
+            DiagnosticEvents = ImmutableOrCopied(diagnosticEvents, nameof(diagnosticEvents));
+            authoritativeCapture = authoritativeSnapshot ?? throw new ArgumentNullException(nameof(authoritativeSnapshot));
             IsHistoryAvailable = isHistoryAvailable;
             diagnosticSnapshot = new Lazy<string>(
                 () => RuleEventLogSnapshotEnvelope.Serialize(AuthoritativeSnapshot, DiagnosticEvents),
@@ -613,7 +614,20 @@ namespace GuardsDigital.Application
         public IReadOnlyList<DirectorCommand> AcceptedCommands { get; }
         public IReadOnlyList<RoundResolutionEvent> RoundEvents { get; }
         public IReadOnlyList<RuleEventLogEntry> DiagnosticEvents { get; }
-        public string AuthoritativeSnapshot { get; }
+
+        /// <summary>
+        /// The authoritative payload describing this projection's state, encoded on first read and
+        /// then held.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 7.9b. Read from the capture taken when this projection was built - an
+        /// immutable value, exactly like the copies <see cref="DiagnosticSnapshot"/> defers over -
+        /// never from the live authorities, so a caller holding an older projection still reads the
+        /// state as it was then. Deferring the encode is what took the payload assembly off the
+        /// accepted-command path: nothing on that path reads this, and a reader that does pays it
+        /// at most once per projection, which is the same count the eager encode paid.
+        /// </remarks>
+        public string AuthoritativeSnapshot => authoritativeCapture.Payload;
 
         /// <summary>
         /// The authoritative snapshot plus the ordered rule-event log, encoded on first read and
@@ -725,6 +739,20 @@ namespace GuardsDigital.Application
         private static CardInstance CloneCard(CardInstance card)
         {
             return new CardInstance(card.Id, card.DefinitionReference, card.OwnerId, card.State);
+        }
+
+        /// <summary>
+        /// The input itself when it is a snapshot that cannot change, and an immutable copy of it
+        /// otherwise. Only the append-only logs' snapshots skip the copy; anything else keeps it,
+        /// because sharing a caller's mutable list would make this projection mutable with it.
+        /// </summary>
+        private static IReadOnlyList<TItem> ImmutableOrCopied<TItem>(
+            IEnumerable<TItem> items, string name)
+        {
+            if (items == null) throw new ArgumentNullException(name);
+            return items is IImmutableEventSnapshot && items is IReadOnlyList<TItem> snapshot
+                ? snapshot
+                : Array.AsReadOnly(items.ToArray());
         }
     }
 }

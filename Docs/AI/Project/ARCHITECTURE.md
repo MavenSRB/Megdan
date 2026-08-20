@@ -48,8 +48,8 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ### Undo and diagnostics
 
-- Director-mode Undo must retain one immutable initial-scenario description plus a typed log of accepted gameplay commands and explicit choices. It removes the latest command, reconstructs fresh authority from setup, and deterministically replays the retained prefix through the normal command paths.
-- Undo does not store per-command snapshots and does not require inverse-action handlers. It rebuilds presentation and the read-only diagnostic event log from the reconstructed authority and replayed accepted events.
+- Director-mode Undo must retain one immutable initial-scenario description plus a typed log of accepted gameplay commands and explicit choices. It removes the latest command, reconstructs authority, and deterministically replays the surviving prefix through the normal command paths. Since milestone 7.9b the reconstruction starts from the most recent retained point at or before that prefix rather than from setup, so the replayed segment is bounded by the checkpoint interval instead of by match length.
+- A retained point is the aggregate's own serialized pre-image, kept every fixed number of accepted commands at the cost of three references. It is a derived cache that a restore, a replay and a rollback can each discard and rebuild; the command log stays the one authority Undo answers from, and no inverse-action handlers exist. Undo rebuilds presentation and the read-only diagnostic event log from the reconstructed authority and replayed accepted events.
 - Full-match undo history is acceptable for the small internal prototype.
 - Undo, hidden-state inspection, and Tie Breaker override are internal tools and unavailable in competitive online matches.
 - The implemented history contains typed accepted commands only. Invalid and presentation-only inputs create no entry; restart clears the command log and rebuilds the immutable initial scenario. Redo is intentionally absent.

@@ -343,7 +343,7 @@ ER2 note (`F-ER2-08`): `Undo`/`Restart` reconstruct by full-prefix replay, so th
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79-complete-a-deterministic-test-card-core-match-completion-evidence).
 
-### [~] 7.9b Reduce what a complete match costs to refresh and to undo
+### [x] 7.9b Reduce what a complete match costs to refresh and to undo
 
 Blocked by: nothing. It runs after milestone 7.9 and before milestone 7.9a, which is where `RISK-PERF-001`'s recorded disposition places the smallest corrective milestone a measured crossing schedules.
 
@@ -361,6 +361,8 @@ Acceptance checks:
 - T2 validation: focused runtime-capture and determinism regressions plus the complete-loop suite; both unfiltered suites only if affectedness or the risk triggers require them.
 
 Non-goals: No change to what a command means, to the schema, to the projection's public shape, or to any rule. No 3v3-scale optimization, which is `RISK-SCALE-001`'s and milestone 8.27's. No speculative work on any figure milestone 7.9 measured as inside its threshold - refresh time, snapshot capture, and the steady-state frame metrics are not this milestone's subject.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79b-reduce-what-a-complete-match-costs-to-refresh-and-to-undo-completion-evidence).
 
 ### [!] 7.9a Independently review the complete synthetic core
 

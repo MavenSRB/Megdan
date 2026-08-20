@@ -29,10 +29,11 @@ namespace GuardsDigital.Tests.EditMode
     /// scene's own cost excluded so what is left is the mechanism under investigation.
     ///
     /// Wall-clock assertions are deliberately only against the standing investigation thresholds from
-    /// `Testing/FUTURE_GATES.md` - 25 ms per accepted-command refresh, 64 KiB of managed allocation per
-    /// sample, 250 ms for an Undo replay. Those are noise-tolerant by design and are three orders of
-    /// magnitude above the measured figures, so this fixture reports a real number on every run and
-    /// fails only on a real regression rather than on a busy machine.
+    /// `Testing/FUTURE_GATES.md` - 25 ms per accepted-command refresh, 1 MiB of managed allocation per
+    /// sample, 150 ms for an Undo. Those are noise-tolerant by design and sit far above the measured
+    /// figures, so this fixture reports a real number on every run and fails only on a real regression
+    /// rather than on a busy machine. Milestone 7.9b closed both crossings this fixture was written to
+    /// measure, and the growth and Undo lines now guard the two mechanisms it removed.
     /// </remarks>
     public sealed class CompleteMatchRuntimeCaptureTests
     {
@@ -40,26 +41,29 @@ namespace GuardsDigital.Tests.EditMode
         private const double MaximumAcceptedCommandRefreshMilliseconds = 25.0;
 
         /// <summary>
-        /// Milestone 7.9's re-baseline of `F-ER2-08`'s Undo-replay threshold, and the one place in this
-        /// fixture where a real prior measurement was widened rather than corrected.
+        /// `F-ER2-08`'s Undo bound, tightened at milestone 7.9b from the 600 ms line milestone 7.9
+        /// widened it to.
         /// </summary>
         /// <remarks>
-        /// The 250 ms line was set at milestone 4.4d from a real figure - 28.203 ms for an Undo over the
-        /// two-round director flow - so unlike the allocation row it described the build it was written
-        /// against. What changed is the match: a complete 20-round match retains 502 commands, and
-        /// `F-ER2-08` says an Undo replays all of them. That measures 429 ms on Unity's Mono and 171 ms
-        /// on the .NET runtime the harness uses, so the Windows Editor tier crosses and the harness tier
-        /// does not - which makes the slower runtime the one this line has to describe.
+        /// The history of this line is three numbers. 250 ms was set at milestone 4.4d from a real
+        /// figure - 28.203 ms for an Undo over the two-round director flow. Milestone 7.9 measured the
+        /// complete match `F-ER2-08` predicted would outgrow it - a full-prefix replay of 502 commands
+        /// at 429 ms on Unity's Mono, 171 ms on .NET - and re-baselined to 600 ms against the slower
+        /// runtime, with the fix separately approved rather than taken inside the gate milestone.
         ///
-        /// 600 ms is the measured Mono figure plus roughly 40% headroom. The user was shown the
-        /// measurement and approved this disposition on 2026-08-20, with milestone 7.9b owning the fix:
-        /// replaying from a recent retained point instead of from the start. That is a change to how the
-        /// match reconstructs itself and is deliberately not taken here.
+        /// Milestone 7.9b is that fix: the session retains the aggregate's pre-image every
+        /// <see cref="MatchSession.UndoCheckpointInterval"/> accepted commands, and an Undo replays
+        /// from the latest retained point instead of from the start, so the replayed segment is
+        /// bounded by the interval however long the match is. Measured at complete-match length:
+        /// 30.9 ms on Unity's Mono and 56.4 ms on .NET - complete-match Undo back at what the
+        /// two-round Undo cost. 150 ms is roughly 2.7x the slower measured tier, noise-tolerant on a
+        /// busy machine, and well under what any full-prefix replay of this match measures on either
+        /// runtime, so the line fails if the reconstruction ever replays the whole prefix again.
         ///
-        /// This bounds the Undo control alone. Ordinary play is unaffected - an accepted command refresh
-        /// is 0.4 ms on the same runtime - and `RISK-SCALE-001` owns what six heroes do to it.
+        /// This bounds the Undo control alone. Ordinary play is unaffected - an accepted command
+        /// refresh is 0.36 ms on the same runtime - and `RISK-SCALE-001` owns what six heroes do to it.
         /// </remarks>
-        private const double MaximumUndoReplayMilliseconds = 600.0;
+        private const double MaximumUndoReplayMilliseconds = 150.0;
 
         /// <summary>
         /// Milestone 7.9's re-baseline of a threshold that had never been measured.
@@ -84,13 +88,20 @@ namespace GuardsDigital.Tests.EditMode
         /// and its end.
         /// </summary>
         /// <remarks>
-        /// This is the growth term `RISK-PERF-001` predicted, now measured for the first time and real:
-        /// 281 KB over history lengths 0-13 against 387 KB over 487-496, about +210 bytes per command of
-        /// retained history. It is under this line and above the old 64 KiB one, which is why the risk's
-        /// disposition applies - a measured crossing schedules the smallest separately approved
-        /// corrective milestone rather than an optimization taken here.
+        /// This is the growth term `RISK-PERF-001` predicted, measured at milestone 7.9 - 281,424 B
+        /// over history lengths 0-13 against 387,008 B over 487-496, about +210 bytes per command of
+        /// retained history - and removed at milestone 7.9b, which took every mechanism that copied
+        /// or re-encoded a growing history off the accepted-command path: the projection now shares
+        /// the append-only logs' snapshots instead of copying them, and the pre-image capture writes
+        /// the current state only, sharing each completed round's serialized fragment from the round
+        /// it froze. What remains measures +21,068 B between the same two windows, and it is not a
+        /// history-length term: matched samples one round apart differ by state size - items held,
+        /// levels bought, the round in flight - while the median also straddles the two `CommitCard`
+        /// shapes, whose mix is what most of the 21 KB is. 64 KiB is roughly three times that
+        /// residual, and a third of the way to the removed term, so the line fails on the growth
+        /// mechanism returning rather than on the match being late-game-shaped.
         /// </remarks>
-        private const long MaximumAllocationGrowthAcrossACompleteMatch = 256 * 1024;
+        private const long MaximumAllocationGrowthAcrossACompleteMatch = 64 * 1024;
 
         /// <summary>
         /// The history lengths each sample is taken at: empty, short, and then powers of two up to the
@@ -183,8 +194,9 @@ namespace GuardsDigital.Tests.EditMode
             var session = CreateCompleteMatchSession();
             DeterministicMatchLoop.Replay(session, record.Commands);
 
-            // `F-ER2-08`: an Undo reconstructs by replaying the whole retained prefix, so this is the
-            // most expensive Undo this build can be asked for - the last command of a complete match.
+            // `F-ER2-08`'s fix: an Undo reconstructs from the latest retained point, so even the most
+            // expensive Undo this build can be asked for - the last command of a complete match -
+            // replays a bounded segment rather than the whole prefix.
             var timer = Stopwatch.StartNew();
             var undone = session.Undo();
             timer.Stop();
@@ -196,9 +208,9 @@ namespace GuardsDigital.Tests.EditMode
                 $"undoReplayMs={timer.Elapsed.TotalMilliseconds:F3}");
             Assert.That(timer.Elapsed.TotalMilliseconds,
                 Is.LessThanOrEqualTo(MaximumUndoReplayMilliseconds),
-                "`F-ER2-08`: a full-prefix Undo at complete-match length crossed milestone 7.9's " +
-                "re-baselined threshold. Milestone 7.9b owns making this cheaper; until it runs, this " +
-                "line is what catches it getting worse.");
+                "`F-ER2-08`: an Undo at complete-match length crossed milestone 7.9b's retained-point " +
+                "bound. A full-prefix replay of this match measures far above this line on every " +
+                "runtime, so crossing it means the reconstruction has stopped using a retained point.");
         }
 
         [Test]

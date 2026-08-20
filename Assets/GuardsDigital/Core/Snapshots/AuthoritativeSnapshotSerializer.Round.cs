@@ -21,27 +21,43 @@ namespace GuardsDigital.Core.Snapshots
 {
     public static partial class AuthoritativeSnapshotSerializer
     {
-        private static void WriteRound(BinaryWriter writer, RoundResolutionAuthority round)
+        /// <summary>
+        /// The round section up to where the completed-round history block begins: the cursor and
+        /// the current round's slots. Milestone 7.9b splits the section here and after the block,
+        /// so a capture can write the current state fresh while sharing the history's bytes; the
+        /// stream contents are identical to the unsplit section by construction, because these are
+        /// the same writes in the same order.
+        /// </summary>
+        private static void WriteRoundOpening(BinaryWriter writer, RoundResolutionRestoreState state)
         {
-            var (cursor, history, endOfRound, roundCardActions, systemTransitions, heroProgression,
-                heroItems, teamLives, roundLeveling) =
-                round.CaptureRestoreState();
-            var (roundIndex, turnIndex, phase, tieBreakerState) = cursor;
+            var (roundIndex, turnIndex, phase, tieBreakerState) = state.Cursor;
             writer.Write(roundIndex);
             writer.Write(turnIndex);
             writer.Write((int)phase);
             writer.Write((int)tieBreakerState.RevealedSide);
+            WriteSlots(writer, state.History.TurnSlots);
+        }
 
-            var (turnSlots, completedRounds) = history;
-            WriteSlots(writer, turnSlots);
-            writer.Write(completedRounds.Count);
-            foreach (var completed in completedRounds)
-            {
-                writer.Write(completed.RoundIndex);
-                WriteSlots(writer, completed.TurnSlots);
-                WriteOutcomes(writer, completed.EndOfRoundOutcomes);
-            }
+        /// <summary>
+        /// One frozen round's bytes, exactly as the history block writes them after its count.
+        /// Internal so the fragment cache serializes a newly frozen record through the one writer
+        /// the format has.
+        /// </summary>
+        internal static void WriteCompletedRound(BinaryWriter writer, CompletedRoundRecord completed)
+        {
+            writer.Write(completed.RoundIndex);
+            WriteSlots(writer, completed.TurnSlots);
+            WriteOutcomes(writer, completed.EndOfRoundOutcomes);
+        }
 
+        /// <summary>The round section after the completed-round history block.</summary>
+        private static void WriteRoundRemainder(
+            BinaryWriter writer,
+            RoundResolutionAuthority round,
+            RoundResolutionRestoreState state)
+        {
+            var (_, _, endOfRound, roundCardActions, systemTransitions, heroProgression,
+                heroItems, teamLives, roundLeveling) = state;
             var (currentStage, outcomes, pendingMinionBattleChoice, pendingLanePushRequest) = endOfRound;
             writer.Write(currentStage.HasValue);
             if (currentStage.HasValue) writer.Write((int)currentStage.Value);

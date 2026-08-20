@@ -53,6 +53,28 @@ namespace GuardsDigital.Core.Diagnostics
         /// </summary>
         public IReadOnlyList<T> Entries => memoizedSnapshot ?? (memoizedSnapshot = new Snapshot(buffer, count));
 
+        /// <summary>
+        /// The first <paramref name="count"/> entries as an immutable value, on the same constant-time
+        /// terms as <see cref="Entries"/>: an append writes at or past the end of the visible range,
+        /// and growth or reset leaves the old buffer to every snapshot holding it.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 7.9b. A retained-prefix Undo asks for exactly this - the history without its
+        /// latest entry - and materializing that prefix as a copy was a per-command cost `F-ER2-08`'s
+        /// fix would otherwise reintroduce on the path that exists to remove one.
+        /// </remarks>
+        public IReadOnlyList<T> PrefixEntries(int count)
+        {
+            if (count < 0 || count > this.count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+
+            return count == this.count
+                ? Entries
+                : new Snapshot(buffer, count);
+        }
+
         public void Add(T item)
         {
             if (count == buffer.Length)

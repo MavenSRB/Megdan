@@ -209,7 +209,16 @@ namespace GuardsDigital.Application
         private AdjacentMoveAuthority board;
         private CardActionResolutionAuthority cardActions;
         private RoundResolutionAuthority round;
-        private string memoizedAuthoritative;
+        private AuthoritativeSnapshotCapture memoizedAuthoritative;
+
+        /// <summary>
+        /// The completed-round history's serialized bytes, written once per round instead of once
+        /// per command. A derived cache: it validates itself against the round authority's own
+        /// records on every capture and rebuilds on any divergence, so a restore, a replay and a
+        /// rollback can each ignore it and stay correct.
+        /// </summary>
+        private readonly CompletedRoundsSerializationCache completedRoundsCache =
+            new CompletedRoundsSerializationCache();
 
         public MatchAggregate(MatchSessionInitialState initialState)
         {
@@ -231,6 +240,15 @@ namespace GuardsDigital.Application
         /// <summary>
         /// The authoritative snapshot of the current graphs, computed once per state change.
         /// </summary>
+        public string CaptureAuthoritativeSnapshot()
+        {
+            return CaptureAuthoritative().Payload;
+        }
+
+        /// <summary>
+        /// The authoritative serialization of the current graphs as a capture, taken once per
+        /// state change.
+        /// </summary>
         /// <remarks>
         /// The memo is what removed most of finding `F613-08`'s cost. A command captured the
         /// pre-image and then, on acceptance, the projection serialized the same graphs again; and
@@ -238,10 +256,14 @@ namespace GuardsDigital.Application
         /// events can invalidate this: an accepted commit, and a graph replacement. Both are single
         /// sites here, which is the property milestone 6.1f bought - before it, a fifth field could
         /// be assigned anywhere and the memo would have been unsound.
+        ///
+        /// Since milestone 7.9b what is memoized is the capture rather than the encoded payload:
+        /// the accepted-command path needs only the capture, and the string is assembled by
+        /// whichever reader first asks for it.
         /// </remarks>
-        public string CaptureAuthoritativeSnapshot()
+        internal AuthoritativeSnapshotCapture CaptureAuthoritative()
         {
-            return memoizedAuthoritative ?? (memoizedAuthoritative = SerializeAuthoritative());
+            return memoizedAuthoritative ?? (memoizedAuthoritative = CaptureAuthoritativeFresh());
         }
 
         /// <summary>
@@ -254,9 +276,9 @@ namespace GuardsDigital.Application
             return RuleEventLogSnapshotEnvelope.Serialize(CaptureAuthoritativeSnapshot(), eventLog.Entries);
         }
 
-        private string SerializeAuthoritative()
+        private AuthoritativeSnapshotCapture CaptureAuthoritativeFresh()
         {
-            return AuthoritativeSnapshotSerializer.Serialize(round, board);
+            return AuthoritativeSnapshotSerializer.Capture(round, board, completedRoundsCache);
         }
 
         /// <summary>Detaches the current graphs and streams so another aggregate can adopt them.</summary>
@@ -422,8 +444,10 @@ namespace GuardsDigital.Application
                 // It must serialize afresh rather than read the memo, because a mutation is exactly
                 // what it is looking for and the memo would still hold the pre-command value. Only
                 // the rule-event streams are excluded from the comparison, and only because they are
-                // private to this aggregate and reachable solely from the commit below.
-                if (!string.Equals(preImage.AuthoritativePayload, SerializeAuthoritative(), StringComparison.Ordinal))
+                // private to this aggregate and reachable solely from the commit below. The captures
+                // compare the same serialized content the payload strings compared; neither side
+                // encodes a string to answer.
+                if (!preImage.Authoritative.ContentEquals(CaptureAuthoritativeFresh()))
                 {
                     Rollback(preImage);
                     return MatchCommitOutcome<TPlan>.AtomicityViolation(planned);
@@ -472,7 +496,7 @@ namespace GuardsDigital.Application
         public MatchPreImage CapturePreImage()
         {
             return new MatchPreImage(
-                CaptureAuthoritativeSnapshot(),
+                CaptureAuthoritative(),
                 eventLog.Entries,
                 roundEvents.Entries);
         }
@@ -531,16 +555,20 @@ namespace GuardsDigital.Application
     internal sealed class MatchPreImage
     {
         public MatchPreImage(
-            string authoritativePayload,
+            AuthoritativeSnapshotCapture authoritative,
             IReadOnlyList<RuleEventLogEntry> eventLogEntries,
             IReadOnlyList<RoundResolutionEvent> roundEvents)
         {
-            AuthoritativePayload = authoritativePayload ?? throw new ArgumentNullException(nameof(authoritativePayload));
+            Authoritative = authoritative ?? throw new ArgumentNullException(nameof(authoritative));
             EventLogEntries = eventLogEntries ?? throw new ArgumentNullException(nameof(eventLogEntries));
             RoundEvents = roundEvents ?? throw new ArgumentNullException(nameof(roundEvents));
         }
 
-        public string AuthoritativePayload { get; }
+        public AuthoritativeSnapshotCapture Authoritative { get; }
+
+        /// <summary>The capture's encoded payload, materialized only when a rollback needs it.</summary>
+        public string AuthoritativePayload => Authoritative.Payload;
+
         public IReadOnlyList<RuleEventLogEntry> EventLogEntries { get; }
         public IReadOnlyList<RoundResolutionEvent> RoundEvents { get; }
     }

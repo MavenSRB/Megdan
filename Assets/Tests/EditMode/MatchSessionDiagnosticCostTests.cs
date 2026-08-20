@@ -44,6 +44,10 @@ namespace GuardsDigital.Tests.EditMode
                 "An accepted command must not encode the rule-event envelope at all. That encode " +
                 "re-encodes the whole accumulated log, so any per-command occurrence grows with " +
                 "session length.");
+            Assert.That(measured.EncodedCharacters, Is.EqualTo(0),
+                "Since milestone 7.9b the one serialization is a capture, and nothing on the " +
+                "accepted path assembles its payload string: the projection encodes it on first " +
+                "read, so a reader pays for it and a command does not.");
         }
 
         /// <summary>
@@ -71,6 +75,9 @@ namespace GuardsDigital.Tests.EditMode
                 "pre-image costs nothing here because the memo still holds the state the previous " +
                 "command's projection encoded. Before 6.1i this path performed six.");
             Assert.That(measured.Envelope, Is.EqualTo(0));
+            Assert.That(measured.EncodedCharacters, Is.EqualTo(0),
+                "Since milestone 7.9b the comparison itself answers from the captures' bytes, so " +
+                "a refusal encodes no payload string either.");
         }
 
         /// <summary>
@@ -102,18 +109,21 @@ namespace GuardsDigital.Tests.EditMode
                 "The measurement needs enough accepted commands for two comparable halves.");
 
             var half = commands.Count / 2;
-            var firstHalf = MeasureSerializedCharacters(session, commands.Take(half));
-            var secondHalf = MeasureSerializedCharacters(session, commands.Skip(half).Take(half));
+            var firstHalf = MeasureSerializedWork(session, commands.Take(half));
+            var secondHalf = MeasureSerializedWork(session, commands.Skip(half).Take(half));
 
             Assert.That(firstHalf, Is.GreaterThan(0),
-                "The measurement must observe real encoding work, or it proves nothing.");
+                "The measurement must observe real serialization work, or it proves nothing.");
 
             // Regression evidence, not a production target. Before 6.1i every command re-encoded the
             // whole accumulated log, so the later half cost strictly more than the earlier one by
-            // construction and grew without bound. The allowance absorbs the authoritative payload
-            // growing as cards move and rounds complete, which is state size and not session length.
+            // construction and grew without bound. Since milestone 7.9b what a command writes is a
+            // capture - the current state's bytes, plus each completed round's fragment once, when
+            // it freezes - so the allowance absorbs current state moving as cards move, which is
+            // state size and not session length; re-encoding the growing completed-round history
+            // every command is exactly what this line would catch coming back.
             Assert.That(secondHalf, Is.LessThan(firstHalf * 2.0),
-                $"Per-command serialized size grew with session length: {firstHalf} characters for " +
+                $"Per-command serialized size grew with session length: {firstHalf} bytes for " +
                 $"the first {half} commands against {secondHalf} for the next {half}.");
         }
 
@@ -239,10 +249,17 @@ namespace GuardsDigital.Tests.EditMode
             act();
             return new SerializationCount(
                 AuthoritativeSnapshotSerializer.SerializeCallCount,
-                RuleEventLogSnapshotEnvelope.SerializeCallCount);
+                RuleEventLogSnapshotEnvelope.SerializeCallCount,
+                AuthoritativeSnapshotSerializer.SerializedCharacterCount +
+                RuleEventLogSnapshotEnvelope.SerializedCharacterCount);
         }
 
-        private static long MeasureSerializedCharacters(
+        /// <summary>
+        /// Everything the batch serialized or encoded: the bytes captures wrote, plus any payload or
+        /// envelope characters anything materialized. On the accepted path the encoded terms are
+        /// zero, and including them is what keeps this measurement honest if that changes.
+        /// </summary>
+        private static long MeasureSerializedWork(
             MatchSession session,
             IEnumerable<DirectorCommand> commands)
         {
@@ -254,7 +271,8 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(session.Execute(command).Accepted, Is.True);
             }
 
-            return AuthoritativeSnapshotSerializer.SerializedCharacterCount +
+            return AuthoritativeSnapshotSerializer.CapturedByteCount +
+                AuthoritativeSnapshotSerializer.SerializedCharacterCount +
                 RuleEventLogSnapshotEnvelope.SerializedCharacterCount;
         }
 
@@ -456,14 +474,16 @@ namespace GuardsDigital.Tests.EditMode
 
         private sealed class SerializationCount
         {
-            public SerializationCount(long authoritative, long envelope)
+            public SerializationCount(long authoritative, long envelope, long encodedCharacters)
             {
                 Authoritative = authoritative;
                 Envelope = envelope;
+                EncodedCharacters = encodedCharacters;
             }
 
             public long Authoritative { get; }
             public long Envelope { get; }
+            public long EncodedCharacters { get; }
         }
 
         private sealed class CapturingUndoRestartView : IUndoRestartView

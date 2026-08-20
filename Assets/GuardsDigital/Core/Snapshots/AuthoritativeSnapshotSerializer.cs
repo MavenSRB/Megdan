@@ -146,12 +146,36 @@ namespace GuardsDigital.Core.Snapshots
         public static long SerializeCallCount { get; private set; }
 
         /// <summary>Total encoded characters produced. See the envelope's counterpart.</summary>
+        /// <remarks>
+        /// Since milestone 7.9b this counts payload materializations rather than captures: a
+        /// capture writes bytes and encodes nothing, and the accepted-command path takes exactly
+        /// one capture and materializes no payload at all. <see cref="CapturedByteCount"/> is the
+        /// counter that sees what a capture writes.
+        /// </remarks>
         public static long SerializedCharacterCount { get; private set; }
+
+        /// <summary>
+        /// Total bytes a capture actually wrote: the two current-state spans, plus each completed
+        /// round's fragment once, when it first freezes. This is the per-command serialization cost
+        /// under milestone 7.9b's capture, so it is what the diagnostic growth fixture measures.
+        /// </summary>
+        public static long CapturedByteCount { get; private set; }
 
         public static void ResetSerializeCallCount()
         {
             SerializeCallCount = 0;
             SerializedCharacterCount = 0;
+            CapturedByteCount = 0;
+        }
+
+        internal static void CountMaterializedPayload(int encodedCharacters)
+        {
+            SerializedCharacterCount += encodedCharacters;
+        }
+
+        internal static void CountCapturedBytes(int bytes)
+        {
+            CapturedByteCount += bytes;
         }
 
         public static string Serialize(
@@ -160,10 +184,34 @@ namespace GuardsDigital.Core.Snapshots
             EffectCapabilityCatalog capabilities = null,
             ComponentDefinitionCatalog components = null)
         {
+            return Capture(round, board, null, capabilities, components).Payload;
+        }
+
+        /// <summary>
+        /// One authoritative serialization as its parts: the current state written fresh, and the
+        /// completed-round history shared from <paramref name="completedRoundsCache"/> rather than
+        /// re-encoded. The capture's <see cref="AuthoritativeSnapshotCapture.Payload"/> is
+        /// byte-identical to <see cref="Serialize"/>, which runs through this method itself, so
+        /// there is exactly one write path for the format.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 7.9b. This is what makes the per-command rollback pre-image cost independent
+        /// of match length: current state is bounded, so writing it is flat, while the history the
+        /// payload must still carry grows every round and is written once per round instead of
+        /// once per command. A null cache serves one capture at full cost.
+        /// </remarks>
+        public static AuthoritativeSnapshotCapture Capture(
+            RoundResolutionAuthority round,
+            AdjacentMoveAuthority board,
+            CompletedRoundsSerializationCache completedRoundsCache,
+            EffectCapabilityCatalog capabilities = null,
+            ComponentDefinitionCatalog components = null)
+        {
             if (round == null) throw new ArgumentNullException(nameof(round));
             if (board == null) throw new ArgumentNullException(nameof(board));
 
             SerializeCallCount++;
+            var cache = completedRoundsCache ?? new CompletedRoundsSerializationCache();
             using (var stream = new MemoryStream())
             using (var writer = new BinaryWriter(stream))
             {
@@ -177,11 +225,26 @@ namespace GuardsDigital.Core.Snapshots
                 WriteParticipants(writer, round.Participants);
                 WriteBoard(writer, board);
                 WriteCards(writer, round.Instances);
-                WriteRound(writer, round);
+
+                var state = round.CaptureRestoreState();
+                WriteRoundOpening(writer, state);
                 writer.Flush();
-                var encoded = Convert.ToBase64String(stream.ToArray());
-                SerializedCharacterCount += encoded.Length;
-                return encoded;
+                var prefixLength = checked((int)stream.Position);
+                WriteRoundRemainder(writer, round, state);
+                writer.Flush();
+
+                var buffer = stream.GetBuffer();
+                var total = checked((int)stream.Length);
+                var prefix = new byte[prefixLength];
+                Array.Copy(buffer, prefix, prefixLength);
+                var suffix = new byte[total - prefixLength];
+                Array.Copy(buffer, prefixLength, suffix, 0, suffix.Length);
+                CountCapturedBytes(total);
+
+                return new AuthoritativeSnapshotCapture(
+                    prefix,
+                    cache.GetFragment(state.History.CompletedRounds),
+                    suffix);
             }
         }
 
