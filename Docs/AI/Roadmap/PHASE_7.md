@@ -386,3 +386,40 @@ Hard gate: The complete Wasp inventory and Wasp-specific implementation do not b
 Hard-gate roadmap audit: As part of milestone 7.9a, audit readiness for verified Wasp content before authorizing the next milestone. Confirm that the synthetic core loop has retired the intended architecture and integration risks, identify unresolved prerequisites that must remain ahead of Wasp implementation, recommend any justified changes to Phase 8's inventory/mapping entry sequence, and record the remaining-effort range. This audit cannot waive milestones 8.1 or 8.2 or authorize Wasp-specific implementation.
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79a-independently-review-the-complete-synthetic-core-completion-evidence).
+
+### [ ] 7.9c Close the four confirmed rules-surface defects from the 7.9a review
+
+Blocked by: nothing; it is the gate-blocking corrective milestone 7.9a proposed, and the Phase 8 hard gate stays closed until it completes.
+
+Observable outcome: a hero Defeat that leaves its side without an effective minion in the Battle Zone produces p.8's immediate mid-turn Lane Push exactly when the defeated hero itself counted as a minion and never otherwise; the two production system transitions cannot be begun by a raw director command; and the HUD never draws an `END TURN` control beside a mandatory Hero Respawn choice.
+
+Context: milestone 7.9a confirmed all four defects from source, with the full evidence in its completion commit. The Attack backend mints a hero Defeat's Lane-Push qualification through the shared removal decision and `RecordAttackLanePush` then reads only the minion arm, so the recorded cause has no consumer (F-BOARD-01) - reachable with shipped content through Blue Feint's counts-as-minion mode. The qualification query itself never asks whether the removed unit counted as a minion (F-BOARD-02), which today is masked by the first defect; the two corrections land together because routing the cause without the guard would emit false pushes for ordinary hero Defeats. `TryBeginSystemTransition` accepts the two production definitions its own contract comment excludes, so a raw command runs p.15's mandatory purchase outside p.8's step and corrupts the Pity-Coin record in both directions (F-PROG-01). And the End Turn derivation's hand-maintained pending-decision list omits `PendingHeroRespawnChoice` while its sibling includes it (F-PRES-01).
+
+Acceptance checks:
+
+- `RecordAttackLanePush` records the hero arm's cause, and `LanePushQualificationQuery.AfterRemoval` refuses to qualify a removed unit that did not count as a minion, in one change. `ImmediateLanePushTests.HeroDefeatOfTheLastCountsAsMinion_EmitsTheMidTurnRequest` and `ImmediateLanePushTests.HeroDefeatOfAnOrdinaryHero_RecordsNoCause_EvenInAnEmptiedBattleZone` are both observed failing at the pre-fix revision and passing after.
+- `TryBeginSystemTransition` refuses the Lane-Push and level-up definitions under a typed reason that says the transition is begun by its own rules, before the transition authority is asked. `SystemTransitionContinuationTests.BeginningAProductionTransitionByCommand_IsRefused` is observed failing pre-fix (the command is accepted and levels move) and passing after, and the refused command leaves every hero's Level, coin balance, and the projection's pending step unchanged.
+- The round presenter and the End Turn derivation share one pending-decision predicate, so a pending kind can no longer be added to one list only. `MatchFeaturePresenterTests.RoundPresenter_WithholdsEndTurnWhileAHeroRespawnChoiceStands` is observed failing pre-fix (a non-null invocation whose execution the authority refuses) and passing after.
+- Determinism evidence is unchanged: the three reported seeds and the eight-seed soak reproduce their recorded endings, all pinned corpus digests are byte-identical (no schema cause exists), and the aggregate-invariance equality groups hold.
+- T2 validation: the four named fixtures, the complete-loop suite, and directly affected Lane-Push, hero-Defeat, system-transition, and presenter regressions. The corrective sequence's complete unfiltered sweep is milestone 7.9d's closing validation, by the user's recorded decision.
+
+Non-goals: no publishing of a projected turn-ending offer (the recorded root cause of F-PRES-01's class, Phase 8-scale work); no change to the Minion Battle, the Lane-Push stages, or the continuation contract itself; no schema move; no correction of any other 7.9a finding.
+
+### [ ] 7.9d Restore the guards verified content will lean on
+
+Blocked by: milestone 7.9c, so the corrective sequence ends on this milestone's complete unfiltered sweep.
+
+Observable outcome: the five guard gaps the 7.9a review recorded are closed - the cross-runtime snapshot-digest pin runs on the harness tier, the Unity tiers carry a growth assertion for 7.9b's mechanism, setup refuses a hero deck missing a named next-Tier instance, a malformed effect definition is refused before a match starts, and the risk register's schema claim is mechanically pinned.
+
+Context: none of these is a defect today; each is a guard whose absence the review demonstrated - the digest pin discovers zero harness tests for one `UnityEngine.Application.dataPath` line (recorded failing at `587401e`), the pre-7.9b copying mechanism passed the Unity tiers' absolute 25 ms line at 2.7 ms, a hand-authored deck gap would silently skip p.15's mandatory purchase and still collect p.8's Pity Coin, `EffectDefinitionValidator` has had no production caller since 6.2b recorded F62B-05, and the `RISK-COMPAT-001` row went stale across twelve schema moves before 7.9a brought it current.
+
+Acceptance checks:
+
+- `CardAggregateInvarianceTests` resolves its diagnostic output directory without `UnityEngine`, leaves the harness exclude list, and its nine measured digests match across both runtimes; the pre-fix half is the zero-discovery observation recorded at `587401e`, and a cross-runtime mismatch is raised as a new confirmed defect rather than re-pinned. `Testing/DOTNET_HARNESS.md`'s exclude-list sentence drops its hand-counted integer in the same edit.
+- `CompleteMatchRuntimeCaptureTests` gains a median-time ratio assertion beside its absolute refresh line, proven non-vacuous on a deliberate violator - a temporarily reintroduced per-command history copy observed failing the assertion in a scratch working tree - and passing at the closing revision; the assertion's limits against mechanisms too cheap to show in time are recorded beside it, because the Unity tiers cannot measure allocation at all.
+- `HeroItemSlotSetupValidator` requires every named next-Tier candidate reachable from a hero's owned cards to exist as that hero's deck instance. `DashboardSlotsAndComposedItemTotalsTests.AHeroWhoseDeckIsMissingANamedNextTierCard_IsRefusedAtSetup` is observed failing pre-fix and passing after.
+- Every configured `ActionDefinition.EffectRoot` is validated by `EffectDefinitionValidator` from the same configuration constructor that runs the two setup validators, against the catalog the match composes. `AMalformedEffectDefinition_IsRefusedBeforeTheMatchStarts` is observed failing pre-fix (configuration succeeds) and passing after.
+- The `RISK-COMPAT-001` register row's schema claim is pinned through `Tools/PinnedConstants.txt`, with the `stale-pinned-constant` check observed failing on a deliberately mis-stated scratch copy of the row and the validator passing at the closing revision.
+- Closing validation, by the user's recorded decision: both complete unfiltered Unity suites and the cross-platform harness green at the closing revision, with the known-good baseline table in `Testing/PLAYMODE_AND_SUITES.md` updated and the moved totals explained by the tests 7.9c and this milestone added.
+
+Non-goals: no work on the three general card-text seams (F-CARD-01, F-CARD-02, F-CARD-03 - sequenced at milestone 8.2 from Wasp's verified text); no harness NUnit-version alignment; no schema move; no correction of any other 7.9a finding.

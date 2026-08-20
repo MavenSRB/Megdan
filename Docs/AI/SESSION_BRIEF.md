@@ -14,7 +14,7 @@ The project has completed roadmap milestones through **7.9a**. The configured ve
 
 - Current completed milestone: **7.9a**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.1**.
+- Next proposed milestone: **7.9c**.
 
 Milestone **7.9** completed on 2026-08-20 and closed Phase 7's T3 hard gate. The configured ten-card hands now play complete matches under fixed reported seeds, reaching all three of the rulebook's victory paths by playing rather than by staging, and a bounded eight-seed soak plays the ordinary configured match without stalling. It found two defects nothing else could - a Defense preview that threw on a placed token's own contribution, and a built player whose text shaper crashed because a runtime-created panel carries no ICU data - and it measured `RISK-PERF-001` and `F-ER2-08` for the first time, which is what schedules 7.9b.
 
@@ -28,7 +28,9 @@ Milestone **7.9b** completed on 2026-08-20 and closed both crossings 7.9 measure
 
 Milestone **7.9a** completed on 2026-08-20: the fresh-task analysis-only independent review of the complete synthetic core, at the corrected post-7.9b figures. Its verdict: the loop is deterministic, performant for the prototype, and architecturally strong, and it is not yet certifiably rules-correct. It confirmed four defects - the hero Defeat's recorded Lane-Push cause is minted and dropped, its qualification never asks whether the removed unit counts as a minion, a raw `BeginSystemTransition` command runs p.15's purchase outside p.8's step and mispays the Pity Coin, and the HUD draws a dead END TURN beside a mandatory respawn choice - and proposed one corrective milestone, **7.9c**, closing all four on mechanical checks. It also identified three general seams still awaiting first implementation that block the hero milestones that would consume them: card text on non-Skill actions, an Active effect's trigger window, and the largely unconsumed modifier vocabulary. The hard-gate roadmap audit and the full finding-disposition table live in the completion commit, addressed from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
 
-The remaining route is **7.9c (proposed) then Phase 8**; each item requires exact approval, 7.9c's scheduling itself awaits user approval, and the Phase 8 hard gate stays closed until that gate-blocking corrective completes. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone inside it.
+Milestones **7.9c** and **7.9d** were scheduled on 2026-08-20 as a user-approved roadmap amendment: 7.9c closes the review's four confirmed defects and is the gate-blocking corrective, and 7.9d restores the five guards owed before milestone 8.3, closing the corrective sequence on both complete unfiltered suites by the same recorded decision.
+
+The remaining route is **7.9c, 7.9d, then Phase 8**; each item requires exact approval, and the Phase 8 hard gate stays closed until 7.9c completes. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone inside it.
 
 The user-approved mechanics-showcase amendment is finished; which card carries which modes, and why, lives in [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md). Two constraints still bind: Red Lancer, Red Pursuit, Blue Scout Shot and Blue Hammer keep the printed Attacks holding one non-Ranged and one Ranged per team, now the floor rather than a margin; and a resolving Skill's hero is the affected rules object, the card only the stable source. Milestone 7.9 later gates the ten-card matrix.
 
