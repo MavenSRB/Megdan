@@ -254,6 +254,56 @@ Acceptance checks:
 
 Non-goals: No automatic action-follow camera, cinematic shots, animation-driven camera motion, fog or visibility rules, 3D-miniature/2D-token switching, touch gestures, per-player persisted camera settings, production environment work, or match-authority change.
 
+### [ ] 7.8c Give a paused system transition a presentation surface
+
+Observable outcome: A player can see and answer a paused multi-step system transition through the same projected-invocation surface every other pending choice already uses.
+
+Context: no view draws a paused transition. That has been true since milestone 6.11 built rulebook p.8's Lane-Push respawn Place, which needed a blocked Spawn point to reach and so was never drawn; milestone 7.6 turned it from rare into ordinary, because p.8's Pity Coin leaves every hero able to afford the first level and p.15's Upgrade a Card then stops the end of round on a real choice from the second round onward. Milestone 7.6 gave the scene runtime a director command surface so the configured scene could pass its own end of round, and that surface names an option rather than choosing one; what is missing is the projection a person can see and pick from. This must precede milestone 7.9, whose acceptance checks require leveling to work inside a complete match and require a Win64 development build to complete a deterministic synthetic-match smoke path outside the Editor: a built player that reaches an end of round it cannot answer completes nothing. The final pitch treatment of contextual prompts remains milestone 9.13's.
+
+Acceptance checks:
+
+- The round view model projects the paused step's chooser, its options, and the exact typed invocations the continuation already carries. Presentation adds no option, removes none, reorders none by a rule of its own, and chooses none.
+- Each option is labelled from authoritative projected content: p.15's Upgrade a Card names the card returned to the deck and the card taken into the hand, and p.8's respawn Place names the destination space. No label is produced by parsing an option or item identity, and none is inferred from display name, art, hero identity, or team.
+- Answering forwards the existing `AnswerSystemTransitionStep` command carrying the invocation the continuation projected, and nothing else. A stale, forged, or refused option is rejected atomically with the pause still standing and the surface redrawn from current authority.
+- The contextual End Turn control stays suppressed while a transition is paused, because the pause projects no stop; the existing all-options-refused rule is not reinterpreted.
+- Milestone 7.6's scene-runtime command surface stops being the only way to answer. It is either replaced by the projected invocations or retained explicitly as a director/debug path, and the choice between those is recorded.
+- Focused presentation tests cover both paused kinds, an option the authority refuses, suppression of End Turn, and reconstruction after restore, deterministic replay, and retained-prefix Undo. A saved-scene Play Mode test drives an end of round that stops on p.15's choice and answers it entirely from the surface.
+
+Non-goals: No rules, progression, or continuation behaviour change; no new pending-choice kind or command; no second answer path beside the projected invocation; no final pitch HUD, prompt styling, animation, or audio; no six-hero HUD; no camera work.
+
+### [ ] 7.8d Rename the coin ledger for what it now is
+
+Observable outcome: The type that owns every hero's coin balance is named for the balances rather than for one of the three separate rules that move them, and nothing else changes.
+
+Context: `DefeatRewardAccounting` was named when rulebook p.13's Defeat was the only rule that touched a coin. It now carries three operations and only one concerns a Defeat: the Defeat and assist award, milestone 7.5's p.15 level-up spend, and milestone 7.6's p.8 Pity Coin grant. All three live there because a second writer to a balance would be a second answer to what a hero can afford, so the type is right and the name is not. Milestone 6.13's naming audit is the precedent - a qualifier that has stopped describing its type is corrected in a pass of its own - and both 7.5 and 7.6 deliberately deferred it rather than bury a mechanical rename across every call site inside a progression milestone. It should precede milestone 7.9a's independent review so the review reads the final names.
+
+Acceptance checks:
+
+- The accounting type and its restore-state types are renamed to name the coin ledger. The awarded-outcome record that stops one Defeat paying twice keeps its Defeat vocabulary, because that part is genuinely about a Defeat.
+- Every production call site, test, and living-document reference to the old names is updated in the same milestone. No alias, shim, obsolete forwarder, or partial rename is left behind.
+- No wire format changes. The snapshot section is positional, so `CurrentSchemaVersion` does not move, the compatibility corpus keeps its `-v21` fixture names, and all eight pinned digests are unchanged - asserted as evidence that this is a rename rather than re-pinned as a consequence.
+- Both aggregate-invariance digest families are unchanged for the same reason, and all three equality groups still hold.
+- The cross-platform harness and both complete Unity suites pass with the same totals as the preceding milestone, since no test is added or removed.
+
+Non-goals: No behaviour change of any kind; no new coin source or sink; no change to who may spend, grant, or award; no schema move; no re-pinning; no renaming of the Defeat outcome, removal, or reward-schedule types that are still about a Defeat.
+
+### [ ] 7.8e Shard the three living documents that sit at their thresholds
+
+Observable outcome: `SESSION_BRIEF.md`, `Project/CURRENT_IMPLEMENTATION.md`, and `Rules/RULE_SYSTEMS.md` are each comfortably under their thresholds because authority moved to indexed shards, not because prose was compressed again.
+
+Context: all three have warned at 85% on consecutive milestones, and each has been brought back under its line by compression rather than by routing - milestone 7.6 spent a substantial part of its handoff trimming construction history and restatements out of them, which is effort spent on the documents rather than on the work. `DOCUMENTATION_GOVERNANCE.md` already names the remedy: "moving precise active authority to an indexed shard is the normal response to sustained growth, not compression", and it forbids the alternative, since "a validator cannot become passable merely by deleting content". This is scheduled as its own milestone because the next one to touch these subjects would otherwise pay the same cost again.
+
+Acceptance checks:
+
+- Each of the three documents ends below 75% of both its word and byte thresholds, and the handoff records the remaining headroom for each.
+- Every statement that moves is relocated verbatim or replaced by a more precise statement in its new home. Nothing is deleted to fit, and the `duplicate-history`, code-truth, and archive checks still pass.
+- Each new shard is indexed by the family index that owns its subject, carries that family's threshold, is reachable from the brief's targeted routing table, and states what it owns at its head.
+- The brief keeps only current authorization, the exact next-milestone route, and a compact implementation summary, which is what it already claims to be.
+- No governed document is left above its warning threshold, and the validator reports zero warnings.
+- The living-document validator and `Validate-BoardMapSpecification.ps1` both pass; no Unity validation is launched, because no source, test, scene, or asset changes.
+
+Non-goals: No content deletion or weakening; no threshold change or governance amendment; no rule, behaviour, or test change; no archive rewriting beyond append-only routing; no renumbering or rescoping of any milestone.
+
 ### [ ] 7.9 Complete a deterministic test-card core match
 
 Observable outcome: The configured ten-card mechanics-showcase hands can start a match, play legal Movement/Hold/Attack/Defense/Skill turns, exercise every source-reviewed reusable core operation and delayed lifetime, complete rounds, resolve minions and Lane Pushes, progress, and end through every victory path.
