@@ -667,6 +667,17 @@ namespace GuardsDigital.Tests.EditMode
         /// and 7559 in <c>attached-marker</c>. 4 is not a multiple of 3, so the base64 the envelope
         /// carries grows by 4 or 8 characters depending on where each payload sits against a padding
         /// boundary.
+        /// Milestone 7.9 keeps schema v21 and re-pins nothing. It adds two fixtures and changes no
+        /// existing one, which is the compatibility evidence rather than an absence of it: all eight
+        /// digests above are byte-identical, because a corpus that gains coverage of a state shape it
+        /// did not reach is not a change to the wire. The two are <c>paused-level-up-v21</c>, a match
+        /// stopped inside p.15's Upgrade a Card carrying a hero's Level, coins, items and a
+        /// system-transition continuation at once, and <c>ended-match-v21</c>, a match p.13's last Life
+        /// counter has ended carrying its derived outcome. Both are shapes the complete synthetic loop
+        /// reaches every time and no earlier corpus fixture reached at all, so nothing in the sections
+        /// they exercise had version-controlled coverage before this milestone. There is no
+        /// migrate-or-reject decision to record because no existing payload's meaning moved; the
+        /// standing decision for every future cause is unchanged.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
@@ -677,7 +688,9 @@ namespace GuardsDigital.Tests.EditMode
             new CompatibilityFixture("pending-minion-battle-v21", "4fd9a1ba601b77d6f0802c9e0b6110fd81dcf7682fdb6a893e32094a761dd2cc"),
             new CompatibilityFixture("placed-token-v21", "0636641937a845159d51a4eb8ce7bef5a60446972c14f8942f0e2409a7c738c3"),
             new CompatibilityFixture("attached-marker-v21", "13c7fc129012ea0cffd492349b51f07c87263b80fb6fc322ddce0a3830a49ff0"),
-            new CompatibilityFixture("pending-correction-v21", "279ca492fad632c43fc70bb8e9b8a35a43052d53a4f59a610585df14e90ccc0b")
+            new CompatibilityFixture("pending-correction-v21", "279ca492fad632c43fc70bb8e9b8a35a43052d53a4f59a610585df14e90ccc0b"),
+            new CompatibilityFixture("paused-level-up-v21", "7a2587cacd8e6e2aa5b57e4a603bbd416c30ed88f449e6ac45c57287ac99b0a0"),
+            new CompatibilityFixture("ended-match-v21", "1aee1b34a066ced915512a9aa5cb4e8c25b71bf19acdde31efacefb1a26fa6c9")
         };
 
         [Test]
@@ -807,7 +820,58 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
             // so the paused after-action correction gets the eighth.
             values.Add("pending-correction-v21", CapturePendingCorrectionSnapshot());
+
+            // Milestone 7.9. The complete synthetic loop reaches two state shapes the eight fixtures
+            // above never do, and both are shapes a payload has to survive rather than merely reach:
+            // a match paused inside p.15's Upgrade a Card, which carries a hero's Level, coins, items
+            // and a system-transition continuation at once, and a match that has ended, which carries
+            // the derived outcome and refuses every later command. They are captured from short
+            // scripted sequences rather than from a seeded complete match on purpose - a corpus digest
+            // is a pin, and pinning one to a generated run would re-pin the corpus on every change to
+            // anything the generator touches, which is the opposite of what a compatibility corpus is
+            // for.
+            values.Add("paused-level-up-v21", CapturePausedLevelUpSnapshot());
+            values.Add("ended-match-v21", CaptureEndedMatchSnapshot());
             return values;
+        }
+
+        /// <summary>
+        /// A configured match stopped exactly where p.15's Upgrade a Card asks its question, which is
+        /// the state milestone 7.5 built and milestone 7.8a drew.
+        /// </summary>
+        private static string CapturePausedLevelUpSnapshot()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionPausedOnLevelUpUpgrade(out _);
+            Assert.That(session.Projection.PendingSystemTransitionStep, Is.Not.Null,
+                "The fixture must be paused, or this pins an ordinary end of round twice.");
+            return session.CaptureSnapshot();
+        }
+
+        /// <summary>
+        /// A configured match that p.13's last Life counter has ended: the Red hero's Attack defeats
+        /// the adjacent Blue one on the first turn, and the team it belonged to had one counter.
+        /// </summary>
+        private static string CaptureEndedMatchSnapshot()
+        {
+            var session = ConfiguredMatchFixtures.CreateEngagedSession(1);
+            var red = session.Projection.Cards.Single(card => card.Id.Value == "red-pursuit-card");
+            var blue = session.Projection.Cards.Single(card => card.Id.Value == "blue-hammer-card");
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(red.OwnerId, red.Id));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(blue.OwnerId, blue.Id));
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id),
+                "Red Pursuit's Initiative 7 acts before Blue Hammer's 6.");
+
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                offer.IsAvailable && FindActionKind(session.Projection, offer) == ActionKind.Attack);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));
+            var target = session.Projection.PendingAttackTargetChoice;
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId, target.ChoiceId, target.LegalTargetHeroIds.Single()));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.DeclineDefense());
+
+            Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.GameEnded));
+            Assert.That(session.Projection.Outcome.HasEnded, Is.True);
+            return session.CaptureSnapshot();
         }
 
         /// <summary>

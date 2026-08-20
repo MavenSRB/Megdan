@@ -183,6 +183,140 @@ namespace GuardsDigital.Tests.EditMode
                 new MatchSessionInitialState(scenario, relocatedSetup, new[] { map }));
         }
 
+        /// <summary>
+        /// Milestone 7.9. The configured match with the two heroes standing beside each other and the
+        /// stated number of Life counters per team, so ordinary play reaches p.13's Defeat, its respawn
+        /// and its ending instead of needing thousands of commands to find them.
+        /// </summary>
+        /// <remarks>
+        /// Everything else is the configured setup: both full minion waves, the declared Wave count,
+        /// the same ten dealt cards. The two changes are the ones that make a mirrored 1v1 test
+        /// configuration behave like a match with something at stake, and neither invents a rule - a
+        /// starting position and a counter count are setup content, which is exactly what
+        /// <see cref="QuickGameSetupState"/> carries. The adjacency is the same one
+        /// <c>MatchVictoryPathTests</c> builds for the same reason.
+        /// </remarks>
+        public static MatchSession CreateEngagedSession(int lifeCountersPerTeam)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var heroes = WithBlueHeroBesideTheRedOne(map, setup);
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams
+                    .Select(team => new QuickGameTeamSetupState(
+                        team.TeamId, team.TeamSide, lifeCountersPerTeam, team.ThroneZoneId))
+                    .ToArray(),
+                heroes,
+                setup.Minions));
+        }
+
+        /// <summary>
+        /// Milestone 7.9. The same adjacency with the configured counter counts untouched, for a
+        /// scenario that needs two heroes within reach of each other and nothing else changed.
+        /// </summary>
+        public static MatchSession CreateAdjacentConfiguredSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroBesideTheRedOne(map, setup),
+                setup.Minions));
+        }
+
+        /// <summary>
+        /// Milestone 7.9. The configured match with exactly one Blue minion, standing in the starting
+        /// Battle Zone, so p.8's Minion Battle removes it and awards Red the push at the end of every
+        /// round - milestone 7.7's Throne-capture scenario, reused so a generated match can reach p.8's
+        /// two push endings rather than only p.13's.
+        /// </summary>
+        public static MatchSession CreateUncontestedPushSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var survivor = setup.Minions.First(minion =>
+                minion.TeamSide == TeamSide.Blue &&
+                minion.MinionType != StandardMinionType.Heavy &&
+                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                    map, minion.Coordinate));
+
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                setup.Heroes,
+                setup.Minions
+                    .Where(minion => minion.TeamSide != TeamSide.Blue ||
+                        minion.MinionId.Equals(survivor.MinionId))
+                    .ToArray()));
+        }
+
+        private static IReadOnlyList<QuickGameHeroSetupState> WithBlueHeroBesideTheRedOne(
+            BoardMapDefinition map, QuickGameSetupState setup)
+        {
+            var redHero = setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Heroes.Select(hero => hero.Coordinate)
+                    .Concat(setup.Minions.Select(minion => minion.Coordinate)));
+            var beside = redHero.Coordinate.GetNeighbors()
+                .First(coordinate => !occupied.Contains(coordinate) &&
+                    map.Spaces.Any(space =>
+                        space.Kind == BoardMapSpaceKind.Playable &&
+                        space.Coordinate.Equals(coordinate)));
+            var besideSpaceId = map.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable &&
+                space.Coordinate.Equals(beside)).Id;
+
+            return setup.Heroes
+                .Select(hero => hero.TeamSide == TeamSide.Blue
+                    ? new QuickGameHeroSetupState(
+                        hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
+                        hero.SpawnPoint, new ConfiguredSpaceReference(map.Id, besideSpaceId), beside)
+                    : hero)
+                .ToArray();
+        }
+
+        private static MatchSession CreateSession(
+            PlaceholderOneVsOneTestConfiguration configuration,
+            BoardMapDefinition map,
+            QuickGameSetupState setup)
+        {
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
         /// <summary>The ordinary configured match on the official map, with nobody earning a coin.</summary>
         public static MatchSession CreateConfiguredSession()
         {

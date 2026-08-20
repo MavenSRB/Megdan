@@ -163,7 +163,11 @@ if ($player.ExitCode -ne 0) {
     $failed = $true
 }
 
-foreach ($marker in @('GUARDS_SMOKE: BEGIN', 'GUARDS_SMOKE: COMPOSED', 'GUARDS_SMOKE: COMMAND_ACCEPTED', 'GUARDS_SMOKE: PASS')) {
+# Milestone 7.9 added ROUNDS_PLAYED and PAUSE_ANSWERED. COMMAND_ACCEPTED proves a typed command
+# survived the build; those two prove the built player can actually be played - it crossed a round
+# boundary and answered p.15's Upgrade a Card, which milestone 7.6 established an ordinary end of
+# round stops on from the second round onward.
+foreach ($marker in @('GUARDS_SMOKE: BEGIN', 'GUARDS_SMOKE: COMPOSED', 'GUARDS_SMOKE: COMMAND_ACCEPTED', 'GUARDS_SMOKE: PAUSE_ANSWERED', 'GUARDS_SMOKE: ROUNDS_PLAYED', 'GUARDS_SMOKE: PASS')) {
     if ($playerOutput -notmatch [regex]::Escape($marker)) {
         Write-Output "FAIL: the player log is missing the marker '$marker'."
         $failed = $true

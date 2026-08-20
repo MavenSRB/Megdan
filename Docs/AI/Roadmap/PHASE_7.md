@@ -315,7 +315,7 @@ Non-goals: No content deletion or weakening; no threshold change or governance a
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78e-shard-the-three-living-documents-that-sit-at-their-thresholds-completion-evidence).
 
-### [~] 7.9 Complete a deterministic test-card core match
+### [x] 7.9 Complete a deterministic test-card core match
 
 Observable outcome: The configured ten-card mechanics-showcase hands can start a match, play legal Movement/Hold/Attack/Defense/Skill turns, exercise every source-reviewed reusable core operation and delayed lifetime, complete rounds, resolve minions and Lane Pushes, progress, and end through every victory path.
 
@@ -339,7 +339,9 @@ Acceptance checks:
 - A broader deterministic core-loop suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
-ER2 note (`F-ER2-08`): `Undo`/`Restart` reconstruct by full-prefix replay, so their cost grows with match length; this gate's runtime baseline must measure Undo at complete-match length and record a bound. `RISK-PERF-001` is also open because projection construction copies growing command/current-round histories. Neither mechanism schedules optimization by inspection: milestone 7.9 records the pitch-scale measurements, and a separately approved corrective milestone is proposed only for a measured threshold crossing.
+ER2 note (`F-ER2-08`): `Undo`/`Restart` reconstruct by full-prefix replay, so their cost grows with match length; this gate's runtime baseline must measure Undo at complete-match length and record a bound. The `RISK-PERF-001` row reopened after its 6.1o retirement is also open because projection construction copies growing command/current-round histories. Neither mechanism schedules optimization by inspection: milestone 7.9 records the pitch-scale measurements, and a separately approved corrective milestone is proposed only for a measured threshold crossing. Both crossed, and milestone 7.9b is that corrective milestone.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-79-complete-a-deterministic-test-card-core-match-completion-evidence).
 
 ### [ ] 7.9b Reduce what a complete match costs to refresh and to undo
 

@@ -117,10 +117,12 @@ namespace GuardsDigital.Presentation.Match
     /// session, decides no legality, and owns no match state - it lays out the surfaces the presenters
     /// render into, and answers where the pointer is blocked.
     ///
-    /// The panel and its settings are created here rather than authored as assets, for the reason the
+    /// The panel and its layout are created here rather than authored as assets, for the reason the
     /// rest of the configured scene composes in code: the saved scene carries this component and nothing
     /// else about the HUD, so there is no asset for an import to lose and no second place the layout
-    /// lives.
+    /// lives. Its settings object is the one exception, and milestone 7.9 made it one: a build with no
+    /// `PanelSettings` asset in it ships no ICU text data, which is invisible in the Editor and fatal
+    /// in a built player, so the panel is copied from a committed asset.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class ConfiguredMatchHudRenderer : MonoBehaviour
@@ -290,7 +292,28 @@ namespace GuardsDigital.Presentation.Match
                 document = gameObject.AddComponent<UIDocument>();
             }
 
-            panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+            // Milestone 7.9. A copy of a project asset where one exists, and a bare instance only when
+            // it does not.
+            //
+            // The player-build smoke gate found why, and it is the exact class of defect milestone
+            // 6.1d built that gate for: something no Editor test can observe. The ICU data Unity's
+            // text shaper needs ships only when the build contains at least one `PanelSettings`
+            // asset, and a HUD that built its settings entirely with `CreateInstance` gave the build
+            // none - which in a built player is a `NullReferenceException` out of
+            // `UITKTextHandle.ShapeText` for every label the HUD redraws. The player says so itself:
+            // "It will not be present on PanelSettings created at runtime, so make sure the build
+            // contains at least one PanelSettings asset". The Editor never showed it, because the
+            // Editor has the data loaded either way.
+            //
+            // Two things to know before editing the asset. Its own `m_ICUDataAsset` field is empty on
+            // disk and stays empty; it is not what carries the data, its presence in the build is. And
+            // it is instantiated rather than used directly, so the per-panel values set below stay
+            // runtime state and never dirty a tracked asset. The comment above about composing in code
+            // still holds for the layout, which is the part that has no asset.
+            var authored = Resources.Load<PanelSettings>(RuntimePanelSettingsResourcePath);
+            panelSettings = authored != null
+                ? Instantiate(authored)
+                : ScriptableObject.CreateInstance<PanelSettings>();
             panelSettings.name = "Guards Configured Match Panel";
             panelSettings.hideFlags = HideFlags.HideAndDontSave;
             panelSettings.scaleMode = PanelScaleMode.ConstantPixelSize;
@@ -378,6 +401,12 @@ namespace GuardsDigital.Presentation.Match
         /// if plainer, panel rather than nothing.
         /// </summary>
         public const string RuntimeThemeResourcePath = "UI/GuardsRuntimeTheme";
+
+        /// <summary>
+        /// The imported panel-settings asset the runtime panel is copied from. Milestone 7.9 added it
+        /// so a built player has the text data Unity only attaches at import; see <see cref="Build"/>.
+        /// </summary>
+        public const string RuntimePanelSettingsResourcePath = "UI/GuardsRuntimePanelSettings";
 
         /// <summary>
         /// Applies the current viewport to every absolutely-placed region. Called on every header

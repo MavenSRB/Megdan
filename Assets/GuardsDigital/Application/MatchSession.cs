@@ -856,6 +856,23 @@ namespace GuardsDigital.Application
             {
                 label = $"Active effect {contribution.SourceActiveEffectId.Value}";
             }
+            else if (!string.IsNullOrEmpty(contribution.SourceContinuousSourceId))
+            {
+                // Milestone 7.9. The fourth typed source rulebook p.19 keeps apart from Active effects:
+                // a placed token's property today, an unlocked Ultimate since milestone 7.3, a marker
+                // later. Before this branch existed, every one of them reached the `else` and threw, so
+                // a Defense preview for the hero controlling a placed Hazard - which grants exactly this
+                // kind of contribution - made the match unplayable rather than merely unlabelled. The
+                // complete-loop driver found it by playing; no earlier fixture had ever attacked a hero
+                // who controlled a token.
+                //
+                // The id is read off the contribution rather than resolved back to its source, exactly
+                // as the Active-effect branch above reads its id. A lookup would need both the board's
+                // token property sources and the unlocked-Ultimate set, which would make this projection
+                // the place that knows what kinds of continuous source exist - and a fifth kind would
+                // then throw here again for the same reason this one did.
+                label = $"Continuous source {contribution.SourceContinuousSourceId}";
+            }
             else
             {
                 throw new InvalidOperationException("A value contribution has no readable typed source.");

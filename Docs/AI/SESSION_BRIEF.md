@@ -8,13 +8,15 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through **7.8e**. The configured vertical slice uses a pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound snapshots, and passive Unity presentation; schema v21 persists every continuation the slice can pause on, together with every hero's progression, every team's counters, and the board's own components. It plays rulebook p.7's turn inside p.8's round: cards commit and reveal under Initiative, a turn spends one action or Holds, an Attack runs p.13's whole consequence list inside the Attack, the round closes through p.8's six ordered steps, and the match ends by one derived outcome naming winner, loser and cause. A player sees all of it on one runtime UI Toolkit panel. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries and remaining gaps lives in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the shards the routing table below names; every statement this summary compresses is stated once by the shard that owns it.
+The project has completed roadmap milestones through **7.9**. The configured vertical slice uses a pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound snapshots, and passive Unity presentation; schema v21 persists every continuation the slice can pause on, together with every hero's progression, every team's counters, and the board's own components. It plays rulebook p.7's turn inside p.8's round: cards commit and reveal under Initiative, a turn spends one action or Holds, an Attack runs p.13's whole consequence list inside the Attack, the round closes through p.8's six ordered steps, and the match ends by one derived outcome naming winner, loser and cause. A player sees all of it on one runtime UI Toolkit panel. The exact subject-oriented inventory of implemented behavior, configured setup, compatibility boundaries and remaining gaps lives in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the shards the routing table below names; every statement this summary compresses is stated once by the shard that owns it.
 
 ## Current authorization and next route
 
-- Current completed milestone: **7.8e**.
-- Active authorized milestone: **7.9**.
-- Next proposed milestone: **7.9**.
+- Current completed milestone: **7.9**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **7.9b**.
+
+Milestone **7.9** completed on 2026-08-20 and closed Phase 7's T3 hard gate. The configured ten-card hands now play complete matches under fixed reported seeds, reaching all three of the rulebook's victory paths by playing rather than by staging, and a bounded eight-seed soak plays the ordinary configured match without stalling. It found two defects nothing else could - a Defense preview that threw on a placed token's own contribution, and a built player whose text shaper crashed because a runtime-created panel carries no ICU data - and it measured `RISK-PERF-001` and `F-ER2-08` for the first time, which is what schedules 7.9b.
 
 Milestone **7.8e** completed on 2026-08-20 and moved authority out of the three documents that had been living at their warning line, instead of compressing them a fourth time. Four new indexed shards - [Project/COMBAT_AND_CONSEQUENCES.md](Project/COMBAT_AND_CONSEQUENCES.md), [Project/HERO_PROGRESSION.md](Project/HERO_PROGRESSION.md), [Rules/BOARD_OBJECT_SYSTEMS.md](Rules/BOARD_OBJECT_SYSTEMS.md) and [Rules/UNIT_TYPE_QUESTIONS.md](Rules/UNIT_TYPE_QUESTIONS.md) - take precise active authority verbatim, and superseded baseline narrative moved to the testing archive. This brief's own implementation paragraph is a summary again rather than a second inventory. The validator reports zero warnings.
 
@@ -28,7 +30,7 @@ Milestones 7.1 through 7.8 are complete and addressed by SHA from the same archi
 
 Milestone **7.9b** was scheduled on 2026-08-20 as a user-approved roadmap amendment, and runs after 7.9 and before 7.9a. It owns the two performance thresholds 7.9's complete-match capture measured and crossed: `RISK-PERF-001`'s per-command allocation growing with the retained history, and `F-ER2-08`'s Undo replaying the whole prefix. Neither is a playability problem at 1v1 scale, both were measured rather than inspected, and 7.9 optimized nothing.
 
-The remaining route is **7.9 onward**; each item requires exact approval. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone inside it.
+The remaining route is **7.9b onward**; each item requires exact approval. Phase 6 is complete: its implementation closed at 6.13's T3 gate, and 6.1y discharged the last milestone inside it.
 
 The user-approved mechanics-showcase amendment is finished; which card carries which modes, and why, lives in [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md). Two constraints still bind: Red Lancer, Red Pursuit, Blue Scout Shot and Blue Hammer keep the printed Attacks holding one non-Ranged and one Ranged per team, now the floor rather than a margin; and a resolving Skill's hero is the affected rules object, the card only the stable source. Milestone 7.9 later gates the ten-card matrix.
 

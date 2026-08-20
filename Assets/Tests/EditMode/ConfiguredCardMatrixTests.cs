@@ -1,0 +1,709 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Components.Synthetic;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
+using NUnit.Framework;
+
+namespace GuardsDigital.Tests.EditMode
+{
+    /// <summary>
+    /// Milestone 7.9 acceptance checks two and three: the exact configured primary-action matrix, the
+    /// three general replacements that must stay derived, and the two showcase cards whose relationship
+    /// no fixture had ever proved from the dealt hand.
+    /// </summary>
+    /// <remarks>
+    /// The printed value columns are not repeated here.
+    /// <see cref="CardDefinitionInstanceTests.SyntheticHands_MatchApprovedFiveCardValueAndActionMatrix"/>
+    /// owns them and pins every Attack, Range, Movement and Defense number of all ten cards; what that
+    /// fixture does not pin is *which* mode family each card's primary action is, because it compares
+    /// <see cref="ActionKind"/> and six of the ten are Skills. This one pins the identity, which is what
+    /// the gate's matrix actually names: Red Needle's Push/Place, Red Bulwark's modifier/restriction/
+    /// permission, Red Bombard's direct Move/Spawn, Blue Feint's immunity/effective-type/component,
+    /// Blue Sentinel's Swap/Replace/Remove, Blue Longbow's bounded Repeat, and the four printed Attacks.
+    ///
+    /// The two scenarios at the bottom are the check the showcase schedule has owed since milestone
+    /// 6.2d. Blue Feint carries the token placement rather than Blue Sentinel, whose board-object family
+    /// it belongs to, because p.8 removes every placed token at the end of a round and a card is played
+    /// at most once in a round - a Sentinel supplying its own Hazard could never have one standing when
+    /// it came back. The claim is therefore that Feint at Initiative 12 and Sentinel at 11 are two cards
+    /// of one hand and one round holds both plays. <see cref="ConfiguredExchangeSkillTests"/> proved
+    /// Sentinel's three branches with a Hazard supplied by the fixture-only Cache card; these prove them
+    /// with the Hazard the dealt hand actually supplies.
+    ///
+    /// Unity-independent, so it runs in the cross-platform harness as well as the Windows tier.
+    /// </remarks>
+    public sealed class ConfiguredCardMatrixTests
+    {
+        private static readonly ActionDefinitionId FeintSkill = new ActionDefinitionId("primary-immunity-skill");
+        private static readonly ActionDefinitionId SentinelSkill = new ActionDefinitionId("primary-exchange-skill");
+
+        private static readonly EffectNodeId FeintPlaceBranch = new EffectNodeId("feint-place-branch");
+        private static readonly EffectNodeId FeintGiveMarker = new EffectNodeId("feint-give-marker");
+        private static readonly EffectNodeId FeintReturnMarker = new EffectNodeId("feint-return-marker");
+        private static readonly EffectNodeId SentinelReplaceBranch = new EffectNodeId("sentinel-replace-branch");
+        private static readonly EffectNodeId SentinelRemoveBranch = new EffectNodeId("sentinel-remove-branch");
+
+        // -----------------------------------------------------------------------------------------
+        // The matrix
+        // -----------------------------------------------------------------------------------------
+
+        [Test]
+        public void TheTenConfiguredCards_CarryTheExactApprovedPrimaryActionMatrix()
+        {
+            var red = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var blue = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"));
+
+            AssertPrimaryActions(red, new[]
+            {
+                Row("placeholder-red-needle", "TEST - Red Needle", 13, ActionKind.Skill, "primary-push-place-skill"),
+                Row("placeholder-red-bulwark", "TEST - Red Bulwark", 11, ActionKind.Skill, "primary-modification-skill"),
+                Row("placeholder-red-lancer", "TEST - Red Lancer", 9, ActionKind.Attack, null),
+                Row("placeholder-red-pursuit", "TEST - Red Pursuit", 7, ActionKind.Attack, null),
+                Row("placeholder-red-bombard", "TEST - Red Bombard", 5, ActionKind.Skill, "primary-direct-move-spawn-skill")
+            });
+
+            AssertPrimaryActions(blue, new[]
+            {
+                Row("placeholder-blue-feint", "TEST - Blue Feint", 12, ActionKind.Skill, "primary-immunity-skill"),
+                Row("placeholder-blue-sentinel", "TEST - Blue Sentinel", 11, ActionKind.Skill, "primary-exchange-skill"),
+                Row("placeholder-blue-scout-shot", "TEST - Blue Scout Shot", 8, ActionKind.Attack, null),
+                Row("placeholder-blue-hammer", "TEST - Blue Hammer", 6, ActionKind.Attack, null),
+                Row("placeholder-blue-longbow", "TEST - Blue Longbow", 4, ActionKind.Skill, "primary-push-repeat-skill")
+            });
+        }
+
+        [Test]
+        public void EachTeam_KeepsAtLeastOnePrintedRangedAndOnePrintedNonRangedAttack()
+        {
+            foreach (var hand in new[]
+            {
+                PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero")),
+                PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+            })
+            {
+                var attacks = hand.DealtDefinitions
+                    .SelectMany(definition => definition.ActionDefinitions)
+                    .Where(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                        action.Kind == ActionKind.Attack)
+                    .ToArray();
+
+                Assert.That(attacks.Count(action => action.AttackRange == AttackRangeKind.Ranged),
+                    Is.GreaterThanOrEqualTo(1), "Each team keeps a printed Ranged Attack.");
+                Assert.That(attacks.Count(action => action.AttackRange == AttackRangeKind.NonRanged),
+                    Is.GreaterThanOrEqualTo(1), "Each team keeps a printed non-Ranged Attack.");
+            }
+        }
+
+        [Test]
+        public void HoldFastTravelAndClear_AreDerivedAndNeverPrintedOnAShowcaseCard()
+        {
+            var printed = new[]
+                {
+                    PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero")),
+                    PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+                }
+                .SelectMany(hand => hand.DealtDefinitions)
+                .SelectMany(definition => definition.ActionDefinitions)
+                .ToArray();
+
+            // p.7 lists Hold, Fast Travel and Clear among the secondary actions every hero has, not
+            // among the icons a card prints. A showcase Skill that printed one would be invented text.
+            Assert.That(printed.Any(action => action.Kind == ActionKind.Hold), Is.False);
+            Assert.That(printed.Any(action => action.Kind == ActionKind.FastTravel), Is.False);
+            Assert.That(printed.Any(action => action.Kind == ActionKind.Clear), Is.False);
+            Assert.That(
+                printed.Any(action => action.Origin == ActionDefinitionOrigin.Replacement),
+                Is.False,
+                "A replacement is derived from an eligible source action at the offer query, never " +
+                "printed onto a card.");
+
+            // And in a live turn the general rules still derive them. A Hold comes from the selected
+            // unresolved card - which is why it cannot be asked of a hand that is not in a turn - and
+            // Fast Travel replaces that card's own printed Secondary Movement rather than an invented
+            // action of its own.
+            // The ordinary configured starting position rather than this file's adjacent one, because
+            // p.7's Fast Travel is refused while an enemy stands in the origin Zone - which is exactly
+            // the position the scenarios below deliberately build.
+            var live = ConfiguredMatchFixtures.CreateConfiguredSession();
+            CommitOneCardEachBy(live, "red-lancer", "blue-feint");
+            var actor = live.Projection.SelectedActor;
+
+            var hold = GeneralRuleActionOfferQuery.GetAvailableHoldOffer(
+                actor.CardInstanceId, actor.ActorId,
+                live.Projection.Definitions, live.Projection.Cards);
+            Assert.That(hold.HasValue, Is.True);
+            Assert.That(hold.Value.IsAvailable, Is.True);
+            Assert.That(hold.Value.InvocationContext,
+                Is.EqualTo(ActionInvocationContext.GeneralRuleSecondary),
+                "A Hold is a general-rule secondary action, not something the card printed.");
+            Assert.That(hold.Value.SourceCardInstanceId, Is.EqualTo(actor.CardInstanceId),
+                "It is derived from the selected card, so it names that card as its source.");
+
+            var actingCard = live.Projection.Cards.Single(value => value.Id.Equals(actor.CardInstanceId));
+            var actingDefinition = live.Projection.Definitions.Single(value =>
+                value.Reference.Equals(actingCard.DefinitionReference));
+            var printedMovement = actingDefinition.ActionDefinitions.Single(action =>
+                action.Origin == ActionDefinitionOrigin.PrintedSecondary &&
+                action.Kind == ActionKind.Movement);
+            Assert.That(live.Projection.AvailableFastTravelOptions, Is.Not.Empty);
+            Assert.That(
+                live.Projection.AvailableFastTravelOptions
+                    .Select(option => option.ReplacedMovementActionDefinitionId),
+                Is.All.EqualTo(printedMovement.Id),
+                "Fast Travel replaces an eligible printed Movement offer and nothing else.");
+            Assert.That(
+                live.Projection.AvailableFastTravelOptions
+                    .Select(option => option.ReplacementOffer.InvocationContext),
+                Is.All.EqualTo(ActionInvocationContext.Replacement));
+        }
+
+        [Test]
+        public void EveryConfiguredDefinition_IsVisiblyTestOnlyAndClaimsNoVerifiedContent()
+        {
+            foreach (var hand in new[]
+            {
+                PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero")),
+                PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+            })
+            {
+                Assert.That(hand.Definitions, Has.All.Property("ContentAuthority")
+                    .EqualTo(CardContentAuthority.SyntheticTestFixture),
+                    "No configured definition may claim verified authority.");
+                Assert.That(hand.Definitions, Has.All.Property("DisplayName").StartsWith("TEST - "),
+                    "A synthetic definition says so in the one string a player would ever read.");
+                Assert.That(
+                    hand.Definitions.Any(definition =>
+                        definition.Id.Value.IndexOf("wasp", StringComparison.OrdinalIgnoreCase) >= 0),
+                    Is.False,
+                    "No configured definition names the hero whose inventory milestone 8.1 owns.");
+            }
+        }
+
+        [Test]
+        public void TheFixtureOnlySkillCards_StayOutOfEveryNormalHandAndKeepADistinctIsolationRole()
+        {
+            // Milestone 7.9's disposition of the extra Focus and Cache cards, which the gate requires
+            // either retired or documented. They are retained, and the role each keeps is one no
+            // configured showcase card can take over:
+            //
+            //   Focus (`primary-skill`, milestone 6.2a) is the only *board-neutral* Skill in the
+            //   project. Its effect is a Sequence that marks the actor and then offers a `may` step
+            //   opening a real decision, and it touches no space, no object and no component at all.
+            //   That is what lets the execution-frame fixtures - ordering, an optional step, a
+            //   capability-requested choice, a typed output binding, an Active effect crossing the
+            //   snapshot boundary - assert on the frame without a board operation's outcome mixed in.
+            //   All six configured Skills touch the board, so none of them can stand in for it.
+            //
+            //   Cache (`primary-component-skill`, milestone 6.2) reaches the same three component
+            //   capabilities Blue Feint now carries, but reaches them alone: it prints one Skill whose
+            //   only modes are place, give and return, on a hand with no board-object siblings and an
+            //   Initiative outside its team's ordinary band. Blue Feint offers those three behind two
+            //   timing modes and a five-way Choose, on a card whose whole point is that Blue Sentinel
+            //   acts on what it places. A component fixture that had only Feint would be asserting on
+            //   the showcase relationship every time it wanted one token on the board - and two corpus
+            //   payloads, `placed-token-v21` and `attached-marker-v21`, are captured through Cache for
+            //   exactly that reason.
+            //
+            // What the gate actually forbids is either of them enlarging a normal hand or sitting
+            // there unexplained. The first half is what this asserts; the second is written above.
+            var fixtureOnly = new[] { "placeholder-red-focus", "placeholder-blue-focus",
+                "placeholder-red-cache", "placeholder-blue-cache" };
+
+            foreach (var hand in new[]
+            {
+                PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero")),
+                PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+            })
+            {
+                Assert.That(hand.DealtDefinitions, Has.Count.EqualTo(5));
+                Assert.That(
+                    hand.AllInstances.Any(instance =>
+                        fixtureOnly.Any(id => instance.Id.Value.StartsWith(
+                            id.Replace("placeholder-", string.Empty), StringComparison.Ordinal))),
+                    Is.False,
+                    "Neither fixture-only card is dealt to, or held in the deck of, a normal hand.");
+            }
+
+            // And they exist where the fixtures that need them look. The Skill-fixture hand is the only
+            // one that deals them, which is what keeps them out of the configured scene entirely.
+            var skillHand = PlaceholderMovementHand.CreateBlueWithSkill(new HeroId("blue-synthetic-hero"));
+            Assert.That(
+                skillHand.DealtDefinitions.Select(definition => definition.Id.Value),
+                Has.Some.EqualTo("placeholder-blue-focus"));
+            Assert.That(
+                skillHand.DealtDefinitions.Select(definition => definition.Id.Value),
+                Has.Some.EqualTo("placeholder-blue-cache"));
+
+            // Neither states a colour or a Tier, so every progression query excludes them by
+            // classification rather than by a colour that happened to be left unset.
+            foreach (var definition in skillHand.DealtDefinitions.Where(value =>
+                value.Id.Value == "placeholder-blue-focus" || value.Id.Value == "placeholder-blue-cache"))
+            {
+                Assert.That(definition.Progression, Is.EqualTo(CardProgressionProfile.NotStated),
+                    $"{definition.Id.Value} must state no progression content of its own.");
+            }
+        }
+
+        [Test]
+        public void NoRegisteredCapability_IsDeferredToAVerifiedHeroMilestone()
+        {
+            // Milestone 7.9 acceptance check six, asked mechanically rather than by reading the roadmap:
+            // "no source-reviewed general keyword or reusable core capability is deferred for first
+            // implementation to a verified hero milestone". A capability that no card can reach is
+            // exactly such a deferral - it exists as a handler, it registers, it serializes, and the
+            // first thing that would ever run it is a hero this project has not written yet.
+            //
+            // The registration list is the one a snapshot records to say which contract set it was
+            // written against, so this compares the same list the wire does. What it demands of each
+            // entry is a card - configured or fixture - whose printed effect names it, because a card
+            // is the only thing that starts an effect in this build.
+            var registered = SyntheticEffectCapabilities.CreateCatalog().Registered;
+            Assert.That(registered, Is.Not.Empty, "The catalog must register something to check.");
+
+            var owner = new HeroId("capability-coverage-hero");
+            var opponent = new HeroId("capability-coverage-opponent");
+            var reachable = new[]
+                {
+                    PlaceholderMovementHand.CreateRed(owner),
+                    PlaceholderMovementHand.CreateBlue(owner),
+                    PlaceholderMovementHand.CreateRedWithSkill(owner),
+                    PlaceholderMovementHand.CreateBlueWithSkill(owner),
+                    PlaceholderMovementHand.CreateRedWithRepeatSkill(owner),
+                    PlaceholderMovementHand.CreateBlueWithRepeatSkill(owner),
+                    PlaceholderMovementHand.CreateRedWithCardStateSkill(owner, opponent),
+                    PlaceholderMovementHand.CreateBlueWithCardStateSkill(owner, opponent),
+                    PlaceholderMovementHand.CreateRedWithRadiusSkill(owner),
+                    PlaceholderMovementHand.CreateBlueWithRadiusSkill(owner)
+                }
+                .SelectMany(hand => hand.Definitions)
+                .SelectMany(definition => definition.ActionDefinitions)
+                .Where(action => action.EffectRoot != null)
+                .SelectMany(action => action.EffectRoot.Nodes)
+                .Where(node => node.Capability.IsDefined)
+                .Select(node => node.Capability)
+                .Distinct()
+                .ToArray();
+
+            var deferred = registered
+                .Where(capability => !reachable.Any(value => value.Equals(capability)))
+                .Select(capability => capability.CapabilityId.Value)
+                .Where(id => !FrameShapeStubs.Contains(id, StringComparer.Ordinal))
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(deferred, Is.Empty,
+                "Every registered capability must already be reachable from a printed card. These are " +
+                $"not: {string.Join(", ", deferred)}. A capability first reached by verified hero " +
+                "content is a deferral this gate exists to refuse.");
+
+            // The exclusion list is not allowed to be a place things quietly go. Every entry must still
+            // be registered, so a stub that is deleted or renamed fails here rather than sitting in a
+            // list nothing reads.
+            foreach (var stub in FrameShapeStubs)
+            {
+                Assert.That(
+                    registered.Any(capability => string.Equals(
+                        capability.CapabilityId.Value, stub, StringComparison.Ordinal)),
+                    Is.True,
+                    $"{stub} is declared as a frame-shape stub but is no longer registered.");
+            }
+        }
+
+        /// <summary>
+        /// The registered capabilities that are deliberately on no card, and why each is not a deferral.
+        /// </summary>
+        /// <remarks>
+        /// These five exist to give the effect-resolution fixtures a node with a known shape - one that
+        /// records that it ran, one that reports a condition, one that is impossible, one that declines,
+        /// one that accepts a hero and binds it. They implement no rule and reference no rulebook page,
+        /// so there is nothing about them a verified hero milestone could be waiting for; putting any of
+        /// them on a card would be inventing content to satisfy a test. Every capability that does
+        /// implement something - the discard, the Radius-bounded selection, every board operation, every
+        /// component operation, every modification - is on a card, which is what the case above proves.
+        /// </remarks>
+        private static readonly string[] FrameShapeStubs =
+        {
+            "synthetic-accept-hero",
+            "synthetic-declined",
+            "synthetic-impossible",
+            "synthetic-is-flagged",
+            "synthetic-note-actor"
+        };
+
+        // -----------------------------------------------------------------------------------------
+        // Blue Feint's component modes, from the dealt hand
+        // -----------------------------------------------------------------------------------------
+
+        [Test]
+        public void BlueFeint_OffersItsFiveModesFromTheDealtFiveCardHand()
+        {
+            var session = StartFeintSkill(out _);
+
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null);
+            Assert.That(
+                choice.Candidates.Select(candidate => candidate.OptionNodeId.Value),
+                Is.EqualTo(new[]
+                {
+                    "feint-push-immunity", "feint-counts-as-minion", "feint-place-branch",
+                    "feint-give-marker", "feint-return-marker"
+                }),
+                "Milestone 6.8b's two timing modes and the three the retired Cache card handed over, " +
+                "in the definition's own order, offered from the card the configured scene deals.");
+            Assert.That(choice.ChooserId, Is.EqualTo(session.Projection.SelectedActor.ActorId));
+            Assert.That(
+                choice.SelectInvocations.Any(invocation =>
+                    invocation.Candidate.OptionNodeId.Equals(FeintReturnMarker)),
+                Is.False,
+                "p.18 scopes a return to the source that gave, and this hand has given no marker, so " +
+                "the mode is offered and unavailable rather than absent.");
+        }
+
+        [Test]
+        public void BlueFeintsPlacement_SuppliesTheHazardBlueSentinelsReplaceTakesInTheSameRound()
+        {
+            var session = PlaceAHazardWithBlueFeint(out var tokenAt, out var roundIndex);
+
+            FinishTheTurn(session);
+            CommitOneCardEachBy(session, "red-pursuit", "blue-sentinel");
+            StartSkill(session, SentinelSkill);
+            ChooseBranch(session, SentinelReplaceBranch);
+            SelectSpace(session, tokenAt);
+
+            Assert.That(session.Projection.RoundIndex, Is.EqualTo(roundIndex),
+                "One round holds both the play that places the token and the play that acts on it, " +
+                "which is the whole reason the placement is on Feint rather than on Sentinel.");
+            var standing = session.Projection.PlacedTokens.Single(token => token.Coordinate.Equals(tokenAt));
+            Assert.That(standing.Definition.Reference, Is.EqualTo(SyntheticComponentDefinitions.WardV1),
+                "p.19's Replace substitutes a different object, so the Hazard Feint placed is gone and " +
+                "a Ward stands in its space.");
+        }
+
+        [Test]
+        public void BlueFeintsPlacement_SuppliesTheHazardBlueSentinelsRemoveTakesInTheSameRound()
+        {
+            var session = PlaceAHazardWithBlueFeint(out var tokenAt, out var roundIndex);
+
+            FinishTheTurn(session);
+            CommitOneCardEachBy(session, "red-pursuit", "blue-sentinel");
+            StartSkill(session, SentinelSkill);
+            ChooseBranch(session, SentinelRemoveBranch);
+            SelectSpace(session, tokenAt);
+
+            Assert.That(session.Projection.RoundIndex, Is.EqualTo(roundIndex));
+            Assert.That(
+                session.Projection.PlacedTokens.Any(token => token.Coordinate.Equals(tokenAt)),
+                Is.False,
+                "A standalone Remove returns the token Feint placed to its supply inside the same round.");
+        }
+
+        // -----------------------------------------------------------------------------------------
+        // The fourth typed contribution source
+        // -----------------------------------------------------------------------------------------
+
+        [Test]
+        public void ADefenderStandingOnItsOwnHazard_ReadsTheContinuousSourceInItsDefensePreview()
+        {
+            // Milestone 7.9's own defect, found by playing rather than by reading. The Hazard token has
+            // granted its controller Defense +1 since milestone 6.8, and rulebook p.19 keeps a token's
+            // properties outside the Active-effect rules, so the contribution it makes is the fourth
+            // typed source - neither a card, nor a minion, nor an Active effect. The Defense preview
+            // read the first three and threw `InvalidOperationException` on the fourth, so attacking a
+            // hero who controlled a placed token made the match unplayable. No earlier fixture had ever
+            // attacked one; `DeterministicMatchLoop` did it on its first seeded run.
+            var session = PlaceAHazardWithBlueFeint(out _, out _);
+
+            // Red's Lancer is committed in the same turn and acts after Feint's Initiative 12, so the
+            // Attack lands on the hero that now controls the token.
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                offer.IsAvailable && DefinitionOf(session, offer).ActionDefinitions
+                    .Single(action => action.Id.Equals(offer.ActionDefinitionId)).Kind == ActionKind.Attack);
+            Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));
+            var target = session.Projection.PendingAttackTargetChoice;
+            Accept(session, DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId, target.ChoiceId, target.LegalTargetHeroIds.Single()));
+
+            var preview = session.Projection.PendingDefensePreview;
+            Assert.That(preview, Is.Not.Null,
+                "Building this preview is what used to throw; reaching it at all is the fix.");
+            var contributions = preview.Choices
+                .Where(choice => !choice.IsDecline)
+                .SelectMany(choice => choice.DefenseContributions)
+                .ToArray();
+            var continuous = contributions
+                .Where(contribution => contribution.Kind == ValueContributionKind.ContinuousSourceModifier)
+                .ToArray();
+
+            Assert.That(continuous, Is.Not.Empty,
+                "The placed Hazard's property reaches its controller's Defense Total.");
+            Assert.That(continuous.Select(contribution => contribution.Amount), Is.All.EqualTo(1));
+            Assert.That(continuous, Has.All.Property("SourceLabel").StartsWith("Continuous source "),
+                "The fourth source gets a readable label of its own rather than an exception.");
+            Assert.That(
+                continuous.Any(contribution => string.IsNullOrWhiteSpace(contribution.SourceLabel)),
+                Is.False);
+        }
+
+        // -----------------------------------------------------------------------------------------
+        // Scenario
+        // -----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The configured match with the two heroes standing beside each other, played one turn: Blue
+        /// commits Feint at Initiative 12 and Red its Ranged Lancer at 9, so Blue acts first and places
+        /// a Hazard, and the turn is left standing on Red's action.
+        /// </summary>
+        private static MatchSession PlaceAHazardWithBlueFeint(
+            out HexCoordinate tokenAt, out int roundIndex)
+        {
+            var session = CreateAdjacentConfiguredSession();
+            CommitOneCardEachBy(session, "red-lancer", "blue-feint");
+            StartSkill(session, FeintSkill);
+            ChooseBranch(session, FeintPlaceBranch);
+
+            // The place branch is p.18's order made explicit: an `if able` reclamation the supply makes
+            // unavailable while nothing is placed, then the placement itself.
+            var choice = session.Projection.PendingEffectChoice;
+            tokenAt = choice.Candidates[0].Value.Coordinate;
+            SelectSpace(session, tokenAt);
+
+            var placed = session.Projection.PlacedTokens.Single();
+            Assert.That(placed.Definition.Reference, Is.EqualTo(SyntheticComponentDefinitions.HazardV4));
+            Assert.That(placed.Coordinate, Is.EqualTo(tokenAt));
+            roundIndex = session.Projection.RoundIndex;
+            return session;
+        }
+
+        private static MatchSession StartFeintSkill(out HexCoordinate blueAt)
+        {
+            var session = CreateAdjacentConfiguredSession();
+            blueAt = session.Projection.Heroes
+                .Single(hero => session.Projection.Participants
+                    .GetTeamForHero(hero.HeroId).Side == TeamSide.Blue)
+                .Coordinate;
+            CommitOneCardEachBy(session, "red-lancer", "blue-feint");
+            StartSkill(session, FeintSkill);
+            return session;
+        }
+
+        /// <summary>
+        /// The configured 1v1 match on the official map with the Blue hero moved beside the Red one, so
+        /// one hero's Attack can reach the other and a placed token stands beside both.
+        /// </summary>
+        private static MatchSession CreateAdjacentConfiguredSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var redHero = setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Heroes.Select(hero => hero.Coordinate)
+                    .Concat(setup.Minions.Select(minion => minion.Coordinate)));
+            var beside = redHero.Coordinate.GetNeighbors()
+                .First(coordinate => !occupied.Contains(coordinate) &&
+                    map.Spaces.Any(space =>
+                        space.Kind == BoardMapSpaceKind.Playable &&
+                        space.Coordinate.Equals(coordinate)));
+            var besideSpaceId = map.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable &&
+                space.Coordinate.Equals(beside)).Id;
+
+            var heroes = setup.Heroes
+                .Select(hero => hero.TeamSide == TeamSide.Blue
+                    ? new QuickGameHeroSetupState(
+                        hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
+                        hero.SpawnPoint, new ConfiguredSpaceReference(map.Id, besideSpaceId), beside)
+                    : hero)
+                .ToArray();
+            var tuned = new QuickGameSetupState(
+                setup.SelectedMap, setup.WaveCount, setup.TieBreakerState, setup.Teams, heroes,
+                setup.Minions);
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                tuned.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, tuned, new[] { map }));
+        }
+
+        // -----------------------------------------------------------------------------------------
+        // Helpers
+        // -----------------------------------------------------------------------------------------
+
+        private sealed class PrimaryActionRow
+        {
+            public PrimaryActionRow(
+                string definitionId, string displayName, int initiative, ActionKind kind, string actionId)
+            {
+                DefinitionId = definitionId;
+                DisplayName = displayName;
+                Initiative = initiative;
+                Kind = kind;
+                ActionId = actionId;
+            }
+
+            public string DefinitionId { get; }
+            public string DisplayName { get; }
+            public int Initiative { get; }
+            public ActionKind Kind { get; }
+
+            /// <summary>The exact Skill this card carries, or null for the four printed Attacks.</summary>
+            public string ActionId { get; }
+        }
+
+        private static PrimaryActionRow Row(
+            string definitionId, string displayName, int initiative, ActionKind kind, string actionId) =>
+            new PrimaryActionRow(definitionId, displayName, initiative, kind, actionId);
+
+        private static void AssertPrimaryActions(PlaceholderMovementHand hand, PrimaryActionRow[] rows)
+        {
+            Assert.That(hand.DealtDefinitions, Has.Count.EqualTo(rows.Length),
+                "p.15 holds a hand at exactly five cards, one of each colour.");
+            Assert.That(hand.Instances, Has.Count.EqualTo(rows.Length));
+
+            for (var index = 0; index < rows.Length; index++)
+            {
+                var row = rows[index];
+                var definition = hand.DealtDefinitions[index];
+                var instance = hand.Instances[index];
+
+                Assert.That(definition.Id, Is.EqualTo(new CardDefinitionId(row.DefinitionId)),
+                    "A showcase conversion advances a revision, never a card's stable identity.");
+                Assert.That(definition.DisplayName, Is.EqualTo(row.DisplayName));
+                Assert.That(definition.Initiative.Value, Is.EqualTo(row.Initiative));
+                Assert.That(instance.DefinitionReference, Is.EqualTo(definition.Reference),
+                    "The hand slot holds the instance of the definition the matrix names for it.");
+                Assert.That(instance.OwnerId, Is.EqualTo(hand.Instances[0].OwnerId),
+                    "All five cards of a hand belong to the one hero it was dealt to.");
+
+                var primary = definition.ActionDefinitions.Single(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedPrimary);
+                Assert.That(primary.Kind, Is.EqualTo(row.Kind));
+                if (row.ActionId != null)
+                {
+                    Assert.That(primary.Id, Is.EqualTo(new ActionDefinitionId(row.ActionId)),
+                        $"{row.DisplayName} carries the exact showcase mode family the matrix names.");
+                }
+                else
+                {
+                    Assert.That(primary.AttackRange, Is.Not.EqualTo(AttackRangeKind.None),
+                        "A printed Attack declares whether it is Ranged.");
+                }
+
+                Assert.That(
+                    definition.ActionDefinitions.Count(action =>
+                        action.Origin == ActionDefinitionOrigin.PrintedSecondary &&
+                        action.Kind == ActionKind.Movement),
+                    Is.EqualTo(1),
+                    "Every showcase card keeps its printed Secondary Movement.");
+                Assert.That(
+                    definition.ActionDefinitions.Count(action =>
+                        action.Origin == ActionDefinitionOrigin.Reaction &&
+                        action.Kind == ActionKind.Defense),
+                    Is.EqualTo(1),
+                    "Every showcase card keeps its Defense reaction.");
+            }
+
+            Assert.That(
+                rows.Where(row => row.ActionId != null).Select(row => row.ActionId).Distinct().Count(),
+                Is.EqualTo(rows.Count(row => row.ActionId != null)),
+                "No two cards of one hand carry the same Skill.");
+        }
+
+        private static void CommitOneCardEachBy(
+            MatchSession session, string redFragment, string blueFragment)
+        {
+            Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
+            foreach (var pair in new[]
+            {
+                new { Side = TeamSide.Red, Fragment = redFragment },
+                new { Side = TeamSide.Blue, Fragment = blueFragment }
+            })
+            {
+                var card = session.Projection.Cards.Single(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == pair.Side &&
+                    candidate.Id.Value.StartsWith(pair.Fragment, StringComparison.Ordinal) &&
+                    candidate.State.Location == CardLocation.Hand);
+                Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+
+            Assert.That(session.Projection.PendingInitiativeChoice, Is.Null,
+                "The committed Initiatives differ, so no tie has to be steered.");
+        }
+
+        /// <summary>
+        /// Holds out the rest of the turn the scenario left standing, so the next commitment can be
+        /// made. The Hazard placed in that turn stays on the board across it: p.8 removes placed tokens
+        /// at the end of the *round*, which is the boundary this deliberately does not cross.
+        /// </summary>
+        private static void FinishTheTurn(MatchSession session)
+        {
+            var turnIndex = session.Projection.TurnIndex;
+            while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn &&
+                session.Projection.TurnIndex == turnIndex)
+            {
+                Accept(session, DirectorCommand.PerformHold(
+                    session.Projection.SelectedActor.CardInstanceId));
+            }
+
+            Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments),
+                "A round of the configured match holds more than one turn, and this scenario needs the " +
+                "second one.");
+        }
+
+        private static void StartSkill(MatchSession session, ActionDefinitionId skill)
+        {
+            var offer = session.Projection.AvailableTurnActions
+                .Single(candidate => candidate.ActionDefinitionId.Equals(skill));
+            Assert.That(offer.IsAvailable, Is.True,
+                "The card whose turn this is must be the one the scenario committed for it.");
+            Accept(session, DirectorCommand.StartAction(offer.ActionDefinitionId));
+        }
+
+        private static void ChooseBranch(MatchSession session, EffectNodeId branch)
+        {
+            var choice = session.Projection.PendingEffectChoice;
+            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.OptionNodeId.Equals(branch))));
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+        }
+
+        private static void SelectSpace(MatchSession session, HexCoordinate coordinate)
+        {
+            var choice = session.Projection.PendingEffectChoice;
+            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.Value.Coordinate.Equals(coordinate))));
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+        }
+
+        private static CardDefinition DefinitionOf(MatchSession session, ActionOffer offer) =>
+            session.Projection.Definitions.Single(definition =>
+                definition.Reference.Equals(offer.SourceDefinitionReference));
+
+        private static void Accept(MatchSession session, DirectorCommand command) =>
+            ConfiguredMatchFixtures.Accept(session, command);
+    }
+}
