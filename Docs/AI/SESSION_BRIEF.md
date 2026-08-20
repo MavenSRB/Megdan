@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.8d**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **7.8d**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.8e**.
 - Next proposed milestone: **7.8e**.
 
 Milestone **7.8d** completed on 2026-08-20 and renamed the coin ledger for what it now is. `DefeatRewardAccounting` is `HeroCoinLedger`, its restore-state types and every call site followed, and the Defeat vocabulary stayed where a Defeat is still the subject. Schema stays v21 with every pinned digest asserted unchanged rather than re-pinned, which is what makes it a rename.

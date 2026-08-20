@@ -296,7 +296,7 @@ Non-goals: No behaviour change of any kind; no new coin source or sink; no chang
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78d-rename-the-coin-ledger-for-what-it-now-is-completion-evidence).
 
-### [ ] 7.8e Shard the three living documents that sit at their thresholds
+### [~] 7.8e Shard the three living documents that sit at their thresholds
 
 Observable outcome: `SESSION_BRIEF.md`, `Project/CURRENT_IMPLEMENTATION.md`, and `Rules/RULE_SYSTEMS.md` are each comfortably under their thresholds because authority moved to indexed shards, not because prose was compressed again.
 
