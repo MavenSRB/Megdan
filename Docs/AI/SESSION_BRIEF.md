@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **7.8e**. The configured ve
 ## Current authorization and next route
 
 - Current completed milestone: **7.8e**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **7.9**.
 - Next proposed milestone: **7.9**.
 
 Milestone **7.8e** completed on 2026-08-20 and moved authority out of the three documents that had been living at their warning line, instead of compressing them a fourth time. Four new indexed shards - [Project/COMBAT_AND_CONSEQUENCES.md](Project/COMBAT_AND_CONSEQUENCES.md), [Project/HERO_PROGRESSION.md](Project/HERO_PROGRESSION.md), [Rules/BOARD_OBJECT_SYSTEMS.md](Rules/BOARD_OBJECT_SYSTEMS.md) and [Rules/UNIT_TYPE_QUESTIONS.md](Rules/UNIT_TYPE_QUESTIONS.md) - take precise active authority verbatim, and superseded baseline narrative moved to the testing archive. This brief's own implementation paragraph is a summary again rather than a second inventory. The validator reports zero warnings.

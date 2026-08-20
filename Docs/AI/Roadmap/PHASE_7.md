@@ -315,7 +315,7 @@ Non-goals: No content deletion or weakening; no threshold change or governance a
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-78e-shard-the-three-living-documents-that-sit-at-their-thresholds-completion-evidence).
 
-### [ ] 7.9 Complete a deterministic test-card core match
+### [~] 7.9 Complete a deterministic test-card core match
 
 Observable outcome: The configured ten-card mechanics-showcase hands can start a match, play legal Movement/Hold/Attack/Defense/Skill turns, exercise every source-reviewed reusable core operation and delayed lifetime, complete rounds, resolve minions and Lane Pushes, progress, and end through every victory path.
 
