@@ -26,8 +26,12 @@ Current reference figures, recorded at runtime baseline revision `7ad51a7` (mile
 | Undo replay | 28.203 ms | 250 ms |
 | Accepted-command refresh, 44 samples | 1.254 ms focused, 0.401 ms complete-suite | 25 ms |
 | Accepted-command refresh managed allocation | Unmeasured at complete-match history length | 64 KiB/sample |
+| Six-player decoded snapshot payload | Unmeasured at 3v3 scale; 6,633 B at the staged 1v1 setup | reference only |
+| End-of-round leveling stage, six heroes | Unmeasured at 3v3 scale | 25 ms |
 
 A threshold crossing requires investigation and an approved fix, a rationale-preserving re-baseline, or explicit user acceptance; it never authorizes speculative optimization. Milestone 7.9 re-examines Undo replay and measures accepted-command projection refresh time/allocation at complete-match history length per `F-ER2-08` and `RISK-PERF-001`. No projection-history corrective milestone is scheduled unless that measurement crosses a standing threshold.
+
+The last two rows carry no baseline because nothing has run at 3v3 scale, and they are recorded here so `RISK-SCALE-001` has something to be measured against rather than reasoned about. The payload row is a reference figure rather than a threshold of its own: what it costs is already bounded by the snapshot-only capture row above, since the payload is serialized once per accepted command and twice per refused one. Milestone 8.25 records the six-player payload against the 1v1 reference, because it is the first milestone at which 108 card instances and 108 definitions exist. Milestone 8.27 samples the leveling stage, because it is the first whose acceptance checks reach repeated rounds and progression with six heroes; milestone 8.26 is scoped to one complete six-hero turn and names neither figure, so it measures neither.
 
 Completed milestones' gate recipes and their recorded run evidence moved verbatim to the [testing archive](../Archive/TESTING_HISTORY.md#completed-gate-recipes-and-run-evidence-routed-2026-08-14-milestone-61ag) on 2026-08-14.
 

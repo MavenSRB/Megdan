@@ -185,8 +185,9 @@ Acceptance checks:
 - Wasp appears once; all six heroes are different and assigned to exactly one team/player.
 - DEV-001 and DEV-002 are marked retired; only approved director/debug deviations remain.
 - Snapshots round-trip the complete six-player setup deterministically.
+- `RISK-SCALE-001`'s payload half is measured rather than computed: the six-player decoded payload is recorded against the staged 1v1 reference of 6,633 bytes and compared with the standing thresholds in `Testing/FUTURE_GATES.md`. This milestone is the first at which 108 card instances and 108 definitions exist, and the risk's own figure for them is arithmetic on measured unit costs rather than a measurement.
 
-Non-goals: No networking, hidden per-player devices, AI, matchmaking, or balance changes.
+Non-goals: No networking, hidden per-player devices, AI, matchmaking, or balance changes. No reassessment of `RISK-SCALE-001`'s ordering half, which needs a round boundary this milestone does not reach.
 
 ### [!] 8.26 Integrate six-hero director control and team interactions
 
@@ -215,6 +216,7 @@ Acceptance checks:
 - Automated configuration and integration checks prove that staged one-hero-per-team, mirrored-definition, fixed-two-response, and controller-as-game-entity assumptions are absent: six distinct heroes map to six distinct controlling player/seats, exactly three heroes belong to each team, and director tooling remains outside match authority.
 - Undo, restart, snapshots, event log, and Tie Breaker override remain deterministic across the complete 3v3 loop.
 - A broader source-linked six-hero integration suite passes.
+- `RISK-SCALE-001` is reassessed in full and then retired with its recorded 3v3 bound or its residuals explicitly accepted. This is the first milestone whose acceptance checks reach repeated rounds and progression with six heroes, so it is the first at which rulebook p.15's simultaneous Level Up can be observed as the serialized one-question-at-a-time step the continuation contract makes it, and the first at which the leveling stage's per-round derivation can be sampled against the standing thresholds rather than reasoned about.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
 Hard gate: The networking architecture decision does not begin until the deterministic 3v3 match, URP migration, and independent readiness review at milestone 8.28a are reviewed and approved. Production visual work remains blocked through milestone 8.36a.
