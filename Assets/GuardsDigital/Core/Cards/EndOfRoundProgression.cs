@@ -86,7 +86,13 @@ namespace GuardsDigital.Core.Cards
                 // mandatory; the stage has been ordered here since milestone 6.1 and unavailable until
                 // now. It follows retrieval because p.15's Upgrade a Card step chooses from the hand,
                 // and the cards a hero played this round are only back in it once retrieval has run.
-                EndOfRoundStage.LevelUpAndUpgrade
+                EndOfRoundStage.LevelUpAndUpgrade,
+
+                // Milestone 7.6. p.8's last end-of-round step, and the last one that was ordered and
+                // unavailable. It follows the Level Up above it because its own question is about that
+                // step's outcome - "All players who have NOT leveled up this round" - so a Pity Coin
+                // paid before leveling would be paid on an answer nobody had yet.
+                EndOfRoundStage.CollectPityCoins
             });
         }
 

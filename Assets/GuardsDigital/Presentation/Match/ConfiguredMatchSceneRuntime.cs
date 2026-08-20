@@ -274,6 +274,48 @@ namespace GuardsDigital.Presentation.Match
         public bool ContinueEndOfRound() =>
             RoundPresenter.Submit(RoundView.Model?.ContinueEndOfRoundInvocation);
 
+        /// <summary>
+        /// The options a paused multi-step system transition is waiting on, or an empty list when none
+        /// is paused (milestone 7.6).
+        ///
+        /// This is a director command surface rather than a rendered one: no view draws a paused
+        /// transition yet, which has been true since milestone 6.11's Lane-Push respawn and which
+        /// milestone 7.6 makes reachable in ordinary play, because p.8's Pity Coin leaves a hero able to
+        /// afford a level and p.15's Upgrade a Card then stops the end of round on a real choice. Until
+        /// a presenter projects it, this is what lets the configured scene get past its own end of round
+        /// rather than stall on a question nothing can answer.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>
+            PausedSystemTransitionOptions =>
+            session.Projection.PendingSystemTransitionStep?.Options ??
+            (IReadOnlyList<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>)
+                Array.Empty<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>();
+
+        /// <summary>
+        /// Answers the paused system transition with one of the options it projected.
+        ///
+        /// The option is the caller's, deliberately: choosing one here would be presentation deciding a
+        /// player's choice, which is the one thing this layer must never do. An option the continuation
+        /// did not offer is refused by the authority rather than filtered out here, so a stale one
+        /// behaves exactly as every other stale command does.
+        /// </summary>
+        public bool AnswerPausedSystemTransition(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId optionId)
+        {
+            var pending = session.Projection.PendingSystemTransitionStep;
+            var invocation = pending?.Invocations
+                .FirstOrDefault(candidate => candidate.OptionId.Equals(optionId));
+            if (pending == null || invocation == null || !invocation.Value.IsDefined)
+            {
+                return false;
+            }
+
+            var accepted = session.Execute(
+                DirectorCommand.AnswerSystemTransitionStep(invocation.Value)).Accepted;
+            RefreshAll();
+            return accepted;
+        }
+
         public bool SubmitInitiativeChoice(CardInstanceId cardId)
         {
             var invocation = RoundView.Model?.InitiativeChoices.SingleOrDefault(value =>

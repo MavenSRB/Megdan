@@ -53,7 +53,14 @@ namespace GuardsDigital.Core.Cards
         /// purchases asks the outcome, and nothing has to keep four enum members in agreement with the
         /// four the rules can report.
         /// </summary>
-        HeroLevelUpProgressed = 21
+        HeroLevelUpProgressed = 21,
+
+        /// <summary>
+        /// Milestone 7.6: one hero collected rulebook p.8's Pity Coin, because it did not level up this
+        /// round. A kind of its own rather than a fifth <c>HeroLevelUpOutcomeKind</c>, because this is
+        /// the step p.8 places *after* Level Up and its subject is a hero that did not level.
+        /// </summary>
+        PityCoinCollected = 22
     }
 
     public readonly struct RoundResolutionEvent
@@ -84,7 +91,8 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Rules.LanePush.LanePushStageOutcome lanePushStageOutcome = default,
             GuardsDigital.Core.Components.PlacedToken removedToken = null,
             GuardsDigital.Core.Components.MarkerAttachment returnedMarker = null,
-            GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome heroLevelUpOutcome = null)
+            GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome heroLevelUpOutcome = null,
+            GuardsDigital.Core.Rules.Consequences.CoinGrantOperation pityCoinGrant = default)
         {
             Kind = kind;
             RoundIndex = roundIndex;
@@ -114,6 +122,7 @@ namespace GuardsDigital.Core.Cards
             RemovedToken = removedToken;
             ReturnedMarker = returnedMarker;
             HeroLevelUpOutcome = heroLevelUpOutcome;
+            PityCoinGrant = pityCoinGrant;
         }
 
         public RoundResolutionEventKind Kind { get; }
@@ -154,6 +163,9 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>Milestone 7.5: what p.15's and p.16's leveling did, or <c>null</c>.</summary>
         public GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome HeroLevelUpOutcome { get; }
+
+        /// <summary>Milestone 7.6: the p.8 Pity Coin one hero collected, with its balance transition.</summary>
+        public GuardsDigital.Core.Rules.Consequences.CoinGrantOperation PityCoinGrant { get; }
 
         public static RoundResolutionEvent FromCommitment(
             int roundIndex,
@@ -540,6 +552,23 @@ namespace GuardsDigital.Core.Cards
                 turnIndex,
                 endOfRoundStage: Cards.EndOfRoundStage.LevelUpAndUpgrade,
                 heroLevelUpOutcome: outcome);
+        }
+
+        /// <summary>
+        /// Milestone 7.6: one hero collected p.8's Pity Coin. It carries the whole balance transition
+        /// rather than only the hero, because the page's own consequence is about what that coin can and
+        /// cannot then buy, and a reader that had to look the balance up somewhere else could not see it.
+        /// </summary>
+        public static RoundResolutionEvent PityCoinCollected(
+            int roundIndex,
+            GuardsDigital.Core.Rules.Consequences.CoinGrantOperation grant)
+        {
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.PityCoinCollected,
+                roundIndex,
+                0,
+                endOfRoundStage: Cards.EndOfRoundStage.CollectPityCoins,
+                pityCoinGrant: grant);
         }
     }
 }

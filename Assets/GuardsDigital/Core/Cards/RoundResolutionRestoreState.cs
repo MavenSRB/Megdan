@@ -158,7 +158,8 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions,
             GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression,
             GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems,
-            GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState teamLives)
+            GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState teamLives,
+            GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState roundLeveling)
         {
             Cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
             History = history ?? throw new ArgumentNullException(nameof(history));
@@ -168,6 +169,7 @@ namespace GuardsDigital.Core.Cards
             HeroProgression = heroProgression ?? throw new ArgumentNullException(nameof(heroProgression));
             HeroItems = heroItems ?? throw new ArgumentNullException(nameof(heroItems));
             TeamLives = teamLives ?? throw new ArgumentNullException(nameof(teamLives));
+            RoundLeveling = roundLeveling ?? throw new ArgumentNullException(nameof(roundLeveling));
         }
 
         public RoundCursorRestoreState Cursor { get; }
@@ -202,6 +204,15 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState TeamLives { get; }
 
+        /// <summary>
+        /// Milestone 7.6's record of which heroes bought a level this round. Required and with no absent
+        /// form, for the reason the three states above are: every round has an answer to p.8's question,
+        /// and "nobody levelled" is a legal value rather than a missing section. It is the only one of
+        /// the four that is round-scoped, so the empty list is both the common case and the one a fresh
+        /// round starts from.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState RoundLeveling { get; }
+
         public void Deconstruct(
             out RoundCursorRestoreState cursor,
             out RoundHistoryRestoreState history,
@@ -210,7 +221,8 @@ namespace GuardsDigital.Core.Cards
             out GuardsDigital.Core.Rules.Transitions.SystemTransitionRestoreState systemTransitions,
             out GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression,
             out GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems,
-            out GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState teamLives)
+            out GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState teamLives,
+            out GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState roundLeveling)
         {
             cursor = Cursor;
             history = History;
@@ -220,6 +232,7 @@ namespace GuardsDigital.Core.Cards
             heroProgression = HeroProgression;
             heroItems = HeroItems;
             teamLives = TeamLives;
+            roundLeveling = RoundLeveling;
         }
     }
 }

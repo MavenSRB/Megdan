@@ -180,7 +180,7 @@ Non-goals: No Wasp costs, card identities, item art, or Ultimate text.
 
 Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-75-resolve-mandatory-end-of-round-leveling-and-upgrades-completion-evidence).
 
-### [~] 7.6 Resolve Pity Coin ordering
+### [x] 7.6 Resolve Pity Coin ordering
 
 Observable outcome: After all leveling finishes, each hero that did not level this round receives exactly one Pity Coin.
 
@@ -189,6 +189,8 @@ Acceptance checks:
 - Eligibility is tracked authoritatively for the current round and is independent per hero.
 - A hero that bought one or more levels receives no Pity Coin.
 - A Pity Coin that raises a hero to a level threshold cannot be spent until a later round.
+
+Historical evidence: [Phase 7 handoff](../Archive/Phase-Handoffs/PHASE_7.md#milestone-76-resolve-pity-coin-ordering-completion-evidence).
 
 ### [ ] 7.7 Integrate and verify all three victory paths
 
@@ -213,6 +215,23 @@ Acceptance checks:
 - The same state and choices produce the same state and ordered events.
 - A focused two-round regression proves that completing a round removes that round's events from the current-round projection while retaining them in the whole-match event log and completed-round history; events accepted in the new round then append to a fresh current-round sequence. Restore, replay, and retained-prefix Undo reproduce the same boundary.
 - Integration preserves the established resumable cursor, completed-round history, round-local reset, snapshot, Undo, and event-log contracts rather than introducing a second round-transition path.
+
+### [ ] 7.8a Add card-colour controls and compact hero overview overlays
+
+Observable outcome: The configured match keeps the board dominant while colouring every active hero card-selection control from that card's authoritative typed colour and showing one compact hero overview at the left edge for Red and the right edge for Blue, with hero identity, current item bonuses, four ordered current-round card slots, and a fifth discard-pile slot.
+
+Acceptance checks:
+
+- Every selectable active-hero card button uses its projected authoritative `CardColor` for the button surface while retaining readable card name and action/value text, its existing enabled/disabled and selected/focused states, and the exact typed invocation it already forwards. Presentation never infers colour from team, hero, hand position, display name, art, or action type.
+- Red's overview is a small overlay aligned to the left screen edge and Blue's is its right-edge counterpart. Both remain clear of the configured card-selection and contextual-prompt controls, keep the board as the dominant surface, and remain usable at the project's validated desktop Game View and short-viewport fallback.
+- Each overview shows the projected hero name and configured hero icon without using either to infer rules identity. The current configured one-hero-per-team scene draws one overview on each side, and the layout is a repeated hero component rather than a singleton tied to Wasp or synthetic display names.
+- Item bonuses appear above the card slots as compact signed values paired with their printed-value symbols, such as `+1` beside Attack. Only authoritative current item bonuses are shown; presentation does not recalculate item ownership, slot validity, or totals, and no full item-name labels are added to the compact surface.
+- Four fixed, left-to-right slots represent that hero's current-round turns. An occupied slot uses the played card's authoritative colour; an unplayed slot stays visibly empty. The slots contain no visible turn numbers, colour names, card names, or `ROUND CARDS` heading, while hover/focus and assistive labels may expose the turn ordinal and colour without changing the compact layout.
+- The fifth slot is visually distinct and shows the hero's authoritative discard-pile state, including a compact discard label and count. It updates from the projection rather than from presenter-maintained card movement.
+- Completed-round history, the current-round reset, card retrieval, discard, upgrade, restore, deterministic replay, and retained-prefix Undo all redraw the same colours, bonuses, slots, and discard count from current authority; none of this overview state is serialized or owned by Unity views.
+- Focused presentation tests cover all five card colours, team/card-colour separation, zero and multiple item bonuses, empty and four-card histories, discard changes, round reset, restore/replay/Undo reconstruction, and layout at the validated desktop and compact fallback sizes. A visible non-batch Game View capture confirms readable contrast, no overlap, and the approved compact side-box composition.
+
+Non-goals: No rules-state, card-lifecycle, progression, item, history, or discard behavior changes; no production card art; no Wasp-specific card data; no animation, audio, tooltip card preview, six-hero HUD, or private-hand networking work.
 
 ### [ ] 7.9 Complete a deterministic test-card core match
 

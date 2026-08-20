@@ -593,6 +593,34 @@ namespace GuardsDigital.Tests.EditMode
             {
                 while (Session.Projection.Phase == RoundResolutionPhase.EndOfRound)
                 {
+                    // Milestone 7.6. p.8's Pity Coin can leave a hero able to afford a level, so from
+                    // the second round on this scenario's end of round can stop on p.15's Upgrade a
+                    // Card. The answer deliberately avoids upgrading either card this scenario commits
+                    // by name, because p.15 returns the upgraded card to the deck and this fixture
+                    // plays Bulwark and Feint across three rounds; every hero here has three non-Basic
+                    // cards, so one is always free to upgrade. What leveling itself does is
+                    // `HeroLevelUpTests`' subject and the stage is `EndOfRoundLevelUpStageTests`'.
+                    var pending = Session.Projection.PendingSystemTransitionStep;
+                    if (pending != null)
+                    {
+                        var spare = pending.Invocations
+                            .Where(candidate =>
+                            {
+                                var upgraded = GuardsDigital.Core.Rules.Progression.HeroLevelUpOption
+                                    .Read(candidate.OptionId).UpgradedCardInstanceId;
+                                return !upgraded.Equals(BulwarkCardId) && !upgraded.Equals(FeintCardId);
+                            })
+                            .ToArray();
+                        Assert.That(spare, Is.Not.Empty,
+                            "p.15 offers every tied lowest-Tier card, so one that this scenario does " +
+                            "not name is always among them.");
+                        var answered = Session.Execute(
+                            DirectorCommand.AnswerSystemTransitionStep(spare[0]));
+                        Assert.That(answered.Accepted, Is.True, answered.Detail);
+                        Record(answered);
+                        continue;
+                    }
+
                     AdvanceOneEndOfRoundStage();
                 }
             }

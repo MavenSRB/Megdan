@@ -975,6 +975,18 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(runtime.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
                 while (runtime.Phase == RoundResolutionPhase.EndOfRound)
                 {
+                    // Milestone 7.6. p.8's Pity Coin leaves every hero able to afford a level, so from
+                    // the second round on this loop meets p.15's Upgrade a Card choice. No presenter
+                    // draws a paused system transition yet - the same gap milestone 6.11's Lane-Push
+                    // respawn has - so the scene answers it through the runtime's director command
+                    // surface, naming the option rather than letting presentation pick one.
+                    var options = runtime.PausedSystemTransitionOptions;
+                    if (options.Count > 0)
+                    {
+                        Assert.That(runtime.AnswerPausedSystemTransition(options[0]), Is.True);
+                        continue;
+                    }
+
                     Assert.That(runtime.ContinueEndOfRound(), Is.True);
                 }
 

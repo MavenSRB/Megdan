@@ -212,6 +212,19 @@ namespace GuardsDigital.Core.Diagnostics
                     return;
                 }
 
+                case RoundResolutionEventKind.PityCoinCollected:
+                {
+                    // Milestone 7.6. The balance after is the part a reader wants: p.8's own closing
+                    // sentence is about what this coin cannot then buy, and a line that named only the
+                    // hero would not show whether it took them to a level threshold.
+                    var grant = ruleEvent.PityCoinGrant;
+                    Add(
+                        "Round.PityCoinCollected",
+                        JoinReferences(roundReference, $"hero={grant.RecipientHeroId.Value}"),
+                        $"coins={grant.Amount};balance={grant.BalanceAfter};stage={ruleEvent.EndOfRoundStage}");
+                    return;
+                }
+
                 default:
                     Add($"Round.{ruleEvent.Kind}", roundReference, "accepted boundary");
                     return;

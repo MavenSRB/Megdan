@@ -33,6 +33,12 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public const int BaselineLifeCountersPerTeam = 5;
 
+        /// <summary>
+        /// Rulebook p.8: an eligible hero collects "1 coin". The number is stated once here rather than
+        /// written at the grant, because it is the page's and not an implementation detail.
+        /// </summary>
+        public const int PityCoinsPerRound = 1;
+
         private readonly IReadOnlyList<CardDefinition> definitions;
         private readonly IReadOnlyList<CardInstance> instances;
         private readonly MatchParticipants participants;
@@ -148,6 +154,12 @@ namespace GuardsDigital.Core.Cards
             // still has counters, rather than a null every consumer would have to check.
             TeamLives = compositionTeamLives ?? new GuardsDigital.Core.Rules.Consequences.TeamLifeState(
                 participants, BaselineLifeCountersPerTeam);
+
+            // Milestone 7.6. p.8's Pity Coin asks who did not level up this round, so the round records
+            // who did. It is created here rather than composed because there is nothing to compose: a
+            // round begins with nobody having levelled, and unlike the Life counters beside it no setup
+            // states otherwise.
+            RoundLeveling = new GuardsDigital.Core.Rules.Progression.RoundLevelingRecord(participants);
 
             // One state, shared with the dispatcher whose Defense total reads it - the same arrangement
             // the marker register has, and for the same reason.
@@ -266,6 +278,17 @@ namespace GuardsDigital.Core.Cards
         /// Ultimate from the card's own position.
         /// </summary>
         public TeamLifeState TeamLives { get; private set; }
+
+        /// <summary>
+        /// Milestone 7.6's record of which heroes bought a level this round, held beside the Levels it
+        /// is about. p.8's Pity Coin is the only rule that reads it, and it reads the negation: "All
+        /// players who have NOT leveled up this round collect 1 coin."
+        ///
+        /// It is round-scoped rather than match-scoped, which is the one thing that distinguishes it
+        /// from every other progression state on this authority: it is emptied when the round closes,
+        /// beside the turn slots and stage outcomes that are cleared there for the same reason.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Progression.RoundLevelingRecord RoundLeveling { get; private set; }
 
         /// <summary>
         /// Milestone 7.3's unlocked Ultimates, derived from this match's own card instances whenever a
@@ -512,7 +535,8 @@ namespace GuardsDigital.Core.Cards
                 systemTransitions.CaptureRestoreState(),
                 HeroProgression.CaptureRestoreState(),
                 HeroItems.CaptureRestoreState(),
-                TeamLives.CaptureRestoreState());
+                TeamLives.CaptureRestoreState(),
+                RoundLeveling.CaptureRestoreState());
         }
 
         internal static RoundResolutionAuthority Restore(
@@ -560,6 +584,12 @@ namespace GuardsDigital.Core.Cards
             // rather than mutating them, so a restored match never passes through a full pile on its way
             // to the count it saved.
             authority.TeamLives = TeamLifeState.Restore(participants, state.TeamLives);
+
+            // Milestone 7.6. p.8's question is about the round the payload was taken in, so the record
+            // is replaced by the one it carried rather than left as the empty round the constructor
+            // above created - which would have paid a Pity Coin to a hero that had already levelled.
+            authority.RoundLeveling = GuardsDigital.Core.Rules.Progression.RoundLevelingRecord.Restore(
+                participants, state.RoundLeveling);
             cardActions?.BindHeroItems(authority.HeroItems);
             cardActions?.BindDefeatConsequenceState(authority.HeroProgression, authority.TeamLives);
 
@@ -1170,6 +1200,15 @@ namespace GuardsDigital.Core.Cards
                 return ResolveLevelUp(stage);
             }
 
+            // Milestone 7.6. Handled here for the reason the three stages above are: its collaborators
+            // are the coin ledger and the round's own leveling record, which this authority holds.
+            // Unlike the stage before it this one asks nobody anything, so it can never pause.
+            if (stage == EndOfRoundStage.CollectPityCoins &&
+                endOfRoundStageAvailability.IsAvailable(EndOfRoundStage.CollectPityCoins))
+            {
+                return ResolvePityCoins(stage);
+            }
+
             EndOfRoundStageResolution resolution;
             if (!endOfRoundStageAvailability.IsAvailable(stage))
             {
@@ -1266,6 +1305,17 @@ namespace GuardsDigital.Core.Cards
                     RoundResolutionRejectionReason.UnavailableLevelUpTransition);
             }
 
+            // Milestone 7.6. A leveling stopped on p.15's Upgrade a Card is answered by its own command,
+            // so a second advance while it is stopped is refused rather than beginning a second
+            // leveling - the same guard p.8's push has carried since 6.11. It became reachable with this
+            // milestone: until the Pity Coin existed, the staged 1v1 slice could not leave a hero able
+            // to afford a level, so no ordinary round ever paused here.
+            if (IsPausedLevelUp())
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.IncompleteLevelUpTransition);
+            }
+
             var result = systemTransitions.TryBegin(
                 GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId,
                 new GuardsDigital.Core.Rules.Transitions.SystemTransitionInstanceId(
@@ -1287,20 +1337,82 @@ namespace GuardsDigital.Core.Cards
         }
 
         /// <summary>
+        /// p.8's "Collect a Pity Coin": "All players who have NOT leveled up this round collect 1 coin."
+        ///
+        /// Every participant hero is asked, in hero-id order, and the question is the page's own - did
+        /// this hero level up this round - rather than p.15's reminder about not having had enough
+        /// coins. The two differ: a hero that could afford a level and did not buy one for any other
+        /// reason has still not levelled up, so it collects, which is what p.8's words say and what this
+        /// implements.
+        ///
+        /// Deterministic and unconditional, so like the component cleanup it can never pause and carries
+        /// no continuation. The coin is granted rather than awarded because nobody was defeated.
+        /// </summary>
+        private RoundResolutionResult ResolvePityCoins(EndOfRoundStage stage)
+        {
+            var ledger = cardActions?.DefeatRewards;
+            if (ledger == null)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.UnavailablePityCoinLedger);
+            }
+
+            var events = new List<RoundResolutionEvent>();
+            foreach (var hero in participants.Heroes
+                         .OrderBy(value => value.Id.Value, StringComparer.Ordinal))
+            {
+                if (RoundLeveling.HasLeveled(hero.Id))
+                {
+                    continue;
+                }
+
+                if (!ledger.TryGrant(
+                        hero.Id,
+                        PityCoinsPerRound,
+                        GuardsDigital.Core.Rules.Consequences.CoinGrantKind.PityCoin,
+                        out var granted))
+                {
+                    throw new InvalidOperationException(
+                        $"p.8's Pity Coin for '{hero.Id}' could not be granted.");
+                }
+
+                events.Add(RoundResolutionEvent.PityCoinCollected(RoundIndex, granted));
+            }
+
+            return CompleteEndOfRoundStage(stage, EndOfRoundStageOutcomeKind.Completed, events);
+        }
+
+        /// <summary>
         /// What the leveling rules have done since they were last asked, as events.
         ///
         /// The rules report rather than raise for the reason milestone 6.11's Lane-Push stages do: a
         /// step rules implementation answers the transition authority and has no event stream, and this
         /// authority owns the one the round writes to.
         /// </summary>
-        private List<RoundResolutionEvent> DrainLevelUpEvents() =>
-            (levelUp == null
+        private List<RoundResolutionEvent> DrainLevelUpEvents()
+        {
+            var outcomes = levelUp == null
                 ? Array.Empty<GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome>()
                 : (IReadOnlyList<GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcome>)
-                    levelUp.DrainOutcomes())
+                    levelUp.DrainOutcomes();
+
+            // Milestone 7.6. p.8's Pity Coin question is answered from the purchases this round made, so
+            // the round records them as it reads them. It is recorded here rather than by the leveling
+            // rules because the rules are about p.15 and this is p.8's fact: the same division that
+            // keeps the schedule out of the ledger and the ledger out of the purchase.
+            foreach (var outcome in outcomes)
+            {
+                if (outcome.Kind == GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcomeKind.LevelPurchased)
+                {
+                    RoundLeveling.RecordLevelPurchased(outcome.HeroId);
+                }
+            }
+
+            return outcomes
                 .Select(outcome => RoundResolutionEvent.HeroLevelUpProgressed(
                     RoundIndex, TurnIndex, outcome))
                 .ToList();
+        }
 
         private bool IsPausedLevelUp() =>
             levelUp != null &&
@@ -1375,6 +1487,13 @@ namespace GuardsDigital.Core.Cards
             TurnIndex = 1;
             turnSlots.Clear();
             endOfRoundOutcomes.Clear();
+
+            // Milestone 7.6. p.8 asks its Pity Coin question of "this round", so the record of who
+            // levelled is emptied here beside the slots and stage outcomes, which are round-scoped for
+            // the same reason. This is also what makes the page's last sentence true without a second
+            // rule enforcing it: a coin collected a moment ago cannot buy a level until the next round's
+            // Level Up stage, because the stage cursor only moves forward and this round's is behind it.
+            RoundLeveling.BeginRound();
             CurrentEndOfRoundStage = null;
             CurrentTurnAuthority = null;
             CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(instances, participants);

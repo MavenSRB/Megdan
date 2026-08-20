@@ -127,7 +127,15 @@ namespace GuardsDigital.Core.Snapshots
         // than migrated (milestone 6.2 migrate-or-reject decision); v8 rejected v7 because the
         // Active-effect section left semantics on the wire, and v7 rejected v6 for the analogous
         // reason at milestone 6.1s.
-        public const int CurrentSchemaVersion = 20;
+        // v21: which heroes bought a level in the current round joins the round section, after the Life
+        // counters. Milestone 7.6's Pity Coin step reads the negation of it - rulebook p.8 pays "All
+        // players who have NOT leveled up this round" - and that step is a stage later than the Level Up
+        // that produces the answer, so a match saved between the two has to carry it. v20 is rejected
+        // rather than migrated: the only reading available for the section's absence is "nobody levelled
+        // this round", which is right for every payload a v20 build could produce, because no v20 rule
+        // records one, and wrong for the first payload this milestone writes - a hero that had already
+        // levelled would come back eligible and collect a coin the page denies it.
+        public const int CurrentSchemaVersion = 21;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

@@ -285,6 +285,79 @@ namespace GuardsDigital.Core.Rules.Consequences
     }
 
     /// <summary>
+    /// Where a coin came from when no Defeat put it there. Milestone 7.6 adds the first: rulebook p.8's
+    /// Pity Coin, paid at the end of a round to every hero that did not level up in it.
+    ///
+    /// It is a separate vocabulary from <see cref="CoinAwardKind"/> rather than a third member of it,
+    /// because that enum's two members answer "which half of p.13's Defeat reward is this" and a Pity
+    /// Coin is not an answer to that question. Widening it would have made every consumer that switches
+    /// on a Defeat award handle a value with no Defeat behind it.
+    /// </summary>
+    public enum CoinGrantKind
+    {
+        None = 0,
+        PityCoin = 1
+    }
+
+    /// <summary>
+    /// One addition to a hero's coin balance with no Defeat source, in the shape
+    /// <see cref="CoinSpendOperation"/> gives a deduction: the hero, what put the coin there, the
+    /// amount, and the exact balance transition.
+    /// </summary>
+    public readonly struct CoinGrantOperation
+    {
+        public CoinGrantOperation(
+            HeroId recipientHeroId,
+            TeamId recipientTeamId,
+            CoinGrantKind grantKind,
+            int amount,
+            int balanceBefore,
+            int balanceAfter)
+        {
+            if (!recipientHeroId.IsDefined || !recipientTeamId.IsDefined)
+            {
+                throw new ArgumentException("Coin grant requires a typed recipient and team.");
+            }
+
+            if (grantKind != CoinGrantKind.PityCoin)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(grantKind), grantKind, "Coin grant kind must name what put the coin there.");
+            }
+
+            if (amount <= 0 ||
+                balanceBefore < CoinResourceOperation.MinimumBalance ||
+                balanceAfter != balanceBefore + amount)
+            {
+                throw new ArgumentException(
+                    "Coin grant must be positive and preserve its declared balance transition.");
+            }
+
+            RecipientHeroId = recipientHeroId;
+            RecipientTeamId = recipientTeamId;
+            GrantKind = grantKind;
+            Amount = amount;
+            BalanceBefore = balanceBefore;
+            BalanceAfter = balanceAfter;
+        }
+
+        public HeroId RecipientHeroId { get; }
+
+        public TeamId RecipientTeamId { get; }
+
+        public CoinGrantKind GrantKind { get; }
+
+        public int Amount { get; }
+
+        public int BalanceBefore { get; }
+
+        public int BalanceAfter { get; }
+
+        public ResourceOperationFailureBehavior FailureBehavior =>
+            ResourceOperationFailureBehavior.RejectWithoutMutation;
+    }
+
+    /// <summary>
     /// What a hero spent coins on. Milestone 7.5 adds the first and so far only sink: rulebook p.15's
     /// mandatory level up, whose price is <c>HeroLevelSchedule.LevelUpCost</c>.
     ///
@@ -407,13 +480,18 @@ namespace GuardsDigital.Core.Rules.Consequences
     /// <summary>
     /// The match's per-hero coin ledger, plus the record of which Defeat outcomes have already paid out.
     ///
-    /// Milestone 7.5 makes the name narrower than the type. Every coin in this build still arrives
-    /// through <see cref="Award"/> - rulebook p.13's Defeat and assist coins are the only source
-    /// implemented - but p.15's mandatory level up is now a sink, so the balances are no longer read
-    /// only by the rule that filled them. <see cref="TrySpend"/> lives here rather than beside the level
-    /// purchase because a second writer to a balance is a second answer to what a hero can afford; the
-    /// awarded-outcome set is what stays Defeat-specific, and it is the reason a rename was left to a
-    /// naming pass of its own rather than folded into a progression milestone.
+    /// Milestone 7.5 made the name narrower than the type, and milestone 7.6 makes it narrower still.
+    /// Three operations now move a balance and only the first is about a Defeat: <see cref="Award"/> is
+    /// rulebook p.13's Defeat and assist coins, <see cref="TrySpend"/> is p.15's mandatory level up, and
+    /// <see cref="TryGrant"/> is p.8's Pity Coin. All three live here because a second writer to a
+    /// balance is a second answer to what a hero can afford, which is the one thing that must not
+    /// happen. What stays genuinely Defeat-specific is the awarded-outcome set, which exists so a
+    /// Defeat cannot pay out twice.
+    ///
+    /// **The rename is now overdue and is deliberately not done here.** Milestone 6.13's audit is the
+    /// precedent for it - a qualifier that has stopped describing the type gets corrected in a pass of
+    /// its own - and folding a mechanical rename across every call site into a progression milestone
+    /// would have buried this milestone's actual behaviour in it.
     /// </summary>
     public sealed class DefeatRewardAccounting
     {
@@ -527,6 +605,50 @@ namespace GuardsDigital.Core.Rules.Consequences
                 amount,
                 balanceBefore,
                 balanceBefore - amount);
+            coinBalances[heroId] = operation.BalanceAfter;
+            return true;
+        }
+
+        /// <summary>
+        /// Adds coins to a hero's balance from a source that is not a Defeat - rulebook p.8's Pity Coin
+        /// being the only one this build has.
+        ///
+        /// It is a third operation rather than a reuse of <see cref="Award"/> because that method takes
+        /// a <see cref="DefeatOutcome"/> and enforces what one means: an enemy team, a non-friendly
+        /// target, and one payout per outcome. A Pity Coin has none of those - nobody was defeated - so
+        /// expressing it there would have meant inventing an outcome to satisfy the checks, which is the
+        /// shape milestone 7.2c's record warns about when a literal is dressed up as a binding.
+        ///
+        /// Like the spend beside it, this decides nothing about whether the coin is owed. Who is
+        /// eligible and when is the calling rule's, which is where p.8 is quoted.
+        /// </summary>
+        public bool TryGrant(
+            HeroId heroId,
+            int amount,
+            CoinGrantKind grantKind,
+            out CoinGrantOperation operation)
+        {
+            if (amount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(amount), amount, "A coin grant is a positive number of coins.");
+            }
+
+            var balanceBefore = GetCoins(heroId);
+            var candidateBalance = (long)balanceBefore + amount;
+            if (candidateBalance > int.MaxValue)
+            {
+                operation = default;
+                return false;
+            }
+
+            operation = new CoinGrantOperation(
+                heroId,
+                participants.GetTeamForHero(heroId).Id,
+                grantKind,
+                amount,
+                balanceBefore,
+                (int)candidateBalance);
             coinBalances[heroId] = operation.BalanceAfter;
             return true;
         }

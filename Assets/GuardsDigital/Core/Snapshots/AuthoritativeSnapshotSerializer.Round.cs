@@ -24,7 +24,7 @@ namespace GuardsDigital.Core.Snapshots
         private static void WriteRound(BinaryWriter writer, RoundResolutionAuthority round)
         {
             var (cursor, history, endOfRound, roundCardActions, systemTransitions, heroProgression,
-                heroItems, teamLives) =
+                heroItems, teamLives, roundLeveling) =
                 round.CaptureRestoreState();
             var (roundIndex, turnIndex, phase, tieBreakerState) = cursor;
             writer.Write(roundIndex);
@@ -55,6 +55,7 @@ namespace GuardsDigital.Core.Snapshots
             WriteHeroProgression(writer, heroProgression);
             WriteHeroItems(writer, heroItems);
             WriteTeamLives(writer, teamLives);
+            WriteRoundLeveling(writer, roundLeveling);
 
             var (hasCardActions, roundDefeatRewards) = roundCardActions;
             writer.Write(hasCardActions);
@@ -123,6 +124,7 @@ namespace GuardsDigital.Core.Snapshots
             var heroProgression = ReadHeroProgression(reader);
             var heroItems = ReadHeroItems(reader);
             var teamLives = ReadTeamLives(reader);
+            var roundLeveling = ReadRoundLeveling(reader);
 
             // Milestone 7.2. The paused Attack continuation below verifies a recorded Defense total by
             // re-deriving it, and p.16's item bonus is part of that total, so the items have to exist
@@ -192,7 +194,8 @@ namespace GuardsDigital.Core.Snapshots
                     systemTransitions.CaptureRestoreState(),
                     heroProgression,
                     heroItems,
-                    teamLives),
+                    teamLives,
+                    roundLeveling),
                 commitment,
                 turn,
                 cardActions,
@@ -358,6 +361,35 @@ namespace GuardsDigital.Core.Snapshots
 
                     return new KeyValuePair<TeamId, int>(teamId, counters);
                 }));
+
+        /// <summary>
+        /// Milestone 7.6. Which heroes bought a level in the round the payload was taken in, which is
+        /// what rulebook p.8's Pity Coin step reads the negation of.
+        ///
+        /// A sparse list of names rather than a flag per hero, in the shape the items above it use and
+        /// for the same reason: for most of a match nobody has levelled, so a per-hero section would
+        /// write an entry for every hero to say nothing at all. An empty list is therefore both the
+        /// common case and the one a fresh round starts from, and it is written rather than omitted,
+        /// because a missing section would be a round whose answer nobody wrote rather than a round in
+        /// which nobody levelled. <c>RoundLevelingRecord.Restore</c> owns the two rules the reader does
+        /// not: that every name is a participant, and that no hero appears twice.
+        /// </summary>
+        private static void WriteRoundLeveling(
+            BinaryWriter writer,
+            GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState state)
+        {
+            state.Deconstruct(out var leveledThisRound);
+            writer.Write(leveledThisRound.Count);
+            foreach (var heroId in leveledThisRound)
+            {
+                writer.Write(heroId.Value);
+            }
+        }
+
+        private static GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState ReadRoundLeveling(
+            BinaryReader reader) =>
+            new GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState(
+                ReadMany(reader, "heroes that levelled this round", () => new HeroId(reader.ReadString())));
 
         /// <summary>
         /// Milestone 6.11. Rulebook p.8's shared Wave counters, the victory sentence that ended the game

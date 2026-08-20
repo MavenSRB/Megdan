@@ -76,7 +76,23 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="UnavailableLanePushTransition"/> is: nothing is misconfigured about a handler, the
         /// collaborator that would spend the coins is absent.
         /// </summary>
-        UnavailableLevelUpTransition = 21
+        UnavailableLevelUpTransition = 21,
+
+        /// <summary>
+        /// Milestone 7.6: the round reached <see cref="EndOfRoundStage.CollectPityCoins"/> declaring the
+        /// stage available, and this composition has no coin ledger to pay from. Distinct from
+        /// <see cref="UnavailableLevelUpTransition"/> only in which collaborator is absent; both say the
+        /// match declared a p.8 step it cannot run.
+        /// </summary>
+        UnavailablePityCoinLedger = 22,
+
+        /// <summary>
+        /// Milestone 7.6: p.15's leveling is already running and stopped on an Upgrade a Card choice, so
+        /// the stage that began it is waiting for that answer rather than for another advance. The
+        /// sibling of <see cref="IncompleteLanePushTransition"/>, and reachable for the first time now
+        /// that p.8's Pity Coin can leave a hero able to afford a level in the next round.
+        /// </summary>
+        IncompleteLevelUpTransition = 23
     }
 
     public readonly struct RoundResolutionResult

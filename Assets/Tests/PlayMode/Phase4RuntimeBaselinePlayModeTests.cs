@@ -111,6 +111,22 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(runtime.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
                 while (runtime.Phase == RoundResolutionPhase.EndOfRound)
                 {
+                    // Milestone 7.6. p.8's Pity Coin leaves every hero able to afford a level, so from
+                    // the second round on this flow meets p.15's Upgrade a Card choice. It is answered
+                    // through the runtime's director command surface, because no presenter draws a
+                    // paused system transition yet, and it is measured like every other accepted command
+                    // here: it is one, and leaving it out would sample a flow the director no longer has.
+                    var options = runtime.PausedSystemTransitionOptions;
+                    if (options.Count > 0)
+                    {
+                        var optionId = options[0];
+                        MeasureAcceptedCommandRefresh(
+                            acceptedCommandRefreshMilliseconds,
+                            () => runtime.AnswerPausedSystemTransition(optionId));
+                        yield return null;
+                        continue;
+                    }
+
                     MeasureAcceptedCommandRefresh(
                         acceptedCommandRefreshMilliseconds,
                         runtime.ContinueEndOfRound);
