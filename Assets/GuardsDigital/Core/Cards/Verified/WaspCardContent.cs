@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// every synthetic revision in this build already has, and the reason a slice's compatibility
         /// decision is a real decision rather than a formality.
         /// </summary>
-        public const string ContentRevision = "wasp-8-6-rev-1";
+        public const string ContentRevision = "wasp-8-8-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity. It is not a
@@ -320,7 +320,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     CenterOfMass, KineticBlast),
                 "Push up to 2 enemy units adjacent to you 3 spaces; if a pushed hero is stopped by an " +
                 "obstacle, that hero discards a card, if able.",
-                PrintedTextComposition.AwaitedAt("8.8")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 CenterOfMass, "Center of Mass", 11, 6, 3,
@@ -338,7 +338,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Blue, CardTier.III, PrintedValueChannel.Range),
                 "Push up to 2 enemy units adjacent to you 3 or 4 spaces; if a pushed hero is stopped " +
                 "by an obstacle, that hero discards a card, if able.",
-                PrintedTextComposition.AwaitedAt("8.8")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 StopProjectiles, "Stop Projectiles", 3, 0, 2,

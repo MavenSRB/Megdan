@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.Displacement;
@@ -8,23 +9,25 @@ using GuardsDigital.Core.Rules.Placement;
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
-    /// The typed composition of Wasp's five telekinetic Skills - milestone 8.6, and the first verified
-    /// official card text this project runs.
+    /// The typed composition of Wasp's Skills: her five telekinetic ones at milestone 8.6 - the first
+    /// verified official card text this project runs - and her two kinetic ones at 8.8.
     ///
     /// <para><b>Nothing here is a handler.</b> Every node below names a capability that already existed
     /// and a policy that is now declarable, which is what milestone 8.2's capability matrix promised for
     /// the whole of Wasp's set: "no custom handler anywhere". What 8.6 added is vocabulary the general
     /// contracts were missing - the orbit destination policy, the printed-Range selection with p.19's
     /// straight-line complement, the Place anchored at the acting hero, and the repeat maximum with its
-    /// same-target binding - and each of those lives beside the general rule it belongs to rather than
-    /// here.</para>
+    /// same-target binding - and 8.8 added three more to the Push declarations: the least distance a
+    /// card prints, the most units it may take, and the side of the board it may take them from. Each
+    /// lives beside the general rule it belongs to rather than here.</para>
     ///
-    /// <para><b>Why the two families read differently.</b> Lift Up, Control Gravity and Center of Mass
+    /// <para><b>Why the families read differently.</b> Lift Up, Control Gravity and Center of Mass
     /// print "in radius"; Telekinesis and Mass Telekinesis print "in range". p.9 says card text
     /// mentioning either "refers to this value" - the printed icon's - so both are selections bounded by
     /// the card rather than by a number written into a node, and they differ only in which icon they
-    /// read. The distance that <em>is</em> written down is the single space the Move covers, because
-    /// that is card text and p.16 never raises it.</para>
+    /// read. Kinetic Repulse and Kinetic Blast print neither and are bounded by adjacency instead, so
+    /// every number in them is written down. A distance that <em>is</em> written down is card text and
+    /// p.16 never raises it: the single space the Move covers, and the three or four the Push does.</para>
     ///
     /// <para><b>What each definition deliberately does not say.</b> No card-name branch, no immunity
     /// question of its own, no geometry, and no ordering beyond the printed sentence's. Immunity is the
@@ -66,6 +69,20 @@ namespace GuardsDigital.Core.Cards.Verified
                 // instance chooses freely. The absence of `on the same target` is content, and the
                 // definition states it by declaring no binding rather than by omitting a parameter.
                 return CreateTelekinesis(cardId, contentRevision, repeats: true);
+            }
+
+            if (cardId.Equals(WaspCardContent.KineticRepulse))
+            {
+                // "3 spaces" - one number, so the least the card names is the same one and nobody is
+                // asked how far.
+                return CreateKineticPush(cardId, contentRevision, leastDistance: 3, distance: 3);
+            }
+
+            if (cardId.Equals(WaspCardContent.KineticBlast))
+            {
+                // "3 or 4 spaces" - the upgrade's whole difference from Kinetic Repulse, and the first
+                // verified distance a card writes as a choice.
+                return CreateKineticPush(cardId, contentRevision, leastDistance: 3, distance: 4);
             }
 
             return null;
@@ -221,6 +238,154 @@ namespace GuardsDigital.Core.Cards.Verified
             }
 
             return new EffectDefinition(SkillEffectId(cardId), contentRevision, root, nodes);
+        }
+
+        /// <summary>
+        /// "Push up to 2 enemy units adjacent to you 3 spaces; if a pushed hero is stopped by an
+        /// obstacle, that hero discards a card, if able." - and, for Kinetic Blast, "3 or 4 spaces".
+        ///
+        /// <para><b>One push, then one rider per unit it could have pushed.</b> The batch is a single
+        /// node because p.18 makes it one event: "you choose the distance and then push all those units
+        /// that many spaces at the same time". It resolves every target against the state before
+        /// anything moved and commits farthest-first, and none of that is restated here - the card
+        /// declares who may be pushed, how many, and how far, and the capability owns the rest.</para>
+        ///
+        /// <para><b>Why two riders and not one.</b> The sentence after the semicolon is about a hero,
+        /// not about the push: each pushed hero that an obstacle stopped discards. The push publishes a
+        /// stop cause per hero it moved, so the rider is a <see cref="EffectNodeKind.Conditional"/> per
+        /// hero, and the card's own "up to 2" is why there are exactly two. Both read the same predicate
+        /// over a fact the push already decided; neither asks the board anything.</para>
+        ///
+        /// <para><b>Who discards, and what "if able" means.</b> The card names no chooser for the card
+        /// discarded, so p.10's worked example stands - the hero it happened to picks from their own
+        /// hand - and that is the discard capability's own contract rather than something declared
+        /// here. `if able` is the node's policy: a hero holding nothing gives nothing and the action
+        /// carries on, which is what an empty hand means and not what a failure means.</para>
+        /// </summary>
+        private static EffectDefinition CreateKineticPush(
+            CardDefinitionId cardId,
+            string contentRevision,
+            int leastDistance,
+            int distance)
+        {
+            var root = new EffectNodeId("kinetic-root");
+            var push = new EffectNodeId("kinetic-push");
+            var firstRider = new EffectNodeId("kinetic-first-rider");
+            var firstDiscard = new EffectNodeId("kinetic-first-discard");
+            var secondRider = new EffectNodeId("kinetic-second-rider");
+            var secondDiscard = new EffectNodeId("kinetic-second-discard");
+
+            return new EffectDefinition(
+                SkillEffectId(cardId),
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { push, firstRider, secondRider }),
+                    new EffectNodeDefinition(
+                        // `up to 2` is p.10's non-mandatory wording, and it is over the units: the
+                        // actor may push two, one, or none, and pushing none is a legal result rather
+                        // than a step that failed. The spaces are declared separately below, which is
+                        // the whole of what milestone 8.8 added to this capability.
+                        push, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                        SyntheticDisplacementCapabilities.ObjectPushV3,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                "distance", EffectValue.Integer(distance)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.LeastDistanceParameterName,
+                                EffectValue.Integer(leastDistance)),
+                            // Neither card says "ignoring obstacles", and p.18 makes that a property of
+                            // the pushing effect rather than a default, so it is declared false.
+                            EffectInputBinding.FromLiteral(
+                                "ignoresObstacles", EffectValue.Boolean(false)),
+                            // "units", which p.19 separates from tokens by name.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer((int)PushEligiblePieceKind.Unit)),
+                            // "enemy", from the card's perspective, which is the acting hero's.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.TargetRelationParameterName,
+                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.MaximumTargetsParameterName,
+                                EffectValue.Integer(2))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("distance", EffectValueKind.Integer),
+                            new EffectOutputBinding("moved", EffectValueKind.Integer),
+                            new EffectOutputBinding(
+                                SyntheticDisplacementCapabilities.FirstStoppedHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticDisplacementCapabilities.FirstHeroWasStoppedOutputName,
+                                EffectValueKind.Boolean),
+                            new EffectOutputBinding(
+                                SyntheticDisplacementCapabilities.SecondStoppedHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticDisplacementCapabilities.SecondHeroWasStoppedOutputName,
+                                EffectValueKind.Boolean)
+                        })
+                }
+                .Concat(Rider(
+                    firstRider,
+                    firstDiscard,
+                    push,
+                    SyntheticDisplacementCapabilities.FirstHeroWasStoppedOutputName,
+                    SyntheticDisplacementCapabilities.FirstStoppedHeroOutputName))
+                .Concat(Rider(
+                    secondRider,
+                    secondDiscard,
+                    push,
+                    SyntheticDisplacementCapabilities.SecondHeroWasStoppedOutputName,
+                    SyntheticDisplacementCapabilities.SecondStoppedHeroOutputName))
+                .ToArray());
+        }
+
+        /// <summary>
+        /// "if a pushed hero is stopped by an obstacle, that hero discards a card, if able", asked once
+        /// about one hero.
+        ///
+        /// The predicate is a pure reading of a fact the push published - milestone 8.5's own
+        /// <see cref="EffectNodeKind.Conditional"/> shape - so the question of whether the board's edge
+        /// counts as an obstacle is answered where the push resolves, once, rather than by two riders
+        /// that could disagree. A push that pushed nobody publishes no fact, the binding resolves to
+        /// nothing, and the predicate reads false, which is the same answer as a hero who was not
+        /// stopped and the same branch.
+        /// </summary>
+        private static IEnumerable<EffectNodeDefinition> Rider(
+            EffectNodeId rider,
+            EffectNodeId discard,
+            EffectNodeId push,
+            string stoppedOutputName,
+            string heroOutputName)
+        {
+            yield return new EffectNodeDefinition(
+                rider, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                SyntheticEffectCapabilities.IsFlaggedV1,
+                childNodeIds: new[] { discard },
+                inputs: new[]
+                {
+                    EffectInputBinding.FromNodeOutput(
+                        "flag", push, stoppedOutputName, EffectValueKind.Boolean)
+                });
+
+            yield return new EffectNodeDefinition(
+                discard, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromNodeOutput(
+                        SyntheticCardStateCapabilities.HeroParameter,
+                        push,
+                        heroOutputName,
+                        EffectValueKind.Hero)
+                });
         }
 
         private static EffectDefinitionId SkillEffectId(CardDefinitionId cardId) =>

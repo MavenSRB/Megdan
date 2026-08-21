@@ -69,6 +69,31 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// <summary>Whether the push actually relocates anything. A zero-space push is applied, not failed.</summary>
         public bool Moves => HasDirection && ActualDistance > 0;
 
+        /// <summary>
+        /// Whether card text that says "stopped by an obstacle" is talking about this outcome -
+        /// milestone 8.8, and the resolution of ledger question W-04.
+        ///
+        /// <para>Both short arms count, and the second one is the question. p.19's Terrain keyword makes
+        /// the water surrounding the play area terrain, and p.18 lists terrain among the obstacles, so a
+        /// unit shoved off the edge of the board is stopped by the water and the card's sentence applies.
+        /// The map model does not represent that water: <see cref="AdjacentMoveAuthority.IsPlayable"/>
+        /// and <see cref="AdjacentMoveAuthority.IsTerrain"/> both answer no for an off-map coordinate,
+        /// and milestone 6.8e made that a deliberate third answer - off the map is nothing, and no
+        /// Move-Through permission crosses it, which is exactly what a modelled terrain space would
+        /// wrongly allow. The two readings are reconciled here rather than in either of them: the
+        /// classification keeps its three answers, because the permission needs them, and the card's
+        /// sentence reads the two that mean "it ran into something" as one.</para>
+        ///
+        /// <para><see cref="PushStoppingReason.ReachedRequestedDistance"/> is not one of them, and neither
+        /// refusal is: nothing stopped a push that travelled its whole distance, and a push with no
+        /// direction never happened. A zero-space push blocked at the first space is stopped by an
+        /// obstacle, because p.18 calls that a push.</para>
+        /// </summary>
+        public bool StoppedByAnObstacle =>
+            HasDirection &&
+            (StoppingReason == PushStoppingReason.BlockedByObstacle ||
+                StoppingReason == PushStoppingReason.LeftBoard);
+
         internal static PushPathResult Refuse(HexCoordinate origin, int requestedDistance, PushStoppingReason reason) =>
             new PushPathResult(false, origin, origin, requestedDistance, 0, reason);
 

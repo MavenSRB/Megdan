@@ -940,10 +940,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticDisplacementCapabilities.ObjectPushV2,
+                        SyntheticDisplacementCapabilities.ObjectPushV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
+                            // The card names one number, so the least it names is the same one.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.LeastDistanceParameterName,
+                                EffectValue.Integer(2)),
                             EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
                             // p.18's own breadth, restated by the fixture hand rather than narrowed:
                             // this card says every adjacent object, and a token standing beside the
@@ -951,7 +955,17 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromLiteral(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
                                 EffectValue.Integer(
-                                    (int)Rules.Displacement.PushEligiblePieceKind.UnitOrToken))
+                                    (int)Rules.Displacement.PushEligiblePieceKind.UnitOrToken)),
+                            // The same breadth over the other two things milestone 8.8 lets a card
+                            // narrow, and this card narrows neither: it names no side of the board,
+                            // and it names no maximum, which is p.18's plain batch over every object
+                            // standing beside the pusher.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.TargetRelationParameterName,
+                                EffectValue.Integer((int)Rules.Modifications.SourceTeamRelation.AnyTeam)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.MaximumTargetsParameterName,
+                                EffectValue.Integer(0))
                         },
                         outputs: new[]
                         {
@@ -1188,10 +1202,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticDisplacementCapabilities.ObjectPushV2,
+                        SyntheticDisplacementCapabilities.ObjectPushV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
+                            // The card names one number, so the least it names is the same one.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.LeastDistanceParameterName,
+                                EffectValue.Integer(2)),
                             EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
                             // p.18's own breadth, restated by the fixture hand rather than narrowed:
                             // this card says every adjacent object, and a token standing beside the
@@ -1199,7 +1217,17 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromLiteral(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
                                 EffectValue.Integer(
-                                    (int)Rules.Displacement.PushEligiblePieceKind.UnitOrToken))
+                                    (int)Rules.Displacement.PushEligiblePieceKind.UnitOrToken)),
+                            // The same breadth over the other two things milestone 8.8 lets a card
+                            // narrow, and this card narrows neither: it names no side of the board,
+                            // and it names no maximum, which is p.18's plain batch over every object
+                            // standing beside the pusher.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.TargetRelationParameterName,
+                                EffectValue.Integer((int)Rules.Modifications.SourceTeamRelation.AnyTeam)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.MaximumTargetsParameterName,
+                                EffectValue.Integer(0))
                         },
                         outputs: new[]
                         {
@@ -1350,7 +1378,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticDisplacementCapabilities.PushTargetV2,
+                        SyntheticDisplacementCapabilities.PushTargetV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
@@ -1358,6 +1386,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             // Card text, not a printed icon: p.16 never raises this one, whatever
                             // items the hero owns.
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.LeastDistanceParameterName,
+                                EffectValue.Integer(1)),
                             EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
                             EffectInputBinding.FromLiteral(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
@@ -2015,12 +2046,15 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticDisplacementCapabilities.PushTargetV2,
+                        SyntheticDisplacementCapabilities.PushTargetV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "target", selectTarget, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.LeastDistanceParameterName,
+                                EffectValue.Integer(3)),
                             EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
                             // `unit` rather than p.18's own unit-or-token breadth, which is why an
                             // adjacent token is never among this branch's candidates.
@@ -2407,12 +2441,15 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticDisplacementCapabilities.PushTargetV2,
+                        SyntheticDisplacementCapabilities.PushTargetV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "target", selectTarget, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.LeastDistanceParameterName,
+                                EffectValue.Integer(1)),
                             EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
                             // `unit` rather than p.18's own unit-or-token breadth, which is why an
                             // adjacent token is never among this branch's candidates.

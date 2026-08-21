@@ -88,6 +88,45 @@ namespace GuardsDigital.Tests.EditMode
                 "Off the map is nothing rather than an obstacle, so it reports its own reason.");
         }
 
+        /// <summary>
+        /// Milestone 8.8, and the resolution of ledger question W-04: card text that says "stopped by an
+        /// obstacle" covers the board's edge as well as an obstacle on it.
+        ///
+        /// The two readings the question is about both stay true, which is the point of answering it
+        /// here rather than in either of them. p.19's Terrain keyword makes the water around the play
+        /// area terrain and p.18 lists terrain among the obstacles, so a unit shoved off the edge ran
+        /// into something; and the map model still answers off-map as nothing, because milestone 6.8e
+        /// made that a third answer on purpose - a modelled terrain space would let a Move-Through
+        /// permission carry a unit into the water.
+        /// </summary>
+        [Test]
+        public void TheEdgeOfTheMap_IsStillWhatCardTextCallsAnObstacle()
+        {
+            var offTheEdge = Resolve(CreateLine(-1, 3), requestedDistance: 4);
+            var intoAUnit = Resolve(CreateLine(-1, 6, blockerAt: new HexCoordinate(4, 0)), 3);
+            var intoTerrain = Resolve(CreateTerrainLine(), requestedDistance: 3);
+            var unobstructed = Resolve(CreateLine(-1, 6), requestedDistance: 3);
+            var noDirection = PushPathQuery.Resolve(
+                CreateLine(-1, 6), PusherAt, new HexCoordinate(3, -1), 3,
+                RuleObject.ForHero(Target), false, RuleModificationSet.Empty);
+
+            Assert.That(offTheEdge.StoppedByAnObstacle, Is.True,
+                "W-04: p.19 makes the water surrounding the board terrain, and p.18 makes terrain an " +
+                "obstacle, so a push stopped at the edge is stopped by an obstacle.");
+            Assert.That(intoAUnit.StoppedByAnObstacle, Is.True);
+            Assert.That(intoTerrain.StoppedByAnObstacle, Is.True,
+                "A modelled terrain space is the same event the edge stands for.");
+            Assert.That(unobstructed.StoppedByAnObstacle, Is.False,
+                "Nothing stopped a push that travelled its whole distance.");
+            Assert.That(noDirection.StoppedByAnObstacle, Is.False,
+                "A push p.18 could not aim never happened, so nothing stopped it.");
+
+            Assert.That(
+                Resolve(CreateLine(-1, 6, blockerAt: new HexCoordinate(2, 0)), 3).StoppedByAnObstacle,
+                Is.True,
+                "and a push blocked at the very first space is p.18's zero-space push, which is a push.");
+        }
+
         [Test]
         public void APushIgnoringObstacles_CrossesThemAndLandsOnTheFirstEmptySpaceBeyond()
         {

@@ -994,8 +994,33 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.CardState,
                 context.EnclosingActionKind,
                 context.Components,
-                context.HeroItems);
+                context.HeroItems,
+                AnswersAlreadyGiven(frame, node));
         }
+
+        /// <summary>
+        /// Milestone 8.8. What this node has already been told, oldest first, so a capability that asks
+        /// two questions can complete the work both answers describe.
+        ///
+        /// It is read off the frame's own accepted choices rather than remembered anywhere: those are
+        /// what a snapshot persists and a replay reproduces, so a resolution restored between one
+        /// question and the next arrives with the same answers it paused holding. A declined choice
+        /// records no selection and never reaches a handler, because declining pops the node.
+        ///
+        /// Internal for the reason <see cref="ResolveInputBindings"/> is: snapshot restore re-asks the
+        /// handler what it is offering, and a handler on its second question has to be asked through
+        /// the same path live execution asks it through, or the restored pause is the first question
+        /// again.
+        /// </summary>
+        internal static IReadOnlyList<IReadOnlyList<EffectValue>> AnswersAlreadyGiven(
+            PendingResolution frame, EffectNodeDefinition node) =>
+            frame.AcceptedChoices
+                .Where(record => record.NodeId.Equals(node.Id))
+                .Select(record => (IReadOnlyList<EffectValue>)record.Selected
+                    .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value)
+                    .Select(candidate => candidate.Value)
+                    .ToArray())
+                .ToArray();
 
         /// <summary>
         /// The exact input dictionary live execution hands a capability. Internal so that snapshot

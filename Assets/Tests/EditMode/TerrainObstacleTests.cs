@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -297,6 +298,43 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(ObstacleQuery.BlocksTransit(board, offMap, mover, MoveThroughFor(Mover)),
                 Is.True);
             Assert.That(ObstacleQuery.BlocksEndOfMovement(board, offMap, RuleModificationSet.Empty), Is.True);
+        }
+
+        /// <summary>
+        /// Milestone 8.8, and half of ledger question W-04's answer: the official map already models
+        /// p.19's surrounding water, so nothing leaves the play area without meeting terrain first.
+        ///
+        /// The question W-04 asks is whether a push stopped at the board's edge is stopped by an
+        /// obstacle. On this map the edge is not where the spaces stop - every space beside a playable
+        /// one is either playable or declared terrain - so a unit shoved off the play area lands
+        /// against a modelled obstacle and the card's sentence is answered by the ordinary rule. The
+        /// reading recorded on <c>PushPathResult.StoppedByAnObstacle</c> covers what is past the ring,
+        /// where the classification does answer "nothing"; this is why no map change was needed to
+        /// resolve the question.
+        /// </summary>
+        [Test]
+        public void EverySpaceBesideAPlayableOne_IsPlayableOrDeclaredTerrain()
+        {
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var playable = new HashSet<HexCoordinate>(map.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Playable)
+                .Select(space => space.Coordinate));
+            var declared = new HashSet<HexCoordinate>(map.Spaces.Select(space => space.Coordinate));
+
+            var unmodelled = playable
+                .SelectMany(space => space.GetNeighbors())
+                .Distinct()
+                .Where(neighbour => !declared.Contains(neighbour))
+                .OrderBy(neighbour => neighbour.Q)
+                .ThenBy(neighbour => neighbour.R)
+                .ToArray();
+
+            Assert.That(playable, Is.Not.Empty, "A vacuous ring would prove nothing.");
+            Assert.That(
+                unmodelled.Select(neighbour => $"q{neighbour.Q} r{neighbour.R}"),
+                Is.Empty,
+                "A playable space with an unmodelled neighbour would let a unit be pushed straight " +
+                "out of the map without meeting the water p.19 calls terrain.");
         }
 
         // ---------------------------------------------------------------------------------------

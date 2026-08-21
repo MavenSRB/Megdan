@@ -27,6 +27,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// A mandatory node therefore means exactly that distance, and an `up to` node makes the distance the
     /// decision - which is the same distinction the four failure policies already carry.
     ///
+    /// Milestone 8.8 adds the one thing that distinction could not carry. Wasp's Kinetic Repulse prints
+    /// "Push up to 2 enemy units adjacent to you 3 spaces": the `up to` is over the units and the spaces
+    /// are exact, and a node has one policy. So the Push declarations now say the count and the distance
+    /// separately - a declared maximum number of targets beside the declared distance, and a printed
+    /// least distance beside it that <see cref="AdmittedDistances"/> reads - and the node's policy keeps
+    /// its p.10 meaning over the step as a whole. Kinetic Blast's "3 or 4 spaces" is the first distance
+    /// a card writes as a choice rather than as a number.
+    ///
     /// Registered into the one shared catalog for the reason milestone 6.2 records: a match has one
     /// capability contract set, and the snapshot records it as one list.
     /// </summary>
@@ -77,18 +85,79 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string DestinationPolicyParameterName = "destinationPolicy";
 
         /// <summary>
-        /// Revision 2, minted at milestone 6.4c: revision 1's declaration plus the eligible piece kind.
+        /// Revision 3, minted at milestone 8.8: revision 2's declaration plus the two things Wasp's
+        /// kinetic Skills print that a node's failure policy could not say - the fewest spaces the card
+        /// names, and how many units it may push.
         ///
-        /// Both Push declarations move together because both resolve through one routine and one pair
-        /// of target finders, so a parameter added to only the named one would leave the batch reading
-        /// a declaration it does not have.
+        /// Revision 2 - milestone 6.4c's, which added the eligible piece kind - is retired rather than
+        /// kept beside it, for the reason milestone 6.8k and milestone 8.6 retired the revisions they
+        /// replaced: the registration list records contracts, and a definition bound to a declaration
+        /// that cannot state its count bound would be pushing everything standing there while its
+        /// printed text says two.
+        ///
+        /// Both Push declarations move to revision 3 together because both resolve through one routine
+        /// and one pair of target finders, so a parameter added to only the named one would leave the
+        /// batch reading a declaration it does not have. Only the shared reading moves to both: the
+        /// count bound and the target relation are the batch's alone, because the named push is handed
+        /// one object by a selection node that has already answered both questions.
         /// </summary>
-        public static EffectCapabilityReference ObjectPushV2 =>
-            new EffectCapabilityReference(ObjectPush, 2);
+        public static EffectCapabilityReference ObjectPushV3 =>
+            new EffectCapabilityReference(ObjectPush, 3);
 
-        /// <summary>Revision 2, minted at milestone 6.4c, for the same reason the batch's is.</summary>
-        public static EffectCapabilityReference PushTargetV2 =>
-            new EffectCapabilityReference(PushTarget, 2);
+        /// <summary>Revision 3, minted at milestone 8.8, for the same reason the batch's is.</summary>
+        public static EffectCapabilityReference PushTargetV3 =>
+            new EffectCapabilityReference(PushTarget, 3);
+
+        /// <summary>
+        /// The printed-least-distance parameter's name, spelled once so a definition cannot mistype it.
+        /// A card naming one distance declares the same number here; Kinetic Blast's "3 or 4 spaces"
+        /// declares 3 beside a distance of 4.
+        /// </summary>
+        public const string LeastDistanceParameterName = "leastDistance";
+
+        /// <summary>
+        /// The count bound's parameter name: the most units the card lets one push take.
+        ///
+        /// Zero is the named absence, and it is the reading every Push declaration had before milestone
+        /// 8.8 - p.18's batch takes every object adjacent to the pusher, and a card that says so names
+        /// no number for this to carry. A card that does name one, as both of Wasp's kinetic Skills do,
+        /// makes which units are pushed a decision, because two of the three standing there is not a
+        /// set the rule can pick on the player's behalf.
+        /// </summary>
+        public const string MaximumTargetsParameterName = "maximumTargets";
+
+        /// <summary>
+        /// The declared side of the board the batch may push, carrying a
+        /// <see cref="SourceTeamRelation"/>. Wasp's kinetic Skills print "enemy units"; a card that
+        /// names no side declares <see cref="SourceTeamRelation.AnyTeam"/>, which is p.18's own breadth.
+        /// </summary>
+        public const string TargetRelationParameterName = "targetRelation";
+
+        /// <summary>
+        /// Milestone 8.8's stop-cause facts, in the order the batch commits. Each pushed hero gets a
+        /// pair - whether an obstacle stopped it, and which hero it was - so a rider hanging off the
+        /// push can ask a <see cref="EffectNodeKind.Conditional"/> about one hero at a time and hand the
+        /// same hero to whatever the card makes them do.
+        ///
+        /// <para>Two pairs, because the verified text that reads them pushes up to two units. The batch
+        /// itself can stop more, and publishes stop causes only for as many heroes as it has names for;
+        /// a card that pushes more and prints a rider for all of them needs a third name declared here,
+        /// which is visible at content load - a definition can only bind an output the schema declares -
+        /// rather than silently dropped. The pair is heroes only because the fact is a
+        /// <see cref="EffectValueKind.Hero"/> and because a minion has no hand to answer a rider with;
+        /// p.19's "stopped by an obstacle" is the same event for one, and stays unpublished until a card
+        /// prints something a minion can be told to do.</para>
+        /// </summary>
+        public const string FirstStoppedHeroOutputName = "firstStoppedHero";
+
+        /// <summary>Whether an obstacle stopped the first hero this push moved. See <see cref="FirstStoppedHeroOutputName"/>.</summary>
+        public const string FirstHeroWasStoppedOutputName = "firstHeroWasStopped";
+
+        /// <summary>The second stopped hero, in commit order. See <see cref="FirstStoppedHeroOutputName"/>.</summary>
+        public const string SecondStoppedHeroOutputName = "secondStoppedHero";
+
+        /// <summary>Whether an obstacle stopped the second hero this push moved.</summary>
+        public const string SecondHeroWasStoppedOutputName = "secondHeroWasStopped";
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
@@ -333,7 +402,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class ObjectPushHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => ObjectPushV2;
+            public EffectCapabilityReference Reference => ObjectPushV3;
 
             public EffectCapabilityParameterSchema Schema { get; } = PushSchema(named: false);
 
@@ -363,7 +432,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class PushTargetHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => PushTargetV2;
+            public EffectCapabilityReference Reference => PushTargetV3;
 
             public EffectCapabilityParameterSchema Schema { get; } = PushSchema(named: true);
 
@@ -396,6 +465,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             parameters.Add(new EffectCapabilityParameter("distance", EffectValueKind.Integer));
+
+            // Milestone 8.8. The distance a card names when it names more than one - "3 or 4 spaces" -
+            // stated as the floor of the same declaration rather than as a second distance parameter,
+            // because there is one distance and the card writes its ends.
+            parameters.Add(new EffectCapabilityParameter(
+                LeastDistanceParameterName, EffectValueKind.Integer));
             parameters.Add(new EffectCapabilityParameter("ignoresObstacles", EffectValueKind.Boolean));
 
             // Milestone 6.4c. Both declarations carry it, because both produce their target set
@@ -405,44 +480,110 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // be able to get one of them wrong.
             parameters.Add(new EffectCapabilityParameter(
                 SyntheticExchangeCapabilities.EligiblePieceParameterName, EffectValueKind.Integer));
-            return new EffectCapabilityParameterSchema(
-                parameters,
-                new[]
-                {
-                    new EffectOutputBinding("distance", EffectValueKind.Integer),
-                    new EffectOutputBinding("moved", EffectValueKind.Integer)
-                });
+
+            var outputs = new List<EffectOutputBinding>
+            {
+                new EffectOutputBinding("distance", EffectValueKind.Integer),
+                new EffectOutputBinding("moved", EffectValueKind.Integer),
+                new EffectOutputBinding(FirstStoppedHeroOutputName, EffectValueKind.Hero),
+                new EffectOutputBinding(FirstHeroWasStoppedOutputName, EffectValueKind.Boolean)
+            };
+
+            if (!named)
+            {
+                // Milestone 8.8, and the batch's alone. Which side of the board a push may take and
+                // how many of it are the two things a card says about a target set it does not name
+                // one by one; the named push is handed its object by a selection node that has
+                // already answered both, so a count bound there would be a parameter with one legal
+                // value and a relation there would ask the same question twice.
+                parameters.Add(new EffectCapabilityParameter(
+                    TargetRelationParameterName, EffectValueKind.Integer));
+                parameters.Add(new EffectCapabilityParameter(
+                    MaximumTargetsParameterName, EffectValueKind.Integer));
+
+                // The second stop-cause pair, for the same reason: one named target can stop one hero.
+                outputs.Add(new EffectOutputBinding(SecondStoppedHeroOutputName, EffectValueKind.Hero));
+                outputs.Add(new EffectOutputBinding(
+                    SecondHeroWasStoppedOutputName, EffectValueKind.Boolean));
+            }
+
+            return new EffectCapabilityParameterSchema(parameters, outputs);
         }
+
+        /// <summary>
+        /// The spaces this declaration admits, read through the one statement of pages 10 and 11 that
+        /// every capability moving something a stated number of spaces consults.
+        /// </summary>
+        private static AdmittedDistances Distances(EffectCapabilityContext context) =>
+            AdmittedDistances.ForDeclared(
+                context.FailurePolicy,
+                context.Input("distance").IntegerValue,
+                context.Input(LeastDistanceParameterName).IntegerValue);
+
+        /// <summary>
+        /// The most units this declaration lets one push take, or 0 where it names no number - a batch
+        /// whose card says every adjacent object, and the named push, whose definition already named
+        /// its one object and declares no such parameter at all.
+        /// </summary>
+        private static int MaximumTargets(EffectCapabilityContext context) =>
+            context.Input(MaximumTargetsParameterName).IntegerValue;
+
+        /// <summary>
+        /// Whether the declared distance is one this capability can read at all. Asked in both entry
+        /// points and stated once, because a probe that admitted a declaration the execution refuses
+        /// is the disagreement milestone 6.6a found in another handler.
+        /// </summary>
+        private static bool DeclaresALegalDistance(EffectCapabilityContext context)
+        {
+            var declared = context.Input("distance").IntegerValue;
+            var least = context.Input(LeastDistanceParameterName).IntegerValue;
+            return declared >= 0 && least >= 0 && least <= declared;
+        }
+
+        /// <summary>
+        /// Whether which of the admitted objects to push is the chooser's decision, which is exactly
+        /// whether the card named a maximum at all.
+        ///
+        /// A card that names one has said something the rule cannot answer for the player: "up to 2
+        /// enemy units adjacent to you" leaves which two, and - under p.10's non-mandatory wording -
+        /// whether to push two, one or none. A card that names none is p.18's plain batch, where every
+        /// object standing beside the pusher is pushed and there is nothing to ask.
+        /// </summary>
+        private static bool CountIsADecision(EffectCapabilityContext context) =>
+            MaximumTargets(context) > 0;
 
         private static EffectExecutionResult ExecutePush(
             EffectCapabilityContext context, PushTargetFinder finder)
         {
-            var distance = context.Input("distance").IntegerValue;
-            if (distance < 0 || !finder(context, out _, out _))
+            if (!DeclaresALegalDistance(context) || !finder(context, out _, out var admitted))
             {
                 return EffectExecutionResult.ImpossibleMandatory();
             }
 
-            if (context.FailurePolicy != EffectFailurePolicy.UpTo)
+            // A push that has already been told which units - a resolution restored or replayed
+            // between its two questions - is past question one, and asking it again would reopen a
+            // decision the frame records as made. The answers decide which question this is, exactly
+            // as they do in Resume, which is what lets snapshot restore re-ask this handler what it
+            // is offering and get the question the pause was written on.
+            if (TryFindTargetsNamedEarlier(context, admitted, out var namedEarlier))
             {
-                return Push(context, distance, finder);
+                return PushOrAskDistance(context, namedEarlier);
             }
 
-            // "If a card allows you to push multiple targets up to X spaces, you choose the
-            // distance", and which distances that offers is the one optional-distance reading rather
-            // than arithmetic written here - the same statement direct Move consults, which is what
-            // stops the two from answering differently again.
-            var candidates = AdmittedDistances.ForDeclared(context.FailurePolicy, distance)
-                .Enumerate()
-                .Select(EffectValue.Integer)
-                .ToArray();
-            return EffectExecutionResult.NeedsChoice(
-                new EffectChoiceRequest(EffectChooserRole.Actor, candidates, 1, 1));
+            // Question one: which units. p.18 settles the distance over "all those units", so the set
+            // is named before the distance is asked, and the card's own sentence reads in that order
+            // too - "Push up to 2 enemy units adjacent to you 3 or 4 spaces".
+            if (CountIsADecision(context))
+            {
+                return OfferTargets(context, admitted);
+            }
+
+            return PushOrAskDistance(context, admitted);
         }
 
         /// <summary>
         /// Whether a push would do anything, asked without pushing. Both declarations need it and both
-        /// need it for the same reason: under any policy but `up to` the execution above resolves and
+        /// need it for the same reason: with nothing left to decide the execution above resolves and
         /// commits the batch in the same call, so this is the one shape where probing by executing
         /// would move every adjacent object across the board.
         ///
@@ -454,34 +595,177 @@ namespace GuardsDigital.Core.Effects.Synthetic
         private static EffectExecutionResultKind AnticipatePush(
             EffectCapabilityContext context, PushTargetFinder finder)
         {
-            if (context.Input("distance").IntegerValue < 0 || !finder(context, out _, out _))
+            if (!DeclaresALegalDistance(context) || !finder(context, out _, out _))
             {
                 return EffectExecutionResultKind.ImpossibleMandatory;
             }
 
-            return context.FailurePolicy == EffectFailurePolicy.UpTo
+            return CountIsADecision(context) || !Distances(context).NamesOneDistance
                 ? EffectExecutionResultKind.NeedsChoice
                 : EffectExecutionResultKind.Applied;
         }
 
+        /// <summary>
+        /// One answer, routed by what it answers.
+        ///
+        /// A push asks at most two questions and they carry different kinds, so nothing has to be
+        /// remembered about which one is open: coordinates name the units, an integer names the
+        /// distance. What the earlier answer said is read off the frame through
+        /// <see cref="EffectCapabilityContext.AnswersAlreadyGiven"/>, and re-derived against live state
+        /// before it is used, because an object named when the choice opened may have moved, been
+        /// removed, or become immune since.
+        /// </summary>
         private static EffectExecutionResult ResumePush(
             EffectCapabilityContext context,
             IReadOnlyList<EffectValue> selected,
             PushTargetFinder finder)
         {
-            if (selected == null || selected.Count != 1 ||
-                selected[0].Kind != EffectValueKind.Integer)
+            if (selected == null)
             {
                 return EffectExecutionResult.ImpossibleMandatory();
             }
 
-            var chosen = selected[0].IntegerValue;
-            if (chosen < 0 || chosen > context.Input("distance").IntegerValue)
+            if (selected.Count == 0)
+            {
+                // Confirming an `up to` selection with nothing in it is the count the card allows -
+                // "up to 2" includes none - so the step was offered and not taken rather than failed.
+                return EffectExecutionResult.DeclinedOptional();
+            }
+
+            if (selected.All(value => value.Kind == EffectValueKind.Coordinate))
+            {
+                if (!finder(context, out _, out var admitted))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var chosen = NamedTargets(context, selected, admitted);
+                if (chosen.Count != selected.Count)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return PushOrAskDistance(context, chosen);
+            }
+
+            if (selected.Count != 1 || selected[0].Kind != EffectValueKind.Integer)
             {
                 return EffectExecutionResult.ImpossibleMandatory();
             }
 
-            return Push(context, chosen, finder);
+            var distance = selected[0].IntegerValue;
+            if (!Distances(context).Admits(distance) || !finder(context, out _, out var stillAdmitted))
+            {
+                return EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            TryFindTargetsNamedEarlier(context, stillAdmitted, out var targets);
+            return Push(context, distance, targets);
+        }
+
+        /// <summary>
+        /// Whether an earlier answer to this node already named the units, and which of the admitted
+        /// ones they are. False where no such answer exists, which is the unbounded batch p.18
+        /// describes and every declaration before milestone 8.8.
+        /// </summary>
+        private static bool TryFindTargetsNamedEarlier(
+            EffectCapabilityContext context,
+            IReadOnlyList<BoardObjectReference> admitted,
+            out IReadOnlyList<BoardObjectReference> named)
+        {
+            for (var index = context.AnswersAlreadyGiven.Count - 1; index >= 0; index--)
+            {
+                var answer = context.AnswersAlreadyGiven[index];
+                if (answer.Count > 0 && answer.All(value => value.Kind == EffectValueKind.Coordinate))
+                {
+                    named = NamedTargets(context, answer, admitted);
+                    return true;
+                }
+            }
+
+            named = admitted;
+            return false;
+        }
+
+        /// <summary>
+        /// The admitted objects standing where these coordinates point, in the admitted set's own
+        /// order. An answer naming a space that no longer holds an admitted object simply drops out,
+        /// which is what makes the count check at the call site meaningful.
+        /// </summary>
+        private static IReadOnlyList<BoardObjectReference> NamedTargets(
+            EffectCapabilityContext context,
+            IReadOnlyList<EffectValue> named,
+            IReadOnlyList<BoardObjectReference> admitted)
+        {
+            var board = context.Components.Board;
+            var chosen = new List<BoardObjectReference>();
+            foreach (var target in admitted)
+            {
+                if (board.TryGetObjectCoordinate(target, out var standing) &&
+                    named.Any(value =>
+                        value.Kind == EffectValueKind.Coordinate &&
+                        value.Coordinate.Equals(standing)))
+                {
+                    chosen.Add(target);
+                }
+            }
+
+            return chosen;
+        }
+
+        /// <summary>
+        /// Where the admitted objects stand right now. A push names its targets by space, the identity
+        /// milestone 6.4 chose for displacement, so this is what the chooser is offered.
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> AdmittedCoordinates(
+            EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> admitted)
+        {
+            var board = context.Components.Board;
+            var coordinates = new List<HexCoordinate>();
+            foreach (var target in admitted)
+            {
+                if (board.TryGetObjectCoordinate(target, out var standing))
+                {
+                    coordinates.Add(standing);
+                }
+            }
+
+            return coordinates;
+        }
+
+        private static EffectExecutionResult OfferTargets(
+            EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> admitted)
+        {
+            var candidates = AdmittedCoordinates(context, admitted)
+                .Select(EffectValue.Space)
+                .ToArray();
+            var maximum = Math.Min(MaximumTargets(context), candidates.Length);
+            var minimum = context.FailurePolicy == EffectFailurePolicy.UpTo ? 0 : maximum;
+            return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                EffectChooserRole.Actor, candidates, minimum, maximum));
+        }
+
+        /// <summary>
+        /// Either the distance question or the push itself. p.18: "If a card allows you to push
+        /// multiple targets up to X spaces, you choose the distance and then push all those units that
+        /// many spaces at the same time" - so a declaration admitting more than one number asks, and
+        /// one admitting a single number simply uses it.
+        /// </summary>
+        private static EffectExecutionResult PushOrAskDistance(
+            EffectCapabilityContext context,
+            IReadOnlyList<BoardObjectReference> targets)
+        {
+            var admitted = Distances(context);
+            if (!admitted.NamesOneDistance)
+            {
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.Actor,
+                    admitted.Enumerate().Select(EffectValue.Integer).ToArray(),
+                    1,
+                    1));
+            }
+
+            return Push(context, admitted.Maximum, targets);
         }
 
         /// <summary>
@@ -490,9 +774,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// here alone, whichever declaration produced the target set.
         /// </summary>
         private static EffectExecutionResult Push(
-            EffectCapabilityContext context, int distance, PushTargetFinder finder)
+            EffectCapabilityContext context,
+            int distance,
+            IReadOnlyList<BoardObjectReference> targets)
         {
-            if (!finder(context, out var pusherAt, out var targets))
+            if (!TryFindPusher(context, out var pusherAt, out _))
             {
                 return EffectExecutionResult.ImpossibleMandatory();
             }
@@ -520,21 +806,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
             }
 
-            // Phase two: commit farthest-from-the-pusher first. Every target travels directly away
+            // Phase two: read the stop causes, in the order the targets themselves are in.
+            //
+            // Deliberately not the commit order below. That order is p.18's geometry protecting itself
+            // from its own batch; this one is what a card's rider reads, and "the first hero this push
+            // stopped" should mean the first of the units the card named rather than whichever of them
+            // happened to travel furthest. A hero pushed zero spaces by an obstacle standing right
+            // behind it is counted here, because p.18 calls that a push.
+            var stopped = resolved
+                .Where(entry =>
+                    entry.Key.Kind == BoardObjectKind.Hero && entry.Value.StoppedByAnObstacle)
+                .Select(entry => entry.Key.HeroId)
+                .ToList();
+
+            // Phase three: commit farthest-from-the-pusher first. Every target travels directly away
             // along its own file, so working outwards means a space is always vacated before
             // anything is asked to enter it, and the batch never refuses itself.
             var moved = 0;
             foreach (var entry in resolved
+                .Where(entry => entry.Value.Moves)
                 .OrderByDescending(entry => entry.Value.ActualDistance)
                 .ThenBy(entry => entry.Value.Origin.Q)
                 .ThenBy(entry => entry.Value.Origin.R))
             {
-                if (!entry.Value.Moves)
-                {
-                    // p.18's zero-space push: a legal result that relocates nothing.
-                    continue;
-                }
-
                 var committed = board.CommitValidatedDisplacement(entry.Key, entry.Value.Endpoint);
                 if (committed.Accepted)
                 {
@@ -542,12 +836,58 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
             }
 
-            return EffectExecutionResult.Applied(new[]
+            return EffectExecutionResult.Applied(StopCauseFacts(context, distance, moved, stopped));
+        }
+
+        /// <summary>
+        /// What one push publishes: how far it pushed, how many it moved, and milestone 8.8's stop
+        /// causes, one pair per hero this declaration has a name for.
+        ///
+        /// The boolean of a pair is always published and the hero only when there is one, because
+        /// <see cref="EffectValue.Hero"/> refuses an undefined hero and a fact naming nobody would be a
+        /// worse answer than no fact: a <see cref="EffectNodeKind.Conditional"/> reading the boolean
+        /// gets false either way, and the branch behind it is what would have consumed the hero.
+        /// </summary>
+        private static IReadOnlyList<EffectOutcomeFact> StopCauseFacts(
+            EffectCapabilityContext context, int distance, int moved, IReadOnlyList<HeroId> stopped)
+        {
+            var facts = new List<EffectOutcomeFact>
             {
                 new EffectOutcomeFact("distance", EffectValue.Integer(distance)),
-                new EffectOutcomeFact("moved", EffectValue.Integer(moved))
-            });
+                new EffectOutcomeFact("moved", EffectValue.Integer(moved)),
+                new EffectOutcomeFact(
+                    FirstHeroWasStoppedOutputName, EffectValue.Boolean(stopped.Count > 0))
+            };
+
+            if (stopped.Count > 0)
+            {
+                facts.Add(new EffectOutcomeFact(
+                    FirstStoppedHeroOutputName, EffectValue.Hero(stopped[0])));
+            }
+
+            if (!PublishesASecondStopCause(context))
+            {
+                return facts;
+            }
+
+            facts.Add(new EffectOutcomeFact(
+                SecondHeroWasStoppedOutputName, EffectValue.Boolean(stopped.Count > 1)));
+            if (stopped.Count > 1)
+            {
+                facts.Add(new EffectOutcomeFact(
+                    SecondStoppedHeroOutputName, EffectValue.Hero(stopped[1])));
+            }
+
+            return facts;
         }
+
+        /// <summary>
+        /// Whether this declaration is the batch. Read off the parameters it was handed rather than
+        /// passed down through the routine, because the count bound is exactly what makes a push able
+        /// to stop a second hero, and the two would otherwise be two statements of one fact.
+        /// </summary>
+        private static bool PublishesASecondStopCause(EffectCapabilityContext context) =>
+            context.Inputs.ContainsKey(MaximumTargetsParameterName);
 
         /// <summary>
         /// The acting hero's space and every object it may push out of the six adjacent spaces.
@@ -577,6 +917,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 if (board.TryGetObjectAt(neighbor, out var occupant) &&
                     AdmitsThisPiece(context, occupant) &&
+                    StandsOnTheDeclaredSide(context, occupant) &&
                     !IsImmuneToThisPush(context, occupant, pushingUnit))
                 {
                     found.Add(occupant);
@@ -585,6 +926,37 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             targets = found;
             return found.Count > 0;
+        }
+
+        /// <summary>
+        /// Milestone 8.8: whether the declared side of the board admits this object - "enemy units" for
+        /// Wasp's two kinetic Skills, and everything for a card that names no side.
+        ///
+        /// It filters here, beside the piece kind and the immunity question, because p.19 makes it the
+        /// same kind of question: what the card's own words let this action target. The reading itself
+        /// is <see cref="TargetQuery.StandsInRelationTo"/>'s, so the selection a player is offered and
+        /// the operation that follows cannot part company over what "enemy" means.
+        /// </summary>
+        private static bool StandsOnTheDeclaredSide(
+            EffectCapabilityContext context, BoardObjectReference occupant)
+        {
+            var declared = context.Input(TargetRelationParameterName);
+            if (declared.Kind != EffectValueKind.Integer)
+            {
+                // The named push declares no relation at all: its one object came from a selection
+                // node that already asked whatever its card says about whose unit it is.
+                return true;
+            }
+
+            var relation = (SourceTeamRelation)declared.IntegerValue;
+            if (!Enum.IsDefined(typeof(SourceTeamRelation), relation) ||
+                relation == SourceTeamRelation.None)
+            {
+                return false;
+            }
+
+            return TargetQuery.StandsInRelationTo(
+                relation, occupant, context.ActorId, context.Participants, context.Components.Board);
         }
 
         /// <summary>

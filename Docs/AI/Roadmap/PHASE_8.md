@@ -196,7 +196,7 @@ Non-goals: no change to commitment, joint reveal, Initiative order, action resol
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-87a-separate-the-current-unresolved-card-from-resolved-turn-history-completion-evidence).
 
-### [ ] 8.8 Complete the Wasp kinetic skills
+### [x] 8.8 Complete the Wasp kinetic skills
 
 Milestone 8.7a completed the approved current-card rail insertion. Milestone 8.7 supplied the consumption regime, and milestones 8.4 and 8.5 supplied the hands and published predicate facts.
 
@@ -209,6 +209,14 @@ Acceptance checks:
 - The W-04 board-edge question is resolved on its recorded proposed reading before any test encodes it: p.19 makes the water surrounding the board terrain and therefore an obstacle, so a push stopped at the board edge is stopped by an obstacle; the map model's off-map-is-nothing answer is reconciled with that reading explicitly in this milestone's evidence.
 
 Non-goals: no Attack text, no new push geometry.
+
+**How the composition reads, recorded because 8.9-8.11 compose against the same declarations.** The `up to` in "up to 2 enemy units adjacent to you 3 spaces" is over the units and the spaces are exact, and a node carries one `EffectFailurePolicy`, so the count and the distance are declared separately from this milestone on: `AdmittedDistances.ForDeclared` takes the least distance the card itself prints beside the declared one, and the batch declares a maximum number of targets. A declaration that names a maximum makes which units are pushed the chooser's decision; one that names none is p.18's plain batch over every adjacent object, which is what every declaration before this milestone meant and still means. Both Push declarations moved to revision 3 together because both resolve through one routine, and only the shared distance reading moved to both - the count bound and the target relation are the batch's, because a named push is handed one object by a selection node that has already answered both. `TargetQuery.StandsInRelationTo` opens the first arm of p.19's relationship vocabulary and reuses `SourceTeamRelation` rather than minting a fourth team enum; the rest of that vocabulary still waits for a card.
+
+**The batch asks two questions, and that is the general seam this milestone added.** p.18 settles the distance over "all those units", so the units are named first and the distance second, and one capability asks both because the rule is one keyword and both answers feed one simultaneous commit. `EffectCapabilityContext.AnswersAlreadyGiven` carries what the node has already been told, projected from the resolution's own accepted choices - state the frame already carried and the payload already wrote - so no new persisted field exists and a restore between the two questions re-derives the second. `Execute` reads the same answers, which is what lets the snapshot restore path re-ask a handler what it is offering and get the question the pause was written on rather than the first one.
+
+**W-04 is answered yes, and the reconciliation has two halves, neither of which changed the model.** The official map already states p.19's reading: every space adjacent to a playable space of `official-single-lane` is itself playable or declared terrain, so a unit pushed off the play area meets the modelled water and the ordinary obstacle rule answers the card. Past that ring the classification does answer "nothing", deliberately, because milestone 6.8e separated off-map from terrain so no Move-Through permission could carry a unit into the water - so the card's own reading is stated once, on `PushPathResult.StoppedByAnObstacle`, and admits both the blocked arm and the left-the-board arm. A later official ruling supersedes the reading rather than the classification.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-88-complete-the-wasp-kinetic-skills-completion-evidence).
 
 ### [!] 8.9 Complete the Wasp basic cards
 

@@ -89,5 +89,73 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() =>
                 AdmittedDistances.ForDeclared(EffectFailurePolicy.UpTo, -1));
         }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.8: the distance a card writes as a choice between named numbers
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void APrintedFloor_NarrowsTheOptionalReadingToTheNumbersTheCardNames()
+        {
+            // Kinetic Blast: "Push up to 2 enemy units adjacent to you 3 or 4 spaces." The `up to` is
+            // over the units, so the step is non-mandatory; the spaces are two named numbers, so the
+            // reading has to admit those two and nothing between them and zero.
+            var admitted = AdmittedDistances.ForDeclared(EffectFailurePolicy.UpTo, 4, 3);
+
+            Assert.That(admitted.Enumerate(), Is.EqualTo(new[] { 3, 4 }));
+            Assert.That(admitted.AdmitsStandingStill, Is.False,
+                "The card names no number below three, so no wording of the step admits zero spaces.");
+            Assert.That(admitted.NamesOneDistance, Is.False, "Two numbers are still a decision.");
+        }
+
+        [Test]
+        public void APrintedFloorEqualToTheDistance_LeavesNothingToDecideUnderAnyWording()
+        {
+            // Kinetic Repulse: "Push up to 2 enemy units adjacent to you 3 spaces." The same
+            // non-mandatory wording over the units, and one number over the spaces. Before the floor
+            // existed the only way to say `up to` about the units was to make the spaces optional too.
+            foreach (var policy in new[]
+            {
+                EffectFailurePolicy.UpTo, EffectFailurePolicy.Mandatory,
+                EffectFailurePolicy.May, EffectFailurePolicy.IfAble
+            })
+            {
+                var admitted = AdmittedDistances.ForDeclared(policy, 3, 3);
+
+                Assert.That(admitted.Enumerate(), Is.EqualTo(new[] { 3 }), policy.ToString());
+                Assert.That(admitted.NamesOneDistance, Is.True, policy.ToString());
+            }
+        }
+
+        [Test]
+        public void AFloorOfZero_IsTheReadingEveryDeclarationBeforeMilestoneEightEightHad()
+        {
+            foreach (var policy in new[] { EffectFailurePolicy.UpTo, EffectFailurePolicy.Mandatory })
+            {
+                Assert.That(
+                    AdmittedDistances.ForDeclared(policy, 2, 0).Enumerate(),
+                    Is.EqualTo(AdmittedDistances.ForDeclared(policy, 2).Enumerate()),
+                    policy + ": naming no floor has to read exactly as it did before there was one.");
+            }
+        }
+
+        [Test]
+        public void AnExactDeclarationIgnoresTheFloor_BecauseThereIsNothingBelowTheNumberToNarrow()
+        {
+            // A floor cannot raise what a declaration admits; p.11 already fixed an exact wording at
+            // its declared number, and the floor only narrows the optional reading from below.
+            Assert.That(
+                AdmittedDistances.ForDeclared(EffectFailurePolicy.Mandatory, 4, 3).Enumerate(),
+                Is.EqualTo(new[] { 4 }));
+        }
+
+        [Test]
+        public void AFloorAboveTheDeclaredDistance_IsRefusedRatherThanReadAsAnEmptySet()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                AdmittedDistances.ForDeclared(EffectFailurePolicy.UpTo, 3, 4));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                AdmittedDistances.ForDeclared(EffectFailurePolicy.UpTo, 3, -1));
+        }
     }
 }

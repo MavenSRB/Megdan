@@ -730,7 +730,13 @@ namespace GuardsDigital.Core.Snapshots
                 resolution.CardState,
                 resolution.EnclosingActionKind,
                 resolution.Components,
-                resolution.HeroItems));
+                resolution.HeroItems,
+                // Milestone 8.8 extended the same discipline once more, to a capability that asks more
+                // than one question: what it is offering depends on the answers it already holds, and
+                // those are the resolution's own accepted choices, which this payload has just
+                // restored. Without them the re-ask reproduces the first question rather than the one
+                // the frame paused on.
+                EffectResolutionSession.AnswersAlreadyGiven(restored, node)));
             if (offered.Choice == null)
             {
                 throw Malformed(

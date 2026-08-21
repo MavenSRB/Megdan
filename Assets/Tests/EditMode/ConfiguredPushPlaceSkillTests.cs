@@ -148,7 +148,7 @@ namespace GuardsDigital.Tests.EditMode
                 "The target offer asks the same immunity question as its consuming Push.");
 
             var push = effect.Nodes.Single(node => node.Id.Equals(Push));
-            Assert.That(push.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.PushTargetV2),
+            Assert.That(push.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.PushTargetV3),
                 "The Push names one target, so it uses the target-named declaration of p.18's Push.");
             Assert.That(push.FailurePolicy, Is.EqualTo(EffectFailurePolicy.Mandatory),
                 "A fixed distance opens no distance choice.");

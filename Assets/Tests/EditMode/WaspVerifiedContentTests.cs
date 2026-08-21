@@ -188,8 +188,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             // Milestone 8.6 attached the first five compositions, so the question changed shape: a card
             // either carries its effect root or names the slice that owes one, and no card may do
-            // neither or both. ActionDefinition already refuses "both"; this states which five are
-            // which, so a composition landing without its row being cleared is visible here.
+            // neither or both. ActionDefinition already refuses "both"; this states which are which, so
+            // a composition landing without its row being cleared is visible here. Milestone 8.8 added
+            // the two kinetic Skills and advanced the revision every one of them carries.
             Assert.That(
                 WaspCardContent.AllDefinitions
                     .SelectMany(definition => definition.ActionDefinitions)
@@ -197,15 +198,17 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(action => $"{action.EffectRoot.Id.Value}@{action.EffectRoot.ContentRevision}"),
                 Is.EqualTo(new[]
                 {
-                    "wasp-lift-up-skill@wasp-8-6-rev-1",
-                    "wasp-control-gravity-skill@wasp-8-6-rev-1",
-                    "wasp-center-of-mass-skill@wasp-8-6-rev-1",
-                    "wasp-telekinesis-skill@wasp-8-6-rev-1",
-                    "wasp-mass-telekinesis-skill@wasp-8-6-rev-1"
+                    "wasp-lift-up-skill@wasp-8-8-rev-1",
+                    "wasp-control-gravity-skill@wasp-8-8-rev-1",
+                    "wasp-kinetic-repulse-skill@wasp-8-8-rev-1",
+                    "wasp-center-of-mass-skill@wasp-8-8-rev-1",
+                    "wasp-kinetic-blast-skill@wasp-8-8-rev-1",
+                    "wasp-telekinesis-skill@wasp-8-8-rev-1",
+                    "wasp-mass-telekinesis-skill@wasp-8-8-rev-1"
                 }),
-                "The five telekinetic Skills are composed; every other card's composition lands at its " +
-                "own 8.8-8.13 slice under a content-revision advance, so no half-implemented card text " +
-                "can run in between.");
+                "The five telekinetic Skills and the two kinetic ones are composed; every other card's " +
+                "composition lands at its own 8.9-8.13 slice under a content-revision advance, so no " +
+                "half-implemented card text can run in between.");
 
             var owedByCard = WaspCardContent.AllDefinitions
                 .Select(definition => new
@@ -235,9 +238,9 @@ namespace GuardsDigital.Tests.EditMode
                     "wasp-thunder-boomerang -> 8.10",
                     "wasp-lift-up -> composed",
                     "wasp-control-gravity -> composed",
-                    "wasp-kinetic-repulse -> 8.8",
+                    "wasp-kinetic-repulse -> composed",
                     "wasp-center-of-mass -> composed",
-                    "wasp-kinetic-blast -> 8.8",
+                    "wasp-kinetic-blast -> composed",
                     "wasp-stop-projectiles -> 8.11",
                     "wasp-deflect-projectiles -> 8.11",
                     "wasp-telekinesis -> composed",

@@ -406,7 +406,7 @@ namespace GuardsDigital.Tests.EditMode
                 "later, which is the defect this rule exists to catch.");
             Assert.That(
                 catalog.Registered,
-                Has.Member(SyntheticDisplacementCapabilities.ObjectPushV2)
+                Has.Member(SyntheticDisplacementCapabilities.ObjectPushV3)
                     .And.Member(SyntheticDisplacementCapabilities.DirectMoveV3)
                     .And.Member(SyntheticPlacementCapabilities.PlaceV2)
                     .And.Member(SyntheticPlacementCapabilities.SpawnV1)

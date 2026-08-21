@@ -30,6 +30,12 @@ namespace GuardsDigital.Core.Rules.Displacement
     /// <see cref="EffectFailurePolicy"/>, which is where milestone 6.2a already put p.10's distinction.
     /// This type never asks what is reachable, occupied, or in a straight line - which spaces a mover
     /// can actually use is the geometry question its capability asks separately.
+    ///
+    /// Milestone 8.8 adds the one thing the wording cannot carry: a floor the card itself prints.
+    /// No clause of the rulebook sets one, which is why the reading above starts at none - but a card
+    /// can, and Kinetic Blast's "3 or 4 spaces" does. It is a third argument to the same statement
+    /// rather than a second one, because a card that prints a floor is usually a card whose `up to` is
+    /// about something else in the same sentence, and both readings then have to be taken together.
     /// </summary>
     public readonly struct AdmittedDistances
     {
@@ -49,8 +55,22 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// number exact, which is p.11's own separation of "the distance is optional" from "the move
         /// itself is optional".
         /// </param>
+        /// <param name="leastPrintedDistance">
+        /// Milestone 8.8. The fewest spaces the card itself names, which is 3 in Kinetic Blast's
+        /// "Push up to 2 enemy units adjacent to you 3 or 4 spaces" and 0 wherever a card names one
+        /// number only.
+        ///
+        /// It is a third argument rather than a second factory because it answers a different question
+        /// from the one above and the two have to be answered together. p.10 and p.11 read the node's
+        /// own wording; a floor is printed content, and the two words that carry it here - "up to 2"
+        /// over the units and "3 or 4" over the spaces - sit in one sentence, so a card can make the
+        /// count optional while naming the distance exactly. That is Kinetic Repulse, and before this
+        /// argument existed the only way to say "up to" about the units was to make the spaces optional
+        /// too. A floor cannot raise what the declaration admits: it narrows the optional reading from
+        /// below and leaves an exact declaration exactly where it was.
+        /// </param>
         public static AdmittedDistances ForDeclared(
-            EffectFailurePolicy failurePolicy, int declaredDistance)
+            EffectFailurePolicy failurePolicy, int declaredDistance, int leastPrintedDistance = 0)
         {
             if (declaredDistance < 0)
             {
@@ -60,8 +80,24 @@ namespace GuardsDigital.Core.Rules.Displacement
                     "A declared displacement distance must not be negative.");
             }
 
+            if (leastPrintedDistance < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(leastPrintedDistance),
+                    leastPrintedDistance,
+                    "A printed least displacement distance must not be negative.");
+            }
+
+            if (leastPrintedDistance > declaredDistance)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(leastPrintedDistance),
+                    leastPrintedDistance,
+                    "A printed least displacement distance must not exceed the declared distance.");
+            }
+
             return failurePolicy == EffectFailurePolicy.UpTo
-                ? new AdmittedDistances(0, declaredDistance)
+                ? new AdmittedDistances(leastPrintedDistance, declaredDistance)
                 : new AdmittedDistances(declaredDistance, declaredDistance);
         }
 
@@ -84,6 +120,14 @@ namespace GuardsDigital.Core.Rules.Displacement
 
         /// <summary>Whether that many spaces satisfies the declaration.</summary>
         public bool Admits(int distance) => distance >= Minimum && distance <= Maximum;
+
+        /// <summary>
+        /// Whether the declaration leaves nothing to decide - the question a capability asks before it
+        /// opens a distance prompt. Milestone 8.8 states it here rather than at the caller, because the
+        /// caller used to ask it by re-reading the node's policy, and a printed floor equal to the
+        /// declared distance is now a second way for one number to be the only one admitted.
+        /// </summary>
+        public bool NamesOneDistance => Minimum == Maximum;
 
         /// <summary>
         /// Every admitted number of spaces, ascending. This is the candidate list where the distance is

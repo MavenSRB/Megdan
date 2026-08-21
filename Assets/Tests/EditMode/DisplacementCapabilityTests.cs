@@ -36,6 +36,9 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly HeroId Actor = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
         private static readonly HeroId Other = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
         private static readonly MinionId Minion = new MinionId("displacement-capability-minion");
+        private static readonly MinionId AlliedMinion =
+            new MinionId("displacement-capability-allied-minion");
+        private static readonly HeroId SecondOther = new HeroId("displacement-capability-second-hero");
         private static readonly MapId Map = new MapId("synthetic-displacement-capability-map");
 
         private static readonly HexCoordinate ActorAt = new HexCoordinate(0, 0);
@@ -104,7 +107,7 @@ namespace GuardsDigital.Tests.EditMode
             var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
             var otherAt = ActorAt.GetNeighbor(HexDirection.East);
 
-            var handler = Handler(SyntheticDisplacementCapabilities.ObjectPushV2);
+            var handler = Handler(SyntheticDisplacementCapabilities.ObjectPushV3);
             var offered = handler.Execute(Context(
                 board, EffectFailurePolicy.UpTo, distance: 2, modifications: RuleModificationSet.Empty));
 
@@ -150,7 +153,7 @@ namespace GuardsDigital.Tests.EditMode
             var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
             var otherAt = ActorAt.GetNeighbor(HexDirection.East);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV2).Resume(
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Resume(
                 Context(board, EffectFailurePolicy.UpTo, 2, RuleModificationSet.Empty,
                     PushEligiblePieceKind.Unit),
                 new[] { EffectValue.Integer(2) });
@@ -174,7 +177,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateStarBoard();
             var token = PlaceToken(board, ActorAt.GetNeighbor(HexDirection.West));
 
-            var refused = Handler(SyntheticDisplacementCapabilities.PushTargetV2).Execute(
+            var refused = Handler(SyntheticDisplacementCapabilities.PushTargetV3).Execute(
                 NamedContext(board, token.Coordinate, PushEligiblePieceKind.Unit));
 
             Assert.That(refused.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
@@ -183,7 +186,7 @@ namespace GuardsDigital.Tests.EditMode
                 "it arrives, so a stale or forged selection is refused here too.");
             Assert.That(board.PlacedTokens.Single().Coordinate, Is.EqualTo(token.Coordinate));
 
-            var admitted = Handler(SyntheticDisplacementCapabilities.PushTargetV2).Execute(
+            var admitted = Handler(SyntheticDisplacementCapabilities.PushTargetV3).Execute(
                 NamedContext(board, token.Coordinate, PushEligiblePieceKind.UnitOrToken));
 
             Assert.That(admitted.Kind, Is.EqualTo(EffectExecutionResultKind.Applied),
@@ -207,7 +210,7 @@ namespace GuardsDigital.Tests.EditMode
                 PushEligiblePieceKind.Unit
             })
             {
-                var handler = Handler(SyntheticDisplacementCapabilities.PushTargetV2);
+                var handler = Handler(SyntheticDisplacementCapabilities.PushTargetV3);
                 var anticipated = handler.Anticipate(
                     NamedContext(board, token.Coordinate, eligiblePiece));
                 var executed = handler.Execute(NamedContext(board, token.Coordinate, eligiblePiece));
@@ -246,7 +249,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateStarBoard();
             var otherAt = ActorAt.GetNeighbor(HexDirection.East);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV2).Resume(
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Resume(
                 Context(board, EffectFailurePolicy.UpTo, 2, RuleModificationSet.Empty),
                 new[] { EffectValue.Integer(0) });
 
@@ -263,7 +266,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateStarBoard();
             var otherAt = ActorAt.GetNeighbor(HexDirection.East);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV2).Resume(
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Resume(
                 Context(board, EffectFailurePolicy.UpTo, 2, RuleModificationSet.Empty),
                 new[] { EffectValue.Integer(5) });
 
@@ -288,7 +291,7 @@ namespace GuardsDigital.Tests.EditMode
                 Actor, Actor, new CardInstanceId("push-wall-source"), wall));
             var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV2).Resume(
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Resume(
                 Context(board, EffectFailurePolicy.UpTo, 2, RuleModificationSet.Empty),
                 new[] { EffectValue.Integer(2) });
 
@@ -646,6 +649,262 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // ---------------------------------------------------------------------------------------
+        // Milestone 8.8: the three things a card can now say about a batch, and what it publishes
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void ADeclaredEnemyRelation_LeavesTheActorsOwnTeamStandingWhileEveryEnemyTravels()
+        {
+            // "up to 2 enemy units adjacent to you". p.19's relationship vocabulary read from the
+            // card's perspective, which is the acting hero's: her own minion is not among her targets.
+            var board = CreateMixedTeamBoard();
+            var alliedAt = ActorAt.GetNeighbor(HexDirection.West);
+            var enemyHeroAt = ActorAt.GetNeighbor(HexDirection.East);
+
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Execute(Context(
+                board, EffectFailurePolicy.Mandatory, 2, RuleModificationSet.Empty,
+                PushEligiblePieceKind.Unit, SourceTeamRelation.OpposingSource,
+                maximumTargets: 0, leastDistance: 2));
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(Output(applied, "moved").IntegerValue, Is.EqualTo(2),
+                "The enemy hero and the enemy minion travelled; the allied minion did not.");
+            Assert.That(
+                board.Minions.Single(minion => minion.MinionId.Equals(AlliedMinion)).Coordinate,
+                Is.EqualTo(alliedAt),
+                "A unit on the actor's own team is not an enemy unit, however close it stands.");
+            Assert.That(
+                board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(StraightLineQuery.Step(enemyHeroAt, HexDirection.East, 2)));
+
+            var unnarrowed = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Execute(Context(
+                CreateMixedTeamBoard(), EffectFailurePolicy.Mandatory, 2, RuleModificationSet.Empty,
+                PushEligiblePieceKind.Unit, SourceTeamRelation.AnyTeam,
+                maximumTargets: 0, leastDistance: 2));
+            Assert.That(Output(unnarrowed, "moved").IntegerValue, Is.EqualTo(3),
+                "The same board with no side named pushes all three, which is what makes the case " +
+                "above the card's narrowing rather than a rule this milestone invented.");
+        }
+
+        [Test]
+        public void ADeclaredMaximum_MakesWhichUnitsArePushedTheChoosersDecision()
+        {
+            var board = CreateMixedTeamBoard();
+            var enemyHeroAt = ActorAt.GetNeighbor(HexDirection.East);
+            var enemyMinionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
+            var handler = Handler(SyntheticDisplacementCapabilities.ObjectPushV3);
+
+            var offered = handler.Execute(KineticContext(board, maximumTargets: 2, distance: 3));
+
+            Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
+            Assert.That(
+                offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Is.EquivalentTo(new[] { enemyHeroAt, enemyMinionAt }),
+                "A push names its targets by space, and only the enemy units are offered.");
+            Assert.That(offered.Choice.MinimumSelections, Is.EqualTo(0),
+                "`up to 2` includes none, so the selection may close on nothing.");
+            Assert.That(offered.Choice.MaximumSelections, Is.EqualTo(2));
+
+            var applied = handler.Resume(
+                KineticContext(board, maximumTargets: 2, distance: 3),
+                new[] { EffectValue.Space(enemyMinionAt) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(Output(applied, "moved").IntegerValue, Is.EqualTo(1));
+            Assert.That(
+                board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(enemyHeroAt),
+                "The unit the chooser did not name stays exactly where it stood.");
+            Assert.That(
+                board.Minions.Single(minion => minion.MinionId.Equals(Minion)).Coordinate,
+                Is.EqualTo(StraightLineQuery.Step(enemyMinionAt, HexDirection.NorthEast, 3)));
+        }
+
+        [Test]
+        public void ChoosingNoUnitAtAll_IsTheCountTheCardAllowsRatherThanAFailedStep()
+        {
+            var board = CreateMixedTeamBoard();
+
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Resume(
+                KineticContext(board, maximumTargets: 2, distance: 3),
+                Array.Empty<EffectValue>());
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.DeclinedOptional),
+                "p.10: an `up to` step nobody takes is not taken, which is not the same as one that " +
+                "could not be.");
+            Assert.That(
+                board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(ActorAt.GetNeighbor(HexDirection.East)));
+        }
+
+        [Test]
+        public void ADistanceTheCardWritesAsAChoice_IsAskedAfterTheUnitsAndAppliesToThoseUnits()
+        {
+            // Kinetic Blast: "Push up to 2 enemy units adjacent to you 3 or 4 spaces." p.18 settles the
+            // distance over "all those units", so the set is named first and one distance is chosen for
+            // it. Both answers reach the same node, which is why the second one has to be able to read
+            // the first.
+            var board = CreateMixedTeamBoard();
+            var enemyHeroAt = ActorAt.GetNeighbor(HexDirection.East);
+            var handler = Handler(SyntheticDisplacementCapabilities.ObjectPushV3);
+
+            var chosenUnits = handler.Resume(
+                KineticContext(board, maximumTargets: 2, distance: 4, leastDistance: 3),
+                new[] { EffectValue.Space(enemyHeroAt) });
+
+            Assert.That(chosenUnits.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
+            Assert.That(
+                chosenUnits.Choice.Candidates.Select(candidate => candidate.IntegerValue),
+                Is.EqualTo(new[] { 3, 4 }),
+                "The card names two numbers and nothing between them and zero.");
+
+            var applied = handler.Resume(
+                KineticContext(
+                    board, maximumTargets: 2, distance: 4, leastDistance: 3,
+                    answeredEarlier: new[] { EffectValue.Space(enemyHeroAt) }),
+                new[] { EffectValue.Integer(4) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(Output(applied, "distance").IntegerValue, Is.EqualTo(4));
+            Assert.That(Output(applied, "moved").IntegerValue, Is.EqualTo(1),
+                "Only the unit the first answer named travelled, at the distance the second chose.");
+            Assert.That(
+                board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(StraightLineQuery.Step(enemyHeroAt, HexDirection.East, 4)));
+            Assert.That(
+                board.Minions.Single(minion => minion.MinionId.Equals(Minion)).Coordinate,
+                Is.EqualTo(ActorAt.GetNeighbor(HexDirection.NorthEast)),
+                "The enemy unit the first answer left out is still standing beside the actor.");
+        }
+
+        [Test]
+        public void ADistanceTheCardNamesExactly_OpensNoSecondQuestionEvenUnderAnOptionalCount()
+        {
+            var board = CreateMixedTeamBoard();
+
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Resume(
+                KineticContext(board, maximumTargets: 2, distance: 3, leastDistance: 3),
+                new[] { EffectValue.Space(ActorAt.GetNeighbor(HexDirection.East)) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied),
+                "Kinetic Repulse's `up to` is over the units; the spaces are one number, so nobody is " +
+                "asked how far.");
+            Assert.That(Output(applied, "distance").IntegerValue, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void TheStopCause_IsPublishedPerPushedHeroInCommitOrder()
+        {
+            // One batch, two heroes, two different outcomes. The facts are what the card's rider reads,
+            // and the rider is about a hero rather than about the push, so each hero gets a pair.
+            var board = CreateTwoPushedHeroBoard();
+            var stoppedAt = ActorAt.GetNeighbor(HexDirection.East);
+            var freeAt = ActorAt.GetNeighbor(HexDirection.West);
+            PlaceToken(board, StraightLineQuery.Step(ActorAt, HexDirection.East, 3));
+
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Resume(
+                KineticContext(
+                    board, maximumTargets: 2, distance: 3, relation: SourceTeamRelation.AnyTeam),
+                new[] { EffectValue.Space(stoppedAt), EffectValue.Space(freeAt) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(
+                Output(applied, SyntheticDisplacementCapabilities.FirstHeroWasStoppedOutputName)
+                    .BooleanValue,
+                Is.True);
+            Assert.That(
+                Output(applied, SyntheticDisplacementCapabilities.FirstStoppedHeroOutputName).HeroId,
+                Is.EqualTo(Other),
+                "An obstacle two spaces along its file stopped this one short of the three it asked for.");
+            Assert.That(
+                Output(applied, SyntheticDisplacementCapabilities.SecondHeroWasStoppedOutputName)
+                    .BooleanValue,
+                Is.False,
+                "The other hero travelled its whole distance, so nothing stopped it.");
+            Assert.That(
+                applied.Outcomes.Any(outcome => string.Equals(
+                    outcome.OutputName,
+                    SyntheticDisplacementCapabilities.SecondStoppedHeroOutputName,
+                    StringComparison.Ordinal)),
+                Is.False,
+                "A fact naming nobody would be a worse answer than no fact: the boolean is what the " +
+                "rider branches on, and it already says there was no second hero.");
+        }
+
+        [Test]
+        public void APushedHeroStoppedByTheBoardsEdge_IsPublishedAsStoppedByAnObstacle()
+        {
+            // Ledger question W-04, at the seam a card reads it through. The board here ends two spaces
+            // East of the target, so the push leaves the map rather than meeting anything on it.
+            var board = CreateShortEdgeBoard();
+            var targetAt = ActorAt.GetNeighbor(HexDirection.East);
+
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Resume(
+                KineticContext(board, maximumTargets: 2, distance: 3),
+                new[] { EffectValue.Space(targetAt) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(
+                board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(StraightLineQuery.Step(ActorAt, HexDirection.East, 3)),
+                "p.18 moves it as far as it can, which is up to the last playable space.");
+            Assert.That(
+                Output(applied, SyntheticDisplacementCapabilities.FirstHeroWasStoppedOutputName)
+                    .BooleanValue,
+                Is.True,
+                "W-04: the water p.19 calls terrain is what it stopped against, so the card's sentence " +
+                "applies even though the model answers off-map as nothing.");
+            Assert.That(
+                Output(applied, SyntheticDisplacementCapabilities.FirstStoppedHeroOutputName).HeroId,
+                Is.EqualTo(Other));
+        }
+
+        [Test]
+        public void APushedMinionStoppedByAnObstacle_PublishesNoStopCause()
+        {
+            // The card's rider says "if a pushed hero"; a minion has no hand to answer one with, so the
+            // fact stays a hero's until a card prints something a minion can be told to do.
+            var board = CreateMixedTeamBoard();
+            var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
+            PlaceToken(board, StraightLineQuery.Step(ActorAt, HexDirection.NorthEast, 2));
+
+            var applied = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Resume(
+                KineticContext(board, maximumTargets: 2, distance: 3),
+                new[] { EffectValue.Space(minionAt) });
+
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(Output(applied, "moved").IntegerValue, Is.EqualTo(0),
+                "The obstacle sits immediately behind it, which is p.18's zero-space push.");
+            Assert.That(
+                Output(applied, SyntheticDisplacementCapabilities.FirstHeroWasStoppedOutputName)
+                    .BooleanValue,
+                Is.False);
+        }
+
+        [Test]
+        public void ANamedPush_DeclaresNeitherACountNorASideAndPublishesOneStopCause()
+        {
+            var handler = Handler(SyntheticDisplacementCapabilities.PushTargetV3);
+            var batch = Handler(SyntheticDisplacementCapabilities.ObjectPushV3);
+
+            Assert.That(
+                handler.Schema.Parameters.Select(parameter => parameter.Name),
+                Has.No.Member(SyntheticDisplacementCapabilities.MaximumTargetsParameterName),
+                "Its one object came from a selection node that already answered how many.");
+            Assert.That(
+                handler.Schema.Parameters.Select(parameter => parameter.Name),
+                Has.Member(SyntheticDisplacementCapabilities.LeastDistanceParameterName),
+                "The distance reading is shared, so both declarations carry it.");
+            Assert.That(
+                handler.Schema.Outputs.Select(output => output.OutputName),
+                Has.No.Member(SyntheticDisplacementCapabilities.SecondStoppedHeroOutputName),
+                "One named target can stop one hero.");
+            Assert.That(
+                batch.Schema.Outputs.Select(output => output.OutputName),
+                Has.Member(SyntheticDisplacementCapabilities.SecondStoppedHeroOutputName));
+        }
+
+        // ---------------------------------------------------------------------------------------
         // Helpers
         // ---------------------------------------------------------------------------------------
 
@@ -688,7 +947,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static EffectExecutionResult Push(
             AdjacentMoveAuthority board, int distance, RuleModificationSet modifications) =>
-            Handler(SyntheticDisplacementCapabilities.ObjectPushV2)
+            Handler(SyntheticDisplacementCapabilities.ObjectPushV3)
                 .Execute(Context(board, EffectFailurePolicy.Mandatory, distance, modifications));
 
         private static EffectValue Output(EffectExecutionResult result, string name) =>
@@ -713,13 +972,70 @@ namespace GuardsDigital.Tests.EditMode
             int distance,
             RuleModificationSet modifications,
             PushEligiblePieceKind eligiblePiece) =>
+            Context(
+                board, policy, distance, modifications, eligiblePiece,
+                SourceTeamRelation.AnyTeam, maximumTargets: 0, leastDistance: 0);
+
+        /// <summary>
+        /// Milestone 8.8's full batch declaration. The three defaults above are the reading every Push
+        /// had before it: no printed floor under the distance, no side of the board named, and no
+        /// maximum, which is p.18's plain batch over every adjacent object. Cases about those three
+        /// state their own.
+        /// </summary>
+        private static EffectCapabilityContext Context(
+            AdjacentMoveAuthority board,
+            EffectFailurePolicy policy,
+            int distance,
+            RuleModificationSet modifications,
+            PushEligiblePieceKind eligiblePiece,
+            SourceTeamRelation relation,
+            int maximumTargets,
+            int leastDistance) =>
             BuildContext(board, policy, modifications, new Dictionary<string, EffectValue>
             {
                 ["distance"] = EffectValue.Integer(distance),
+                [SyntheticDisplacementCapabilities.LeastDistanceParameterName] =
+                    EffectValue.Integer(leastDistance),
                 ["ignoresObstacles"] = EffectValue.Boolean(false),
                 [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
-                    EffectValue.Integer((int)eligiblePiece)
+                    EffectValue.Integer((int)eligiblePiece),
+                [SyntheticDisplacementCapabilities.TargetRelationParameterName] =
+                    EffectValue.Integer((int)relation),
+                [SyntheticDisplacementCapabilities.MaximumTargetsParameterName] =
+                    EffectValue.Integer(maximumTargets)
             });
+
+        /// <summary>
+        /// Milestone 8.8's kinetic declaration: enemy units only, a maximum the card names, and a
+        /// distance whose floor is its own number unless a case states otherwise.
+        /// </summary>
+        private static EffectCapabilityContext KineticContext(
+            AdjacentMoveAuthority board,
+            int maximumTargets,
+            int distance,
+            int leastDistance = -1,
+            IReadOnlyList<EffectValue> answeredEarlier = null,
+            SourceTeamRelation relation = SourceTeamRelation.OpposingSource) =>
+            BuildContext(
+                board,
+                EffectFailurePolicy.UpTo,
+                RuleModificationSet.Empty,
+                new Dictionary<string, EffectValue>
+                {
+                    ["distance"] = EffectValue.Integer(distance),
+                    [SyntheticDisplacementCapabilities.LeastDistanceParameterName] =
+                        EffectValue.Integer(leastDistance < 0 ? distance : leastDistance),
+                    ["ignoresObstacles"] = EffectValue.Boolean(false),
+                    [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
+                        EffectValue.Integer((int)PushEligiblePieceKind.Unit),
+                    [SyntheticDisplacementCapabilities.TargetRelationParameterName] =
+                        EffectValue.Integer((int)relation),
+                    [SyntheticDisplacementCapabilities.MaximumTargetsParameterName] =
+                        EffectValue.Integer(maximumTargets)
+                },
+                answeredEarlier == null
+                    ? null
+                    : new[] { answeredEarlier });
 
         /// <summary>Milestone 6.5a's named Push, at a fixed distance of 2 with obstacles observed.</summary>
         private static EffectCapabilityContext NamedContext(
@@ -732,6 +1048,8 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     ["target"] = EffectValue.Space(target),
                     ["distance"] = EffectValue.Integer(2),
+                    [SyntheticDisplacementCapabilities.LeastDistanceParameterName] =
+                        EffectValue.Integer(2),
                     ["ignoresObstacles"] = EffectValue.Boolean(false),
                     [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
                         EffectValue.Integer((int)eligiblePiece)
@@ -770,6 +1088,14 @@ namespace GuardsDigital.Tests.EditMode
             EffectFailurePolicy policy,
             RuleModificationSet modifications,
             IReadOnlyDictionary<string, EffectValue> inputs) =>
+            BuildContext(board, policy, modifications, inputs, null);
+
+        private static EffectCapabilityContext BuildContext(
+            AdjacentMoveAuthority board,
+            EffectFailurePolicy policy,
+            RuleModificationSet modifications,
+            IReadOnlyDictionary<string, EffectValue> inputs,
+            IReadOnlyList<IReadOnlyList<EffectValue>> answersAlreadyGiven) =>
             new EffectCapabilityContext(
                 new EffectNodeId("displacement-capability-node"),
                 policy,
@@ -788,7 +1114,9 @@ namespace GuardsDigital.Tests.EditMode
                 ActionKind.Skill,
                 new MatchComponents(
                     SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
-                    board, board, board));
+                    board, board, board),
+                null,
+                answersAlreadyGiven);
 
         /// <summary>A playable East-West file (-2,0)..(6,0) with the actor at (0,0).</summary>
         private static AdjacentMoveAuthority CreateLineBoard(HexCoordinate otherAt)
@@ -839,6 +1167,103 @@ namespace GuardsDigital.Tests.EditMode
                         minionAt)
                 });
         }
+
+        /// <summary>
+        /// Milestone 8.8. A wider star board with one more minion, on the actor's own team, standing
+        /// to the West - so a declaration that names a side has something to leave alone. It is wider
+        /// than the one above because a four-space push needs somewhere to land.
+        /// </summary>
+        private static AdjacentMoveAuthority CreateMixedTeamBoard() =>
+            CreateStarBoard(
+                new[]
+                {
+                    new HeroOccupancy(Actor, ActorAt),
+                    new HeroOccupancy(Other, ActorAt.GetNeighbor(HexDirection.East))
+                },
+                new[]
+                {
+                    MinionBeside(Minion, ActorAt.GetNeighbor(HexDirection.NorthEast), TeamSide.Blue),
+                    MinionBeside(AlliedMinion, ActorAt.GetNeighbor(HexDirection.West), TeamSide.Red)
+                },
+                radius: 6);
+
+        /// <summary>
+        /// Milestone 8.8. Two pushable heroes on opposite files from the actor, so one batch can stop
+        /// one of them and not the other and the published stop causes have two heroes to tell apart.
+        ///
+        /// The third hero is not one this configuration's match lists, so the declaration that reaches
+        /// it names no side of the board. Which side a unit stands on is the case above's subject;
+        /// this one is about what a push publishes once it has its targets.
+        /// </summary>
+        private static AdjacentMoveAuthority CreateTwoPushedHeroBoard() =>
+            CreateStarBoard(
+                new[]
+                {
+                    new HeroOccupancy(Actor, ActorAt),
+                    new HeroOccupancy(Other, ActorAt.GetNeighbor(HexDirection.East)),
+                    new HeroOccupancy(SecondOther, ActorAt.GetNeighbor(HexDirection.West))
+                },
+                Array.Empty<QuickGameMinionSetupState>(),
+                radius: 4);
+
+        /// <summary>
+        /// Milestone 8.8. The same arrangement on a board that simply ends three spaces East of the
+        /// actor, which is the edge W-04 is about - nothing stands on the line at all.
+        /// </summary>
+        private static AdjacentMoveAuthority CreateShortEdgeBoard()
+        {
+            var coordinates = new List<HexCoordinate>();
+            for (var q = -4; q <= 3; q++)
+            {
+                for (var r = Math.Max(-4, -q - 4); r <= Math.Min(4, -q + 4); r++)
+                {
+                    coordinates.Add(new HexCoordinate(q, r));
+                }
+            }
+
+            return new AdjacentMoveAuthority(
+                BoardMapDefinition.CreateSynthetic(Map, 1, coordinates),
+                new[]
+                {
+                    new HeroOccupancy(Actor, ActorAt),
+                    new HeroOccupancy(Other, ActorAt.GetNeighbor(HexDirection.East))
+                },
+                Array.Empty<ObstacleOccupancy>());
+        }
+
+        private static AdjacentMoveAuthority CreateStarBoard(
+            IReadOnlyList<HeroOccupancy> heroes,
+            IReadOnlyList<QuickGameMinionSetupState> minions,
+            int radius)
+        {
+            var coordinates = new List<HexCoordinate>();
+            for (var q = -radius; q <= radius; q++)
+            {
+                for (var r = Math.Max(-radius, -q - radius); r <= Math.Min(radius, -q + radius); r++)
+                {
+                    coordinates.Add(new HexCoordinate(q, r));
+                }
+            }
+
+            return new AdjacentMoveAuthority(
+                BoardMapDefinition.CreateSynthetic(Map, 1, coordinates),
+                heroes,
+                Array.Empty<ObstacleOccupancy>(),
+                minions);
+        }
+
+        private static QuickGameMinionSetupState MinionBeside(
+            MinionId minionId, HexCoordinate coordinate, TeamSide side) =>
+            new QuickGameMinionSetupState(
+                minionId,
+                new TeamId(side == TeamSide.Blue
+                    ? PlaceholderOneVsOneParticipants.BlueTeamIdValue
+                    : PlaceholderOneVsOneParticipants.RedTeamIdValue),
+                side,
+                StandardMinionType.Melee,
+                new ConfiguredSpawnPointReference(Map, new SpawnPointId("spawn-capability")),
+                new ConfiguredSpaceReference(Map, new SpaceId($"q{coordinate.Q}_r{coordinate.R}")),
+                coordinate);
 
         private static PlacedToken PlaceToken(AdjacentMoveAuthority board, HexCoordinate coordinate) =>
             PlaceToken(board, coordinate, SyntheticComponentDefinitions.HazardV4);

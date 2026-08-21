@@ -735,21 +735,44 @@ namespace GuardsDigital.Tests.EditMode
         /// at all: the ids, the <c>wasp-8-3-rev-1</c> revisions and the thirty-six per-seat instance
         /// identities of a mirrored deal had no version-controlled coverage, so a later slice advancing
         /// Wasp's content revision would have moved no digest here and said nothing.
+        /// Milestone 8.8 keeps schema v22 and re-pins all twelve fixtures for two content causes, and
+        /// this is the slice the entry above predicted. Both Push declarations advance to revision 3 -
+        /// they carry the printed least distance, and the batch carries the count bound and the target
+        /// relation Wasp's kinetic Skills print - and Wasp's content revision advances from
+        /// <c>wasp-8-6-rev-1</c> to <c>wasp-8-8-rev-1</c> because two more of her cards now carry a
+        /// composition. The decision is reject rather than migrate on the same ground as every
+        /// registration cause before it: a payload naming <c>synthetic-object-push@2</c> states a
+        /// contract whose declaration could not say how many units a card may push, so restoring it
+        /// would hand a saved match a batch that takes everything standing beside the pusher where the
+        /// printed card says two. No reader change is needed, because
+        /// <c>ValidateCapabilityRegistrations</c> already refuses a list that is not sequence-equal to
+        /// this build's, and no persisted state outside this corpus exists to strand.
+        /// The delta was read at the byte level in a throwaway worktree at pre-change revision
+        /// <c>43cab2e</c> rather than assumed, and it is the smallest this corpus has recorded. Every
+        /// payload keeps its exact decoded length. Eleven of the twelve differ in exactly two bytes,
+        /// both <c>0x02 -> 0x03</c>: the two Push revisions in the registration list, whose ids are
+        /// unchanged and whose length prefixes therefore are too. <c>verified-hand-setup-v22</c> differs
+        /// in those same two and in 54 further single bytes, every one of them <c>'6' -> '8'</c> - the
+        /// content revision in the eighteen definition-table rows and the thirty-six per-seat instance
+        /// rows. Nothing else moved anywhere: the eleven showcase payloads are otherwise byte-identical,
+        /// which is this corpus's own proof that verified content never reaches a showcase scene, and
+        /// the two new stop-cause facts add nothing at all, because they are written only inside a
+        /// pending frame that has already resolved a push and no fixture holds one.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v22", "31c03d74db2d8f868b1dcfeb412cb60b63897e81b7605ffa6056a8c1cd99cd66"),
-            new CompatibilityFixture("active-turn-v22", "414c9917e94f8bd605e0ccf8a6543338c4e150d1ab62cc32e8c7c844c1f05275"),
-            new CompatibilityFixture("pending-choice-v22", "9c6339d2cec712042e0a05b85eaaafa375326070ca1175389584aaf6e20fc042"),
-            new CompatibilityFixture("end-of-round-v22", "85b7d2242f78d9b17355f2afe0b8284b43dd81f4337dd6ad5b1dfe630045b1ba"),
-            new CompatibilityFixture("pending-minion-battle-v22", "d9eb674ae709266109e0b19e860616ffe736b8c649f63135cf41717b7efda8b9"),
-            new CompatibilityFixture("placed-token-v22", "d29917aab2d6aac03cad95baef48d12a707bf1a762f9fdf7586994e5b68aa14f"),
-            new CompatibilityFixture("attached-marker-v22", "fcfc3cedc6540076f5b75765eafc0b842a11ef6d93ea83419ea795e3a9c71d3b"),
-            new CompatibilityFixture("pending-correction-v22", "f73f5d68da10ea8859a3bde7c6c6e5a2b61744c522bf0c209ae4a2dbf13a97d5"),
-            new CompatibilityFixture("paused-level-up-v22", "25394691177f27ee23da37ed50b5271c46c87cbc19ca68809462030049c586d8"),
-            new CompatibilityFixture("ended-match-v22", "b3df5c9d75cee7017d542eb2123c3cecabe3850b4f9da898310668ed153ea437"),
-            new CompatibilityFixture("verified-hand-setup-v22", "932e23639d946a8b71fa06d73e275528367e8fd161326ad320e60e399ac4c823"),
-            new CompatibilityFixture("paused-orbit-repeat-v22", "9d9c3a4fdfef570c0f8182ee4e2bbadf3090414ca664305b15f5195e942f030a")
+            new CompatibilityFixture("setup-v22", "5b1510c919f3396dd0cbe53c9ab9d246fb514b8e055d3a1647977013bf072837"),
+            new CompatibilityFixture("active-turn-v22", "5e6830d09e642b128c26d0fc4cb6f1430f3fd8fdb78adead7377f2ff48cbafc1"),
+            new CompatibilityFixture("pending-choice-v22", "44f57d2f90cc113fae5f19be4268c7bdda6ae4245b554732cea27aa7efa5b359"),
+            new CompatibilityFixture("end-of-round-v22", "d8b1fa36d12ab27c4ce8c42df0332b25d79e5a2ed19a817596798cb2c3d383d7"),
+            new CompatibilityFixture("pending-minion-battle-v22", "45b525282b2a5266f027d931522272e773a53c4aaecdd899d50fc22785486b7b"),
+            new CompatibilityFixture("placed-token-v22", "d318016a9fdd51c4b06d04f190ca30810a1c8fbbadcebdf2004fb95e837d3493"),
+            new CompatibilityFixture("attached-marker-v22", "2f805bb87dc1d0061b6d06825441d223063339f258a7989ea082b9924005629d"),
+            new CompatibilityFixture("pending-correction-v22", "6c2f6c7d948f0d71a46656999e6c21cc7bb24b80481ddc92c9e5c94982884fd5"),
+            new CompatibilityFixture("paused-level-up-v22", "296bcde62354a4dff7ccc5cc5aecce73d116f7c45e08e75fb101fa805463d969"),
+            new CompatibilityFixture("ended-match-v22", "666bc97b61c54f04439733f683790d6c593d29159c5696687f23e581ac860cf9"),
+            new CompatibilityFixture("verified-hand-setup-v22", "801c20fc3de4f429ed36d449f35dae00b2ac3c3f64892b26a0458d9d7cabca97"),
+            new CompatibilityFixture("paused-orbit-repeat-v22", "4c04bad40e8f8884bdc49351f56e058fa1959c7f91439de97618ba849b115b3d")
         };
 
         [Test]

@@ -401,7 +401,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 byCapability.Where(entry => entry.Capability.Equals(
-                    GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.ObjectPushV2)),
+                    GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.ObjectPushV3)),
                 Is.Empty,
                 "The adjacency-derived batch reaches a player through no configured card.");
             Assert.That(
@@ -414,7 +414,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 byCapability
                     .Where(entry => entry.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.PushTargetV2))
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.PushTargetV3))
                     .Select(entry => entry.Id.Value),
                 Is.EqualTo(new[] { "placeholder-red-needle", "placeholder-blue-longbow" }),
                 "Card-text Push is exposed by 6.5a's conversion at distance 3 and 6.7a's at 1.");

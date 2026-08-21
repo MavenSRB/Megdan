@@ -115,7 +115,8 @@ namespace GuardsDigital.Core.Effects
             EffectCardState cardState,
             ActionKind enclosingActionKind,
             MatchComponents components = null,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
+            IReadOnlyList<IReadOnlyList<EffectValue>> answersAlreadyGiven = null)
         {
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
                 enclosingActionKind == ActionKind.None)
@@ -152,6 +153,7 @@ namespace GuardsDigital.Core.Effects
             CardState = cardState ?? throw new ArgumentNullException(nameof(cardState));
             Components = components;
             HeroItems = heroItems;
+            AnswersAlreadyGiven = answersAlreadyGiven ?? Array.Empty<IReadOnlyList<EffectValue>>();
         }
 
         public EffectNodeId NodeId { get; }
@@ -234,6 +236,27 @@ namespace GuardsDigital.Core.Effects
         /// than constructed at every seam that needs them.
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems { get; }
+
+        /// <summary>
+        /// The answers <em>this node</em> has already been given inside this resolution, oldest first,
+        /// each one the values that closed a single choice. Empty for a node that has asked nothing yet,
+        /// which is every node in this build until milestone 8.8.
+        ///
+        /// <para>It exists because p.18's multi-target Push asks two questions: which of the units the
+        /// card admits are being pushed, and - where the card names more than one distance, as Kinetic
+        /// Blast's "3 or 4 spaces" does - how far. One capability asking twice is the honest shape,
+        /// because the rule is one keyword and both answers feed the same single batch; the alternative
+        /// was a second node deciding a distance for a push it does not perform, which would have left
+        /// the same sentence stated in two places.</para>
+        ///
+        /// <para>It is not memory the handler owns. These are the resolution's own accepted choice
+        /// records, which the frame already carries and a snapshot already persists, so a restored pause
+        /// re-derives with exactly the answers it had. A handler still re-derives everything it can:
+        /// what an earlier answer names is checked against live state at the moment it is used, for the
+        /// reason milestone 6.8l gives - what was true when a choice opened is not what its answer
+        /// applies to.</para>
+        /// </summary>
+        public IReadOnlyList<IReadOnlyList<EffectValue>> AnswersAlreadyGiven { get; }
 
         public EffectValue Input(string parameterName) =>
             Inputs.TryGetValue(parameterName, out var value) ? value : default;

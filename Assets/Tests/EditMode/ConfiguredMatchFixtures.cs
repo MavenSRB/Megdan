@@ -389,6 +389,139 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.8. The verified mirror with one of Wasp's kinetic Skills in the Red hand and the
+        /// Blue Wasp standing on a chosen side of her.
+        ///
+        /// <para><b>How the card gets there.</b> Kinetic Repulse and Kinetic Blast are Tier II and III,
+        /// so p.6 leaves them in the deck; what puts one in a hand is p.15's Level Up, which swaps a
+        /// card for one of its own upgrade candidates. This does exactly that swap at setup rather than
+        /// playing four rounds to reach it: the Blue-colour card of the printed starting five moves to
+        /// the deck and the named kinetic card takes its place, so the hand is still p.15's "exactly 5
+        /// cards, 1 of each color". Only the Red seat is touched, because only the Red seat acts.</para>
+        ///
+        /// <para><b>Where the two heroes stand.</b> The direction is the fixture's real variable, and it
+        /// is searched for rather than written down. <paramref name="stoppedShort"/> asks for the
+        /// neighbouring space whose file runs into something inside Kinetic Repulse's three spaces - on
+        /// the official map that is its terrain ring, which is p.19's water - and its opposite asks for
+        /// one open through Kinetic Blast's four. A literal coordinate would go stale the first time the
+        /// map or the spawn points moved, and the two cases are the same fixture differing only in which
+        /// side of the actor the target stands on.</para>
+        /// </summary>
+        public static MatchSession CreateKineticSession(CardDefinitionId kineticCardId, bool stoppedShort)
+        {
+            var source = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                TeamSide.Red);
+            var state = source.CaptureRestoreState();
+            var redHeroId = state.Participants.Heroes
+                .Single(hero => state.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            var upgraded = state.Definitions.Single(definition => definition.Id.Equals(kineticCardId));
+            var replaced = source.RedHand.Instances.Single(instance =>
+                state.Definitions
+                    .Single(definition =>
+                        definition.Reference.Equals(instance.DefinitionReference))
+                    .Progression.Color == upgraded.Progression.Color);
+
+            var configuration = PlaceholderOneVsOneTestConfiguration.Restore(
+                new PlaceholderConfigurationRestoreState(
+                    state.Participants,
+                    state.Definitions,
+                    state.Instances.Select(instance =>
+                        instance.OwnerId.Equals(redHeroId) &&
+                        instance.DefinitionReference.DefinitionId.Equals(kineticCardId)
+                            ? CardInstance.CreateInHand(
+                                instance.Id, instance.DefinitionReference, instance.OwnerId)
+                            : instance.Id.Equals(replaced.Id)
+                                ? CardInstance.CreateInDeck(
+                                    instance.Id, instance.DefinitionReference, instance.OwnerId)
+                                : instance),
+                    state.TieBreakerState,
+                    state.SetupSeed));
+
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var session = CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroOnAPushLine(map, setup, stoppedShort),
+                setup.Minions));
+
+            Assert.That(
+                session.Projection.Cards.Count(card =>
+                    card.OwnerId.Equals(redHeroId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(5),
+                "p.15 leaves the hand at five cards, one of each colour; the swap has to keep it there.");
+            return session;
+        }
+
+        /// <summary>
+        /// The Blue hero moved to the neighbouring space of the Red one whose push line closes early or
+        /// stays open, as the caller asks.
+        ///
+        /// "Closes" is asked of the map rather than of a live board, because the answer has to hold
+        /// before any session exists: a space that is not playable is the terrain ring or the nothing
+        /// beyond it, and either one stops a push. Nothing else stands on these files at setup.
+        /// </summary>
+        private static IReadOnlyList<QuickGameHeroSetupState> WithBlueHeroOnAPushLine(
+            BoardMapDefinition map, QuickGameSetupState setup, bool stoppedShort)
+        {
+            var redHero = setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var playable = new HashSet<HexCoordinate>(map.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Playable)
+                .Select(space => space.Coordinate));
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Heroes.Select(hero => hero.Coordinate)
+                    .Concat(setup.Minions.Select(minion => minion.Coordinate)));
+
+            bool RunsClear(HexCoordinate beside, int spaces)
+            {
+                var step = new HexCoordinate(
+                    beside.Q - redHero.Coordinate.Q, beside.R - redHero.Coordinate.R);
+                var walked = beside;
+                for (var space = 1; space <= spaces; space++)
+                {
+                    walked = new HexCoordinate(walked.Q + step.Q, walked.R + step.R);
+                    if (!playable.Contains(walked) || occupied.Contains(walked))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            // Three spaces is Kinetic Repulse's distance and four is Kinetic Blast's greater one, so
+            // the stopped line has to close inside the shorter push and the clear one has to stay open
+            // through the longer.
+            var beside = redHero.Coordinate.GetNeighbors()
+                .Where(coordinate =>
+                    playable.Contains(coordinate) && !occupied.Contains(coordinate))
+                .FirstOrDefault(coordinate => stoppedShort
+                    ? !RunsClear(coordinate, 3)
+                    : RunsClear(coordinate, 4));
+            Assert.That(playable, Does.Contain(beside),
+                "The official map has to offer a space beside the Red hero whose push line " +
+                (stoppedShort ? "stops short" : "runs clear") + ", or this fixture proves nothing.");
+
+            var besideSpaceId = map.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable &&
+                space.Coordinate.Equals(beside)).Id;
+            return setup.Heroes
+                .Select(hero => hero.TeamSide == TeamSide.Blue
+                    ? new QuickGameHeroSetupState(
+                        hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
+                        hero.SpawnPoint, new ConfiguredSpaceReference(map.Id, besideSpaceId), beside)
+                    : hero)
+                .ToArray();
+        }
+
+        /// <summary>
         /// One session from one named fixture configuration, with the Blue hero moved beside the Red
         /// one. Extracted at milestone 8.6 from the identical bodies above it.
         /// </summary>

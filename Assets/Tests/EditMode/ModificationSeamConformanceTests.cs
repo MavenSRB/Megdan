@@ -850,7 +850,7 @@ namespace GuardsDigital.Tests.EditMode
                     .ToString();
 
             public string ReadPushAnticipation(RuleModificationSet modifications) =>
-                Handler(SyntheticDisplacementCapabilities.PushTargetV2)
+                Handler(SyntheticDisplacementCapabilities.PushTargetV3)
                     .Anticipate(Context(
                         ActionKind.Skill,
                         modifications,
