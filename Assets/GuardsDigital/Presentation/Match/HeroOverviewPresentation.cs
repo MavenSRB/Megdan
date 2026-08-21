@@ -197,7 +197,9 @@ namespace GuardsDigital.Presentation.Match
             TrayCardGroup group,
             int playedTurnIndex,
             bool isSelectable,
-            bool isSelected)
+            bool isSelected,
+            bool isActiveEffectSource = false,
+            bool isResolving = false)
         {
             if (!cardInstanceId.IsDefined)
             {
@@ -224,13 +226,17 @@ namespace GuardsDigital.Presentation.Match
             PlayedTurnIndex = playedTurnIndex;
             IsSelectable = isSelectable;
             IsSelected = isSelected;
+            IsActiveEffectSource = isActiveEffectSource;
+            IsResolving = isResolving;
             ColorName = MatchHudTheme.ColorName(color);
             HistoryLabel = group == TrayCardGroup.Played
                 ? $"PLAYED · TURN {playedTurnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
                 : group == TrayCardGroup.Discarded
                     ? "DISCARDED"
                     : "AVAILABLE";
-            AssistiveLabel = $"{DisplayName} - {ColorName} - {Face.ValueLine} - {HistoryLabel}";
+            ActiveLabel = isActiveEffectSource ? "ACTIVE" : string.Empty;
+            AssistiveLabel = $"{DisplayName} - {ColorName} - {Face.ValueLine} - {HistoryLabel}" +
+                (isActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty);
         }
 
         public CardInstanceId CardInstanceId { get; }
@@ -262,6 +268,31 @@ namespace GuardsDigital.Presentation.Match
         public bool IsSelectable { get; }
 
         public bool IsSelected { get; }
+
+        /// <summary>
+        /// Milestone 8.5b: whether the authority reports at least one live Active effect sourced by
+        /// this card instance.
+        ///
+        /// It is a projected fact, not a guess: a card whose definition could create an effect, or a
+        /// card that made one which has since ended, is not this. It is orthogonal to every other state
+        /// a card carries - a card can be selected, unavailable, played and active at once - which is
+        /// why it has its own treatment and its own word rather than a shade of an existing one.
+        /// </summary>
+        public bool IsActiveEffectSource { get; }
+
+        /// <summary>`ACTIVE`, or empty when nothing this card sourced is live.</summary>
+        public string ActiveLabel { get; }
+
+        /// <summary>
+        /// Whether this is the card the current turn is being resolved from.
+        ///
+        /// A resolving card carries no commitment command - the round is past choosing - but dimming it
+        /// as merely unavailable was wrong: it is the card in play, and the user's 2026-08-21 report is
+        /// that it should read at full strength while its turn runs. It is separate from
+        /// <see cref="IsSelectable"/> because the two answer different questions: what may be committed
+        /// now, and what is being performed now.
+        /// </summary>
+        public bool IsResolving { get; }
 
         /// <summary>`PLAYED · TURN n`, `AVAILABLE`, or `DISCARDED` - and never a round number.</summary>
         public string HistoryLabel { get; }
@@ -615,7 +646,8 @@ namespace GuardsDigital.Presentation.Match
             TrayCardGroup group,
             int playedTurnIndex,
             bool isSelectable,
-            bool isSelected)
+            bool isSelected,
+            bool isResolving = false)
         {
             if (projection == null) throw new ArgumentNullException(nameof(projection));
             if (card == null) throw new ArgumentNullException(nameof(card));
@@ -629,7 +661,11 @@ namespace GuardsDigital.Presentation.Match
                 group,
                 playedTurnIndex,
                 isSelectable,
-                isSelected);
+                isSelected,
+                // Milestone 8.5b: asked of the projection, never derived here. Presentation does not
+                // know what an Active effect is, only which cards the authority says are sourcing one.
+                projection.IsActiveEffectSource(card.Id),
+                isResolving);
         }
 
         /// <summary>

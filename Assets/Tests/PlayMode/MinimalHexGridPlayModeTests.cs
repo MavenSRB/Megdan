@@ -337,7 +337,9 @@ namespace GuardsDigital.Tests.PlayMode
             // One row: the cards share a top edge. Checked only where the viewport is actually wide
             // enough for five of them, so a cramped Game View reports nothing rather than a false
             // failure - the fixed-resolution arithmetic is asserted in MatchHudPresentationTests.
-            var required = (5f * (DirectorHandsUnityView.CardWidth + DirectorHandsUnityView.CardGap)) + 30f;
+            var required = (5f * (DirectorHandsUnityView.CardWidth + DirectorHandsUnityView.CardGap +
+                (2f * (DirectorHandsUnityView.ActiveOutlineGap +
+                    DirectorHandsUnityView.ActiveOutlineWidth)))) + 30f;
             if (hud.CardPanelRect.width >= required)
             {
                 Assert.That(cards.Select(card => Mathf.Round(card.worldBound.yMin)).Distinct().Count(),
@@ -373,6 +375,151 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(root.Runtime.SelectCommitmentCard(chosen.Id), Is.True);
             yield return null;
             yield return Capture("tmp/milestone-8-5a-card-tray-selected.png");
+        }
+
+        /// <summary>
+        /// Milestone 8.5b in the running scene: the card that sourced a live Active effect is outlined
+        /// and labelled, a card can be selected and active at once, and both go when the effect ends.
+        ///
+        /// It runs on the showcase composition because that is the only content in this build that
+        /// creates an Active effect - every Wasp printed primary is still greyed under `DEV-006` until
+        /// its own slice composes it - and on the round-scoped mode of the Bulwark Skill, so the effect
+        /// outlives the turn that made it and is still live while the next turn's commitment phase can
+        /// select a card. The three states the milestone asks to see are captured in order.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_MarksTheSourceCardWhileItsActiveEffectIsLiveAndCapturesEachState()
+        {
+            yield return LoadShowcaseScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            yield return null;
+
+            var bulwark = runtime.Cards.Single(card => card.Id.Value == "red-bulwark-card");
+            var blueHeroId = runtime.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            var blue = runtime.Cards
+                .Where(card => card.State.Location == CardLocation.Hand &&
+                    card.OwnerId.Equals(blueHeroId))
+                .OrderBy(card => runtime.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .Initiative.Value)
+                .First();
+            foreach (var card in new[] { bulwark, blue })
+            {
+                Assert.That(runtime.SelectCommitmentCard(card.Id), Is.True);
+                Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            }
+
+            Assert.That(runtime.SubmitAction(new ActionDefinitionId("primary-modification-skill")),
+                Is.True);
+            Assert.That(
+                runtime.SubmitEffectChoiceOption(new EffectNodeId("bulwark-fast-travel-restriction")),
+                Is.True);
+            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
+            yield return null;
+
+            Assert.That(runtime.ActiveEffectSourceCardInstanceIds,
+                Is.EqualTo(new[] { bulwark.Id }),
+                "The authority reports exactly the card that sourced the live effect.");
+            // The turn may already have moved on to the other hero, and the tray follows whoever the
+            // match is waiting on; the indicator is a fact about a card, so point the tray at the hand
+            // that holds it before reading it.
+            Assert.That(runtime.SelectViewedHero(bulwark.OwnerId), Is.True);
+            yield return null;
+            AssertOneCardIsMarkedActive(hud, "while the effect is live");
+            yield return Capture("tmp/milestone-8-5b-active.png");
+
+            // Play the turn out, so the next turn's commitment phase can select a card while the
+            // round-scoped effect is still live - the two states standing together. The Skill may have
+            // closed its own turn already, so the advance is offered rather than assumed.
+            AdvancePastTheCurrentTurn(runtime);
+            yield return null;
+            if (runtime.Phase == RoundResolutionPhase.AwaitingCommitments &&
+                runtime.IsActiveEffectSource(bulwark.Id))
+            {
+                var selectable = runtime.Cards.First(card =>
+                    card.State.Location == CardLocation.Hand &&
+                    card.OwnerId.Equals(bulwark.OwnerId));
+                Assert.That(runtime.SelectCommitmentCard(selectable.Id), Is.True);
+                Assert.That(runtime.SelectViewedHero(bulwark.OwnerId), Is.True);
+                yield return null;
+                AssertOneCardIsMarkedActive(hud, "with another card selected beside it");
+                yield return Capture("tmp/milestone-8-5b-active-and-selected.png");
+            }
+
+            for (var turn = 0; turn < 8 && runtime.Phase != RoundResolutionPhase.EndOfRound; turn++)
+            {
+                if (runtime.Phase == RoundResolutionPhase.AwaitingCommitments)
+                {
+                    CommitNextTurn(runtime);
+                }
+
+                AdvancePastTheCurrentTurn(runtime);
+            }
+
+            Assert.That(runtime.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound),
+                "The round has to reach its end for a round-scoped effect to expire.");
+
+            while (runtime.Phase == RoundResolutionPhase.EndOfRound)
+            {
+                var options = runtime.PausedSystemTransitionOptions;
+                if (options.Count > 0)
+                {
+                    Assert.That(runtime.AnswerPausedSystemTransition(options[0]), Is.True);
+                    continue;
+                }
+
+                Assert.That(runtime.ContinueEndOfRound(), Is.True);
+            }
+
+            yield return null;
+            Assert.That(runtime.ActiveEffectSourceCardInstanceIds, Is.Empty,
+                "Round End expires a round-scoped effect, so nothing is live any more.");
+            Assert.That(
+                Descendants(hud.RootElement).Count(element => element.name == "gd-card-active"),
+                Is.EqualTo(0),
+                "and the indicator is gone with it rather than left behind by presentation.");
+            yield return Capture("tmp/milestone-8-5b-ended.png");
+        }
+
+        /// <summary>
+        /// Ends the current turn, however many projected stops that takes and whether or not the action
+        /// already closed it. Nothing here assumes a turn shape - only that the round moves on.
+        /// </summary>
+        private static void AdvancePastTheCurrentTurn(ConfiguredMatchSceneRuntime runtime)
+        {
+            var turnIndex = runtime.TurnIndex;
+            for (var guard = 0; guard < 6; guard++)
+            {
+                if (runtime.Phase != RoundResolutionPhase.ResolvingTurn ||
+                    runtime.TurnIndex != turnIndex)
+                {
+                    return;
+                }
+
+                if (!runtime.SubmitEndTurn())
+                {
+                    return;
+                }
+            }
+        }
+
+        private static void AssertOneCardIsMarkedActive(
+            ConfiguredMatchHudRenderer hud, string because)
+        {
+            var slots = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-card-slot")
+                .ToArray();
+            Assert.That(
+                slots.Count(slot =>
+                    slot.style.borderTopColor.value == MatchHudTheme.ActiveEffectAccent),
+                Is.EqualTo(1),
+                $"Exactly one card wears the Active-effect outline {because}.");
+            Assert.That(
+                Descendants(hud.RootElement).Count(element => element.name == "gd-card-active"),
+                Is.EqualTo(1),
+                $"and it carries the word ACTIVE {because}, so the state is never colour alone.");
         }
 
         /// <summary>p.15's two answers for one card, both at that card's own colour.</summary>

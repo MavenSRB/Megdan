@@ -42,6 +42,21 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>What a confirmable control wears, distinct from selection because it means "now do it".</summary>
         public static readonly Color ConfirmAccent = new Color(0.95f, 0.62f, 0.25f, 1f);
 
+        /// <summary>
+        /// Milestone 8.5b: what a card sourcing a live Active effect wears.
+        ///
+        /// A third accent rather than a shade of an existing one, because it is orthogonal to both:
+        /// selection is what the player has chosen, the confirm accent is what they may do next, and
+        /// this is what the rules are still doing on their behalf. A card can be selected and active at
+        /// once, so the two treatments have to be told apart at a glance - and neither is the only
+        /// thing saying so, since the card also carries the word `ACTIVE`.
+        ///
+        /// <para>Violet, because the five printed card colours are gold, silver, red, green and blue,
+        /// selection is cyan and the confirm accent is orange - so it is the one hue on this HUD that
+        /// cannot be mistaken for a card's own colour or for either existing control state.</para>
+        /// </summary>
+        public static readonly Color ActiveEffectAccent = new Color(0.729f, 0.451f, 0.949f, 1f);
+
         public static readonly Color TeamRed = new Color(0.62f, 0.173f, 0.153f, 1f);
         public static readonly Color TeamBlue = new Color(0.157f, 0.416f, 0.667f, 1f);
 

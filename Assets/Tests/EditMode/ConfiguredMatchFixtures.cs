@@ -451,6 +451,56 @@ namespace GuardsDigital.Tests.EditMode
         public static MatchSession CreateRestoreTarget() =>
             CreateSessionWithAnAdjacentEnemyMinion(out _, out _);
 
+        /// <summary>
+        /// A configured match stopped with one Active effect live, and the card that sourced it named.
+        ///
+        /// Milestone 8.5b. The producer is the showcase Bulwark card's modification Skill in its
+        /// Defense-bonus mode - the same synthetic effect `ConfiguredEffectLifetimeGateTests` drives to
+        /// <c>Active</c>, reused rather than reinvented so the two agree about what a live effect is.
+        /// It is a synthetic producer by the milestone's own acceptance rule: the complete transition
+        /// is proven before Wasp composes a persistent card at 8.9.
+        ///
+        /// <para>The Blue commitment is the lowest-Initiative card in that hand, which is what puts
+        /// Bulwark's hero on the first turn; a card whose effect never started would leave the fixture
+        /// asserting nothing, so the caller's first assertion is that something really is live.</para>
+        /// </summary>
+        public static MatchSession CreateSessionWithALiveActiveEffect(out CardInstanceId sourceCardId)
+        {
+            var bulwarkCardId = new CardInstanceId("red-bulwark-card");
+            var session = CreateConfiguredSession();
+            var blue = session.Projection.Cards
+                .Where(card => card.State.Location == CardLocation.Hand &&
+                    session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue)
+                .OrderBy(card => session.Projection.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .Initiative.Value)
+                .First();
+            foreach (var id in new[] { bulwarkCardId, blue.Id })
+            {
+                var card = session.Projection.Cards.Single(candidate => candidate.Id.Equals(id));
+                Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                Accept(session, DirectorCommand.ChooseTiedActor(
+                    tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+            }
+
+            Accept(session, DirectorCommand.StartAction(
+                new ActionDefinitionId("primary-modification-skill")));
+            var choice = session.Projection.PendingEffectChoice;
+            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations
+                .Single(candidate => candidate.Candidate.OptionNodeId.Equals(
+                    new GuardsDigital.Core.Effects.EffectNodeId("bulwark-defense-bonus")))));
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+
+            sourceCardId = bulwarkCardId;
+            return session;
+        }
+
         public static void PlayOneOrdinaryRound(MatchSession session)
         {
             while (session.Projection.Phase == RoundResolutionPhase.AwaitingCommitments)

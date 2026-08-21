@@ -188,6 +188,21 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// A control that carries no command but is not spent: inert, and drawn at full strength.
+        ///
+        /// Milestone 8.5b, for the card the current turn is being resolved from. It is the same
+        /// inertness <see cref="MarkUnavailable"/> applies - no command, no focus stop, no keyboard-order
+        /// change - without the dimming, because the card in play is the opposite of unavailable to look
+        /// at. The opacity is set explicitly rather than left alone so that a disabled control's own
+        /// theme dimming cannot reintroduce it.
+        /// </summary>
+        internal static void MarkInPlay(VisualElement element)
+        {
+            element.SetEnabled(false);
+            element.style.opacity = 1f;
+        }
+
+        /// <summary>
         /// Reports when the pointer enters or leaves a control, and when keyboard focus does, as one
         /// event. Every board cue in this HUD is driven from here, so a pointed-at control and a focused
         /// control mean the same thing to the board.
@@ -657,6 +672,15 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public const float CardGap = 12f;
 
+        /// <summary>
+        /// Milestone 8.5b: the Active-effect outline's width, and the gap between it and the card's own
+        /// edge. Both are always drawn - the outline is transparent when nothing is active - so a card
+        /// never changes size because an effect started or ended.
+        /// </summary>
+        public const float ActiveOutlineWidth = 2f;
+
+        public const float ActiveOutlineGap = 3f;
+
         private readonly VisualElement header;
         private readonly VisualElement cards;
 
@@ -780,6 +804,7 @@ namespace GuardsDigital.Presentation.Match
             // the tallest one's content, so they match and none of them can overflow.
             button.style.width = CardWidth;
             button.style.minHeight = CardMinimumHeight;
+            button.style.flexGrow = 1f;
             button.style.flexDirection = FlexDirection.Column;
             button.style.alignItems = Align.Stretch;
             button.style.justifyContent = Justify.FlexStart;
@@ -787,7 +812,7 @@ namespace GuardsDigital.Presentation.Match
             // the padding that used to inset every line is gone and each band states its own.
             HudElements.Padding(button, 0f);
             button.style.marginLeft = 0f;
-            button.style.marginRight = CardGap;
+            button.style.marginRight = 0f;
             button.style.marginTop = 0f;
             button.style.marginBottom = 0f;
             button.style.backgroundColor = MatchHudTheme.Face(card.Color);
@@ -796,22 +821,53 @@ namespace GuardsDigital.Presentation.Match
 
             button.Add(BuildCardFrame(card));
 
+            // Milestone 8.5b: the card sits in a slot, and the slot is what carries the Active-effect
+            // outline. It has to be outside the card because the card's own border is the shared
+            // selection treatment, and a card can be selected and active at the same time - two
+            // meanings on one border would be one meaning lost. The slot is always drawn, so a card
+            // does not change size when an effect starts or ends; only the outline's colour does.
+            var slot = new VisualElement { name = "gd-card-slot" };
+            slot.style.flexDirection = FlexDirection.Column;
+            slot.style.alignItems = Align.Stretch;
+            slot.style.marginRight = CardGap;
+            HudElements.Padding(slot, ActiveOutlineGap);
+            HudElements.Border(
+                slot,
+                card.IsActiveEffectSource
+                    ? MatchHudTheme.ActiveEffectAccent
+                    : new Color(0f, 0f, 0f, 0f),
+                ActiveOutlineWidth,
+                11f);
+
             // The mockup's raised treatment: a card that can still be played this round sits visibly
             // higher than the ones that cannot. It is a relative offset rather than a margin, because a
             // margin on a stretched card would shorten it instead of moving it. The card keeps its size,
             // its hit target moves with it, and its keyboard order and legality are untouched - the
             // group it belongs to is already in the label either way.
-            button.style.top = card.Group == TrayCardGroup.Available ? -AvailableCardRaise : 0f;
+            slot.style.top = card.Group == TrayCardGroup.Available ? -AvailableCardRaise : 0f;
+
+            // Milestone 8.5b's correction. A card carries no commitment command once the round is past
+            // choosing, but the card the current turn is being resolved from is the card in play and
+            // reads at full strength - "carries no command" and "is spent" are different facts, and the
+            // shared unavailable treatment was saying the second about the first.
             if (!card.IsSelectable)
             {
-                HudElements.MarkUnavailable(button);
+                if (card.IsResolving)
+                {
+                    HudElements.MarkInPlay(button);
+                }
+                else
+                {
+                    HudElements.MarkUnavailable(button);
+                }
             }
 
             var printed = card.Face.PrintedTextKind == CardSourceContentKind.Transcribed
                 ? card.Face.PrintedText
                 : card.Face.EmptyTextLabel;
             button.tooltip = $"{card.AssistiveLabel} - {printed}";
-            return button;
+            slot.Add(button);
+            return slot;
         }
 
         /// <summary>
@@ -1147,6 +1203,29 @@ namespace GuardsDigital.Presentation.Match
             var label = HudElements.Text(card.HistoryLabel, 11f, ink, FontStyle.Bold);
             label.style.flexShrink = 1f;
             band.Add(label);
+
+            // Milestone 8.5b: the word beside the outline. The outline alone would be a meaning carried
+            // by colour, and the two states can stand together - a played card can still be sourcing a
+            // live effect - so `ACTIVE` sits beside the lifecycle label rather than replacing it.
+            if (card.IsActiveEffectSource)
+            {
+                var active = new VisualElement { name = "gd-card-active" };
+                active.style.flexDirection = FlexDirection.Row;
+                active.style.alignItems = Align.Center;
+                active.style.flexShrink = 0f;
+                active.style.marginLeft = 7f;
+                active.style.paddingLeft = 5f;
+                active.style.paddingRight = 5f;
+                active.style.paddingTop = 1f;
+                active.style.paddingBottom = 1f;
+                active.style.backgroundColor = MatchHudTheme.ActiveEffectAccent;
+                HudElements.Border(active, MatchHudTheme.ActiveEffectAccent, 1f, 3f);
+                active.Add(HudElements.Text(
+                    card.ActiveLabel, 9.5f, new Color(0.09f, 0.094f, 0.102f, 1f), FontStyle.Bold));
+                active.tooltip = "An Active effect this card created is still in effect";
+                band.Add(active);
+            }
+
             return band;
         }
     }

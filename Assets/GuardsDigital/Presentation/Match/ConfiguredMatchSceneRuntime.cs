@@ -244,8 +244,19 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<CardDefinition> Definitions => session.Projection.Definitions;
         public IReadOnlyList<CardInstance> Cards => session.Projection.Cards;
         public IReadOnlyList<HeroOccupancy> Heroes => session.Projection.Heroes;
+
+        /// <summary>
+        /// Milestone 8.5b: the card instances currently sourcing a live Active effect, forwarded like
+        /// every other projected read here so a scene-facing caller never names the projection type.
+        /// </summary>
+        public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds =>
+            session.Projection.ActiveEffectSourceCardInstanceIds;
+
+        public bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
+            session.Projection.IsActiveEffectSource(cardInstanceId);
         public RoundResolutionPhase Phase => session.Projection.Phase;
         public int RoundIndex => session.Projection.RoundIndex;
+        public int TurnIndex => session.Projection.TurnIndex;
         public TieBreakerState TieBreakerState => session.Projection.TieBreakerState;
         public bool IsTurnActive => session.Projection.IsTurnActive;
         public SelectedInitiativeActor SelectedActor => session.Projection.SelectedActor;

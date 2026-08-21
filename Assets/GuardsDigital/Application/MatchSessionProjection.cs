@@ -434,7 +434,8 @@ namespace GuardsDigital.Application
             GuardsDigital.Core.Rules.Victory.MatchOutcome outcome = default,
             IEnumerable<HeroProgressionProjection> heroProgression = null,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
-                pendingSystemTransitionDescription = null)
+                pendingSystemTransitionDescription = null,
+            IEnumerable<CardInstanceId> activeEffectSourceCardInstanceIds = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -513,6 +514,16 @@ namespace GuardsDigital.Application
             {
                 throw new ArgumentException(
                     "One hero carries at most one projected progression.", nameof(heroProgression));
+            }
+
+            ActiveEffectSourceCardInstanceIds = Array.AsReadOnly((activeEffectSourceCardInstanceIds ??
+                Enumerable.Empty<CardInstanceId>()).ToArray());
+            if (ActiveEffectSourceCardInstanceIds.Distinct().Count() !=
+                ActiveEffectSourceCardInstanceIds.Count)
+            {
+                throw new ArgumentException(
+                    "A source card appears once however many of its Active effects are live.",
+                    nameof(activeEffectSourceCardInstanceIds));
             }
 
             PendingSystemTransitionDescription = pendingSystemTransitionDescription;
@@ -694,6 +705,30 @@ namespace GuardsDigital.Application
         /// <see cref="TeamLifeCounters"/> reports.
         /// </summary>
         public IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
+
+        /// <summary>
+        /// Milestone 8.5b: every card instance that is the source of at least one Active-effect
+        /// instance currently in <see cref="GuardsDigital.Core.Timing.ActiveEffectPhase.Active"/>,
+        /// ordered by instance id.
+        ///
+        /// <para>It is a derived reading of the authoritative lifecycle and nothing else. A dormant
+        /// instance is not here because it is not in effect yet, and an ended one is not because it is
+        /// over; a card whose definition <i>could</i> create an effect is not here either, because the
+        /// question is about live instances rather than about content. One card appears once however
+        /// many of its instances are live, which is what makes it answerable as a card-level fact.</para>
+        ///
+        /// <para><b>Why the application answers this and not presentation.</b> A view that wanted to
+        /// know which cards are "in effect" could only get there by walking aggregate state, by
+        /// inferring from a definition, or by replaying the lifecycle events it happened to see - and
+        /// the third would give a different answer after a restore, a replay, or a retained-prefix
+        /// Undo than during live play. Deriving it here means every one of those paths produces the
+        /// same list from the same lifecycle, with nothing new on the wire.</para>
+        /// </summary>
+        public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds { get; }
+
+        /// <summary>Whether this card instance currently sources at least one live Active effect.</summary>
+        public bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
+            ActiveEffectSourceCardInstanceIds.Contains(cardInstanceId);
 
         /// <summary>
         /// Milestone 7.8a: what <see cref="PendingSystemTransitionStep"/> is actually asking, described

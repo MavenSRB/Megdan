@@ -1245,8 +1245,17 @@ namespace GuardsDigital.Presentation.Match
             HeroId heroId,
             CardInstanceId? selectedCardInstanceId)
         {
+            var commitment = projection.GetCommitment(heroId);
             var canSelect = projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
-                projection.GetCommitment(heroId).Status == TurnCardCommitmentStatus.AwaitingResponse;
+                commitment.Status == TurnCardCommitmentStatus.AwaitingResponse;
+            // Milestone 8.5b's correction: the card this hero revealed for the current turn is the card
+            // in play, and it is drawn at full strength while its turn runs. It carries no commitment
+            // command - the round is past choosing - but "carries no command" and "is spent" are not the
+            // same thing, and the shared unavailable treatment said the second about the first.
+            var resolvingCardInstanceId =
+                commitment.Status == TurnCardCommitmentStatus.Revealed
+                    ? commitment.RevealedCardInstanceId
+                    : null;
             var entries = new List<TrayCardViewModel>();
             foreach (var card in projection.Cards.Where(card => card.OwnerId.Equals(heroId)))
             {
@@ -1277,7 +1286,9 @@ namespace GuardsDigital.Presentation.Match
                     group,
                     group == TrayCardGroup.Played ? playedTurnIndex : 0,
                     group == TrayCardGroup.Available && canSelect,
-                    selectedCardInstanceId.HasValue && selectedCardInstanceId.Value.Equals(card.Id)));
+                    selectedCardInstanceId.HasValue && selectedCardInstanceId.Value.Equals(card.Id),
+                    resolvingCardInstanceId.HasValue &&
+                        resolvingCardInstanceId.Value.Equals(card.Id)));
             }
 
             return Array.AsReadOnly(entries

@@ -802,7 +802,36 @@ namespace GuardsDigital.Application
                 CreateHeroProgression(round),
                 // Milestone 7.8a. The pause and what it means are read in the same breath, from the same
                 // authority, so a reader can never hold a description of one pause beside another one.
-                round.SystemTransitions.DescribePendingStep());
+                round.SystemTransitions.DescribePendingStep(),
+                CreateActiveEffectSourceCards(round));
+        }
+
+        /// <summary>
+        /// Milestone 8.5b. Which card instances currently source a live Active effect, read off the
+        /// round authority's own lifecycle.
+        ///
+        /// <para>The round holds the lifecycle and hands the same object to each turn, so this is the
+        /// one place the answer exists whether or not a turn is running - which matters, because an
+        /// effect that outlives the turn that made it is exactly the kind a player needs to see. Only
+        /// <see cref="GuardsDigital.Core.Timing.ActiveEffectPhase.Active"/> counts: a dormant instance has not begun and an ended
+        /// one is over. The list is distinct and ordered by instance id, so one card appears once
+        /// however many of its instances are live and the sequence is a fact rather than an iteration
+        /// accident.</para>
+        /// </summary>
+        private static IReadOnlyList<CardInstanceId> CreateActiveEffectSourceCards(
+            RoundResolutionAuthority round)
+        {
+            if (round == null)
+            {
+                return Array.Empty<CardInstanceId>();
+            }
+
+            return Array.AsReadOnly(round.Timing.Effects
+                .Where(effect => effect.Phase == GuardsDigital.Core.Timing.ActiveEffectPhase.Active)
+                .Select(effect => effect.SourceCardInstanceId)
+                .Distinct()
+                .OrderBy(id => id.Value, StringComparer.Ordinal)
+                .ToArray());
         }
 
         /// <summary>

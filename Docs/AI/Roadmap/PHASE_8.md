@@ -108,9 +108,9 @@ Non-goals: no card-effect composition, rule or legality change, source-image art
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-85a-show-verified-card-words-and-action-values-in-the-card-tray-completion-evidence).
 
-### [!] 8.5b Highlight tray cards whose Active effects are live
+### [x] 8.5b Highlight tray cards whose Active effects are live
 
-Blocked by: milestone 8.5a must establish the approved card-tray layout this indicator extends.
+Its one prerequisite is discharged: milestone 8.5a established the card-tray layout this indicator extends.
 
 Observable outcome: a tray card that is the source of at least one currently active Active-effect instance receives a persistent outer outline and an explicit `ACTIVE` label until the authoritative effect ends.
 
@@ -123,7 +123,11 @@ Acceptance checks:
 - A synthetic Active-effect producer proves the complete state transition before Wasp's persistent cards are composed at 8.9, and focused presentation coverage proves a similarly named card or a card whose definition can create an effect is not highlighted without a live matching instance.
 - T2 validation: focused Active-effect projection and `MatchHudPresentationTests`, the directly affected `MinimalHexGridPlayModeTests` HUD case, and one targeted Game View inspection with active, selected-plus-active, and ended states.
 
+- **User-approved correction, 2026-08-21:** the card the current turn is being resolved from is drawn at full strength. It still carries no commitment command and gains no focus stop, but the shared unavailable treatment was dimming it as though it were spent, and the card in play is the opposite of unavailable to look at.
+
 Non-goals: no Wasp effect composition, Active-effect rule or duration change, triggered-effect execution, continuous Ultimate or token-property indicator, card interaction change, animation, production VFX, or general status-effect panel.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-85b-highlight-tray-cards-whose-active-effects-are-live-completion-evidence).
 
 ### [ ] 8.6 Complete the Wasp telekinetic skills
 

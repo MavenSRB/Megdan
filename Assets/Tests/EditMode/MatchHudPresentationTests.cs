@@ -10,6 +10,8 @@ using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Snapshots;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
@@ -431,7 +433,9 @@ namespace GuardsDigital.Tests.EditMode
             const float trayBorder = 1f * 2f;
             const float scrollbarAllowance = 16f;
             var available = tray.width - trayPadding - trayBorder - scrollbarAllowance;
-            var row = 5f * (DirectorHandsUnityView.CardWidth + DirectorHandsUnityView.CardGap);
+            var row = 5f * (DirectorHandsUnityView.CardWidth + DirectorHandsUnityView.CardGap +
+                (2f * (DirectorHandsUnityView.ActiveOutlineGap +
+                    DirectorHandsUnityView.ActiveOutlineWidth)));
 
             Assert.That(row, Is.LessThanOrEqualTo(available),
                 "p.6's five cards are one row inside the tray, with their gutters, and never wrap.");
@@ -495,8 +499,13 @@ namespace GuardsDigital.Tests.EditMode
                 buttons.Select(button => button.tooltip.Split(new[] { " - " }, StringSplitOptions.None)[0]),
                 Is.EqualTo(view.Model.ViewedHand.TrayCards.Select(card => card.DisplayName)),
                 "Keyboard and pointer order is still the tray's own played/available/discarded order.");
-            Assert.That(buttons.Count(button => button.style.top.value.value < 0f), Is.EqualTo(5),
-                "Every still-playable card keeps the milestone 7.8a lift.");
+            Assert.That(
+                Descendants(view.Root)
+                    .Where(element => element.name == "gd-card-slot")
+                    .Count(slot => slot.style.top.value.value < 0f),
+                Is.EqualTo(5),
+                "Every still-playable card keeps the milestone 7.8a lift, which milestone 8.5b moved " +
+                "onto the slot so the Active-effect outline rises with the card it belongs to.");
             Assert.That(buttons.All(button => button.enabledSelf), Is.True,
                 "Every card the authority offers still carries its command.");
 
@@ -544,7 +553,10 @@ namespace GuardsDigital.Tests.EditMode
                 .OfType<Button>()
                 .First();
             Assert.That(button.enabledSelf, Is.False, "and it carries no command.");
-            Assert.That(button.style.top.value.value, Is.EqualTo(0f), "and it is not lifted.");
+            Assert.That(
+                Descendants(view.Root).First(element => element.name == "gd-card-slot")
+                    .style.top.value.value,
+                Is.EqualTo(0f), "and it is not lifted.");
         }
 
         [Test]
@@ -620,6 +632,119 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(DisplayStyle.None));
             Assert.That(view.Model.Heroes[0].TurnSlots.Count(slot => slot.IsOccupied), Is.EqualTo(2),
                 "and the round's second turn is now a slot of its own.");
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.5b: the card whose Active effect is live, and the card being resolved
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void ACardWhoseActiveEffectIsLive_IsOutlinedAndLabelledAndOnlyThatCard()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithALiveActiveEffect(out var sourceCardId);
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.SelectViewedHero(session.Projection.Cards
+                .Single(card => card.Id.Equals(sourceCardId)).OwnerId);
+
+            var hand = view.Model.ViewedHand;
+            var active = hand.TrayCards.Where(card => card.IsActiveEffectSource).ToArray();
+            Assert.That(active.Select(card => card.CardInstanceId), Is.EqualTo(new[] { sourceCardId }),
+                "Exactly the card the authority named, and no card that merely could create an effect.");
+            Assert.That(active[0].ActiveLabel, Is.EqualTo("ACTIVE"));
+            Assert.That(active[0].AssistiveLabel, Does.Contain("ACTIVE EFFECT IN EFFECT"));
+            foreach (var card in hand.TrayCards.Where(card => !card.IsActiveEffectSource))
+            {
+                Assert.That(card.ActiveLabel, Is.Empty);
+                Assert.That(card.AssistiveLabel, Does.Not.Contain("ACTIVE EFFECT"));
+            }
+
+            var slots = Descendants(view.Root)
+                .Where(element => element.name == "gd-card-slot")
+                .ToArray();
+            Assert.That(slots, Has.Length.EqualTo(hand.TrayCards.Count),
+                "Every card sits in a slot, so a card does not change size when an effect starts.");
+            Assert.That(
+                slots.Count(slot =>
+                    slot.style.borderTopColor.value == MatchHudTheme.ActiveEffectAccent),
+                Is.EqualTo(1),
+                "One outline, outside the card's own border - which is the selection treatment - so " +
+                "a card can be selected and active at once without either meaning being lost.");
+            Assert.That(
+                slots.Select(slot => slot.style.borderTopWidth.value).Distinct(),
+                Is.EqualTo(new[] { DirectorHandsUnityView.ActiveOutlineWidth }),
+                "and the outline is always drawn, so only its colour changes.");
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-card-active"),
+                Is.EqualTo(1),
+                "The word ACTIVE is drawn beside the lifecycle label, so the state is never colour alone.");
+            Assert.That(
+                MatchHudTheme.ActiveEffectAccent, Is.Not.EqualTo(MatchHudTheme.SelectedOutline));
+            Assert.That(
+                MatchHudTheme.ActiveEffectAccent, Is.Not.EqualTo(MatchHudTheme.ConfirmAccent));
+            foreach (CardColor color in Enum.GetValues(typeof(CardColor)))
+            {
+                Assert.That(MatchHudTheme.ActiveEffectAccent, Is.Not.EqualTo(MatchHudTheme.Face(color)),
+                    $"and it is not {color}'s own face, so it cannot be read as a card colour.");
+            }
+        }
+
+        [Test]
+        public void WhenTheEffectEnds_TheIndicatorGoesWithItOnTheSameRefresh()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithALiveActiveEffect(out var sourceCardId);
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            var ownerId = session.Projection.Cards.Single(card => card.Id.Equals(sourceCardId)).OwnerId;
+            presenter.SelectViewedHero(ownerId);
+            Assert.That(view.Model.ViewedHand.TrayCards.Any(card => card.IsActiveEffectSource), Is.True);
+
+            // Play the round out. The mark is cancelled when its source card's state changes and expires
+            // at the turn it was made on, so by the round's end nothing it created is live any more.
+            ConfiguredMatchFixtures.PlayOutTheRestOfTheRound(session);
+            presenter.SelectViewedHero(ownerId);
+
+            Assert.That(RestoredMatch(session).Round.Timing.Effects
+                .Any(effect => effect.Phase == ActiveEffectPhase.Active), Is.False,
+                "The fixture only proves the removal while the lifecycle really has ended it.");
+            Assert.That(session.Projection.ActiveEffectSourceCardInstanceIds, Is.Empty);
+            Assert.That(view.Model.ViewedHand.TrayCards.Any(card => card.IsActiveEffectSource), Is.False,
+                "so no card is outlined, on the same refresh that reported the ending.");
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-card-active"), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TheCardBeingResolved_IsDrawnAtFullStrengthWhileItsTurnRuns()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithALiveActiveEffect(out var sourceCardId);
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.SelectViewedHero(session.Projection.Cards
+                .Single(card => card.Id.Equals(sourceCardId)).OwnerId);
+
+            var hand = view.Model.ViewedHand;
+            var resolving = hand.TrayCards.Single(card => card.IsResolving);
+            Assert.That(resolving.CardInstanceId, Is.EqualTo(sourceCardId),
+                "The card in play is the one this hero revealed for the current turn.");
+            Assert.That(resolving.IsSelectable, Is.False,
+                "It carries no commitment command - the round is past choosing.");
+
+            var buttons = Descendants(view.Root)
+                .Where(element => element.name == "gd-card-choice")
+                .OfType<Button>()
+                .ToArray();
+            var index = hand.TrayCards.Select((card, position) => (card, position))
+                .Single(entry => entry.card.IsResolving).position;
+            Assert.That(buttons[index].enabledSelf, Is.False,
+                "so it is inert - no command, and no focus stop the tray did not have before.");
+            Assert.That(buttons[index].style.opacity.value, Is.EqualTo(1f),
+                "but it is the card being played, so it is not dimmed as though it were spent.");
+            foreach (var other in buttons.Where((_, position) => position != index))
+            {
+                Assert.That(other.style.opacity.value, Is.LessThan(1f),
+                    "while a card that carries no command and is not in play still reads as unavailable.");
+            }
         }
 
         // -------------------------------------------------------------------------------------------
@@ -1203,6 +1328,18 @@ namespace GuardsDigital.Tests.EditMode
         private static CardColor ColorOf(MatchSession session, CardDefinitionReference reference) =>
             session.Projection.Definitions.Single(definition =>
                 definition.Reference.Equals(reference)).Progression.Color;
+
+        /// <summary>
+        /// The authoritative graph behind a session, so a test can read the Active-effect lifecycle the
+        /// projection derives its answer from rather than trusting that answer against itself.
+        /// </summary>
+        private static RestoredAuthoritativeMatch RestoredMatch(MatchSession session) =>
+            AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
+                session.Projection.AuthoritativeSnapshot,
+                session.Projection.Definitions,
+                new[] { session.Projection.SelectedMap },
+                session.Projection.Setup.Minions);
 
         private static CardDefinition DefinitionOf(MatchSession session, CardInstanceId cardInstanceId)
         {
