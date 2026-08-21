@@ -39,7 +39,45 @@ namespace GuardsDigital.Core.Rules.Placement
         MinionMiniature = 2,
 
         /// <summary>A token only, for p.18's token placement and its short-supply rule.</summary>
-        Token = 3
+        Token = 3,
+
+        /// <summary>
+        /// A unit or a token - the breadth Wasp's Telekinesis and Mass Telekinesis print, added at
+        /// milestone 8.6.
+        ///
+        /// It admits the same three kinds <see cref="GamePiece"/> does, because the board holds
+        /// nothing else today, and it is still a separate member for the reason
+        /// <see cref="GuardsDigital.Core.Rules.Displacement.PushEligiblePieceKind"/> refuses to call
+        /// its own unrestricted value `GamePiece`: the name is the content. `A game piece` is p.18's
+        /// sentence about the Place keyword and `a unit or a token` is the card's sentence about this
+        /// Place, so recording the card's as the page's would attribute to Wasp a breadth she does not
+        /// print - and the two would part company the first time a placeable piece is neither.
+        /// </summary>
+        UnitOrToken = 4
+    }
+
+    /// <summary>
+    /// The space a Place's destination question is measured from.
+    ///
+    /// p.18 puts the piece "into a different space" and says nothing about where that space is
+    /// measured from, because the invoking card says it. Both readings verified content prints are
+    /// here: p.18's own correction measures from the piece being moved, while Wasp's Telekinesis
+    /// measures from the acting hero - "into a space adjacent to you" - and no amount of radius around
+    /// the piece could express that.
+    ///
+    /// It is declared rather than inferred from whichever coordinate a caller passed, so a definition
+    /// states its anchor and <see cref="PlaceOperation"/> can refuse a caller whose measured-from space
+    /// disagrees with the declaration. Milestone 8.6.
+    /// </summary>
+    public enum PlaceDestinationAnchor
+    {
+        None = 0,
+
+        /// <summary>The space the placed piece is standing on.</summary>
+        PlacedPiece = 1,
+
+        /// <summary>The space the hero performing the action is standing on.</summary>
+        ActingHero = 2
     }
 
     /// <summary>
@@ -113,8 +151,16 @@ namespace GuardsDigital.Core.Rules.Placement
             PlaceDestinationScope destinationScope,
             int destinationRadius,
             PlaceChooserKind chooser,
-            PlaceNoDestinationPolicy noDestinationPolicy)
+            PlaceNoDestinationPolicy noDestinationPolicy,
+            PlaceDestinationAnchor destinationAnchor)
         {
+            if (destinationAnchor == PlaceDestinationAnchor.None)
+            {
+                throw new ArgumentException(
+                    "A Place declares the space its destination question is measured from.",
+                    nameof(destinationAnchor));
+            }
+
             if (sourceContainer == PlaceSourceContainer.None)
             {
                 throw new ArgumentException(
@@ -161,11 +207,15 @@ namespace GuardsDigital.Core.Rules.Placement
             DestinationRadius = destinationRadius;
             Chooser = chooser;
             NoDestinationPolicy = noDestinationPolicy;
+            DestinationAnchor = destinationAnchor;
         }
 
         public PlaceSourceContainer SourceContainer { get; }
         public PlaceEligiblePieceKind EligiblePiece { get; }
         public PlaceDestinationScope DestinationScope { get; }
+
+        /// <summary>The space this Place's destination question is measured from.</summary>
+        public PlaceDestinationAnchor DestinationAnchor { get; }
 
         /// <summary>
         /// The inclusive rulebook distance <see cref="PlaceDestinationScope.EmptySpacesWithinRadius"/>
@@ -181,6 +231,6 @@ namespace GuardsDigital.Core.Rules.Placement
             (DestinationScope == PlaceDestinationScope.EmptySpacesWithinRadius
                 ? $"({DestinationRadius})"
                 : string.Empty) +
-            $", chosen by {Chooser}, {NoDestinationPolicy} without one";
+            $" around {DestinationAnchor}, chosen by {Chooser}, {NoDestinationPolicy} without one";
     }
 }

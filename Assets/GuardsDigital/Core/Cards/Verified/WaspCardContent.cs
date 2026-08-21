@@ -18,12 +18,14 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Initiative, not the item icon from the colour - because the faces state each of them separately
     /// and Wasp's own set would break any such derivation.</para>
     ///
-    /// <para><b>What is deliberately absent.</b> No action carries an <c>EffectRoot</c>. Each card's
-    /// text composition lands at its own 8.5-8.13 slice under a content-revision advance, so no
-    /// half-implemented card text can run in between, and every printed primary states the milestone
-    /// that owes it through <see cref="PrintedTextComposition"/> rather than passing for a card that
-    /// prints nothing. The transcription itself rides <see cref="CardDefinition.SourceContent"/>, where
-    /// no rule may read it.</para>
+    /// <para><b>What is composed and what is still owed.</b> Each card's text composition lands at its
+    /// own 8.5-8.13 slice under a content-revision advance, so no half-implemented card text can run in
+    /// between, and a printed primary that has not reached its slice states the milestone that owes it
+    /// through <see cref="PrintedTextComposition"/> rather than passing for a card that prints nothing.
+    /// Milestone 8.6 attached the first five: the telekinetic Skills, whose node tables live in
+    /// <see cref="WaspEffectContent"/> so that this file stays what it is - the transcription. The
+    /// transcription itself rides <see cref="CardDefinition.SourceContent"/>, where no rule may read
+    /// it.</para>
     ///
     /// <para><b>No image, anywhere.</b> The extracted faces are audit and presentation assets and stay
     /// that way: nothing in this file, and no member of the content model it builds, names an image, an
@@ -37,7 +39,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// every synthetic revision in this build already has, and the reason a slice's compatibility
         /// decision is a real decision rather than a formality.
         /// </summary>
-        public const string ContentRevision = "wasp-8-3-rev-1";
+        public const string ContentRevision = "wasp-8-6-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity. It is not a
@@ -298,7 +300,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     ControlGravity, KineticRepulse),
                 "Move a unit, or a token, in radius 1 space, without moving it away from you or closer " +
                 "to you. May repeat once on the same target.",
-                PrintedTextComposition.AwaitedAt("8.6")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 ControlGravity, "Control Gravity", 10, 5, 3,
@@ -308,7 +310,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     CenterOfMass, KineticBlast),
                 "Move a unit, or a token, in radius 1 space, without moving it away from you or closer " +
                 "to you. May repeat once on the same target.",
-                PrintedTextComposition.AwaitedAt("8.6")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 KineticRepulse, "Kinetic Repulse", 10, 5, 3,
@@ -327,7 +329,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Blue, CardTier.III, PrintedValueChannel.Defense),
                 "Move a unit, or a token, in radius 1 space, without moving it away from you or closer " +
                 "to you. May repeat up to two times on the same target.",
-                PrintedTextComposition.AwaitedAt("8.6")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 KineticBlast, "Kinetic Blast", 11, 6, 3,
@@ -365,7 +367,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     ReflectProjectiles, MassTelekinesis),
                 "Place a unit or a token in range, which is not in a straight line, into a space " +
                 "adjacent to you.",
-                PrintedTextComposition.AwaitedAt("8.6")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 ReflectProjectiles, "Reflect Projectiles", 2, 0, 2,
@@ -382,7 +384,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Green, CardTier.III, PrintedValueChannel.Attack),
                 "Place a unit or a token in range, which is not in a straight line, into a space " +
                 "adjacent to you. May repeat once.",
-                PrintedTextComposition.AwaitedAt("8.6")),
+                PrintedTextComposition.None),
 
             // p.16's Ultimate. It prints no Initiative and no action at all - the card is placed beside
             // the dashboard and its ability "is always in effect" - so its whole printed content is the
@@ -497,6 +499,12 @@ namespace GuardsDigital.Core.Cards.Verified
                         profile.TextComposition);
 
                 case WaspPrimaryKind.Skill:
+                    // Milestone 8.6. A Skill whose composition has landed carries its effect root and
+                    // states no debt; one still owed carries the debt and no root. Neither case is
+                    // written twice: the root is asked for, the debt comes off the table row above, and
+                    // ActionDefinition refuses a Skill that has neither - so a composition added
+                    // without clearing its row, or a row cleared without a composition, fails at
+                    // content load rather than at the table.
                     return new ActionDefinition(
                         PrimarySkill,
                         ActionKind.Skill,
@@ -505,7 +513,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.None,
                         default,
-                        null,
+                        WaspEffectContent.SkillEffectFor(profile.Id, ContentRevision),
                         profile.TextComposition);
 
                 case WaspPrimaryKind.Block:

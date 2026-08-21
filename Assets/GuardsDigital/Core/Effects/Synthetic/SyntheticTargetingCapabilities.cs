@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
@@ -77,45 +78,98 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference RadiusTargetV1 =>
             new EffectCapabilityReference(RadiusTarget, 1);
 
+        /// <summary>
+        /// Milestone 8.6. The printed-Range twin of <see cref="RadiusTarget"/>, for card text that says
+        /// "in range" rather than "in radius".
+        ///
+        /// A second capability ID rather than a parameter on the one above, for the reason p.9 gives
+        /// two icons two meanings and p.16 two items: a card prints one of them, and a definition that
+        /// could name either through the same parameter would let a Radius card read a Range item. The
+        /// handler beneath is nevertheless shared - the two differ only in which
+        /// <see cref="PrintedValueChannel"/> they read - so no geometry, immunity or item composition
+        /// is written twice.
+        ///
+        /// It declares one thing the Radius selection does not: p.19's straight-line complement, which
+        /// Wasp's Telekinesis, Mass Telekinesis and both Boomerangs print as "in range, which is not in
+        /// a straight line". No verified card pairs that filter with a Radius, so the Radius
+        /// declaration does not carry the parameter rather than carrying one nothing sets.
+        /// </summary>
+        public static EffectCapabilityId RangeTarget { get; } =
+            new EffectCapabilityId("synthetic-range-target");
+
+        public static EffectCapabilityReference RangeTargetV1 =>
+            new EffectCapabilityReference(RangeTarget, 1);
+
+        /// <summary>
+        /// The straight-line filter parameter's name, spelled once so a definition cannot mistype it.
+        /// </summary>
+        public const string ExcludeStraightLineParameterName = "excludeStraightLine";
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
                 new ChooseTargetHandler(ChooseTargetV3, declaresActivity: false),
                 new ChooseTargetHandler(ChooseTargetV4, declaresActivity: true),
-                new RadiusTargetHandler()
+                new PrintedIconTargetHandler(
+                    RadiusTargetV1, PrintedValueChannel.Radius, declaresStraightLineFilter: false),
+                new PrintedIconTargetHandler(
+                    RangeTargetV1, PrintedValueChannel.Range, declaresStraightLineFilter: true)
             };
 
         /// <summary>
-        /// Milestone 7.2b's printed-Radius selection: the same chooser-owned target selection, whose
-        /// bound is the acting card's Radius Total rather than an integer the definition carries.
+        /// Milestone 7.2b's printed-icon selection: the same chooser-owned target selection, whose
+        /// bound is the acting card's Radius or Range Total rather than an integer the definition
+        /// carries.
         ///
         /// It states no range parameter at all, which is the whole point - there is nothing for a
         /// definition to write down, because p.9 puts the value on the card. What it does state is the
         /// activity it targets under, since p.18 declares immunity per activity and this selection
         /// filters immunity through the same <see cref="TargetQuery"/> the capability above uses. The
         /// disk itself comes from <see cref="RadiusQuery"/>, and the total from
-        /// <see cref="RadiusValueQuery"/>, so neither the geometry nor the item composition is repeated
-        /// here.
+        /// <see cref="RadiusValueQuery"/> or <see cref="RangeValueQuery"/>, so neither the geometry nor
+        /// the item composition is repeated here.
+        ///
+        /// Milestone 8.6 gave it the channel and the optional straight-line complement as constructor
+        /// state, exactly as <see cref="ChooseTargetHandler"/> takes its activity declaration: two
+        /// capability IDs, one implementation, and no way for the two icons' selections to disagree
+        /// about anything except which icon they read.
         /// </summary>
-        private sealed class RadiusTargetHandler
+        private sealed class PrintedIconTargetHandler
             : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
         {
-            public RadiusTargetHandler()
+            private readonly PrintedValueChannel channel;
+            private readonly bool declaresStraightLineFilter;
+
+            public PrintedIconTargetHandler(
+                EffectCapabilityReference reference,
+                PrintedValueChannel channel,
+                bool declaresStraightLineFilter)
             {
+                Reference = reference;
+                this.channel = channel;
+                this.declaresStraightLineFilter = declaresStraightLineFilter;
+
+                var parameters = new List<EffectCapabilityParameter>
+                {
+                    new EffectCapabilityParameter("includeSelf", EffectValueKind.Boolean),
+                    new EffectCapabilityParameter("activity", EffectValueKind.Integer)
+                };
+                if (declaresStraightLineFilter)
+                {
+                    parameters.Add(new EffectCapabilityParameter(
+                        ExcludeStraightLineParameterName, EffectValueKind.Boolean));
+                }
+
+                parameters.Add(new EffectCapabilityParameter(
+                    EffectSelectionDeclaration.ConsumerParameterName,
+                    EffectValueKind.Node,
+                    isRequired: false));
                 Schema = new EffectCapabilityParameterSchema(
-                    new[]
-                    {
-                        new EffectCapabilityParameter("includeSelf", EffectValueKind.Boolean),
-                        new EffectCapabilityParameter("activity", EffectValueKind.Integer),
-                        new EffectCapabilityParameter(
-                            EffectSelectionDeclaration.ConsumerParameterName,
-                            EffectValueKind.Node,
-                            isRequired: false)
-                    },
+                    parameters,
                     new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
             }
 
-            public EffectCapabilityReference Reference => RadiusTargetV1;
+            public EffectCapabilityReference Reference { get; }
 
             public EffectCapabilityParameterSchema Schema { get; }
 
@@ -167,7 +221,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
 
             /// <summary>
-            /// The spaces of every object the acting hero may target inside its card's Radius, in
+            /// The spaces of every object the acting hero may target inside its card's printed icon, in
             /// canonical axial order.
             ///
             /// The total is re-derived on every ask rather than captured, which is what makes the
@@ -195,30 +249,53 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HexCoordinate>();
                 }
 
-                var radiusTotal = RadiusValueQuery.Calculate(
-                    context.SourceCardInstanceId,
-                    context.SourceDefinitionReference,
-                    context.ActionDefinitionId,
-                    context.CardState.Definitions,
-                    context.ActorId,
-                    context.HeroItems);
-                if (radiusTotal.Total <= 0)
+                var printedTotal = channel == PrintedValueChannel.Radius
+                    ? RadiusValueQuery.Calculate(
+                        context.SourceCardInstanceId,
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions,
+                        context.ActorId,
+                        context.HeroItems)
+                    : RangeValueQuery.Calculate(
+                        context.SourceCardInstanceId,
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions,
+                        context.ActorId,
+                        context.HeroItems);
+                if (printedTotal.Total <= 0)
                 {
-                    // A card printing no Radius icon has no Radius at all, and p.16 does not give it
-                    // one: an item raises a printed icon and never invents one. The selection is
-                    // therefore impossible rather than adjacent-by-default.
+                    // A card printing no icon of this channel has no such bound at all, and p.16 does
+                    // not give it one: an item raises a printed icon and never invents one. The
+                    // selection is therefore impossible rather than adjacent-by-default.
                     return Array.Empty<HexCoordinate>();
                 }
 
-                var targets = RadiusQuery.Targets(
-                    origin,
-                    radiusTotal,
-                    context.Input("includeSelf").BooleanValue,
-                    selector.AsRuleObject(),
-                    activity,
-                    board,
-                    context.Participants,
-                    context.Modifications);
+                // p.9 states one geometry for both icons - "targets up to 3 spaces away", counted
+                // through obstacles because there are no line-of-sight rules - so the Range reading
+                // asks the same disk question. RadiusQuery is where that question lives and it refuses
+                // a total of the wrong channel by construction, which is why the Range arm asks
+                // TargetQuery, the shared contract underneath it, rather than mislabelling its total.
+                var targets = channel == PrintedValueChannel.Radius
+                    ? RadiusQuery.Targets(
+                        origin,
+                        printedTotal,
+                        context.Input("includeSelf").BooleanValue,
+                        selector.AsRuleObject(),
+                        activity,
+                        board,
+                        context.Participants,
+                        context.Modifications)
+                    : TargetQuery.FindTargetsWithin(
+                        origin,
+                        printedTotal.Total,
+                        context.Input("includeSelf").BooleanValue,
+                        selector.AsRuleObject(),
+                        activity,
+                        board,
+                        context.Participants,
+                        context.Modifications);
 
                 var spaces = new List<HexCoordinate>(targets.Count);
                 foreach (var target in targets)
@@ -229,7 +306,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     }
                 }
 
-                return spaces;
+                // p.19's straight-line rule read as a complement, anchored at the selecting hero. It is
+                // applied after immunity rather than before it because the two narrow for different
+                // reasons and neither is a special case of the other: a unit can be out of line and
+                // immune at once, and both refusals are the card's.
+                return declaresStraightLineFilter &&
+                    context.Input(ExcludeStraightLineParameterName).BooleanValue
+                    ? StraightLineQuery.FilterOutStraightLine(origin, spaces)
+                    : (IReadOnlyList<HexCoordinate>)spaces;
             }
         }
 

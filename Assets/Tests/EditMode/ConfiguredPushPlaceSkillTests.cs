@@ -160,7 +160,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(SelectTarget));
 
             var place = effect.Nodes.Single(node => node.Id.Equals(Place));
-            Assert.That(place.Capability, Is.EqualTo(SyntheticPlacementCapabilities.PlaceV1));
+            Assert.That(place.Capability, Is.EqualTo(SyntheticPlacementCapabilities.PlaceV2));
 
             // Milestone 7.2c. The bound is the card's printed Radius icon, published by its own node
             // and bound here, rather than a number this table carries. p.9: a card text that mentions

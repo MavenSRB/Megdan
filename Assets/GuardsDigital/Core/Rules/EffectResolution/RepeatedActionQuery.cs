@@ -1,10 +1,50 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 
 namespace GuardsDigital.Core.Rules.EffectResolution
 {
+    /// <summary>
+    /// What one completed instance asked for, and what the instance it asks for inherits.
+    ///
+    /// It is one value rather than a boolean beside a coordinate because the two are never
+    /// independently true: an unrequested repeat has nothing to inherit, and a requested one inherits
+    /// exactly what its own node declared. Milestone 8.6.
+    /// </summary>
+    public readonly struct RepeatRequest : IEquatable<RepeatRequest>
+    {
+        private RepeatRequest(bool isRequested, RepeatContinuation continuation)
+        {
+            IsRequested = isRequested;
+            Continuation = continuation;
+        }
+
+        /// <summary>No repeat was asked for - the default, and what every non-repeating action reports.</summary>
+        public static RepeatRequest None => default;
+
+        public bool IsRequested { get; }
+
+        /// <summary>The state the requested instance starts in. Meaningful only when requested.</summary>
+        public RepeatContinuation Continuation { get; }
+
+        public static RepeatRequest For(RepeatContinuation continuation) =>
+            new RepeatRequest(true, continuation);
+
+        public bool Equals(RepeatRequest other) =>
+            IsRequested == other.IsRequested && Continuation.Equals(other.Continuation);
+
+        public override bool Equals(object obj) => obj is RepeatRequest other && Equals(other);
+
+        public override int GetHashCode() =>
+            (IsRequested ? 1 : 0) ^ (Continuation.GetHashCode() * 397);
+
+        public override string ToString() => IsRequested ? Continuation.ToString() : "no repeat";
+    }
+
     /// <summary>
     /// Milestone 6.7: the two questions a bounded Repeat asks of a resolution, stated once.
     ///
@@ -13,6 +53,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     /// already part of every <see cref="PendingResolution"/>, and a request is already an ordinary
     /// applied node outcome. That is what makes a requested repeat survive a pause, a snapshot restore,
     /// a replay, and a retained-prefix Undo without a wire field inside the effect frame.
+    ///
+    /// Milestone 8.6 added the third question - what the next instance inherits - and moved the bound
+    /// from "one repeat, by construction" to "the maximum the node declares". The two are the same
+    /// answer for every definition written before it: a node that declares no maximum declares one.
     /// </summary>
     public static class RepeatedActionQuery
     {
@@ -29,44 +73,156 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// <summary>
         /// Whether a <see cref="EffectNodeKind.RepeatAction"/> node reached in this frame is eligible.
         ///
-        /// The whole bound is here: an instance created by a repeat may not ask for another. Because
-        /// the node kind cannot be mandatory, an ineligible one is skipped in silence rather than
-        /// stopping the action, so a repeated instance never exposes the decision at all.
+        /// The whole bound is here: a chain may ask as many times as the node declares, and no more.
+        /// Because the node kind cannot be mandatory, an ineligible one is skipped in silence rather
+        /// than stopping the action, so the last instance never exposes the decision at all.
         /// </summary>
-        public static bool CanRepeat(PendingResolution frame)
+        public static bool CanRepeat(PendingResolution frame, EffectNodeDefinition node)
         {
             if (frame == null) throw new ArgumentNullException(nameof(frame));
-            return !IsRepeatedInstance(frame.InvocationContext);
+            if (node == null) throw new ArgumentNullException(nameof(node));
+            return frame.Repeat.CompletedRepeats < node.MaximumRepeats;
         }
 
         /// <summary>
-        /// Whether this resolution's completed outcomes contain an applied repeat request.
+        /// What this resolution's completed outcomes say it asked for, and what the instance it asked
+        /// for inherits.
         ///
         /// Asked of the trusted definition rather than of a node-name convention, so only a node the
         /// content author declared as a Repeat can request one. Two applied requests still mean one
-        /// repeated instance: the answer is a fact about the action, not a counter.
+        /// repeated instance: the answer is a fact about the action, not a counter - the counter is the
+        /// frame's own <see cref="PendingResolution.Repeat"/>, advanced by one here.
+        ///
+        /// A declared <see cref="RepeatTargetBinding.SameTarget"/> whose selection named no piece
+        /// reports no request at all. The definition validator makes that unreachable by requiring the
+        /// bound selection to have certainly run; if it were reached anyway, refusing the repeat is the
+        /// conservative answer and letting it run unbound would be the card saying something it does
+        /// not say.
         /// </summary>
-        public static bool WasRequested(
+        public static RepeatRequest Requested(
             EffectDefinition definition,
+            PendingResolution frame,
             IReadOnlyList<EffectNodeOutcome> outcomes)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
             if (outcomes == null)
             {
-                return false;
+                return RepeatRequest.None;
             }
 
             foreach (var outcome in outcomes)
             {
-                if (outcome.ResultKind == EffectExecutionResultKind.Applied &&
-                    definition.TryGetNode(outcome.NodeId, out var node) &&
-                    node.Kind == EffectNodeKind.RepeatAction)
+                if (outcome.ResultKind != EffectExecutionResultKind.Applied ||
+                    !definition.TryGetNode(outcome.NodeId, out var node) ||
+                    node.Kind != EffectNodeKind.RepeatAction)
                 {
-                    return true;
+                    continue;
+                }
+
+                var completedRepeats = frame.Repeat.CompletedRepeats + 1;
+                if (node.RepeatTargetBinding != RepeatTargetBinding.SameTarget)
+                {
+                    return RepeatRequest.For(RepeatContinuation.Next(completedRepeats));
+                }
+
+                // The piece was recorded onto the frame when the selection named it, because that is
+                // the last moment it is still standing where the selection saw it.
+                return frame.Repeat.HasBoundTarget
+                    ? RepeatRequest.For(RepeatContinuation.NextBoundTo(
+                        completedRepeats, frame.Repeat.BoundTarget))
+                    : RepeatRequest.None;
+            }
+
+            return RepeatRequest.None;
+        }
+
+        /// <summary>
+        /// Whether this node is the selection an `on the same target` repeat in this definition binds.
+        ///
+        /// Asked of the trusted definition on every ask rather than carried in the continuation, which
+        /// is what keeps the inherited piece data and the binding a rule. The definition validator
+        /// admits at most one binding per definition, so the answer is unambiguous.
+        /// </summary>
+        public static bool BindsSelection(EffectDefinition definition, EffectNodeDefinition node)
+        {
+            if (definition == null) throw new ArgumentNullException(nameof(definition));
+            if (node == null) throw new ArgumentNullException(nameof(node));
+            return definition.Nodes.Any(candidate =>
+                candidate.RepeatTargetBinding == RepeatTargetBinding.SameTarget &&
+                candidate.BoundSelectionNodeId.Equals(node.Id));
+        }
+
+        /// <summary>
+        /// The piece a selection just named, for a definition whose repeat will bind it.
+        ///
+        /// The published space is resolved to its occupant here and now, in the one moment the two
+        /// certainly agree - the selection has applied and nothing has moved since. Returns
+        /// <c>false</c> for a node that binds nothing, a result that published no space, and a space
+        /// the board reports empty, and in each case the frame keeps whatever it already held.
+        /// </summary>
+        public static bool TryCaptureBoundTarget(
+            EffectDefinition definition,
+            EffectNodeDefinition node,
+            EffectExecutionResult result,
+            MatchComponents components,
+            out BoardObjectReference boundTarget)
+        {
+            boundTarget = default;
+            if (result == null || result.Kind != EffectExecutionResultKind.Applied ||
+                components == null || !components.CanDisplace ||
+                !BindsSelection(definition, node))
+            {
+                return false;
+            }
+
+            foreach (var fact in result.Outcomes)
+            {
+                if (fact.Value.Kind == EffectValueKind.Coordinate)
+                {
+                    return components.Board.TryGetObjectAt(fact.Value.Coordinate, out boundTarget);
                 }
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// The answer a repeated instance must give at this node, when this node is the one its card's
+        /// `on the same target` binds: the space the inherited piece is standing on now.
+        ///
+        /// The space is looked up rather than remembered, which is the whole reason the continuation
+        /// carries a piece. A bound piece that has left the board reports <c>false</c>, and the node
+        /// then executes normally - which for a mandatory selection means it offers its ordinary
+        /// candidates. That case cannot arise from an orbit, whose subject is still standing wherever
+        /// it was moved to; it is the honest answer for a chain whose target was removed between
+        /// instances, and the selection's own eligibility then decides what may happen next.
+        /// </summary>
+        public static bool TryReadBoundTarget(
+            EffectDefinition definition,
+            EffectNodeDefinition node,
+            PendingResolution frame,
+            MatchComponents components,
+            out EffectValue boundTarget)
+        {
+            if (definition == null) throw new ArgumentNullException(nameof(definition));
+            if (node == null) throw new ArgumentNullException(nameof(node));
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
+
+            boundTarget = default;
+            if (!frame.Repeat.HasBoundTarget || components == null || !components.CanDisplace ||
+                !BindsSelection(definition, node))
+            {
+                return false;
+            }
+
+            if (!components.Board.TryGetObjectCoordinate(frame.Repeat.BoundTarget, out var at))
+            {
+                return false;
+            }
+
+            boundTarget = EffectValue.Space(at);
+            return true;
         }
     }
 }

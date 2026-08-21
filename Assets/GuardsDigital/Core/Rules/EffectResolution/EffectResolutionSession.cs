@@ -64,7 +64,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             PendingResolution frame,
             bool isComplete,
             IEnumerable<EffectResolutionEvent> events,
-            bool repeatRequested,
+            RepeatRequest repeatRequested,
             GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause)
         {
             Accepted = accepted;
@@ -94,8 +94,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         ///
         /// It says nothing about when the next instance starts. That is the card action's business,
         /// and its answer is "once this instance's after-action correction boundary is clean".
+        ///
+        /// Milestone 8.6 widened it from a boolean to the request itself, because a bounded repeat's
+        /// next instance has to be told which repeat it is and, when the card said `on the same
+        /// target`, which target it inherits.
         /// </summary>
-        public bool RepeatRequested { get; }
+        public RepeatRequest RepeatRequested { get; }
 
         /// <summary>
         /// Milestone 6.9: which of rulebook p.8's two sentences this completed instance answered, or
@@ -112,7 +116,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             PendingResolution frame,
             bool isComplete,
             IEnumerable<EffectResolutionEvent> events,
-            bool repeatRequested = false,
+            RepeatRequest repeatRequested = default,
             GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause =
                 GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None) =>
             new EffectResolutionStepResult(
@@ -129,7 +133,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             }
 
             return new EffectResolutionStepResult(
-                false, reason, frame, false, null, false,
+                false, reason, frame, false, null, RepeatRequest.None,
                 GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None);
         }
     }
@@ -252,7 +256,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroId actorId,
             HeroId controllerId,
             ActionInvocationContext invocationContext,
-            EffectResolutionContext context)
+            EffectResolutionContext context,
+            RepeatContinuation repeat = default)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
@@ -265,7 +270,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     actorId,
                     controllerId,
                     invocationContext,
-                    context),
+                    context,
+                    repeat),
                 context,
                 new List<EffectResolutionEvent>());
         }
@@ -289,7 +295,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroId actorId,
             HeroId controllerId,
             ActionInvocationContext invocationContext,
-            EffectResolutionContext context) =>
+            EffectResolutionContext context,
+            RepeatContinuation repeat = default) =>
             new PendingResolution(
                 resolutionId,
                 sourceCardInstanceId,
@@ -299,7 +306,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 actorId,
                 controllerId,
                 invocationContext,
-                new[] { new EffectContinuationFrame(context.Definition.RootNodeId, 0) });
+                new[] { new EffectContinuationFrame(context.Definition.RootNodeId, 0) },
+                repeat: repeat);
 
         public static EffectResolutionStepResult Answer(
             PendingResolution frame,
@@ -427,7 +435,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             continuation.Clear();
             return EffectResolutionStepResult.Accept(
                 Rebuild(frame, continuation, outcomes, frame.AcceptedChoices), true, events,
-                RepeatedActionQuery.WasRequested(context.Definition, outcomes),
+                RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes));
         }
 
@@ -539,6 +547,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     var handler = context.Catalog.Load(node.Capability);
                     var resumed = handler.Resume(
                         BuildCapabilityContext(frame, node, outcomes, context), selected);
+                    frame = CaptureBoundTarget(frame, node, resumed, context);
                     var terminal = ApplyCapabilityResult(
                         frame, node, resumed, continuation, outcomes, choices, events, context);
                     if (terminal != null)
@@ -572,7 +581,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 {
                     return EffectResolutionStepResult.Accept(
                         Rebuild(frame, continuation, outcomes, choices), true, events,
-                        RepeatedActionQuery.WasRequested(context.Definition, outcomes),
+                        RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                         RecordedLanePushQuery.Recorded(context.Definition, outcomes));
                 }
 
@@ -706,9 +715,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     case EffectNodeKind.RepeatAction:
                         // Milestone 6.7. Nothing is performed here. An eligible `may` opens p.10's
                         // confirm-or-decline; an eligible `if able` requests without asking; and an
-                        // instance that is already a repeat skips in silence, which is the whole bound
-                        // and is why this node kind refuses to be mandatory.
-                        if (!RepeatedActionQuery.CanRepeat(frame))
+                        // instance whose chain has run the node's declared maximum skips in silence,
+                        // which is the whole bound and is why this node kind refuses to be mandatory.
+                        if (!RepeatedActionQuery.CanRepeat(frame, node))
                         {
                             Pop(continuation);
                             Record(outcomes, events, node.Id,
@@ -729,7 +738,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                     case EffectNodeKind.Capability:
                         var handler = context.Catalog.Load(node.Capability);
-                        var result = handler.Execute(BuildCapabilityContext(frame, node, outcomes, context));
+                        var capabilityContext = BuildCapabilityContext(frame, node, outcomes, context);
+
+                        // Milestone 8.6. `on the same target` means the repeated instance does not
+                        // choose here: the space the inherited piece is standing on now is handed to
+                        // this node's own Resume, which re-derives its candidates and refuses a target
+                        // that is no longer eligible exactly as it would refuse a stale answer to a
+                        // real choice. Routing it through Resume rather than through a narrowed Execute
+                        // is what keeps the binding capability-agnostic - nothing here knows what a
+                        // target is - and what makes a bound target that has moved out of reach an
+                        // impossible step rather than a silently free one.
+                        var result = RepeatedActionQuery.TryReadBoundTarget(
+                            context.Definition, node, frame, context.Components, out var boundTarget)
+                            ? handler.Resume(capabilityContext, new[] { boundTarget })
+                            : handler.Execute(capabilityContext);
+                        frame = CaptureBoundTarget(frame, node, result, context);
                         var applied = ApplyCapabilityResult(
                             frame, node, result, continuation, outcomes, choices, events, context);
                         if (applied != null)
@@ -833,7 +856,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             continuation.Clear();
             return EffectResolutionStepResult.Accept(
                 Rebuild(frame, continuation, outcomes, choices), true, events,
-                RepeatedActionQuery.WasRequested(context.Definition, outcomes),
+                RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes));
         }
 
@@ -1064,5 +1087,27 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<EffectNodeOutcome> outcomes,
             IEnumerable<EffectChoiceRecord> choices) =>
             frame.With(continuation, outcomes, choices, null);
+
+        /// <summary>
+        /// Milestone 8.6. Records onto the frame which piece a selection just named, for the one
+        /// definition shape that will need it: a card whose repeat says `on the same target`.
+        ///
+        /// It happens here, at the moment the selection applies, and not at the moment the repeat asks,
+        /// because those two moments are separated by everything the instance does - and for Wasp's
+        /// orbit skills what it does is move the piece. A coordinate remembered now would name whatever
+        /// is standing there later; the piece does not change when it moves.
+        ///
+        /// Every other definition passes through unchanged, because <c>BindsSelection</c> is false for
+        /// every node no repeat binds.
+        /// </summary>
+        private static PendingResolution CaptureBoundTarget(
+            PendingResolution frame,
+            EffectNodeDefinition node,
+            EffectExecutionResult result,
+            EffectResolutionContext context) =>
+            RepeatedActionQuery.TryCaptureBoundTarget(
+                context.Definition, node, result, context.Components, out var boundTarget)
+                ? frame.WithRepeat(frame.Repeat.Binding(boundTarget))
+                : frame;
     }
 }

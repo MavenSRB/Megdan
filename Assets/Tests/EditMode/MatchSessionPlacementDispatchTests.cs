@@ -259,7 +259,7 @@ namespace GuardsDigital.Tests.EditMode
                 new
                 {
                     Capability =
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.PlaceV1,
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticPlacementCapabilities.PlaceV2,
                     Cards = new[] { "placeholder-red-needle" }
                 },
                 new

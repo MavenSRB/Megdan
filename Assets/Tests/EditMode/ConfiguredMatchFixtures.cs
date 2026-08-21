@@ -284,6 +284,134 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.6. The verified mirror with the two Wasps standing beside each other, so a
+        /// fixture can watch one of them move the other with a card off the printed starting five.
+        ///
+        /// The enemy hero is the subject deliberately. A minion beside her would work as well for one
+        /// orbit and not for a second: p.18's after-action correction returns a minion displaced out of
+        /// the Battle Zone before the repeated instance starts, which is the rule working correctly and
+        /// a fixture watching the wrong thing.
+        /// </summary>
+        public static MatchSession CreateEngagedVerifiedMirrorSession() =>
+            CreateEngagedFixtureSession(
+                PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(TeamSide.Red));
+
+        /// <summary>
+        /// Milestone 8.6. The two heroes standing beside each other with the orbit Skill dealt, so a
+        /// fixture can watch a subject move around the actor and a bounded repeat move it again.
+        ///
+        /// The adjacency is what makes the card resolvable at all: the internal-test setup stands the
+        /// two heroes at opposite ends of the map, and an orbit needs something inside the acting
+        /// card's printed Radius to orbit.
+        /// </summary>
+        public static MatchSession CreateOrbitSession() =>
+            CreateEngagedFixtureSession(
+                PlaceholderOneVsOneTestConfiguration.CreateForOrbitFixture(TeamSide.Red));
+
+        /// <summary>
+        /// Milestone 8.6. The kinesis Skill dealt with a Blue minion standing inside the acting card's
+        /// printed Range but off every file through the actor, so a fixture can watch p.19's
+        /// straight-line complement decide what the selection may name.
+        ///
+        /// The enemy hero stands beside the actor as well, and that is the case the complement is for:
+        /// p.19 says adjacent units are in a straight line, so the hero is exactly the piece a
+        /// "not in a straight line" card may not touch however close it is.
+        /// </summary>
+        public static MatchSession CreateKinesisSession(out MinionId outOfLineMinionId)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForKinesisFixture(
+                TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var engaged = new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroBesideTheRedOne(map, setup),
+                setup.Minions);
+
+            return CreateSession(
+                configuration, map, WithAMeleeMinionOutOfLineFromTheRedHero(
+                    map, engaged, out outOfLineMinionId));
+        }
+
+        /// <summary>
+        /// One Blue melee minion moved to the nearest empty playable space that is inside range 3 of the
+        /// Red hero and on no file through them.
+        ///
+        /// The space is searched for rather than written down, because which coordinates satisfy both
+        /// conditions is a fact about the official map's geography and the setup standing on it, and a
+        /// literal would go stale the first time either moved.
+        /// </summary>
+        private static QuickGameSetupState WithAMeleeMinionOutOfLineFromTheRedHero(
+            BoardMapDefinition map, QuickGameSetupState setup, out MinionId target)
+        {
+            var redHero = setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Heroes.Select(hero => hero.Coordinate)
+                    .Concat(setup.Minions.Select(minion => minion.Coordinate)));
+            var destination = map.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Playable)
+                .Where(space => !occupied.Contains(space.Coordinate))
+                .Where(space =>
+                    HexDistanceQuery.Calculate(redHero.Coordinate, space.Coordinate) <= 3 &&
+                    !StraightLineQuery.AreInStraightLine(redHero.Coordinate, space.Coordinate))
+                .OrderBy(space => HexDistanceQuery.Calculate(redHero.Coordinate, space.Coordinate))
+                .ThenBy(space => space.Coordinate.Q)
+                .ThenBy(space => space.Coordinate.R)
+                .First();
+
+            var moved = setup.Minions.First(minion =>
+                minion.TeamSide == TeamSide.Blue && minion.MinionType == StandardMinionType.Melee);
+            target = moved.MinionId;
+            var relocatedTarget = target;
+            var minions = setup.Minions
+                .Select(minion => minion.MinionId.Equals(relocatedTarget)
+                    ? new QuickGameMinionSetupState(
+                        minion.MinionId,
+                        minion.TeamId,
+                        minion.TeamSide,
+                        minion.MinionType,
+                        minion.SpawnPoint,
+                        new ConfiguredSpaceReference(map.Id, destination.Id),
+                        destination.Coordinate)
+                    : minion)
+                .ToArray();
+
+            return new QuickGameSetupState(
+                setup.SelectedMap, setup.WaveCount, setup.TieBreakerState, setup.Teams, setup.Heroes,
+                minions);
+        }
+
+        /// <summary>
+        /// One session from one named fixture configuration, with the Blue hero moved beside the Red
+        /// one. Extracted at milestone 8.6 from the identical bodies above it.
+        /// </summary>
+        private static MatchSession CreateEngagedFixtureSession(
+            PlaceholderOneVsOneTestConfiguration configuration)
+        {
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroBesideTheRedOne(map, setup),
+                setup.Minions));
+        }
+
+        /// <summary>
         /// The same, with a Blue melee minion moved beside the Red hero as well, so a fixture can ask
         /// what an Attack narrowed to p.13's heroes alone is offered when both a hero and a minion
         /// stand next to it.

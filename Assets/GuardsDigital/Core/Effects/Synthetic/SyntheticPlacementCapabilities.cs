@@ -38,8 +38,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference ActorSpaceV1 =>
             new EffectCapabilityReference(ActorSpace, 1);
 
-        public static EffectCapabilityReference PlaceV1 =>
-            new EffectCapabilityReference(Place, 1);
+        /// <summary>
+        /// Revision 2, minted at milestone 8.6: revision 1's subject and radius plus the two things
+        /// p.18 leaves to the card - which kind of piece this Place may take, and the space its
+        /// destinations are measured from.
+        ///
+        /// Revision 1 is retired rather than kept beside it, exactly as direct Move retired its own
+        /// when the subject widened. Both new parameters are declarations revision 1 made silently: it
+        /// always took any game piece and always measured from the piece itself, so a definition
+        /// carrying the old contract would be asking for one particular pair of answers while claiming
+        /// to ask for none.
+        /// </summary>
+        public static EffectCapabilityReference PlaceV2 =>
+            new EffectCapabilityReference(Place, 2);
+
+        /// <summary>The eligible-piece parameter's name, spelled once for the reason the Push's is.</summary>
+        public const string EligiblePieceParameterName = "eligiblePiece";
+
+        /// <summary>The destination-anchor parameter's name, spelled once for the same reason.</summary>
+        public const string DestinationAnchorParameterName = "destinationAnchor";
 
         public static EffectCapabilityReference SpawnV1 =>
             new EffectCapabilityReference(Spawn, 1);
@@ -129,13 +146,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class PlaceHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => PlaceV1;
+            public EffectCapabilityReference Reference => PlaceV2;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
                 new[]
                 {
                     new EffectCapabilityParameter("subject", EffectValueKind.Coordinate),
-                    new EffectCapabilityParameter("radius", EffectValueKind.Integer)
+                    new EffectCapabilityParameter("radius", EffectValueKind.Integer),
+                    new EffectCapabilityParameter(
+                        EligiblePieceParameterName, EffectValueKind.Integer),
+                    new EffectCapabilityParameter(
+                        DestinationAnchorParameterName, EffectValueKind.Integer)
                 },
                 new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) });
 
@@ -170,7 +191,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 if (selected == null || selected.Count != 1 ||
                     selected[0].Kind != EffectValueKind.Coordinate ||
-                    !TryDeclare(context, out var policy, out var subject, out _))
+                    !TryDeclare(context, out var policy, out var subject, out var measuredFrom))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -182,6 +203,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.Components.Board,
                     context.Components.Tokens,
                     subject,
+                    measuredFrom,
                     selected[0].Coordinate,
                     Array.Empty<HexCoordinate>());
                 return outcome.Accepted
@@ -224,16 +246,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// decision milestone 6.4 recorded for distance optionality: p.10's mandatory-versus-`may`
             /// distinction is already carried by the four failure policies, and a second parameter
             /// saying the same thing could disagree with them.
+            ///
+            /// Immunity is asked of the named piece and only of the named piece. p.18 makes it a
+            /// targeting rule about units, and <see cref="BoardObjectReference.AsRuleObject"/> is the
+            /// named absence for a token, which p.19 says is not a unit - so a token is placed without
+            /// an immunity question rather than by one that silently answers no.
             /// </summary>
             private static bool TryDeclare(
                 EffectCapabilityContext context,
                 out PlacePolicy policy,
                 out BoardObjectReference subject,
-                out HexCoordinate origin)
+                out HexCoordinate measuredFrom)
             {
                 policy = null;
                 subject = default;
-                origin = default;
+                measuredFrom = default;
 
                 var components = context.Components;
                 if (components == null || !components.CanDisplace || !components.IsLive)
@@ -245,6 +272,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var named = context.Input("subject");
                 if (radius < 1 || named.Kind != EffectValueKind.Coordinate ||
                     !components.Board.TryGetObjectAt(named.Coordinate, out subject))
+                {
+                    return false;
+                }
+
+                var eligiblePiece =
+                    (PlaceEligiblePieceKind)context.Input(EligiblePieceParameterName).IntegerValue;
+                var anchor =
+                    (PlaceDestinationAnchor)context.Input(DestinationAnchorParameterName).IntegerValue;
+                if (!Enum.IsDefined(typeof(PlaceEligiblePieceKind), eligiblePiece) ||
+                    eligiblePiece == PlaceEligiblePieceKind.None ||
+                    !Enum.IsDefined(typeof(PlaceDestinationAnchor), anchor) ||
+                    anchor == PlaceDestinationAnchor.None)
                 {
                     return false;
                 }
@@ -261,16 +300,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return false;
                 }
 
-                origin = named.Coordinate;
+                if (anchor == PlaceDestinationAnchor.ActingHero)
+                {
+                    if (!components.Board.TryGetObjectCoordinate(
+                            BoardObjectReference.ForHero(context.ActorId), out measuredFrom))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    measuredFrom = named.Coordinate;
+                }
+
                 policy = new PlacePolicy(
                     PlaceSourceContainer.Board,
-                    PlaceEligiblePieceKind.GamePiece,
+                    eligiblePiece,
                     PlaceDestinationScope.EmptySpacesWithinRadius,
                     radius,
                     PlaceChooserKind.ActingHero,
                     context.FailurePolicy == EffectFailurePolicy.Mandatory
                         ? PlaceNoDestinationPolicy.Impossible
-                        : PlaceNoDestinationPolicy.Decline);
+                        : PlaceNoDestinationPolicy.Decline,
+                    anchor);
                 return true;
             }
         }

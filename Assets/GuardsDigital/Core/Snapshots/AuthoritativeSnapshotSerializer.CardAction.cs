@@ -134,6 +134,107 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(pending.EffectDefinitionReference.ContentRevision);
             writer.Write(pending.ActorId.Value);
             writer.Write(pending.ControllerId.Value);
+            WriteRepeatContinuation(writer, pending.Continuation);
+        }
+
+        /// <summary>
+        /// Milestone 8.6's schema move, in one place because two continuations carry it: the effect
+        /// frame of an instance that is running, and the owed instance that has not started yet.
+        ///
+        /// Three fields, and deliberately no node identity: which selection a bound target belongs to
+        /// is read from the trusted definition when the repeated instance reaches it, so a tampered
+        /// payload can move a coordinate but cannot move a rule. The coordinate is written only when
+        /// there is one, which keeps every action that never repeats at one extra byte.
+        /// </summary>
+        private static void WriteRepeatContinuation(BinaryWriter writer, RepeatContinuation repeat)
+        {
+            writer.Write(repeat.CompletedRepeats);
+            writer.Write((int)repeat.BoundTarget.Kind);
+            if (repeat.HasBoundTarget)
+            {
+                writer.Write(BoundTargetIdentity(repeat.BoundTarget));
+            }
+        }
+
+        /// <summary>
+        /// The one identity a board object of each kind has. Written as a kind and a string rather than
+        /// as three optional ids, because exactly one of them is ever defined and a payload that named
+        /// two would be describing a piece that does not exist.
+        /// </summary>
+        private static string BoundTargetIdentity(BoardObjectReference target)
+        {
+            switch (target.Kind)
+            {
+                case BoardObjectKind.Hero:
+                    return target.HeroId.Value;
+                case BoardObjectKind.Minion:
+                    return target.MinionId.Value;
+                case BoardObjectKind.Token:
+                    return target.TokenInstanceId.Value;
+                default:
+                    throw new InvalidOperationException(
+                        "A bound repeat target is a hero, a minion or a token.");
+            }
+        }
+
+        /// <summary>
+        /// Reads that continuation back and refuses one that disagrees with the invocation context
+        /// beside it. The two say the same thing from two directions - a repeated instance runs under
+        /// the repeated context and has a positive count - and a payload that made them disagree would
+        /// otherwise be caught by <see cref="PendingResolution"/>'s own guard as an exception rather
+        /// than as a rejected snapshot.
+        /// </summary>
+        private static RepeatContinuation ReadRepeatContinuation(
+            BinaryReader reader,
+            ActionInvocationContext invocationContext)
+        {
+            var completedRepeats = reader.ReadInt32();
+            var boundTargetKind = SnapshotEnumReader.Read<BoardObjectKind>(
+                reader, "repeat continuation bound target kind");
+            var boundTarget = default(BoardObjectReference);
+            if (boundTargetKind != BoardObjectKind.None)
+            {
+                var identity = reader.ReadString();
+                switch (boundTargetKind)
+                {
+                    case BoardObjectKind.Hero:
+                        boundTarget = BoardObjectReference.ForHero(new HeroId(identity));
+                        break;
+                    case BoardObjectKind.Minion:
+                        boundTarget = BoardObjectReference.ForMinion(new MinionId(identity));
+                        break;
+                    default:
+                        boundTarget = BoardObjectReference.ForToken(new TokenInstanceId(identity));
+                        break;
+                }
+            }
+
+            if (completedRepeats < 0)
+            {
+                throw Malformed("Snapshot repeat continuation records a negative repeat count.");
+            }
+
+            if ((completedRepeats > 0) !=
+                (invocationContext == ActionInvocationContext.Repeated))
+            {
+                throw Malformed(
+                    "Snapshot repeat continuation and invocation context disagree about whether this " +
+                    "instance is a repeat.");
+            }
+
+            if (completedRepeats == 0)
+            {
+                // A printed instance may already have named the piece its own repeat will bind, so the
+                // target is legal here; what is not is a count that says this instance is a repeat when
+                // the invocation context says it is not, which the check above refuses.
+                return boundTarget.IsDefined
+                    ? RepeatContinuation.FirstInstance.Binding(boundTarget)
+                    : RepeatContinuation.FirstInstance;
+            }
+
+            return boundTarget.IsDefined
+                ? RepeatContinuation.NextBoundTo(completedRepeats, boundTarget)
+                : RepeatContinuation.Next(completedRepeats);
         }
 
         /// <summary>
@@ -160,7 +261,8 @@ namespace GuardsDigital.Core.Snapshots
                 new EffectDefinitionReference(
                     new EffectDefinitionId(reader.ReadString()), reader.ReadString()),
                 new HeroId(reader.ReadString()),
-                new HeroId(reader.ReadString()));
+                new HeroId(reader.ReadString()),
+                ReadRepeatContinuation(reader, ActionInvocationContext.Repeated));
             if (SkillCardActionStrategyBackend.FindRepeatableAction(definitions, repeat) == null)
             {
                 throw Malformed(
@@ -358,6 +460,7 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(pending.ControllerId.Value);
             writer.Write(pending.EffectDefinitionReference.DefinitionId.Value);
             writer.Write(pending.EffectDefinitionReference.ContentRevision);
+            WriteRepeatContinuation(writer, pending.Repeat);
 
             writer.Write(pending.Continuation.Count);
             foreach (var frame in pending.Continuation)
@@ -433,6 +536,8 @@ namespace GuardsDigital.Core.Snapshots
                     $"Snapshot names effect definition '{effectReference}', which the configured match definitions do not provide for action '{common.ActionId}'.");
             }
 
+            var repeat = ReadRepeatContinuation(reader, common.InvocationContext);
+
             var continuation = ReadMany(reader, "effect continuation frames", () =>
             {
                 var nodeId = new EffectNodeId(reader.ReadString());
@@ -494,7 +599,8 @@ namespace GuardsDigital.Core.Snapshots
                 common.InvocationContext,
                 continuation,
                 outcomes,
-                accepted);
+                accepted,
+                repeat: repeat);
             if (!reader.ReadBoolean())
             {
                 return restored;

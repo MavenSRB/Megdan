@@ -31,48 +31,66 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly MapId Map = new MapId("synthetic-place-map");
         private static readonly HexCoordinate ActorAt = new HexCoordinate(0, 0);
 
+        /// <summary>Where every fixture below stands the other hero, and therefore the space a
+        /// PlacedPiece-anchored Place measures its destinations from.</summary>
+        private static readonly HexCoordinate OtherAt = new HexCoordinate(1, 0);
+
         private static PlacePolicy BoardRadius(int radius) => new PlacePolicy(
             PlaceSourceContainer.Board,
             PlaceEligiblePieceKind.GamePiece,
             PlaceDestinationScope.EmptySpacesWithinRadius,
             radius,
             PlaceChooserKind.ActingHero,
-            PlaceNoDestinationPolicy.Impossible);
+            PlaceNoDestinationPolicy.Impossible,
+            PlaceDestinationAnchor.PlacedPiece);
 
         [Test]
-        public void APlacePolicy_RefusesToExistWithoutEachOfTheFiveThingsAPlaceMustDeclare()
+        public void APlacePolicy_RefusesToExistWithoutEachOfTheSixThingsAPlaceMustDeclare()
         {
             // CARD_EFFECT_CAPABILITIES.md makes an incomplete placement declaration a content-load
-            // rejection, so the incomplete object cannot be constructed at all.
+            // rejection, so the incomplete object cannot be constructed at all. Milestone 8.6 added the
+            // sixth: the space the destination question is measured from.
+            Assert.That(() => new PlacePolicy(
+                    PlaceSourceContainer.Board, PlaceEligiblePieceKind.GamePiece,
+                    PlaceDestinationScope.EmptySpacesWithinRadius, 1,
+                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.Impossible,
+                    PlaceDestinationAnchor.None),
+                Throws.ArgumentException, "destination anchor");
             Assert.That(() => new PlacePolicy(
                     PlaceSourceContainer.None, PlaceEligiblePieceKind.GamePiece,
                     PlaceDestinationScope.EmptySpacesWithinRadius, 1,
-                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.Impossible),
+                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.Impossible,
+                    PlaceDestinationAnchor.PlacedPiece),
                 Throws.ArgumentException, "source container");
             Assert.That(() => new PlacePolicy(
                     PlaceSourceContainer.Board, PlaceEligiblePieceKind.None,
                     PlaceDestinationScope.EmptySpacesWithinRadius, 1,
-                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.Impossible),
+                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.Impossible,
+                    PlaceDestinationAnchor.PlacedPiece),
                 Throws.ArgumentException, "eligible piece kind");
             Assert.That(() => new PlacePolicy(
                     PlaceSourceContainer.Board, PlaceEligiblePieceKind.GamePiece,
                     PlaceDestinationScope.None, 1,
-                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.Impossible),
+                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.Impossible,
+                    PlaceDestinationAnchor.PlacedPiece),
                 Throws.ArgumentException, "destination query");
             Assert.That(() => new PlacePolicy(
                     PlaceSourceContainer.Board, PlaceEligiblePieceKind.GamePiece,
                     PlaceDestinationScope.EmptySpacesWithinRadius, 1,
-                    PlaceChooserKind.None, PlaceNoDestinationPolicy.Impossible),
+                    PlaceChooserKind.None, PlaceNoDestinationPolicy.Impossible,
+                    PlaceDestinationAnchor.PlacedPiece),
                 Throws.ArgumentException, "chooser");
             Assert.That(() => new PlacePolicy(
                     PlaceSourceContainer.Board, PlaceEligiblePieceKind.GamePiece,
                     PlaceDestinationScope.EmptySpacesWithinRadius, 1,
-                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.None),
+                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.None,
+                    PlaceDestinationAnchor.PlacedPiece),
                 Throws.ArgumentException, "no-destination policy");
             Assert.That(() => new PlacePolicy(
                     PlaceSourceContainer.Board, PlaceEligiblePieceKind.GamePiece,
                     PlaceDestinationScope.EmptySpacesWithinRadius, 0,
-                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.Impossible),
+                    PlaceChooserKind.ActingHero, PlaceNoDestinationPolicy.Impossible,
+                    PlaceDestinationAnchor.PlacedPiece),
                 Throws.InstanceOf<ArgumentOutOfRangeException>(),
                 "A radius of zero admits only the origin, which p.18's different-space rule excludes.");
         }
@@ -123,7 +141,8 @@ namespace GuardsDigital.Tests.EditMode
                 PlaceDestinationScope.NearestEmptySpacesInScope,
                 0,
                 PlaceChooserKind.OwningTeam,
-                PlaceNoDestinationPolicy.Impossible);
+                PlaceNoDestinationPolicy.Impossible,
+                PlaceDestinationAnchor.PlacedPiece);
             var scope = new[]
             {
                 new HexCoordinate(1, 0), new HexCoordinate(2, 0),
@@ -146,7 +165,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var outcome = PlaceOperation.PlaceFromBoard(
                 BoardRadius(2), board, board,
-                BoardObjectReference.ForHero(Other), destination, Array.Empty<HexCoordinate>());
+                BoardObjectReference.ForHero(Other), OtherAt, destination, Array.Empty<HexCoordinate>());
 
             Assert.That(outcome.Accepted, Is.True);
             Assert.That(outcome.SourceContainer, Is.EqualTo(PlaceSourceContainer.Board));
@@ -170,11 +189,13 @@ namespace GuardsDigital.Tests.EditMode
                 PlaceDestinationScope.EmptySpacesWithinRadius,
                 2,
                 PlaceChooserKind.OwningTeam,
-                PlaceNoDestinationPolicy.Impossible);
+                PlaceNoDestinationPolicy.Impossible,
+                PlaceDestinationAnchor.PlacedPiece);
 
             var outcome = PlaceOperation.PlaceFromBoard(
                 minionsOnly, board, board,
-                BoardObjectReference.ForHero(Other), new HexCoordinate(2, 0), Array.Empty<HexCoordinate>());
+                BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(2, 0),
+                Array.Empty<HexCoordinate>());
 
             Assert.That(outcome.Accepted, Is.False);
             Assert.That(outcome.RejectionReason, Is.EqualTo(PlaceRejectionReason.IneligiblePiece));
@@ -190,19 +211,127 @@ namespace GuardsDigital.Tests.EditMode
 
             var tooFar = PlaceOperation.PlaceFromBoard(
                 BoardRadius(1), board, board,
-                BoardObjectReference.ForHero(Other), new HexCoordinate(3, 0), Array.Empty<HexCoordinate>());
+                BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(3, 0),
+                Array.Empty<HexCoordinate>());
             var ownSpace = PlaceOperation.PlaceFromBoard(
                 BoardRadius(2), board, board,
-                BoardObjectReference.ForHero(Other), new HexCoordinate(1, 0), Array.Empty<HexCoordinate>());
+                BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(1, 0),
+                Array.Empty<HexCoordinate>());
             var occupied = PlaceOperation.PlaceFromBoard(
                 BoardRadius(2), board, board,
-                BoardObjectReference.ForHero(Other), ActorAt, Array.Empty<HexCoordinate>());
+                BoardObjectReference.ForHero(Other), OtherAt, ActorAt, Array.Empty<HexCoordinate>());
 
             Assert.That(tooFar.RejectionReason, Is.EqualTo(PlaceRejectionReason.DestinationNotAdmitted));
             Assert.That(ownSpace.RejectionReason, Is.EqualTo(PlaceRejectionReason.DestinationNotAdmitted),
                 "p.18 requires a different space.");
             Assert.That(occupied.RejectionReason, Is.EqualTo(PlaceRejectionReason.DestinationNotAdmitted),
                 "The actor stands there; a game piece can only be placed into an empty space.");
+        }
+
+        [Test]
+        public void ABoardPlace_RefusesAMeasuredFromSpaceItsDeclaredAnchorDoesNotName()
+        {
+            // Milestone 8.6. The anchor is content - p.18 says nothing about where a destination is
+            // measured from, so the invoking card does - and a caller and a declaration that disagree
+            // about it are refused rather than quietly resolved in the caller's favour.
+            var board = CreateBoard(otherAt: OtherAt);
+
+            var outcome = PlaceOperation.PlaceFromBoard(
+                BoardRadius(2), board, board,
+                BoardObjectReference.ForHero(Other), ActorAt, new HexCoordinate(2, 0),
+                Array.Empty<HexCoordinate>());
+
+            Assert.That(outcome.RejectionReason,
+                Is.EqualTo(PlaceRejectionReason.DestinationAnchorMismatch),
+                "This policy anchors at the placed piece, and the actor's space is not the piece's.");
+            Assert.That(
+                board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(OtherAt), "A refused Place moves nothing.");
+        }
+
+        [Test]
+        public void AnActorAnchoredPlace_MeasuresItsDestinationsFromTheAnchorAndNotFromThePiece()
+        {
+            // Wasp's Telekinesis prints "into a space adjacent to you", which is a question about where
+            // the acting hero stands and which no radius around the piece could ask.
+            var board = CreateBoard(otherAt: new HexCoordinate(2, 0));
+            var anchored = new PlacePolicy(
+                PlaceSourceContainer.Board,
+                PlaceEligiblePieceKind.UnitOrToken,
+                PlaceDestinationScope.EmptySpacesWithinRadius,
+                1,
+                PlaceChooserKind.ActingHero,
+                PlaceNoDestinationPolicy.Impossible,
+                PlaceDestinationAnchor.ActingHero);
+
+            var accepted = PlaceOperation.PlaceFromBoard(
+                anchored, board, board,
+                BoardObjectReference.ForHero(Other), ActorAt, new HexCoordinate(0, 1),
+                Array.Empty<HexCoordinate>());
+            var besideThePiece = PlaceOperation.PlaceFromBoard(
+                anchored, board, board,
+                BoardObjectReference.ForHero(Other), ActorAt, new HexCoordinate(3, 0),
+                Array.Empty<HexCoordinate>());
+
+            Assert.That(accepted.Accepted, Is.True,
+                "A space adjacent to the actor is admitted however far the piece was standing.");
+            Assert.That(accepted.Origin, Is.EqualTo(new HexCoordinate(2, 0)),
+                "and the outcome still names where the piece came from, which is not the anchor.");
+            Assert.That(besideThePiece.RejectionReason,
+                Is.EqualTo(PlaceRejectionReason.DestinationNotAdmitted),
+                "while a space adjacent to the piece is not adjacent to the actor and is refused.");
+        }
+
+        [Test]
+        public void ASupplyPlace_RefusesAnAnchorAPieceOffTheBoardCannotHave()
+        {
+            var board = CreateBoard(otherAt: OtherAt);
+            var catalog = SyntheticComponentDefinitions.CreateCatalog();
+            var impossible = new PlacePolicy(
+                PlaceSourceContainer.Supply,
+                PlaceEligiblePieceKind.Token,
+                PlaceDestinationScope.EmptySpacesWithinRadius,
+                1,
+                PlaceChooserKind.ActingHero,
+                PlaceNoDestinationPolicy.Impossible,
+                PlaceDestinationAnchor.PlacedPiece);
+
+            var outcome = PlaceOperation.PlaceFromSupply(
+                impossible, board, catalog, Hazard(catalog, new HexCoordinate(0, 1)),
+                ActorAt, Array.Empty<HexCoordinate>());
+
+            Assert.That(outcome.RejectionReason,
+                Is.EqualTo(PlaceRejectionReason.DestinationAnchorMismatch),
+                "A piece taken from the supply came off no space, so it cannot be the space its own " +
+                "destinations are measured from.");
+        }
+
+        [Test]
+        public void TheUnitOrTokenKind_AdmitsWhatTheCardSaysAndIsStillNotThePagesGamePiece()
+        {
+            // Milestone 8.6. `a game piece (such as a miniature, or a token)` is p.18's sentence about
+            // the Place keyword; `a unit or a token` is Wasp's sentence about her Place. They admit the
+            // same three kinds on this board and are still two declarations, for the reason
+            // PushEligiblePieceKind refuses to call its own unrestricted value `GamePiece`: the name is
+            // the content, and the two part company the first time a placeable piece is neither.
+            var board = CreateBoard(otherAt: OtherAt);
+            var unitOrToken = new PlacePolicy(
+                PlaceSourceContainer.Board,
+                PlaceEligiblePieceKind.UnitOrToken,
+                PlaceDestinationScope.EmptySpacesWithinRadius,
+                2,
+                PlaceChooserKind.ActingHero,
+                PlaceNoDestinationPolicy.Impossible,
+                PlaceDestinationAnchor.PlacedPiece);
+
+            var outcome = PlaceOperation.PlaceFromBoard(
+                unitOrToken, board, board,
+                BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(2, 0),
+                Array.Empty<HexCoordinate>());
+
+            Assert.That(outcome.Accepted, Is.True, "A hero is a unit.");
+            Assert.That(unitOrToken.EligiblePiece, Is.Not.EqualTo(PlaceEligiblePieceKind.GamePiece),
+                "and the declaration still says what the card says.");
         }
 
         [Test]
@@ -213,7 +342,7 @@ namespace GuardsDigital.Tests.EditMode
             var outcome = PlaceOperation.PlaceFromBoard(
                 BoardRadius(2), board, board,
                 BoardObjectReference.ForMinion(new MinionId("absent-minion")),
-                new HexCoordinate(2, 0), Array.Empty<HexCoordinate>());
+                OtherAt, new HexCoordinate(2, 0), Array.Empty<HexCoordinate>());
 
             Assert.That(outcome.RejectionReason, Is.EqualTo(PlaceRejectionReason.SubjectNotOnBoard));
         }
@@ -231,7 +360,8 @@ namespace GuardsDigital.Tests.EditMode
                 ActorAt, Array.Empty<HexCoordinate>());
             var supplyArm = PlaceOperation.PlaceFromBoard(
                 SupplyRadius(1), board, board,
-                BoardObjectReference.ForHero(Other), new HexCoordinate(0, 1), Array.Empty<HexCoordinate>());
+                BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(0, 1),
+                Array.Empty<HexCoordinate>());
 
             Assert.That(boardArm.RejectionReason, Is.EqualTo(PlaceRejectionReason.SourceContainerMismatch));
             Assert.That(supplyArm.RejectionReason, Is.EqualTo(PlaceRejectionReason.SourceContainerMismatch));
@@ -287,7 +417,8 @@ namespace GuardsDigital.Tests.EditMode
             PlaceDestinationScope.EmptySpacesWithinRadius,
             radius,
             PlaceChooserKind.ActingHero,
-            PlaceNoDestinationPolicy.Impossible);
+            PlaceNoDestinationPolicy.Impossible,
+            PlaceDestinationAnchor.ActingHero);
 
         private static PlacedToken Hazard(ComponentDefinitionCatalog catalog, HexCoordinate coordinate) =>
             new PlacedToken(

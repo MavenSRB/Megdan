@@ -182,8 +182,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<EffectContinuationFrame> continuation,
             IEnumerable<EffectNodeOutcome> completedOutcomes = null,
             IEnumerable<EffectChoiceRecord> acceptedChoices = null,
-            PendingEffectChoice pendingChoice = null)
+            PendingEffectChoice pendingChoice = null,
+            RepeatContinuation repeat = default)
         {
+            // Milestone 8.6. The two ways of saying "this instance is a repeat" are kept in step here,
+            // because they answer different halves of the same fact and nothing else could catch them
+            // disagreeing: the invocation context is what the dispatcher's start gate and the offer
+            // queries read, and the continuation is what the bound repeat counts.
+            if (repeat.IsRepeatedInstance != (invocationContext == ActionInvocationContext.Repeated))
+            {
+                throw new ArgumentException(
+                    "A repeated instance runs under the repeated invocation context and carries a " +
+                    "repeat continuation; a printed one carries neither.", nameof(repeat));
+            }
+
             if (!resolutionId.IsDefined)
             {
                 throw new ArgumentException("A pending resolution requires a resolution ID.", nameof(resolutionId));
@@ -214,6 +226,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             ActorId = actorId;
             ControllerId = controllerId;
             InvocationContext = invocationContext;
+            Repeat = repeat;
             Continuation = new ReadOnlyCollection<EffectContinuationFrame>(
                 (continuation ?? throw new ArgumentNullException(nameof(continuation))).ToArray());
             CompletedOutcomes = new ReadOnlyCollection<EffectNodeOutcome>(
@@ -238,6 +251,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public HeroId ControllerId { get; }
         public ActionInvocationContext InvocationContext { get; }
 
+        /// <summary>
+        /// Milestone 8.6: how far through a bounded repeat this instance is, and the target it
+        /// inherited from the instance before it. <see cref="RepeatContinuation.FirstInstance"/> for
+        /// every printed instance, which is the default value, so nothing that never repeats names it.
+        /// </summary>
+        public RepeatContinuation Repeat { get; }
+
         /// <summary>Index 0 is the root frame; the last entry is where execution resumes.</summary>
         public IReadOnlyList<EffectContinuationFrame> Continuation { get; }
 
@@ -248,6 +268,28 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public PendingEffectChoice PendingChoice { get; }
 
         public bool IsAwaitingChoice => PendingChoice != null;
+
+        /// <summary>
+        /// The same frame carrying a different repeat continuation. Milestone 8.6: the piece an
+        /// `on the same target` repeat will bind is recorded the moment the selection names it, which
+        /// is mid-resolution, so the frame has to be able to take one without rebuilding everything
+        /// else about it.
+        /// </summary>
+        public PendingResolution WithRepeat(RepeatContinuation repeat) =>
+            new PendingResolution(
+                ResolutionId,
+                SourceCardInstanceId,
+                SourceDefinitionReference,
+                ActionDefinitionId,
+                EffectDefinitionReference,
+                ActorId,
+                ControllerId,
+                InvocationContext,
+                Continuation,
+                CompletedOutcomes,
+                AcceptedChoices,
+                PendingChoice,
+                repeat);
 
         public PendingResolution With(
             IEnumerable<EffectContinuationFrame> continuation,
@@ -266,6 +308,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 continuation,
                 completedOutcomes,
                 acceptedChoices,
-                pendingChoice);
+                pendingChoice,
+                Repeat);
     }
 }

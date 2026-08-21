@@ -26,7 +26,7 @@ namespace GuardsDigital.Tests.EditMode
     ///
     /// This fixture exists for the paths a single fixture card cannot reach. Two of them are the ones
     /// the project has been caught on twice before, at 6.8c and 6.8b: a rule whose only caller is a
-    /// test is not implemented, so the `towardActor` policy and the Object Push immunity are proved
+    /// test is not implemented, so the destination policy and the Object Push immunity are proved
     /// here through the registered handlers. `RuleActivity.ObjectPush` has been an inert enum member
     /// since milestone 6.8 and this is the milestone that reads it; milestone 6.8b's Blue Feint
     /// immunity is scheduled behind 6.4 for exactly that reason.
@@ -314,8 +314,8 @@ namespace GuardsDigital.Tests.EditMode
             // This is the production consumer of CloserQuery.
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, moverAt: new HexCoordinate(3, 0), distance: 2, towardActor: true));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, moverAt: new HexCoordinate(3, 0), distance: 2, DirectMoveDestinationPolicy.TowardActor));
 
             Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
             var spaces = offered.Choice.Candidates.Select(candidate => candidate.Coordinate).ToArray();
@@ -341,12 +341,82 @@ namespace GuardsDigital.Tests.EditMode
             // decided before the geometry and added to what the geometry admits.
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, towardActor: true));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, DirectMoveDestinationPolicy.TowardActor));
 
             Assert.That(
                 offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
                 Has.Member(new HexCoordinate(3, 0)));
+        }
+
+        [Test]
+        public void AnOrbitMove_OffersOnlySpacesTheSameDistanceFromTheActorAsTheMoversOwn()
+        {
+            // Milestone 8.6. `without moving it away from you or closer to you` is the third declared
+            // destination policy, and this is its production consumer. The star board is what makes the
+            // case say anything: on a line there is nowhere to orbit to, which is a true answer about a
+            // line and no evidence at all about the policy.
+            var board = CreateStarBoard();
+            var moverAt = ActorAt.GetNeighbor(HexDirection.East);
+
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(
+                    board, EffectFailurePolicy.Mandatory, moverAt, 1,
+                    DirectMoveDestinationPolicy.EquidistantFromActor));
+
+            Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
+            var spaces = offered.Choice.Candidates.Select(candidate => candidate.Coordinate).ToArray();
+            Assert.That(spaces, Is.EqualTo(new[] { new HexCoordinate(0, 1) }),
+                "The mover stands one space from the actor, so the orbit admits the ring of one - " +
+                "and of its two spaces, the North-East one holds the fixture's minion, which is the " +
+                "occupancy question rather than this policy's.");
+            Assert.That(spaces, Has.No.Member(ActorAt),
+                "The step towards the actor is refused, exactly as `away` would be.");
+            Assert.That(spaces, Has.No.Member(new HexCoordinate(2, 0)),
+                "and so is the step away from them.");
+            Assert.That(spaces, Has.No.Member(moverAt),
+                "A mandatory one-space move walks exactly one space (p.11), so standing still is not " +
+                "admitted here - which is the failure policy's decision, not the orbit's.");
+        }
+
+        [Test]
+        public void AnOrbitMove_IsImpossibleWhileTheActorStandsNowhere()
+        {
+            // Both narrowing policies measure from the acting hero, so an actor who is not on the board
+            // - a hero awaiting respawn - can satisfy neither. The unrestricted reading needs no such
+            // position and is deliberately not refused for lacking one.
+            var map = BoardMapDefinition.CreateSynthetic(
+                Map, 1, Enumerable.Range(-2, 9).Select(q => new HexCoordinate(q, 0)).ToArray());
+            var actorless = new AdjacentMoveAuthority(
+                map,
+                new[] { new HeroOccupancy(Other, new HexCoordinate(3, 0)) },
+                Array.Empty<ObstacleOccupancy>());
+
+            Assert.That(
+                Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(MoveContext(
+                    actorless, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2,
+                    DirectMoveDestinationPolicy.EquidistantFromActor)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(
+                Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(MoveContext(
+                    actorless, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2,
+                    DirectMoveDestinationPolicy.Unrestricted)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.NeedsChoice),
+                "A card that says only how far still resolves with the actor off the board.");
+        }
+
+        [Test]
+        public void ADirectMove_RefusesADestinationPolicyItsDeclarationDoesNotName()
+        {
+            var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
+
+            Assert.That(
+                Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(MoveContext(
+                    board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2,
+                    DirectMoveDestinationPolicy.None)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                "An undeclared policy is refused rather than read as the unrestricted one: p.11 gives " +
+                "card text the narrowing, so silence is a content fault and not a permission.");
         }
 
         [Test]
@@ -359,8 +429,8 @@ namespace GuardsDigital.Tests.EditMode
             // the Movement action's reachability walk, which never emits the mover's own space.
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, DirectMoveDestinationPolicy.Unrestricted));
 
             Assert.That(
                 offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
@@ -377,8 +447,8 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
             var moverAt = new HexCoordinate(3, 0);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Resume(
-                MoveContext(board, EffectFailurePolicy.UpTo, moverAt, distance: 2, towardActor: false),
+            var applied = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Resume(
+                MoveContext(board, EffectFailurePolicy.UpTo, moverAt, distance: 2, DirectMoveDestinationPolicy.Unrestricted),
                 new[] { EffectValue.Space(moverAt) });
 
             Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
@@ -396,8 +466,9 @@ namespace GuardsDigital.Tests.EditMode
             // optional, so the correction above must not reach a mandatory node.
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(board, EffectFailurePolicy.Mandatory, new HexCoordinate(3, 0), 2, false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(board, EffectFailurePolicy.Mandatory, new HexCoordinate(3, 0), 2,
+                    DirectMoveDestinationPolicy.Unrestricted));
 
             Assert.That(
                 offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
@@ -413,9 +484,9 @@ namespace GuardsDigital.Tests.EditMode
             // something the chooser may do - and the walk reads the widened set without changing.
             var board = CreateLineBoard(otherAt: new HexCoordinate(-2, 0));
             PlaceToken(board, new HexCoordinate(-1, 0));
-            var handler = Handler(SyntheticDisplacementCapabilities.DirectMoveV2);
+            var handler = Handler(SyntheticDisplacementCapabilities.DirectMoveV3);
             var context = MoveContext(
-                board, EffectFailurePolicy.UpTo, new HexCoordinate(-2, 0), distance: 2, towardActor: false);
+                board, EffectFailurePolicy.UpTo, new HexCoordinate(-2, 0), distance: 2, DirectMoveDestinationPolicy.Unrestricted);
 
             var offered = handler.Execute(context);
 
@@ -434,8 +505,8 @@ namespace GuardsDigital.Tests.EditMode
             // The negative twin: without it the case above cannot tell filtering from a short board.
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, moverAt: new HexCoordinate(3, 0), distance: 2, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, moverAt: new HexCoordinate(3, 0), distance: 2, DirectMoveDestinationPolicy.Unrestricted));
 
             Assert.That(
                 offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
@@ -448,8 +519,8 @@ namespace GuardsDigital.Tests.EditMode
             // p.11: "unless the distance is optional ... you must move the exact number of spaces".
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(board, EffectFailurePolicy.Mandatory, new HexCoordinate(3, 0), distance: 2, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(board, EffectFailurePolicy.Mandatory, new HexCoordinate(3, 0), distance: 2, DirectMoveDestinationPolicy.Unrestricted));
 
             var spaces = offered.Choice.Candidates.Select(candidate => candidate.Coordinate).ToArray();
             Assert.That(spaces, Has.Member(new HexCoordinate(1, 0)));
@@ -463,8 +534,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), distance: 2, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), distance: 2, DirectMoveDestinationPolicy.Unrestricted));
 
             Assert.That(
                 offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
@@ -478,8 +549,8 @@ namespace GuardsDigital.Tests.EditMode
             // p.11 keeps the ordinary movement restrictions, and the actor's own space is occupied.
             var board = CreateLineBoard(otherAt: new HexCoordinate(2, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(2, 0), distance: 3, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(2, 0), distance: 3, DirectMoveDestinationPolicy.Unrestricted));
 
             var spaces = offered.Choice.Candidates.Select(candidate => candidate.Coordinate).ToArray();
             Assert.That(spaces, Has.No.Member(ActorAt), "The actor occupies its own space.");
@@ -497,8 +568,8 @@ namespace GuardsDigital.Tests.EditMode
             var minionAt = ActorAt.GetNeighbor(HexDirection.NorthEast);
             var destination = StraightLineQuery.Step(minionAt, HexDirection.NorthEast, 1);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Resume(
-                MoveContext(board, EffectFailurePolicy.UpTo, minionAt, distance: 1, towardActor: false),
+            var applied = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Resume(
+                MoveContext(board, EffectFailurePolicy.UpTo, minionAt, distance: 1, DirectMoveDestinationPolicy.Unrestricted),
                 new[] { EffectValue.Space(destination) });
 
             Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
@@ -515,8 +586,8 @@ namespace GuardsDigital.Tests.EditMode
             var token = PlaceToken(board, tokenAt);
             var destination = StraightLineQuery.Step(tokenAt, HexDirection.West, 1);
 
-            var applied = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Resume(
-                MoveContext(board, EffectFailurePolicy.UpTo, tokenAt, distance: 1, towardActor: false),
+            var applied = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Resume(
+                MoveContext(board, EffectFailurePolicy.UpTo, tokenAt, distance: 1, DirectMoveDestinationPolicy.Unrestricted),
                 new[] { EffectValue.Space(destination) });
 
             Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
@@ -531,8 +602,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
 
-            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(1, 0), distance: 2, towardActor: false));
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(1, 0), distance: 2, DirectMoveDestinationPolicy.Unrestricted));
 
             Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
                 "A coordinate no object stands on names no subject; the space is re-read, not remembered.");
@@ -549,8 +620,9 @@ namespace GuardsDigital.Tests.EditMode
 
             var heroBoard = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
             PlaceToken(heroBoard, new HexCoordinate(4, 0));
-            var heroOffered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(heroBoard, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, false, withPermission));
+            var heroOffered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(heroBoard, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2,
+                    DirectMoveDestinationPolicy.Unrestricted, withPermission));
             Assert.That(
                 heroOffered.Choice.Candidates.Select(candidate => candidate.Coordinate),
                 Has.Member(new HexCoordinate(5, 0)),
@@ -559,8 +631,9 @@ namespace GuardsDigital.Tests.EditMode
             var tokenBoard = CreateLineBoard(otherAt: new HexCoordinate(-2, 0));
             PlaceToken(tokenBoard, new HexCoordinate(3, 0));
             PlaceToken(tokenBoard, new HexCoordinate(4, 0), SyntheticComponentDefinitions.WardV1);
-            var tokenOffered = Handler(SyntheticDisplacementCapabilities.DirectMoveV2).Execute(
-                MoveContext(tokenBoard, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2, false, withPermission));
+            var tokenOffered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(
+                MoveContext(tokenBoard, EffectFailurePolicy.UpTo, new HexCoordinate(3, 0), 2,
+                    DirectMoveDestinationPolicy.Unrestricted, withPermission));
             Assert.That(tokenOffered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
             Assert.That(
                 tokenOffered.Choice.Candidates.Select(candidate => candidate.Coordinate),
@@ -669,8 +742,8 @@ namespace GuardsDigital.Tests.EditMode
             EffectFailurePolicy policy,
             HexCoordinate moverAt,
             int distance,
-            bool towardActor) =>
-            MoveContext(board, policy, moverAt, distance, towardActor, RuleModificationSet.Empty);
+            DirectMoveDestinationPolicy destinationPolicy) =>
+            MoveContext(board, policy, moverAt, distance, destinationPolicy, RuleModificationSet.Empty);
 
         /// <summary>
         /// Since milestone 6.8k the subject is the space the mover stands on, the same coordinate
@@ -682,13 +755,14 @@ namespace GuardsDigital.Tests.EditMode
             EffectFailurePolicy policy,
             HexCoordinate moverAt,
             int distance,
-            bool towardActor,
+            DirectMoveDestinationPolicy destinationPolicy,
             RuleModificationSet modifications) =>
             BuildContext(board, policy, modifications, new Dictionary<string, EffectValue>
             {
                 ["mover"] = EffectValue.Space(moverAt),
                 ["distance"] = EffectValue.Integer(distance),
-                ["towardActor"] = EffectValue.Boolean(towardActor)
+                [SyntheticDisplacementCapabilities.DestinationPolicyParameterName] =
+                    EffectValue.Integer((int)destinationPolicy)
             });
 
         private static EffectCapabilityContext BuildContext(

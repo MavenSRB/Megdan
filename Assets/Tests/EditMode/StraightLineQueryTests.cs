@@ -111,5 +111,101 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
         }
+
+        // ---------------------------------------------------------------------------------------
+        // Milestone 8.6: p.19's sentence stated whole, and read as a complement
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void ASingleSpace_IsAStraightLineAndIsInAStraightLineWithItself()
+        {
+            var origin = new HexCoordinate(2, -3);
+
+            Assert.That(
+                StraightLineQuery.IsStraightLine(new[] { origin }), Is.True,
+                "p.19 states it outright: a single space counts as a straight line.");
+            Assert.That(StraightLineQuery.AreInStraightLine(origin, origin), Is.True,
+                "and membership follows from that, which is the reading the complement below needs.");
+            Assert.That(
+                StraightLineQuery.TryGetDirection(origin, origin, out _, out _), Is.False,
+                "while the direction question still has no answer - a line of one space names no " +
+                "file to walk along, and p.18's Push is the caller that asks.");
+            Assert.That(
+                StraightLineQuery.IsStraightLine(new HexCoordinate[0]), Is.False,
+                "No spaces at all is not a line: p.19 describes spaces arranged in a file.");
+        }
+
+        [Test]
+        public void ASequenceIsALine_OnlyWhenEveryStepFollowsTheSameFile()
+        {
+            var origin = new HexCoordinate(0, 0);
+
+            Assert.That(
+                StraightLineQuery.IsStraightLine(new[]
+                {
+                    origin,
+                    StraightLineQuery.Step(origin, HexDirection.East, 1),
+                    StraightLineQuery.Step(origin, HexDirection.East, 2)
+                }),
+                Is.True, "Three spaces arranged in a file.");
+            Assert.That(
+                StraightLineQuery.IsStraightLine(new[]
+                {
+                    origin,
+                    StraightLineQuery.Step(origin, HexDirection.East, 2)
+                }),
+                Is.False, "A file with a gap in it is not a sequence of spaces.");
+            Assert.That(
+                StraightLineQuery.IsStraightLine(new[]
+                {
+                    origin,
+                    StraightLineQuery.Step(origin, HexDirection.East, 1),
+                    origin.GetNeighbor(HexDirection.East).GetNeighbor(HexDirection.NorthEast)
+                }),
+                Is.False, "and a bend is not one file.");
+            Assert.That(
+                StraightLineQuery.IsStraightLine(new[] { origin, origin }), Is.False,
+                "nor is a repeated space, which p.19's one-obstacle-per-space rule forbids anyway.");
+        }
+
+        [Test]
+        public void TheComplement_DropsEveryFileThroughTheOriginIncludingItsOwnSpace()
+        {
+            var origin = new HexCoordinate(0, 0);
+            var inLine = StraightLineQuery.Step(origin, HexDirection.NorthEast, 2);
+            var adjacent = origin.GetNeighbor(HexDirection.West);
+            var offAxis = origin.GetNeighbor(HexDirection.East).GetNeighbor(HexDirection.NorthEast);
+
+            var kept = StraightLineQuery.FilterOutStraightLine(
+                origin, new[] { origin, inLine, adjacent, offAxis });
+
+            Assert.That(kept, Is.EqualTo(new[] { offAxis }),
+                "`not in a straight line` removes the whole file, the adjacent space p.19 names by " +
+                "hand, and the origin itself - and keeps exactly what is off every axis.");
+        }
+
+        [Test]
+        public void TheComplement_KeepsTheTwoOffAxisSpacesOfEveryDistanceTwoRing()
+        {
+            var origin = new HexCoordinate(-4, 1);
+            var ring = new System.Collections.Generic.List<HexCoordinate>();
+            for (var dq = -2; dq <= 2; dq++)
+            {
+                for (var dr = System.Math.Max(-2, -dq - 2); dr <= System.Math.Min(2, -dq + 2); dr++)
+                {
+                    var candidate = new HexCoordinate(origin.Q + dq, origin.R + dr);
+                    if (HexDistanceQuery.Calculate(origin, candidate) == 2)
+                    {
+                        ring.Add(candidate);
+                    }
+                }
+            }
+
+            Assert.That(ring, Has.Count.EqualTo(12), "A distance-two ring has twelve spaces.");
+            Assert.That(
+                StraightLineQuery.FilterOutStraightLine(origin, ring), Has.Count.EqualTo(6),
+                "Six of them are two steps along one of the six files, and the other six are not - " +
+                "which is the shape a `not in a straight line` card is actually offered.");
+        }
     }
 }

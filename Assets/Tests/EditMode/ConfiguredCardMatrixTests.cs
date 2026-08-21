@@ -287,7 +287,11 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticShowcaseHand.CreateRedWithCardStateSkill(owner, opponent),
                     SyntheticShowcaseHand.CreateBlueWithCardStateSkill(owner, opponent),
                     SyntheticShowcaseHand.CreateRedWithRadiusSkill(owner),
-                    SyntheticShowcaseHand.CreateBlueWithRadiusSkill(owner)
+                    SyntheticShowcaseHand.CreateBlueWithRadiusSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithOrbitSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithOrbitSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithKinesisSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithKinesisSkill(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(definition => definition.ActionDefinitions)

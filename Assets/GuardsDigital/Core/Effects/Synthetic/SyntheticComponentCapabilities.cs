@@ -190,7 +190,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 PlaceDestinationScope.EmptySpacesWithinRadius,
                 1,
                 PlaceChooserKind.ActingHero,
-                PlaceNoDestinationPolicy.Impossible);
+                PlaceNoDestinationPolicy.Impossible,
+                // The piece comes from the supply and stands nowhere, so the only space this radius
+                // can be measured from is the acting hero's - which is what the handler has always
+                // passed and now declares.
+                PlaceDestinationAnchor.ActingHero);
 
             public EffectCapabilityReference Reference => PlaceTokenV1;
 

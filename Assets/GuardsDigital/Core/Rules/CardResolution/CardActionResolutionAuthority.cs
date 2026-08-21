@@ -582,9 +582,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Starts the instance a completed action asked for, once its boundary is clean, and closes
         /// that instance's own boundary in turn.
         ///
-        /// The recursion is bounded at one level by the rule itself rather than by a guard here: the
-        /// repeated instance runs under <c>ActionInvocationContext.Repeated</c>, under which a Repeat
-        /// node is ineligible, so it reports no request of its own and the repeat handed down is null.
+        /// The recursion is bounded by the rule itself rather than by a guard here: each instance
+        /// carries how many repeats its chain has already run, and the Repeat node it reaches is
+        /// eligible only while that count is below the maximum the node declares - so the chain ends by
+        /// the last instance reporting no request, exactly as milestone 6.7's single repeat did when
+        /// the maximum was always one.
         /// </summary>
         private CardActionResolutionResult StartOwedRepeat(
             List<ResolutionStep> steps,
@@ -613,6 +615,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 components,
                 boundary.RoundIndex,
                 boundary.TurnIndex,
+                out var furtherRepeat,
                 out var repeatedLanePushCause);
             if (!repeated.Accepted)
             {
@@ -624,7 +627,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             steps.AddRange(repeated.Steps);
             return CloseActionBoundary(
                 CardActionResolutionResult.Accept(repeated.IsComplete, null, null, steps),
-                null,
+                furtherRepeat,
                 repeatedLanePushCause,
                 repeat.ResolutionId,
                 repeat.SourceCardInstanceId,
@@ -748,6 +751,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     board,
                     board,
                     subject,
+                    origin,
                     step.Destination.Destination,
                     BattleZoneQuery.FindCurrentBattleZoneCoordinates(board)).Accepted
                 : board.CommitValidatedDisplacement(subject, step.Destination.Destination).Accepted;

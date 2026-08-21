@@ -368,7 +368,8 @@ namespace GuardsDigital.Core.Rules.Displacement
             PlaceDestinationScope.NearestEmptySpacesInScope,
             0,
             PlaceChooserKind.OwningTeam,
-            PlaceNoDestinationPolicy.Impossible);
+            PlaceNoDestinationPolicy.Impossible,
+            PlaceDestinationAnchor.PlacedPiece);
 
         internal static DisplacedMinionCorrectionStep DeriveNext(
             AdjacentMoveAuthority board,

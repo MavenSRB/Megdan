@@ -134,13 +134,17 @@ namespace GuardsDigital.Tests.EditMode
                 Sequence("root", "a"),
                 new EffectNodeDefinition(
                     new EffectNodeId("a"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                    SyntheticDisplacementCapabilities.DirectMoveV2,
+                    SyntheticDisplacementCapabilities.DirectMoveV3,
                     inputs: new[]
                     {
                         EffectInputBinding.FromRole(
                             "mover", EffectRoleKind.Actor, EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                        EffectInputBinding.FromLiteral(
+                        SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                        EffectValue.Integer(
+                            (int)GuardsDigital.Core.Rules.Displacement
+                                .DirectMoveDestinationPolicy.Unrestricted))
                     }));
 
             Assert.That(rejections.Select(rejection => rejection.Reason),
@@ -155,13 +159,17 @@ namespace GuardsDigital.Tests.EditMode
                 Sequence("root", "a"),
                 new EffectNodeDefinition(
                     new EffectNodeId("a"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                    SyntheticDisplacementCapabilities.DirectMoveV2,
+                    SyntheticDisplacementCapabilities.DirectMoveV3,
                     inputs: new[]
                     {
                         EffectInputBinding.FromRole(
                             "mover", EffectRoleKind.ChosenSpace, EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                        EffectInputBinding.FromLiteral(
+                        SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                        EffectValue.Integer(
+                            (int)GuardsDigital.Core.Rules.Displacement
+                                .DirectMoveDestinationPolicy.Unrestricted))
                     }));
 
             Assert.That(rejections.Select(rejection => rejection.Reason),
@@ -205,13 +213,17 @@ namespace GuardsDigital.Tests.EditMode
                     outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                 new EffectNodeDefinition(
                     new EffectNodeId("move"), EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
-                    SyntheticDisplacementCapabilities.DirectMoveV2,
+                    SyntheticDisplacementCapabilities.DirectMoveV3,
                     inputs: new[]
                     {
                         EffectInputBinding.FromNodeOutput(
                             "mover", new EffectNodeId("select"), "chosen", EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                        EffectInputBinding.FromLiteral(
+                        SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                        EffectValue.Integer(
+                            (int)GuardsDigital.Core.Rules.Displacement
+                                .DirectMoveDestinationPolicy.Unrestricted))
                     }));
 
             Assert.That(rejections, Is.Empty);
@@ -532,6 +544,89 @@ namespace GuardsDigital.Tests.EditMode
                 "card text applied inside an Attack.");
         }
 
+        // ---------------------------------------------------------------------------------------
+        // Milestone 8.6: a same-target repeat has to be able to inherit a target
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void ASameTargetRepeat_IsAcceptedWhenItsSelectionCertainlyRanAndPublishesOneSpace()
+        {
+            Assert.That(
+                Validate(
+                    Sequence("root", "select", "move", "repeat"),
+                    Selection("select", "move"),
+                    Mover("move", "select"),
+                    BoundRepeat("repeat", "select")),
+                Is.Empty,
+                "The selection is a guaranteed predecessor of the repeat and publishes exactly one " +
+                "coordinate, which is everything the inherited target needs.");
+        }
+
+        [Test]
+        public void ASameTargetRepeat_IsRejectedWhenItCouldNotInheritATarget()
+        {
+            Assert.That(
+                Validate(
+                    Sequence("root", "select", "move", "repeat"),
+                    Selection("select", "move"),
+                    Mover("move", "select"),
+                    BoundRepeat("repeat", "absent"))
+                    .Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.UnresolvedRepeatTargetBinding),
+                "One definition is one action's node table, and there is no address that reaches " +
+                "out of it.");
+
+            Assert.That(
+                Validate(
+                    Sequence("root", "producer", "repeat"),
+                    Producer("producer"),
+                    BoundRepeat("repeat", "producer"))
+                    .Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.UnresolvedRepeatTargetBinding),
+                "A node publishing a hero and no space has no target for the repeat to inherit.");
+
+            // The selection is inside one arm of a Choose, so a run that took the other arm reaches the
+            // repeat having named nobody - and the card would silently become p.10's free choice.
+            Assert.That(
+                Validate(
+                    Sequence("root", "choice", "repeat"),
+                    new EffectNodeDefinition(
+                        new EffectNodeId("choice"), EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { new EffectNodeId("select"), new EffectNodeId("other") },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    Selection("select", "other"),
+                    Leaf("other"),
+                    BoundRepeat("repeat", "select"))
+                    .Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.UnresolvedRepeatTargetBinding),
+                "and a selection that has not certainly run cannot be the one a repeat binds.");
+        }
+
+        [Test]
+        public void TwoRepeatsBindingATarget_AreRejectedBecauseOneInheritedPieceHasOneOwner()
+        {
+            Assert.That(
+                Validate(
+                    Sequence("root", "select", "move", "first", "second"),
+                    Selection("select", "move"),
+                    Mover("move", "select"),
+                    BoundRepeat("first", "select"),
+                    BoundRepeat("second", "select"))
+                    .Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.UnresolvedRepeatTargetBinding),
+                "A repeated instance inherits one piece and carries no node identity with it, so two " +
+                "bindings would leave it unable to say which selection the piece belongs to.");
+        }
+
+        private static EffectNodeDefinition BoundRepeat(string id, string selectionId) =>
+            new EffectNodeDefinition(
+                new EffectNodeId(id), EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
+                chooser: EffectChooserRole.Actor,
+                repeatTargetBinding: RepeatTargetBinding.SameTarget,
+                boundSelectionNodeId: new EffectNodeId(selectionId));
+
         private static System.Collections.Generic.IReadOnlyList<EffectDefinitionRejection> ValidateCardText(
             params EffectNodeDefinition[] nodes) =>
             EffectDefinitionValidator.ValidateCardText(
@@ -579,13 +674,17 @@ namespace GuardsDigital.Tests.EditMode
         private static EffectNodeDefinition Mover(string id, string selectionId) =>
             new EffectNodeDefinition(
                 new EffectNodeId(id), EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
-                SyntheticDisplacementCapabilities.DirectMoveV2,
+                SyntheticDisplacementCapabilities.DirectMoveV3,
                 inputs: new[]
                 {
                     EffectInputBinding.FromNodeOutput(
                         "mover", new EffectNodeId(selectionId), "chosen", EffectValueKind.Coordinate),
                     EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                    EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                    EffectInputBinding.FromLiteral(
+                        SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                        EffectValue.Integer(
+                            (int)GuardsDigital.Core.Rules.Displacement
+                                .DirectMoveDestinationPolicy.Unrestricted))
                 });
 
         private static EffectNodeDefinition Reader(string id, string sourceId) =>

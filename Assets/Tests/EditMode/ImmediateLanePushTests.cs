@@ -407,8 +407,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 catalog.Registered,
                 Has.Member(SyntheticDisplacementCapabilities.ObjectPushV2)
-                    .And.Member(SyntheticDisplacementCapabilities.DirectMoveV2)
-                    .And.Member(SyntheticPlacementCapabilities.PlaceV1)
+                    .And.Member(SyntheticDisplacementCapabilities.DirectMoveV3)
+                    .And.Member(SyntheticPlacementCapabilities.PlaceV2)
                     .And.Member(SyntheticPlacementCapabilities.SpawnV1)
                     .And.Member(SyntheticExchangeCapabilities.SwapV2)
                     .And.Member(SyntheticExchangeCapabilities.ReplaceTokenV1),

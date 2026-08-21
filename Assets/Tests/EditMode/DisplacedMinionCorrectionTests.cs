@@ -239,7 +239,8 @@ namespace GuardsDigital.Tests.EditMode
                 PlaceDestinationScope.NearestEmptySpacesInScope,
                 0,
                 PlaceChooserKind.OwningTeam,
-                PlaceNoDestinationPolicy.Impossible);
+                PlaceNoDestinationPolicy.Impossible,
+                PlaceDestinationAnchor.PlacedPiece);
 
             Assert.That(
                 pending.DestinationCandidates.Select(candidate => candidate.Destination),

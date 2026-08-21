@@ -129,7 +129,7 @@ Non-goals: no Wasp effect composition, Active-effect rule or duration change, tr
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-85b-highlight-tray-cards-whose-active-effects-are-live-completion-evidence).
 
-### [ ] 8.6 Complete the Wasp telekinetic skills
+### [x] 8.6 Complete the Wasp telekinetic skills
 
 Its one prerequisite is discharged: milestone 8.4 loaded the verified hands milestone 8.3's definitions supply.
 
@@ -144,6 +144,11 @@ Acceptance checks:
 - Any continuation state the bounded repeat count adds is an explicit schema decision with the full ceremony, not an incidental field.
 
 Non-goals: no discard riders (Kinetic Repulse and Kinetic Blast are 8.8's), no Attack or Defense text.
+
+- **Correction taken during implementation, 2026-08-21:** `on the same target` binds the **piece**, not the space it was standing on. Every other board subject in this engine is named by its coordinate, which p.19's one-obstacle-per-space rule makes unambiguous - but only while nothing has moved, and a repeat is separated from the instance that chose the target by a whole action boundary whose commonest content is moving that very target. A coordinate would have named whatever stood where the target used to be, which the first orbit fixture demonstrated immediately.
+- **Where the count above one and the straight-line complement are observed in a configured match:** on this milestone's two synthetic fixture Skills. Center of Mass and both Telekineses are Tier II and III cards that p.6's setup leaves in the deck, so no configured match can play one until p.15's Level Up puts it in a hand - milestone 8.14's business. Wasp's own configured evidence is Lift Up, which is in her printed starting five.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-86-complete-the-wasp-telekinetic-skills-completion-evidence).
 
 ### [ ] 8.7 Consume the declared modifier vocabulary
 
@@ -189,7 +194,7 @@ Non-goals: no rider discards (no basic card has one), no trigger execution.
 
 ### [!] 8.10 Complete the Wasp Attack cards
 
-Blocked by: milestones 8.6 (straight-line query) and 8.8 (discard rider family). Milestone 8.5 supplied the text seam and the target policies.
+Blocked by: milestone 8.8 (discard rider family). Milestone 8.5 supplied the text seam and the target policies, and milestone 8.6 supplied the straight-line query and its complement.
 
 Observable outcome: Shock, Electrocute, Electroblast, Charged Boomerang, and Thunder Boomerang resolve their complete printed text, including the escalating and repeating riders.
 

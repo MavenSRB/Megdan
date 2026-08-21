@@ -419,6 +419,37 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// The ordinary configuration plus milestone 8.6's orbit Skill in each hand.
+        ///
+        /// Separate for the reason the five before it are, and for one more: this card declares the
+        /// first repeat maximum above one in the build and binds its repeated instances to one target,
+        /// so a fixture that watches a chain of three instances must be the only configuration that can
+        /// change what that chain does.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForOrbitFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRedWithOrbitSkill,
+                SyntheticShowcaseHand.CreateBlueWithOrbitSkill);
+        }
+
+        /// <summary>
+        /// The ordinary configuration plus milestone 8.6's kinesis Skill in each hand - the first
+        /// content in the build to print rulebook p.9's Range icon on a Skill and the first to ask
+        /// p.19's straight-line question, so it is separate for exactly the reason the Radius pair is.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForKinesisFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRedWithKinesisSkill,
+                SyntheticShowcaseHand.CreateBlueWithKinesisSkill);
+        }
+
+        /// <summary>
         /// Each named configuration says which hand it deals rather than setting a flag another one
         /// reads. Milestone 6.2d needed a third combination and a second boolean would have made the
         /// callers here describe themselves by what they are not. The five-card scene removed that

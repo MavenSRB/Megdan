@@ -11,6 +11,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -74,7 +75,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateOfficialBoard();
 
-            var offered = Handler(SyntheticPlacementCapabilities.PlaceV1)
+            var offered = Handler(SyntheticPlacementCapabilities.PlaceV2)
                 .Execute(Context(board, RedActor, PlaceInputs(RedHeroAt, radius: 2)));
 
             Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
@@ -92,13 +93,13 @@ namespace GuardsDigital.Tests.EditMode
         public void Place_RelocatesTheNamedPieceAndPublishesTheSpaceItLandedOn()
         {
             var board = CreateOfficialBoard();
-            var destination = Handler(SyntheticPlacementCapabilities.PlaceV1)
+            var destination = Handler(SyntheticPlacementCapabilities.PlaceV2)
                 .Execute(Context(board, RedActor, PlaceInputs(RedHeroAt, radius: 2)))
                 .Choice.Candidates.Last().Coordinate;
             Assert.That(HexDistanceQuery.Calculate(RedHeroAt, destination), Is.EqualTo(2),
                 "The furthest offered space is a genuine radius-2 placement, not an adjacent step.");
 
-            var applied = Handler(SyntheticPlacementCapabilities.PlaceV1).Resume(
+            var applied = Handler(SyntheticPlacementCapabilities.PlaceV2).Resume(
                 Context(board, RedActor, PlaceInputs(RedHeroAt, radius: 2)),
                 new[] { EffectValue.Space(destination) });
 
@@ -125,17 +126,17 @@ namespace GuardsDigital.Tests.EditMode
                 .First();
             PlaceToken(board, tokenAt);
             var minion = board.Minions.First();
-            var tokenDestination = Handler(SyntheticPlacementCapabilities.PlaceV1)
+            var tokenDestination = Handler(SyntheticPlacementCapabilities.PlaceV2)
                 .Execute(Context(board, RedActor, PlaceInputs(tokenAt, radius: 2)))
                 .Choice.Candidates[0].Coordinate;
 
-            var token = Handler(SyntheticPlacementCapabilities.PlaceV1).Resume(
+            var token = Handler(SyntheticPlacementCapabilities.PlaceV2).Resume(
                 Context(board, RedActor, PlaceInputs(tokenAt, radius: 2)),
                 new[] { EffectValue.Space(tokenDestination) });
-            var minionDestination = Handler(SyntheticPlacementCapabilities.PlaceV1)
+            var minionDestination = Handler(SyntheticPlacementCapabilities.PlaceV2)
                 .Execute(Context(board, RedActor, PlaceInputs(minion.Coordinate, radius: 1)))
                 .Choice.Candidates[0].Coordinate;
-            var moved = Handler(SyntheticPlacementCapabilities.PlaceV1).Resume(
+            var moved = Handler(SyntheticPlacementCapabilities.PlaceV2).Resume(
                 Context(board, RedActor, PlaceInputs(minion.Coordinate, radius: 1)),
                 new[] { EffectValue.Space(minionDestination) });
 
@@ -152,13 +153,13 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateOfficialBoard();
 
-            var occupied = Handler(SyntheticPlacementCapabilities.PlaceV1).Resume(
+            var occupied = Handler(SyntheticPlacementCapabilities.PlaceV2).Resume(
                 Context(board, RedActor, PlaceInputs(RedHeroAt, radius: 2)),
                 new[] { EffectValue.Space(board.Minions.First().Coordinate) });
-            var terrain = Handler(SyntheticPlacementCapabilities.PlaceV1).Resume(
+            var terrain = Handler(SyntheticPlacementCapabilities.PlaceV2).Resume(
                 Context(board, RedActor, PlaceInputs(RedHeroAt, radius: 8)),
                 new[] { EffectValue.Space(new HexCoordinate(1, -5)) });
-            var wrongKind = Handler(SyntheticPlacementCapabilities.PlaceV1).Resume(
+            var wrongKind = Handler(SyntheticPlacementCapabilities.PlaceV2).Resume(
                 Context(board, RedActor, PlaceInputs(RedHeroAt, radius: 2)),
                 new[] { EffectValue.Hero(RedActor) });
 
@@ -177,15 +178,81 @@ namespace GuardsDigital.Tests.EditMode
             // already carries the mandatory-versus-optional distinction there.
             var board = CreateBoxedBoard();
 
-            var mandatory = Handler(SyntheticPlacementCapabilities.PlaceV1).Execute(
+            var mandatory = Handler(SyntheticPlacementCapabilities.PlaceV2).Execute(
                 Context(board, RedActor, PlaceInputs(new HexCoordinate(0, 0), radius: 1)));
-            var ifAble = Handler(SyntheticPlacementCapabilities.PlaceV1).Execute(
+            var ifAble = Handler(SyntheticPlacementCapabilities.PlaceV2).Execute(
                 Context(board, RedActor, PlaceInputs(new HexCoordinate(0, 0), radius: 1),
                     EffectFailurePolicy.IfAble));
 
             Assert.That(mandatory.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
             Assert.That(ifAble.Kind, Is.EqualTo(EffectExecutionResultKind.DeclinedOptional),
                 "`if able` makes having nowhere to put it a skipped step rather than a stopped action.");
+        }
+
+        [Test]
+        public void AnActorAnchoredPlace_OffersTheSpacesBesideTheActorRatherThanBesideThePiece()
+        {
+            // Milestone 8.6's second new declaration. Wasp's Telekinesis prints "into a space adjacent
+            // to you"; the piece may be three spaces away and the destinations are still hers.
+            var board = CreateOfficialBoard();
+            var far = board.Minions
+                .OrderBy(minion => HexDistanceQuery.Calculate(RedHeroAt, minion.Coordinate))
+                .First(minion => HexDistanceQuery.Calculate(RedHeroAt, minion.Coordinate) > 1);
+
+            var offered = Handler(SyntheticPlacementCapabilities.PlaceV2).Execute(
+                Context(board, RedActor, PlaceInputs(
+                    far.Coordinate,
+                    radius: 1,
+                    eligiblePiece: PlaceEligiblePieceKind.UnitOrToken,
+                    anchor: PlaceDestinationAnchor.ActingHero)));
+
+            Assert.That(offered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
+            Assert.That(
+                offered.Choice.Candidates.Select(candidate => candidate.Coordinate)
+                    .All(space => HexDistanceQuery.Calculate(RedHeroAt, space) == 1),
+                Is.True,
+                "Every offered space is one from the acting hero, which is what the anchor declares " +
+                "and what the piece's own neighbourhood could not have produced.");
+            Assert.That(
+                offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Has.No.Member(RedHeroAt),
+                "and the actor's own space is not empty, so p.18's different-space rule is kept " +
+                "without the anchor having to say so.");
+        }
+
+        [Test]
+        public void ThePlacedPieceAnchor_IsStillWhatTheGeneralDeclarationMeasuresFrom()
+        {
+            var board = CreateOfficialBoard();
+
+            var offered = Handler(SyntheticPlacementCapabilities.PlaceV2).Execute(
+                Context(board, RedActor, PlaceInputs(RedHeroAt, radius: 2)));
+
+            Assert.That(
+                offered.Choice.Candidates.Select(candidate => candidate.Coordinate)
+                    .All(space => HexDistanceQuery.Calculate(RedHeroAt, space) <= 2),
+                Is.True,
+                "Milestone 6.5's Place is unchanged by 8.6: it measures from the piece, and here the " +
+                "piece happens to be the actor.");
+        }
+
+        [Test]
+        public void AnUndeclaredEligibilityOrAnchor_IsRefusedRatherThanDefaulted()
+        {
+            var board = CreateOfficialBoard();
+
+            Assert.That(
+                Handler(SyntheticPlacementCapabilities.PlaceV2).Execute(
+                    Context(board, RedActor, PlaceInputs(
+                        RedHeroAt, radius: 2, eligiblePiece: PlaceEligiblePieceKind.None))).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(
+                Handler(SyntheticPlacementCapabilities.PlaceV2).Execute(
+                    Context(board, RedActor, PlaceInputs(
+                        RedHeroAt, radius: 2, anchor: PlaceDestinationAnchor.None))).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                "Both are things p.18 leaves to the card, so silence is a content fault rather than " +
+                "a permission - the same reading the direct Move's destination policy takes.");
         }
 
         // ---------------------------------------------------------------------------------------
@@ -328,11 +395,19 @@ namespace GuardsDigital.Tests.EditMode
         private static IEffectCapabilityHandler Handler(EffectCapabilityReference reference) =>
             SyntheticEffectCapabilities.CreateCatalog().Load(reference);
 
-        private static Dictionary<string, EffectValue> PlaceInputs(HexCoordinate subject, int radius) =>
+        private static Dictionary<string, EffectValue> PlaceInputs(
+            HexCoordinate subject,
+            int radius,
+            PlaceEligiblePieceKind eligiblePiece = PlaceEligiblePieceKind.GamePiece,
+            PlaceDestinationAnchor anchor = PlaceDestinationAnchor.PlacedPiece) =>
             new Dictionary<string, EffectValue>
             {
                 ["subject"] = EffectValue.Space(subject),
-                ["radius"] = EffectValue.Integer(radius)
+                ["radius"] = EffectValue.Integer(radius),
+                [SyntheticPlacementCapabilities.EligiblePieceParameterName] =
+                    EffectValue.Integer((int)eligiblePiece),
+                [SyntheticPlacementCapabilities.DestinationAnchorParameterName] =
+                    EffectValue.Integer((int)anchor)
             };
 
         private static EffectCapabilityContext Context(

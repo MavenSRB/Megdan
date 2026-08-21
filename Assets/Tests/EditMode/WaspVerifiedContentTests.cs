@@ -186,14 +186,26 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void NoActionCarriesAnEffectRoot_AndEveryPrintedPrimaryNamesWhatOwesItsText()
         {
+            // Milestone 8.6 attached the first five compositions, so the question changed shape: a card
+            // either carries its effect root or names the slice that owes one, and no card may do
+            // neither or both. ActionDefinition already refuses "both"; this states which five are
+            // which, so a composition landing without its row being cleared is visible here.
             Assert.That(
                 WaspCardContent.AllDefinitions
                     .SelectMany(definition => definition.ActionDefinitions)
                     .Where(action => action.EffectRoot != null)
-                    .Select(action => action.Id.Value),
-                Is.Empty,
-                "Composition lands at each card's own 8.5-8.13 slice under a content-revision advance, " +
-                "so no half-implemented card text can run in between.");
+                    .Select(action => $"{action.EffectRoot.Id.Value}@{action.EffectRoot.ContentRevision}"),
+                Is.EqualTo(new[]
+                {
+                    "wasp-lift-up-skill@wasp-8-6-rev-1",
+                    "wasp-control-gravity-skill@wasp-8-6-rev-1",
+                    "wasp-center-of-mass-skill@wasp-8-6-rev-1",
+                    "wasp-telekinesis-skill@wasp-8-6-rev-1",
+                    "wasp-mass-telekinesis-skill@wasp-8-6-rev-1"
+                }),
+                "The five telekinetic Skills are composed; every other card's composition lands at its " +
+                "own 8.8-8.13 slice under a content-revision advance, so no half-implemented card text " +
+                "can run in between.");
 
             var owedByCard = WaspCardContent.AllDefinitions
                 .Select(definition => new
@@ -207,12 +219,10 @@ namespace GuardsDigital.Tests.EditMode
                 })
                 .ToArray();
 
-            Assert.That(owedByCard.All(entry => entry.Owed.IsAwaited), Is.True,
-                "Every one of Wasp's nineteen faces prints text, so every one owes a composition.");
-
             Assert.That(
-                owedByCard.Select(entry =>
-                    $"{entry.Card} -> {entry.Owed.OwningMilestoneId ?? entry.Owed.NamedTrigger}"),
+                owedByCard.Select(entry => entry.Owed.IsAwaited
+                    ? $"{entry.Card} -> {entry.Owed.OwningMilestoneId ?? entry.Owed.NamedTrigger}"
+                    : $"{entry.Card} -> composed"),
                 Is.EqualTo(new[]
                 {
                     "wasp-magnetic-dagger -> 8.9",
@@ -223,19 +233,20 @@ namespace GuardsDigital.Tests.EditMode
                     "wasp-charged-boomerang -> 8.10",
                     "wasp-electroblast -> 8.10",
                     "wasp-thunder-boomerang -> 8.10",
-                    "wasp-lift-up -> 8.6",
-                    "wasp-control-gravity -> 8.6",
+                    "wasp-lift-up -> composed",
+                    "wasp-control-gravity -> composed",
                     "wasp-kinetic-repulse -> 8.8",
-                    "wasp-center-of-mass -> 8.6",
+                    "wasp-center-of-mass -> composed",
                     "wasp-kinetic-blast -> 8.8",
                     "wasp-stop-projectiles -> 8.11",
                     "wasp-deflect-projectiles -> 8.11",
-                    "wasp-telekinesis -> 8.6",
+                    "wasp-telekinesis -> composed",
                     "wasp-reflect-projectiles -> 8.11",
-                    "wasp-mass-telekinesis -> 8.6",
+                    "wasp-mass-telekinesis -> composed",
                     "wasp-high-voltage -> 8.13"
                 }),
-                "Each card's owner is the slice milestone 8.2's capability matrix assigned it.");
+                "Each card is either composed or owned by the slice milestone 8.2's capability matrix " +
+                "assigned it.");
         }
 
         [Test]

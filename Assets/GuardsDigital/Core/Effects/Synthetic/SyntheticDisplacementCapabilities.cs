@@ -57,13 +57,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityId("synthetic-push-target");
 
         /// <summary>
-        /// Revision 2, minted at milestone 6.8k: the subject parameter widened from a typed hero to a
-        /// typed coordinate. A revision rather than a second capability because the rule did not change
-        /// - the same direct Move now merely names any displaceable subject - and the registration list
-        /// records contracts, so the widened schema must be visible there for a restore to compare.
+        /// Revision 3, minted at milestone 8.6: revision 2's declaration with the `towardActor` boolean
+        /// replaced by a declared <see cref="DirectMoveDestinationPolicy"/>.
+        ///
+        /// Revision 2 - milestone 6.8k's, which widened the subject from a typed hero to a typed
+        /// coordinate - is retired rather than kept beside it, exactly as 6.8k retired revision 1 when
+        /// it widened that subject. The registration list records contracts, and two live revisions of
+        /// one declaration would let a definition ask the same capability a question it can no longer
+        /// answer the same way: a boolean cannot express Wasp's orbit, and a policy that also carried
+        /// the boolean could state two narrowings at once.
         /// </summary>
-        public static EffectCapabilityReference DirectMoveV2 =>
-            new EffectCapabilityReference(DirectMove, 2);
+        public static EffectCapabilityReference DirectMoveV3 =>
+            new EffectCapabilityReference(DirectMove, 3);
+
+        /// <summary>
+        /// The destination-policy parameter's name, spelled once so a definition cannot mistype it and
+        /// so the enum it carries has exactly one reading site.
+        /// </summary>
+        public const string DestinationPolicyParameterName = "destinationPolicy";
 
         /// <summary>
         /// Revision 2, minted at milestone 6.4c: revision 1's declaration plus the eligible piece kind.
@@ -100,22 +111,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// the port has served every kind since milestone 6.4a widened it.
         ///
         /// The mover is a bound parameter rather than always the actor, so the source-relative policy has
-        /// a real subject: `move a unit towards you` is this capability with `towardActor` set, not a
-        /// separate Pull keyword, exactly as `BOARD_CAPABILITIES.md` requires. A definition fills the
+        /// a real subject: `move a unit towards you` is this capability under
+        /// <see cref="DirectMoveDestinationPolicy.TowardActor"/>, not a separate Pull keyword, exactly
+        /// as `BOARD_CAPABILITIES.md` requires. A definition fills the
         /// parameter from a prior target-selection node's published space, never from a role - the frame
         /// resolves roles without board access, so no role can supply a coordinate, and the definition
         /// validator refuses one that tries at content load.
         /// </summary>
         private sealed class DirectMoveHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => DirectMoveV2;
+            public EffectCapabilityReference Reference => DirectMoveV3;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
                 new[]
                 {
                     new EffectCapabilityParameter("mover", EffectValueKind.Coordinate),
                     new EffectCapabilityParameter("distance", EffectValueKind.Integer),
-                    new EffectCapabilityParameter("towardActor", EffectValueKind.Boolean)
+                    new EffectCapabilityParameter(
+                        DestinationPolicyParameterName, EffectValueKind.Integer)
                 },
                 new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) });
 
@@ -207,31 +220,42 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HexCoordinate>();
                 }
 
-                var admitted = AdmittedDistances.ForDeclared(context.FailurePolicy, distance);
-                IEnumerable<HexCoordinate> travelled = components.Board
-                    .FindDirectMoveDestinations(mover, distance, context.Modifications)
-                    .Where(destination => admitted.Admits(destination.Cost))
-                    .Select(destination => destination.Destination);
-
-                if (context.Input("towardActor").BooleanValue)
+                var destinationPolicy =
+                    (DirectMoveDestinationPolicy)context.Input(DestinationPolicyParameterName).IntegerValue;
+                if (!Enum.IsDefined(typeof(DirectMoveDestinationPolicy), destinationPolicy) ||
+                    destinationPolicy == DirectMoveDestinationPolicy.None)
                 {
-                    // p.18's `Closer (Space)`, measured from the acting hero. A move `towards you`
-                    // admits only spaces closer to the actor than the mover's own starting space.
-                    if (!components.Board.TryGetObjectCoordinate(
-                            BoardObjectReference.ForHero(context.ActorId), out var actorAt))
-                    {
-                        return Array.Empty<HexCoordinate>();
-                    }
-
-                    travelled = CloserQuery.FilterCloserTo(actorAt, moverAt, travelled);
+                    return Array.Empty<HexCoordinate>();
                 }
+
+                // p.18's `Closer (Space)`, measured from the acting hero, is what both narrowing
+                // policies compare against, so an actor who is not on the board can satisfy neither.
+                // The unrestricted reading needs no such position and is therefore not refused for
+                // lacking one.
+                var actorAt = default(HexCoordinate);
+                if (DirectMoveDestinations.NeedsActorPosition(destinationPolicy) &&
+                    !components.Board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out actorAt))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var admitted = AdmittedDistances.ForDeclared(context.FailurePolicy, distance);
+                IEnumerable<HexCoordinate> travelled = DirectMoveDestinations.Admit(
+                    destinationPolicy,
+                    actorAt,
+                    moverAt,
+                    components.Board
+                        .FindDirectMoveDestinations(mover, distance, context.Modifications)
+                        .Where(destination => admitted.Admits(destination.Cost))
+                        .Select(destination => destination.Destination));
 
                 // Standing still is admitted by the wording, not by the geometry, so it is added to
                 // whatever the geometry admits rather than filtered through it. The reachability walk
                 // beneath never emits the mover's own space - a Movement action's destination costs at
-                // least one point - and `Closer` would refuse it as well, since no space is closer to
-                // the actor than itself. Both are right about travel and neither is being asked about
-                // travel: this is p.10's decision not to move.
+                // least one point - and the destination policy is not asked about it either. Both are
+                // right about travel and neither is being asked about travel: this is p.10's decision
+                // not to move.
                 var spaces = admitted.AdmitsStandingStill
                     ? travelled.Concat(new[] { moverAt })
                     : travelled;

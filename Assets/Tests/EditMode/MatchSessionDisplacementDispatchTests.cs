@@ -407,7 +407,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 byCapability
                     .Where(entry => entry.Capability.Equals(
-                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV2))
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV3))
                     .Select(entry => entry.Id.Value),
                 Is.EqualTo(new[] { "placeholder-red-bombard" }),
                 "Direct Move is exposed by exactly the card milestone 6.5b converted.");

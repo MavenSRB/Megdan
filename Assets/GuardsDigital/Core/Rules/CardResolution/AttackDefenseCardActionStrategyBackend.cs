@@ -1309,9 +1309,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions) =>
             ComposeItems(offer, definitions, PrintedValueChannel.Attack);
 
-        /// <summary>The attacker's Range value, composed the same way (milestone 7.2a).</summary>
+        /// <summary>
+        /// The attacker's Range value, composed the same way (milestone 7.2a). Milestone 8.6 moved the
+        /// composition itself into <see cref="RangeValueQuery"/> when Wasp's telekinetic Skills became
+        /// a second reader of the same printed icon; this stays as the local name the resolution's
+        /// three re-derivation sites call.
+        /// </summary>
         private ValueResult RangeValue(ActionOffer offer, IReadOnlyList<CardDefinition> definitions) =>
-            ComposeItems(offer, definitions, PrintedValueChannel.Range);
+            RangeValueQuery.Calculate(offer, definitions, heroItems);
 
         private ValueResult ComposeItems(
             ActionOffer offer,

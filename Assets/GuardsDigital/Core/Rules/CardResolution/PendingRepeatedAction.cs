@@ -28,8 +28,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionDefinitionId actionDefinitionId,
             EffectDefinitionReference effectDefinitionReference,
             HeroId actorId,
-            HeroId controllerId)
+            HeroId controllerId,
+            RepeatContinuation continuation)
         {
+            if (!continuation.IsRepeatedInstance)
+            {
+                throw new ArgumentException(
+                    "A pending repeated action is at least the first repeat of its chain.",
+                    nameof(continuation));
+            }
+
             if (!resolutionId.IsDefined)
             {
                 throw new ArgumentException(
@@ -64,6 +72,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             EffectDefinitionReference = effectDefinitionReference;
             ActorId = actorId;
             ControllerId = controllerId;
+            Continuation = continuation;
         }
 
         /// <summary>
@@ -81,11 +90,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public HeroId ControllerId { get; }
 
         /// <summary>
+        /// Milestone 8.6: which repeat of its chain this instance is, and the target it inherits when
+        /// its card said `on the same target`. It is the one thing here that is not identity, and it is
+        /// still not semantics: the binding it belongs to is read from the trusted definition when the
+        /// instance reaches the node.
+        /// </summary>
+        public RepeatContinuation Continuation { get; }
+
+        /// <summary>
         /// The repeat a completed instance asked for, named from that instance's own frame.
         ///
-        /// The suffix is what keeps the two instances distinguishable in the fact stream and in any
-        /// pending choice either one opens; because the repeated instance's own Repeat node is
-        /// ineligible, there is never a third and so never a counter to advance.
+        /// The suffix is what keeps the instances distinguishable in the fact stream and in any pending
+        /// choice any of them opens. It is applied per repeat rather than counted, so the second repeat
+        /// of a chain is named from the first repeat's own id and stays unique without this record
+        /// having to spell the ordinal into a string - the ordinal it does carry is the
+        /// <see cref="Continuation"/>, which is a rules fact rather than a name.
         /// </summary>
         public static PendingRepeatedAction Mint(
             ActionResolutionId completedResolutionId,
@@ -94,7 +113,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionDefinitionId actionDefinitionId,
             EffectDefinitionReference effectDefinitionReference,
             HeroId actorId,
-            HeroId controllerId) =>
+            HeroId controllerId,
+            RepeatContinuation continuation) =>
             new PendingRepeatedAction(
                 new ActionResolutionId($"{completedResolutionId.Value}-repeat"),
                 sourceCardInstanceId,
@@ -102,6 +122,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 actionDefinitionId,
                 effectDefinitionReference,
                 actorId,
-                controllerId);
+                controllerId,
+                continuation);
     }
 }

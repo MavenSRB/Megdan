@@ -135,7 +135,17 @@ namespace GuardsDigital.Core.Snapshots
         // this round", which is right for every payload a v20 build could produce, because no v20 rule
         // records one, and wrong for the first payload this milestone writes - a hero that had already
         // levelled would come back eligible and collect a coin the page denies it.
-        public const int CurrentSchemaVersion = 21;
+        // v22: a repeat continuation - how many repeats an instance's chain has already run, and the
+        // target it inherited - joins both the pending Skill frame and the owed repeated action.
+        // Milestone 8.6's Center of Mass is the first verified card whose repeat count is above one, so
+        // "am I a repeat" stopped being the whole answer, and its two siblings print "on the same
+        // target", which has to cross an action boundary a snapshot can fall inside. v21 is rejected
+        // rather than migrated for the reason v20 was: the only reading available for the section's
+        // absence is "this is the first instance and nothing is inherited", which is right for every
+        // payload a v21 build could produce - no v21 content declares a maximum above one or a target
+        // binding - and wrong for the first payload this milestone writes, where a second repeat would
+        // come back believing it was the first and could ask for one more than the card allows.
+        public const int CurrentSchemaVersion = 22;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

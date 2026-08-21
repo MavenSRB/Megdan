@@ -27,7 +27,14 @@ namespace GuardsDigital.Core.Rules.Placement
         DestinationUnavailable = 5,
 
         /// <summary>The operation asked for a source container this call does not serve.</summary>
-        SourceContainerMismatch = 6
+        SourceContainerMismatch = 6,
+
+        /// <summary>
+        /// The space the caller measured destinations from is not the one this Place declared its
+        /// anchor to be. Milestone 8.6: the anchor is content, so a caller and a declaration that
+        /// disagree about it are refused rather than quietly resolved in the caller's favour.
+        /// </summary>
+        DestinationAnchorMismatch = 7
     }
 
     /// <summary>
@@ -123,11 +130,20 @@ namespace GuardsDigital.Core.Rules.Placement
         /// legal when a choice opened may have been taken before the answer arrived - the same
         /// discipline every capability resumption follows.
         /// </summary>
+        /// <param name="measuredFrom">
+        /// The space the destination question is measured from, which must be the one the policy
+        /// declares its <see cref="PlacePolicy.DestinationAnchor"/> to be. Milestone 8.6 made it an
+        /// argument rather than always the subject's own space, because Wasp's Telekinesis places "into
+        /// a space adjacent to you" - a question about where the actor stands, which no radius around
+        /// the piece can express - and made it checked rather than trusted, so a caller that passed the
+        /// wrong space is refused instead of silently measuring from it.
+        /// </param>
         public static PlaceOutcome PlaceFromBoard(
             PlacePolicy policy,
             IBoardDisplacementAuthority board,
             ITokenPlacementAuthority spaces,
             BoardObjectReference subject,
+            HexCoordinate measuredFrom,
             HexCoordinate destination,
             IReadOnlyList<HexCoordinate> scopedCoordinates)
         {
@@ -151,7 +167,15 @@ namespace GuardsDigital.Core.Rules.Placement
                 return PlaceOutcome.Reject(PlaceSourceContainer.Board, PlaceRejectionReason.SubjectNotOnBoard);
             }
 
-            var admitted = PlaceDestinationQuery.FindDestinations(policy, spaces, origin, scopedCoordinates);
+            if (policy.DestinationAnchor == PlaceDestinationAnchor.PlacedPiece &&
+                !measuredFrom.Equals(origin))
+            {
+                return PlaceOutcome.Reject(
+                    PlaceSourceContainer.Board, PlaceRejectionReason.DestinationAnchorMismatch);
+            }
+
+            var admitted = PlaceDestinationQuery.FindDestinations(
+                policy, spaces, measuredFrom, scopedCoordinates);
             if (!admitted.Contains(destination))
             {
                 return PlaceOutcome.Reject(
@@ -197,11 +221,22 @@ namespace GuardsDigital.Core.Rules.Placement
                     policy.SourceContainer, PlaceRejectionReason.SourceContainerMismatch);
             }
 
-            if (policy.EligiblePiece != PlaceEligiblePieceKind.Token &&
-                policy.EligiblePiece != PlaceEligiblePieceKind.GamePiece)
+            // The supply arm serves tokens alone, so the declaration has to admit one. Asked through
+            // the same eligibility statement the board arm uses rather than by listing the kinds that
+            // happen to include tokens, which is what let milestone 8.6 add a fourth kind without
+            // touching this line.
+            if (!IsEligible(policy.EligiblePiece, BoardObjectKind.Token))
             {
                 return PlaceOutcome.Reject(
                     PlaceSourceContainer.Supply, PlaceRejectionReason.IneligiblePiece);
+            }
+
+            // A piece taken from the supply came off no space, so it cannot be the space its own
+            // destinations are measured from.
+            if (policy.DestinationAnchor == PlaceDestinationAnchor.PlacedPiece)
+            {
+                return PlaceOutcome.Reject(
+                    PlaceSourceContainer.Supply, PlaceRejectionReason.DestinationAnchorMismatch);
             }
 
             var admitted = PlaceDestinationQuery.FindDestinations(
@@ -231,7 +266,12 @@ namespace GuardsDigital.Core.Rules.Placement
         {
             switch (eligible)
             {
+                // p.18's "a game piece (such as a miniature, or a token)" and Wasp's "a unit or a
+                // token" are two cards' sentences that coincide on this board, where a hero, a minion
+                // miniature and a token are the only pieces there are. They share an arm rather than
+                // a member, so the definitions keep saying what their own faces say.
                 case PlaceEligiblePieceKind.GamePiece:
+                case PlaceEligiblePieceKind.UnitOrToken:
                     return kind == BoardObjectKind.Hero ||
                         kind == BoardObjectKind.Minion ||
                         kind == BoardObjectKind.Token;

@@ -127,11 +127,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer.InvocationContext,
                 context);
 
-            if (step.RepeatRequested)
+            if (step.RepeatRequested.IsRequested)
             {
                 repeat = PendingRepeatedAction.Mint(
                     resolutionId, offer.SourceCardInstanceId, offer.SourceDefinitionReference,
-                    offer.ActionDefinitionId, action.EffectRoot.Reference, offer.ActorId, offer.ActorId);
+                    offer.ActionDefinitionId, action.EffectRoot.Reference, offer.ActorId, offer.ActorId,
+                    step.RepeatRequested.Continuation);
             }
 
             lanePushCause = step.LanePushCause;
@@ -166,8 +167,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchComponents components,
             int roundIndex,
             int turnIndex,
+            out PendingRepeatedAction furtherRepeat,
             out LanePushCauseKind lanePushCause)
         {
+            furtherRepeat = null;
             lanePushCause = LanePushCauseKind.None;
             if (repeat == null) throw new ArgumentNullException(nameof(repeat));
             if (!resolutionId.IsDefined)
@@ -199,7 +202,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 repeat.ActorId,
                 repeat.ControllerId,
                 ActionInvocationContext.Repeated,
-                context);
+                context,
+                repeat.Continuation);
+
+            // Milestone 8.6. A repeated instance can now ask for another, up to the maximum its own
+            // node declares - which milestone 6.7's structural bound made impossible and 6.7's code
+            // therefore never read. The chain still ends without a guard here, because the node's
+            // eligibility is what stops it and the frame this instance ran under carries the count.
+            if (step.RepeatRequested.IsRequested)
+            {
+                furtherRepeat = PendingRepeatedAction.Mint(
+                    resolutionId, repeat.SourceCardInstanceId, repeat.SourceDefinitionReference,
+                    repeat.ActionDefinitionId, action.EffectRoot.Reference, repeat.ActorId,
+                    repeat.ControllerId, step.RepeatRequested.Continuation);
+            }
 
             lanePushCause = step.LanePushCause;
             return Complete(
@@ -332,7 +348,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 }
             }
 
-            if (step.RepeatRequested)
+            if (step.RepeatRequested.IsRequested)
             {
                 repeat = PendingRepeatedAction.Mint(
                     new ActionResolutionId(pendingResolution.ResolutionId.Value),
@@ -341,7 +357,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingResolution.ActionDefinitionId,
                     pendingResolution.EffectDefinitionReference,
                     pendingResolution.ActorId,
-                    pendingResolution.ControllerId);
+                    pendingResolution.ControllerId,
+                    step.RepeatRequested.Continuation);
             }
 
             lanePushCause = step.LanePushCause;

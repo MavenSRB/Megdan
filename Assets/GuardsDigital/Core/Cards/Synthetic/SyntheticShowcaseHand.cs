@@ -228,6 +228,48 @@ namespace GuardsDigital.Core.Cards.Synthetic
         internal const int RadiusSkillPrintedRadius = 2;
 
         /// <summary>
+        /// Milestone 8.6's two fixture Skills, which prove this milestone's four new declarations on
+        /// synthetic content before any verified card composes them - the discipline every general seam
+        /// in this project has followed since 6.4.
+        ///
+        /// Two cards rather than one because p.9 puts one Range-or-Radius icon on a card and these read
+        /// different ones. The orbit card carries the equidistant destination policy and the bounded
+        /// repeat with its same-target binding; the kinesis card carries the printed-Range selection
+        /// with p.19's straight-line complement and the Place anchored at the acting hero. Each is dealt
+        /// by its own configuration, so the ordinary five and every pinned digest measure what they
+        /// measured before.
+        ///
+        /// Red's 19 and 20 continue above 7.1a's 18, so neither steers Initiative inside a Red hand;
+        /// Blue's 5 is the same free value inside Blue's ordinary band that the other fixture pairs
+        /// reuse, and no configuration deals two of them together.
+        /// </summary>
+        private static readonly SyntheticSkillProfile RedOrbitSkillProfile =
+            new SyntheticSkillProfile("red-orbit", "Red Orbit", 19);
+
+        private static readonly SyntheticSkillProfile BlueOrbitSkillProfile =
+            new SyntheticSkillProfile("blue-orbit", "Blue Orbit", 5);
+
+        private static readonly SyntheticSkillProfile RedKinesisSkillProfile =
+            new SyntheticSkillProfile("red-kinesis", "Red Kinesis", 20);
+
+        private static readonly SyntheticSkillProfile BlueKinesisSkillProfile =
+            new SyntheticSkillProfile("blue-kinesis", "Blue Kinesis", 5);
+
+        /// <summary>
+        /// The printed Range the kinesis cards carry - p.9's own larger example value, "with a
+        /// Range/Radius value of 3, your primary action can affect targets up to 3 spaces away", which
+        /// is large enough for a straight-line complement to have something to exclude and something to
+        /// keep in the same disk.
+        /// </summary>
+        internal const int KinesisSkillPrintedRange = 3;
+
+        /// <summary>
+        /// How many times the orbit fixture's repeat may ask: the first declared maximum above one in
+        /// this build, which is what makes a third instance observable at all.
+        /// </summary>
+        internal const int OrbitSkillMaximumRepeats = 2;
+
+        /// <summary>
         /// Milestone 7.3's Ultimate cards, one per hand - the eighteenth definition each hand's deck
         /// owes rulebook p.6.
         ///
@@ -361,6 +403,42 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, BlueProfiles, BlueUltimateProfile, null, radiusSkillProfile: BlueRadiusSkillProfile);
         }
 
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.6's orbit Skill alone: a printed-Radius selection,
+        /// a one-space direct Move that may end neither closer to nor farther from the actor, and a
+        /// repeat that may ask twice and binds the same target each time.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithOrbitSkill(HeroId ownerId)
+        {
+            return Create(
+                ownerId, RedProfiles, RedUltimateProfile, null, orbitSkillProfile: RedOrbitSkillProfile);
+        }
+
+        public static ConfiguredHand CreateBlueWithOrbitSkill(HeroId ownerId)
+        {
+            return Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null, orbitSkillProfile: BlueOrbitSkillProfile);
+        }
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.6's kinesis Skill alone: a printed-Range selection
+        /// that excludes everything in a straight line from the actor, feeding a Place that takes a unit
+        /// or a token from the board into an empty space adjacent to the actor.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithKinesisSkill(HeroId ownerId)
+        {
+            return Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                kinesisSkillProfile: RedKinesisSkillProfile);
+        }
+
+        public static ConfiguredHand CreateBlueWithKinesisSkill(HeroId ownerId)
+        {
+            return Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                kinesisSkillProfile: BlueKinesisSkillProfile);
+        }
+
 
         /// <summary>
         /// Milestone 8.5's fixture cards: printed Attacks and a printed Defense that carry card text.
@@ -422,6 +500,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile cardStateSkillProfile = null,
             HeroId cardStateDiscardingHeroId = default,
             SyntheticSkillProfile radiusSkillProfile = null,
+            SyntheticSkillProfile orbitSkillProfile = null,
+            SyntheticSkillProfile kinesisSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -510,6 +590,20 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 AddCard(
                     definitions, instances, CreateRadiusSkillDefinition(radiusSkillProfile),
                     radiusSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (orbitSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances, CreateOrbitSkillDefinition(orbitSkillProfile),
+                    orbitSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (kinesisSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances, CreateKinesisSkillDefinition(kinesisSkillProfile),
+                    kinesisSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -832,13 +926,16 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
-                        SyntheticDisplacementCapabilities.DirectMoveV2,
+                        SyntheticDisplacementCapabilities.DirectMoveV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "mover", selectSubject, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
-                            EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted))
                         },
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -870,12 +967,20 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("space", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         place, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticPlacementCapabilities.PlaceV1,
+                        SyntheticPlacementCapabilities.PlaceV2,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "subject", actorSpace, "space", EffectValueKind.Coordinate),
-                            EffectInputBinding.FromLiteral("radius", EffectValue.Integer(2))
+                            EffectInputBinding.FromLiteral("radius", EffectValue.Integer(2)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticPlacementCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Placement.PlaceEligiblePieceKind.GamePiece)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticPlacementCapabilities.DestinationAnchorParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Placement.PlaceDestinationAnchor.PlacedPiece))
                         },
                         outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -1069,13 +1174,16 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
                         move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
-                        SyntheticDisplacementCapabilities.DirectMoveV2,
+                        SyntheticDisplacementCapabilities.DirectMoveV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "mover", selectSubject, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted))
                         },
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -1280,6 +1388,186 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         {
                             new PrintedValueDefinition(
                                 PrintedValueChannel.Radius, RadiusSkillPrintedRadius)
+                        },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 8.6's orbit fixture: `Move a unit or a token in radius 1 space, without moving it
+        /// away from you or closer to you. You may repeat this action up to two times on the same
+        /// target.`
+        ///
+        /// Everything before the repeat is already registered - the printed-Radius selection is 7.2b's
+        /// and the direct Move is 6.4's, widened at 6.8k - so what this card adds is the declared
+        /// destination policy and, for the first time in this build, a repeat maximum above one bound to
+        /// an earlier selection. None of it is official content; the sentence is deliberately the same
+        /// shape Wasp's three telekinetic Move skills print, because a fixture that proved a different
+        /// shape would prove nothing about them.
+        /// </summary>
+        private static CardDefinition CreateOrbitSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("orbit-root");
+            var selectTarget = new EffectNodeId("orbit-select");
+            var move = new EffectNodeId("orbit-move");
+            var repeat = new EffectNodeId("orbit-repeat");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-6-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { selectTarget, move, repeat }),
+                    new EffectNodeDefinition(
+                        selectTarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.RadiusTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            // Card-text direct Move has no activity of its own and reads its enclosing
+                            // action's, which is this Skill.
+                            EffectInputBinding.FromLiteral(
+                                "activity",
+                                EffectValue.Integer((int)Rules.Modifications.RuleActivity.Skill)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(move))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.DirectMoveV3,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "mover", selectTarget, "chosen", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Displacement.DirectMoveDestinationPolicy
+                                        .EquidistantFromActor))
+                        },
+                        outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
+                        chooser: EffectChooserRole.Actor,
+                        maximumRepeats: OrbitSkillMaximumRepeats,
+                        repeatTargetBinding: RepeatTargetBinding.SameTarget,
+                        boundSelectionNodeId: selectTarget)
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-6-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-orbit-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        new[]
+                        {
+                            new PrintedValueDefinition(
+                                PrintedValueChannel.Radius, RadiusSkillPrintedRadius)
+                        },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 8.6's kinesis fixture: `Place a unit or a token in range, which is not in a
+        /// straight line, into a space adjacent to you.`
+        ///
+        /// It is the first card in this build to print a Range icon its own text reads, and the first
+        /// to ask p.19's straight-line question at all. The Place beneath is milestone 6.5's, under the
+        /// two declarations milestone 8.6 added to it: the piece kind the card names, and the space its
+        /// destinations are measured from. Not official content; the sentence mirrors Wasp's
+        /// Telekinesis for the reason the orbit fixture mirrors her Move skills.
+        /// </summary>
+        private static CardDefinition CreateKinesisSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("kinesis-root");
+            var selectTarget = new EffectNodeId("kinesis-select");
+            var place = new EffectNodeId("kinesis-place");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-6-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { selectTarget, place }),
+                    new EffectNodeDefinition(
+                        selectTarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.RangeTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                "activity",
+                                EffectValue.Integer((int)Rules.Modifications.RuleActivity.Skill)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.ExcludeStraightLineParameterName,
+                                EffectValue.Boolean(true)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(place))
+                        },
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                    new EffectNodeDefinition(
+                        place, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.PlaceV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "subject", selectTarget, "chosen", EffectValueKind.Coordinate),
+                            // `adjacent to you` is card text, which p.16 never raises.
+                            EffectInputBinding.FromLiteral("radius", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticPlacementCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Placement.PlaceEligiblePieceKind.UnitOrToken)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticPlacementCapabilities.DestinationAnchorParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Placement.PlaceDestinationAnchor.ActingHero))
+                        },
+                        outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-6-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-kinesis-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        new[]
+                        {
+                            new PrintedValueDefinition(
+                                PrintedValueChannel.Range, KinesisSkillPrintedRange)
                         },
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.None,
@@ -1768,7 +2056,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         }),
                     new EffectNodeDefinition(
                         place, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticPlacementCapabilities.PlaceV1,
+                        SyntheticPlacementCapabilities.PlaceV2,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
@@ -1777,7 +2065,15 @@ namespace GuardsDigital.Core.Cards.Synthetic
                                 "radius",
                                 cardRadius,
                                 SyntheticValueCapabilities.RadiusOutput,
-                                EffectValueKind.Integer)
+                                EffectValueKind.Integer),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticPlacementCapabilities.EligiblePieceParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Placement.PlaceEligiblePieceKind.GamePiece)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticPlacementCapabilities.DestinationAnchorParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Placement.PlaceDestinationAnchor.PlacedPiece))
                         },
                         outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) })
                 });
@@ -1869,13 +2165,16 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     // only the exact one.
                     new EffectNodeDefinition(
                         move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
-                        SyntheticDisplacementCapabilities.DirectMoveV2,
+                        SyntheticDisplacementCapabilities.DirectMoveV3,
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "mover", selectTarget, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
-                            EffectInputBinding.FromLiteral("towardActor", EffectValue.Boolean(false))
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                                EffectValue.Integer(
+                                    (int)Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted))
                         },
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(

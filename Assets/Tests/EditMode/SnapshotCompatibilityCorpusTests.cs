@@ -670,9 +670,9 @@ namespace GuardsDigital.Tests.EditMode
         /// Milestone 7.9 keeps schema v21 and re-pins nothing. It adds two fixtures and changes no
         /// existing one, which is the compatibility evidence rather than an absence of it: all eight
         /// digests above are byte-identical, because a corpus that gains coverage of a state shape it
-        /// did not reach is not a change to the wire. The two are <c>paused-level-up-v21</c>, a match
+        /// did not reach is not a change to the wire. The two are <c>paused-level-up-v22</c>, a match
         /// stopped inside p.15's Upgrade a Card carrying a hero's Level, coins, items and a
-        /// system-transition continuation at once, and <c>ended-match-v21</c>, a match p.13's last Life
+        /// system-transition continuation at once, and <c>ended-match-v22</c>, a match p.13's last Life
         /// counter has ended carrying its derived outcome. Both are shapes the complete synthetic loop
         /// reaches every time and no earlier corpus fixture reached at all, so nothing in the sections
         /// they exercise had version-controlled coverage before this milestone. There is no
@@ -692,7 +692,45 @@ namespace GuardsDigital.Tests.EditMode
         /// eight ordinary fixtures and both component ones are built from the internal-test and
         /// Skill-fixture showcase configurations, which this milestone deliberately left alone so that
         /// the corpus measures the wire rather than the content that happens to be in the scene.
-        /// The added fixture is <c>verified-hand-setup-v21</c>, and it is added rather than swapped
+        /// Milestone 8.6 moves schema v21 to v22 and renames every fixture with it, for one cause: a
+        /// repeat continuation - how many repeats an instance's chain has already run, and the target it
+        /// inherited - joins both the pending Skill frame and the owed repeated action. Center of Mass's
+        /// "may repeat up to two times" is the first verified count above one, so "am I a repeat" stopped
+        /// being the whole answer; her two siblings print "on the same target", which has to cross an
+        /// action boundary a snapshot can fall inside.
+        /// The decision is reject rather than migrate, on the same ground as every bump before it. A v21
+        /// payload records no such section, and the only reading available for its absence is "this is
+        /// the first instance and nothing is inherited". That is right for every payload a v21 build
+        /// could produce, because no v21 content declares a maximum above one or a target binding, and
+        /// it is exactly why it must not be written into the reader: the first payload it would be wrong
+        /// about is one this milestone writes, where a second repeat would come back believing it was
+        /// the first and could ask for one more than the card allows.
+        /// Measured in a throwaway worktree at pre-change revision <c>3578dda</c> rather than assumed,
+        /// and the measurement is the reason this entry can be specific about what did <i>not</i>
+        /// change. Every payload grows by exactly 27 bytes in one contiguous insertion, and the 27 bytes
+        /// are not the new section at all: they are one more entry in the capability registration list -
+        /// a one-byte length prefix, the twenty-two characters of <c>synthetic-range-target</c>, and a
+        /// four-byte revision - inserted after <c>synthetic-radius-target</c>, which is where ordinal
+        /// order puts it. Outside that insertion exactly four bytes differ in every fixture: the schema
+        /// version at offset 30, the registered-capability count (31 to 32), direct Move's revision (2
+        /// to 3) and Place's revision (1 to 2). The insertion lands at offset 2227 in <c>setup</c>,
+        /// <c>active-turn</c>, <c>pending-choice</c>, <c>end-of-round</c>, <c>pending-minion-battle</c>,
+        /// <c>paused-level-up</c> and <c>ended-match</c>, at 2462 in <c>placed-token</c>,
+        /// <c>attached-marker</c> and <c>pending-correction</c>, and at 1305 in
+        /// <c>verified-hand-setup</c>, which carries a smaller definition table.
+        /// <c>verified-hand-setup</c> differs in 54 further single bytes, every one of them the same
+        /// character: Wasp's content revision moving from <c>wasp-8-3-rev-1</c> to <c>wasp-8-6-rev-1</c>
+        /// in the eighteen definition-table rows and the thirty-six per-seat instance rows, which is the
+        /// coupling milestone 8.3 built that revision for and the first time a slice has exercised it.
+        /// The repeat continuation itself adds nothing to any of those eleven, and that is a statement
+        /// about the corpus rather than about the field: the continuation is written inside a pending
+        /// Skill frame and inside an owed repeated action, and none of the eleven holds either, so none
+        /// of them has anywhere to put one. That is precisely why a twelfth fixture is added -
+        /// <c>paused-orbit-repeat-v22</c>, a match stopped inside the second instance of a bounded
+        /// repeat, carrying a count of one and the target that instance inherited. Without it the
+        /// schema move this milestone owes would have no version-controlled coverage at all, which is
+        /// the same reason milestone 8.4 added the verified-hand fixture rather than swapping one.
+        /// The added fixture is <c>verified-hand-setup-v22</c>, and it is added rather than swapped
         /// for one of the others because until now no payload in this corpus carried verified content
         /// at all: the ids, the <c>wasp-8-3-rev-1</c> revisions and the thirty-six per-seat instance
         /// identities of a mirrored deal had no version-controlled coverage, so a later slice advancing
@@ -700,17 +738,18 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v21", "467ea6b74465518d37a82299d356c8e7ba3e493cddd8ddf99385530cd4b7e213"),
-            new CompatibilityFixture("active-turn-v21", "a99497b0d0cacbf9ee6e4fc27b767034e486e3debd8e539c797a87e798b51e26"),
-            new CompatibilityFixture("pending-choice-v21", "0913cc4a02974d3f991cf0de7afa944fac53bbfbfe04e5fb5190e362fcabb786"),
-            new CompatibilityFixture("end-of-round-v21", "1b19da97c8e4b1e37aa644500c171eae2397a39c31f37e2ed6df867b067395a7"),
-            new CompatibilityFixture("pending-minion-battle-v21", "4fd9a1ba601b77d6f0802c9e0b6110fd81dcf7682fdb6a893e32094a761dd2cc"),
-            new CompatibilityFixture("placed-token-v21", "0636641937a845159d51a4eb8ce7bef5a60446972c14f8942f0e2409a7c738c3"),
-            new CompatibilityFixture("attached-marker-v21", "13c7fc129012ea0cffd492349b51f07c87263b80fb6fc322ddce0a3830a49ff0"),
-            new CompatibilityFixture("pending-correction-v21", "279ca492fad632c43fc70bb8e9b8a35a43052d53a4f59a610585df14e90ccc0b"),
-            new CompatibilityFixture("paused-level-up-v21", "7a2587cacd8e6e2aa5b57e4a603bbd416c30ed88f449e6ac45c57287ac99b0a0"),
-            new CompatibilityFixture("ended-match-v21", "1aee1b34a066ced915512a9aa5cb4e8c25b71bf19acdde31efacefb1a26fa6c9"),
-            new CompatibilityFixture("verified-hand-setup-v21", "49545713354db8c24a0f9c261b0d15068fde1c02e34d36cef1195f4546157f09")
+            new CompatibilityFixture("setup-v22", "31c03d74db2d8f868b1dcfeb412cb60b63897e81b7605ffa6056a8c1cd99cd66"),
+            new CompatibilityFixture("active-turn-v22", "414c9917e94f8bd605e0ccf8a6543338c4e150d1ab62cc32e8c7c844c1f05275"),
+            new CompatibilityFixture("pending-choice-v22", "9c6339d2cec712042e0a05b85eaaafa375326070ca1175389584aaf6e20fc042"),
+            new CompatibilityFixture("end-of-round-v22", "85b7d2242f78d9b17355f2afe0b8284b43dd81f4337dd6ad5b1dfe630045b1ba"),
+            new CompatibilityFixture("pending-minion-battle-v22", "d9eb674ae709266109e0b19e860616ffe736b8c649f63135cf41717b7efda8b9"),
+            new CompatibilityFixture("placed-token-v22", "d29917aab2d6aac03cad95baef48d12a707bf1a762f9fdf7586994e5b68aa14f"),
+            new CompatibilityFixture("attached-marker-v22", "fcfc3cedc6540076f5b75765eafc0b842a11ef6d93ea83419ea795e3a9c71d3b"),
+            new CompatibilityFixture("pending-correction-v22", "f73f5d68da10ea8859a3bde7c6c6e5a2b61744c522bf0c209ae4a2dbf13a97d5"),
+            new CompatibilityFixture("paused-level-up-v22", "25394691177f27ee23da37ed50b5271c46c87cbc19ca68809462030049c586d8"),
+            new CompatibilityFixture("ended-match-v22", "b3df5c9d75cee7017d542eb2123c3cecabe3850b4f9da898310668ed153ea437"),
+            new CompatibilityFixture("verified-hand-setup-v22", "932e23639d946a8b71fa06d73e275528367e8fd161326ad320e60e399ac4c823"),
+            new CompatibilityFixture("paused-orbit-repeat-v22", "9d9c3a4fdfef570c0f8182ee4e2bbadf3090414ca664305b15f5195e942f030a")
         };
 
         [Test]
@@ -798,16 +837,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v21", session.CaptureSnapshot());
+            values.Add("setup-v22", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v21", session.CaptureSnapshot());
+            values.Add("active-turn-v22", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v21", session.CaptureSnapshot());
+            values.Add("pending-choice-v22", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -823,7 +862,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v21", session.CaptureSnapshot());
+            values.Add("end-of-round-v22", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -832,17 +871,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v21", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v22", session.CaptureSnapshot());
 
             // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
             // carry zero components would leave the sections it exists to protect untested, so one
             // payload holds a token on the board and one holds a marker on a hero.
-            values.Add("placed-token-v21", CaptureComponentSnapshot("component-place-branch"));
-            values.Add("attached-marker-v21", CaptureComponentSnapshot("component-give-marker"));
+            values.Add("placed-token-v22", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v22", CaptureComponentSnapshot("component-give-marker"));
 
             // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
             // so the paused after-action correction gets the eighth.
-            values.Add("pending-correction-v21", CapturePendingCorrectionSnapshot());
+            values.Add("pending-correction-v22", CapturePendingCorrectionSnapshot());
 
             // Milestone 7.9. The complete synthetic loop reaches two state shapes the eight fixtures
             // above never do, and both are shapes a payload has to survive rather than merely reach:
@@ -853,17 +892,69 @@ namespace GuardsDigital.Tests.EditMode
             // is a pin, and pinning one to a generated run would re-pin the corpus on every change to
             // anything the generator touches, which is the opposite of what a compatibility corpus is
             // for.
-            values.Add("paused-level-up-v21", CapturePausedLevelUpSnapshot());
-            values.Add("ended-match-v21", CaptureEndedMatchSnapshot());
+            values.Add("paused-level-up-v22", CapturePausedLevelUpSnapshot());
+            values.Add("ended-match-v22", CaptureEndedMatchSnapshot());
 
             // Milestone 8.4. The configured session as a player is dealt it: two mirrored Wasps holding
             // p.5's starting five with thirteen in each deck, which is the first verified content any
             // payload in this corpus has ever carried.
             values.Add(
-                "verified-hand-setup-v21",
+                "verified-hand-setup-v22",
                 ConfiguredMatchFixtures.CreateVerifiedMirrorSession().CaptureSnapshot());
+
+            // Milestone 8.6's own schema move. The repeat continuation is written inside a pending Skill
+            // frame and inside an owed repeat, and no fixture above holds either, so the section this
+            // milestone added would have had no version-controlled coverage at all without this one.
+            values.Add("paused-orbit-repeat-v22", CapturePausedOrbitRepeatSnapshot());
             return values;
         }
+
+        /// <summary>
+        /// A match stopped inside the <i>second</i> instance of a bounded repeat, which is the only
+        /// shape that exercises everything milestone 8.6 put on the wire at once: a positive repeat
+        /// count, and the target that instance inherited from the first.
+        ///
+        /// The sequence is the card's own sentence. The actor picks a subject inside the printed
+        /// Radius, moves it one space around themselves, and confirms the repeat; the second instance
+        /// then does not ask which subject - `on the same target` binds it - so it pauses on the
+        /// destination, which is exactly where a payload carrying an inherited target has to be
+        /// legible.
+        /// </summary>
+        private static string CapturePausedOrbitRepeatSnapshot()
+        {
+            var session = CreateOrbitSession();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.Single(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.Id.Value.Contains("orbit") &&
+                    candidate.State.Location == CardLocation.Hand);
+                Assert.That(session.Execute(
+                    DirectorCommand.CommitCard(card.OwnerId, card.Id)).Accepted, Is.True);
+            }
+
+            var offer = session.Projection.AvailableTurnActions.Single(candidate =>
+                candidate.ActionDefinitionId.Equals(new ActionDefinitionId("primary-orbit-skill")));
+            Assert.That(session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId)).Accepted,
+                Is.True);
+
+            // The subject, then the space it orbits to, then p.10's confirm-or-decline for the repeat.
+            AnswerEffect(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
+            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            AnswerEffect(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
+            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+
+            Assert.That(session.Projection.PendingSkillResolution, Is.Not.Null,
+                "The captured payload has to hold a paused frame, or it pins no continuation at all.");
+            Assert.That(
+                session.Projection.PendingSkillResolution.InvocationContext,
+                Is.EqualTo(ActionInvocationContext.Repeated),
+                "The pause has to be inside the repeated instance, which is what carries the count.");
+            return session.CaptureSnapshot();
+        }
+
+        private static MatchSession CreateOrbitSession() => ConfiguredMatchFixtures.CreateOrbitSession();
 
         /// <summary>
         /// A configured match stopped exactly where p.15's Upgrade a Card asks its question, which is
@@ -1036,6 +1127,11 @@ namespace GuardsDigital.Tests.EditMode
                 return ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
             }
 
+            if (fixtureName.StartsWith("paused-orbit-repeat", StringComparison.Ordinal))
+            {
+                return CreateOrbitSession();
+            }
+
             return fixtureName.StartsWith("placed-token", StringComparison.Ordinal) ||
                 fixtureName.StartsWith("attached-marker", StringComparison.Ordinal) ||
                 fixtureName.StartsWith("pending-correction", StringComparison.Ordinal)
@@ -1043,9 +1139,17 @@ namespace GuardsDigital.Tests.EditMode
                     : CreateSession();
         }
 
-        private static MatchSession CreateComponentSession()
+        private static MatchSession CreateComponentSession() =>
+            CreateFixtureSession(PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue));
+
+        /// <summary>
+        /// One session from one named fixture configuration. Extracted at milestone 8.6, when the
+        /// component session's body was needed a second time: the setup, scenario and map are the same
+        /// for every fixture configuration, and only which hands are dealt differs.
+        /// </summary>
+        private static MatchSession CreateFixtureSession(
+            PlaceholderOneVsOneTestConfiguration configuration)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

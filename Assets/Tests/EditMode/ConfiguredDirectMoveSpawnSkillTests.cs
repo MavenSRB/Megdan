@@ -13,6 +13,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
@@ -161,15 +162,20 @@ namespace GuardsDigital.Tests.EditMode
                 Is.False, "`another` excludes the acting hero.");
 
             var move = effect.Nodes.Single(node => node.Id.Equals(Move));
-            Assert.That(move.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.DirectMoveV2));
+            Assert.That(move.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.DirectMoveV3));
             Assert.That(move.FailurePolicy, Is.EqualTo(EffectFailurePolicy.UpTo),
                 "`up to 2 spaces` is p.11's optional distance, carried by the node's own policy.");
             Assert.That(
                 move.Inputs.Single(input => input.ParameterName == "distance").Literal.IntegerValue,
                 Is.EqualTo(2));
             Assert.That(
-                move.Inputs.Single(input => input.ParameterName == "towardActor").Literal.BooleanValue,
-                Is.False, "A `towards` bound would need verified card text to read it from.");
+                move.Inputs.Single(input => input.ParameterName ==
+                    SyntheticDisplacementCapabilities.DestinationPolicyParameterName)
+                    .Literal.IntegerValue,
+                Is.EqualTo((int)DirectMoveDestinationPolicy.Unrestricted),
+                "This card says only how far, so it narrows nothing relative to the actor. Both " +
+                "narrowings the policy can express need verified card text to read them from - and " +
+                "since milestone 8.6, three of Wasp's Skills supply the orbit one.");
             Assert.That(
                 move.Inputs.Single(input => input.ParameterName == "mover").SourceNodeId,
                 Is.EqualTo(SelectTarget),
@@ -184,7 +190,7 @@ namespace GuardsDigital.Tests.EditMode
                 spawn.Outputs.Select(output => output.OutputName).OrderBy(value => value, StringComparer.Ordinal),
                 Is.EqualTo(new[] { "at", "spawned" }));
             Assert.That(effect.Nodes.Any(node =>
-                node.Capability.Equals(SyntheticPlacementCapabilities.PlaceV1)), Is.False,
+                node.Capability.Equals(SyntheticPlacementCapabilities.PlaceV2)), Is.False,
                 "p.18 keeps Place and Spawn distinct operations, and no card offers both.");
 
             Assert.That(

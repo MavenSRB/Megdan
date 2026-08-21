@@ -83,7 +83,10 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<EffectOutputBinding> outputs = null,
             EffectChooserRole chooser = EffectChooserRole.None,
             int minimumSelections = 0,
-            int maximumSelections = 0)
+            int maximumSelections = 0,
+            int maximumRepeats = 1,
+            RepeatTargetBinding repeatTargetBinding = RepeatTargetBinding.Unbound,
+            EffectNodeId boundSelectionNodeId = default)
         {
             if (!id.IsDefined)
             {
@@ -136,6 +139,9 @@ namespace GuardsDigital.Core.Effects
             Chooser = chooser;
             MinimumSelections = minimumSelections;
             MaximumSelections = maximumSelections;
+            MaximumRepeats = maximumRepeats;
+            RepeatTargetBinding = repeatTargetBinding;
+            BoundSelectionNodeId = boundSelectionNodeId;
 
             ValidateNodeShape();
         }
@@ -152,12 +158,46 @@ namespace GuardsDigital.Core.Effects
         public int MaximumSelections { get; }
 
         /// <summary>
+        /// How many times a <see cref="EffectNodeKind.RepeatAction"/> node may ask, counted across the
+        /// whole chain of instances rather than per instance. One for every repeat built before
+        /// milestone 8.6, which is exactly what 6.7's structural bound already meant, and two for
+        /// Center of Mass's "may repeat up to two times" - the first verified count above one.
+        ///
+        /// It is a maximum and never a number of repeats to perform: each instance still reaches the
+        /// node's own `may` or `if able` and may stop the chain there, which is what "up to" means on
+        /// p.10.
+        /// </summary>
+        public int MaximumRepeats { get; }
+
+        /// <summary>
+        /// What a repeated instance does about the target the instance before it chose. Milestone 8.6.
+        /// </summary>
+        public RepeatTargetBinding RepeatTargetBinding { get; }
+
+        /// <summary>
+        /// The selection node whose published target a <see cref="RepeatTargetBinding.SameTarget"/>
+        /// repeat binds. Undefined for an unbound repeat and for every other node kind.
+        /// </summary>
+        public EffectNodeId BoundSelectionNodeId { get; }
+
+        /// <summary>
         /// Per-kind legality that depends only on this node. Cross-node concerns - unresolved children,
         /// cycles, unreachable nodes, binding types, unregistered capabilities - belong to
         /// <see cref="EffectDefinitionValidator"/>, which can see the whole table.
         /// </summary>
         private void ValidateNodeShape()
         {
+            // Milestone 8.6. The three repeat declarations belong to one node kind, so every other kind
+            // is refused them here rather than ignoring them - a Sequence carrying a bound selection
+            // would be stating a rule nothing reads.
+            if (Kind != EffectNodeKind.RepeatAction &&
+                (MaximumRepeats != 1 || RepeatTargetBinding != RepeatTargetBinding.Unbound ||
+                    BoundSelectionNodeId.IsDefined))
+            {
+                throw new ArgumentException(
+                    $"A {Kind} node is not a repeat, so it declares no repeat maximum and no target binding.");
+            }
+
             switch (Kind)
             {
                 case EffectNodeKind.Sequence:
@@ -233,15 +273,31 @@ namespace GuardsDigital.Core.Effects
                             "A RepeatAction node reads and publishes nothing; the repeated instance " +
                             "runs the same definition from its own start.");
 
-                    // A repeat that must happen is unbounded by construction, and `up to` would need a
-                    // count this node does not have. Admitting `may` and `if able` only is what makes
-                    // milestone 6.7's non-recursion structural: a Repeat reached in an already-repeated
-                    // instance is ineligible, and an ineligible non-mandatory step is p.10's silent skip
-                    // rather than a stop, so nothing is exposed and nothing halts.
+                    // A repeat that must happen is unbounded by construction. Admitting `may` and `if
+                    // able` only is what makes the bound structural rather than a count to trust: a
+                    // Repeat that has already run its declared maximum is ineligible, and an ineligible
+                    // non-mandatory step is p.10's silent skip rather than a stop, so nothing is
+                    // exposed and nothing halts. Milestone 6.7 stated the maximum as the constant one;
+                    // milestone 8.6 let a card declare it, and changed nothing else about this.
                     if (FailurePolicy != EffectFailurePolicy.May &&
                         FailurePolicy != EffectFailurePolicy.IfAble)
                         throw new ArgumentException(
-                            "A RepeatAction node is `may` or `if able`; a mandatory or counted repeat is unbounded.");
+                            "A RepeatAction node is `may` or `if able`; a mandatory repeat is unbounded.");
+                    if (MaximumRepeats < 1)
+                        throw new ArgumentException(
+                            "A RepeatAction node asks at least once; a node that may never ask is the " +
+                            "node not being there.");
+                    if (RepeatTargetBinding == RepeatTargetBinding.SameTarget &&
+                        !BoundSelectionNodeId.IsDefined)
+                        throw new ArgumentException(
+                            "A same-target repeat names the selection node whose target it binds.");
+                    if (RepeatTargetBinding == RepeatTargetBinding.Unbound &&
+                        BoundSelectionNodeId.IsDefined)
+                        throw new ArgumentException(
+                            "An unbound repeat binds no selection, so it must name none.");
+                    if (BoundSelectionNodeId.Equals(Id))
+                        throw new ArgumentException(
+                            "A repeat cannot bind its own target; the selection it binds is another node.");
                     if (FailurePolicy == EffectFailurePolicy.May && Chooser == EffectChooserRole.None)
                         throw new ArgumentException(
                             "A may RepeatAction node requires a chooser, because it opens a decision.");

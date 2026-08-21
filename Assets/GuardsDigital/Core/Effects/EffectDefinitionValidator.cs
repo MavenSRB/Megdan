@@ -51,7 +51,15 @@ namespace GuardsDigital.Core.Effects
         /// bound by this. The slice that first transcribes a rider needing a question owns the nesting
         /// and the schema move it costs.
         /// </summary>
-        CardTextCannotPauseInsideAnAttack = 15
+        CardTextCannotPauseInsideAnAttack = 15,
+
+        /// <summary>
+        /// Milestone 8.6. A `on the same target` repeat names a selection whose target it could not
+        /// inherit: one this definition does not declare, one that publishes no single space, one that
+        /// has not certainly run by the time the repeat is reached, or a second such repeat in the same
+        /// definition, which would leave one inherited target with two nodes claiming it.
+        /// </summary>
+        UnresolvedRepeatTargetBinding = 16
     }
 
     public readonly struct EffectDefinitionRejection
@@ -193,7 +201,77 @@ namespace GuardsDigital.Core.Effects
                 ValidateBindings(definition, node, guaranteedBefore, rejections);
             }
 
+            ValidateRepeatTargetBinding(definition, guaranteedBefore, rejections);
+
             return rejections;
+        }
+
+        /// <summary>
+        /// Milestone 8.6: that a `on the same target` repeat can actually inherit a target.
+        ///
+        /// Three things have to hold, and the analysis for all three already exists. The bound node
+        /// must be declared here, because one definition is one action's node table and there is no
+        /// address that reaches out of it. It must publish exactly one space, because that space is the
+        /// whole of what the repeated instance inherits and a node publishing two would leave the
+        /// engine choosing. And it must be a <i>guaranteed</i> predecessor of the repeat - the same
+        /// dominance question a node binding an earlier node's output already asks - because a repeat
+        /// that requested a bound target the run never produced would silently degrade into p.10's
+        /// free choice, which is the opposite of what the card says.
+        ///
+        /// One further rule is about the definition rather than the node: at most one repeat in it may
+        /// bind a target. A continuation carries one inherited space and no node identity, deliberately
+        /// (<see cref="RepeatContinuation"/>), so two bindings would leave the repeated instance unable
+        /// to say which selection the space it is holding belongs to.
+        /// </summary>
+        private static void ValidateRepeatTargetBinding(
+            EffectDefinition definition,
+            IReadOnlyDictionary<EffectNodeId, HashSet<EffectNodeId>> guaranteedBefore,
+            List<EffectDefinitionRejection> rejections)
+        {
+            var binding = definition.Nodes
+                .Where(node => node.RepeatTargetBinding == RepeatTargetBinding.SameTarget)
+                .ToArray();
+            if (binding.Length == 0)
+            {
+                return;
+            }
+
+            if (binding.Length > 1)
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.UnresolvedRepeatTargetBinding,
+                    $"Effect definition '{definition.Id}' declares {binding.Length} repeats that bind a " +
+                    "target; a repeated instance inherits one space and could not tell which selection " +
+                    "it belongs to."));
+                return;
+            }
+
+            var repeat = binding[0];
+            if (!definition.TryGetNode(repeat.BoundSelectionNodeId, out var selection))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.UnresolvedRepeatTargetBinding,
+                    $"Repeat '{repeat.Id}' binds the target of '{repeat.BoundSelectionNodeId}', which " +
+                    "this definition does not declare."));
+                return;
+            }
+
+            if (selection.Outputs.Count(output => output.ValueKind == EffectValueKind.Coordinate) != 1)
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.UnresolvedRepeatTargetBinding,
+                    $"Repeat '{repeat.Id}' binds the target of '{selection.Id}', which does not publish " +
+                    "exactly one space for the repeated instance to inherit."));
+            }
+
+            if (!guaranteedBefore.TryGetValue(repeat.Id, out var guaranteed) ||
+                !guaranteed.Contains(selection.Id))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.UnresolvedRepeatTargetBinding,
+                    $"Repeat '{repeat.Id}' binds the target of '{selection.Id}', which has not " +
+                    "certainly run wherever the repeat is reached."));
+            }
         }
 
         /// <summary>
