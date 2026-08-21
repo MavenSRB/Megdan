@@ -14,8 +14,10 @@ namespace GuardsDigital.Core.Participants
             PlaceholderMovementHand redHand,
             PlaceholderMovementHand blueHand,
             TieBreakerState tieBreakerState,
+            SetupRandomnessSeed setupSeed,
             bool validateInitialCardState = true)
         {
+            SetupSeed = setupSeed;
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
             RedHand = redHand ?? throw new ArgumentNullException(nameof(redHand));
             BlueHand = blueHand ?? throw new ArgumentNullException(nameof(blueHand));
@@ -78,6 +80,13 @@ namespace GuardsDigital.Core.Participants
 
         public TieBreakerState TieBreakerState { get; }
 
+        /// <summary>
+        /// The recorded setup draw <see cref="TieBreakerState"/> was derived from, or
+        /// <see cref="SetupRandomnessSeed.Unrecorded"/> when the side was explicitly selected under
+        /// `DEV-005`. Milestone 8.28b.
+        /// </summary>
+        public SetupRandomnessSeed SetupSeed { get; }
+
         public IReadOnlyList<CardDefinition> CardDefinitions { get; }
 
         public IReadOnlyList<CardInstance> CardInstances { get; }
@@ -94,8 +103,14 @@ namespace GuardsDigital.Core.Participants
         /// </summary>
         public static PlaceholderOneVsOneTestConfiguration Create()
         {
+            // Milestone 8.28b. The draw happens once, here, and is recorded before anything derives
+            // from it, so the coin flip below can be carried out again from the record and land on the
+            // same side. It is still a real flip: the seed came from platform entropy a moment ago.
+            var setupSeed = SetupRandomnessAuthority.DrawSeed();
+
             return Create(
-                TieBreakerSetupAuthority.CreateNormalSetupState(),
+                TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed),
+                setupSeed,
                 PlaceholderMovementHand.CreateRed,
                 PlaceholderMovementHand.CreateBlue);
         }
@@ -114,7 +129,8 @@ namespace GuardsDigital.Core.Participants
                 Participants,
                 CardDefinitions,
                 CardInstances,
-                TieBreakerState);
+                TieBreakerState,
+                SetupSeed);
 
         public static PlaceholderOneVsOneTestConfiguration Restore(
             PlaceholderConfigurationRestoreState state)
@@ -203,6 +219,7 @@ namespace GuardsDigital.Core.Participants
                 BuildHand(redHero, PlaceholderMovementHand.RedUltimateDefinitionId),
                 BuildHand(blueHero, PlaceholderMovementHand.BlueUltimateDefinitionId),
                 state.TieBreakerState,
+                state.SetupSeed,
                 false);
         }
 
@@ -289,6 +306,21 @@ namespace GuardsDigital.Core.Participants
             Func<HeroId, PlaceholderMovementHand> redHand,
             Func<HeroId, PlaceholderMovementHand> blueHand)
         {
+            return Create(tieBreakerState, SetupRandomnessSeed.Unrecorded, redHand, blueHand);
+        }
+
+        /// <summary>
+        /// Milestone 8.28b. The seed is stated rather than defaulted, so a configuration whose Tie
+        /// Breaker was flipped and one whose side was selected cannot be confused for each other: the
+        /// first records the draw it made, the second records <see cref="SetupRandomnessSeed.Unrecorded"/>
+        /// because it made none.
+        /// </summary>
+        private static PlaceholderOneVsOneTestConfiguration Create(
+            TieBreakerState tieBreakerState,
+            SetupRandomnessSeed setupSeed,
+            Func<HeroId, PlaceholderMovementHand> redHand,
+            Func<HeroId, PlaceholderMovementHand> blueHand)
+        {
             var participants = PlaceholderOneVsOneParticipants.Create();
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
@@ -297,7 +329,8 @@ namespace GuardsDigital.Core.Participants
                 participants,
                 redHand(redHeroId),
                 blueHand(blueHeroId),
-                tieBreakerState);
+                tieBreakerState,
+                setupSeed);
         }
 
         /// <summary>

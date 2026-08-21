@@ -409,7 +409,13 @@ namespace GuardsDigital.Application
                         restored.Participants,
                         initialState.Scenario.CardDefinitions,
                         restored.Cards,
-                        restored.Round.TieBreakerState)),
+                        restored.Round.TieBreakerState,
+                        // Milestone 8.28b. The side comes from the payload because it flips during
+                        // play; the draw comes from the recorded scenario because it happened once, at
+                        // setup, and no later state can restate it. A restore that dropped it would
+                        // leave a live match unable to say how it started, which is the gap F-ER2-04
+                        // recorded.
+                        initialState.Scenario.SetupSeed)),
                 restored);
         }
 

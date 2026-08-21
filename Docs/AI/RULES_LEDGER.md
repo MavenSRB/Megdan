@@ -6,7 +6,7 @@ Last updated: 2026-08-20
 
 This ledger prevents silent rule drift. It connects each game system to its source, approved deviations, implementation status, and focused tests.
 
-The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, placeholder coordinate-to-XZ presentation, authoritative hero/minion/token occupancy, typed command/event card actions, collection-backed participants, visible restorable Movement/Attack/Defense resolution, Tie Breaker state, repeated four-turn synthetic rounds with resumable end-of-round progression, deterministic schema-versioned snapshot capture/restore, accepted-command-only director Undo/restart, the complete official map with validated ordered Lane, and the exact-map configured mirrored-Wasp 1v1 Quick Game setup. Milestones through 8.2 are complete. All rule systems remain unimplemented unless stated otherwise.
+The project contains the completed Unity shell, automated test infrastructure, generic hex-coordinate foundation, placeholder coordinate-to-XZ presentation, authoritative hero/minion/token occupancy, typed command/event card actions, collection-backed participants, visible restorable Movement/Attack/Defense resolution, Tie Breaker state, repeated four-turn synthetic rounds with resumable end-of-round progression, deterministic schema-versioned snapshot capture/restore, accepted-command-only director Undo/restart, the complete official map with validated ordered Lane, and the exact-map configured mirrored-Wasp 1v1 Quick Game setup. Milestones through 8.28b are complete. All rule systems remain unimplemented unless stated otherwise.
 
 ## Authority hierarchy
 

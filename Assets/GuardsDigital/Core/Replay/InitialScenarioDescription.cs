@@ -18,11 +18,37 @@ namespace GuardsDigital.Core.Replay
         private readonly IReadOnlyList<HeroOccupancy> initialHeroes;
         private readonly IReadOnlyList<ObstacleOccupancy> initialObstacles;
 
+        /// <summary>
+        /// A scenario whose Tie Breaker side was explicitly selected rather than flipped, so there is
+        /// no draw to record. Every focused fixture names the side it wants, which is exactly the
+        /// `DEV-005` shape; the configured match uses the overload that carries its recorded seed.
+        /// </summary>
         public InitialScenarioDescription(
             MatchParticipants participants,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> initialCards,
             TieBreakerState initialTieBreakerState,
+            MapDefinitionReference selectedMap,
+            IEnumerable<HeroOccupancy> initialHeroes,
+            IEnumerable<ObstacleOccupancy> initialObstacles)
+            : this(
+                participants,
+                definitions,
+                initialCards,
+                initialTieBreakerState,
+                SetupRandomnessSeed.Unrecorded,
+                selectedMap,
+                initialHeroes,
+                initialObstacles)
+        {
+        }
+
+        public InitialScenarioDescription(
+            MatchParticipants participants,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> initialCards,
+            TieBreakerState initialTieBreakerState,
+            SetupRandomnessSeed setupSeed,
             MapDefinitionReference selectedMap,
             IEnumerable<HeroOccupancy> initialHeroes,
             IEnumerable<ObstacleOccupancy> initialObstacles)
@@ -44,6 +70,7 @@ namespace GuardsDigital.Core.Replay
             }
 
             InitialTieBreakerState = initialTieBreakerState;
+            SetupSeed = setupSeed;
             SelectedMap = selectedMap;
             this.initialHeroes = Array.AsReadOnly(
                 (initialHeroes ?? throw new ArgumentNullException(nameof(initialHeroes))).ToArray());
@@ -53,6 +80,13 @@ namespace GuardsDigital.Core.Replay
 
         public MatchParticipants Participants { get; }
         public TieBreakerState InitialTieBreakerState { get; }
+
+        /// <summary>
+        /// The recorded setup draw <see cref="InitialTieBreakerState"/> was derived from, or
+        /// <see cref="SetupRandomnessSeed.Unrecorded"/> when the side was explicitly selected under
+        /// `DEV-005`. Milestone 8.28b.
+        /// </summary>
+        public SetupRandomnessSeed SetupSeed { get; }
         public MapDefinitionReference SelectedMap { get; }
         public IReadOnlyList<CardDefinition> CardDefinitions => definitions;
         public IReadOnlyList<CardInstance> InitialCards => initialCards.Select(CloneCard).ToArray();
@@ -66,7 +100,8 @@ namespace GuardsDigital.Core.Replay
                     Participants,
                     definitions,
                     initialCards.Select(CloneCard),
-                    InitialTieBreakerState));
+                    InitialTieBreakerState,
+                    SetupSeed));
         }
 
         public AdjacentMoveAuthority CreateBoard(IEnumerable<BoardMapDefinition> availableMaps)

@@ -1,5 +1,4 @@
 using System;
-using System.Security.Cryptography;
 using GuardsDigital.Core.Participants;
 
 namespace GuardsDigital.Core.Setup
@@ -57,17 +56,22 @@ namespace GuardsDigital.Core.Setup
 
     public static class TieBreakerSetupAuthority
     {
-        public static TieBreakerState CreateNormalSetupState()
+        /// <summary>
+        /// Rulebook p.5's setup coin flip, derived from the match's recorded setup draw.
+        ///
+        /// Milestone 8.28b, closing `F-ER2-04`. The flip is still random from the player's
+        /// perspective - the seed it derives from was drawn from platform entropy at setup - but it is
+        /// now reproducible from a fact the match wrote down, which is what deterministic replay and a
+        /// future online authority both need.
+        /// </summary>
+        public static TieBreakerState CreateNormalSetupState(SetupRandomnessSeed seed)
         {
-            using (var random = RandomNumberGenerator.Create())
-            {
-                var result = new byte[1];
-                random.GetBytes(result);
-                return new TieBreakerState(
-                    (result[0] & 1) == 0
-                        ? TeamSide.Red
-                        : TeamSide.Blue);
-            }
+            var draw = SetupRandomnessAuthority.Derive(
+                seed, SetupRandomnessPurpose.TieBreakerCoinFlip);
+            return new TieBreakerState(
+                (draw & 1UL) == 0UL
+                    ? TeamSide.Red
+                    : TeamSide.Blue);
         }
 
         public static TieBreakerState CreateInternalTestSetupState(TeamSide explicitSide)

@@ -20,8 +20,10 @@ namespace GuardsDigital.Core.Participants
             MatchParticipants participants,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            TieBreakerState tieBreakerState)
+            TieBreakerState tieBreakerState,
+            SetupRandomnessSeed setupSeed)
         {
+            SetupSeed = setupSeed;
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
             Definitions = Array.AsReadOnly(
                 (definitions ?? throw new ArgumentNullException(nameof(definitions))).ToArray());
@@ -35,16 +37,25 @@ namespace GuardsDigital.Core.Participants
         public IReadOnlyList<CardInstance> Instances { get; }
         public TieBreakerState TieBreakerState { get; }
 
+        /// <summary>
+        /// The recorded setup draw, or <see cref="SetupRandomnessSeed.Unrecorded"/> when the side was
+        /// explicitly selected. Milestone 8.28b; the type's remark above is why it is a required
+        /// parameter rather than a defaulted one.
+        /// </summary>
+        public SetupRandomnessSeed SetupSeed { get; }
+
         public void Deconstruct(
             out MatchParticipants participants,
             out IReadOnlyList<CardDefinition> definitions,
             out IReadOnlyList<CardInstance> instances,
-            out TieBreakerState tieBreakerState)
+            out TieBreakerState tieBreakerState,
+            out SetupRandomnessSeed setupSeed)
         {
             participants = Participants;
             definitions = Definitions;
             instances = Instances;
             tieBreakerState = TieBreakerState;
+            setupSeed = SetupSeed;
         }
     }
 }

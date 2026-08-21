@@ -67,6 +67,7 @@ namespace GuardsDigital.Presentation.Match
                 configuration.CardDefinitions,
                 configuration.CardInstances,
                 configuration.TieBreakerState,
+                configuration.SetupSeed,
                 map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 obstacleViews.Select(view => view.Occupancy));

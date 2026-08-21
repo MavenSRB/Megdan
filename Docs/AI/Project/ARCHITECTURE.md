@@ -31,7 +31,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Multi-step actions pause on authoritative, data-shaped pending choices and resume through follow-up commands; UI callbacks never own the continuation.
 - Director-mode authority runs locally in-process.
 - Private online authority runs in one host/session process behind the same typed command, ordered-event, pending-choice, and versioned-snapshot contracts; clients never own rules resolution.
-- Randomness must not be generalized beyond the initial Tie Breaker setup decision.
+- Randomness must not be generalized beyond the initial Tie Breaker setup decision, and since milestone 8.28b it enters through exactly one seam: `SetupRandomnessAuthority.DrawSeed` records a seed in authoritative setup state, and every decision that needs a draw derives from it by named purpose. Nothing else in the authoritative assemblies may reach platform entropy, which `SetupRandomnessConformanceTests` holds mechanically rather than by convention. The seed rides setup state rather than the snapshot payload, because setup is supplied to a restore rather than read from it; the resulting side is what the payload carries, since it flips during play and the draw does not.
 
 ### Application service and presentation
 
