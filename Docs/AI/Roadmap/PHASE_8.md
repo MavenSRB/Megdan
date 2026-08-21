@@ -54,6 +54,22 @@ Non-goals: no change to Level Up eligibility, coin payment, upgrade-pair or item
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-88a-show-upgrade-choices-as-tray-style-cards-completion-evidence).
 
+### [ ] 8.8b Refuse a Clear that can remove nothing
+
+Added by the user-approved roadmap amendment of 2026-08-22, from the player's report that `CLEAR` reads as an ordinary choice while standing beside nothing it could take.
+
+Observable outcome: when no token stands adjacent to the acting hero, the `CLEAR` replacement is drawn greyed and carries no command, and a start naming it is refused atomically.
+
+Acceptance checks:
+
+- Availability is decided by the authority that decides a turn action's, on one predicate asked both where the offer set is built and where the start is validated, so the offer and the command cannot disagree. `ActionOffer.IsAvailable` is the vehicle, as it is for milestones 6.5af, 7.8a1, 8.4 and 8.7, and the refusal names its own typed rejection reason rather than a generic one.
+- **Clearing none stays legal wherever a token is adjacent.** p.13's "any number" includes zero, so what is refused is a Clear that *cannot* remove anything, never one whose chooser declines to: a hero beside one or more tokens still confirms the empty subset, and the projected invocation list still leads with it.
+- The greyed offer keeps its place and its label and reads as unavailable through opacity as well as through being inert, which is the treatment milestones 6.5ac and 6.5af give every other refused control; no second design and no sentence in its place. Opening the token selection from it is refused too, so a surface cannot enter a mode the authority would not complete.
+- The refusal is recorded in [RULES_LEDGER.md](../RULES_LEDGER.md) as an approved deviation with a named review trigger, because p.13 does permit performing a Clear that removes nothing. p.12's Hold is what makes refusing it costless, and no card in this build reads "performed a Clear" as a trigger; the deviation is revisited when one does.
+- Focused checks cover the greyed offer with no adjacent token, the available offer with one, the empty subset still confirmable beside a token, the atomic refusal of a start naming the greyed offer, and the selection refusing to open on it. The new rejection reason is added inert first and the checks are recorded failing before the predicate is wired and passing after.
+
+Non-goals: no change to what a Clear removes, to token adjacency, to p.13's replacement relationship with the Attack, to Fast Travel or any other replacement, to any other action's availability rule, or to the tray and contextual region beyond the greyed control.
+
 ### [x] 8.9 Complete the Wasp basic cards
 
 Blocked by: milestone 8.7 (restriction and overlay consumers). Milestones 8.4 and 8.5 supplied the hands and the Attack text seam.
