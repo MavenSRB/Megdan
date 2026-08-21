@@ -109,6 +109,12 @@ namespace GuardsDigital.Tests.EditMode
         /// it take any number of adjacent tokens including none. An Attack with nobody to target is
         /// still an Attack a Clear may replace, so stamping the Attack unavailable must not take the
         /// replacement away with it.
+        ///
+        /// Milestone 8.3 closes the 7.9a review's F-TEST-03 here. The subject set used to be allowed to
+        /// be empty through an <c>Assert.Pass</c>, which would have retired this regression silently the
+        /// first time the configured content changed shape - and milestone 8.4 changes exactly that. The
+        /// 7.9a diagnostic recorded the escape as latent rather than live (six of six passing with no
+        /// escape message in the trx), so the guard below pins the position that was already true.
         /// </summary>
         [Test]
         public void AnUnavailableAttack_StillOffersTheClearThatReplacesIt()
@@ -123,10 +129,9 @@ namespace GuardsDigital.Tests.EditMode
                     .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId))
                     .DefaultPolicy.CanBeReplaced)
                 .ToArray();
-            if (replaceable.Length == 0)
-            {
-                Assert.Pass("The acting card prints no replaceable Attack in this position.");
-            }
+            Assert.That(replaceable, Is.Not.Empty,
+                "The acting card prints a replaceable Attack in this position, or the assertions below " +
+                "hold over nothing and this regression protects nothing.");
 
             foreach (var offer in replaceable)
             {

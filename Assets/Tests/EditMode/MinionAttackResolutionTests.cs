@@ -122,6 +122,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var payload = AuthoritativeSnapshotSerializer.Serialize(round, fixture.Board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 payload,
                 fixture.Configuration.CardDefinitions,
                 new[] { fixture.Map },
@@ -159,6 +160,7 @@ namespace GuardsDigital.Tests.EditMode
                 RoundResolutionComposition.ForCardActionsOnly(fixture.Authority));
             var payload = AuthoritativeSnapshotSerializer.Serialize(round, fixture.Board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 payload,
                 fixture.Configuration.CardDefinitions,
                 new[] { fixture.Map },
@@ -245,7 +247,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Single(value => value.SourceCardInstanceId.Value == "red-pursuit-card" &&
                     value.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
             return new Fixture(configuration, attacker, map, board,
-                new CardActionResolutionAuthority(board), offer);
+                new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board), offer);
         }
 
         private static BoardMapDefinition CreateBattleZoneMap()

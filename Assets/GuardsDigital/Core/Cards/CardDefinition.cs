@@ -31,9 +31,10 @@ namespace GuardsDigital.Core.Cards
             InitiativeValue initiative,
             CardContentAuthority contentAuthority,
             CardProgressionProfile progression,
-            IEnumerable<ActionDefinition> actionDefinitions)
+            IEnumerable<ActionDefinition> actionDefinitions,
+            CardSourceContent sourceContent = null)
             : this(id, contentRevision, displayName, initiative, contentAuthority, progression,
-                actionDefinitions, null)
+                actionDefinitions, null, sourceContent)
         {
         }
 
@@ -44,6 +45,14 @@ namespace GuardsDigital.Core.Cards
         /// required for an Ultimate and refused for everything else. Both directions matter: an
         /// Ultimate with no ability is a card whose entire printed content is missing, and an ordinary
         /// card with one would supply a rule from a card the page gives no permanent ability to.
+        ///
+        /// <paramref name="sourceContent"/> is milestone 8.3's, and it is optional here only in the
+        /// sense that a synthetic fixture has nothing to say. What makes the absence a statement rather
+        /// than an omission is the coupling below: a definition claiming
+        /// <see cref="CardContentAuthority.VerifiedOfficial"/> must carry its transcription or state
+        /// that its face prints none, and a synthetic fixture may carry neither. So a verified card
+        /// cannot reach an unstated source content by leaving an argument out - it cannot be
+        /// constructed at all.
         /// </summary>
         public CardDefinition(
             CardDefinitionId id,
@@ -53,7 +62,8 @@ namespace GuardsDigital.Core.Cards
             CardContentAuthority contentAuthority,
             CardProgressionProfile progression,
             IEnumerable<ActionDefinition> actionDefinitions,
-            UltimateRuleDefinition ultimateRule)
+            UltimateRuleDefinition ultimateRule,
+            CardSourceContent sourceContent = null)
         {
             if (!id.IsDefined)
             {
@@ -74,6 +84,32 @@ namespace GuardsDigital.Core.Cards
                 contentAuthority == CardContentAuthority.None)
             {
                 throw new ArgumentException("Card definition requires explicit content authority.", nameof(contentAuthority));
+            }
+
+            // Milestone 8.3, closing the 7.9a review's F-CARD-08. The coupling runs both ways because
+            // each direction removes a different lie. Verified content with no transcription is a
+            // definition nobody can audit against the face it claims to come from; a synthetic fixture
+            // carrying printed words would be inventing source authority, which is exactly what this
+            // milestone's "synthetic test values are not used as Wasp authority" forbids. Neither is
+            // reachable by omission - the argument's default is the synthetic answer, and a verified
+            // definition is refused it.
+            var statedSourceContent = sourceContent ?? CardSourceContent.NotSourced;
+            if (contentAuthority == CardContentAuthority.VerifiedOfficial &&
+                !statedSourceContent.StatesASourceFace)
+            {
+                throw new ArgumentException(
+                    "Verified official content carries the words its source face prints, or states " +
+                    "through CardSourceContent.PrintsNoText that the face prints none.",
+                    nameof(sourceContent));
+            }
+
+            if (contentAuthority != CardContentAuthority.VerifiedOfficial &&
+                statedSourceContent.StatesASourceFace)
+            {
+                throw new ArgumentException(
+                    $"A {contentAuthority} definition has no source face; only verified official " +
+                    "content may state what one prints.",
+                    nameof(sourceContent));
             }
 
             if (progression == null)
@@ -130,6 +166,7 @@ namespace GuardsDigital.Core.Cards
             ContentAuthority = contentAuthority;
             Progression = progression;
             UltimateRule = ultimateRule;
+            SourceContent = statedSourceContent;
             var materializedActionDefinitions = actionDefinitions.ToArray();
             ActionDefinitions = Array.AsReadOnly(materializedActionDefinitions);
 
@@ -167,6 +204,16 @@ namespace GuardsDigital.Core.Cards
         /// and a null one is a card it does not.
         /// </summary>
         public UltimateRuleDefinition UltimateRule { get; }
+
+        /// <summary>
+        /// Milestone 8.3's transcribed printed text, or the explicit statement that there is none to
+        /// transcribe. Never null, and read by no rule: it is audit provenance that ties a definition
+        /// to the face it came from, and
+        /// <c>CardDefinitionTests.EveryDefinitionStatesItsSourceContentOrAnExplicitAbsence_AndNoRuleReadsIt</c>
+        /// fails the build if any production type calls this getter. What a card's text does is typed
+        /// effect content; what it says is here.
+        /// </summary>
+        public CardSourceContent SourceContent { get; }
 
         public IReadOnlyList<ActionDefinition> ActionDefinitions { get; }
 

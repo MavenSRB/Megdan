@@ -472,12 +472,11 @@ namespace GuardsDigital.Tests.EditMode
 
             var exception = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     payload,
                     session.Projection.Definitions,
                     new[] { session.Projection.SelectedMap },
                     CreateSetup(session.Projection.SelectedMap).Minions,
-                    null,
-                    null,
                     SystemTransitionCatalog.Empty));
 
             Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.MalformedPayload),
@@ -503,6 +502,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(tampered, Is.Not.EqualTo(payload), "The tamper has to actually change something.");
             var exception = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     tampered,
                     session.Projection.Definitions,
                     new[] { session.Projection.SelectedMap },
@@ -524,6 +524,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var exception = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     prior,
                     session.Projection.Definitions,
                     new[] { session.Projection.SelectedMap },

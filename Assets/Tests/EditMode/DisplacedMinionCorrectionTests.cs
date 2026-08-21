@@ -228,6 +228,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(pending.Kind, Is.EqualTo(DisplacedMinionCorrectionKind.Place));
 
             var board = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 session.Projection.AuthoritativeSnapshot,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },

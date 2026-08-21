@@ -32,7 +32,9 @@ namespace GuardsDigital.Core.Cards
             ActionDefinitionPolicy defaultPolicy,
             AttackRangeKind attackRange,
             ActionCardStateTransition sourceCardStateTransition,
-            EffectDefinition effectRoot = null)
+            EffectDefinition effectRoot = null,
+            PrintedTextComposition textComposition = default,
+            PrintedDefenseResolution defenseResolution = PrintedDefenseResolution.None)
         {
             if (!id.IsDefined)
             {
@@ -59,6 +61,12 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Action definition requires a valid Attack range classification.", nameof(attackRange));
             }
 
+            if (!Enum.IsDefined(typeof(PrintedDefenseResolution), defenseResolution))
+            {
+                throw new ArgumentException(
+                    "Action definition requires a valid printed Defense resolution.", nameof(defenseResolution));
+            }
+
             ValidatePolicy(origin, defaultPolicy);
 
             Id = id;
@@ -70,6 +78,23 @@ namespace GuardsDigital.Core.Cards
             AttackRange = attackRange;
             SourceCardStateTransition = sourceCardStateTransition;
             EffectRoot = effectRoot;
+            TextComposition = textComposition;
+
+            // Milestone 8.3. A Defense action that names no resolution resolves the way every Defense
+            // action in this build has since milestone 2.3 - by comparing its printed number - so the
+            // default is normalised here rather than left as a third state every reader has to
+            // interpret. p.14's Block is opt-in, which is what keeps a definition that simply forgot
+            // its Defense value from arriving as a Block.
+            DefenseResolution = kind == ActionKind.Defense && defenseResolution == PrintedDefenseResolution.None
+                ? PrintedDefenseResolution.Value
+                : defenseResolution;
+
+            if (Kind != ActionKind.Defense && DefenseResolution != PrintedDefenseResolution.None)
+            {
+                throw new ArgumentException(
+                    "Only a Defense action definition states how a Defense resolves.",
+                    nameof(defenseResolution));
+            }
 
             if (BaseValues.Select(value => value.Channel).Distinct().Count() != BaseValues.Count)
             {
@@ -99,6 +124,19 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public EffectDefinition EffectRoot { get; }
 
+        /// <summary>
+        /// Milestone 8.3. Whether this action's printed text still owes its typed composition, and to
+        /// which milestone. <see cref="PrintedTextComposition.None"/> on everything that either carries
+        /// its composition already or prints no text at all.
+        /// </summary>
+        public PrintedTextComposition TextComposition { get; }
+
+        /// <summary>
+        /// Milestone 8.3. How a Defense action resolves - p.14's numeric comparison or its Block -
+        /// and <see cref="PrintedDefenseResolution.None"/> for every other kind.
+        /// </summary>
+        public PrintedDefenseResolution DefenseResolution { get; }
+
         private void ValidateActionShape(IEnumerable<PrintedValueDefinition> baseValues)
         {
             if (Kind == ActionKind.Movement)
@@ -112,16 +150,30 @@ namespace GuardsDigital.Core.Cards
                     throw new ArgumentException("Attack action definitions require a range classification.", nameof(AttackRange));
                 }
 
+                // Milestone 8.3 widens the non-Ranged shape by p.9's own sentence, "Some primary actions
+                // have a Range or Radius icon and a value on the right side of the card". Four of
+                // Wasp's Attacks print a Radius beside their Attack value - it is the scope their
+                // After-the-attack text asks about, not a second combat number - so the shape is one
+                // Attack value plus at most p.9's one icon. A Ranged Attack's icon is the Range that
+                // classifies it, and no verified face prints both.
                 var expectedChannels = AttackRange == AttackRangeKind.Ranged
                     ? new[] { PrintedValueChannel.Attack, PrintedValueChannel.Range }
                     : new[] { PrintedValueChannel.Attack };
-                if (BaseValues.Count != expectedChannels.Length ||
-                    expectedChannels.Any(channel => BaseValues.All(value => value.Channel != channel)))
+                var optionalChannels = AttackRange == AttackRangeKind.Ranged
+                    ? Array.Empty<PrintedValueChannel>()
+                    : new[] { PrintedValueChannel.Radius };
+                if (BaseValues.Count < expectedChannels.Length ||
+                    BaseValues.Count > expectedChannels.Length + optionalChannels.Length ||
+                    expectedChannels.Any(channel => BaseValues.All(value => value.Channel != channel)) ||
+                    BaseValues.Any(value =>
+                        !expectedChannels.Contains(value.Channel) &&
+                        !optionalChannels.Contains(value.Channel)))
                 {
                     throw new ArgumentException(
                         AttackRange == AttackRangeKind.Ranged
                             ? "Ranged Attack action definitions require exactly one Attack and one Range printed value."
-                            : "Non-Ranged Attack action definitions require exactly one Attack printed value.",
+                            : "Non-Ranged Attack action definitions require exactly one Attack printed " +
+                              "value and at most rulebook p.9's Radius icon.",
                         nameof(baseValues));
                 }
 
@@ -131,6 +183,44 @@ namespace GuardsDigital.Core.Cards
                     throw new ArgumentException(
                         "Ranged Attack action definitions require a positive printed Range value.",
                         nameof(baseValues));
+                }
+
+                if (BaseValues.Any(value =>
+                        value.Channel == PrintedValueChannel.Radius && value.Amount < 1))
+                {
+                    throw new ArgumentException(
+                        "A printed Radius icon states a positive value; p.9's smallest is 1, which " +
+                        "reaches adjacent targets only.",
+                        nameof(baseValues));
+                }
+            }
+            else if (Kind == ActionKind.Defense && DefenseResolution == PrintedDefenseResolution.Block)
+            {
+                // Milestone 8.3, and p.14's other Defense shape. A Block card prints a shield with an
+                // exclamation mark where every other card prints a number, so the two numeric rules
+                // below cannot apply to it: there is no Defense value to require, and the card is not
+                // the in-hand card a secondary Defense discards - p.14 prints the Block as the card's
+                // own primary action, which milestone 8.11 resolves on milestone 5.8's reserved
+                // DefenseBlockResult seam.
+                if (Origin != ActionDefinitionOrigin.PrintedPrimary)
+                {
+                    throw new ArgumentException(
+                        "p.14's Block is a card's printed primary action, not a secondary reaction.",
+                        nameof(Origin));
+                }
+
+                if (BaseValues.Any(value => value.Channel != PrintedValueChannel.Range))
+                {
+                    throw new ArgumentException(
+                        "A Block prints no Defense value; the only value icon p.9 admits beside a " +
+                        "primary action is Range or Radius, and a Block card's is Range.",
+                        nameof(baseValues));
+                }
+
+                if (BaseValues.Count > 0 && BaseValues.Single().Amount < 1)
+                {
+                    throw new ArgumentException(
+                        "A printed Range icon states a positive value.", nameof(baseValues));
                 }
             }
             else if (Kind == ActionKind.Defense)
@@ -162,10 +252,16 @@ namespace GuardsDigital.Core.Cards
 
             else if (Kind == ActionKind.Skill)
             {
-                if (EffectRoot == null)
+                // Milestone 8.3 admits the one absence a Skill may state, and states it rather than
+                // permitting a null. A Skill's whole content is its effect, so a Skill carrying neither
+                // an effect root nor an explicit outstanding composition is a card that does nothing;
+                // a verified Skill whose composition is owed to its own 8.5-8.13 slice says so through
+                // PrintedTextComposition, and milestone 8.4 is what refuses to perform it meanwhile.
+                if (EffectRoot == null && !TextComposition.IsAwaited)
                 {
                     throw new ArgumentException(
-                        "Skill action definitions require an effect root.", nameof(EffectRoot));
+                        "Skill action definitions require an effect root, or an explicit statement of " +
+                        "the milestone that owes its composition.", nameof(EffectRoot));
                 }
 
                 if (Origin != ActionDefinitionOrigin.PrintedPrimary &&
@@ -183,10 +279,25 @@ namespace GuardsDigital.Core.Cards
                 // action". A Radius is not a combat value the Skill's algorithm consumes - a Skill has
                 // none - it is the scope its effect asks about, so it is printed content the effect
                 // reads rather than a number written into the effect's text.
-                if (BaseValues.Any(value => value.Channel != PrintedValueChannel.Radius))
+                //
+                // Milestone 8.3 admits the other half of the same sentence. p.9 writes "a Range or
+                // Radius icon", and Wasp's Telekinesis and Mass Telekinesis print the Range one on a
+                // Skill, so restricting this to Radius alone was the synthetic content's shape rather
+                // than the page's rule. The page prints one such icon, not two, which is why the count
+                // is bounded here rather than left to the unique-channel rule above.
+                if (BaseValues.Any(value =>
+                        value.Channel != PrintedValueChannel.Radius &&
+                        value.Channel != PrintedValueChannel.Range))
                 {
                     throw new ArgumentException(
-                        "A Skill action definition prints no value other than rulebook p.9's Radius.",
+                        "A Skill action definition prints no value other than rulebook p.9's Range or Radius.",
+                        nameof(baseValues));
+                }
+
+                if (BaseValues.Count > 1)
+                {
+                    throw new ArgumentException(
+                        "Rulebook p.9 prints one Range or Radius icon beside a primary action, not both.",
                         nameof(baseValues));
                 }
 
@@ -217,6 +328,28 @@ namespace GuardsDigital.Core.Cards
             {
                 throw new ArgumentException(
                     "Only Skill action definitions execute through the typed effect frame.", nameof(EffectRoot));
+            }
+
+            // Milestone 8.3. An outstanding composition is a statement about this action's printed card
+            // text, so it is refused in both of the two places it could not be true: beside an effect
+            // root, which is the composition it claims is missing, and on an action whose source-card
+            // text is suppressed, which by p.9 performs no card text to owe. Without those two the
+            // statement would decay into a free-floating annotation any action could carry.
+            if (TextComposition.IsAwaited)
+            {
+                if (EffectRoot != null)
+                {
+                    throw new ArgumentException(
+                        "An action carrying its effect root owes no composition.", nameof(TextComposition));
+                }
+
+                if (DefaultPolicy.CardTextApplication != CardTextApplicationPolicy.Applies)
+                {
+                    throw new ArgumentException(
+                        "Only an action that performs its source card's text can owe that text a " +
+                        "composition (rulebook p.9).",
+                        nameof(TextComposition));
+                }
             }
 
             if (Kind != ActionKind.Attack && AttackRange != AttackRangeKind.None)

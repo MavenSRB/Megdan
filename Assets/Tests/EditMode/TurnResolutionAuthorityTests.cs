@@ -890,7 +890,7 @@ namespace GuardsDigital.Tests.EditMode
                     instances,
                     participants,
                     new TieBreakerState(TeamSide.Red),
-                    new CardActionResolutionAuthority(board)));
+                    new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board)));
         }
 
         private static AttackTestFixture CreateAttackFixture(
@@ -995,7 +995,7 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     configuration.Participants,
                     configuration.TieBreakerState,
-                    new CardActionResolutionAuthority(board),
+                    new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board),
                     new ActiveEffectLifecycle(),
                     1,
                     1)

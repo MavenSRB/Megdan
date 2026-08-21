@@ -383,6 +383,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var rejection = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     tampered,
                     session.Projection.Definitions,
                     new[] { session.Projection.SelectedMap },
@@ -477,6 +478,7 @@ namespace GuardsDigital.Tests.EditMode
         private static ZoneId BattleZoneIdOf(MatchSession session)
         {
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 session.Projection.AuthoritativeSnapshot,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },

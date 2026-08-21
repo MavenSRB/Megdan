@@ -31,7 +31,15 @@ namespace GuardsDigital.Core.Effects
         /// Milestone 6.8l. A selection names a node that reads nothing it publishes, so the two are
         /// unrelated and filtering the candidates by that node's eligibility would be a guess.
         /// </summary>
-        SelectionConsumerReadsNothing = 13
+        SelectionConsumerReadsNothing = 13,
+
+        /// <summary>
+        /// Milestone 8.3, closing the 7.9a review's F-CARD-06. A node is named as a child by more than
+        /// one node, or the root is named as a child at all. The node table is a tree; only the acyclic
+        /// part of that was ever checked, so a directed acyclic graph loaded cleanly into machinery
+        /// that assumes each node has one parent.
+        /// </summary>
+        NodeReachableThroughTwoParents = 14
     }
 
     public readonly struct EffectDefinitionRejection
@@ -107,6 +115,15 @@ namespace GuardsDigital.Core.Effects
                 return rejections;
             }
 
+            var beforeParentRules = rejections.Count;
+            ValidateSingleParent(definition, rejections);
+            if (rejections.Count > beforeParentRules)
+            {
+                // The dominance analysis below is only meaningful over a tree, so reporting its
+                // conclusions about a graph that is not one would be reporting guesses.
+                return rejections;
+            }
+
             var guaranteedBefore = GuaranteedPredecessors(definition);
 
             foreach (var node in definition.Nodes)
@@ -116,6 +133,66 @@ namespace GuardsDigital.Core.Effects
             }
 
             return rejections;
+        }
+
+        /// <summary>
+        /// Milestone 8.3, closing the 7.9a review's F-CARD-06: the node table is a tree, and until now
+        /// only the acyclic half of that was checked.
+        ///
+        /// A diamond - one node named as a child by two others - is acyclic and fully reachable, so it
+        /// loaded cleanly, and then every part of the engine that assumes one parent read it wrong. The
+        /// concrete failure is in <see cref="GuaranteedPredecessors"/> one method below: a node's
+        /// guaranteed set is built by <b>unioning</b> what each parent guarantees, which is correct for
+        /// a tree because there is one parent to union from. Give a node two, and it inherits the
+        /// guarantees of the path that did <i>not</i> run - so a node under both arms of a Choose could
+        /// bind an output produced only in the arm the chooser declined, and the resolver would fault
+        /// mid-resolution on a definition this validator had passed. The correct answer over a graph is
+        /// the intersection, but computing it would only license authoring shapes the resolver's
+        /// single-visit execution and node-keyed continuations cannot represent either, so the table is
+        /// held to the shape it is already read as.
+        ///
+        /// Sharing is expressed by declaring the node twice under two ids. That costs an author a
+        /// duplicated declaration and buys every reader the guarantee that a node id names one position
+        /// in one tree.
+        /// </summary>
+        private static void ValidateSingleParent(
+            EffectDefinition definition,
+            ICollection<EffectDefinitionRejection> rejections)
+        {
+            var parentsByChild = new Dictionary<EffectNodeId, List<EffectNodeId>>();
+            foreach (var node in definition.Nodes)
+            {
+                foreach (var child in node.ChildNodeIds)
+                {
+                    if (!parentsByChild.TryGetValue(child, out var parents))
+                    {
+                        parents = new List<EffectNodeId>();
+                        parentsByChild.Add(child, parents);
+                    }
+
+                    parents.Add(node.Id);
+                }
+            }
+
+            foreach (var entry in parentsByChild
+                .Where(candidate => candidate.Value.Count > 1)
+                .OrderBy(candidate => candidate.Key.Value, StringComparer.Ordinal))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.NodeReachableThroughTwoParents,
+                    $"Node '{entry.Key}' is named as a child by " +
+                    string.Join(", ", entry.Value.Select(parent => $"'{parent}'")) +
+                    "; a node table is a tree, so a shared node is declared twice under two ids."));
+            }
+
+            if (parentsByChild.TryGetValue(definition.RootNodeId, out var rootParents))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.NodeReachableThroughTwoParents,
+                    $"Root node '{definition.RootNodeId}' is named as a child by " +
+                    string.Join(", ", rootParents.Select(parent => $"'{parent}'")) +
+                    "; the root is where execution starts and has no parent."));
+            }
         }
 
         private static void ValidateCapability(

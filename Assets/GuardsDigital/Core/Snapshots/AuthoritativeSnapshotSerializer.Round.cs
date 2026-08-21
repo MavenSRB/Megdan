@@ -93,7 +93,7 @@ namespace GuardsDigital.Core.Snapshots
             IReadOnlyList<CardInstance> cards,
             MatchParticipants participants,
             AdjacentMoveAuthority board,
-            EffectCapabilityCatalog capabilities,
+            MatchContentCatalogs catalogs,
             ComponentDefinitionCatalog components,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions)
         {
@@ -115,7 +115,7 @@ namespace GuardsDigital.Core.Snapshots
             var outcomes = ReadOutcomes(reader);
             var pendingMinionBattleChoice = ReadPendingMinionBattleChoice(reader);
             var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
-            var timing = ActiveEffectLifecycle.Restore(ReadTiming(reader, capabilities));
+            var timing = ActiveEffectLifecycle.Restore(ReadTiming(reader, catalogs.Capabilities));
             var markers = MarkerAttachmentRegister.Restore(ReadMarkers(reader, components, participants));
 
             // The Lane Push is read before the continuation that may be paused inside it, because a
@@ -168,7 +168,7 @@ namespace GuardsDigital.Core.Snapshots
             if (reader.ReadBoolean())
             {
                 turn = ReadTurn(reader, definitions, cards, participants, board, timing, markers,
-                    roundIndex, turnIndex, capabilities, lanePush, verifyingHeroItems, out cardActions);
+                    roundIndex, turnIndex, catalogs, lanePush, verifyingHeroItems, out cardActions);
             }
             else if (hasRoundCardActions)
             {
@@ -176,6 +176,7 @@ namespace GuardsDigital.Core.Snapshots
                 // the honest live value rather than an implicit none, exactly as the pending-turn
                 // path does; if this arm ever gains a consumer it is already correct.
                 cardActions = CardActionResolutionAuthority.Restore(
+                    catalogs,
                     board,
                     CardActionResolutionRestoreState.WithoutPendingAction(roundCoinLedger),
                     null,

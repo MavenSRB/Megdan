@@ -326,7 +326,8 @@ namespace GuardsDigital.Application
                 MatchSystemTransitions.CreateCatalog(),
                 MatchSystemTransitions.CreateRules(rebuiltLanePushAuthority, rebuiltLevelUp));
             var rebuiltLanePush = new LanePushConsumption(rebuiltLanePushAuthority, rebuiltTransitions);
-            var rebuiltCardActions = new CardActionResolutionAuthority(rebuiltBoard, rebuiltMarkers);
+            var rebuiltCardActions = new CardActionResolutionAuthority(
+                rebuiltConfiguration.ContentCatalogs, rebuiltBoard, rebuiltMarkers);
             var rebuiltRound = new RoundResolutionAuthority(
                 rebuiltConfiguration.CardDefinitions,
                 rebuiltConfiguration.CardInstances,
@@ -393,6 +394,10 @@ namespace GuardsDigital.Application
         private RestoredGraphs DeserializeAuthoritative(string authoritativePayload)
         {
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                // Milestone 8.3. The configured session states the content its restore rebinds
+                // against, which is what the serializer used to guess with a synthetic default under
+                // a comment claiming this site already supplied it.
+                configuration.ContentCatalogs,
                 authoritativePayload,
                 initialState.Scenario.CardDefinitions,
                 initialState.AvailableMaps,

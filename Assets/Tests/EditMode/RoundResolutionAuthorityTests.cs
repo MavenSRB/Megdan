@@ -243,7 +243,8 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.Participants,
                 configuration.TieBreakerState,
                 1,
-                RoundResolutionComposition.ForCardActionsOnly(new CardActionResolutionAuthority(board)));
+                RoundResolutionComposition.ForCardActionsOnly(
+                    new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board)));
 
             var redMovementCard = configuration.RedHand.Instances[0];
             var blueFirstCard = configuration.BlueHand.Instances[0];

@@ -332,7 +332,7 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 Array.Empty<ObstacleOccupancy>(),
                 Array.Empty<QuickGameMinionSetupState>());
-            var cardActions = new CardActionResolutionAuthority(board);
+            var cardActions = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board);
 
             // The Blue hero holds one Defense-slot item. Its set-aside card is a Tier III branch of a
             // Blue upgrade tree, which is where the Defense icon is printed; nothing in this build deals
@@ -530,6 +530,7 @@ namespace GuardsDigital.Tests.EditMode
                 RuleEventLogSnapshotEnvelope.TryDeserialize(afterBothCommits, out var envelope, out _),
                 Is.True);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 envelope.AuthoritativePayload,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },

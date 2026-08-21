@@ -176,7 +176,7 @@ namespace GuardsDigital.Core.Snapshots
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> cards,
             MatchParticipants participants,
-            EffectCapabilityCatalog capabilities,
+            MatchContentCatalogs catalogs,
             MarkerAttachmentRegister markers,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
@@ -204,8 +204,8 @@ namespace GuardsDigital.Core.Snapshots
                 case CardActionContinuationKind.Skill:
                     state = CardActionResolutionRestoreState.WithPendingSkill(
                         ReadSkillResolution(
-                            reader, definitions, cards, capabilities, participants,
-                            CardActionResolutionAuthority.CreateRestoredComponents(board, markers),
+                            reader, definitions, cards, catalogs.Capabilities, participants,
+                            CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
                             modifications, heroItems),
                         coinLedger,
                         lanePush);
@@ -222,7 +222,7 @@ namespace GuardsDigital.Core.Snapshots
             // The snapshot never stores the pending choices; they are derived during
             // restore, so no verified choice is supplied here.
             return CardActionResolutionAuthority.Restore(
-                board, state, null, null, null, definitions, cards, participants, markers, modifications,
+                catalogs, board, state, null, null, null, definitions, cards, participants, markers, modifications,
                 heroItems);
         }
 

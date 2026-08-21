@@ -621,6 +621,7 @@ namespace GuardsDigital.Tests.EditMode
             MatchSession session)
         {
             return AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 session.Projection.AuthoritativeSnapshot,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },

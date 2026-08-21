@@ -175,7 +175,7 @@ namespace GuardsDigital.Tests.EditMode
                     },
                     Array.Empty<ObstacleOccupancy>(),
                     Array.Empty<QuickGameMinionSetupState>());
-                cardActions = new CardActionResolutionAuthority(board);
+                cardActions = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board);
                 round = new RoundResolutionAuthority(
                     definitions,
                     instances,

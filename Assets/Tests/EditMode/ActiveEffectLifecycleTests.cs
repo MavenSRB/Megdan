@@ -256,6 +256,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(RuleEventLogSnapshotEnvelope.TryDeserialize(activeSnapshot, out var envelope), Is.True);
             var decoded = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 envelope.AuthoritativePayload,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },

@@ -603,6 +603,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static AdjacentMoveAuthority RestoreBoard(MatchSession session) =>
             AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 session.Projection.AuthoritativeSnapshot,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },

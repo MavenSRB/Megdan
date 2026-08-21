@@ -263,7 +263,7 @@ namespace GuardsDigital.Tests.EditMode
             public CardActionResolutionResult PerformWithOffer(
                 ActionOffer offer,
                 IEnumerable<TokenInstanceId> selectedTokenIds) =>
-                new CardActionResolutionAuthority(Board).PerformTurnClear(
+                new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), Board).PerformTurnClear(
                     new ActionResolutionId("clear-test-resolution"),
                     offer,
                     AttackAction.Id,

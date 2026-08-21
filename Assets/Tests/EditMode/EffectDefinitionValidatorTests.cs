@@ -394,13 +394,85 @@ namespace GuardsDigital.Tests.EditMode
                 "The load-path helper the link assertion proved reachable must exist to be exercised.");
 
             var thrown = Assert.Throws<System.Reflection.TargetInvocationException>(() =>
-                loadPath.Invoke(null, new object[] { new[] { malformed } }));
+                loadPath.Invoke(
+                    null,
+                    new object[] { new[] { malformed }, MatchContentCatalogs.ForThisBuild() }));
             Assert.That(thrown.InnerException, Is.InstanceOf<System.ArgumentException>());
             Assert.That(thrown.InnerException.Message,
                 Does.Contain(nameof(EffectDefinitionRejectionReason.UnregisteredCapability)),
                 "The refusal carries the typed rejection, because that is what a content author acts on.");
             Assert.That(thrown.InnerException.Message, Does.Contain("validator-load-path-card"),
                 "And it names the card, because a load failure over 24 definitions is otherwise a hunt.");
+        }
+
+        /// <summary>
+        /// Milestone 8.3, closing the 7.9a review's F-CARD-06: the node table is a tree, and the
+        /// validator used to check only that it was acyclic.
+        ///
+        /// A diamond passes every rule that existed before this one - no cycle, every node reachable,
+        /// every child resolving - and then breaks the dominance analysis that makes typed result
+        /// binding safe. That analysis unions each parent's guarantees into its children, which is
+        /// right when there is one parent and wrong with two: the shared node inherits guarantees from
+        /// the path that did not run. So this is the shape the rule has to refuse, and refusing it at
+        /// content load is the difference between a rejected definition and a card spent on a
+        /// resolution that faults halfway through.
+        /// </summary>
+        [Test]
+        public void ANodeReachableThroughTwoParents_IsRejected()
+        {
+            var rejections = Validate(
+                Sequence("root", "left", "right"),
+                Sequence("left", "shared"),
+                Sequence("right", "shared"),
+                Leaf("shared"));
+
+            Assert.That(rejections.Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.NodeReachableThroughTwoParents),
+                "A node named as a child by two nodes is a graph, and every reader of this table - the " +
+                "resolver's single visit, its node-keyed continuations, the dominance analysis - reads " +
+                "a tree.");
+            Assert.That(rejections.Single().Detail, Does.Contain("shared"),
+                "The refusal names the node, because a content author fixes one declaration.");
+        }
+
+        /// <summary>The same rule from the other end: the root is where execution starts.</summary>
+        [Test]
+        public void ARootNamedAsAChild_IsRejected()
+        {
+            var rejections = Validate(
+                Sequence("root", "child"),
+                Sequence("child", "root"));
+
+            // A root with a parent is also a cycle, and the cycle rule reports first and returns; what
+            // this pins is that reaching the root again is refused either way.
+            var graphRules = new[]
+            {
+                EffectDefinitionRejectionReason.CyclicNodeGraph,
+                EffectDefinitionRejectionReason.NodeReachableThroughTwoParents
+            };
+
+            Assert.That(
+                rejections.Any(rejection => graphRules.Contains(rejection.Reason)),
+                Is.True,
+                "Reaching the root again is refused, whichever of the two graph rules names it first.");
+        }
+
+        /// <summary>
+        /// The compliant twin. Sharing is expressed by declaring the node twice under two ids, which is
+        /// the shape every configured definition already has - so the rule above bans a shape nothing
+        /// in this build authors, rather than one it relies on.
+        /// </summary>
+        [Test]
+        public void TheSameWorkUnderTwoNodeIds_StaysAccepted()
+        {
+            Assert.That(
+                Validate(
+                    Sequence("root", "left", "right"),
+                    Sequence("left", "shared-a"),
+                    Sequence("right", "shared-b"),
+                    Leaf("shared-a"),
+                    Leaf("shared-b")),
+                Is.Empty);
         }
 
         private static System.Collections.Generic.IReadOnlyList<EffectDefinitionRejection> Validate(

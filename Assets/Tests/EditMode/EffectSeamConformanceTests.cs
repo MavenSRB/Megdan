@@ -72,6 +72,157 @@ namespace GuardsDigital.Tests.EditMode
                 "effect frame did nothing.");
         }
 
+        /// <summary>
+        /// Milestone 8.3, closing the 7.9a review's F-CARD-05: no production type may conjure the
+        /// content catalogs a match runs on. It takes what it is given.
+        ///
+        /// Eleven production sites used to mint a synthetic catalog whenever a caller passed none -
+        /// five inside the card-action dispatcher, two inside the snapshot write path, two inside the
+        /// read path, and the component-catalog twins beside them - and the serializer's comment
+        /// claimed "the configured session always supplies the real ones" while <c>MatchAggregate</c>
+        /// supplied neither. Each was a place a verified capability would have to be wired in by hand,
+        /// and none of them would fail if it were missed.
+        ///
+        /// The rule names members rather than types, for the reason the effect-seam rule above does: a
+        /// factory call leaves a metadata token, and a token is what a scan can see. Two types are
+        /// excluded by name with their reason, which is the FrameShapeStubs precedent - an exclusion
+        /// list, not an escape hatch:
+        ///
+        /// <list type="bullet">
+        /// <item><c>MatchContentCatalogs</c> - the one declared origin. Its own factory is what every
+        /// other site is required to call instead of naming synthetic content.</item>
+        /// <item><c>SyntheticEffectCapabilities</c> and <c>SyntheticComponentDefinitions</c> - the
+        /// registered content itself. A catalog's own factory building a catalog is what a catalog is;
+        /// what the rule is about is every other type naming it.</item>
+        /// <item><c>PlaceholderOneVsOneTestConfiguration</c> - the configured match's content
+        /// declaration, which states once what its cards need. It is the visibly test-only
+        /// configuration milestone 8.4 retires, and the exclusion retires with it.</item>
+        /// </list>
+        /// </summary>
+        [Test]
+        public void NoProductionCompositionSite_NamesACapabilityCatalogItWasNotGiven()
+        {
+            var audited = CatalogAuditedTypes();
+
+            Assert.That(ILConformanceScanner.UnresolvedTokens(audited), Is.Empty,
+                "Unresolved IL tokens mean this scan skipped instructions, so a violation could hide " +
+                "behind one.");
+
+            Assert.That(
+                FindCatalogMintingViolations(audited),
+                Is.Empty,
+                "A production type is building or naming a content catalog instead of taking the one " +
+                "it was composed with. Only MatchContentCatalogs declares what this build registers.");
+        }
+
+        [Test]
+        public void TheCatalogRule_DistinguishesAllowedAndForbiddenExamples()
+        {
+            Assert.That(
+                FindCatalogMintingViolations(new[] { typeof(CatalogMintingSample) }),
+                Is.Not.Empty,
+                "A type that asks the build for a catalog rather than taking one must be reported, or " +
+                "the rule is inert.");
+
+            Assert.That(
+                FindCatalogMintingViolations(new[] { typeof(CatalogTakingSample) }),
+                Is.Empty,
+                "A type that uses the catalogs it was handed must not be reported, or the rule bans " +
+                "the ordinary shape it exists to permit.");
+        }
+
+        /// <summary>
+        /// The negative rule is satisfied by a build that registers nothing, so the declared origin must
+        /// be shown to still be the thing that names the content.
+        /// </summary>
+        [Test]
+        public void TheDeclaredOrigin_IsWhereThisBuildsCatalogsAreActuallyNamed()
+        {
+            Assert.That(
+                ILConformanceScanner.References(
+                    new[] { typeof(MatchContentCatalogs) }, SyntheticCapabilityFactory()),
+                Is.True,
+                "If MatchContentCatalogs stopped naming the registered content, every other type would " +
+                "pass this rule while the build registered nothing.");
+        }
+
+        private static IReadOnlyList<string> FindCatalogMintingViolations(IEnumerable<Type> types) =>
+            ILConformanceScanner.FindForbiddenReferences(
+                types,
+                ForbiddenCatalogMembers(),
+                "a content catalog conjured rather than taken as a required argument");
+
+        private static IEnumerable<MemberInfo> ForbiddenCatalogMembers()
+        {
+            var members = new MemberInfo[]
+                {
+                    SyntheticCapabilityFactory(),
+                    ILConformanceScanner.Method(
+                        typeof(GuardsDigital.Core.Components.Synthetic.SyntheticComponentDefinitions),
+                        nameof(GuardsDigital.Core.Components.Synthetic.SyntheticComponentDefinitions.CreateCatalog)),
+                    // Asking the build what it registers is the declared origin's job. Without this
+                    // member the rule would be evaded by calling ForThisBuild() from a dispatcher -
+                    // the same defect wearing the new type's name.
+                    ILConformanceScanner.Method(
+                        typeof(MatchContentCatalogs), nameof(MatchContentCatalogs.ForThisBuild)),
+                    ILConformanceScanner.Constructor(typeof(EffectCapabilityCatalog))
+                }
+                .Where(member => member != null)
+                .ToArray();
+
+            Assert.That(members, Has.Length.EqualTo(4),
+                "A forbidden member no longer resolves. Correct the rule rather than deleting it; a " +
+                "rule that names nothing protects nothing.");
+            return members;
+        }
+
+        private static MethodInfo SyntheticCapabilityFactory() =>
+            ILConformanceScanner.Method(
+                typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticEffectCapabilities),
+                nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticEffectCapabilities.CreateCatalog));
+
+        /// <summary>
+        /// Every production Core and Application type except the two declared by name above, so a
+        /// composition site written after this milestone is audited by existing rather than by being
+        /// added to a list. The namespace filter matters in the cross-platform harness, which compiles
+        /// Core, Application and these fixtures into one assembly and would otherwise hand this rule
+        /// its own deliberate violation sample.
+        /// </summary>
+        private static IReadOnlyList<Type> CatalogAuditedTypes() =>
+            ILConformanceScanner.TypesIn(typeof(EffectCapabilityCatalog).Assembly)
+                .Concat(ILConformanceScanner.TypesIn(typeof(MatchSession).Assembly))
+                .Distinct()
+                .Where(type => (type.Namespace ?? string.Empty).StartsWith(
+                        "GuardsDigital", StringComparison.Ordinal) &&
+                    !(type.Namespace ?? string.Empty).StartsWith(
+                        "GuardsDigital.Tests", StringComparison.Ordinal))
+                .Where(type =>
+                    type != typeof(MatchContentCatalogs) &&
+                    type != typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticEffectCapabilities) &&
+                    type != typeof(GuardsDigital.Core.Components.Synthetic.SyntheticComponentDefinitions) &&
+                    type != typeof(GuardsDigital.Core.Participants.PlaceholderOneVsOneTestConfiguration))
+                .ToArray();
+
+        /// <summary>Deliberate violation: asks the build for content instead of being handed it.</summary>
+        private sealed class CatalogMintingSample
+        {
+            public EffectCapabilityCatalog Capabilities() =>
+                MatchContentCatalogs.ForThisBuild().Capabilities;
+        }
+
+        /// <summary>Compliant twin: uses the catalogs its composition supplied.</summary>
+        private sealed class CatalogTakingSample
+        {
+            public CatalogTakingSample(MatchContentCatalogs catalogs)
+            {
+                Catalogs = catalogs ?? throw new ArgumentNullException(nameof(catalogs));
+            }
+
+            public MatchContentCatalogs Catalogs { get; }
+
+            public EffectCapabilityCatalog Capabilities() => Catalogs.Capabilities;
+        }
+
         private static IReadOnlyList<string> FindEffectSeamViolations(IEnumerable<Type> types) =>
             ILConformanceScanner.FindForbiddenReferences(
                 types,

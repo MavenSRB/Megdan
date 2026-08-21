@@ -126,6 +126,7 @@ namespace GuardsDigital.Tests.EditMode
             Accept(session, DirectorCommand.ResolveCardWithoutRespawn(pending.DeclineInvocation));
 
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 session.Projection.AuthoritativeSnapshot,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },

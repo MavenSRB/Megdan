@@ -423,7 +423,7 @@ namespace GuardsDigital.Tests.EditMode
                 1);
             var modifications = RuleModificationQuery.Build(
                 timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
-            var authority = new CardActionResolutionAuthority(board);
+            var authority = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board);
             var attackOffer = ActionOfferQuery.GetAvailableOffers(
                     configuration.CardDefinitions,
                     configuration.CardInstances,
@@ -502,7 +502,7 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.TieBreakerState,
                 1,
                 RoundResolutionComposition.ForMatch(
-                    new CardActionResolutionAuthority(board),
+                    new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board),
                     board,
                     timing,
                     new MarkerAttachmentRegister(),
@@ -610,7 +610,7 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.TieBreakerState,
                 1,
                 RoundResolutionComposition.ForMatch(
-                    new CardActionResolutionAuthority(board),
+                    new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board),
                     board,
                     timing,
                     new MarkerAttachmentRegister(),
@@ -619,6 +619,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var payload = AuthoritativeSnapshotSerializer.Serialize(round, board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 payload, configuration.CardDefinitions, new[] { board.MapDefinition });
             var original = RuleModificationQuery.Build(
                 timing, board, configuration.Participants, configuration.TieBreakerState,

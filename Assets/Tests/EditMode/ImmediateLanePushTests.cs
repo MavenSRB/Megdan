@@ -357,6 +357,7 @@ namespace GuardsDigital.Tests.EditMode
             var payload = session.Projection.AuthoritativeSnapshot;
 
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 payload,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },
@@ -590,7 +591,10 @@ namespace GuardsDigital.Tests.EditMode
                 .Single(value => value.SourceCardInstanceId.Value == "red-pursuit-card" &&
                     value.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
             return new AttackFixture(
-                configuration, board, new CardActionResolutionAuthority(board), offer);
+                configuration,
+                board,
+                new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board),
+                offer);
         }
 
         /// <summary>

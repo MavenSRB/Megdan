@@ -39,7 +39,7 @@ Non-goals: No effect implementation or other-hero inventory.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-82-map-wasp-cards-to-capabilities-and-re-baseline-the-remaining-phase-8-milestones-completion-evidence).
 
-### [ ] 8.3 Add verified Wasp definitions and lifecycle data
+### [x] 8.3 Add verified Wasp definitions and lifecycle data
 
 Observable outcome: Verified Wasp definitions/instances use the existing lifecycle and turn foundation without placeholder authority.
 
@@ -54,6 +54,8 @@ Acceptance checks:
 - The effect-definition validator rejects a node reachable through two parents (closes F-CARD-06; `EffectDefinitionValidatorTests.ANodeReachableThroughTwoParents_IsRejected` observed failing pre-fix).
 - Crackling Dagger's verified definition and values ship as inventory data; its behavior is deferred by the 2026-08-21 user decision with the named trigger "first odd-player-count configuration", because the six-player pitch returns the Handicap card to the box at setup (p.5).
 - Opportunistic in the same milestone per F-TEST-03: the `AnUnavailableAttack_StillOffersTheClearThatReplacesIt` vacuity escape gains its `Is.Not.Empty` guard.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-83-add-verified-wasp-definitions-and-lifecycle-data-completion-evidence).
 
 ### [ ] 8.4 Load both Wasp hands into the director turn loop
 
@@ -85,7 +87,7 @@ Non-goals: no Wasp card composition (8.8-8.11 own the consumers), no Block resol
 
 ### [!] 8.6 Complete the Wasp telekinetic skills
 
-Blocked by: milestones 8.3 and 8.4 must supply the verified definitions and loaded hands.
+Blocked by: milestone 8.4 must load the verified hands milestone 8.3's definitions supply.
 
 Observable outcome: Lift Up, Control Gravity, Center of Mass, Telekinesis, and Mass Telekinesis resolve their complete printed text in the configured Wasp mirror - the first five verified Wasp primaries in play.
 

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Cards
@@ -34,6 +36,25 @@ namespace GuardsDigital.Core.Cards
         public const string ApplicabilityKind = "WhileControllerHeroOnBoard";
 
         public UltimateRuleDefinition(string ruleId, string ruleKind, RuleModification modification)
+            : this(
+                ruleId,
+                ruleKind,
+                modification ??
+                    throw new ArgumentNullException(
+                        nameof(modification),
+                        "An Ultimate's whole printed content is its permanent ability (rulebook p.16); " +
+                        "a declaration with no rule would be a card that does nothing."),
+                PrintedTextComposition.None,
+                Array.Empty<PrintedValueDefinition>())
+        {
+        }
+
+        private UltimateRuleDefinition(
+            string ruleId,
+            string ruleKind,
+            RuleModification modification,
+            PrintedTextComposition textComposition,
+            IEnumerable<PrintedValueDefinition> printedValues)
         {
             if (string.IsNullOrWhiteSpace(ruleId) || string.IsNullOrWhiteSpace(ruleKind))
             {
@@ -42,16 +63,63 @@ namespace GuardsDigital.Core.Cards
 
             RuleId = ruleId;
             RuleKind = ruleKind;
+            Modification = modification;
+            TextComposition = textComposition;
 
-            // Unlike a token property, this may not be declaration-only. A token can legitimately
-            // declare a source and a lifetime with no typed rule yet, because milestone 6.3 recorded
-            // the seam before any verified text filled it. An Ultimate that supplied nothing would be a
-            // card whose whole printed content is an ability, printing no ability.
-            Modification = modification ??
-                throw new ArgumentNullException(
-                    nameof(modification),
-                    "An Ultimate's whole printed content is its permanent ability (rulebook p.16); " +
-                    "a declaration with no rule would be a card that does nothing.");
+            var values = (printedValues ?? throw new ArgumentNullException(nameof(printedValues)))
+                .ToArray();
+
+            // p.9's one icon, on the one card that is not an action. High Voltage prints a Radius its
+            // ability reads, and 2026-08-21's approved reading of ledger question 12 makes that icon an
+            // item's target - so the value has to be printed content here rather than a number written
+            // into whatever composes the ability later.
+            if (values.Length > 1 ||
+                values.Any(value =>
+                    value.Channel != PrintedValueChannel.Radius &&
+                    value.Channel != PrintedValueChannel.Range))
+            {
+                throw new ArgumentException(
+                    "An Ultimate prints at most one of rulebook p.9's Range or Radius icons.",
+                    nameof(printedValues));
+            }
+
+            if (values.Any(value => value.Amount < 1))
+            {
+                throw new ArgumentException(
+                    "A printed Range or Radius icon states a positive value.", nameof(printedValues));
+            }
+
+            PrintedValues = Array.AsReadOnly(values);
+        }
+
+        /// <summary>
+        /// Milestone 8.3's Ultimate whose printed ability is transcribed but not yet composed, naming
+        /// the milestone that owes the composition.
+        ///
+        /// The invariant the ordinary constructor states is unchanged in substance - an Ultimate whose
+        /// whole printed content is an ability may not print no ability - and this is the one way to
+        /// satisfy it without a typed rule: by saying out loud which milestone owes one. Wasp's High
+        /// Voltage needs it because its ability is a triggered one ("Each time after you perform a basic
+        /// skill...") and none of <see cref="RuleModification"/>'s five families can express a trigger.
+        /// Milestone 8.12 gives the continuous-source declaration a typed effect reference and 8.13
+        /// composes this card onto it; until then the card carries its printed Radius, its transcribed
+        /// words on the definition, and an explicit debt - never a stand-in rule chosen to fill the
+        /// argument.
+        /// </summary>
+        public static UltimateRuleDefinition AwaitingComposition(
+            string ruleId,
+            string ruleKind,
+            PrintedTextComposition textComposition,
+            IEnumerable<PrintedValueDefinition> printedValues)
+        {
+            if (!textComposition.IsAwaited)
+            {
+                throw new ArgumentException(
+                    "An Ultimate with no typed rule states the milestone that owes its composition.",
+                    nameof(textComposition));
+            }
+
+            return new UltimateRuleDefinition(ruleId, ruleKind, null, textComposition, printedValues);
         }
 
         /// <summary>This ability's stable identity inside its card, and the derived source's identity suffix.</summary>
@@ -59,9 +127,26 @@ namespace GuardsDigital.Core.Cards
 
         public string RuleKind { get; }
 
-        /// <summary>The typed rule this Ultimate supplies while its hero is on the board.</summary>
+        /// <summary>
+        /// The typed rule this Ultimate supplies while its hero is on the board, or null when
+        /// <see cref="TextComposition"/> names the milestone that owes it.
+        /// </summary>
         public RuleModification Modification { get; }
 
-        public override string ToString() => $"{RuleId} ({RuleKind}): {Modification}";
+        /// <summary>
+        /// Milestone 8.3. Whether this Ultimate's printed ability still owes its typed composition, and
+        /// to which milestone. <see cref="PrintedTextComposition.None"/> whenever
+        /// <see cref="Modification"/> is present.
+        /// </summary>
+        public PrintedTextComposition TextComposition { get; }
+
+        /// <summary>
+        /// Milestone 8.3. The p.9 Range or Radius icon this Ultimate prints, or empty. Empty for every
+        /// Ultimate built before 8.3, which printed none.
+        /// </summary>
+        public IReadOnlyList<PrintedValueDefinition> PrintedValues { get; }
+
+        public override string ToString() =>
+            $"{RuleId} ({RuleKind}): {(Modification == null ? TextComposition.ToString() : Modification.ToString())}";
     }
 }

@@ -179,6 +179,7 @@ namespace GuardsDigital.Tests.EditMode
                 value.Channel == PrintedValueChannel.Defense), Is.True);
 
             var restored = CardActionResolutionAuthority.Restore(
+                MatchContentCatalogs.ForThisBuild(),
                 board,
                 CardActionResolutionRestoreState.WithPendingAttack(
                     answered.PendingResolution,
@@ -226,7 +227,7 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 Array.Empty<ObstacleOccupancy>(),
                 minions);
-            var cardActions = new CardActionResolutionAuthority(board);
+            var cardActions = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board);
             var round = new RoundResolutionAuthority(
                 configuration.CardDefinitions,
                 configuration.CardInstances,
@@ -262,6 +263,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var payload = AuthoritativeSnapshotSerializer.Serialize(round, board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 payload,
                 configuration.CardDefinitions,
                 new[] { board.MapDefinition },

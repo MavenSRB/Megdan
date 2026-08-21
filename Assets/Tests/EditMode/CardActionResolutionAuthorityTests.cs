@@ -27,6 +27,7 @@ namespace GuardsDigital.Tests.EditMode
             // Cast because the authority now also overloads on a marker register: the null under test
             // is specifically an absent movement-restriction evaluator.
             Assert.Throws<System.ArgumentNullException>(() => new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(),
                 CreateMovementAuthority(actorId, new HexCoordinate(0, 0)),
                 (IMovementActionStartRestrictionEvaluator)null));
         }
@@ -184,7 +185,8 @@ namespace GuardsDigital.Tests.EditMode
             var restrictions = new MutableMovementActionStartRestrictionEvaluator(
                 MovementActionStartRestriction.Prevent());
             var movementAuthority = CreateMovementAuthority(actorId, origin);
-            var authority = new CardActionResolutionAuthority(movementAuthority, restrictions);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority, restrictions);
 
             var result = authority.StartMovementResolution(
                 new ActionResolutionId("prevented-resolution"),
@@ -220,7 +222,8 @@ namespace GuardsDigital.Tests.EditMode
             var restrictions = new MutableMovementActionStartRestrictionEvaluator(
                 MovementActionStartRestriction.LimitTo(2));
             var movementAuthority = CreateMovementAuthority(actorId, origin);
-            var authority = new CardActionResolutionAuthority(movementAuthority, restrictions);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority, restrictions);
 
             var start = authority.StartMovementResolution(
                 new ActionResolutionId("limited-resolution"),
@@ -308,7 +311,8 @@ namespace GuardsDigital.Tests.EditMode
             var definition = CreateDefinition(CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 2));
             var offer = CreateOffer(actorId, definition, ActionInvocationContext.PrintedPrimary);
             var movementAuthority = CreateMovementAuthority(actorId, origin);
-            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority);
             var start = authority.StartMovementResolution(new ActionResolutionId("resolution-1"), offer, new[] { definition }, new[] { CreateInstance(actorId, definition) }, RuleModificationSet.Empty);
 
             var movement = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
@@ -346,7 +350,8 @@ namespace GuardsDigital.Tests.EditMode
             var definition = CreateDefinition(CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 3));
             var offer = CreateOffer(actorId, definition, ActionInvocationContext.PrintedPrimary);
             var movementAuthority = CreateMovementAuthority(actorId, origin);
-            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority);
             var start = authority.StartMovementResolution(new ActionResolutionId("resolution-1"), offer, new[] { definition }, new[] { CreateInstance(actorId, definition) }, RuleModificationSet.Empty);
 
             var stop = authority.AnswerMovementChoice(MovementChoiceCommand.Stop(
@@ -376,7 +381,8 @@ namespace GuardsDigital.Tests.EditMode
             var definition = CreateDefinition(CreateMovementAction("secondary-move", ActionDefinitionOrigin.PrintedSecondary, 1));
             var offer = CreateOffer(actorId, definition, ActionInvocationContext.PrintedSecondary);
             var movementAuthority = CreateMovementAuthority(actorId, origin);
-            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority);
             var start = authority.StartMovementResolution(new ActionResolutionId("resolution-1"), offer, new[] { definition }, new[] { CreateInstance(actorId, definition) }, RuleModificationSet.Empty);
 
             var step = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
@@ -408,7 +414,8 @@ namespace GuardsDigital.Tests.EditMode
             var definition = CreateDefinition(CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 2));
             var offer = CreateOffer(actorId, definition, ActionInvocationContext.PrintedPrimary);
             var movementAuthority = CreateMovementAuthority(actorId, origin);
-            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority);
             var start = authority.StartMovementResolution(new ActionResolutionId("resolution-1"), offer, new[] { definition }, new[] { CreateInstance(actorId, definition) }, RuleModificationSet.Empty);
 
             var stale = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
@@ -453,7 +460,8 @@ namespace GuardsDigital.Tests.EditMode
             var definition = CreateDefinition(CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 3));
             var offer = CreateOffer(actorId, definition, ActionInvocationContext.PrintedPrimary);
             var movementAuthority = CreateMovementAuthority(actorId, origin);
-            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority);
             var start = authority.StartMovementResolution(new ActionResolutionId("resolution-1"), offer, new[] { definition }, new[] { CreateInstance(actorId, definition) }, RuleModificationSet.Empty);
 
             var first = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
@@ -496,7 +504,8 @@ namespace GuardsDigital.Tests.EditMode
                 CreateRadiusTwoCoordinates(),
                 new[] { new HeroOccupancy(actorId, origin) },
                 new[] { new ObstacleOccupancy(new ObstacleId("blocker"), blockedDestination) });
-            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority);
             var start = authority.StartMovementResolution(new ActionResolutionId("resolution-1"), offer, new[] { definition }, new[] { CreateInstance(actorId, definition) }, RuleModificationSet.Empty);
 
             var blockedStep = authority.AnswerMovementChoice(MovementChoiceCommand.SelectDestination(
@@ -528,7 +537,8 @@ namespace GuardsDigital.Tests.EditMode
                     new ObstacleOccupancy(new ObstacleId("east-blocker"), new HexCoordinate(1, 0)),
                     new ObstacleOccupancy(new ObstacleId("south-east-blocker"), new HexCoordinate(0, 1))
                 });
-            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority);
             var start = authority.StartMovementResolution(
                 new ActionResolutionId("resolution-1"),
                 offer,
@@ -585,7 +595,8 @@ namespace GuardsDigital.Tests.EditMode
                     new HeroOccupancy(actorId, origin),
                     new HeroOccupancy(blockerId, blockerOrigin)
                 });
-            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority);
             var start = authority.StartMovementResolution(
                 new ActionResolutionId("resolution-1"),
                 offer,
@@ -799,7 +810,8 @@ namespace GuardsDigital.Tests.EditMode
             var instance = CreateInstance(actorId, definition);
             var offer = ActionOfferQuery.GetAvailableOffers(new[] { definition }, new[] { instance }, actorId).Single();
             var originalMovementAuthority = CreateMovementAuthority(actorId, origin);
-            var originalAuthority = new CardActionResolutionAuthority(originalMovementAuthority);
+            var originalAuthority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), originalMovementAuthority);
             var start = originalAuthority.StartMovementResolution(
                 new ActionResolutionId("resolution-1"),
                 offer,
@@ -821,6 +833,7 @@ namespace GuardsDigital.Tests.EditMode
                 start.PendingChoice.CanStop,
                 System.Array.Empty<ReachableMovementDestination>());
             Assert.Throws<System.ArgumentException>(() => CardActionResolutionAuthority.Restore(
+                MatchContentCatalogs.ForThisBuild(),
                 restoredMovementAuthority,
                 CardActionResolutionRestoreState.WithPendingMovement(
                     start.PendingResolution,
@@ -834,6 +847,7 @@ namespace GuardsDigital.Tests.EditMode
                 new MarkerAttachmentRegister(), RuleModificationSet.Empty));
 
             var restoredAuthority = CardActionResolutionAuthority.Restore(
+                MatchContentCatalogs.ForThisBuild(),
                 restoredMovementAuthority,
                 CardActionResolutionRestoreState.WithPendingMovement(
                     start.PendingResolution,
@@ -871,7 +885,8 @@ namespace GuardsDigital.Tests.EditMode
             var instance = CreateInstance(actorId, definition);
             var offer = ActionOfferQuery.GetAvailableOffers(new[] { definition }, new[] { instance }, actorId).Single();
             var originalMovementAuthority = CreateMovementAuthority(actorId, origin);
-            var originalAuthority = new CardActionResolutionAuthority(originalMovementAuthority);
+            var originalAuthority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), originalMovementAuthority);
             var start = originalAuthority.StartMovementResolution(
                 new ActionResolutionId("resolution-1"),
                 offer,
@@ -883,6 +898,7 @@ namespace GuardsDigital.Tests.EditMode
                 firstDestination), RuleModificationSet.Empty);
             var movementAuthority = CreateMovementAuthority(actorId, firstDestination);
             var restored = CardActionResolutionAuthority.Restore(
+                MatchContentCatalogs.ForThisBuild(),
                 movementAuthority,
                 CardActionResolutionRestoreState.WithPendingMovement(
                     partial.PendingResolution,
@@ -923,7 +939,8 @@ namespace GuardsDigital.Tests.EditMode
             var definition = CreateDefinition(CreateMovementAction("primary-move", ActionDefinitionOrigin.PrintedPrimary, 2));
             var offer = CreateOffer(actorId, definition, ActionInvocationContext.PrintedPrimary);
             var movementAuthority = CreateMovementAuthority(actorId, origin);
-            var authority = new CardActionResolutionAuthority(movementAuthority);
+            var authority = new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), movementAuthority);
             var events = new List<CardActionResolutionEvent>();
 
             var start = authority.StartMovementResolution(new ActionResolutionId("resolution-1"), offer, new[] { definition }, new[] { CreateInstance(actorId, definition) }, RuleModificationSet.Empty);
@@ -939,7 +956,8 @@ namespace GuardsDigital.Tests.EditMode
 
         private static CardActionResolutionAuthority CreateResolutionAuthority(HeroId actorId, HexCoordinate origin)
         {
-            return new CardActionResolutionAuthority(CreateMovementAuthority(actorId, origin));
+            return new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(), CreateMovementAuthority(actorId, origin));
         }
 
         private static AdjacentMoveAuthority CreateMovementAuthority(HeroId actorId, HexCoordinate origin)

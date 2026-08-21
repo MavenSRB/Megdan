@@ -525,6 +525,7 @@ namespace GuardsDigital.Tests.EditMode
                 RuleEventLogSnapshotEnvelope.TryDeserialize(afterBothCommits, out var envelope, out _),
                 Is.True);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 envelope.AuthoritativePayload,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },
@@ -605,6 +606,7 @@ namespace GuardsDigital.Tests.EditMode
                     session.CaptureSnapshot(), out var envelope, out _),
                 Is.True);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 envelope.AuthoritativePayload,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },
@@ -627,6 +629,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True);
             var refusal = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     envelope.AuthoritativePayload,
                     session.Projection.Definitions,
                     new[] { session.Projection.SelectedMap },

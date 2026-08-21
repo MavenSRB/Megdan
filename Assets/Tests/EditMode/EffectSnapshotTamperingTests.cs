@@ -115,11 +115,11 @@ namespace GuardsDigital.Tests.EditMode
                 map,
                 configuration.TieBreakerState);
             return AuthoritativeSnapshotSerializer.Deserialize(
+                new MatchContentCatalogs(capabilities, configuration.ContentCatalogs.Components),
                 authoritativePayload,
                 configuration.CardDefinitions,
                 new[] { map },
-                setup.Minions,
-                capabilities);
+                setup.Minions);
         }
 
         /// <summary>Runs the synthetic Skill far enough that its Active effect exists and is serialized.</summary>

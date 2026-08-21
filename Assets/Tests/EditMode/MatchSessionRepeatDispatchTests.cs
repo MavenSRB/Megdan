@@ -418,6 +418,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static RestoredAuthoritativeMatch Deserialize(MatchSession session) =>
             AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 session.Projection.AuthoritativeSnapshot,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },
@@ -427,6 +428,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             return new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(),
                 new GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority(
                     map,
                     new[] { new HeroOccupancy(actorId, ActorAt) },

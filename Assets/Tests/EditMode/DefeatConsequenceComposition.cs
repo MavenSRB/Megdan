@@ -27,6 +27,7 @@ namespace GuardsDigital.Tests.EditMode
             MarkerAttachmentRegister markers = null)
         {
             return new CardActionResolutionAuthority(
+                MatchContentCatalogs.ForThisBuild(),
                 board,
                 markers,
                 new HeroProgressionState(participants),

@@ -4,8 +4,6 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
-using GuardsDigital.Core.Components.Synthetic;
-using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.BoardObjects;
@@ -30,15 +28,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly MatchComponents components;
         private readonly AdjacentMoveAuthority board;
 
-        public CardActionResolutionAuthority(AdjacentMoveAuthority adjacentMoveAuthority)
-            : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, null)
+        public CardActionResolutionAuthority(
+            MatchContentCatalogs catalogs,
+            AdjacentMoveAuthority adjacentMoveAuthority)
+            : this(catalogs, adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, null)
         {
         }
 
         public CardActionResolutionAuthority(
+            MatchContentCatalogs catalogs,
             AdjacentMoveAuthority adjacentMoveAuthority,
             IMovementActionStartRestrictionEvaluator movementActionStartRestrictions)
-            : this(adjacentMoveAuthority, movementActionStartRestrictions, null)
+            : this(catalogs, adjacentMoveAuthority, movementActionStartRestrictions, null)
         {
         }
 
@@ -48,9 +49,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// application layer composes a match through this overload rather than naming it.
         /// </summary>
         public CardActionResolutionAuthority(
+            MatchContentCatalogs catalogs,
             AdjacentMoveAuthority adjacentMoveAuthority,
             MarkerAttachmentRegister markers)
-            : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, markers)
+            : this(catalogs, adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, markers)
         {
         }
 
@@ -66,11 +68,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// than pricing one against Levels and counters nobody records.
         /// </summary>
         public CardActionResolutionAuthority(
+            MatchContentCatalogs catalogs,
             AdjacentMoveAuthority adjacentMoveAuthority,
             MarkerAttachmentRegister markers,
             GuardsDigital.Core.Rules.Progression.HeroProgressionState heroLevels,
             GuardsDigital.Core.Rules.Consequences.TeamLifeState teamLives)
-            : this(adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, markers)
+            : this(catalogs, adjacentMoveAuthority, UnrestrictedMovementActionStartEvaluator.Instance, markers)
         {
             if (heroLevels == null) throw new ArgumentNullException(nameof(heroLevels));
             if (teamLives == null) throw new ArgumentNullException(nameof(teamLives));
@@ -78,10 +81,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         public CardActionResolutionAuthority(
+            MatchContentCatalogs catalogs,
             AdjacentMoveAuthority adjacentMoveAuthority,
             IMovementActionStartRestrictionEvaluator movementActionStartRestrictions,
             MarkerAttachmentRegister markers)
             : this(
+                catalogs ?? throw new ArgumentNullException(nameof(catalogs)),
                 new MovementCardActionStrategyBackend(
                     adjacentMoveAuthority,
                     movementActionStartRestrictions ?? throw new ArgumentNullException(
@@ -89,8 +94,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, null, markers),
                 new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                 new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
-                CreateComponents(adjacentMoveAuthority, markers),
+                new SkillCardActionStrategyBackend(catalogs.Capabilities),
+                CreateComponents(catalogs, adjacentMoveAuthority, markers),
                 adjacentMoveAuthority)
         {
         }
@@ -100,6 +105,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingImmediateLanePushRequest pendingLanePush;
 
         private CardActionResolutionAuthority(
+            MatchContentCatalogs catalogs,
             MovementCardActionStrategyBackend movementBackend,
             AttackDefenseCardActionStrategyBackend attackDefenseBackend,
             FastTravelCardActionStrategyBackend fastTravelBackend,
@@ -108,6 +114,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchComponents components,
             AdjacentMoveAuthority board)
         {
+            ContentCatalogs = catalogs ?? throw new ArgumentNullException(nameof(catalogs));
             this.movementBackend = movementBackend ?? throw new ArgumentNullException(nameof(movementBackend));
             this.attackDefenseBackend = attackDefenseBackend ?? throw new ArgumentNullException(nameof(attackDefenseBackend));
             this.fastTravelBackend = fastTravelBackend ?? throw new ArgumentNullException(nameof(fastTravelBackend));
@@ -131,10 +138,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// round authority persists are the same object.
         /// </summary>
         private static MatchComponents CreateComponents(
+            MatchContentCatalogs catalogs,
             AdjacentMoveAuthority adjacentMoveAuthority,
             MarkerAttachmentRegister markers) =>
             new MatchComponents(
-                SyntheticComponentDefinitions.CreateCatalog(),
+                catalogs.Components,
                 adjacentMoveAuthority,
                 markers ?? new MarkerAttachmentRegister(),
                 adjacentMoveAuthority,
@@ -147,9 +155,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the composition a live one was.
         /// </summary>
         internal static MatchComponents CreateRestoredComponents(
+            MatchContentCatalogs catalogs,
             AdjacentMoveAuthority adjacentMoveAuthority,
             MarkerAttachmentRegister markers) =>
-            CreateComponents(adjacentMoveAuthority, markers);
+            CreateComponents(catalogs, adjacentMoveAuthority, markers);
+
+        /// <summary>
+        /// Milestone 8.3. The trusted content this dispatcher was composed with, exposed so the write
+        /// path can record what a match actually ran on instead of asking the build a second time. It
+        /// is the same object every backend and every capability here holds.
+        /// </summary>
+        public MatchContentCatalogs ContentCatalogs { get; }
 
         public PendingCardActionResolution PendingResolution => movementBackend.PendingResolution;
 
@@ -799,6 +815,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// for the effects that can return them.
         /// </param>
         public static CardActionResolutionAuthority Restore(
+            MatchContentCatalogs catalogs,
             AdjacentMoveAuthority adjacentMoveAuthority,
             CardActionResolutionRestoreState state,
             PendingMovementChoice verifiedMovementChoice,
@@ -819,7 +836,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // request is not one of the continuations: it accompanies whichever one the action left
             // behind, including none at all.
             var restoredAuthority = RestoreContinuation(
-                adjacentMoveAuthority, state, verifiedMovementChoice, verifiedTargetChoice,
+                catalogs, adjacentMoveAuthority, state, verifiedMovementChoice, verifiedTargetChoice,
                 verifiedDefenseChoice, definitions, instances, participants, markers, modifications,
                 heroItems);
             restoredAuthority.pendingLanePush = state.PendingImmediateLanePush;
@@ -842,6 +859,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         private static CardActionResolutionAuthority RestoreContinuation(
+            MatchContentCatalogs catalogs,
             AdjacentMoveAuthority adjacentMoveAuthority,
             CardActionResolutionRestoreState state,
             PendingMovementChoice verifiedMovementChoice,
@@ -857,12 +875,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var coinLedger = state.CoinLedger.IsPresent
                 ? HeroCoinLedger.Restore(participants, state.CoinLedger.State)
                 : null;
-            var components = CreateComponents(adjacentMoveAuthority, markers);
+            var components = CreateComponents(catalogs, adjacentMoveAuthority, markers);
 
             switch (state.ContinuationKind)
             {
                 case CardActionContinuationKind.Movement:
                     return new CardActionResolutionAuthority(
+                        catalogs,
                         MovementCardActionStrategyBackend.Restore(
                             adjacentMoveAuthority,
                             new MovementBackendRestoreState(state.PendingMovementResolution),
@@ -871,12 +890,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
+                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
                         components,
                         adjacentMoveAuthority);
 
                 case CardActionContinuationKind.Attack:
                     return new CardActionResolutionAuthority(
+                        catalogs,
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         AttackDefenseCardActionStrategyBackend.RestoreAttack(
                             adjacentMoveAuthority,
@@ -892,29 +912,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             heroItems),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
+                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
                         components,
                         adjacentMoveAuthority);
 
                 case CardActionContinuationKind.Skill:
                     return new CardActionResolutionAuthority(
+                        catalogs,
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         SkillCardActionStrategyBackend.Restore(
-                            SyntheticEffectCapabilities.CreateCatalog(),
+                            catalogs.Capabilities,
                             new SkillBackendRestoreState(state.PendingSkillResolution)),
                         components,
                         adjacentMoveAuthority);
 
                 case CardActionContinuationKind.Correction:
                     var restored = new CardActionResolutionAuthority(
+                        catalogs,
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
+                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
                         components,
                         adjacentMoveAuthority);
                     restored.pendingCorrection = state.PendingCorrection;
@@ -923,11 +945,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
                 default:
                     return new CardActionResolutionAuthority(
+                        catalogs,
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(SyntheticEffectCapabilities.CreateCatalog()),
+                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
                         components,
                         adjacentMoveAuthority);
             }

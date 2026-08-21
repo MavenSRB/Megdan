@@ -18,6 +18,13 @@ namespace GuardsDigital.Core.Participants
             bool validateInitialCardState = true)
         {
             SetupSeed = setupSeed;
+
+            // Milestone 8.3. The content catalogs a match composed from this configuration runs on,
+            // declared once here and handed to every consumer. This is the configured match's content
+            // declaration - the place that knows which capabilities and components its cards need - and
+            // it is the only production type besides MatchContentCatalogs itself that may ask the build
+            // what it registers. Everything downstream takes what it is given.
+            ContentCatalogs = MatchContentCatalogs.ForThisBuild();
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
             RedHand = redHand ?? throw new ArgumentNullException(nameof(redHand));
             BlueHand = blueHand ?? throw new ArgumentNullException(nameof(blueHand));
@@ -66,13 +73,21 @@ namespace GuardsDigital.Core.Participants
                 // and the engine throws where a rule should have refused. Asked here because this is
                 // where a configuration first holds both its definitions and the catalog the match will
                 // compose them against.
-                ValidateEffectDefinitions(cardDefinitions);
+                ValidateEffectDefinitions(cardDefinitions, ContentCatalogs);
             }
             CardDefinitions = Array.AsReadOnly(cardDefinitions);
             CardInstances = Array.AsReadOnly(cardInstances);
         }
 
         public MatchParticipants Participants { get; }
+
+        /// <summary>
+        /// Milestone 8.3. The trusted capability and component content a match composed from this
+        /// configuration runs on. Every consumer - the card-action dispatcher, the snapshot restore,
+        /// the effect-definition validation below - takes this object rather than asking the build for
+        /// a catalog of its own.
+        /// </summary>
+        public MatchContentCatalogs ContentCatalogs { get; }
 
         public PlaceholderMovementHand RedHand { get; }
 
@@ -339,9 +354,11 @@ namespace GuardsDigital.Core.Participants
         /// for the match, with the typed rejection list surfaced whole so a content author fixes one
         /// load failure rather than one rejection per attempt.
         /// </summary>
-        private static void ValidateEffectDefinitions(IEnumerable<CardDefinition> definitions)
+        private static void ValidateEffectDefinitions(
+            IEnumerable<CardDefinition> definitions,
+            MatchContentCatalogs catalogs)
         {
-            var catalog = GuardsDigital.Core.Effects.Synthetic.SyntheticEffectCapabilities.CreateCatalog();
+            var catalog = catalogs.Capabilities;
             foreach (var definition in definitions)
             {
                 foreach (var action in definition.ActionDefinitions)

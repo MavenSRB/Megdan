@@ -182,6 +182,7 @@ namespace GuardsDigital.Tests.EditMode
             var payload = CreateAdvancedPayload(out var setup, out var map, out var definitions);
 
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 payload, definitions, new[] { map }, setup.Minions);
 
             Assert.That(restored.Board.CurrentBattleZoneId, Is.EqualTo(BlueApproach),
@@ -233,6 +234,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var exception = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     tampered, definitions, new[] { map }, setup.Minions));
 
             Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.MalformedPayload));
@@ -246,6 +248,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var exception = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     tampered, definitions, new[] { map }, setup.Minions));
 
             Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.MalformedPayload),
@@ -261,6 +264,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var exception = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     tampered, definitions, new[] { map }, setup.Minions));
 
             Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.MalformedPayload),
@@ -322,6 +326,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var exception = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     prior, definitions, new[] { map }, setup.Minions));
 
             Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.UnsupportedSchemaVersion),
@@ -356,6 +361,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(RuleEventLogSnapshotEnvelope.TryDeserialize(
                 session.CaptureSnapshot(), out var envelope, out _), Is.True);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 envelope.AuthoritativePayload, definitions, new[] { map }, setup.Minions);
 
             Assert.That(restored.Board.CommitValidatedBattleZoneAdvance(BlueApproach), Is.True);
@@ -377,6 +383,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(RuleEventLogSnapshotEnvelope.TryDeserialize(
                 session.CaptureSnapshot(), out var envelope, out _), Is.True);
             return AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 envelope.AuthoritativePayload,
                 session.Projection.Definitions,
                 new[] { map },

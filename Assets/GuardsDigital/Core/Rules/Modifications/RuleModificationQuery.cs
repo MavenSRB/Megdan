@@ -244,6 +244,16 @@ namespace GuardsDigital.Core.Rules.Modifications
                     continue;
                 }
 
+                // Milestone 8.3. An Ultimate whose printed ability is transcribed but whose composition
+                // its own milestone still owes supplies no typed rule, so it contributes nothing here.
+                // Contributing something would mean inventing the rule the card is waiting for, and
+                // faulting would make an unlocked card unplayable; the card is unlocked and inert until
+                // the milestone its declaration names composes it.
+                if (ultimate.Rule.Modification == null)
+                {
+                    continue;
+                }
+
                 yield return AppliedRuleModification.FromContinuousSource(
                     ultimate.Rule.Modification,
                     RuleObject.ForHero(ultimate.OwnerId),

@@ -180,11 +180,9 @@ namespace GuardsDigital.Core.Snapshots
 
         public static string Serialize(
             RoundResolutionAuthority round,
-            AdjacentMoveAuthority board,
-            EffectCapabilityCatalog capabilities = null,
-            ComponentDefinitionCatalog components = null)
+            AdjacentMoveAuthority board)
         {
-            return Capture(round, board, null, capabilities, components).Payload;
+            return Capture(round, board, null).Payload;
         }
 
         /// <summary>
@@ -200,15 +198,35 @@ namespace GuardsDigital.Core.Snapshots
         /// payload must still carry grows every round and is written once per round instead of
         /// once per command. A null cache serves one capture at full cost.
         /// </remarks>
+        /// <remarks>
+        /// Milestone 8.3. The registration sections are written from the catalogs the round's own
+        /// dispatcher was composed with, not from a pair of optional arguments that fell back to the
+        /// synthetic set when a caller passed none - which is what the configured match did, since
+        /// <c>MatchAggregate</c> never passed any. A snapshot now records what the match it came from
+        /// actually ran on, and there is no argument through which a caller could make it record
+        /// something else.
+        /// </remarks>
         public static AuthoritativeSnapshotCapture Capture(
             RoundResolutionAuthority round,
             AdjacentMoveAuthority board,
-            CompletedRoundsSerializationCache completedRoundsCache,
-            EffectCapabilityCatalog capabilities = null,
-            ComponentDefinitionCatalog components = null)
+            CompletedRoundsSerializationCache completedRoundsCache)
         {
             if (round == null) throw new ArgumentNullException(nameof(round));
             if (board == null) throw new ArgumentNullException(nameof(board));
+
+            // A round composed without a dispatcher states no content, and the registration sections
+            // below are exactly what a restore rebinds against - so this refuses by name rather than
+            // faulting on a null. Every round a match composes has one; the shape this catches is a
+            // fixture composed for one narrow question and then asked for a whole snapshot.
+            var cardActions = round.CardActions;
+            if (cardActions == null)
+            {
+                throw new InvalidOperationException(
+                    "A round with no card-action dispatcher names no capability or component " +
+                    "catalogs, and a snapshot cannot record registrations the match does not have.");
+            }
+
+            var catalogs = cardActions.ContentCatalogs;
 
             SerializeCallCount++;
             var cache = completedRoundsCache ?? new CompletedRoundsSerializationCache();
@@ -218,10 +236,8 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(Magic);
                 writer.Write(CurrentSchemaVersion);
                 WriteDefinitions(writer, round.Definitions);
-                WriteCapabilityRegistrations(
-                    writer, capabilities ?? SyntheticEffectCapabilities.CreateCatalog());
-                WriteComponentRegistrations(
-                    writer, components ?? SyntheticComponentDefinitions.CreateCatalog());
+                WriteCapabilityRegistrations(writer, catalogs.Capabilities);
+                WriteComponentRegistrations(writer, catalogs.Components);
                 WriteParticipants(writer, round.Participants);
                 WriteBoard(writer, board);
                 WriteCards(writer, round.Instances);
@@ -249,31 +265,41 @@ namespace GuardsDigital.Core.Snapshots
         }
 
         public static RestoredAuthoritativeMatch Deserialize(
+            MatchContentCatalogs catalogs,
             string payload,
             IEnumerable<CardDefinition> currentDefinitions,
             IEnumerable<BoardMapDefinition> currentMapDefinitions)
         {
             return Deserialize(
+                catalogs,
                 payload,
                 currentDefinitions,
                 currentMapDefinitions,
                 Enumerable.Empty<QuickGameMinionSetupState>());
         }
 
+        /// <param name="catalogs">
+        /// The trusted capability and component content this build registers, which a restore rebinds
+        /// the payload's registration sections against.
+        ///
+        /// Milestone 8.3 made it required and moved it to the front. It used to be two optional
+        /// arguments defaulting to the synthetic catalogs, under a comment claiming "the configured
+        /// session always supplies the real ones" - which was false in the most consequential case:
+        /// <c>MatchAggregate</c>, the configured session's own aggregate, passed none, so every
+        /// configured restore rebound against a default nobody had chosen. A required argument makes
+        /// the content a restore trusts a decision the caller states.
+        /// </param>
         public static RestoredAuthoritativeMatch Deserialize(
+            MatchContentCatalogs catalogs,
             string payload,
             IEnumerable<CardDefinition> currentDefinitions,
             IEnumerable<BoardMapDefinition> currentMapDefinitions,
             IEnumerable<QuickGameMinionSetupState> minions,
-            EffectCapabilityCatalog capabilities = null,
-            ComponentDefinitionCatalog components = null,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions = null)
         {
-            // The trusted capability and component sets a restore rebinds against. Defaulted rather
-            // than required so existing callers keep compiling; the configured session always supplies
-            // the real ones.
-            capabilities = capabilities ?? SyntheticEffectCapabilities.CreateCatalog();
-            components = components ?? SyntheticComponentDefinitions.CreateCatalog();
+            if (catalogs == null) throw new ArgumentNullException(nameof(catalogs));
+            var capabilities = catalogs.Capabilities;
+            var components = catalogs.Components;
             // Milestone 6.11 widened this default from the synthetic transition alone to the set this
             // build actually supplies, because a real one joined it: a restore that rebound against the
             // synthetic catalog refused a paused Lane Push as a transition this build no longer has,
@@ -328,7 +354,7 @@ namespace GuardsDigital.Core.Snapshots
                     var board = ReadBoard(reader, mapCatalog, minions, components);
                     var cards = ReadCards(reader, definitions, participants);
                     var round = ReadRound(
-                        reader, definitions, cards, participants, board, capabilities, components,
+                        reader, definitions, cards, participants, board, catalogs, components,
                         transitions);
                     if (stream.Position != stream.Length)
                     {

@@ -294,7 +294,8 @@ namespace GuardsDigital.Tests.EditMode
 
             public CardActionResolutionResult Perform(HexCoordinate destination)
             {
-                return new CardActionResolutionAuthority(Board).PerformTurnFastTravel(
+                return new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), Board)
+                    .PerformTurnFastTravel(
                     new ActionResolutionId("fast-travel-test-resolution"),
                     replacementOffer,
                     MovementActionId,

@@ -44,7 +44,7 @@ namespace GuardsDigital.Core.Snapshots
             MarkerAttachmentRegister markers,
             int roundIndex,
             int turnIndex,
-            EffectCapabilityCatalog capabilities,
+            MatchContentCatalogs catalogs,
             GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             out CardActionResolutionAuthority cardActions)
@@ -61,7 +61,7 @@ namespace GuardsDigital.Core.Snapshots
             // the unlocked Ultimates to that cross-check, derived from the same restored cards the live
             // match derived them from, so a total an always-on ability raised is reproduced too.
             cardActions = ReadCardAction(
-                reader, board, definitions, cards, participants, capabilities, markers,
+                reader, board, definitions, cards, participants, catalogs, markers,
                 RuleModificationQuery.Build(
                     timing,
                     board,

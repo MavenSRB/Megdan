@@ -33,6 +33,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 payload,
                 fixture.Configuration.CardDefinitions,
                 new[] { fixture.Board.MapDefinition });
@@ -80,6 +81,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var targetSnapshot = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
             var targetRestore = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 targetSnapshot,
                 fixture.Configuration.CardDefinitions,
                 new[] { fixture.Board.MapDefinition });
@@ -97,6 +99,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var defenseSnapshot = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
             var defenseRestore = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 defenseSnapshot,
                 fixture.Configuration.CardDefinitions,
                 new[] { fixture.Board.MapDefinition });
@@ -122,6 +125,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Round.TryAdvanceEndOfRound().Accepted, Is.True);
 
             var cursorRestore = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board),
                 fixture.Configuration.CardDefinitions,
                 new[] { fixture.Board.MapDefinition });
@@ -134,6 +138,7 @@ namespace GuardsDigital.Tests.EditMode
             while (fixture.Round.Phase == RoundResolutionPhase.EndOfRound)
                 Assert.That(fixture.Round.TryAdvanceEndOfRound().Accepted, Is.True);
             var completedRestore = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board),
                 fixture.Configuration.CardDefinitions,
                 new[] { fixture.Board.MapDefinition });
@@ -151,7 +156,8 @@ namespace GuardsDigital.Tests.EditMode
             var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
             var wrongSchema = RewriteSchemaVersion(payload, AuthoritativeSnapshotSerializer.CurrentSchemaVersion + 1);
             var schemaException = Assert.Throws<SnapshotLoadException>(() =>
-                AuthoritativeSnapshotSerializer.Deserialize(wrongSchema, fixture.Configuration.CardDefinitions,
+                AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(), wrongSchema, fixture.Configuration.CardDefinitions,
                     new[] { fixture.Board.MapDefinition }));
             Assert.That(schemaException.Reason, Is.EqualTo(SnapshotLoadRejectionReason.UnsupportedSchemaVersion));
 
@@ -166,13 +172,15 @@ namespace GuardsDigital.Tests.EditMode
                 original.Progression,
                 original.ActionDefinitions);
             var revisionException = Assert.Throws<SnapshotLoadException>(() =>
-                AuthoritativeSnapshotSerializer.Deserialize(payload, definitions,
+                AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(), payload, definitions,
                     new[] { fixture.Board.MapDefinition }));
             Assert.That(revisionException.Reason,
                 Is.EqualTo(SnapshotLoadRejectionReason.CardDefinitionContentRevisionMismatch));
 
             var missingMapException = Assert.Throws<SnapshotLoadException>(() =>
-                AuthoritativeSnapshotSerializer.Deserialize(payload, fixture.Configuration.CardDefinitions,
+                AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(), payload, fixture.Configuration.CardDefinitions,
                     Array.Empty<BoardMapDefinition>()));
             Assert.That(missingMapException.Reason, Is.EqualTo(SnapshotLoadRejectionReason.MapDefinitionMissing));
 
@@ -181,7 +189,8 @@ namespace GuardsDigital.Tests.EditMode
                 currentMap.DisplayName, currentMap.Spaces, currentMap.Zones, currentMap.SpawnPoints,
                 currentMap.OrderedLaneZoneIds);
             var mapRevisionException = Assert.Throws<SnapshotLoadException>(() =>
-                AuthoritativeSnapshotSerializer.Deserialize(payload, fixture.Configuration.CardDefinitions,
+                AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(), payload, fixture.Configuration.CardDefinitions,
                     new[] { changedMap }));
             Assert.That(mapRevisionException.Reason,
                 Is.EqualTo(SnapshotLoadRejectionReason.MapDefinitionContentRevisionMismatch));
@@ -199,7 +208,8 @@ namespace GuardsDigital.Tests.EditMode
             var corrupted = RewriteFirstTeamSide(payload, 9999);
 
             var exception = Assert.Throws<SnapshotLoadException>(() =>
-                AuthoritativeSnapshotSerializer.Deserialize(corrupted, fixture.Configuration.CardDefinitions,
+                AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(), corrupted, fixture.Configuration.CardDefinitions,
                     new[] { fixture.Board.MapDefinition }));
 
             Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.UnrecognizedEnumValue),
@@ -266,7 +276,10 @@ namespace GuardsDigital.Tests.EditMode
                     new HeroOccupancy(redHero, new HexCoordinate(0, 0)),
                     new HeroOccupancy(blueHero, new HexCoordinate(1, 0))
                 });
+            var contentCatalogs = new MatchContentCatalogs(
+                catalog, MatchContentCatalogs.ForThisBuild().Components);
             var cardActions = CardActionResolutionAuthority.Restore(
+                contentCatalogs,
                 board,
                 CardActionResolutionRestoreState.WithPendingSkill(
                     live.Frame,
@@ -290,13 +303,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(round.CurrentTurnAuthority.SelectedActor.CardInstanceId, Is.EqualTo(redCard.Id));
             Assert.That(round.CurrentTurnAuthority.PendingEffectChoice, Is.Not.Null);
 
-            var payload = AuthoritativeSnapshotSerializer.Serialize(round, board, catalog);
+            var payload = AuthoritativeSnapshotSerializer.Serialize(round, board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                contentCatalogs,
                 payload,
                 definitions,
                 new[] { board.MapDefinition },
-                Enumerable.Empty<QuickGameMinionSetupState>(),
-                catalog);
+                Enumerable.Empty<QuickGameMinionSetupState>());
 
             var restoredChoice = restored.Round.CurrentTurnAuthority.PendingEffectChoice;
             Assert.That(restoredChoice, Is.Not.Null);
@@ -457,7 +470,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0), new HexCoordinate(0, 1), new HexCoordinate(-1, 1) },
                 new[] { new HeroOccupancy(redHero, new HexCoordinate(0, 0)), new HeroOccupancy(blueHero, new HexCoordinate(1, 0)) },
                 new[] { new GuardsDigital.Core.Obstacles.ObstacleOccupancy(new GuardsDigital.Core.Obstacles.ObstacleId("snapshot-rock"), new HexCoordinate(-1, 1)) });
-            var cardActions = new CardActionResolutionAuthority(board);
+            var cardActions = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board);
             var round = new RoundResolutionAuthority(
                 configuration.CardDefinitions,
                 configuration.CardInstances,

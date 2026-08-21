@@ -731,6 +731,7 @@ namespace GuardsDigital.Tests.EditMode
                 AuthoritativeSnapshotSerializer.CurrentSchemaVersion + 1);
             var schemaException = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     futureCompletedMatchPayload,
                     session.Projection.Definitions,
                     new[] { session.Projection.SelectedMap }));
@@ -741,6 +742,7 @@ namespace GuardsDigital.Tests.EditMode
                 AuthoritativeSnapshotSerializer.CurrentSchemaVersion - 1);
             var priorSchemaException = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     priorSchemaPayload,
                     session.Projection.Definitions,
                     new[] { session.Projection.SelectedMap }));
@@ -764,6 +766,7 @@ namespace GuardsDigital.Tests.EditMode
                 original.UltimateRule);
             var contentException = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     envelope.AuthoritativePayload,
                     changedDefinitions,
                     new[] { session.Projection.SelectedMap }));

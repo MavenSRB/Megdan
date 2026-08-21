@@ -919,7 +919,7 @@ namespace GuardsDigital.Tests.EditMode
                     1);
             }
 
-            var cardActions = new CardActionResolutionAuthority(board);
+            var cardActions = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board);
 
             // Milestone 7.5. This fixture declares the configured stage set, which now includes p.8's
             // Level Up, so it composes the transition and the rules that run it: a match that says it

@@ -810,7 +810,7 @@ namespace GuardsDigital.Tests.EditMode
                         new HeroOccupancy(AttackerId, new HexCoordinate(0, 0)),
                         new HeroOccupancy(DefenderId, new HexCoordinate(1, 0))
                     });
-                cardActions = new CardActionResolutionAuthority(Board, Markers);
+                cardActions = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), Board, Markers);
                 Round = new RoundResolutionAuthority(
                     configuration.CardDefinitions,
                     configuration.CardInstances,

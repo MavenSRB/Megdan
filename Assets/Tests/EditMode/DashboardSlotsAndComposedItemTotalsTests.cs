@@ -568,6 +568,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var exception = Assert.Throws<SnapshotLoadException>(() =>
                 AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
                     Convert.ToBase64String(payload),
                     session.Projection.Definitions,
                     new[] { session.Projection.SelectedMap },
@@ -740,6 +741,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 RuleEventLogSnapshotEnvelope.TryDeserialize(snapshot, out var envelope, out _), Is.True);
             return AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 envelope.AuthoritativePayload,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },
@@ -797,7 +799,7 @@ namespace GuardsDigital.Tests.EditMode
                     },
                     Array.Empty<ObstacleOccupancy>(),
                     Array.Empty<QuickGameMinionSetupState>());
-                CardActions = new CardActionResolutionAuthority(board);
+                CardActions = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board);
                 Round = new RoundResolutionAuthority(
                     definitions,
                     instances,

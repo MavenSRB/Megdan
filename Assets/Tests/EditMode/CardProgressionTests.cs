@@ -636,6 +636,7 @@ namespace GuardsDigital.Tests.EditMode
                 afterBothCommits, out var envelope, out _);
             Assert.That(envelopeAccepted, Is.True);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 envelope.AuthoritativePayload,
                 session.Projection.Definitions,
                 new[] { session.Projection.SelectedMap },

@@ -351,6 +351,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
                 payload,
                 fixture.Definitions,
                 new[] { fixture.Board.MapDefinition },
@@ -481,7 +482,7 @@ namespace GuardsDigital.Tests.EditMode
                         ? new[] { new ObstacleOccupancy(new ObstacleId("radius-blocker"), obstacleAt.Value) }
                         : Array.Empty<ObstacleOccupancy>(),
                     Array.Empty<QuickGameMinionSetupState>());
-                CardActions = new CardActionResolutionAuthority(Board);
+                CardActions = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), Board);
                 Round = new RoundResolutionAuthority(
                     definitions,
                     instances,
