@@ -89,6 +89,38 @@ Non-goals: no Wasp card composition (8.8-8.11 own the consumers), no Block resol
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-85-open-the-general-card-text-seam-on-attack-and-defense-actions-completion-evidence).
 
+### [ ] 8.5a Show verified card words and action values in the card tray
+
+Observable outcome: every configured Wasp card in the player-facing tray shows its verified printed words and separates Initiative, primary-action values, spatial values, and secondary-action values according to the [approved card-tray mockup](../References/MILESTONE_8_5A_CARD_TRAY_MOCKUP.png), without changing what any card does.
+
+Acceptance checks:
+
+- Each tray card presents its name, full `CardSourceContent` transcription, primary action kind, and lifecycle label (`PLAYED · TURN <n>`, `AVAILABLE`, or `DISCARDED`) without truncation at the supported Windows validation resolution; a source face that explicitly prints no text receives an explicit empty-text presentation rather than invented copy.
+- Initiative occupies its own upper-left flag. Printed values belonging to alternate actions remain in a distinct secondary-value region, a numeric value belonging to the primary action is attached to the primary-action band, and printed Radius or Range occupies a distinct spatial badge at the lower-left of the rules panel. The grouping is derived from typed action definitions and value channels, never from card names or parsed printed text.
+- The tray remains colour-coded from projected `CardColor` with a visible colour name, while labels, borders, selection, availability, and assistive text keep every meaning available without colour alone.
+- Played-first/available/discarded ordering, the available-card lift, viewed-hero selection, commitment forwarding, unavailable-card refusal, pointer blocking, and keyboard order remain unchanged; the passive presenter reads projected definitions and submits no new authority.
+- The five-card Wasp starting hand fits as one readable row with no clipped card, overlapping label, or rules text, and a targeted visual inspection compares the running HUD with the approved mockup.
+- T2 validation: focused `MatchHudPresentationTests`, the directly affected `MinimalHexGridPlayModeTests` HUD cases, and one targeted Game View inspection pass at the supported validation resolution.
+
+Non-goals: no card-effect composition, rule or legality change, source-image artwork, production illustration, animation, responsive mobile layout, six-seat HUD work, or Phase 9 presentation polish.
+
+### [!] 8.5b Highlight tray cards whose Active effects are live
+
+Blocked by: milestone 8.5a must establish the approved card-tray layout this indicator extends.
+
+Observable outcome: a tray card that is the source of at least one currently active Active-effect instance receives a persistent outer outline and an explicit `ACTIVE` label until the authoritative effect ends.
+
+Acceptance checks:
+
+- `MatchSessionProjection` publishes an immutable derived fact identifying each source `CardInstanceId` whose authoritative lifecycle contains an `ActiveEffectPhase.Active` instance. Presentation does not inspect aggregate state, parse printed text, infer from a card definition that an effect might exist, or reconstruct the answer from events.
+- `TrayCardViewModel` derives one active-source state from that projected fact. The runtime card draws a distinct outer outline plus a visible and assistive `ACTIVE` label; the indicator remains distinguishable from card colour, commitment selection, availability, and the played/available/discarded lifecycle label, including when two states apply together.
+- Dormant and ended instances do not highlight. Creation/activation adds the indicator on the matching source card, and cancellation or expiry removes it on the same projection refresh; multiple active instances from one source still produce one unambiguous card-level indicator.
+- Snapshot restore, deterministic replay, retained-prefix Undo, restart, and ordinary live play derive the same highlighted source cards from the lifecycle they already preserve. No presentation-owned effect lifetime or new serialized answer is introduced.
+- A synthetic Active-effect producer proves the complete state transition before Wasp's persistent cards are composed at 8.9, and focused presentation coverage proves a similarly named card or a card whose definition can create an effect is not highlighted without a live matching instance.
+- T2 validation: focused Active-effect projection and `MatchHudPresentationTests`, the directly affected `MinimalHexGridPlayModeTests` HUD case, and one targeted Game View inspection with active, selected-plus-active, and ended states.
+
+Non-goals: no Wasp effect composition, Active-effect rule or duration change, triggered-effect execution, continuous Ultimate or token-property indicator, card interaction change, animation, production VFX, or general status-effect panel.
+
 ### [ ] 8.6 Complete the Wasp telekinetic skills
 
 Its one prerequisite is discharged: milestone 8.4 loaded the verified hands milestone 8.3's definitions supply.
