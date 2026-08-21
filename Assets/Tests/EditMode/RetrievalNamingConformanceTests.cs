@@ -34,8 +34,9 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class RetrievalNamingConformanceTests
     {
         /// <summary>
-        /// The qualifiers that claim limited reach. `Placeholder` is included because the configured
-        /// hand is built from placeholder content and a stage collaborator must never be mistaken for it.
+        /// The qualifiers that claim limited reach. `Placeholder` is included because the 1v1 test
+        /// setup a match is still composed from is named for one, and a stage collaborator must never
+        /// be mistaken for it.
         /// </summary>
         private static readonly string[] LimitedReachQualifiers = { "Synthetic", "Fixture", "Placeholder" };
 
@@ -146,8 +147,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Qualifier("Synthetic" + "CardRetrievalHandler"), Is.EqualTo("Synthetic"));
             Assert.That(Qualifier("EndOfRound" + "FixtureCapabilities"), Is.EqualTo("Fixture"));
             Assert.That(Qualifier("TryRetrieveEligible" + "SyntheticCard"), Is.EqualTo("Synthetic"));
-            Assert.That(Qualifier("PlaceholderMovementHand"), Is.EqualTo("Placeholder"),
-                "Placeholder content keeps its qualifier; the rule is about what a match composes, not about it.");
+            Assert.That(Qualifier("PlaceholderOneVsOneTestConfiguration"), Is.EqualTo("Placeholder"),
+                "A placeholder setup keeps its qualifier; the rule is about what a match composes, not about it.");
 
             // Their compliant twins, which are the names in the source today.
             Assert.That(Qualifier(nameof(CardRetrievalHandler)), Is.Null);

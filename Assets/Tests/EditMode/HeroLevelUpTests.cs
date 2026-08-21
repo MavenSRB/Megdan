@@ -549,7 +549,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public LevelUpFixture(int redCoins)
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.Create();
+                configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
                 RedHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
                 BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
                 Levels = new HeroProgressionState(configuration.Participants);

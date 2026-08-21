@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
@@ -81,7 +82,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RedBombard_ReplacesOnlyItsPrintedPrimaryAttack()
         {
-            var hand = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var hand = SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"));
             var definition = hand.Definitions.Single(candidate =>
                 candidate.DisplayName == "TEST - Red Bombard");
 
@@ -120,7 +121,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             // This is the conversion that takes the Red side to the showcase schedule's floor: with
             // Red Bombard's Ranged Attack gone, Red Lancer is the only one left.
-            var attacks = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"))
+            var attacks = SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"))
                 .Definitions
                 .SelectMany(definition => definition.ActionDefinitions)
                 .Where(action => action.Kind == ActionKind.Attack &&
@@ -746,7 +747,7 @@ namespace GuardsDigital.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         private static EffectDefinition BombardEffect() =>
-            PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"))
+            SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"))
                 .Definitions.Single(candidate => candidate.DisplayName == "TEST - Red Bombard")
                 .ActionDefinitions.Single(action => action.Id.Equals(BombardSkill))
                 .EffectRoot;

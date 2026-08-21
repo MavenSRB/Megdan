@@ -390,7 +390,7 @@ namespace GuardsDigital.Tests.EditMode
             // that spend that permission - each on exactly one card. The adjacency-derived batch
             // stays behind the Skill fixture, because no showcase card declares "every adjacent
             // object".
-            var ordinary = PlaceholderOneVsOneTestConfiguration.Create();
+            var ordinary = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
 
             var byCapability = ordinary.CardDefinitions
                 .SelectMany(definition => definition.ActionDefinitions

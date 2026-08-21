@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
@@ -68,7 +69,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RedNeedle_ReplacesOnlyItsPrintedPrimaryAttack()
         {
-            var hand = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var hand = SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"));
             var definition = hand.Definitions.Single(candidate =>
                 candidate.DisplayName == "TEST - Red Needle");
 
@@ -105,7 +106,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             // The showcase schedule requires it of every team, and this conversion is the one that
             // takes the count to its floor on the Red side.
-            var attacks = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"))
+            var attacks = SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"))
                 .Definitions
                 .SelectMany(definition => definition.ActionDefinitions)
                 .Where(action => action.Kind == ActionKind.Attack &&
@@ -171,7 +172,7 @@ namespace GuardsDigital.Tests.EditMode
                 effect.Nodes.Single(node => node.Id.Equals(CardRadius)).Capability,
                 Is.EqualTo(SyntheticValueCapabilities.CardRadiusV1));
             Assert.That(
-                PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"))
+                SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"))
                     .Definitions
                     .Single(candidate => candidate.DisplayName == "TEST - Red Needle")
                     .ActionDefinitions
@@ -489,7 +490,7 @@ namespace GuardsDigital.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         private static EffectDefinition NeedleEffect() =>
-            PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"))
+            SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"))
                 .Definitions.Single(candidate => candidate.DisplayName == "TEST - Red Needle")
                 .ActionDefinitions.Single(action => action.Id.Equals(NeedleSkill))
                 .EffectRoot;

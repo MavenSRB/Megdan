@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -210,8 +211,8 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static IEnumerable<CardDefinition> EveryDefinitionThisBuildSupplies() =>
             WaspCardContent.AllDefinitions
-                .Concat(PlaceholderMovementHand.CreateRed(new HeroId("source-content-red")).Definitions)
-                .Concat(PlaceholderMovementHand.CreateBlue(new HeroId("source-content-blue")).Definitions);
+                .Concat(SyntheticShowcaseHand.CreateRed(new HeroId("source-content-red")).Definitions)
+                .Concat(SyntheticShowcaseHand.CreateBlue(new HeroId("source-content-blue")).Definitions);
 
         private static IEnumerable<MemberInfo> SourceContentReaders()
         {

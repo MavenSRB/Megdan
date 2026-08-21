@@ -571,7 +571,7 @@ namespace GuardsDigital.Tests.EditMode
             // Two Ultimates for one hero. p.16 unlocks one.
             var twoForOneHero = CreateSession(instances =>
             {
-                var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+                var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
                 var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
                 var ultimate = configuration.RedHand.Definitions
                     .Single(definition => definition.Progression.IsUltimate);
@@ -681,7 +681,7 @@ namespace GuardsDigital.Tests.EditMode
             placeBlueHero);
 
         private static HashSet<CardDefinitionId> UltimateDefinitionIds() =>
-            new HashSet<CardDefinitionId>(PlaceholderOneVsOneTestConfiguration.Create()
+            new HashSet<CardDefinitionId>(PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture()
                 .CardDefinitions
                 .Where(definition => definition.Progression.IsUltimate)
                 .Select(definition => definition.Id));
@@ -699,7 +699,7 @@ namespace GuardsDigital.Tests.EditMode
             Func<IReadOnlyList<CardInstance>, IReadOnlyList<CardInstance>> shapeCards,
             bool placeBlueHero = true)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -731,7 +731,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public UltimateFixture()
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.Create();
+                configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
                 RedHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
                 BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
                 RedUltimate = configuration.RedHand.Definitions

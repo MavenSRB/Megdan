@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
@@ -80,7 +81,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void BlueFeint_ReplacesOnlyItsPrintedPrimaryAttack()
         {
-            var hand = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"));
+            var hand = SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"));
             var definition = hand.Definitions.Single(candidate =>
                 candidate.DisplayName == "TEST - Blue Feint");
             var instance = hand.Instances[0];
@@ -640,7 +641,7 @@ namespace GuardsDigital.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         private static EffectDefinition FeintEffect() =>
-            PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+            SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"))
                 .Definitions.Single(candidate => candidate.DisplayName == "TEST - Blue Feint")
                 .ActionDefinitions.Single(action => action.Id.Equals(FeintSkill))
                 .EffectRoot;

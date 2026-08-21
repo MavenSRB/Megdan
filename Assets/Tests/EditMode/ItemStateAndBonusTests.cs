@@ -37,7 +37,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryTierTwoAndThreeDefinition_PrintsAnItemIcon_AndNoOtherDefinitionDoes()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var withIcon = new List<CardDefinitionId>();
 
             foreach (var definition in configuration.CardDefinitions)
@@ -195,7 +195,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AnItem_AddsExactlyOneToItsOwnChannelOnEveryOneOfThePageSixIcons()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.Create().Participants;
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
             var owner = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var channels = new[]
             {
@@ -253,7 +253,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AnItem_HasNoEffectOnACardThatPrintsNoMatchingIcon()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.Create().Participants;
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
             var owner = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var items = ItemsHolding(participants, owner, PrintedValueChannel.Range);
 
@@ -279,7 +279,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ItemContributions_NameTheirItemCard_AndNeverRaiseACardTextNumber()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.Create().Participants;
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
             var owner = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var itemCardId = new CardInstanceId("item-card-1");
             var items = HeroItemState.Restore(
@@ -402,7 +402,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheItemState_RefusesAnIncoherentRestore()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.Create().Participants;
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
             var heroes = participants.Heroes.Select(hero => hero.Id).ToArray();
 
             // The ordinary case is a hero with no items, and it is not an error.
@@ -549,7 +549,7 @@ namespace GuardsDigital.Tests.EditMode
             // Nothing in this build gains an item in a live match - milestone 7.5's purchase is what
             // will - so the round trip is proved through the round's own restore contract, exactly as
             // milestone 7.1 proved a non-default hero Level.
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var heroes = configuration.Participants.Heroes.Select(hero => hero.Id).ToArray();
             var captured = HeroItemState.Restore(
                 configuration.Participants,
@@ -677,7 +677,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public ItemFixture()
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.Create();
+                configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
                 RedHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
                 BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
                 Items = new HeroItemState(configuration.Participants);

@@ -37,7 +37,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryConfiguredDefinition_StatesProgressionOrItsExplicitAbsence()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
 
             foreach (var definition in configuration.CardDefinitions)
             {
@@ -76,7 +76,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ConfiguredHands_HoldFiveDistinctColoursWithTheBasicPairAtDifferentSlots()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
 
             var red = configuration.RedHand.DealtDefinitions;
             var blue = configuration.BlueHand.DealtDefinitions;
@@ -107,7 +107,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void CardColour_IsNeitherTeamIdentityNorThePrintedActionIcon()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var red = configuration.RedHand.DealtDefinitions;
             var blue = configuration.BlueHand.DealtDefinitions;
 
@@ -147,7 +147,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void BasicCards_HaveNoTierAndNoUpgradeCandidates()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var basics = configuration.CardDefinitions
                 .Where(definition => definition.Progression.IsBasic)
                 .ToArray();
@@ -172,7 +172,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EachTierOneCard_UpgradesIntoTwoSameColourTierTwoCardsThatShareTwoTierThreeCards()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var definitions = configuration.CardDefinitions;
             var bulwark = definitions.Single(definition => definition.Id.Equals(RedBulwark));
 
@@ -216,7 +216,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void UpgradeRelationships_AreCheckedAgainstColourAndTierRatherThanInferredFromThem()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             Assert.DoesNotThrow(() => CardProgressionValidator.Validate(configuration.CardDefinitions));
 
             // A candidate of a different colour, a candidate that is not one Tier higher, a candidate
@@ -527,7 +527,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryHero_StartsAtLevelOneAndTheStateRefusesAnIncompleteRestore()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var progression = new HeroProgressionState(configuration.Participants);
 
             Assert.That(progression.Levels, Has.Count.EqualTo(configuration.Participants.Heroes.Count));
@@ -701,7 +701,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public ProgressionFixture()
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.Create();
+                configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
                 RedHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
                 BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
                 // Milestone 7.5 deals p.6's remaining Tier II, Tier III and Tier IV cards into each

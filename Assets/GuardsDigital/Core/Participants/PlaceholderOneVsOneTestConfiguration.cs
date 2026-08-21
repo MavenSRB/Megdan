@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -11,8 +13,8 @@ namespace GuardsDigital.Core.Participants
     {
         private PlaceholderOneVsOneTestConfiguration(
             MatchParticipants participants,
-            PlaceholderMovementHand redHand,
-            PlaceholderMovementHand blueHand,
+            ConfiguredHand redHand,
+            ConfiguredHand blueHand,
             TieBreakerState tieBreakerState,
             SetupRandomnessSeed setupSeed,
             bool validateInitialCardState = true)
@@ -46,7 +48,17 @@ namespace GuardsDigital.Core.Participants
                 participants.GetHero(instance.OwnerId);
             }
 
-            var cardDefinitions = redHand.Definitions.Concat(blueHand.Definitions).ToArray();
+            // Milestone 8.4. Two hands may supply the same definition, and in the mirrored Wasp
+            // configuration they always do: a mirror deals one printed set to both seats, so the
+            // eighteen definitions are one set with thirty-six instances rather than two sets of
+            // eighteen. Distinct by reference rather than by id on purpose - the same id at two
+            // content revisions is a real conflict and stays one, and CardInitialSetupValidator below
+            // is what refuses it.
+            var cardDefinitions = redHand.Definitions
+                .Concat(blueHand.Definitions)
+                .GroupBy(definition => definition.Reference)
+                .Select(group => group.First())
+                .ToArray();
             if (validateInitialCardState)
             {
                 CardInitialSetupValidator.Validate(cardDefinitions, cardInstances);
@@ -89,9 +101,9 @@ namespace GuardsDigital.Core.Participants
         /// </summary>
         public MatchContentCatalogs ContentCatalogs { get; }
 
-        public PlaceholderMovementHand RedHand { get; }
+        public ConfiguredHand RedHand { get; }
 
-        public PlaceholderMovementHand BlueHand { get; }
+        public ConfiguredHand BlueHand { get; }
 
         public TieBreakerState TieBreakerState { get; }
 
@@ -107,14 +119,19 @@ namespace GuardsDigital.Core.Participants
         public IReadOnlyList<CardInstance> CardInstances { get; }
 
         /// <summary>
-        /// The ordinary five cards per hero, and what the configured scene deals.
+        /// The configured match: two mirrored Wasps, each dealt rulebook p.5's starting five with the
+        /// remaining thirteen in their deck. This is what the scene composes and what a player plays.
         ///
-        /// It had a named sibling of its own between milestones 6.2d and the five-card scene, because
-        /// the scene was dealt a sixth card - milestone 6.2's Cache - so a player could put a token on
-        /// the board at all. That sibling is gone rather than renamed: Blue Feint absorbed the Cache
-        /// card's three modes, so the scene's hand and the hand every pinned digest, corpus fixture and
-        /// card-matrix assertion measures are the same five again, and there is nothing left for a
-        /// second factory to say.
+        /// <para>Milestone 8.4 is where this stopped being synthetic. Until now it dealt the
+        /// mechanics-showcase cards, whose values and text were invented to exercise machinery; it now
+        /// deals <see cref="WaspCardContent"/>, whose every value and word is transcribed from the
+        /// printed faces. The showcase cards did not disappear - <see cref="SyntheticShowcaseHand"/>
+        /// still fills the fixture configurations below, which say so in their names - but nothing
+        /// synthetic stands in for hero content on the path a match takes any more.</para>
+        ///
+        /// <para>Both seats deal the same eighteen definitions, because a mirror is one printed set
+        /// dealt twice. Only the instance ids differ, and they are prefixed by the seat's team side so
+        /// that a card id says which Wasp holds it.</para>
         /// </summary>
         public static PlaceholderOneVsOneTestConfiguration Create()
         {
@@ -126,17 +143,80 @@ namespace GuardsDigital.Core.Participants
             return Create(
                 TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed),
                 setupSeed,
-                PlaceholderMovementHand.CreateRed,
-                PlaceholderMovementHand.CreateBlue);
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedWaspHand(TeamSide.Blue));
         }
+
+        /// <summary>
+        /// The configured Wasp match with p.5's coin flip replaced by an explicitly selected side, so
+        /// a fixture can play it without a draw deciding who acts first. `DEV-005`, exactly as
+        /// <see cref="CreateForInternalTest"/> uses it for the showcase hands.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateVerifiedMirrorForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedWaspHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// The mechanics-showcase hands with p.5's coin flip, which is what
+        /// <see cref="Create"/> was before milestone 8.4 dealt verified content there.
+        ///
+        /// Every fixture that measures the showcase card matrix, its progression content or its
+        /// synthetic Skills asks for it by this name now, so that what a test is holding is legible
+        /// from the call rather than from what the default happens to be this milestone.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForShowcaseFixture()
+        {
+            var setupSeed = SetupRandomnessAuthority.DrawSeed();
+
+            return Create(
+                TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed),
+                setupSeed,
+                SyntheticShowcaseHand.CreateRed,
+                SyntheticShowcaseHand.CreateBlue);
+        }
+
+        /// <summary>
+        /// A showcase attacker facing a verified defender: the Red seat holds the mechanics-showcase
+        /// hand and the Blue seat holds Wasp's.
+        ///
+        /// <para>Milestone 8.4. p.14's Defense reaction can only be reached by being attacked, and no
+        /// Wasp hero can attack yet - this milestone's own rule greys and refuses every printed primary
+        /// whose card text has no composition, which is all nineteen faces until the 8.6-8.13 slices
+        /// land. So the one configuration that can prove a verified secondary Defense answers a real
+        /// attack from its printed value is one where the attacker's card text is already composed and
+        /// the defender's card is Wasp's. Nothing synthetic decides anything about the defence: the
+        /// Defense value, the discard it spends and the card it comes off are all verified content.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForVerifiedDefenseFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRed,
+                CreateVerifiedWaspHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// One seat's verified Wasp hand. The instance-id prefix is the seat's team side rather than
+        /// its hero id: both are stable for this configuration, and the side is what a reader of a log
+        /// or a snapshot can place without knowing which synthetic hero id belongs to whom.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedWaspHand(TeamSide side) =>
+            ownerId => WaspCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
 
         public static PlaceholderOneVsOneTestConfiguration CreateForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
-                PlaceholderMovementHand.CreateRed,
-                PlaceholderMovementHand.CreateBlue);
+                SyntheticShowcaseHand.CreateRed,
+                SyntheticShowcaseHand.CreateBlue);
         }
 
         public PlaceholderConfigurationRestoreState CaptureRestoreState() =>
@@ -158,27 +238,39 @@ namespace GuardsDigital.Core.Participants
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
             var blueHero = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue).Id;
-            PlaceholderMovementHand BuildHand(HeroId ownerId, CardDefinitionId ultimateId)
+            ConfiguredHand BuildHand(HeroId ownerId)
             {
                 var ownedInstances = instanceArray.Where(instance => instance.OwnerId.Equals(ownerId)).ToArray();
                 var ownedReferences = new HashSet<CardDefinitionReference>(
                     ownedInstances.Select(instance => instance.DefinitionReference));
                 var upgradeTargets = UpgradeTargetsOf(ownerId);
+                var definitionsById = definitionArray
+                    .GroupBy(definition => definition.Id)
+                    .ToDictionary(group => group.Key, group => group.First());
 
                 // Milestone 7.5. The dealt/deck split is a setup fact rather than a live one - every
                 // card moves during a match - so it is recovered from the same content relationship
                 // that routes the definitions two lines above: a card whose definition this hero's own
                 // upgrade closure reaches, or its Ultimate, is one p.6 left in the deck, and every other
                 // owned card is one p.6 dealt. Where each card is right now is on the card itself.
+                //
+                // Milestone 8.4 reads the Ultimate off the definition rather than from a named id.
+                // Milestone 7.3 had to name it - p.16 attaches an Ultimate to the hero rather than to
+                // any card, so the upgrade closure has no edge to follow - but milestone 7.5 then dealt
+                // it an instance, which routes it to its owner like every other card, leaving only this
+                // classification to answer. The verified mirror is what forced the change: both seats
+                // deal one printed set, so one named id no longer tells the two hands apart, while
+                // `IsUltimate` is stated by the content itself and tells each seat's own instance
+                // exactly what p.6 says about it.
                 bool IsDeckCard(CardInstance instance) =>
                     upgradeTargets.Contains(instance.DefinitionReference.DefinitionId) ||
-                    instance.DefinitionReference.DefinitionId.Equals(ultimateId);
+                    (definitionsById.TryGetValue(instance.DefinitionReference.DefinitionId, out var owned) &&
+                        owned.Progression.IsUltimate);
 
-                return PlaceholderMovementHand.Restore(new PlaceholderMovementHandRestoreState(
+                return ConfiguredHand.Restore(new ConfiguredHandRestoreState(
                     definitionArray.Where(definition =>
                         ownedReferences.Contains(definition.Reference) ||
-                        upgradeTargets.Contains(definition.Id) ||
-                        definition.Id.Equals(ultimateId)),
+                        upgradeTargets.Contains(definition.Id)),
                     ownedInstances.Where(instance => !IsDeckCard(instance)),
                     ownedInstances.Where(IsDeckCard)));
             }
@@ -224,15 +316,13 @@ namespace GuardsDigital.Core.Participants
                 return reached;
             }
 
-            // Milestone 7.3. The Ultimate each hand supplies is named rather than derived, because
-            // p.16 attaches it to the hero rather than to any card and so leaves no relationship for the
-            // upgrade closure above to follow. Naming it here is the same thing the Create factories do
-            // when they build these hands, and the sides are already re-identified from the restored
-            // teams two statements above, so nothing new is being decided.
+            // The two hands are rebuilt from the flat definition and instance lists a snapshot
+            // restores, using only relationships the content itself states; the sides are already
+            // re-identified from the restored teams two statements above, so nothing new is decided.
             return new PlaceholderOneVsOneTestConfiguration(
                 participants,
-                BuildHand(redHero, PlaceholderMovementHand.RedUltimateDefinitionId),
-                BuildHand(blueHero, PlaceholderMovementHand.BlueUltimateDefinitionId),
+                BuildHand(redHero),
+                BuildHand(blueHero),
                 state.TieBreakerState,
                 state.SetupSeed,
                 false);
@@ -249,8 +339,8 @@ namespace GuardsDigital.Core.Participants
         {
             return Create(
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
-                PlaceholderMovementHand.CreateRedWithSkill,
-                PlaceholderMovementHand.CreateBlueWithSkill);
+                SyntheticShowcaseHand.CreateRedWithSkill,
+                SyntheticShowcaseHand.CreateBlueWithSkill);
         }
 
         /// <summary>
@@ -265,8 +355,8 @@ namespace GuardsDigital.Core.Participants
         {
             return Create(
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
-                PlaceholderMovementHand.CreateRedWithRepeatSkill,
-                PlaceholderMovementHand.CreateBlueWithRepeatSkill);
+                SyntheticShowcaseHand.CreateRedWithRepeatSkill,
+                SyntheticShowcaseHand.CreateBlueWithRepeatSkill);
         }
 
         /// <summary>
@@ -289,8 +379,8 @@ namespace GuardsDigital.Core.Participants
 
             return Create(
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
-                owner => PlaceholderMovementHand.CreateRedWithCardStateSkill(owner, blueHeroId),
-                owner => PlaceholderMovementHand.CreateBlueWithCardStateSkill(owner, redHeroId));
+                owner => SyntheticShowcaseHand.CreateRedWithCardStateSkill(owner, blueHeroId),
+                owner => SyntheticShowcaseHand.CreateBlueWithCardStateSkill(owner, redHeroId));
         }
 
         /// <summary>
@@ -305,8 +395,8 @@ namespace GuardsDigital.Core.Participants
         {
             return Create(
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
-                PlaceholderMovementHand.CreateRedWithRadiusSkill,
-                PlaceholderMovementHand.CreateBlueWithRadiusSkill);
+                SyntheticShowcaseHand.CreateRedWithRadiusSkill,
+                SyntheticShowcaseHand.CreateBlueWithRadiusSkill);
         }
 
         /// <summary>
@@ -318,8 +408,8 @@ namespace GuardsDigital.Core.Participants
         /// </summary>
         private static PlaceholderOneVsOneTestConfiguration Create(
             TieBreakerState tieBreakerState,
-            Func<HeroId, PlaceholderMovementHand> redHand,
-            Func<HeroId, PlaceholderMovementHand> blueHand)
+            Func<HeroId, ConfiguredHand> redHand,
+            Func<HeroId, ConfiguredHand> blueHand)
         {
             return Create(tieBreakerState, SetupRandomnessSeed.Unrecorded, redHand, blueHand);
         }
@@ -333,8 +423,8 @@ namespace GuardsDigital.Core.Participants
         private static PlaceholderOneVsOneTestConfiguration Create(
             TieBreakerState tieBreakerState,
             SetupRandomnessSeed setupSeed,
-            Func<HeroId, PlaceholderMovementHand> redHand,
-            Func<HeroId, PlaceholderMovementHand> blueHand)
+            Func<HeroId, ConfiguredHand> redHand,
+            Func<HeroId, ConfiguredHand> blueHand)
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);

@@ -245,7 +245,7 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 6.5a converts exactly one card to Place and 6.5b exactly one to Spawn, which
             // is what keeps p.18's two operations separable in the configured hand as well as in the
             // model: no card offers both.
-            var ordinary = PlaceholderOneVsOneTestConfiguration.Create();
+            var ordinary = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
 
             var byCapability = ordinary.CardDefinitions
                 .SelectMany(definition => definition.ActionDefinitions

@@ -13,6 +13,26 @@ using UnityEngine;
 
 namespace GuardsDigital.Presentation.Interaction
 {
+    /// <summary>
+    /// Which cards the scene deals when it composes. Milestone 8.4.
+    /// </summary>
+    public enum SceneCardContent
+    {
+        /// <summary>
+        /// The configured match: two mirrored Wasps dealt their verified printed set. This is what a
+        /// player - and the built player the smoke gate runs - always gets.
+        /// </summary>
+        ConfiguredMatch = 0,
+
+        /// <summary>
+        /// The mechanics-showcase hands, for the Play Mode fixtures whose subject is what a real scene
+        /// draws for a composed Skill: greyed controls, board cues, effect-choice destinations,
+        /// generated token views. Verified content cannot stand in for them, because Wasp's own text
+        /// lands at the 8.6-8.13 slices and until then every printed primary of hers is refused.
+        /// </summary>
+        MechanicsShowcaseFixture = 1
+    }
+
     [ExecuteAlways]
     [DefaultExecutionOrder(-1000)]
     [DisallowMultipleComponent]
@@ -41,6 +61,22 @@ namespace GuardsDigital.Presentation.Interaction
         private DestinationHighlightMaterialOwner resultingSpaceHighlightOwner;
         private ConfiguredMatchHudRenderer hud;
         private ConfiguredMatchSceneRuntime runtime;
+
+        /// <summary>
+        /// What the next composition deals, and nothing after it. Milestone 8.4.
+        ///
+        /// <para>The scene deals the configured match, and until milestone 8.25 replaces this
+        /// composition with the official six-player setup there is no authored place to say otherwise.
+        /// A Play Mode fixture that needs the mechanics-showcase Skills in a real scene states it here
+        /// before loading the scene, and the composition <b>consumes and resets it</b>, so a fixture
+        /// that forgets to clear it cannot change what any later scene load deals. That one-shot
+        /// property is the whole reason this is a value rather than a mode: nothing can be left on.</para>
+        ///
+        /// <para>A launched player never writes it, exactly as a launched player never constructs
+        /// <see cref="PlayerSmokeTestDriver"/>; it is the same internal development affordance
+        /// `DEV-004` covers.</para>
+        /// </summary>
+        public static SceneCardContent NextComposedCardContent { get; set; }
 
         public ConfiguredMatchSceneRuntime Runtime => runtime;
         public IMatchSession Session => runtime?.Session;
@@ -81,7 +117,9 @@ namespace GuardsDigital.Presentation.Interaction
             // because nothing else could put a token on the board, and without one 6.3's Clear and two
             // of 6.6a's three modes were controls with nothing to act on. Blue Sentinel and Blue Feint
             // carry those capabilities now, so the scene keeps them at five.
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = TakeRequestedCardContent() == SceneCardContent.MechanicsShowcaseFixture
+                ? PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture()
+                : PlaceholderOneVsOneTestConfiguration.Create();
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 configuration.Participants,
@@ -169,6 +207,17 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             return currentSelectors;
+        }
+
+        /// <summary>
+        /// Reads <see cref="NextComposedCardContent"/> and puts it back to the configured match, so the
+        /// request applies to exactly the composition that consumed it.
+        /// </summary>
+        private static SceneCardContent TakeRequestedCardContent()
+        {
+            var requested = NextComposedCardContent;
+            NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            return requested;
         }
 
         private void Awake()

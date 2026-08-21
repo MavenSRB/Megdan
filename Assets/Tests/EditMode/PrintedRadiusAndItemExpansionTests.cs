@@ -386,7 +386,7 @@ namespace GuardsDigital.Tests.EditMode
 
             // This milestone's own two Radius cards are dealt by their own configuration alone, which is
             // why 7.2b's corpus moved for the registration alone.
-            var ordinary = PlaceholderOneVsOneTestConfiguration.Create();
+            var ordinary = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             Assert.That(
                 ordinary.CardDefinitions.Any(definition =>
                     definition.Id.Value.Contains("shockwave")),

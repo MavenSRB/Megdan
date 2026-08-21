@@ -678,6 +678,25 @@ namespace GuardsDigital.Tests.EditMode
         /// they exercise had version-controlled coverage before this milestone. There is no
         /// migrate-or-reject decision to record because no existing payload's meaning moved; the
         /// standing decision for every future cause is unchanged.
+        /// Milestone 8.4 keeps schema v21, re-pins nothing, and adds one fixture. The re-baseline had
+        /// predicted a schema move here for verified hand and setup persistence, and implementation
+        /// showed there is nothing to move: the definition table is a list of id-and-revision pairs
+        /// (see <c>AuthoritativeSnapshotSerializer.WriteDefinitions</c>), which is what a definition
+        /// has been on the wire since the corpus began, and what a card's face prints - values, words,
+        /// item icons, a text composition still owed - lives in the trusted catalog the reader binds
+        /// to. Verified content is content, not a new wire shape. The mirror's shared definition set
+        /// needed nothing either: two heroes owning instances of one definition is what
+        /// <c>CardDefinitionReference</c> already means. So there is no migrate-or-reject decision to
+        /// record, and every digest above is byte-identical with two mirrored Wasps composing the
+        /// configured session, which is the compatibility evidence rather than an absence of it - the
+        /// eight ordinary fixtures and both component ones are built from the internal-test and
+        /// Skill-fixture showcase configurations, which this milestone deliberately left alone so that
+        /// the corpus measures the wire rather than the content that happens to be in the scene.
+        /// The added fixture is <c>verified-hand-setup-v21</c>, and it is added rather than swapped
+        /// for one of the others because until now no payload in this corpus carried verified content
+        /// at all: the ids, the <c>wasp-8-3-rev-1</c> revisions and the thirty-six per-seat instance
+        /// identities of a mirrored deal had no version-controlled coverage, so a later slice advancing
+        /// Wasp's content revision would have moved no digest here and said nothing.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
@@ -690,7 +709,8 @@ namespace GuardsDigital.Tests.EditMode
             new CompatibilityFixture("attached-marker-v21", "13c7fc129012ea0cffd492349b51f07c87263b80fb6fc322ddce0a3830a49ff0"),
             new CompatibilityFixture("pending-correction-v21", "279ca492fad632c43fc70bb8e9b8a35a43052d53a4f59a610585df14e90ccc0b"),
             new CompatibilityFixture("paused-level-up-v21", "7a2587cacd8e6e2aa5b57e4a603bbd416c30ed88f449e6ac45c57287ac99b0a0"),
-            new CompatibilityFixture("ended-match-v21", "1aee1b34a066ced915512a9aa5cb4e8c25b71bf19acdde31efacefb1a26fa6c9")
+            new CompatibilityFixture("ended-match-v21", "1aee1b34a066ced915512a9aa5cb4e8c25b71bf19acdde31efacefb1a26fa6c9"),
+            new CompatibilityFixture("verified-hand-setup-v21", "49545713354db8c24a0f9c261b0d15068fde1c02e34d36cef1195f4546157f09")
         };
 
         [Test]
@@ -835,6 +855,13 @@ namespace GuardsDigital.Tests.EditMode
             // for.
             values.Add("paused-level-up-v21", CapturePausedLevelUpSnapshot());
             values.Add("ended-match-v21", CaptureEndedMatchSnapshot());
+
+            // Milestone 8.4. The configured session as a player is dealt it: two mirrored Wasps holding
+            // p.5's starting five with thirteen in each deck, which is the first verified content any
+            // payload in this corpus has ever carried.
+            values.Add(
+                "verified-hand-setup-v21",
+                ConfiguredMatchFixtures.CreateVerifiedMirrorSession().CaptureSnapshot());
             return values;
         }
 
@@ -1002,12 +1029,19 @@ namespace GuardsDigital.Tests.EditMode
         /// card definitions against the ones the session was configured with, so a component payload -
         /// which was produced by the Skill-bearing configuration - has to come back into that same one.
         /// </summary>
-        private static MatchSession CreateRestoreTarget(string fixtureName) =>
-            fixtureName.StartsWith("placed-token", StringComparison.Ordinal) ||
-            fixtureName.StartsWith("attached-marker", StringComparison.Ordinal) ||
-            fixtureName.StartsWith("pending-correction", StringComparison.Ordinal)
-                ? CreateComponentSession()
-                : CreateSession();
+        private static MatchSession CreateRestoreTarget(string fixtureName)
+        {
+            if (fixtureName.StartsWith("verified-hand-setup", StringComparison.Ordinal))
+            {
+                return ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            }
+
+            return fixtureName.StartsWith("placed-token", StringComparison.Ordinal) ||
+                fixtureName.StartsWith("attached-marker", StringComparison.Ordinal) ||
+                fixtureName.StartsWith("pending-correction", StringComparison.Ordinal)
+                    ? CreateComponentSession()
+                    : CreateSession();
+        }
 
         private static MatchSession CreateComponentSession()
         {

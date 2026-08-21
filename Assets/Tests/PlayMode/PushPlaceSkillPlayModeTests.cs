@@ -167,6 +167,11 @@ namespace GuardsDigital.Tests.PlayMode
 
         private static IEnumerator LoadScene()
         {
+            // Milestone 8.4. The configured scene deals Wasp's verified cards now, and every printed
+            // primary of hers is refused until its 8.6-8.13 slice composes its text, so a scene that
+            // must draw a composed Skill asks for the mechanics-showcase hands. The request is consumed
+            // and reset by the composition it applies to, so it cannot leak into another fixture.
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.MechanicsShowcaseFixture;
             var operation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(operation, Is.Not.Null);
             while (!operation.isDone)

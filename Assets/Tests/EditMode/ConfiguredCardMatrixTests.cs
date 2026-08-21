@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
@@ -63,8 +64,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheTenConfiguredCards_CarryTheExactApprovedPrimaryActionMatrix()
         {
-            var red = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
-            var blue = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"));
+            var red = SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var blue = SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"));
 
             AssertPrimaryActions(red, new[]
             {
@@ -90,8 +91,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             foreach (var hand in new[]
             {
-                PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero")),
-                PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+                SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero")),
+                SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"))
             })
             {
                 var attacks = hand.DealtDefinitions
@@ -112,8 +113,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var printed = new[]
                 {
-                    PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero")),
-                    PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+                    SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero")),
+                    SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"))
                 }
                 .SelectMany(hand => hand.DealtDefinitions)
                 .SelectMany(definition => definition.ActionDefinitions)
@@ -175,8 +176,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             foreach (var hand in new[]
             {
-                PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero")),
-                PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+                SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero")),
+                SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"))
             })
             {
                 Assert.That(hand.Definitions, Has.All.Property("ContentAuthority")
@@ -224,8 +225,8 @@ namespace GuardsDigital.Tests.EditMode
 
             foreach (var hand in new[]
             {
-                PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero")),
-                PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+                SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero")),
+                SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"))
             })
             {
                 Assert.That(hand.DealtDefinitions, Has.Count.EqualTo(5));
@@ -239,7 +240,7 @@ namespace GuardsDigital.Tests.EditMode
 
             // And they exist where the fixtures that need them look. The Skill-fixture hand is the only
             // one that deals them, which is what keeps them out of the configured scene entirely.
-            var skillHand = PlaceholderMovementHand.CreateBlueWithSkill(new HeroId("blue-synthetic-hero"));
+            var skillHand = SyntheticShowcaseHand.CreateBlueWithSkill(new HeroId("blue-synthetic-hero"));
             Assert.That(
                 skillHand.DealtDefinitions.Select(definition => definition.Id.Value),
                 Has.Some.EqualTo("placeholder-blue-focus"));
@@ -277,16 +278,16 @@ namespace GuardsDigital.Tests.EditMode
             var opponent = new HeroId("capability-coverage-opponent");
             var reachable = new[]
                 {
-                    PlaceholderMovementHand.CreateRed(owner),
-                    PlaceholderMovementHand.CreateBlue(owner),
-                    PlaceholderMovementHand.CreateRedWithSkill(owner),
-                    PlaceholderMovementHand.CreateBlueWithSkill(owner),
-                    PlaceholderMovementHand.CreateRedWithRepeatSkill(owner),
-                    PlaceholderMovementHand.CreateBlueWithRepeatSkill(owner),
-                    PlaceholderMovementHand.CreateRedWithCardStateSkill(owner, opponent),
-                    PlaceholderMovementHand.CreateBlueWithCardStateSkill(owner, opponent),
-                    PlaceholderMovementHand.CreateRedWithRadiusSkill(owner),
-                    PlaceholderMovementHand.CreateBlueWithRadiusSkill(owner)
+                    SyntheticShowcaseHand.CreateRed(owner),
+                    SyntheticShowcaseHand.CreateBlue(owner),
+                    SyntheticShowcaseHand.CreateRedWithSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithRepeatSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithRepeatSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithCardStateSkill(owner, opponent),
+                    SyntheticShowcaseHand.CreateBlueWithCardStateSkill(owner, opponent),
+                    SyntheticShowcaseHand.CreateRedWithRadiusSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithRadiusSkill(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(definition => definition.ActionDefinitions)
@@ -576,7 +577,7 @@ namespace GuardsDigital.Tests.EditMode
             string definitionId, string displayName, int initiative, ActionKind kind, string actionId) =>
             new PrimaryActionRow(definitionId, displayName, initiative, kind, actionId);
 
-        private static void AssertPrimaryActions(PlaceholderMovementHand hand, PrimaryActionRow[] rows)
+        private static void AssertPrimaryActions(ConfiguredHand hand, PrimaryActionRow[] rows)
         {
             Assert.That(hand.DealtDefinitions, Has.Count.EqualTo(rows.Length),
                 "p.15 holds a hand at exactly five cards, one of each colour.");

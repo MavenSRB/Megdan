@@ -45,7 +45,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryHeroDeclaresThePageSixteenSlots_AndTheFourthCarriesThreeIcons()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.Create().Participants;
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
             Assert.That(participants.Heroes, Is.Not.Empty);
 
             foreach (var hero in participants.Heroes)
@@ -138,7 +138,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TwoItemsUnderTheFourthSlot_RaiseTheirOwnIconsAndNotEachOther()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.Create().Participants;
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
             var owner = participants.Heroes[0].Id;
             var fourth = HeroDashboard.RulebookLayout.Slots[3].Position;
             var items = HeroItemState.Restore(participants, new HeroItemRestoreState(new[]
@@ -177,7 +177,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AnInitiativeItem_RaisesTheValueTheTurnOrderReads()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.Create().Participants;
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
             var red = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
             var blue = participants.Heroes.Single(hero =>
@@ -385,7 +385,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ASetAsideCardNoSlotAccepts_IsRefusedWithoutMovingAnything()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var restricted = ParticipantsWithRestrictedRedDashboard();
             var items = new HeroItemState(restricted);
@@ -421,7 +421,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SetupValidation_RefusesAHeroWhoCanReachACardNoSlotOfTheirsAccepts()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
 
             // The configured content is exactly what the check is about: every hero's upgrade tree
             // leads to Attack, Initiative, Movement and Defense icons, and p.16's layout accepts all
@@ -463,7 +463,7 @@ namespace GuardsDigital.Tests.EditMode
             // and p.8 then pays that hero a Pity Coin for not having levelled. Nothing about that is
             // reachable with the generated showcase content, whose decks are complete by construction;
             // it is what a hand-transcribed verified hero deck gets wrong one card at a time.
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
 
             Assert.DoesNotThrow(() => HeroItemSlotSetupValidator.Validate(
                 configuration.Participants, configuration.CardDefinitions, configuration.CardInstances),
@@ -579,7 +579,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void APlacedItem_RoundTripsWithBothItsSlotAndItsIcon()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.Create().Participants;
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
             var owner = participants.Heroes[0].Id;
             var fourth = HeroDashboard.RulebookLayout.Slots[3].Position;
             var captured = HeroItemState.Restore(participants, new HeroItemRestoreState(new[]
@@ -614,7 +614,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchParticipants ParticipantsWithRestrictedRedDashboard()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.Create().Participants;
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
             return new MatchParticipants(
                 participants.Teams,
                 participants.Players,

@@ -57,7 +57,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-83-add-verified-wasp-definitions-and-lifecycle-data-completion-evidence).
 
-### [ ] 8.4 Load both Wasp hands into the director turn loop
+### [x] 8.4 Load both Wasp hands into the director turn loop
 
 Observable outcome: Red and Blue Wasp hands replace the synthetic hands while using the already-proven play/reveal/Initiative/turn controller.
 
@@ -72,6 +72,8 @@ Acceptance checks:
 
 Milestones 8.5 through 8.14 were assigned their definitions by milestone 8.2's designated re-baseline (2026-08-21, user approved) from the verified 8.1 inventory and the capability matrix in `Rules/HERO_WASP.md`. The original placeholder titles dissolved against the evidence: Wasp has no Movement-primary card, no token or marker of her own, and no resource effect, while the three general card-text seams the 7.9a review identified (F-CARD-01, F-CARD-02, F-CARD-03) land as the general milestones 8.5, 8.7, and 8.12 ahead of the Wasp slices that consume them. Wasp's nineteen faces complete in five slices grouped by shared machinery: telekinetics at 8.6, kinetics at 8.8, basics at 8.9, Attacks at 8.10, Defenses at 8.11, the Ultimate at 8.13, and progression at 8.14.
 
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-84-load-both-wasp-hands-into-the-director-turn-loop-completion-evidence).
+
 ### [ ] 8.5 Open the general card-text seam on Attack and Defense actions
 
 Observable outcome: a printed non-Skill action can declare an `EffectRoot` and a typed target policy, and its text runs at the p.14 checkpoint its keyword names, proven on synthetic definitions before any Wasp card consumes it.
@@ -85,9 +87,9 @@ Acceptance checks:
 
 Non-goals: no Wasp card composition (8.8-8.11 own the consumers), no Block resolution mode (8.11), no trigger-window execution (8.12).
 
-### [!] 8.6 Complete the Wasp telekinetic skills
+### [ ] 8.6 Complete the Wasp telekinetic skills
 
-Blocked by: milestone 8.4 must load the verified hands milestone 8.3's definitions supply.
+Its one prerequisite is discharged: milestone 8.4 loaded the verified hands milestone 8.3's definitions supply.
 
 Observable outcome: Lift Up, Control Gravity, Center of Mass, Telekinesis, and Mass Telekinesis resolve their complete printed text in the configured Wasp mirror - the first five verified Wasp primaries in play.
 
@@ -116,7 +118,7 @@ Non-goals: no Wasp card composition (8.9 owns the configured consumers); no new 
 
 ### [!] 8.8 Complete the Wasp kinetic skills
 
-Blocked by: milestones 8.5 (published predicate facts) and 8.7 (the consumption regime); 8.4 supplies the hands.
+Blocked by: milestones 8.5 (published predicate facts) and 8.7 (the consumption regime). Milestone 8.4 supplied the hands.
 
 Observable outcome: Kinetic Repulse and Kinetic Blast resolve their complete printed text, including the stopped-hero discard rider.
 
@@ -130,7 +132,7 @@ Non-goals: no Attack text, no new push geometry.
 
 ### [!] 8.9 Complete the Wasp basic cards
 
-Blocked by: milestones 8.5 (Attack text seam) and 8.7 (restriction and overlay consumers); 8.4 supplies the hands.
+Blocked by: milestones 8.5 (Attack text seam) and 8.7 (restriction and overlay consumers). Milestone 8.4 supplied the hands.
 
 Observable outcome: Magnetic Dagger and Static Barrier resolve their complete printed text in the configured mirror, and the performed-basic-action fact High Voltage's trigger will read exists.
 

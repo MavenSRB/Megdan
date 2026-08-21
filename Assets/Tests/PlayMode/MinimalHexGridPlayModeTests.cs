@@ -5,6 +5,7 @@ using System.Reflection;
 using System.IO;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
@@ -56,6 +57,46 @@ namespace GuardsDigital.Tests.PlayMode
                 var viewport = cameras[0].WorldToViewportPoint(tile.transform.position);
                 return viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f;
             }), Is.True);
+        }
+
+        /// <summary>
+        /// Milestone 8.4. The scene a player loads deals verified content, which is the whole point of
+        /// the milestone and which only a loaded scene can show: every Editor tier composes its own
+        /// configuration, so none of them can say what the saved scene's composition root builds.
+        ///
+        /// It also holds the one-shot property the showcase request depends on. The fixtures above ask
+        /// for the mechanics-showcase hands and never clear the request, because the composition clears
+        /// it; if it were a mode that stayed on, this case would find showcase cards here.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_DealsTheVerifiedWaspMirrorAndKeepsDealingItAfterAShowcaseRequest()
+        {
+            yield return LoadShowcaseScene();
+            Assert.That(
+                Root().Runtime.Cards.Any(card =>
+                    card.DefinitionReference.DefinitionId.Value == "placeholder-red-pursuit"),
+                Is.True,
+                "The requested composition is the showcase one, or the reset below proves nothing.");
+
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+
+            Assert.That(runtime.Cards, Has.Count.EqualTo(36),
+                "Two eighteen-card decks, which is the smoke gate's pinned cards=36 marker.");
+            Assert.That(
+                runtime.Definitions.All(definition =>
+                    definition.ContentAuthority == CardContentAuthority.VerifiedOfficial &&
+                    definition.ContentRevision == WaspCardContent.ContentRevision),
+                Is.True,
+                "and every one of them is source-verified Wasp content at its stated revision.");
+            Assert.That(
+                runtime.Cards
+                    .Where(card => card.State.Location == CardLocation.Hand)
+                    .Select(card => card.DefinitionReference.DefinitionId)
+                    .Distinct()
+                    .ToArray(),
+                Is.EquivalentTo(WaspCardContent.StartingHand),
+                "Both seats hold rulebook p.5's starting five.");
         }
 
         [UnityTest]
@@ -334,7 +375,7 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator Scene_RoutesConfiguredMinionAttackCuePointerAndRemovalThroughFeatureBoundary()
         {
-            yield return LoadScene();
+            yield return LoadShowcaseScene();
             var root = Root();
             var runtime = root.Runtime;
             var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
@@ -644,7 +685,7 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator Scene_ResolvesTheConvertedSkillThroughThePassiveEffectChoicePrompt()
         {
-            yield return LoadScene();
+            yield return LoadShowcaseScene();
             var runtime = Root().Runtime;
             var red = Hand(runtime, TeamSide.Red).Cards
                 .Single(card => card.Id.Value == "red-bulwark-card");
@@ -1323,6 +1364,19 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
         }
 
+
+        /// <summary>
+        /// Milestone 8.4. The scene deals Wasp's verified cards, whose printed primaries are all
+        /// refused until their 8.6-8.13 slices compose their text, so the two cases below - which need
+        /// a Skill that resolves and an Attack that reaches a minion - ask for the mechanics-showcase
+        /// hands instead. The request is consumed and reset by the composition it applies to, so every
+        /// other case in this fixture still loads the configured match.
+        /// </summary>
+        private static IEnumerator LoadShowcaseScene()
+        {
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.MechanicsShowcaseFixture;
+            return LoadScene();
+        }
         private static IEnumerator LoadScene()
         {
             var operation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);

@@ -616,7 +616,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateAdjacentSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

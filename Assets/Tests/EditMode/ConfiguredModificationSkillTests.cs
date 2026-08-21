@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
@@ -60,7 +61,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RedBulwark_ReplacesOnlyItsPrintedPrimaryAttack()
         {
-            var hand = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var hand = SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"));
             var definition = hand.Definitions.Single(candidate =>
                 candidate.DisplayName == "TEST - Red Bulwark");
             var instance = hand.Instances[1];
@@ -94,7 +95,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSkill_DeclaresThreeModesEachNamingOneRegisteredCapability()
         {
-            var hand = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var hand = SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"));
             var effect = hand.Definitions
                 .Single(candidate => candidate.DisplayName == "TEST - Red Bulwark")
                 .ActionDefinitions.Single(action => action.Id.Equals(BulwarkSkill))

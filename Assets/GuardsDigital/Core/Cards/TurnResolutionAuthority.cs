@@ -59,7 +59,20 @@ namespace GuardsDigital.Core.Cards
         /// checkpoint, and saying so is better than a rejection that blames a missing actor or a
         /// resolved card.
         /// </summary>
-        IncompleteLanePushTransition = 27
+        IncompleteLanePushTransition = 27,
+
+        /// <summary>
+        /// Milestone 8.4: the printed primary's card text has no typed composition yet, so performing
+        /// the action would perform part of the card and silently drop the rest.
+        ///
+        /// Rulebook p.12 never forces a hero to act - they may Hold - so refusing costs the player
+        /// nothing they were owed, while running an Attack without its After-the-attack rider or a
+        /// Skill without its effect would be a rules violation the match could not see. The action
+        /// definition itself states the debt through <see cref="PrintedTextComposition"/>, naming the
+        /// milestone that owes the composition or the trigger that would schedule it, so this refusal
+        /// can always say whose work is missing.
+        /// </summary>
+        PrintedCardTextNotComposed = 28
     }
 
     public enum TurnResolutionEventKind
@@ -804,6 +817,18 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
 
+            // Milestone 8.4. The same statement as on the Attack and Skill starts, so the rule holds
+            // for every action a start command can name rather than for the two kinds that happen to
+            // carry text today. No content in this build reaches it: a printed secondary Movement
+            // suppresses card text and so cannot declare a composition at all, and Wasp prints no
+            // Movement primary. It is stated because the next hero who prints one would otherwise
+            // perform it without its sentence and nothing would say so.
+            if (!CardTextIsComposed(offer))
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.PrintedCardTextNotComposed);
+            }
+
             var result = cardActions.StartTurnMovementResolution(
                 resolutionId,
                 offer,
@@ -1048,6 +1073,16 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
 
+            // Milestone 8.4: asked before the board question below, so a primary that is both owed its
+            // composition and empty is refused for the reason that will still be true after the board
+            // moves. Refused here for the same reason 6.5af's rule is: the dispatcher revalidates a
+            // start against the card-state offer query, which does not consult availability at all.
+            if (!CardTextIsComposed(offer))
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.PrintedCardTextNotComposed);
+            }
+
             // Milestone 6.5af: refused here rather than only left out of the projection, because the
             // dispatcher revalidates a start against the card-state offer query, which cannot see the
             // board and so cannot know this. A start naming an inert Skill is rejected before any
@@ -1098,12 +1133,34 @@ namespace GuardsDigital.Core.Cards
         /// <summary>
         /// Whether this offer can be started at all, as the offer set reports it.
         ///
-        /// Two rules answer it, each for its own kind and each returning true for the other's: milestone
-        /// 6.5af's Skill whose effect can apply nothing, and milestone 7.8a1's Attack with no legal
-        /// target. They are asked together here so that adding a third kind is one more clause rather
-        /// than one more place the offer set is post-processed.
+        /// Three rules answer it, each for its own case and each returning true for the others':
+        /// milestone 6.5af's Skill whose effect can apply nothing, milestone 7.8a1's Attack with no
+        /// legal target, and milestone 8.4's printed primary whose card text has no composition. They
+        /// are asked together here so that adding a fourth is one more clause rather than one more
+        /// place the offer set is post-processed - which is exactly what the third one was.
         /// </summary>
-        private bool CanStart(ActionOffer offer) => CanStartSkill(offer) && CanStartAttack(offer);
+        private bool CanStart(ActionOffer offer) =>
+            CanStartSkill(offer) && CanStartAttack(offer) && CardTextIsComposed(offer);
+
+        /// <summary>
+        /// Milestone 8.4: whether this offer's action can perform the whole of what its card prints.
+        ///
+        /// A verified definition whose printed text has no typed composition yet says so out loud
+        /// through <see cref="ActionDefinition.TextComposition"/>, naming the milestone that owes the
+        /// work or the trigger that would schedule it. Performing such an action would carry out the
+        /// printed values and silently drop the sentence beside them, and a silently dropped rule is a
+        /// rules violation the match cannot detect afterwards - so the action is drawn as one that
+        /// exists and cannot be taken, exactly as milestones 6.5af and 7.8a1 draw theirs. Rulebook p.12
+        /// is what makes that costless: a hero may Hold rather than act, so the card is still spent and
+        /// the turn still passes.
+        ///
+        /// It is asked of the action rather than of the card, because a card whose primary is owed
+        /// still prints a secondary Movement or Defense that is complete; and it is answered true
+        /// wherever the action cannot be resolved at all, for the reason the other two are.
+        /// </summary>
+        private bool CardTextIsComposed(ActionOffer offer) =>
+            !ActionOfferQuery.TryFindActionDefinition(offer, definitions, out var action) ||
+            !action.TextComposition.IsAwaited;
 
         /// <summary>
         /// One statement of the judgement, so the offer set and the start command cannot disagree.
@@ -1283,6 +1340,16 @@ namespace GuardsDigital.Core.Cards
             if (cardActions.HasPendingResolution)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+            }
+
+            // Milestone 8.4. Milestone 7.8a1 let the backend refuse an Attack with no target, because
+            // the offer flag and the refusal were then the same question asked twice. This one is not a
+            // question the backend can be asked - it is about the card's words, not its targets - so it
+            // is stated here, before the target set exists to be built and rolled back.
+            if (!CardTextIsComposed(offer))
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.PrintedCardTextNotComposed);
             }
 
             var result = cardActions.StartTurnAttackResolution(

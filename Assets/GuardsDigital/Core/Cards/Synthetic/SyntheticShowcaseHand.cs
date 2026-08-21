@@ -5,9 +5,24 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Units.Heroes;
 
-namespace GuardsDigital.Core.Cards
+namespace GuardsDigital.Core.Cards.Synthetic
 {
-    public sealed class PlaceholderMovementHand
+    /// <summary>
+    /// The synthetic mechanics-showcase hands: ten cards whose printed actions the Phase 6 showcase
+    /// milestones fixed and milestone 7.9 gated, plus the fixture Skill cards a named factory adds.
+    ///
+    /// <para><b>What this used to be.</b> Until milestone 8.4 this was <c>PlaceholderMovementHand</c>,
+    /// and the temporary-structure register described it exactly: a synthetic five-card hand standing
+    /// in for verified hero content, with milestone 8.4 named as the owner of its retirement. The
+    /// standing-in is what retired. The configured session deals
+    /// <see cref="GuardsDigital.Core.Cards.Verified.WaspCardContent"/> now, and these cards kept only
+    /// the job they were always good at: exercising machinery that verified content has no card for
+    /// yet, in fixtures that say so in their names. Nothing here is authority for any rule.</para>
+    ///
+    /// <para>The hand shape itself moved to <see cref="ConfiguredHand"/>, which both this content and
+    /// the verified content fill, because a hand has the same shape whoever printed the cards.</para>
+    /// </summary>
+    public static class SyntheticShowcaseHand
     {
         /// <summary>
         /// Milestone 7.1's colour and Tier assignment for the two configured hands, and why each hand
@@ -242,96 +257,17 @@ namespace GuardsDigital.Core.Cards
         private static readonly SyntheticUltimateProfile BlueUltimateProfile =
             new SyntheticUltimateProfile("blue-ultimate", "Blue Ultimate");
 
-        /// <summary>
-        /// Which Ultimate each hand supplies, named for the configuration that reassembles a restored
-        /// pair of hands out of one flat definition list.
-        ///
-        /// Milestone 7.1's upgrade targets are routed back to their hand by the relationship the content
-        /// states - each card names the cards it upgrades into - and that comment records the rule that
-        /// routing must not be "a second rule about names or ids". An Ultimate has no such relationship
-        /// to state and the rulebook gives it none: p.16 attaches it to the hero rather than to any
-        /// card, placing it beside the hero dashboard. So it is routed the way a configuration routes
-        /// everything it owns - by naming it - which is exactly what the Red and Blue factories above do
-        /// when they build the hands in the first place.
-        /// </summary>
-        internal static CardDefinitionId RedUltimateDefinitionId =>
-            SyntheticUltimateCard.DefinitionId(RedUltimateProfile);
-
-        internal static CardDefinitionId BlueUltimateDefinitionId =>
-            SyntheticUltimateCard.DefinitionId(BlueUltimateProfile);
-
-        private PlaceholderMovementHand(
-            IReadOnlyList<CardDefinition> definitions,
-            IReadOnlyList<CardInstance> instances,
-            IReadOnlyList<CardInstance> deckInstances)
-        {
-            Definitions = definitions;
-            Instances = instances;
-            DeckInstances = deckInstances;
-            AllInstances = Array.AsReadOnly(instances.Concat(deckInstances).ToArray());
-            DealtDefinitions = Array.AsReadOnly(instances
-                .Select(instance => definitions.First(definition =>
-                    definition.Reference.Equals(instance.DefinitionReference)))
-                .ToArray());
-        }
-
-        /// <summary>
-        /// Every definition this hand supplies: the cards it deals, and since milestone 7.1 the
-        /// upgrade targets those cards state. Pass this wherever a definition has to be resolvable -
-        /// an offer query, a round authority, a snapshot - because a card can name content it has not
-        /// been dealt.
-        /// </summary>
-        public IReadOnlyList<CardDefinition> Definitions { get; }
-
-        /// <summary>
-        /// The cards this hand deals into its owner's hand: rulebook p.6's five starting cards, plus
-        /// whichever fixture Skill card the naming factory added.
-        /// </summary>
-        public IReadOnlyList<CardInstance> Instances { get; }
-
-        /// <summary>
-        /// Milestone 7.5. The cards this hand leaves in its owner's deck - p.6's "return the remaining
-        /// Tier II, Tier III, and Tier IV cards to your deck" - which is every upgrade target the dealt
-        /// cards lead to plus the Ultimate.
-        ///
-        /// They are instances now rather than definitions alone because p.15's Upgrade a Card step
-        /// looks for them there: "Find two Action cards in your deck that have the same color as the
-        /// chosen card but are one Tier higher." A definition with no instance is content a hero could
-        /// never take, so until this milestone the configured scene had a level nobody could complete.
-        /// Together with <see cref="Instances"/> this makes the ordinary hand p.6's eighteen cards.
-        ///
-        /// They are a separate list rather than appended to <see cref="Instances"/> because the two say
-        /// different things: one is what the hero holds at setup and the other is what waits in the
-        /// deck, and <see cref="DealtDefinitions"/> - the set the approved card matrix is about - is
-        /// exactly the first.
-        /// </summary>
-        public IReadOnlyList<CardInstance> DeckInstances { get; }
-
-        /// <summary>Every card this hand supplies, hand then deck. What a match is composed with.</summary>
-        public IReadOnlyList<CardInstance> AllInstances { get; }
-
-        /// <summary>
-        /// The definitions this hand actually deals, in the order it deals them, one per entry of
-        /// <see cref="Instances"/>.
-        ///
-        /// This is the set the approved card matrix is about, and it is named separately from
-        /// <see cref="Definitions"/> because milestone 7.1 made the two differ for the first time: a
-        /// hand now supplies the Tier II and Tier III cards its Tier I cards upgrade into, and none of
-        /// them is dealt. A fixture asserting the five-card shape means this one.
-        /// </summary>
-        public IReadOnlyList<CardDefinition> DealtDefinitions { get; }
-
-        public static PlaceholderMovementHand Create(HeroId ownerId)
+        public static ConfiguredHand Create(HeroId ownerId)
         {
             return Create(ownerId, RedProfiles, RedUltimateProfile, ownerId.Value);
         }
 
-        public static PlaceholderMovementHand CreateRed(HeroId ownerId)
+        public static ConfiguredHand CreateRed(HeroId ownerId)
         {
             return Create(ownerId, RedProfiles, RedUltimateProfile, null);
         }
 
-        public static PlaceholderMovementHand CreateBlue(HeroId ownerId)
+        public static ConfiguredHand CreateBlue(HeroId ownerId)
         {
             return Create(ownerId, BlueProfiles, BlueUltimateProfile, null);
         }
@@ -346,14 +282,14 @@ namespace GuardsDigital.Core.Cards
         /// separate leaves the ordinary cards byte-identical, so the only thing that moves a digest in
         /// this milestone is the schema change itself.
         /// </summary>
-        public static PlaceholderMovementHand CreateRedWithSkill(HeroId ownerId)
+        public static ConfiguredHand CreateRedWithSkill(HeroId ownerId)
         {
             return Create(
                 ownerId, RedProfiles, RedUltimateProfile, null, RedSkillProfile, RedComponentSkillProfile,
                 RedDisplacementSkillProfile);
         }
 
-        public static PlaceholderMovementHand CreateBlueWithSkill(HeroId ownerId)
+        public static ConfiguredHand CreateBlueWithSkill(HeroId ownerId)
         {
             return Create(
                 ownerId, BlueProfiles, BlueUltimateProfile, null, BlueSkillProfile, BlueComponentSkillProfile,
@@ -367,13 +303,13 @@ namespace GuardsDigital.Core.Cards
         /// action matrix and a digest that must not move, and a repeat fixture needs exactly one action
         /// that can displace something and then ask to happen again.
         /// </summary>
-        public static PlaceholderMovementHand CreateRedWithRepeatSkill(HeroId ownerId)
+        public static ConfiguredHand CreateRedWithRepeatSkill(HeroId ownerId)
         {
             return Create(
                 ownerId, RedProfiles, RedUltimateProfile, null, repeatSkillProfile: RedRepeatSkillProfile);
         }
 
-        public static PlaceholderMovementHand CreateBlueWithRepeatSkill(HeroId ownerId)
+        public static ConfiguredHand CreateBlueWithRepeatSkill(HeroId ownerId)
         {
             return Create(
                 ownerId, BlueProfiles, BlueUltimateProfile, null, repeatSkillProfile: BlueRepeatSkillProfile);
@@ -388,7 +324,7 @@ namespace GuardsDigital.Core.Cards
         /// configuration that deals these hands knows both heroes and names them, which is exactly
         /// where a card's own text would name its subject.
         /// </summary>
-        public static PlaceholderMovementHand CreateRedWithCardStateSkill(
+        public static ConfiguredHand CreateRedWithCardStateSkill(
             HeroId ownerId, HeroId discardingHeroId)
         {
             return Create(
@@ -397,7 +333,7 @@ namespace GuardsDigital.Core.Cards
                 cardStateDiscardingHeroId: discardingHeroId);
         }
 
-        public static PlaceholderMovementHand CreateBlueWithCardStateSkill(
+        public static ConfiguredHand CreateBlueWithCardStateSkill(
             HeroId ownerId, HeroId discardingHeroId)
         {
             return Create(
@@ -413,40 +349,19 @@ namespace GuardsDigital.Core.Cards
         /// this card is the first to print a Radius icon: the value is content, so a fixture that
         /// measures the disk must be the only thing that can change it.
         /// </summary>
-        public static PlaceholderMovementHand CreateRedWithRadiusSkill(HeroId ownerId)
+        public static ConfiguredHand CreateRedWithRadiusSkill(HeroId ownerId)
         {
             return Create(
                 ownerId, RedProfiles, RedUltimateProfile, null, radiusSkillProfile: RedRadiusSkillProfile);
         }
 
-        public static PlaceholderMovementHand CreateBlueWithRadiusSkill(HeroId ownerId)
+        public static ConfiguredHand CreateBlueWithRadiusSkill(HeroId ownerId)
         {
             return Create(
                 ownerId, BlueProfiles, BlueUltimateProfile, null, radiusSkillProfile: BlueRadiusSkillProfile);
         }
 
-        internal PlaceholderMovementHandRestoreState CaptureRestoreState() =>
-            new PlaceholderMovementHandRestoreState(Definitions, Instances, DeckInstances);
-
-        internal static PlaceholderMovementHand Restore(PlaceholderMovementHandRestoreState state)
-        {
-            if (state == null) throw new ArgumentNullException(nameof(state));
-            var definitionArray = state.Definitions;
-            var instanceArray = state.Instances;
-            var deckArray = state.DeckInstances;
-            var allInstances = instanceArray.Concat(deckArray).ToArray();
-            if (definitionArray.Count == 0 || instanceArray.Count == 0 ||
-                allInstances.Select(instance => instance.OwnerId).Distinct().Count() != 1 ||
-                allInstances.Any(instance => !definitionArray.Any(definition =>
-                    definition.Reference.Equals(instance.DefinitionReference))))
-            {
-                throw new ArgumentException("A restored placeholder hand requires one owner's definition-backed cards.");
-            }
-
-            return new PlaceholderMovementHand(definitionArray, instanceArray, deckArray);
-        }
-
-        private static PlaceholderMovementHand Create(
+        private static ConfiguredHand Create(
             HeroId ownerId,
             IReadOnlyList<SyntheticCardProfile> profiles,
             SyntheticUltimateProfile ultimateProfile,
@@ -547,7 +462,7 @@ namespace GuardsDigital.Core.Cards
                     radiusSkillProfile.Id, instancePrefix, ownerId);
             }
 
-            return new PlaceholderMovementHand(
+            return new ConfiguredHand(
                 definitions.AsReadOnly(),
                 instances.AsReadOnly(),
                 deckInstances.AsReadOnly());

@@ -5,7 +5,7 @@ using System.Linq;
 namespace GuardsDigital.Core.Cards
 {
     /// <summary>
-    /// The complete restore inputs of a <see cref="PlaceholderMovementHand"/>.
+    /// The complete restore inputs of a <see cref="ConfiguredHand"/>.
     /// </summary>
     /// <remarks>
     /// This entry point had no defaulted parameter to remove. It carries a typed state
@@ -13,9 +13,9 @@ namespace GuardsDigital.Core.Cards
     /// construction site failing to compile - the enforcement this milestone establishes
     /// is against future additions, not only against the defaults present today.
     /// </remarks>
-    public sealed class PlaceholderMovementHandRestoreState
+    public sealed class ConfiguredHandRestoreState
     {
-        public PlaceholderMovementHandRestoreState(
+        public ConfiguredHandRestoreState(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             IEnumerable<CardInstance> deckInstances)
@@ -33,7 +33,7 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>
         /// Milestone 7.5. The cards p.6's setup left in the deck, kept apart from the dealt ones for
-        /// the reason <c>PlaceholderMovementHand.DeckInstances</c> gives: the split is a setup fact, and
+        /// the reason <c>ConfiguredHand.DeckInstances</c> gives: the split is a setup fact, and
         /// where each card is right now lives on the card.
         /// </summary>
         public IReadOnlyList<CardInstance> DeckInstances { get; }

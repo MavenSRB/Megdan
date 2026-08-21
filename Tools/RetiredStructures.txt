@@ -14,3 +14,4 @@ RISK-BUILD-001 | 6.1d | Retired build risk; same rule as RISK-PERF-001
 typed action strategies | 6.1h | The strategy-registry-era name for the action handler decomposition; current claims say direct backend composition
 recursive review-correction closure rule | 2026-08-13 governance amendment | The automatic verification-after-every-correction rule; current policy requires fresh verification only for findings that cannot close mechanically
 next milestone profile | 2026-08-13 governance amendment | The retired per-milestone model/reasoning profile assignment; current routing authorizes a milestone without governed model labels
+PlaceholderMovementHand | 8.4 | The synthetic five-card hand that stood in for verified hero content; the configured session deals WaspCardContent and the showcase cards live in SyntheticShowcaseHand

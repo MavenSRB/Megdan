@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
@@ -78,7 +79,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void BlueSentinel_ReplacesOnlyItsPrintedPrimaryAttack()
         {
-            var hand = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"));
+            var hand = SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"));
             var definition = hand.Definitions.Single(candidate =>
                 candidate.DisplayName == "TEST - Blue Sentinel");
 
@@ -117,7 +118,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheBlueHand_StillKeepsItsPrintedNonRangedAndRangedAttacks()
         {
-            var attacks = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+            var attacks = SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"))
                 .Definitions
                 .SelectMany(definition => definition.ActionDefinitions)
                 .Where(action => action.Kind == ActionKind.Attack &&
@@ -617,7 +618,7 @@ namespace GuardsDigital.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         private static EffectDefinition SentinelEffect() =>
-            PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"))
+            SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"))
                 .Definitions.Single(candidate => candidate.DisplayName == "TEST - Blue Sentinel")
                 .ActionDefinitions.Single(action => action.Id.Equals(SentinelSkill))
                 .EffectRoot;

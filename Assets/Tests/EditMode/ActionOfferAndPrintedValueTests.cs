@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
@@ -221,7 +222,7 @@ namespace GuardsDigital.Tests.EditMode
         public void PlaceholderHand_ContainsFiveVisibleTestCardsWithOnePrintedPrimaryAndSecondaryMovement()
         {
             var ownerId = new HeroId("hero");
-            var hand = PlaceholderMovementHand.Create(ownerId);
+            var hand = SyntheticShowcaseHand.Create(ownerId);
             var primaryKinds = new List<ActionKind>();
 
             Assert.That(hand.DealtDefinitions, Has.Count.EqualTo(5));

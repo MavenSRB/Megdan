@@ -99,7 +99,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ThePublishedRadius_RefusesACardThatPrintsNoIcon()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
             var handler = SyntheticEffectCapabilities.CreateCatalog()
                 .Load(SyntheticValueCapabilities.CardRadiusV1);
 

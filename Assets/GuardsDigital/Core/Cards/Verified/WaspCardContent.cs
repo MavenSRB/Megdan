@@ -173,6 +173,25 @@ namespace GuardsDigital.Core.Cards.Verified
                 .ToArray());
         }
 
+        /// <summary>
+        /// One seat's whole setup as a hand the configured match can be composed from: p.5's five in
+        /// hand, the thirteen its deck keeps, and the eighteen definitions both draw on.
+        ///
+        /// <para>Milestone 8.4. This is what replaced the synthetic hand in the configured session.
+        /// The definitions are shared between the two mirrored seats rather than copied - a mirror
+        /// deals one printed set twice, and two heroes owning instances of one definition is exactly
+        /// what <see cref="CardDefinitionReference"/> already means - so only the instance ids differ,
+        /// which is what <paramref name="instanceIdPrefix"/> is for.</para>
+        /// </summary>
+        public static ConfiguredHand CreateHand(HeroId ownerId, string instanceIdPrefix)
+        {
+            var cards = CreateDealtCards(ownerId, instanceIdPrefix);
+            return new ConfiguredHand(
+                DealtDefinitions,
+                cards.Where(card => StartingHand.Contains(card.DefinitionReference.DefinitionId)),
+                cards.Where(card => !StartingHand.Contains(card.DefinitionReference.DefinitionId)));
+        }
+
         private static CardDefinitionId Id(string cardId) =>
             new CardDefinitionId($"{ContentSetId}-{cardId}");
 

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -83,7 +84,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var participants = PlaceholderOneVsOneParticipants.Create();
             var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var phaseOneHand = PlaceholderMovementHand.Create(redHeroId);
+            var phaseOneHand = SyntheticShowcaseHand.Create(redHeroId);
 
             foreach (var card in phaseOneHand.Instances)
             {

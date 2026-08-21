@@ -135,8 +135,37 @@ namespace GuardsDigital.Tests.EditMode
                 map,
                 configuration.TieBreakerState);
 
+            redHeroId = setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red).HeroId;
+            return CreateSession(
+                configuration, map, WithAMeleeMinionBesideTheRedHero(map, setup, out target));
+        }
+
+        /// <summary>
+        /// Milestone 8.4. The verified mirror with an enemy minion standing beside the Red Wasp, so an
+        /// Attack offer in this position provably has a target under milestone 7.8a1's rule. That is
+        /// what lets the card-text rule be observed on its own: an Attack greyed here cannot have been
+        /// greyed for having nobody to hit.
+        /// </summary>
+        public static MatchSession CreateVerifiedMirrorWithAnAdjacentEnemyMinion(out MinionId target)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            return CreateSession(
+                configuration, map, WithAMeleeMinionBesideTheRedHero(map, setup, out target));
+        }
+
+        /// <summary>One Blue melee minion moved to a free space beside the Red hero.</summary>
+        private static QuickGameSetupState WithAMeleeMinionBesideTheRedHero(
+            BoardMapDefinition map, QuickGameSetupState setup, out MinionId target)
+        {
             var redHero = setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
-            redHeroId = redHero.HeroId;
             var occupied = new HashSet<HexCoordinate>(
                 setup.Heroes.Select(hero => hero.Coordinate)
                     .Concat(setup.Minions.Select(minion => minion.Coordinate)));
@@ -150,7 +179,9 @@ namespace GuardsDigital.Tests.EditMode
                 minion.TeamSide == TeamSide.Blue && minion.MinionType == StandardMinionType.Melee);
             target = moved.MinionId;
             var relocatedTarget = target;
-            var relocatedBeside = beside;
+            var besideSpaceId = map.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable &&
+                space.Coordinate.Equals(beside)).Id;
             var minions = setup.Minions
                 .Select(minion => minion.MinionId.Equals(relocatedTarget)
                     ? new QuickGameMinionSetupState(
@@ -159,28 +190,14 @@ namespace GuardsDigital.Tests.EditMode
                         minion.TeamSide,
                         minion.MinionType,
                         minion.SpawnPoint,
-                        map.Spaces.Single(space =>
-                            space.Kind == BoardMapSpaceKind.Playable &&
-                            space.Coordinate.Equals(relocatedBeside)).Id is var spaceId
-                            ? new ConfiguredSpaceReference(map.Id, spaceId)
-                            : throw new InvalidOperationException(),
-                        relocatedBeside)
+                        new ConfiguredSpaceReference(map.Id, besideSpaceId),
+                        beside)
                     : minion)
                 .ToArray();
-            var relocatedSetup = new QuickGameSetupState(
+
+            return new QuickGameSetupState(
                 setup.SelectedMap, setup.WaveCount, setup.TieBreakerState, setup.Teams, setup.Heroes,
                 minions);
-
-            var scenario = new InitialScenarioDescription(
-                configuration.Participants,
-                configuration.CardDefinitions,
-                configuration.CardInstances,
-                configuration.TieBreakerState,
-                map.Reference,
-                relocatedSetup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
-                Array.Empty<ObstacleOccupancy>());
-            return new MatchSession(
-                new MatchSessionInitialState(scenario, relocatedSetup, new[] { map }));
         }
 
         /// <summary>
@@ -226,6 +243,49 @@ namespace GuardsDigital.Tests.EditMode
         public static MatchSession CreateAdjacentConfiguredSession()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroBesideTheRedOne(map, setup),
+                setup.Minions));
+        }
+
+        /// <summary>
+        /// The configured match milestone 8.4 made verified: two mirrored Wasps on the official map,
+        /// dealt rulebook p.5's starting five with the remaining thirteen in their decks, with p.5's
+        /// coin flip replaced by an explicit side so a fixture can play it deterministically.
+        /// </summary>
+        public static MatchSession CreateVerifiedMirrorSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            return CreateSession(configuration, map, setup);
+        }
+
+        /// <summary>
+        /// A showcase attacker beside a verified defender: the same adjacent placement
+        /// <see cref="CreateAdjacentConfiguredSession"/> builds, with Wasp's cards in the Blue hand so
+        /// a verified secondary Defense can answer a real attack. Milestone 8.4.
+        /// </summary>
+        public static MatchSession CreateVerifiedDefenderSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForVerifiedDefenseFixture(
+                TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

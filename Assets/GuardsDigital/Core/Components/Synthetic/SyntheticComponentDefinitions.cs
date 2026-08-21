@@ -9,8 +9,10 @@ namespace GuardsDigital.Core.Components.Synthetic
     /// against.
     ///
     /// It lives in production Core rather than a test assembly for the same reason
-    /// <c>PlaceholderMovementHand</c> and <c>SyntheticEffectCapabilities</c> do: the configured session
-    /// composes it, so it must be reachable from the composition root.
+    /// <c>SyntheticShowcaseHand</c> and <c>SyntheticEffectCapabilities</c> do: a configured session
+    /// composes it, so it must be reachable from the composition root. Milestone 8.4 took the verified
+    /// hero content out of that sentence - the configured match deals Wasp now - and what remains is
+    /// the fixture reach these bounded sets always had.
     ///
     /// The supplies are deliberately tiny. Rulebook p.18's reclamation rule only exists because a supply
     /// can run out, so a fixture has to be able to exhaust one without placing a realistic number of

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -80,8 +81,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SyntheticHands_ProvideUnequalInitiativesAndCrossHeroTieFixtures()
         {
-            var redHand = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
-            var blueHand = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"));
+            var redHand = SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var blueHand = SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"));
 
             Assert.That(redHand.DealtDefinitions.Select(definition => definition.Initiative.Value),
                 Is.EqualTo(new[] { 13, 11, 9, 7, 5 }));
@@ -122,8 +123,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SyntheticHands_MatchApprovedFiveCardValueAndActionMatrix()
         {
-            var redHand = PlaceholderMovementHand.CreateRed(new HeroId("red-synthetic-hero"));
-            var blueHand = PlaceholderMovementHand.CreateBlue(new HeroId("blue-synthetic-hero"));
+            var redHand = SyntheticShowcaseHand.CreateRed(new HeroId("red-synthetic-hero"));
+            var blueHand = SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"));
             AssertSyntheticMatrix(
                 redHand,
                 new[] { "Red Needle", "Red Bulwark", "Red Lancer", "Red Pursuit", "Red Bombard" },
@@ -354,7 +355,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static void AssertSyntheticMatrix(
-            PlaceholderMovementHand hand,
+            ConfiguredHand hand,
             string[] names,
             int[] initiatives,
             ActionKind[] primaryKinds,
