@@ -31,11 +31,161 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
+    /// One printed value as the tray draws it: the compact token its channel is shown as, the amount,
+    /// and the words for both.
+    ///
+    /// Milestone 8.5a. It is a formatting of one <see cref="PrintedValueDefinition"/> and nothing more -
+    /// never a modified total, never a sum across actions - because the tray draws the card, and what a
+    /// hero's items raise is the hero's business.
+    /// </summary>
+    public sealed class PrintedValueChipViewModel
+    {
+        public PrintedValueChipViewModel(PrintedValueChannel channel, int amount)
+        {
+            if (channel == PrintedValueChannel.None)
+            {
+                throw new ArgumentException("A printed value names its channel.", nameof(channel));
+            }
+
+            Channel = channel;
+            Amount = amount;
+            Token = MatchHudTheme.ChannelToken(channel);
+            AmountLabel = amount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            Label = $"{Token} {AmountLabel}";
+            AssistiveLabel = $"{MatchHudTheme.ChannelName(channel)} {AmountLabel}";
+        }
+
+        public PrintedValueChannel Channel { get; }
+        public int Amount { get; }
+
+        /// <summary>The three-letter token, which is what the card shows beside the number.</summary>
+        public string Token { get; }
+
+        public string AmountLabel { get; }
+
+        /// <summary>`RAD 3` - the token and the amount as one readable pair.</summary>
+        public string Label { get; }
+
+        /// <summary>`Radius 3` - the same pair in words, for the hover and assistive reading.</summary>
+        public string AssistiveLabel { get; }
+    }
+
+    /// <summary>
+    /// The printed face of one card, read into the four homes the milestone 8.5a mockup gives it:
+    /// Initiative on its own flag, the primary action's own numeric value on the primary band, the p.9
+    /// Range or Radius icon on the spatial badge, and every value belonging to an alternate action in
+    /// the secondary strip - with the words the face prints below them.
+    ///
+    /// <para><b>Every grouping is typed.</b> Which region a value belongs to is decided by the action it
+    /// is printed on and by its <see cref="PrintedValueChannel"/>, never by the card's name and never by
+    /// reading the printed sentence. That is the same rule the rest of this project keeps at the card
+    /// seam: this build has no printed-text parser, and a presenter that grew one would be the first.</para>
+    ///
+    /// <para><b>It says nothing the definition does not.</b> A face that prints no rules text, and a
+    /// synthetic fixture with no source face at all, are two different absences and are drawn as two
+    /// different explicit statements rather than as invented copy or as an empty rectangle.</para>
+    /// </summary>
+    public sealed class TrayCardFaceViewModel
+    {
+        public TrayCardFaceViewModel(
+            PrintedValueChipViewModel initiative,
+            string primaryActionLabel,
+            PrintedValueChipViewModel primaryValue,
+            PrintedValueChipViewModel spatialValue,
+            IEnumerable<PrintedValueChipViewModel> secondaryValues,
+            CardSourceContentKind printedTextKind,
+            string printedText)
+        {
+            Initiative = initiative;
+            PrimaryActionLabel = string.IsNullOrWhiteSpace(primaryActionLabel)
+                ? throw new ArgumentException(
+                    "A tray card states what its primary action is, or that it has none.",
+                    nameof(primaryActionLabel))
+                : primaryActionLabel;
+            PrimaryValue = primaryValue;
+            SpatialValue = spatialValue;
+            SecondaryValues = Array.AsReadOnly((secondaryValues ??
+                Enumerable.Empty<PrintedValueChipViewModel>()).ToArray());
+            PrintedTextKind = printedTextKind;
+            PrintedText = printedText ?? string.Empty;
+
+            // The two absences, each stated as itself. "This face prints none" is a fact about a card
+            // that was read; "no source face" is a fact about a fixture that was invented. Collapsing
+            // them would let a synthetic card in a Play Mode scene read as a verified card that happens
+            // to be silent.
+            EmptyTextLabel = printedTextKind == CardSourceContentKind.PrintsNoText
+                ? "THIS FACE PRINTS NO RULES TEXT"
+                : printedTextKind == CardSourceContentKind.Transcribed
+                    ? string.Empty
+                    : "NO SOURCE FACE";
+
+            var parts = new List<string>();
+            if (Initiative != null)
+            {
+                parts.Add(Initiative.Label);
+            }
+
+            parts.Add(PrimaryActionLabel);
+            if (PrimaryValue != null)
+            {
+                parts.Add(PrimaryValue.Label);
+            }
+
+            if (SpatialValue != null)
+            {
+                parts.Add(SpatialValue.Label);
+            }
+
+            foreach (var secondary in SecondaryValues)
+            {
+                parts.Add(secondary.Label);
+            }
+
+            ValueLine = string.Join(" · ", parts);
+        }
+
+        /// <summary>The card's printed Initiative, or null for p.16's Ultimate, which prints none.</summary>
+        public PrintedValueChipViewModel Initiative { get; }
+
+        /// <summary>
+        /// What the card's primary action is, in typed terms: its kind, p.15's Basic supertype where the
+        /// definition states one, and the one qualifier the type carries - p.13's Ranged classification
+        /// on an Attack, p.14's Block on a Defense.
+        /// </summary>
+        public string PrimaryActionLabel { get; }
+
+        /// <summary>The primary action's own combat value, or null when it prints none.</summary>
+        public PrintedValueChipViewModel PrimaryValue { get; }
+
+        /// <summary>p.9's one Range or Radius icon, or null on a face that prints neither.</summary>
+        public PrintedValueChipViewModel SpatialValue { get; }
+
+        /// <summary>Every printed value belonging to an action that is not the primary one.</summary>
+        public IReadOnlyList<PrintedValueChipViewModel> SecondaryValues { get; }
+
+        public CardSourceContentKind PrintedTextKind { get; }
+
+        /// <summary>The transcribed words, verbatim, and empty for either absence.</summary>
+        public string PrintedText { get; }
+
+        /// <summary>What the rules panel says instead of words, and empty when there are words.</summary>
+        public string EmptyTextLabel { get; }
+
+        /// <summary>
+        /// The whole face as one line, in the same order the regions are drawn in. It is the hover and
+        /// assistive reading of a card whose values are spatially separated on screen.
+        /// </summary>
+        public string ValueLine { get; }
+    }
+
+    /// <summary>
     /// One card of the viewed hero's current round, as the tray draws it.
     ///
     /// It carries the card's authoritative colour rather than a swatch chosen here, and the colour's own
     /// name beside it, so the button is never colour alone. <see cref="PlayedTurnIndex"/> is the turn the
     /// round's assignment history recorded, and is zero for every group but <see cref="TrayCardGroup.Played"/>.
+    /// <see cref="Face"/> is milestone 8.5a's: the printed face itself, grouped into the regions the card
+    /// draws it in.
     /// </summary>
     public sealed class TrayCardViewModel
     {
@@ -43,7 +193,7 @@ namespace GuardsDigital.Presentation.Match
             CardInstanceId cardInstanceId,
             string displayName,
             CardColor color,
-            string valueLine,
+            TrayCardFaceViewModel face,
             TrayCardGroup group,
             int playedTurnIndex,
             bool isSelectable,
@@ -69,7 +219,7 @@ namespace GuardsDigital.Presentation.Match
             CardInstanceId = cardInstanceId;
             DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
             Color = color;
-            ValueLine = valueLine ?? string.Empty;
+            Face = face ?? throw new ArgumentNullException(nameof(face));
             Group = group;
             PlayedTurnIndex = playedTurnIndex;
             IsSelectable = isSelectable;
@@ -80,6 +230,7 @@ namespace GuardsDigital.Presentation.Match
                 : group == TrayCardGroup.Discarded
                     ? "DISCARDED"
                     : "AVAILABLE";
+            AssistiveLabel = $"{DisplayName} - {ColorName} - {Face.ValueLine} - {HistoryLabel}";
         }
 
         public CardInstanceId CardInstanceId { get; }
@@ -87,8 +238,18 @@ namespace GuardsDigital.Presentation.Match
         public CardColor Color { get; }
         public string ColorName { get; }
 
-        /// <summary>The card's printed Initiative and action values, compactly.</summary>
-        public string ValueLine { get; }
+        /// <summary>Milestone 8.5a: the printed face, in the regions the card draws it in.</summary>
+        public TrayCardFaceViewModel Face { get; }
+
+        /// <summary>
+        /// The card's printed Initiative and action values as one line. It is the assistive and hover
+        /// reading of <see cref="Face"/>, which is the same content spread across the card's regions -
+        /// one grouping, read twice, so the two can never disagree.
+        /// </summary>
+        public string ValueLine => Face.ValueLine;
+
+        /// <summary>The whole card as one line: name, colour, printed values, and lifecycle.</summary>
+        public string AssistiveLabel { get; }
 
         public TrayCardGroup Group { get; }
         public int PlayedTurnIndex { get; }
@@ -139,25 +300,47 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class HeroTurnSlotViewModel
     {
-        public HeroTurnSlotViewModel(int turnIndex, CardColor color, bool isOccupied)
+        public HeroTurnSlotViewModel(
+            int turnIndex,
+            CardColor color,
+            bool isOccupied,
+            TrayCardViewModel playedCard = null)
         {
             if (turnIndex < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(turnIndex));
             }
 
+            if (isOccupied != (playedCard != null))
+            {
+                throw new ArgumentException(
+                    "An occupied slot names the card played on its turn, and only an occupied one does.",
+                    nameof(playedCard));
+            }
+
             TurnIndex = turnIndex;
             Color = color;
             IsOccupied = isOccupied;
+            PlayedCard = playedCard;
             AssistiveLabel = isOccupied
                 ? $"Turn {turnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}: " +
-                    $"{MatchHudTheme.ColorName(color)} card"
+                    $"{MatchHudTheme.ColorName(color)} card - {playedCard.DisplayName}"
                 : $"Turn {turnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}: empty";
         }
 
         public int TurnIndex { get; }
         public CardColor Color { get; }
         public bool IsOccupied { get; }
+
+        /// <summary>
+        /// The card this hero played on that turn, as the tray draws it, or null for an empty slot.
+        ///
+        /// Milestone 8.5a, by the user's 2026-08-21 decision: resting the pointer on an occupied slot
+        /// reveals that card's whole printed face. The slot is the only place a round's earlier turns
+        /// stay visible once the tray has moved on, and until this it carried a swatch and a word.
+        /// </summary>
+        public TrayCardViewModel PlayedCard { get; }
+
         public string AssistiveLabel { get; }
     }
 
@@ -408,50 +591,198 @@ namespace GuardsDigital.Presentation.Match
                         value.Id.Equals(assignment.CardInstanceId.Value));
                 slots.Add(card == null
                     ? new HeroTurnSlotViewModel(turnIndex, CardColor.None, false)
-                    : new HeroTurnSlotViewModel(turnIndex, ColorOf(projection, card), true));
+                    : new HeroTurnSlotViewModel(
+                        turnIndex,
+                        ColorOf(projection, card),
+                        true,
+                        TrayCard(projection, card, TrayCardGroup.Played, turnIndex, false, false)));
             }
 
             return Array.AsReadOnly(slots.ToArray());
         }
 
         /// <summary>
-        /// The card's printed Initiative and the printed icons its actions carry, compactly, in the one
-        /// channel order the whole HUD reads values in. It is definition content formatted, never a
-        /// modified total: a hero's item bonuses raise a card's totals, and this line is the card.
+        /// One card instance as a tray card, built the one way both surfaces that draw a card build one.
+        ///
+        /// Milestone 8.5a added the second surface - a hero rail's turn slot reveals the card played on
+        /// its turn - so this joined <see cref="ColorOf"/> and <see cref="PlayedTurnIndex"/> as a reading
+        /// this class states once. Two constructions of the same card that drifted apart would show a
+        /// player two different faces for one card and neither would be obviously wrong.
         /// </summary>
-        public static string ValueLine(CardDefinition definition)
+        public static TrayCardViewModel TrayCard(
+            MatchSessionProjection projection,
+            CardInstance card,
+            TrayCardGroup group,
+            int playedTurnIndex,
+            bool isSelectable,
+            bool isSelected)
+        {
+            if (projection == null) throw new ArgumentNullException(nameof(projection));
+            if (card == null) throw new ArgumentNullException(nameof(card));
+            var definition = projection.Definitions
+                .FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference));
+            return new TrayCardViewModel(
+                card.Id,
+                definition?.DisplayName ?? card.Id.Value,
+                definition?.Progression.Color ?? CardColor.None,
+                ReadFace(definition),
+                group,
+                playedTurnIndex,
+                isSelectable,
+                isSelected);
+        }
+
+        /// <summary>
+        /// Milestone 8.5a: one card definition read into the four value homes and the printed words its
+        /// tray card draws, from typed content alone.
+        ///
+        /// <para>It is definition content formatted, never a modified total: a hero's item bonuses raise
+        /// a card's totals, and this face is the card. A definition the projection does not carry - which
+        /// only happens for an instance whose content was never registered - reads as a face that states
+        /// nothing, rather than faulting a whole tray over one card.</para>
+        /// </summary>
+        public static TrayCardFaceViewModel ReadFace(CardDefinition definition)
         {
             if (definition == null)
             {
-                return string.Empty;
+                return new TrayCardFaceViewModel(
+                    null,
+                    "NO CARD DEFINITION",
+                    null,
+                    null,
+                    Array.Empty<PrintedValueChipViewModel>(),
+                    CardSourceContentKind.NotSourced,
+                    string.Empty);
             }
 
-            var parts = new List<string>
-            {
-                $"INIT {definition.Initiative.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
-            };
-            foreach (var channel in MatchHudTheme.ChannelOrder)
-            {
-                if (channel == PrintedValueChannel.Initiative)
-                {
-                    continue;
-                }
+            var primary = PrimaryAction(definition);
+            var spatial = SpatialValue(definition, primary);
+            return new TrayCardFaceViewModel(
+                definition.Initiative.IsDefined
+                    ? new PrintedValueChipViewModel(
+                        PrintedValueChannel.Initiative, definition.Initiative.Value)
+                    : null,
+                PrimaryActionLabel(definition, primary),
+                PrimaryValue(primary),
+                spatial,
+                SecondaryValues(definition),
+                definition.SourceContent?.Kind ?? CardSourceContentKind.NotSourced,
+                definition.SourceContent?.PrintedText ?? string.Empty);
+        }
 
-                var amounts = definition.ActionDefinitions
-                    .SelectMany(action => action.BaseValues)
-                    .Where(value => value.Channel == channel)
-                    .Select(value => value.Amount)
-                    .Distinct()
-                    .OrderBy(amount => amount)
-                    .ToArray();
-                foreach (var amount in amounts)
+        /// <summary>
+        /// The action rulebook p.9 prints as the card's primary. It is read from
+        /// <see cref="ActionDefinitionOrigin"/>, which is the only place a definition says so.
+        /// </summary>
+        private static ActionDefinition PrimaryAction(CardDefinition definition) =>
+            definition.ActionDefinitions.FirstOrDefault(action =>
+                action.Origin == ActionDefinitionOrigin.PrintedPrimary);
+
+        /// <summary>
+        /// The primary action's own numeric value - its Attack or Defense number - which is the value
+        /// the action's own algorithm consumes. p.9's Range/Radius icon sits beside a primary action
+        /// without being one of its numbers, so it is excluded here and drawn on the spatial badge.
+        /// </summary>
+        private static PrintedValueChipViewModel PrimaryValue(ActionDefinition primary) =>
+            primary == null
+                ? null
+                : Chip(primary.BaseValues, channel =>
+                    channel != PrintedValueChannel.Range && channel != PrintedValueChannel.Radius);
+
+        /// <summary>
+        /// p.9's one Range or Radius icon: "Some primary actions have a Range or Radius icon and a value
+        /// on the right side of the card". It rides the primary action on every card that has one, and
+        /// p.16's Ultimate - which is not an action at all - carries its own on its permanent rule.
+        /// </summary>
+        private static PrintedValueChipViewModel SpatialValue(
+            CardDefinition definition, ActionDefinition primary)
+        {
+            var printed = primary == null
+                ? (IEnumerable<PrintedValueDefinition>)definition.UltimateRule?.PrintedValues
+                : primary.BaseValues;
+            return Chip(
+                printed,
+                channel => channel == PrintedValueChannel.Range ||
+                    channel == PrintedValueChannel.Radius);
+        }
+
+        /// <summary>
+        /// The first printed value whose channel the caller is asking about, as a chip, or null when the
+        /// face prints none. <see cref="PrintedValueDefinition"/> is a value type, so an absence is asked
+        /// for as one rather than read out of a default instance whose channel would be
+        /// <see cref="PrintedValueChannel.None"/>.
+        /// </summary>
+        private static PrintedValueChipViewModel Chip(
+            IEnumerable<PrintedValueDefinition> printedValues,
+            Func<PrintedValueChannel, bool> wanted)
+        {
+            if (printedValues == null)
+            {
+                return null;
+            }
+
+            foreach (var value in printedValues)
+            {
+                if (value.Channel != PrintedValueChannel.None && wanted(value.Channel))
                 {
-                    parts.Add($"{MatchHudTheme.ChannelToken(channel)} " +
-                        amount.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    return new PrintedValueChipViewModel(value.Channel, value.Amount);
                 }
             }
 
-            return string.Join(" · ", parts);
+            return null;
+        }
+
+        /// <summary>
+        /// Every printed value belonging to an action that is not the primary one - p.9's secondary
+        /// Movement and p.14's secondary Defense - in the one channel order the whole HUD reads values
+        /// in.
+        ///
+        /// Only actions the card itself prints qualify. A general-rule secondary and a text-granted
+        /// action are offered to a hero holding the card rather than printed on its face, so putting
+        /// their values in a printed-value region would be showing a number the card does not have.
+        /// </summary>
+        private static IEnumerable<PrintedValueChipViewModel> SecondaryValues(CardDefinition definition) =>
+            definition.ActionDefinitions
+                .Where(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedSecondary ||
+                    action.Origin == ActionDefinitionOrigin.Reaction)
+                .SelectMany(action => action.BaseValues)
+                .OrderBy(value => MatchHudTheme.ChannelOrder.ToList().IndexOf(value.Channel))
+                .Select(value => new PrintedValueChipViewModel(value.Channel, value.Amount))
+                .ToArray();
+
+        /// <summary>
+        /// What the card's primary action is, in words a player reads off the printed face: p.15's Basic
+        /// supertype where the definition states one, the action's kind, and the one qualifier its own
+        /// type carries.
+        ///
+        /// The qualifiers are typed facts and only typed facts. p.13's Ranged classification lives on
+        /// <see cref="ActionDefinition.AttackRange"/> and p.14's Block on
+        /// <see cref="ActionDefinition.DefenseResolution"/>; anything else a face happens to say about
+        /// itself is in its printed words, where the player can read it, and is never inferred here.
+        /// </summary>
+        private static string PrimaryActionLabel(CardDefinition definition, ActionDefinition primary)
+        {
+            if (primary == null)
+            {
+                // p.16's Ultimate is the one card with no action at all: it is placed beside the
+                // dashboard and its ability is always in effect, so naming its supertype is naming the
+                // whole of what it is.
+                return definition.Progression.IsUltimate ? "ULTIMATE" : "NO PRIMARY ACTION";
+            }
+
+            var kind = primary.Kind.ToString().ToUpperInvariant();
+            if (primary.Kind == ActionKind.Attack && primary.AttackRange == AttackRangeKind.Ranged)
+            {
+                kind += " · RANGED";
+            }
+            else if (primary.Kind == ActionKind.Defense &&
+                primary.DefenseResolution == PrintedDefenseResolution.Block)
+            {
+                kind += " · BLOCK";
+            }
+
+            return definition.Progression.IsBasic ? "BASIC " + kind : kind;
         }
     }
 }

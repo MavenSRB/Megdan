@@ -70,6 +70,58 @@ namespace GuardsDigital.Presentation.Match
                 : PrimaryText;
 
         /// <summary>
+        /// A plate drawn on a card's own face - the Initiative flag, the primary-action band, the
+        /// secondary-value strip - as a shift of <see cref="Face"/> away from that face's own
+        /// <see cref="FaceText"/>.
+        ///
+        /// Milestone 8.5a. The direction is the point. A plate built by darkening every colour reads
+        /// well on Red, Green and Blue and destroys Gold and Silver, whose text is near-black: the
+        /// darker the plate, the closer it gets to its own letters. Moving away from the text colour
+        /// instead can only raise the plate's contrast against it, whatever the colour and whatever the
+        /// strength, which is why the rule is stated as a direction rather than as ten hand-picked
+        /// swatches. <c>MatchHudPresentationTests</c> measures the resulting ratio for every printed
+        /// colour rather than trusting the construction.
+        /// </summary>
+        public static Color FacePlate(CardColor color, float strength)
+        {
+            var face = Face(color);
+            var awayFromText = FaceText(color) == PrimaryText ? Color.black : Color.white;
+            var plate = Color.Lerp(face, awayFromText, Mathf.Clamp01(strength));
+            return new Color(plate.r, plate.g, plate.b, 1f);
+        }
+
+        /// <summary>The card's own name band and secondary-value strip: a plate one step off the face.</summary>
+        public static Color FaceBand(CardColor color) => FacePlate(color, 0.20f);
+
+        /// <summary>
+        /// The Initiative flag and the primary-action band: the strongest plate, because those two are
+        /// what a player scans a five-card row for.
+        /// </summary>
+        public static Color FaceFlag(CardColor color) => FacePlate(color, 0.42f);
+
+        /// <summary>
+        /// The card's rules panel, which is a light face on every colour exactly as a printed card is.
+        /// The words a card prints are the one thing on it that is never colour-coded.
+        /// </summary>
+        public static readonly Color RulesPanelBackground = new Color(0.925f, 0.918f, 0.898f, 1f);
+
+        public static readonly Color RulesPanelText = new Color(0.106f, 0.110f, 0.122f, 1f);
+
+        /// <summary>The muted ink the rules panel states an absence in, distinct from printed words.</summary>
+        public static readonly Color RulesPanelMutedText = new Color(0.392f, 0.400f, 0.416f, 1f);
+
+        /// <summary>
+        /// The card's colour, darkened until it reads as small text on <see cref="RulesPanelBackground"/>.
+        /// The p.9 Range/Radius badge wears it, so the badge belongs to its card without becoming the
+        /// one thing on the panel that cannot be read.
+        /// </summary>
+        public static Color RulesPanelAccent(CardColor color)
+        {
+            var accent = Color.Lerp(Face(color), Color.black, 0.45f);
+            return new Color(accent.r, accent.g, accent.b, 1f);
+        }
+
+        /// <summary>
         /// The printed colour's own name. A card with no printed colour - milestone 7.3's Ultimate, and
         /// a definition that states no progression at all - says so rather than being given a sixth
         /// colour word it does not have.

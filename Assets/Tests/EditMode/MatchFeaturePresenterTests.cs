@@ -49,13 +49,14 @@ namespace GuardsDigital.Tests.EditMode
 
             // Milestone 5.1c's 1280 is still the width the Defense row was sized against. The height is
             // 360 as a floor rather than a ceiling since milestone 7.8a: p.15's Upgrade a Card can ask
-            // six options at once, and on a tall screen the tray may take a third of it rather than
-            // putting a row of a mandatory choice behind a scrollbar. The tray sizes to its content, so
-            // this is the region it may use and not the region it does use.
+            // six options at once, and on a tall screen the tray takes a share of it rather than
+            // putting a row of a mandatory choice behind a scrollbar. Milestone 8.5a raised that share
+            // to 0.46 for the printed rules text a tray card now carries. The tray sizes to its
+            // content, so this is the region it may use and not the region it does use.
             Assert.That(panel.x, Is.EqualTo(12f));
             Assert.That(panel.width, Is.EqualTo(1280f));
             Assert.That(panel.height, Is.GreaterThanOrEqualTo(360f));
-            Assert.That(panel.height, Is.EqualTo(1152f * 0.34f).Within(0.01f));
+            Assert.That(panel.height, Is.EqualTo(1152f * 0.46f).Within(0.01f));
             Assert.That(panel.yMax, Is.EqualTo(1152f - 12f).Within(0.01f));
             Assert.That(panel.yMin,
                 Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));

@@ -511,8 +511,15 @@ namespace GuardsDigital.Presentation.Match
         /// row of a mandatory choice behind a scrollbar with most of the screen empty above it. So 360
         /// is the floor rather than the ceiling, and the ceiling follows the viewport. The tray still
         /// sizes to its own content, so nothing here makes a small tray larger.
+        ///
+        /// Milestone 8.5a raised the share from a third to 0.46. A tray card now carries its face's
+        /// whole printed text, and the longest of Wasp's starting five - Static Barrier's two sentences
+        /// about radius - needs six wrapped lines that a third of a 1080-line viewport could not hold
+        /// without putting a row of five cards behind a scrollbar. The board keeps well over half the
+        /// screen at every validated viewport, and the small-viewport case is unaffected: below roughly
+        /// 860 lines the floor and the space under the status strip still decide the height.
         /// </summary>
-        private const float CardPanelTallViewportShare = 0.34f;
+        private const float CardPanelTallViewportShare = 0.46f;
 
         public static Rect CalculateCardPanelRect(float viewportWidth, float viewportHeight)
         {

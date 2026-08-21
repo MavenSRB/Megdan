@@ -133,11 +133,12 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(Mathf.Min(1280f, Mathf.Max(0f, Screen.width - 24f))).Within(0.01f));
             // Milestone 7.8a: the tray also clears the standing status strip, so the two never claim
             // the same pixels and neither guaranteed surface can hide behind the other. Its height
-            // bound is 360 or a third of a tall viewport, whichever is larger, and never more than the
-            // space left below the strip.
+            // bound is 360 or a share of a tall viewport, whichever is larger, and never more than the
+            // space left below the strip. Milestone 8.5a raised that share to 0.46, because a tray card
+            // now carries its face's whole printed text.
             Assert.That(panel.height,
                 Is.EqualTo(Mathf.Min(
-                    Mathf.Max(360f, Screen.height * 0.34f),
+                    Mathf.Max(360f, Screen.height * 0.46f),
                     Mathf.Max(0f, Screen.height - 24f - ConfiguredMatchHudRenderer.StatusBarHeight)))
                     .Within(0.01f));
             Assert.That(panel.yMin,
@@ -254,6 +255,124 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.RoundView.HasExclusiveDecision, Is.True,
                 "A paused transition is a decision the tray steps aside for.");
             yield return Capture("tmp/milestone-7-8a-leveling-prompt.png");
+        }
+
+        /// <summary>
+        /// Milestone 8.5a's targeted Game View inspection, and the running-scene proof behind it: the
+        /// tray draws Wasp's verified starting five with each face's own words, in the five regions the
+        /// approved mockup gives them, and every card lands inside the tray it is drawn in.
+        ///
+        /// It runs against the saved scene rather than a fixture because the layout is what is being
+        /// checked, and only a live panel resolves one. The Editor tier proves the grouping is the
+        /// definition's; this proves the cards fit.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_DrawsTheVerifiedCardFacesInTheTrayAndCapturesThemForInspection()
+        {
+            yield return LoadScene();
+            var root = Root();
+            var hud = root.Hud;
+            // Two frames, so the panel has laid out and every card has a resolved rectangle.
+            yield return null;
+            yield return null;
+
+            var cards = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-card-choice")
+                .ToArray();
+            Assert.That(cards, Has.Length.EqualTo(5),
+                "The viewed hero's whole current round is rulebook p.5's starting five.");
+
+            foreach (var card in cards)
+            {
+                foreach (var region in new[]
+                    {
+                        "gd-card-initiative", "gd-card-name-band", "gd-card-secondary-values",
+                        "gd-card-primary-action", "gd-card-rules", "gd-card-history"
+                    })
+                {
+                    Assert.That(
+                        Descendants(card).Count(element => element.name == region), Is.EqualTo(1),
+                        $"Each tray card draws exactly one {region}.");
+                }
+            }
+
+            var printed = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-card-printed-text")
+                .OfType<UnityEngine.UIElements.Label>()
+                .Select(label => label.text)
+                .ToArray();
+            var transcriptions = root.Runtime.Cards
+                .Where(card => card.State.Location == CardLocation.Hand &&
+                    card.OwnerId.Equals(root.Runtime.ViewedHeroId))
+                .Select(card => root.Runtime.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .SourceContent.PrintedText)
+                .ToArray();
+            Assert.That(printed, Is.EquivalentTo(transcriptions),
+                "and the words on screen are the verified transcriptions, whole and unabbreviated.");
+
+            var tray = Named(hud.RootElement, "gd-tray-region");
+            // The vertical bound is only claimed where the viewport is tall enough to hold a card plus
+            // the tray's own chrome. A 480-line Game View cannot, and the tray scrolls there rather than
+            // clipping; milestone 8.5a's acceptance is stated at the supported Windows validation
+            // resolution, which is where the targeted non-batch inspection runs.
+            var trayHoldsACard =
+                hud.CardPanelRect.height >= DirectorHandsUnityView.CardMinimumHeight + 140f;
+            foreach (var card in cards)
+            {
+                var bounds = card.worldBound;
+                Assert.That(bounds.width, Is.GreaterThan(0f), "Every card resolved a real rectangle.");
+                Assert.That(bounds.xMin, Is.GreaterThanOrEqualTo(tray.worldBound.xMin - 0.5f));
+                Assert.That(bounds.xMax, Is.LessThanOrEqualTo(tray.worldBound.xMax + 0.5f),
+                    "and no card runs out through the side of the tray.");
+                if (trayHoldsACard)
+                {
+                    Assert.That(bounds.yMin, Is.GreaterThanOrEqualTo(tray.worldBound.yMin - 0.5f));
+                    Assert.That(bounds.yMax, Is.LessThanOrEqualTo(tray.worldBound.yMax + 0.5f),
+                        "and none is cut off at its foot or pushed behind a scrollbar - the tray's " +
+                        "height bound has to hold the tallest verified face's wrapped rules text.");
+                }
+            }
+
+            // One row: the cards share a top edge. Checked only where the viewport is actually wide
+            // enough for five of them, so a cramped Game View reports nothing rather than a false
+            // failure - the fixed-resolution arithmetic is asserted in MatchHudPresentationTests.
+            var required = (5f * (DirectorHandsUnityView.CardWidth + DirectorHandsUnityView.CardGap)) + 30f;
+            if (hud.CardPanelRect.width >= required)
+            {
+                Assert.That(cards.Select(card => Mathf.Round(card.worldBound.yMin)).Distinct().Count(),
+                    Is.EqualTo(1),
+                    "Five cards of one hand are one readable row, never a wrapped second line.");
+            }
+
+            // Milestone 8.5a, by the user's 2026-08-21 decision: the board framing reserves a share of
+            // the viewport's width along the left edge, where the tray stands, instead of centring the
+            // map in the whole viewport.
+            //
+            // Stated as the asymmetry it produces rather than as a pixel count, so it holds at any
+            // resolution or aspect and cannot pass by luck: under the centred framing this replaced the
+            // map's margins were equal by construction, so `min == 1 - max` exactly and this comparison
+            // is false. The reserve settled where the user wanted the board rather than at the value
+            // that would clear the tray completely, so a little of the map is behind the cards and the
+            // gain is what the reserve buys - the left band is the tray's.
+            var camera = Object.FindAnyObjectByType<Camera>();
+            var viewportX = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
+                .Select(tile => camera.WorldToViewportPoint(tile.transform.position).x)
+                .ToArray();
+            Assert.That(viewportX.Min(), Is.GreaterThan(1f - viewportX.Max()),
+                "The map sits right of centre, leaving the viewport's left band to the card tray.");
+            Assert.That(viewportX.Min(), Is.GreaterThanOrEqualTo(0f));
+            Assert.That(viewportX.Max(), Is.LessThanOrEqualTo(1f),
+                "and it is still whole - the reserve never pushes a space out of the view.");
+
+            yield return Capture("tmp/milestone-8-5a-card-tray.png");
+
+            var chosen = root.Runtime.Cards.First(card =>
+                card.State.Location == CardLocation.Hand &&
+                card.OwnerId.Equals(root.Runtime.ViewedHeroId));
+            Assert.That(root.Runtime.SelectCommitmentCard(chosen.Id), Is.True);
+            yield return null;
+            yield return Capture("tmp/milestone-8-5a-card-tray-selected.png");
         }
 
         /// <summary>p.15's two answers for one card, both at that card's own colour.</summary>

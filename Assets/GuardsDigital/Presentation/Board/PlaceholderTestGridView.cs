@@ -27,6 +27,23 @@ namespace GuardsDigital.Presentation.Board
 
         [SerializeField] private float outerRadius = HexWorldLayout.DefaultOuterRadius;
         [SerializeField] private float cameraPadding = 1.5f;
+
+        /// <summary>
+        /// The share of the viewport's width the framing keeps clear along the left edge, where the card
+        /// tray stands.
+        ///
+        /// Milestone 8.5a, by the user's 2026-08-21 decision. A tray card carries its whole printed face
+        /// now, so the tray is taller than it was, and a map centred in the viewport sat squarely behind
+        /// it. The map is framed into the band this share leaves instead: the camera moves left, and it
+        /// widens only if the map no longer fits. It usually does not have to - the official map is close
+        /// to square and the viewport is 16:9, so the width it was never using is most of what the tray
+        /// needs.
+        ///
+        /// The value is a judgement about where the board should sit rather than the one that would
+        /// clear the tray outright, so a little of the map is still behind the cards' corner. Zero
+        /// restores the plain centred framing.
+        /// </summary>
+        [SerializeField] private float reservedLeftViewportShare = 0.32f;
         [SerializeField] private Camera sceneCamera;
         [SerializeField] private PrimitiveHeroView[] heroViews;
 
@@ -476,10 +493,20 @@ namespace GuardsDigital.Presentation.Board
             var aspect = targetCamera.aspect > 0f ? targetCamera.aspect : 16f / 9f;
             var halfWidth = (maximumX - minimumX) * 0.5f;
             var halfDepth = (maximumZ - minimumZ) * 0.5f;
+            // The map is framed into the band left over once the tray's share of the width is reserved,
+            // so the size below is what fits that band rather than what fits the whole viewport.
+            var reserved = Mathf.Clamp(reservedLeftViewportShare, 0f, 0.6f);
             targetCamera.orthographic = true;
-            targetCamera.orthographicSize = Mathf.Max(halfDepth, halfWidth / aspect) + cameraPadding;
+            targetCamera.orthographicSize =
+                Mathf.Max(halfDepth, halfWidth / (aspect * (1f - reserved))) + cameraPadding;
             targetCamera.farClipPlane = 100f;
-            targetCamera.transform.position = center;
+
+            // The camera looks straight down with world +Z up, so its screen right is world +X: moving
+            // it left moves the map right, out from behind the tray. Half the reserved width centres the
+            // map in the band that is left, which is what keeps every space inside the viewport - the
+            // property `Scene_LoadsCompleteSelectedMapPresentationUnderFramedFixedCamera` measures.
+            var shift = reserved * targetCamera.orthographicSize * aspect;
+            targetCamera.transform.position = new Vector3(center.x - shift, center.y, center.z);
             targetCamera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
         }
 

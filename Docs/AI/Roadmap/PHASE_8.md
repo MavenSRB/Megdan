@@ -89,7 +89,7 @@ Non-goals: no Wasp card composition (8.8-8.11 own the consumers), no Block resol
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-85-open-the-general-card-text-seam-on-attack-and-defense-actions-completion-evidence).
 
-### [ ] 8.5a Show verified card words and action values in the card tray
+### [x] 8.5a Show verified card words and action values in the card tray
 
 Observable outcome: every configured Wasp card in the player-facing tray shows its verified printed words and separates Initiative, primary-action values, spatial values, and secondary-action values according to the [approved card-tray mockup](../References/MILESTONE_8_5A_CARD_TRAY_MOCKUP.png), without changing what any card does.
 
@@ -97,12 +97,16 @@ Acceptance checks:
 
 - Each tray card presents its name, full `CardSourceContent` transcription, primary action kind, and lifecycle label (`PLAYED · TURN <n>`, `AVAILABLE`, or `DISCARDED`) without truncation at the supported Windows validation resolution; a source face that explicitly prints no text receives an explicit empty-text presentation rather than invented copy.
 - Initiative occupies its own upper-left flag. Printed values belonging to alternate actions remain in a distinct secondary-value region, a numeric value belonging to the primary action is attached to the primary-action band, and printed Radius or Range occupies a distinct spatial badge at the lower-left of the rules panel. The grouping is derived from typed action definitions and value channels, never from card names or parsed printed text.
-- The tray remains colour-coded from projected `CardColor` with a visible colour name, while labels, borders, selection, availability, and assistive text keep every meaning available without colour alone.
+- The tray remains colour-coded from projected `CardColor`, and every meaning stays available without colour alone through labels, borders, selection, availability, and assistive text. **User-approved amendment, 2026-08-21:** the colour's name is no longer printed on the card face - a card wearing its colour and also spelling it says the same thing twice in the space the printed text needs - and is carried by each card's hover and assistive reading instead, on the terms milestone 7.8a already set for a hero rail's turn slot.
 - Played-first/available/discarded ordering, the available-card lift, viewed-hero selection, commitment forwarding, unavailable-card refusal, pointer blocking, and keyboard order remain unchanged; the passive presenter reads projected definitions and submits no new authority.
 - The five-card Wasp starting hand fits as one readable row with no clipped card, overlapping label, or rules text, and a targeted visual inspection compares the running HUD with the approved mockup.
+- **User-approved amendment, 2026-08-21:** the board framing reserves a share of the viewport width along the left edge, where the tray stands, so the map sits right of centre and the cards get a band of their own. The map is framed into what is left rather than centred in the whole viewport, it widens only if it no longer fits, and every space stays inside the camera's view. The reserve was set by eye to where the user wanted the board rather than to the value that would clear the tray completely, so a little of the map is still behind the cards' corner.
+- **User-approved amendment, 2026-08-21:** a hero rail's occupied turn slot reveals the card played on that turn when the pointer rests on it, drawn by the same builder the tray draws a card with, and names that card in its assistive label. An empty slot reveals nothing, a redrawn rail drops the reveal, and the slot gains no command, no focus stop, and no keyboard-order change.
 - T2 validation: focused `MatchHudPresentationTests`, the directly affected `MinimalHexGridPlayModeTests` HUD cases, and one targeted Game View inspection pass at the supported validation resolution.
 
 Non-goals: no card-effect composition, rule or legality change, source-image artwork, production illustration, animation, responsive mobile layout, six-seat HUD work, or Phase 9 presentation polish.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-85a-show-verified-card-words-and-action-values-in-the-card-tray-completion-evidence).
 
 ### [!] 8.5b Highlight tray cards whose Active effects are live
 

@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Progression;
@@ -160,6 +161,465 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(card.Group, Is.Not.EqualTo(TrayCardGroup.Played),
                     "The new round has no history yet, so no card is drawn as played in it.");
             }
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.5a: the printed face - its words, and the four homes its values are read into
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void EveryConfiguredWaspCard_ShowsItsVerifiedWordsAndItsNameKindAndLifecycle()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.Refresh();
+
+            var hand = view.Model.ViewedHand;
+            Assert.That(hand.TrayCards, Has.Count.EqualTo(5),
+                "p.5 deals Wasp's three Tier I cards and her two Basic ones.");
+            foreach (var card in hand.TrayCards)
+            {
+                var definition = DefinitionOf(session, card.CardInstanceId);
+                Assert.That(definition.ContentAuthority, Is.EqualTo(CardContentAuthority.VerifiedOfficial));
+                Assert.That(definition.SourceContent.Kind, Is.EqualTo(CardSourceContentKind.Transcribed));
+                Assert.That(card.DisplayName, Is.EqualTo(definition.DisplayName));
+                Assert.That(card.Face.PrintedText, Is.EqualTo(definition.SourceContent.PrintedText),
+                    "The tray shows the face's own transcribed words, verbatim and complete.");
+                Assert.That(card.Face.EmptyTextLabel, Is.Empty,
+                    "A face that prints words states no absence.");
+                Assert.That(card.Face.PrimaryActionLabel, Is.Not.Empty);
+                Assert.That(card.HistoryLabel, Is.EqualTo("AVAILABLE"));
+            }
+
+            // The five faces, as `Rules/HERO_WASP.md` records them. Named here rather than derived so
+            // that a definition edited into a different card fails this rather than agreeing with itself.
+            Assert.That(
+                hand.TrayCards
+                    .OrderBy(card => card.DisplayName, StringComparer.Ordinal)
+                    .Select(card => $"{card.DisplayName}|{card.Face.ValueLine}"),
+                Is.EqualTo(new[]
+                {
+                    "Lift Up|INIT 10 · SKILL · RAD 2 · DEF 5 · MOV 3",
+                    "Magnetic Dagger|INIT 12 · BASIC ATTACK · ATK 3 · RAD 3 · DEF 2 · MOV 1",
+                    "Shock|INIT 8 · ATTACK · ATK 5 · RAD 2 · DEF 6 · MOV 4",
+                    "Static Barrier|INIT 13 · BASIC SKILL · RAD 2 · DEF 2",
+                    "Stop Projectiles|INIT 3 · DEFENSE · BLOCK · MOV 2"
+                }));
+        }
+
+        [Test]
+        public void EveryPrintedValue_IsDrawnInExactlyOneOfTheFourHomesItsTypedContentPutsItIn()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.Refresh();
+
+            foreach (var card in view.Model.ViewedHand.TrayCards)
+            {
+                var definition = DefinitionOf(session, card.CardInstanceId);
+                var face = card.Face;
+                var primary = definition.ActionDefinitions
+                    .Single(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary);
+
+                Assert.That(face.Initiative, Is.Not.Null);
+                Assert.That(face.Initiative.Channel, Is.EqualTo(PrintedValueChannel.Initiative));
+                Assert.That(face.Initiative.Amount, Is.EqualTo(definition.Initiative.Value),
+                    "Initiative is the card's own, on its own flag.");
+
+                // p.9's Range/Radius icon is an icon beside the primary action, not one of its numbers,
+                // so the primary band takes the action's value and the spatial badge takes the icon.
+                var primaryNumbers = primary.BaseValues
+                    .Where(value => value.Channel != PrintedValueChannel.Range &&
+                        value.Channel != PrintedValueChannel.Radius)
+                    .ToArray();
+                var icons = primary.BaseValues
+                    .Where(value => value.Channel == PrintedValueChannel.Range ||
+                        value.Channel == PrintedValueChannel.Radius)
+                    .ToArray();
+                Assert.That(face.PrimaryValue?.Label,
+                    Is.EqualTo(primaryNumbers.Length == 0
+                        ? null
+                        : $"{MatchHudTheme.ChannelToken(primaryNumbers[0].Channel)} {primaryNumbers[0].Amount}"),
+                    $"{card.DisplayName}: the primary band carries the primary action's own value.");
+                Assert.That(face.SpatialValue?.Label,
+                    Is.EqualTo(icons.Length == 0
+                        ? null
+                        : $"{MatchHudTheme.ChannelToken(icons[0].Channel)} {icons[0].Amount}"),
+                    $"{card.DisplayName}: the spatial badge carries p.9's one Range or Radius icon.");
+
+                var expectedSecondary = definition.ActionDefinitions
+                    .Where(action => action.Origin != ActionDefinitionOrigin.PrintedPrimary)
+                    .SelectMany(action => action.BaseValues)
+                    .OrderBy(value => MatchHudTheme.ChannelOrder.ToList().IndexOf(value.Channel))
+                    .Select(value => $"{MatchHudTheme.ChannelToken(value.Channel)} {value.Amount}")
+                    .ToArray();
+                Assert.That(face.SecondaryValues.Select(value => value.Label), Is.EqualTo(expectedSecondary),
+                    $"{card.DisplayName}: every alternate action's printed value, and only those.");
+
+                // Nothing appears twice and nothing is dropped: the four homes partition the face.
+                var drawn = new[] { face.PrimaryValue, face.SpatialValue }
+                    .Concat(face.SecondaryValues)
+                    .Where(value => value != null)
+                    .Select(value => $"{value.Channel}:{value.Amount}")
+                    .OrderBy(value => value, StringComparer.Ordinal);
+                var printed = definition.ActionDefinitions
+                    .SelectMany(action => action.BaseValues)
+                    .Select(value => $"{value.Channel}:{value.Amount}")
+                    .OrderBy(value => value, StringComparer.Ordinal);
+                Assert.That(drawn, Is.EqualTo(printed),
+                    $"{card.DisplayName}: every printed value is drawn exactly once, in one region.");
+            }
+        }
+
+        /// <summary>
+        /// The grouping follows the action a value is printed on, not the words on the face.
+        ///
+        /// Wasp is the proof rather than a fixture built to pass: Static Barrier's text says "radius"
+        /// five times and its face prints one Radius icon; Shock's text says "adjacent" while its badge
+        /// reads the printed Radius; Charged Boomerang's text says "in range" and its Ranged
+        /// classification comes from <see cref="AttackRangeKind"/>. A presenter that had learned to read
+        /// the sentences would produce different regions on every one of them.
+        /// </summary>
+        [Test]
+        public void TheGrouping_ComesFromTypedActionContentRatherThanFromTheWordsOrTheName()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+
+            var barrier = FaceOf(session, "Static Barrier");
+            Assert.That(barrier.PrintedText.Split(new[] { "radius" }, StringSplitOptions.None),
+                Has.Length.GreaterThan(2), "The fixture is only meaningful while the words say it often.");
+            Assert.That(barrier.SpatialValue.Label, Is.EqualTo("RAD 2"));
+            Assert.That(barrier.PrimaryValue, Is.Null, "A Skill prints no combat number.");
+            Assert.That(barrier.PrimaryActionLabel, Is.EqualTo("BASIC SKILL"),
+                "p.15's Basic supertype is read from the progression profile.");
+
+            var shock = FaceOf(session, "Shock");
+            Assert.That(shock.PrintedText, Does.Contain("adjacent to you"));
+            Assert.That(shock.PrimaryActionLabel, Is.EqualTo("ATTACK"),
+                "A non-Ranged Attack carries no qualifier; p.13 gives it adjacency by rule.");
+            Assert.That(shock.PrimaryValue.Label, Is.EqualTo("ATK 5"));
+            Assert.That(shock.SpatialValue.Label, Is.EqualTo("RAD 2"));
+
+            var block = FaceOf(session, "Stop Projectiles");
+            Assert.That(block.PrintedText, Is.EqualTo("Block a ranged attack."));
+            Assert.That(block.PrimaryActionLabel, Is.EqualTo("DEFENSE · BLOCK"),
+                "p.14's Block is read from PrintedDefenseResolution, and the word 'ranged' in the " +
+                "printed sentence is left where the player can read it rather than parsed into a label.");
+            Assert.That(block.SpatialValue, Is.Null, "This face prints no Range or Radius icon.");
+            Assert.That(block.SecondaryValues.Select(value => value.Label), Is.EqualTo(new[] { "MOV 2" }));
+        }
+
+        [Test]
+        public void ARangedAttackAndTheUltimate_AreReadFromTheirOwnTypedContent()
+        {
+            // Neither is in p.5's starting hand, so both are read straight from the verified content the
+            // configured match deals from. The Ultimate is the one card with no Initiative and no action
+            // at all, and the one whose p.9 icon rides its permanent rule instead of an action.
+            var boomerang = CurrentRoundCards.ReadFace(
+                WaspCardContent.Definition(WaspCardContent.ChargedBoomerang));
+            Assert.That(boomerang.PrimaryActionLabel, Is.EqualTo("ATTACK · RANGED"));
+            Assert.That(boomerang.PrimaryValue.Label, Is.EqualTo("ATK 3"));
+            Assert.That(boomerang.SpatialValue.Label, Is.EqualTo("RNG 3"));
+
+            var ultimate = CurrentRoundCards.ReadFace(
+                WaspCardContent.Definition(WaspCardContent.HighVoltage));
+            Assert.That(ultimate.Initiative, Is.Null, "p.16's Ultimate prints no Initiative.");
+            Assert.That(ultimate.PrimaryActionLabel, Is.EqualTo("ULTIMATE"));
+            Assert.That(ultimate.PrimaryValue, Is.Null);
+            Assert.That(ultimate.SecondaryValues, Is.Empty);
+            Assert.That(ultimate.SpatialValue.Label, Is.EqualTo("RAD 3"),
+                "Its Radius is printed on the permanent ability, which is the whole of what it has.");
+        }
+
+        [Test]
+        public void TheTwoAbsences_AreDrawnAsTwoExplicitStatementsRatherThanAsInventedCopy()
+        {
+            var silent = CurrentRoundCards.ReadFace(new CardDefinition(
+                new CardDefinitionId("test-silent-face"),
+                "test-8-5a-rev-1",
+                "Test - Silent Face",
+                new InitiativeValue(7),
+                CardContentAuthority.VerifiedOfficial,
+                CardProgressionProfile.BasicCard(CardColor.Gold),
+                Array.Empty<ActionDefinition>(),
+                CardSourceContent.PrintsNoText));
+            Assert.That(silent.PrintedTextKind, Is.EqualTo(CardSourceContentKind.PrintsNoText));
+            Assert.That(silent.PrintedText, Is.Empty, "No words are invented for a face that prints none.");
+            Assert.That(silent.EmptyTextLabel, Is.EqualTo("THIS FACE PRINTS NO RULES TEXT"));
+
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var view = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(session, view).Refresh();
+            foreach (var card in view.Model.ViewedHand.TrayCards)
+            {
+                // The showcase hand is synthetic, so its cards have no source face at all - a different
+                // fact from a read face that prints nothing, and drawn as a different sentence.
+                Assert.That(card.Face.PrintedTextKind, Is.EqualTo(CardSourceContentKind.NotSourced));
+                Assert.That(card.Face.PrintedText, Is.Empty);
+                Assert.That(card.Face.EmptyTextLabel, Is.EqualTo("NO SOURCE FACE"));
+            }
+        }
+
+        [Test]
+        public void TheCardsRegions_AreDrawnAsNamedElementsAndTheWordsAreNeverTruncated()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.Refresh();
+
+            var buttons = Descendants(view.Root)
+                .Where(element => element.name == "gd-card-choice")
+                .ToArray();
+            Assert.That(buttons, Has.Length.EqualTo(5));
+            foreach (var button in buttons)
+            {
+                foreach (var region in new[]
+                    {
+                        "gd-card-name-band", "gd-card-secondary-values", "gd-card-primary-action",
+                        "gd-card-rules", "gd-card-history"
+                    })
+                {
+                    Assert.That(Descendants(button).Count(element => element.name == region), Is.EqualTo(1),
+                        $"Each card draws exactly one {region}.");
+                }
+
+                Assert.That(Descendants(button).Count(element => element.name == "gd-card-initiative"),
+                    Is.EqualTo(1), "Initiative has an upper-left flag of its own.");
+            }
+
+            var labels = buttons
+                .SelectMany(Descendants)
+                .OfType<Label>()
+                .ToArray();
+            foreach (var card in view.Model.ViewedHand.TrayCards)
+            {
+                foreach (var expected in new[]
+                    {
+                        card.DisplayName.ToUpperInvariant(), card.HistoryLabel,
+                        card.Face.PrintedText, card.Face.PrimaryActionLabel
+                    })
+                {
+                    Assert.That(labels.Any(label => label.text == expected), Is.True,
+                        $"'{expected}' is drawn whole - no ellipsis, no prefix, no summary.");
+                }
+
+                // The printed colour is not written on the face - the user's 2026-08-21 decision - and
+                // is therefore required to be in the reading that replaces it, on the same terms
+                // milestone 7.8a set for a hero rail's turn slot.
+                Assert.That(labels.Any(label => label.text == card.ColorName), Is.False,
+                    "A card wears its colour rather than spelling it.");
+                Assert.That(card.AssistiveLabel, Does.Contain(card.ColorName),
+                    "but the colour still has a word, in this card's assistive and hover reading.");
+
+                // Wrapping is what keeps a long sentence readable inside a fixed-width card; a label that
+                // clipped instead would silently drop rules text.
+                var words = labels.Single(label => label.text == card.Face.PrintedText);
+                Assert.That(words.style.whiteSpace.value, Is.EqualTo(WhiteSpace.Normal));
+            }
+        }
+
+        [Test]
+        public void TheFiveCardHand_FitsOneRowInsideTheTrayAtTheValidationResolution()
+        {
+            // 1920x1080 is the project's declared default screen size and the resolution the targeted
+            // Game View inspection runs at.
+            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(1920f, 1080f);
+            const float trayPadding = 12f * 2f;
+            const float trayBorder = 1f * 2f;
+            const float scrollbarAllowance = 16f;
+            var available = tray.width - trayPadding - trayBorder - scrollbarAllowance;
+            var row = 5f * (DirectorHandsUnityView.CardWidth + DirectorHandsUnityView.CardGap);
+
+            Assert.That(row, Is.LessThanOrEqualTo(available),
+                "p.6's five cards are one row inside the tray, with their gutters, and never wrap.");
+            Assert.That(tray.height, Is.GreaterThanOrEqualTo(480f),
+                "and the tray is tall enough for the longest verified face's wrapped rules text.");
+            Assert.That(
+                DirectorHandsUnityView.CardMinimumHeight,
+                Is.GreaterThanOrEqualTo(DirectorHandsUnityView.CardWidth * 1.5f),
+                "A card is drawn as a card: portrait, at roughly the approved mockup's proportions, " +
+                "and never as a wide tile with a paragraph squeezed into it.");
+            Assert.That(ConfiguredMatchHudRenderer.CalculatePlayfieldRect(1920f, 1080f).height,
+                Is.GreaterThan(tray.height),
+                "while the board stays the larger of the two surfaces.");
+        }
+
+        [Test]
+        public void EveryCardSurface_KeepsItsTextReadableWithoutRelyingOnColourAlone()
+        {
+            foreach (CardColor color in Enum.GetValues(typeof(CardColor)))
+            {
+                var ink = MatchHudTheme.FaceText(color);
+                foreach (var plate in new[]
+                    {
+                        MatchHudTheme.Face(color), MatchHudTheme.FaceBand(color),
+                        MatchHudTheme.FaceFlag(color)
+                    })
+                {
+                    Assert.That(Contrast(plate, ink), Is.GreaterThanOrEqualTo(4.5f),
+                        $"{color}: every plate on a card carries its own text legibly.");
+                }
+
+                Assert.That(
+                    Contrast(MatchHudTheme.RulesPanelBackground, MatchHudTheme.RulesPanelAccent(color)),
+                    Is.GreaterThanOrEqualTo(4.5f),
+                    $"{color}: the spatial badge belongs to its card without becoming unreadable.");
+                Assert.That(MatchHudTheme.ColorName(color), Is.Not.Empty,
+                    "and every printed colour still has a word, for the reading that carries it.");
+            }
+
+            Assert.That(
+                Contrast(MatchHudTheme.RulesPanelBackground, MatchHudTheme.RulesPanelText),
+                Is.GreaterThanOrEqualTo(4.5f));
+            Assert.That(
+                Contrast(MatchHudTheme.RulesPanelBackground, MatchHudTheme.RulesPanelMutedText),
+                Is.GreaterThanOrEqualTo(4.5f));
+        }
+
+        [Test]
+        public void TheRicherCard_ChangesNothingAboutSelectionAvailabilityOrTheOrderOfTheRow()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.Refresh();
+
+            var buttons = Descendants(view.Root)
+                .Where(element => element.name == "gd-card-choice")
+                .OfType<Button>()
+                .ToArray();
+            Assert.That(
+                buttons.Select(button => button.tooltip.Split(new[] { " - " }, StringSplitOptions.None)[0]),
+                Is.EqualTo(view.Model.ViewedHand.TrayCards.Select(card => card.DisplayName)),
+                "Keyboard and pointer order is still the tray's own played/available/discarded order.");
+            Assert.That(buttons.Count(button => button.style.top.value.value < 0f), Is.EqualTo(5),
+                "Every still-playable card keeps the milestone 7.8a lift.");
+            Assert.That(buttons.All(button => button.enabledSelf), Is.True,
+                "Every card the authority offers still carries its command.");
+
+            var chosen = view.Model.ViewedHand.TrayCards[1];
+            Assert.That(presenter.SelectCommitmentCard(chosen.CardInstanceId), Is.True);
+            var selected = Descendants(view.Root)
+                .Where(element => element.name == "gd-card-choice")
+                .OfType<Button>()
+                .ToArray();
+            Assert.That(view.Model.ViewedHand.TrayCards.Count(card => card.IsSelected), Is.EqualTo(1));
+            Assert.That(
+                selected.Count(button =>
+                    button.style.borderTopColor.value == MatchHudTheme.SelectedOutline),
+                Is.EqualTo(1),
+                "Selection is still one shared outline, never a colour swap - the card keeps its own " +
+                "printed colour while it is chosen.");
+            Assert.That(
+                selected.Select(button => button.style.borderTopWidth.value).Distinct(),
+                Is.EqualTo(new[] { 3f }),
+                "and the outline's width never moves. A tray card's width is fixed and its height comes " +
+                "from its content, so a border that grew on selection would re-wrap that card's rules " +
+                "text, make it taller, and stretch the whole row with it.");
+            Assert.That(view.Model.ViewedHand.TrayCards[1].DisplayName, Is.EqualTo(chosen.DisplayName),
+                "and the row's order did not move because a card was selected.");
+        }
+
+        [Test]
+        public void ASpentCard_KeepsItsWholeFaceWhileCarryingNoCommand()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            ConfiguredMatchFixtures.CommitAndHoldOneTurn(session);
+            presenter.Refresh();
+
+            var played = view.Model.ViewedHand.TrayCards
+                .Single(card => card.Group == TrayCardGroup.Played);
+            Assert.That(played.HistoryLabel, Is.EqualTo("PLAYED · TURN 1"));
+            Assert.That(played.IsSelectable, Is.False);
+            Assert.That(played.Face.PrintedText, Is.Not.Empty,
+                "A spent card still shows what it said - reading the round back is what the tray is for.");
+
+            var button = Descendants(view.Root)
+                .Where(element => element.name == "gd-card-choice")
+                .OfType<Button>()
+                .First();
+            Assert.That(button.enabledSelf, Is.False, "and it carries no command.");
+            Assert.That(button.style.top.value.value, Is.EqualTo(0f), "and it is not lifted.");
+        }
+
+        [Test]
+        public void RestingOnAnOccupiedTurnSlot_RevealsTheCardThatWasPlayedOnThatTurn()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            ConfiguredMatchFixtures.CommitAndHoldOneTurn(session);
+            presenter.Refresh();
+
+            var hero = view.Model.Heroes[0];
+            var played = hero.TurnSlots.Single(slot => slot.IsOccupied);
+            var empty = hero.TurnSlots.First(slot => !slot.IsOccupied);
+            Assert.That(played.TurnIndex, Is.EqualTo(1));
+            Assert.That(played.PlayedCard, Is.Not.Null);
+            Assert.That(played.PlayedCard.Group, Is.EqualTo(TrayCardGroup.Played));
+            Assert.That(played.PlayedCard.HistoryLabel, Is.EqualTo("PLAYED · TURN 1"));
+            Assert.That(played.PlayedCard.Color, Is.EqualTo(played.Color),
+                "The slot's swatch and the card it reveals are one card, read once.");
+            Assert.That(empty.PlayedCard, Is.Null, "An empty slot has no card to reveal.");
+            Assert.That(played.AssistiveLabel, Does.Contain(played.PlayedCard.DisplayName),
+                "and the same fact is in the slot's assistive reading, without a pointer.");
+
+            HeroTurnSlotViewModel reported = null;
+            view.TurnSlotHighlighted += slot => reported = slot;
+            Assert.That(view.HighlightedTurnSlot, Is.Null, "Nothing is revealed until the pointer rests.");
+
+            view.ForwardTurnSlotHighlight(played);
+            Assert.That(view.HighlightedTurnSlot, Is.SameAs(played));
+            Assert.That(reported, Is.SameAs(played));
+            var preview = Descendants(view.Root)
+                .Single(element => element.name == "gd-turn-slot-preview");
+            Assert.That(preview.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(
+                Descendants(preview).OfType<Label>().Any(label =>
+                    label.text == played.PlayedCard.DisplayName.ToUpperInvariant()),
+                Is.True,
+                "The revealed face is the card's own, drawn by the builder the tray draws with.");
+            Assert.That(
+                Descendants(preview).OfType<Label>().Any(label =>
+                    label.text == played.PlayedCard.Face.PrintedText),
+                Is.True,
+                "including its verified printed words.");
+
+            view.ForwardTurnSlotHighlight(empty);
+            Assert.That(view.HighlightedTurnSlot, Is.Null,
+                "An empty slot reveals nothing rather than an empty card.");
+            Assert.That(preview.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(Descendants(preview).Count(), Is.EqualTo(1), "and the face is taken down.");
+        }
+
+        [Test]
+        public void ARevealedTurnSlotCard_IsDroppedWhenTheRailIsRedrawn()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            ConfiguredMatchFixtures.CommitAndHoldOneTurn(session);
+            presenter.Refresh();
+
+            view.ForwardTurnSlotHighlight(
+                view.Model.Heroes[0].TurnSlots.Single(slot => slot.IsOccupied));
+            Assert.That(view.HighlightedTurnSlot, Is.Not.Null);
+
+            ConfiguredMatchFixtures.CommitAndHoldOneTurn(session);
+            presenter.Refresh();
+            Assert.That(view.HighlightedTurnSlot, Is.Null,
+                "A rebuilt rail keeps no face for a slot element it no longer draws.");
+            Assert.That(
+                Descendants(view.Root).Single(element => element.name == "gd-turn-slot-preview")
+                    .style.display.value,
+                Is.EqualTo(DisplayStyle.None));
+            Assert.That(view.Model.Heroes[0].TurnSlots.Count(slot => slot.IsOccupied), Is.EqualTo(2),
+                "and the round's second turn is now a slot of its own.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -743,6 +1203,40 @@ namespace GuardsDigital.Tests.EditMode
         private static CardColor ColorOf(MatchSession session, CardDefinitionReference reference) =>
             session.Projection.Definitions.Single(definition =>
                 definition.Reference.Equals(reference)).Progression.Color;
+
+        private static CardDefinition DefinitionOf(MatchSession session, CardInstanceId cardInstanceId)
+        {
+            var instance = session.Projection.Cards.Single(card => card.Id.Equals(cardInstanceId));
+            return session.Projection.Definitions.Single(definition =>
+                definition.Reference.Equals(instance.DefinitionReference));
+        }
+
+        private static TrayCardFaceViewModel FaceOf(MatchSession session, string displayName)
+        {
+            var view = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(session, view).Refresh();
+            return view.Model.ViewedHand.TrayCards
+                .Single(card => card.DisplayName == displayName).Face;
+        }
+
+        /// <summary>
+        /// The WCAG 2.1 contrast ratio between two opaque colours, so "readable without colour alone" is
+        /// a measurement rather than an opinion. 4.5 is the standard's normal-text threshold.
+        /// </summary>
+        private static float Contrast(Color background, Color foreground)
+        {
+            var first = RelativeLuminance(background);
+            var second = RelativeLuminance(foreground);
+            return (Mathf.Max(first, second) + 0.05f) / (Mathf.Min(first, second) + 0.05f);
+        }
+
+        private static float RelativeLuminance(Color color) =>
+            (0.2126f * LinearChannel(color.r)) +
+            (0.7152f * LinearChannel(color.g)) +
+            (0.0722f * LinearChannel(color.b));
+
+        private static float LinearChannel(float value) =>
+            value <= 0.03928f ? value / 12.92f : Mathf.Pow((value + 0.055f) / 1.055f, 2.4f);
 
         private static string NameOf(MatchSession session, CardDefinitionReference reference) =>
             session.Projection.Definitions.Single(definition =>

@@ -1271,13 +1271,9 @@ namespace GuardsDigital.Presentation.Match
                     group = TrayCardGroup.Discarded;
                 }
 
-                var definition = projection.Definitions
-                    .FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference));
-                entries.Add(new TrayCardViewModel(
-                    card.Id,
-                    definition?.DisplayName ?? card.Id.Value,
-                    definition?.Progression.Color ?? CardColor.None,
-                    CurrentRoundCards.ValueLine(definition),
+                entries.Add(CurrentRoundCards.TrayCard(
+                    projection,
+                    card,
                     group,
                     group == TrayCardGroup.Played ? playedTurnIndex : 0,
                     group == TrayCardGroup.Available && canSelect,
