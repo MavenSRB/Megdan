@@ -296,6 +296,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// The unlocked Ultimates arrive from the caller rather than being derived here, because they
         /// are read off the match's card instances and this authority holds none; the callers that do
         /// pass what they hold.
+        ///
+        /// Milestone 8.9's items go the other way, and for the mirror-image reason: the match's one
+        /// item state is already bound into this authority's backends, so taking it from a caller
+        /// would be the second copy <see cref="BindHeroItems"/> exists to prevent.
         /// </summary>
         public RuleModificationSet CurrentModifications(
             ActiveEffectLifecycle timing,
@@ -304,7 +308,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates,
             RuleObject actingObject) =>
             RuleModificationQuery.Build(
-                timing, board, participants, tieBreaker, ultimates, actingObject);
+                timing, board, participants, tieBreaker, ultimates, actingObject, skillBackend.HeroItems);
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||

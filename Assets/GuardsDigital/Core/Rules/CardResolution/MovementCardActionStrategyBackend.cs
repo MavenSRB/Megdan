@@ -334,7 +334,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 var completedResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
                 resolutionEvents.Add(ResolutionStep.FromFact(
                     CardActionResolutionEvent.MovementActionCompleted(completedResolution)));
-                resolutionEvents.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
+                resolutionEvents.Add(ResolutionStep.AtActionEnded(
+                    completedResolution.SourceCardInstanceId,
+                    completedResolution.ActionDefinitionId,
+                    completedResolution.ActorId,
+                    ActionKind.Movement));
                 pendingResolution = null;
                 pendingChoice = null;
 
@@ -353,7 +357,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 var completedResolution = CreatePendingResolution(nextResolution, movementSession.CaptureState());
                 resolutionEvents.Add(ResolutionStep.FromFact(
                     CardActionResolutionEvent.MovementActionCompleted(completedResolution)));
-                resolutionEvents.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
+                resolutionEvents.Add(ResolutionStep.AtActionEnded(
+                    completedResolution.SourceCardInstanceId,
+                    completedResolution.ActionDefinitionId,
+                    completedResolution.ActorId,
+                    ActionKind.Movement));
                 pendingResolution = null;
                 pendingChoice = null;
 
@@ -391,7 +399,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new[]
                 {
                     ResolutionStep.FromFact(completedEvent),
-                    ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded)
+                    ResolutionStep.AtActionEnded(
+                        completedResolution.SourceCardInstanceId,
+                        completedResolution.ActionDefinitionId,
+                        completedResolution.ActorId,
+                        ActionKind.Movement)
                 });
         }
 

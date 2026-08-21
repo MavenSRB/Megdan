@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// every synthetic revision in this build already has, and the reason a slice's compatibility
         /// decision is a real decision rather than a formality.
         /// </summary>
-        public const string ContentRevision = "wasp-8-8-rev-1";
+        public const string ContentRevision = "wasp-8-9-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity. It is not a
@@ -212,7 +212,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardProgressionProfile.BasicCard(CardColor.Gold),
                 "Target a unit adjacent to you. After the attack: This turn: Enemy units in radius " +
                 "cannot be swapped or placed by themselves, or by enemy heroes.",
-                PrintedTextComposition.AwaitedAt("8.9")),
+                PrintedTextComposition.None),
 
             // p.20's Handicap card. Its behavior is deferred by the 2026-08-21 user decision under the
             // named trigger below, because p.5 returns it to the box and the six-player pitch never
@@ -236,7 +236,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 "This turn: While an enemy hero outside of radius is performing an action, spaces in " +
                 "radius count as obstacles. While an enemy hero in radius is performing an action, " +
                 "spaces outside of radius count as obstacles.",
-                PrintedTextComposition.AwaitedAt("8.9")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 Shock, "Shock", 8, 6, 4,
@@ -473,6 +473,11 @@ namespace GuardsDigital.Core.Cards.Verified
                     return null;
 
                 case WaspPrimaryKind.Attack:
+                    // Milestone 8.9. An Attack whose rider has landed carries its card text and the
+                    // p.14 moment the face's keyword names; one still owed carries the debt and
+                    // neither. The two are asked separately and ActionDefinition refuses a root
+                    // without a moment or a moment without a root, so a composition that named the
+                    // wrong one of p.14's three fails at content load rather than at the table.
                     return new ActionDefinition(
                         PrimaryAttack,
                         ActionKind.Attack,
@@ -482,8 +487,10 @@ namespace GuardsDigital.Core.Cards.Verified
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.NonRanged,
                         default,
-                        null,
-                        profile.TextComposition);
+                        WaspEffectContent.AttackTextFor(profile.Id, ContentRevision),
+                        profile.TextComposition,
+                        PrintedDefenseResolution.None,
+                        WaspEffectContent.AttackTextTimingFor(profile.Id));
 
                 case WaspPrimaryKind.RangedAttack:
                     return new ActionDefinition(

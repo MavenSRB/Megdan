@@ -47,7 +47,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardInstanceId checkpointSourceCardInstanceId,
             ActionDefinitionId cardTextActionDefinitionId = default,
             HeroId cardTextActorId = default,
-            CardTextTiming cardTextTiming = CardTextTiming.None)
+            CardTextTiming cardTextTiming = CardTextTiming.None,
+            ActionDefinitionId completedActionDefinitionId = default,
+            HeroId completedActorId = default,
+            ActionKind completedActionKind = ActionKind.None)
         {
             Kind = kind;
             Fact = fact;
@@ -57,6 +60,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardTextActionDefinitionId = cardTextActionDefinitionId;
             CardTextActorId = cardTextActorId;
             CardTextTiming = cardTextTiming;
+            CompletedActionDefinitionId = completedActionDefinitionId;
+            CompletedActorId = completedActorId;
+            CompletedActionKind = completedActionKind;
         }
 
         public ResolutionStepKind Kind { get; }
@@ -89,12 +95,64 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "A resolution checkpoint step requires a defined checkpoint.", nameof(checkpoint));
             }
 
+            if (checkpoint == TimingCheckpoint.ActionEnded)
+            {
+                // Milestone 8.9. The completion checkpoint is the one place rulebook p.9's supertype is
+                // recorded, and it can only be recorded by naming the action that ended. Refusing the
+                // plain factory here is what makes "every action performed on a basic card records the
+                // fact" true by construction rather than by every resolver remembering to: a new action
+                // family cannot reach this checkpoint without saying what it just finished.
+                throw new ArgumentException(
+                    "Use AtActionEnded: the completion checkpoint names the action it completes.",
+                    nameof(checkpoint));
+            }
+
             return new ResolutionStep(
                 ResolutionStepKind.Checkpoint,
                 default,
                 checkpoint,
                 checkpointAffectedHeroId,
                 checkpointSourceCardInstanceId);
+        }
+
+        /// <summary>
+        /// Milestone 8.9. The action this resolver just finished, at the checkpoint that finishes it.
+        ///
+        /// It carries the three identities rulebook p.9's supertype needs and nothing it could infer:
+        /// the card, because that is what decides whether the action was basic; the hero, because a
+        /// trigger asks whose action it was; and the kind, because "a basic <em>skill</em>" narrows by
+        /// it and a replacement action - p.7's Fast Travel, p.13's Clear - has no definition on the
+        /// card to look one up on. Every call site knows its kind statically, which is why it is stated
+        /// rather than resolved.
+        /// </summary>
+        public static ResolutionStep AtActionEnded(
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            ActionKind kind)
+        {
+            if (!sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined || !actorId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A completion step names the card, the action and the hero whose action ended.",
+                    nameof(sourceCardInstanceId));
+            }
+
+            if (kind == ActionKind.None)
+            {
+                throw new ArgumentException(
+                    "A completion step names the kind of action that ended.", nameof(kind));
+            }
+
+            return new ResolutionStep(
+                ResolutionStepKind.Checkpoint,
+                default,
+                TimingCheckpoint.ActionEnded,
+                default,
+                sourceCardInstanceId,
+                completedActionDefinitionId: actionDefinitionId,
+                completedActorId: actorId,
+                completedActionKind: kind);
         }
 
         /// <summary>
@@ -143,5 +201,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Which of p.14's moments this is; defined only on a card-text step.</summary>
         public CardTextTiming CardTextTiming { get; }
+
+        /// <summary>
+        /// The action that ended; defined only on an <see cref="TimingCheckpoint.ActionEnded"/> step,
+        /// where the card it was performed on is <see cref="CheckpointSourceCardInstanceId"/>.
+        /// </summary>
+        public ActionDefinitionId CompletedActionDefinitionId { get; }
+
+        /// <summary>The hero who performed it; defined only on a completion step.</summary>
+        public HeroId CompletedActorId { get; }
+
+        /// <summary>Which action it was; defined only on a completion step.</summary>
+        public ActionKind CompletedActionKind { get; }
     }
 }

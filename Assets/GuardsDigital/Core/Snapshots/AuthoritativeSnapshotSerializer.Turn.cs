@@ -73,7 +73,10 @@ namespace GuardsDigital.Core.Snapshots
                     // after a restore than before it.
                     selectedActor.IsDefined
                         ? GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(selectedActor.ActorId)
-                        : GuardsDigital.Core.Rules.Modifications.RuleObject.None),
+                        : GuardsDigital.Core.Rules.Modifications.RuleObject.None,
+                    // Milestone 8.9: and from the same items, so a disk an item widened is the same
+                    // width after a restore as before it.
+                    heroItems),
                 heroItems,
                 tieBreaker);
             return TurnResolutionAuthority.Restore(

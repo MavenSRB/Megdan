@@ -323,7 +323,11 @@ namespace GuardsDigital.Core.Diagnostics
                 ruleEvent.ActionDefinitionId.IsDefined ? $"action={ruleEvent.ActionDefinitionId.Value}" : null);
             var detail = ruleEvent.Kind == TurnResolutionEventKind.HoldActionPerformed
                 ? $"invocation={ruleEvent.InvocationContext}"
-                : "accepted turn checkpoint";
+                // Milestone 8.9. The kind is the half of rulebook p.9's fact that a trigger narrows by,
+                // so the log says which action was basic rather than only that one was.
+                : ruleEvent.Kind == TurnResolutionEventKind.BasicActionPerformed
+                    ? $"basicActionKind={ruleEvent.BasicAction.Kind}"
+                    : "accepted turn checkpoint";
             Add($"Turn.{ruleEvent.Kind}", turnReferences, detail);
         }
 

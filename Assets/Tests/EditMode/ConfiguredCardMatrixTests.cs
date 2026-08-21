@@ -5,6 +5,7 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Synthetic;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
@@ -272,12 +273,23 @@ namespace GuardsDigital.Tests.EditMode
             // written against, so this compares the same list the wire does. What it demands of each
             // entry is a card - configured or fixture - whose printed effect names it, because a card
             // is the only thing that starts an effect in this build.
-            var registered = SyntheticEffectCapabilities.CreateCatalog().Registered;
+            //
+            // Milestone 8.9 splits that demand in two, because the rule the check quotes has two halves
+            // and one registration set finally distinguishes them. A *capability* must be on some card
+            // this build can deal - which, since milestone 8.4, includes Wasp's printed set as well as
+            // the showcase hands, and leaving hers out would have made the rule ask a question about
+            // half the build's cards. A *handler implementation* - the reusable core capability the
+            // 7.9 check actually names - must additionally be reachable from a showcase card, so a
+            // general contract still cannot arrive for the first time inside a verified hero's slice.
+            // Wasp's two Active effects pass the second half because they run on the handler milestone
+            // 6.8 proved on Red Bulwark; a new handler introduced by her content would not.
+            var catalog = SyntheticEffectCapabilities.CreateCatalog();
+            var registered = catalog.Registered;
             Assert.That(registered, Is.Not.Empty, "The catalog must register something to check.");
 
             var owner = new HeroId("capability-coverage-hero");
             var opponent = new HeroId("capability-coverage-opponent");
-            var reachable = new[]
+            var showcaseReachable = new[]
                 {
                     SyntheticShowcaseHand.CreateRed(owner),
                     SyntheticShowcaseHand.CreateBlue(owner),
@@ -295,11 +307,11 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticShowcaseHand.CreateBlueWithKinesisSkill(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
-                .SelectMany(definition => definition.ActionDefinitions)
-                .Where(action => action.EffectRoot != null)
-                .SelectMany(action => action.EffectRoot.Nodes)
-                .Where(node => node.Capability.IsDefined)
-                .Select(node => node.Capability)
+                .SelectMany(NamedCapabilities)
+                .Distinct()
+                .ToArray();
+            var reachable = showcaseReachable
+                .Concat(WaspCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Distinct()
                 .ToArray();
 
@@ -314,6 +326,24 @@ namespace GuardsDigital.Tests.EditMode
                 "Every registered capability must already be reachable from a printed card. These are " +
                 $"not: {string.Join(", ", deferred)}. A capability first reached by verified hero " +
                 "content is a deferral this gate exists to refuse.");
+
+            var showcaseHandlerTypes = new HashSet<Type>(showcaseReachable
+                .Select(capability => catalog.Load(capability).GetType()));
+            var heroOnlyHandlerTypes = registered
+                .Where(capability => !showcaseReachable.Any(value => value.Equals(capability)))
+                .Select(capability => catalog.Load(capability).GetType())
+                .Where(type => !showcaseHandlerTypes.Contains(type))
+                .Select(type => type.Name)
+                .Where(name => !FrameShapeStubHandlers.Contains(name, StringComparer.Ordinal))
+                .Distinct()
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(heroOnlyHandlerTypes, Is.Empty,
+                "A reusable capability implementation is reachable only from verified hero content: " +
+                $"{string.Join(", ", heroOnlyHandlerTypes)}. Registering a hero's declaration on a " +
+                "handler the showcase already proves is composition; introducing the handler itself " +
+                "inside a hero slice is the deferral milestone 7.9 refuses.");
 
             // The exclusion list is not allowed to be a place things quietly go. Every entry must still
             // be registered, so a stub that is deleted or renamed fails here rather than sitting in a
@@ -348,6 +378,29 @@ namespace GuardsDigital.Tests.EditMode
             "synthetic-is-flagged",
             "synthetic-note-actor"
         };
+
+        /// <summary>
+        /// The handler implementations behind the five stubs above, excluded from the second half of
+        /// the rule for the same reason and no other: a handler reachable from no card at all cannot be
+        /// shown reachable from a showcase card either, and the list above already says why these five
+        /// are on no card.
+        /// </summary>
+        private static readonly string[] FrameShapeStubHandlers =
+        {
+            "AcceptHeroHandler",
+            "DeclinedHandler",
+            "ImpossibleHandler",
+            "IsFlaggedHandler",
+            "NoteActorHandler"
+        };
+
+        /// <summary>Every capability one card definition's printed effects name.</summary>
+        private static IEnumerable<EffectCapabilityReference> NamedCapabilities(CardDefinition definition) =>
+            definition.ActionDefinitions
+                .Where(action => action.EffectRoot != null)
+                .SelectMany(action => action.EffectRoot.Nodes)
+                .Where(node => node.Capability.IsDefined)
+                .Select(node => node.Capability);
 
         // -----------------------------------------------------------------------------------------
         // Blue Feint's component modes, from the dealt hand

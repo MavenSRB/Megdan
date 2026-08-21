@@ -76,6 +76,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// The build's one capability contract set. Milestone 6.2's component handlers join here rather
         /// than forming a second catalog: a match has one registered set, and the snapshot records it as
         /// one list to compare a restore against.
+        ///
+        /// Milestone 8.9's verified Active effects join it for that reason and not by exception. They
+        /// are the first entries here that carry an official card's numbers, and a second catalog for
+        /// them would mean two registration lists where the snapshot compares one.
         /// </summary>
         public static EffectCapabilityCatalog CreateCatalog() =>
             new EffectCapabilityCatalog(new IEffectCapabilityHandler[]
@@ -95,7 +99,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticPlacementCapabilities.Handlers())
                 .Concat(SyntheticExchangeCapabilities.Handlers())
                 .Concat(SyntheticCardStateCapabilities.Handlers())
-                .Concat(SyntheticValueCapabilities.Handlers()));
+                .Concat(SyntheticValueCapabilities.Handlers())
+                .Concat(GuardsDigital.Core.Cards.Verified.WaspActiveEffectContent.Handlers()));
 
         /// <summary>
         /// Creates one Active effect on the actor. This is the capability that gives acceptance check 5

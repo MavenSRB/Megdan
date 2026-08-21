@@ -879,8 +879,9 @@ namespace GuardsDigital.Tests.EditMode
                     {
                         AppliedObstacleOverlay.Bind(
                             ConditionalObstacleOverlay.Declare(
-                                OverlayRadius, SourceTeamRelation.OpposingSource, arm),
+                                SourceTeamRelation.OpposingSource, arm),
                             anchor,
+                            OverlayRadius,
                             "modification-seam-probe-overlay",
                             Blue,
                             TeamSide.Blue,

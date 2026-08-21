@@ -31,6 +31,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         private AppliedObstacleOverlay(
             ConditionalObstacleOverlay declaration,
             HexCoordinate anchor,
+            int radius,
             string sourceId,
             HeroId controllerHeroId,
             TeamSide controllerTeamSide,
@@ -39,6 +40,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         {
             Declaration = declaration;
             Anchor = anchor;
+            Radius = radius;
             SourceId = sourceId;
             ControllerHeroId = controllerHeroId;
             ControllerTeamSide = controllerTeamSide;
@@ -50,6 +52,11 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// Binds one declaration to the current moment.
         /// </summary>
         /// <param name="anchor">The source hero's current space (p.17).</param>
+        /// <param name="radius">
+        /// Milestone 8.9. The disk the source's declaration draws right now - its printed Radius icon
+        /// with p.16's matching items on it, or the number its own text wrote down. Resolved by the
+        /// derivation for the reason the anchor is: that is where the card and the hero's items are.
+        /// </param>
         /// <param name="actingHeroSide">
         /// The side of the hero performing the current action, or <c>null</c> when no hero is
         /// performing one - a round-boundary correction, a restore with no action in flight. An
@@ -61,6 +68,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static AppliedObstacleOverlay Bind(
             ConditionalObstacleOverlay declaration,
             HexCoordinate anchor,
+            int radius,
             string sourceId,
             HeroId controllerHeroId,
             TeamSide controllerTeamSide,
@@ -80,18 +88,28 @@ namespace GuardsDigital.Core.Rules.Modifications
                     "A bound overlay requires the hero controlling its source.", nameof(controllerHeroId));
             }
 
+            if (radius < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(radius), radius, "An overlay's radius is the inclusive disk p.9 defines.");
+            }
+
             var qualifies = actingHeroSide.HasValue && Qualifies(
                 declaration.ActingHeroRelation, actingHeroSide.Value, controllerTeamSide);
             var inside = qualifies &&
-                HexDistanceQuery.Calculate(anchor, actingHeroSpace) <= declaration.Radius;
+                HexDistanceQuery.Calculate(anchor, actingHeroSpace) <= radius;
             return new AppliedObstacleOverlay(
-                declaration, anchor, sourceId, controllerHeroId, controllerTeamSide, qualifies, inside);
+                declaration, anchor, radius, sourceId, controllerHeroId, controllerTeamSide,
+                qualifies, inside);
         }
 
         public ConditionalObstacleOverlay Declaration { get; }
 
         /// <summary>The source hero's space at derivation - the centre of p.17's moving disk.</summary>
         public HexCoordinate Anchor { get; }
+
+        /// <summary>The disk's inclusive radius at derivation, items already composed onto it.</summary>
+        public int Radius { get; }
 
         /// <summary>The source's stable identity, which is also this overlay's provenance key.</summary>
         public string SourceId { get; }
@@ -120,8 +138,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            var spaceIsInside =
-                HexDistanceQuery.Calculate(Anchor, space) <= Declaration.Radius;
+            var spaceIsInside = HexDistanceQuery.Calculate(Anchor, space) <= Radius;
             return actorIsInside
                 ? !spaceIsInside && Declaration.Declares(ObstacleOverlayArm.SpacesOutsideWhileActorInside)
                 : spaceIsInside && Declaration.Declares(ObstacleOverlayArm.SpacesInsideWhileActorOutside);
@@ -144,6 +161,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
         }
 
-        public override string ToString() => $"{Declaration} at {Anchor} from {SourceId}";
+        public override string ToString() =>
+            $"{Declaration} at radius {Radius} around {Anchor} from {SourceId}";
     }
 }

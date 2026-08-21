@@ -92,29 +92,40 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The milestone's honesty rule, on the primary kind that cannot be greyed by anything else.
+        /// The other side of the milestone 8.4 honesty rule, and what milestone 8.9 changed about it.
         ///
-        /// Static Barrier's primary is a Skill carrying no <c>EffectRoot</c>, and both existing
-        /// availability rules answer true for exactly that shape: milestone 6.5af's asks whether the
-        /// effect can apply anything and returns true when there is no effect to ask about, and
-        /// milestone 7.8a1's returns true for anything that is not an Attack. So this offer is
-        /// available and startable by construction until the card-text rule exists, which is what makes
-        /// the observation structural rather than a position that happened to refuse.
+        /// Static Barrier used to be this fixture's Skill-shaped subject, chosen because a Skill
+        /// carrying no <c>EffectRoot</c> passes both other availability rules by construction - 6.5af's
+        /// asks whether the effect can apply anything and answers true when there is no effect to ask
+        /// about, and 7.8a1's answers true for anything that is not an Attack - so a refusal could only
+        /// have come from the composition rule. Milestone 8.9 composed its text, and with it every one
+        /// of Wasp's Skill primaries, so that subject no longer exists and the rule's remaining
+        /// subjects are the Attacks and Defenses of milestones 8.10 and 8.11. The sibling case below
+        /// carries the refusal on one of them, in a position where 7.8a1's rule provably cannot be the
+        /// cause.
         ///
-        /// Running it would perform part of a card and silently drop the rest - a rules violation the
-        /// match cannot see; p.12 lets the hero Hold instead, so nothing they were owed is taken away.
+        /// What is left to state here is the release: the card whose primary this fixture used to find
+        /// greyed is offered as takeable and starts, and it owes nothing.
         /// </summary>
         [Test]
-        public void ASkillPrimaryWhoseCardTextHasNoComposition_IsOfferedGreyedAndRefusesTheStart()
+        public void TheSkillPrimaryThisRuleUsedToGrey_IsOfferedAndStartsOnceItsTextIsComposed()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
             CommitAgainstStopProjectiles(session, WaspCardContent.StaticBarrier, 13);
 
-            var offer = SingleAwaitedPrimary(session, ActionKind.Skill);
-            Assert.That(ActionOf(session, offer).EffectRoot, Is.Null,
-                "or the two existing availability rules could have decided this offer themselves.");
-
-            AssertGreyedAndRefusedAtomically(session, offer);
+            var offer = session.Projection.AvailableTurnActions.Single(candidate =>
+                ActionOf(session, candidate).Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                ActionOf(session, candidate).Kind == ActionKind.Skill);
+            Assert.That(ActionOf(session, offer).TextComposition.IsAwaited, Is.False,
+                "Milestone 8.9 composed Static Barrier's printed text.");
+            Assert.That(ActionOf(session, offer).EffectRoot, Is.Not.Null,
+                "and the composition is an effect root on the action rather than a cleared debt row.");
+            Assert.That(offer.IsAvailable, Is.True,
+                "A primary that owes nothing is offered as takeable.");
+            Assert.That(
+                session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId)).Accepted,
+                Is.True,
+                "and starts, which is the refusal this fixture used to record being released.");
         }
 
         /// <summary>

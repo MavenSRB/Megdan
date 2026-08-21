@@ -280,7 +280,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var participants = PlaceholderOneVsOneParticipants.Create();
             var set = RuleModificationQuery.Build(
-                timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None);
+                timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null);
             Assert.That(
                 set.HasPermission(RuleObject.ForHero(heroId), RulePermissionKind.MoveThroughObstacles),
                 Is.True,

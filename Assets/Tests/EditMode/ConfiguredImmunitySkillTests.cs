@@ -766,7 +766,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var set = RuleModificationQuery.Build(
                 timing, null, PlaceholderOneVsOneParticipants.Create(),
-                new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None);
+                new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null);
             Assert.That(
                 set.IsImmuneTo(
                     RuleObject.ForHero(blue),
@@ -916,7 +916,7 @@ namespace GuardsDigital.Tests.EditMode
                 restored.Round.Timing,
                 restored.Board,
                 restored.Participants,
-                restored.Round.TieBreakerState, UnlockedUltimateSet.None, RuleObject.None);
+                restored.Round.TieBreakerState, UnlockedUltimateSet.None, RuleObject.None, null);
         }
 
         private static ActiveEffectLifecycle RestoreTiming(MatchSession session) =>

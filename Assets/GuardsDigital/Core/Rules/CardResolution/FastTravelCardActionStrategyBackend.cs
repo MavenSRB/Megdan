@@ -83,7 +83,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         replacementOffer,
                         replacedMovementActionDefinitionId,
                         travelEvent)),
-                    ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded)
+                    ResolutionStep.AtActionEnded(
+                        replacementOffer.SourceCardInstanceId,
+                        replacementOffer.ActionDefinitionId,
+                        replacementOffer.ActorId,
+                        ActionKind.FastTravel)
                 });
         }
 

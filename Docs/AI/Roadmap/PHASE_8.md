@@ -218,7 +218,21 @@ Non-goals: no Attack text, no new push geometry.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-88-complete-the-wasp-kinetic-skills-completion-evidence).
 
-### [!] 8.9 Complete the Wasp basic cards
+### [ ] 8.8a Show upgrade choices as tray-style cards
+
+Observable outcome: when end-of-round Level Up pauses on `UPGRADE A CARD`, the contextual region presents Wasp's six projected upgrade choices as the same complete portrait card faces used in the ordinary tray, arranged as two rows that each read Blue, Green, Red.
+
+Acceptance checks:
+
+- Each option draws the candidate replacement card through the tray's shared card-face builder, including its Initiative, name, printed values and action qualifiers, exact source text, Range or Radius badge when present, and assistive colour reading; the prompt does not introduce a second abbreviated card design or decode printed text.
+- The six choices use a two-row, three-column reading and focus order: Blue, Green, Red on the first row, then Blue, Green, Red on the second. The two candidates of each colour retain their authoritative projected order, so presentation neither identifies upgrade pairs by card name nor invents choice authority.
+- The whole option card is the one selectable control and forwards only its projected typed continuation invocation. Selection remains visually and assistively explicit without changing card width, text wrapping, or row height, and the existing prompt facts still state the card returned to the deck, the sibling set aside as an item, paid cost, and remaining coins without duplicating those facts onto the printed face.
+- The contextual region remains the only usable interaction context while the mandatory transition is paused; the ordinary tray, End Turn, and end-of-round advance stay unavailable. The two-row body stays inside the viewport and scrolls when necessary so all six options remain pointer- and keyboard-reachable on the validated desktop view.
+- Focused `MatchHudPresentationTests` cover card-face reuse, exact projected invocation forwarding, row/focus order, visible and assistive selection, and constrained-viewport reachability. T2 validation also runs the directly affected `MinimalHexGridPlayModeTests` Level Up prompt path and one targeted 2048-by-1152 Game View inspection.
+
+Non-goals: no change to Level Up eligibility, coin payment, upgrade-pair or item authority, continuation/snapshot/replay behavior, card definitions, the ordinary tray, other contextual-choice families, or production art and animation.
+
+### [x] 8.9 Complete the Wasp basic cards
 
 Blocked by: milestone 8.7 (restriction and overlay consumers). Milestones 8.4 and 8.5 supplied the hands and the Attack text seam.
 
@@ -232,6 +246,15 @@ Acceptance checks:
 - Crackling Dagger stays data-only per the 8.3 deferral decision.
 
 Non-goals: no rider discards (no basic card has one), no trigger execution.
+
+- **The disk moved onto the Active-effect definition, and it is the printed icon rather than a number.** Milestone 8.7 declared its overlay's radius on the overlay; both of this milestone's cards need one, and p.9 gives a card one Range/Radius icon whose value is what its text means by "radius" - so a definition whose scope and whose overlay measured different disks would be describing two cards, and `ActiveEffectDefinition.Radius` states it once for both consumers. `DeclaredRadius` then says where the number comes from, which is the distinction milestone 7.2b exists to make representable: the printed icon, which p.16's matching item raises, or a figure the sentence writes down, which it never does. Both of Wasp's basics print the icon, both appear on the +1 Radius item list, and the composition happens at derivation through the same `ItemBonusQuery` every printed total goes through - so nothing is stored, and a hero holding the item finds the pinning field at 4 and the barrier at 3.
+- **The affected scope is the first whose membership the board decides.** `ActiveEffectAffectedScopeKind.UnitsInRadius` names units rather than heroes because p.19 does - a pinned minion is as much an enemy unit as a pinned hero - and it selects by `TargetQuery.StandsInRelationTo`, the relationship arm milestone 8.8 opened, rather than by a second reading of who is whose enemy. It consults no modification set, because it *is* that set's derivation, and that costs the rules nothing: `Counts As` replaces a unit's type and both types it walks are units, so no declaration can move an object in or out of "enemy units" - only off the board, which takes it out of the walk. Uniqueness is per controller for the same reason the disk is anchored there; without that arm the first Wasp to resolve a Magnetic Dagger would have suppressed the opposing Wasp's as a duplicate.
+- **The consumers are milestone 8.7's, unchanged.** This milestone declares; the Swap and Place capabilities that ask `RestrictionQuery` at target and destination derivation, and the one `ObstacleQuery` that hands the overlay's answer to movement, push and place alike, were built and proved there on definitions with no numbers in them. Nothing here reads a card name at runtime, and neither composition is more than one mandatory capability node - everything both sentences say is definition content on the Active effect, so an effect tree with branches would be stating the same rule twice in a second vocabulary.
+- **p.9's supertype is recorded structurally rather than by remembering to.** `ResolutionStep.AtCheckpoint` now refuses `ActionEnded`, so the only way to reach the completion checkpoint is `AtActionEnded`, which names the card, the hero and the kind; the turn authority decides `CardClassification.Basic` from the card and publishes one `PerformedBasicAction`. A new action family inherits the rule instead of having to be told it. The kind travels with the fact because "a basic *skill*" narrows by it and a replacement action - p.7's Fast Travel, p.13's Clear - has no definition on the card to look one up on, and the fact is produced by the command that ends the action rather than stored, so replay reproduces it and Undo removes it with everything else.
+- **The 7.9 deferral gate was split in two rather than widened.** It compared every registered capability against the showcase hands alone, which since milestone 8.4 is half the cards this build deals, and Wasp's two registrations failed it. A *capability* must now be on some card this build can deal, hers included; a *handler implementation* - the reusable core capability the 7.9 check actually names - must additionally be reachable from a showcase card. Wasp's two pass the second half because they run on `ActiveEffectCreationHandler`, which milestone 6.8 proved on Red Bulwark and which was lifted out of `SyntheticModificationCapabilities` unchanged so both use one copy. A handler introduced inside a hero's slice still fails, which is the deferral the gate exists to refuse.
+- **What the greyed-primary fixture lost.** Static Barrier was the milestone 8.4 rule's Skill-shaped subject, chosen because a Skill with no effect root passes both other availability rules by construction. Composing its text discharges that case - every one of Wasp's Skill primaries now carries a composition - so the fixture states the release instead, and the rule's remaining subjects are the Attacks and Defenses of 8.10 and 8.11, carried by the sibling case that neutralises 7.8a1's rule with a minion beside the attacker.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-89-complete-the-wasp-basic-cards-completion-evidence).
 
 ### [!] 8.10 Complete the Wasp Attack cards
 

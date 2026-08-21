@@ -259,6 +259,12 @@ namespace GuardsDigital.Core.Timing
                 return false;
             switch (candidate.AffectedScope)
             {
+                // Milestone 8.9. A radius-scoped effect is one occurrence per controller, for the same
+                // reason a controller-scoped one is: the disk is drawn around that hero, so two heroes
+                // playing the same card create two different disks and neither is a duplicate of the
+                // other. Falling through to the global arm below would have let the first Wasp to
+                // resolve a Magnetic Dagger suppress the opposing Wasp's.
+                case ActiveEffectAffectedScopeKind.UnitsInRadius:
                 case ActiveEffectAffectedScopeKind.ControllerHero:
                     return existing.ControllerHeroId.Equals(candidateControllerHeroId);
                 case ActiveEffectAffectedScopeKind.Hero:

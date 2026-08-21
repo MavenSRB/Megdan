@@ -934,7 +934,7 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 PlaceholderOneVsOneParticipants.Create(),
                 new TieBreakerState(TeamSide.Red),
-                UnlockedUltimateSet.None, RuleObject.None);
+                UnlockedUltimateSet.None, RuleObject.None, null);
             Assert.That(
                 set.HasPermission(RuleObject.ForHero(heroId), RulePermissionKind.MoveThroughObstacles),
                 Is.True,
@@ -1338,7 +1338,7 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 PlaceholderOneVsOneParticipants.Create(),
                 new TieBreakerState(TeamSide.Red),
-                UnlockedUltimateSet.None, RuleObject.None);
+                UnlockedUltimateSet.None, RuleObject.None, null);
             Assert.That(
                 set.IsImmuneTo(RuleObject.ForHero(heroId), activity, RuleObject.ForHero(Actor)),
                 Is.True,

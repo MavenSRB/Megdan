@@ -462,7 +462,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.SkillActionCompleted(
                     resolutionId, card, action, actor)));
-                steps.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
+                steps.Add(ResolutionStep.AtActionEnded(card, action, actor, ActionKind.Skill));
             }
             else
             {

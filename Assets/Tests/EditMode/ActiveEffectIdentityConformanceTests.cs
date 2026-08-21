@@ -81,9 +81,11 @@ namespace GuardsDigital.Tests.EditMode
         {
             var subjects = CapabilityHandlerScopes();
 
-            Assert.That(subjects.Any(type => type.Name == "ModificationEffectHandler"), Is.True,
-                "Subject discovery no longer reaches the modification-capability handler, so the " +
-                "rule could pass vacuously over an empty scope.");
+            Assert.That(subjects.Any(type => type.Name == nameof(ActiveEffectCreationHandler)), Is.True,
+                "Subject discovery no longer reaches the shared Active-effect creation handler - the " +
+                "one milestone 8.9 lifted out of SyntheticModificationCapabilities and the one every " +
+                "registered Active effect now runs through - so the rule could pass vacuously over an " +
+                "empty scope.");
             Assert.That(subjects.Any(type => type.Name == "MarkActorHandler"), Is.True,
                 "Subject discovery no longer reaches the MarkActor handler, so the rule could pass " +
                 "vacuously over an empty scope.");
@@ -119,8 +121,12 @@ namespace GuardsDigital.Tests.EditMode
         private static IReadOnlyDictionary<string, IEnumerable<Type>> KnownCreatorScopes() =>
             new Dictionary<string, IEnumerable<Type>>
             {
-                ["SyntheticModificationCapabilities"] =
-                    ILConformanceScanner.WithNestedTypes(typeof(SyntheticModificationCapabilities)),
+                // Milestone 8.9. SyntheticModificationCapabilities' five families and Wasp's two basic
+                // cards create their effects through this one handler now, so it is the creator that
+                // has to be shown minting; the file that used to hold a private copy of it declares
+                // definitions and nothing else.
+                [nameof(ActiveEffectCreationHandler)] =
+                    ILConformanceScanner.WithNestedTypes(typeof(ActiveEffectCreationHandler)),
                 ["SyntheticEffectCapabilities"] =
                     ILConformanceScanner.WithNestedTypes(typeof(SyntheticEffectCapabilities))
             };

@@ -104,7 +104,15 @@ namespace GuardsDigital.Core.Cards
         /// order as normal". It is reported separately from the request because the two are separated by
         /// everything the transition did, and by any Place the page's sidebar asked a team for.
         /// </summary>
-        ImmediateLanePushResolved = 15
+        ImmediateLanePushResolved = 15,
+
+        /// <summary>
+        /// Milestone 8.9: rulebook p.9's supertype, recorded at the checkpoint that completed the
+        /// action - "only Gold and Silver cards are basic", and every action performed on one is a
+        /// basic action. The event carries <see cref="TurnResolutionEvent.BasicAction"/>, which names
+        /// the kind as well as the card, because the trigger that reads it says "a basic skill".
+        /// </summary>
+        BasicActionPerformed = 16
     }
 
     public readonly struct TurnResolutionEvent
@@ -118,7 +126,8 @@ namespace GuardsDigital.Core.Cards
             ActionInvocationContext invocationContext,
             CardActionResolutionEvent cardActionEvent,
             ActiveEffectLifecycleEvent activeEffectEvent = default,
-            HexCoordinate coordinate = default)
+            HexCoordinate coordinate = default,
+            PerformedBasicAction basicAction = default)
         {
             Kind = kind;
             InitiativeEvent = initiativeEvent;
@@ -129,6 +138,7 @@ namespace GuardsDigital.Core.Cards
             CardActionEvent = cardActionEvent;
             ActiveEffectEvent = activeEffectEvent;
             Coordinate = coordinate;
+            BasicAction = basicAction;
         }
 
         public TurnResolutionEventKind Kind { get; }
@@ -148,6 +158,41 @@ namespace GuardsDigital.Core.Cards
         public ActiveEffectLifecycleEvent ActiveEffectEvent { get; }
 
         public HexCoordinate Coordinate { get; }
+
+        /// <summary>
+        /// Milestone 8.9. The basic action p.9's supertype recorded, on a
+        /// <see cref="TurnResolutionEventKind.BasicActionPerformed"/> event and nowhere else.
+        /// </summary>
+        public PerformedBasicAction BasicAction { get; }
+
+        /// <summary>
+        /// Milestone 8.9. p.9's supertype, recorded at the checkpoint that completed the action.
+        ///
+        /// The identities are re-published on the event's own fields as well as inside the fact, so a
+        /// reader that filters this stream by hero or by card sees it without unpacking anything - the
+        /// same shape <see cref="HoldPerformed"/> already has.
+        /// </summary>
+        public static TurnResolutionEvent BasicActionPerformed(PerformedBasicAction basicAction)
+        {
+            if (!basicAction.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A basic-action event requires the action rulebook p.9 counted as basic.",
+                    nameof(basicAction));
+            }
+
+            return new TurnResolutionEvent(
+                TurnResolutionEventKind.BasicActionPerformed,
+                default,
+                basicAction.SourceCardInstanceId,
+                basicAction.ActorId,
+                basicAction.ActionDefinitionId,
+                ActionInvocationContext.None,
+                default,
+                default,
+                default,
+                basicAction);
+        }
 
         public static TurnResolutionEvent FromInitiative(InitiativeResolutionEvent initiativeEvent)
         {
@@ -787,7 +832,17 @@ namespace GuardsDigital.Core.Cards
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
-            AddTiming(events, TimingCheckpoint.ActionEnded);
+
+            // Milestone 8.9. p.9 counts *every* action on a basic card as basic, and p.7's Hold is an
+            // action a hero performs on one, so a Hold spent from Magnetic Dagger or Static Barrier
+            // records the fact exactly as their printed primaries do. It is the one completion the turn
+            // authority raises itself rather than materializing from a resolver's stream.
+            AddCompletedAction(
+                events,
+                offer.Value.SourceCardInstanceId,
+                offer.Value.ActionDefinitionId,
+                offer.Value.ActorId,
+                ActionKind.Hold);
             var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
             if (!acknowledgement.Accepted)
             {
@@ -1611,6 +1666,17 @@ namespace GuardsDigital.Core.Cards
             {
                 if (step.Kind == ResolutionStepKind.Checkpoint)
                 {
+                    if (step.Checkpoint == TimingCheckpoint.ActionEnded)
+                    {
+                        AddCompletedAction(
+                            events,
+                            step.CheckpointSourceCardInstanceId,
+                            step.CompletedActionDefinitionId,
+                            step.CompletedActorId,
+                            step.CompletedActionKind);
+                        continue;
+                    }
+
                     AddTiming(
                         events,
                         step.Checkpoint,
@@ -1640,6 +1706,37 @@ namespace GuardsDigital.Core.Cards
             }
 
             return events;
+        }
+
+        /// <summary>
+        /// Milestone 8.9. One action has finished: record rulebook p.9's supertype if it applies, then
+        /// raise the checkpoint that finishes it.
+        ///
+        /// <para>The order is the sentence's. High Voltage triggers "each time <em>after</em> you
+        /// perform a basic skill" (milestone 8.13), so the fact that the basic action happened is
+        /// already recorded when the checkpoint a trigger hangs on is raised, rather than arriving
+        /// after the moment it describes.</para>
+        ///
+        /// <para>This is the only place the fact is produced, and it is unavoidable rather than
+        /// remembered: <see cref="ResolutionStep.AtCheckpoint"/> refuses this checkpoint, so every
+        /// resolver reaches it through <see cref="ResolutionStep.AtActionEnded"/> and hands over what
+        /// the classification needs. A future action family gets the same treatment by construction.</para>
+        /// </summary>
+        private void AddCompletedAction(
+            ICollection<TurnResolutionEvent> events,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            ActionKind kind)
+        {
+            var basicAction = BasicActionQuery.ForCompletedAction(
+                actorId, sourceCardInstanceId, actionDefinitionId, kind, definitions, instances);
+            if (basicAction.IsDefined)
+            {
+                events.Add(TurnResolutionEvent.BasicActionPerformed(basicAction));
+            }
+
+            AddTiming(events, TimingCheckpoint.ActionEnded, default, sourceCardInstanceId);
         }
 
         private void AddTiming(

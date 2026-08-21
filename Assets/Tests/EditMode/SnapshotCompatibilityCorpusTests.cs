@@ -758,21 +758,45 @@ namespace GuardsDigital.Tests.EditMode
         /// which is this corpus's own proof that verified content never reaches a showcase scene, and
         /// the two new stop-cause facts add nothing at all, because they are written only inside a
         /// pending frame that has already resolved a push and no fixture holds one.
+        /// Milestone 8.9 keeps schema v22 and re-pins all twelve again, for a registration cause and a
+        /// content cause. The registration cause is two new capabilities -
+        /// <c>wasp-pin-enemy-units-in-radius</c> and <c>wasp-close-barrier-in-radius</c>, the Active
+        /// effects Wasp's two basic cards create - and the decision is reject rather than migrate on the
+        /// same ground as every registration cause before it: a payload written without them was written
+        /// by a build in which Magnetic Dagger's After-the-attack text and Static Barrier's Skill did
+        /// nothing, so restoring it into this build would silently re-interpret a match played under
+        /// different cards. No reader change is needed - <c>ValidateCapabilityRegistrations</c> already
+        /// refuses a list that is not sequence-equal to this build's - and no persisted state outside
+        /// this corpus exists to strand. The content cause is Wasp's revision advancing from
+        /// <c>wasp-8-8-rev-1</c> to <c>wasp-8-9-rev-1</c>.
+        /// The delta was read at the byte level in a throwaway worktree at pre-change revision
+        /// <c>e4b121d</c>, and it is exactly three things and no fourth. Every one of the twelve
+        /// authoritative payloads grows by exactly 68 bytes - the two registration entries, 35 and 33
+        /// with their length prefixes and revisions - and changes exactly one byte in place, the
+        /// capability count, <c>0x20 -> 0x22</c>. <c>verified-hand-setup-v22</c> changes 54 further
+        /// single bytes, every one of them <c>'8' -> '9'</c>, which is the content revision in the
+        /// eighteen definition-table rows and the thirty-six per-seat instance rows; the eleven showcase
+        /// payloads are otherwise byte-identical, which is this corpus's own proof once more that
+        /// verified content never reaches a showcase scene. The third is outside the authoritative
+        /// payload: the rule-event log gains eight <c>Turn.BasicActionPerformed</c> entries in total -
+        /// two in <c>end-of-round-v22</c>, four in <c>paused-level-up-v22</c>, two in
+        /// <c>pending-minion-battle-v22</c> - and loses none, which is p.9's supertype being recorded
+        /// wherever those fixtures Hold with a basic card. No other fixture's log moves at all.
         /// </summary>
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v22", "5b1510c919f3396dd0cbe53c9ab9d246fb514b8e055d3a1647977013bf072837"),
-            new CompatibilityFixture("active-turn-v22", "5e6830d09e642b128c26d0fc4cb6f1430f3fd8fdb78adead7377f2ff48cbafc1"),
-            new CompatibilityFixture("pending-choice-v22", "44f57d2f90cc113fae5f19be4268c7bdda6ae4245b554732cea27aa7efa5b359"),
-            new CompatibilityFixture("end-of-round-v22", "d8b1fa36d12ab27c4ce8c42df0332b25d79e5a2ed19a817596798cb2c3d383d7"),
-            new CompatibilityFixture("pending-minion-battle-v22", "45b525282b2a5266f027d931522272e773a53c4aaecdd899d50fc22785486b7b"),
-            new CompatibilityFixture("placed-token-v22", "d318016a9fdd51c4b06d04f190ca30810a1c8fbbadcebdf2004fb95e837d3493"),
-            new CompatibilityFixture("attached-marker-v22", "2f805bb87dc1d0061b6d06825441d223063339f258a7989ea082b9924005629d"),
-            new CompatibilityFixture("pending-correction-v22", "6c2f6c7d948f0d71a46656999e6c21cc7bb24b80481ddc92c9e5c94982884fd5"),
-            new CompatibilityFixture("paused-level-up-v22", "296bcde62354a4dff7ccc5cc5aecce73d116f7c45e08e75fb101fa805463d969"),
-            new CompatibilityFixture("ended-match-v22", "666bc97b61c54f04439733f683790d6c593d29159c5696687f23e581ac860cf9"),
-            new CompatibilityFixture("verified-hand-setup-v22", "801c20fc3de4f429ed36d449f35dae00b2ac3c3f64892b26a0458d9d7cabca97"),
-            new CompatibilityFixture("paused-orbit-repeat-v22", "4c04bad40e8f8884bdc49351f56e058fa1959c7f91439de97618ba849b115b3d")
+            new CompatibilityFixture("setup-v22", "bbf1e59af5803f6b0a7bd61b66300ac5b3a3fc4fc4b8634729ddc4a54a39f0d1"),
+            new CompatibilityFixture("active-turn-v22", "6845c8e2a51b1e17e5277a2f389c0e190ab6d46fc1abf80d8960c27cb2574f2f"),
+            new CompatibilityFixture("pending-choice-v22", "cf1d07adc67dd0d6f7da13084e5975752092d5c12edc1a73f3ebcd796ce12baa"),
+            new CompatibilityFixture("end-of-round-v22", "18f8e76e69801adc07786550e1e058a2e359da009c0f226e7981ae7c337648e6"),
+            new CompatibilityFixture("pending-minion-battle-v22", "567b4987440507f072a40e399a7fb5843c19d0d1b8aadee7f27d0c4de5821620"),
+            new CompatibilityFixture("placed-token-v22", "44d5fe80230b30cf9844ea94480739480e04c8918667a82fa38c85acabcb548a"),
+            new CompatibilityFixture("attached-marker-v22", "a6b90ce4213d25d2371d11ee5df5794e25c66c4fae69214c89da724c4053f14b"),
+            new CompatibilityFixture("pending-correction-v22", "c5fdf985b2d5411098b2489ddbedd01e5d9e0ecb8ab52a48503dc6c2e57ff7f8"),
+            new CompatibilityFixture("paused-level-up-v22", "c3b4056938a486912c8cf4f58f3536c952e99fd982bfe898ea826ba9306f8b74"),
+            new CompatibilityFixture("ended-match-v22", "8777e48fc02d9421d2b4b08d8435cb7428a0ea0225371c5c891d5cb5a913a982"),
+            new CompatibilityFixture("verified-hand-setup-v22", "cb4aac055883a7c954fc95e980fc304c9a8a722592a09f53de1eac022281f89c"),
+            new CompatibilityFixture("paused-orbit-repeat-v22", "99db2a75e7b63ad3ef72e9aa38c7f9e771b6e30e953dc507bac12b8e82157390")
         };
 
         [Test]

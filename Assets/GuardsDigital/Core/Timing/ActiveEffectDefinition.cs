@@ -24,7 +24,23 @@ namespace GuardsDigital.Core.Timing
         ControllerHero = 1,
         Hero = 2,
         ControllerTeam = 3,
-        Global = 4
+        Global = 4,
+
+        /// <summary>
+        /// Milestone 8.9. Every unit standing in a declared relation to the source, inside the disk the
+        /// definition's <see cref="ActiveEffectDefinition.Radius"/> draws around its controller - Wasp's
+        /// Magnetic Dagger, "Enemy units in radius".
+        ///
+        /// It is the first scope whose membership is decided by the board rather than by the match
+        /// roster, and it is therefore the first that changes without the effect changing: p.17 moves
+        /// the disk with its hero and every unit inside it walks in and out on its own. Nothing is
+        /// stored, so the set is exactly whoever is inside at the moment a rule is asked for, which is
+        /// what "in radius" means on a card that does not say "when this resolves".
+        ///
+        /// It names units rather than heroes because p.19 does: a pinned minion is as much an enemy
+        /// unit as a pinned hero, and a scope that expanded to heroes alone would drop half the card.
+        /// </summary>
+        UnitsInRadius = 5
     }
 
     public enum ActiveEffectCancellationCondition
@@ -56,7 +72,9 @@ namespace GuardsDigital.Core.Timing
             string uniquenessKey,
             IEnumerable<TimingCheckpoint> triggerCheckpoints,
             IEnumerable<RuleModification> modifications = null,
-            IEnumerable<ConditionalObstacleOverlay> obstacleOverlays = null)
+            IEnumerable<ConditionalObstacleOverlay> obstacleOverlays = null,
+            DeclaredRadius radius = default,
+            SourceTeamRelation affectedUnitRelation = SourceTeamRelation.None)
         {
             if (string.IsNullOrWhiteSpace(definitionId))
                 throw new ArgumentException("An Active-effect definition requires a stable ID.", nameof(definitionId));
@@ -89,6 +107,9 @@ namespace GuardsDigital.Core.Timing
                 throw new ArgumentException("Declared obstacle overlays must be non-null.", nameof(obstacleOverlays));
 
             ValidateDuration(durationKind, creationCheckpoint, activationCheckpoint, expirationCheckpoint, carriesAcrossRoundBoundary);
+            ValidateDisk(affectedScope, radius, affectedUnitRelation, declaredOverlays.Length);
+            Radius = radius;
+            AffectedUnitRelation = affectedUnitRelation;
             DefinitionId = definitionId;
             AffectedScope = affectedScope;
             DurationKind = durationKind;
@@ -137,6 +158,76 @@ namespace GuardsDigital.Core.Timing
         /// marker; one that declares both is Wasp's Static Barrier's shape without her card's numbers.
         /// </summary>
         public IReadOnlyList<ConditionalObstacleOverlay> ObstacleOverlays { get; }
+
+        /// <summary>
+        /// Milestone 8.9. The one disk this effect draws around its controller, or
+        /// <see cref="DeclaredRadius.None"/> when it draws none.
+        ///
+        /// It lives on the definition rather than on either consumer because p.9 gives a card one
+        /// Range/Radius icon and card text "refers to this value": an effect whose affected units and
+        /// whose obstacle overlay measured different disks would be describing two cards. Both
+        /// consumers read it, and it is resolved - items and all - at derivation, never stored.
+        /// </summary>
+        public DeclaredRadius Radius { get; }
+
+        /// <summary>
+        /// Which side of the source the units inside that disk stand on, for
+        /// <see cref="ActiveEffectAffectedScopeKind.UnitsInRadius"/>; <c>None</c> for every other
+        /// scope, because none of them selects by position at all.
+        /// </summary>
+        public SourceTeamRelation AffectedUnitRelation { get; }
+
+        /// <summary>
+        /// The disk's own consistency, stated once. A scope that selects by position needs a radius and
+        /// a side to select by, and a declared overlay needs a radius to draw itself at; a definition
+        /// that needs neither may not carry one, because a disk nothing measures is a number a reader
+        /// would have to decide the meaning of.
+        /// </summary>
+        private static void ValidateDisk(
+            ActiveEffectAffectedScopeKind affectedScope,
+            DeclaredRadius radius,
+            SourceTeamRelation affectedUnitRelation,
+            int declaredOverlayCount)
+        {
+            var scopeDrawsADisk = affectedScope == ActiveEffectAffectedScopeKind.UnitsInRadius;
+            if (scopeDrawsADisk && affectedUnitRelation == SourceTeamRelation.None)
+            {
+                throw new ArgumentException(
+                    "A radius-scoped Active effect states which side of its source the units it " +
+                    "affects stand on; state SourceTeamRelation.AnyTeam when it affects every unit.",
+                    nameof(affectedUnitRelation));
+            }
+
+            if (!scopeDrawsADisk && affectedUnitRelation != SourceTeamRelation.None)
+            {
+                throw new ArgumentException(
+                    "Only a radius-scoped Active effect selects the units it affects by side.",
+                    nameof(affectedUnitRelation));
+            }
+
+            if (!Enum.IsDefined(typeof(SourceTeamRelation), affectedUnitRelation))
+            {
+                throw new ArgumentException(
+                    "A radius-scoped Active effect states a defined team relation.",
+                    nameof(affectedUnitRelation));
+            }
+
+            var needsADisk = scopeDrawsADisk || declaredOverlayCount > 0;
+            if (needsADisk && !radius.IsDefined)
+            {
+                throw new ArgumentException(
+                    "An Active effect whose scope or overlay is measured from a disk requires the " +
+                    "radius that disk is drawn at.",
+                    nameof(radius));
+            }
+
+            if (!needsADisk && radius.IsDefined)
+            {
+                throw new ArgumentException(
+                    "An Active effect that measures nothing from a disk declares no radius.",
+                    nameof(radius));
+            }
+        }
 
         private static void ValidateDuration(
             ActiveEffectDurationKind duration,

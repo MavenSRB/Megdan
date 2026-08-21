@@ -80,7 +80,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.ClearActionCompleted(
                 resolutionId, replacementOffer, replacedAttackActionDefinitionId)));
-            steps.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
+            steps.Add(ResolutionStep.AtActionEnded(
+                replacementOffer.SourceCardInstanceId,
+                replacementOffer.ActionDefinitionId,
+                replacementOffer.ActorId,
+                ActionKind.Clear));
             return CardActionResolutionResult.Accept(true, null, null, steps);
         }
     }

@@ -149,11 +149,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() => new IEffectCapabilityHandler[]
         {
-            new ModificationEffectHandler(GrantDefenseBonusV1, DefenseBonusDefinition),
-            new ModificationEffectHandler(RestrictFastTravelV1, FastTravelRestrictionDefinition),
-            new ModificationEffectHandler(PermitMoveThroughObstaclesV1, MoveThroughPermissionDefinition),
-            new ModificationEffectHandler(GrantPushImmunityV1, PushImmunityDefinition),
-            new ModificationEffectHandler(CountAsMinionV1, CountsAsMinionDefinition)
+            new ActiveEffectCreationHandler(GrantDefenseBonusV1, DefenseBonusDefinition),
+            new ActiveEffectCreationHandler(RestrictFastTravelV1, FastTravelRestrictionDefinition),
+            new ActiveEffectCreationHandler(PermitMoveThroughObstaclesV1, MoveThroughPermissionDefinition),
+            new ActiveEffectCreationHandler(GrantPushImmunityV1, PushImmunityDefinition),
+            new ActiveEffectCreationHandler(CountAsMinionV1, CountsAsMinionDefinition)
         };
 
         /// <summary>Every definition these capabilities can create, for a fixture that needs them all.</summary>
@@ -166,73 +166,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             CountsAsMinionDefinition
         });
 
-        /// <summary>
-        /// Creates its one declared Active effect on the acting hero.
-        ///
-        /// The handler stays a pure rules executor: it decides that the effect exists, and the lifecycle
-        /// owns when it activates, when it expires, and what cancels it. Creating an effect that already
-        /// exists is a legal no-op rather than a failure, which is what <c>Applied</c> means, and the
-        /// lifecycle's own uniqueness rule refuses a duplicate independently.
-        /// </summary>
-        private sealed class ModificationEffectHandler : IEffectCapabilityHandler
-        {
-            private readonly ActiveEffectDefinition definition;
-
-            internal ModificationEffectHandler(
-                EffectCapabilityReference reference,
-                ActiveEffectDefinition definition)
-            {
-                Reference = reference;
-                this.definition = definition;
-                ActiveEffectDefinitions = Array.AsReadOnly(new[] { definition });
-            }
-
-            public EffectCapabilityReference Reference { get; }
-
-            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                outputs: new[] { new EffectOutputBinding("affected", EffectValueKind.Hero) });
-
-            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; }
-
-            public EffectExecutionResult Execute(EffectCapabilityContext context)
-            {
-                var affected = new[] { new EffectOutcomeFact("affected", EffectValue.Hero(context.ActorId)) };
-                if (context.Timing == null || context.Participants == null)
-                {
-                    // Outside a live match there is no lifecycle to create into. A legal rules no-op.
-                    return EffectExecutionResult.Applied(affected);
-                }
-
-                var effectId = ActiveEffectInstanceIdentity.Mint(context, definition);
-                if (context.Timing.Effects.All(effect => !effect.Id.Equals(effectId)))
-                {
-                    context.Timing.Create(
-                        effectId,
-                        definition,
-                        context.ActorId,
-                        context.Participants.GetTeamForHero(context.ActorId).Side,
-                        default,
-                        context.SourceCardInstanceId,
-                        context.ActionDefinitionId,
-                        Math.Max(context.RoundIndex, 1),
-                        Math.Max(context.TurnIndex, 1));
-                }
-
-                return EffectExecutionResult.Applied(affected);
-            }
-
-            public EffectExecutionResult Resume(
-                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
-                throw new InvalidOperationException("This capability never requests a choice.");
-
-            /// <summary>
-            /// Always applies, so the answer needs to read nothing - which is the point of asking here
-            /// rather than executing: this handler's own execution creates the effect and mints its
-            /// instance identity, and a probe that ran it would grant the modification it was asked
-            /// whether the actor could grant.
-            /// </summary>
-            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                EffectExecutionResultKind.Applied;
-        }
+        // Milestone 8.9 lifted this handler out to ActiveEffectCreationHandler, unchanged, so
+        // Wasp's two basic cards register their Active effects through the same code rather than
+        // through a second copy of it. Nothing about these five declarations moved with it.
     }
 }

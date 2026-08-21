@@ -522,6 +522,73 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.9. The configured mirror with something for Magnetic Dagger to hit and something
+        /// left standing for its After-the-attack text to pin.
+        ///
+        /// <para>Both placements are needed and neither is arbitrary. A Blue melee minion stands beside
+        /// the Red hero because p.13 resolves an Attack on a minion without a Defense response - "it is
+        /// simply defeated" - so the attack runs to p.14's step 7 inside one command and nothing about
+        /// the pin depends on how a defender answered. The Blue hero stands two spaces away because the
+        /// card's radius is 3 and its target must be adjacent: at distance 2 the hero is inside the
+        /// disk and is not the thing being attacked, which is the only position where "enemy units in
+        /// radius" can be observed to contain a unit the Attack did not remove.</para>
+        /// </summary>
+        public static MatchSession CreateMagneticDaggerSession(out MinionId adjacentMinionId)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var withMinion = WithAMeleeMinionBesideTheRedHero(map, setup, out adjacentMinionId);
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                withMinion.SelectedMap,
+                withMinion.WaveCount,
+                withMinion.TieBreakerState,
+                withMinion.Teams,
+                WithBlueHeroAtDistance(map, withMinion, 2),
+                withMinion.Minions));
+        }
+
+        /// <summary>
+        /// The Blue hero moved to a free playable space exactly <paramref name="spaces"/> from the Red
+        /// one, measured the way p.18's Near/Far counts - spaces, obstacles included.
+        /// </summary>
+        private static IReadOnlyList<QuickGameHeroSetupState> WithBlueHeroAtDistance(
+            BoardMapDefinition map, QuickGameSetupState setup, int spaces)
+        {
+            var redHero = setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Heroes.Where(hero => hero.TeamSide != TeamSide.Blue)
+                    .Select(hero => hero.Coordinate)
+                    .Concat(setup.Minions.Select(minion => minion.Coordinate)));
+            var space = map.Spaces
+                .Where(candidate => candidate.Kind == BoardMapSpaceKind.Playable &&
+                    !occupied.Contains(candidate.Coordinate) &&
+                    HexDistanceQuery.Calculate(redHero.Coordinate, candidate.Coordinate) == spaces)
+                .OrderBy(candidate => candidate.Coordinate.Q)
+                .ThenBy(candidate => candidate.Coordinate.R)
+                .FirstOrDefault();
+            Assert.That(space, Is.Not.Null,
+                $"The official map has to offer a free playable space {spaces} from the Red hero, or " +
+                "this fixture proves nothing.");
+
+            return setup.Heroes
+                .Select(hero => hero.TeamSide == TeamSide.Blue
+                    ? new QuickGameHeroSetupState(
+                        hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
+                        hero.SpawnPoint,
+                        new ConfiguredSpaceReference(map.Id, space.Id),
+                        space.Coordinate)
+                    : hero)
+                .ToArray();
+        }
+
+        /// <summary>
         /// One session from one named fixture configuration, with the Blue hero moved beside the Red
         /// one. Extracted at milestone 8.6 from the identical bodies above it.
         /// </summary>

@@ -549,7 +549,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CardTextTiming.AfterTheAttack, resolution, resolution.ActorId, definitions));
             events.Add(ResolutionStep.FromFact(CardActionResolutionEvent.AttackResolutionCompleted(
                 resolution, AttackResolutionOutcome.AttackSuccessful)));
-            events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
+            events.Add(ResolutionStep.AtActionEnded(
+                resolution.SourceCardInstanceId,
+                resolution.ActionDefinitionId,
+                resolution.ActorId,
+                ActionKind.Attack));
 
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;
@@ -895,7 +899,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions));
             events.Add(ResolutionStep.FromFact(
                 CardActionResolutionEvent.AttackResolutionCompleted(completedResolution, outcome)));
-            events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
+            events.Add(ResolutionStep.AtActionEnded(
+                completedResolution.SourceCardInstanceId,
+                completedResolution.ActionDefinitionId,
+                completedResolution.ActorId,
+                ActionKind.Attack));
 
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;

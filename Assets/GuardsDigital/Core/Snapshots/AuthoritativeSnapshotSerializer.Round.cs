@@ -195,7 +195,11 @@ namespace GuardsDigital.Core.Snapshots
                         // Nothing is in flight at this restore point - the pending action is
                         // absent by construction - so no hero is performing an action for a
                         // conditional overlay to apply during.
-                        GuardsDigital.Core.Rules.Modifications.RuleObject.None),
+                        GuardsDigital.Core.Rules.Modifications.RuleObject.None,
+                        // Milestone 8.9: the same items the cross-check below reads, because an
+                        // Active effect's declared Radius icon is raised by them exactly as a
+                        // performed card's is.
+                        verifyingHeroItems),
                     verifyingHeroItems);
             }
 

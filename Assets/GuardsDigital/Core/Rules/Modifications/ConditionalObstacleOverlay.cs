@@ -58,33 +58,27 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// on an Active-effect definition, supplied only while that instance is active, and re-derived on
     /// every ask, so nothing is stored and a restored effect produces exactly this overlay again.
     ///
-    /// The radius is declared here as a number. p.17 makes the <em>anchor</em> the moving part - "an
-    /// Active effect's Radius moves with its hero" - and that is bound at derivation from the source
-    /// hero's current space, which is why nothing here names a space.
+    /// Neither the radius nor the anchor is named here. p.17 makes the <em>anchor</em> the moving part -
+    /// "an Active effect's Radius moves with its hero" - and it is bound at derivation from the source
+    /// hero's current space; the <em>radius</em> is the source card's, so milestone 8.9 moved it up to
+    /// <see cref="GuardsDigital.Core.Timing.ActiveEffectDefinition.Radius"/> where the effect's one
+    /// disk is stated once. p.9 gives a card one Range/Radius icon, and a definition whose overlay
+    /// drew its disk at a different number from its own scope would be describing two cards.
     /// </summary>
     public sealed class ConditionalObstacleOverlay
     {
         private ConditionalObstacleOverlay(
-            int radius,
             SourceTeamRelation actingHeroRelation,
             IReadOnlyList<ObstacleOverlayArm> arms)
         {
-            Radius = radius;
             ActingHeroRelation = actingHeroRelation;
             Arms = arms;
         }
 
         public static ConditionalObstacleOverlay Declare(
-            int radius,
             SourceTeamRelation actingHeroRelation,
             params ObstacleOverlayArm[] arms)
         {
-            if (radius < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(radius), radius, "An overlay's radius is the inclusive disk p.9 defines.");
-            }
-
             if (actingHeroRelation == SourceTeamRelation.None ||
                 !Enum.IsDefined(typeof(SourceTeamRelation), actingHeroRelation))
             {
@@ -110,13 +104,9 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             return new ConditionalObstacleOverlay(
-                radius,
                 actingHeroRelation,
                 new ReadOnlyCollection<ObstacleOverlayArm>(arms.ToArray()));
         }
-
-        /// <summary>The inclusive radius the boundary is drawn at, measured from the bound anchor.</summary>
-        public int Radius { get; }
 
         /// <summary>Whose actions this overlay applies during.</summary>
         public SourceTeamRelation ActingHeroRelation { get; }
@@ -135,6 +125,6 @@ namespace GuardsDigital.Core.Rules.Modifications
         }
 
         public override string ToString() =>
-            $"Radius {Radius} obstacle overlay for {ActingHeroRelation} ({string.Join(", ", Arms)})";
+            $"Obstacle overlay for {ActingHeroRelation} ({string.Join(", ", Arms)})";
     }
 }

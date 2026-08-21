@@ -9,8 +9,10 @@ using GuardsDigital.Core.Rules.Placement;
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
-    /// The typed composition of Wasp's Skills: her five telekinetic ones at milestone 8.6 - the first
-    /// verified official card text this project runs - and her two kinetic ones at 8.8.
+    /// The typed composition of Wasp's card text: her five telekinetic Skills at milestone 8.6 - the
+    /// first verified official card text this project runs - her two kinetic ones at 8.8, and at 8.9
+    /// her two basic cards, which are also the first Attack text this project applies at one of
+    /// rulebook p.14's numbered moments.
     ///
     /// <para><b>Nothing here is a handler.</b> Every node below names a capability that already existed
     /// and a policy that is now declarable, which is what milestone 8.2's capability matrix promised for
@@ -45,6 +47,16 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         public static EffectDefinition SkillEffectFor(CardDefinitionId cardId, string contentRevision)
         {
+            if (cardId.Equals(WaspCardContent.StaticBarrier))
+            {
+                // p.12: "When you perform a Skill action, simply apply the card text." The whole of
+                // this card's text is the `This turn` barrier, so its effect is the one node that
+                // raises it and there is nothing to sequence it with.
+                return CreateActiveEffect(
+                    SkillEffectId(cardId), contentRevision,
+                    WaspActiveEffectContent.CloseBarrierInRadiusV1, "barrier");
+            }
+
             if (cardId.Equals(WaspCardContent.LiftUp) ||
                 cardId.Equals(WaspCardContent.ControlGravity))
             {
@@ -86,6 +98,78 @@ namespace GuardsDigital.Core.Cards.Verified
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Wasp's card text for one printed Attack, or <c>null</c> for an Attack whose composition is
+        /// still owed - the same pairing <see cref="SkillEffectFor"/> has with the table's own debt
+        /// column, and refused the same way by <see cref="ActionDefinition"/> if the two disagree.
+        ///
+        /// Milestone 8.9 composes one: Magnetic Dagger's. Its Attack itself needs nothing declared -
+        /// "Target a unit adjacent to you" is p.13's own sentence for a non-Ranged Attack, word for
+        /// word, so the printed target policy narrows nothing and the card runs through the combat
+        /// contracts exactly as every Attack before it did. What is new is the rider hanging off
+        /// milestone 8.5's seam.
+        /// </summary>
+        public static EffectDefinition AttackTextFor(CardDefinitionId cardId, string contentRevision)
+        {
+            if (cardId.Equals(WaspCardContent.MagneticDagger))
+            {
+                return CreateActiveEffect(
+                    AttackTextEffectId(cardId), contentRevision,
+                    WaspActiveEffectContent.PinEnemyUnitsInRadiusV1, "pin");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Which of rulebook p.14's three moments an Attack's composed text is applied at, named by the
+        /// keyword the face prints rather than parsed out of the transcription.
+        ///
+        /// Every Attack rider in Wasp's set prints "After the attack:", so this answers one moment
+        /// today; it is asked per card rather than inferred from "this card has text" because the page
+        /// has three moments and a card that printed "Before the attack" would otherwise run its text
+        /// at the wrong one silently.
+        /// </summary>
+        public static CardTextTiming AttackTextTimingFor(CardDefinitionId cardId) =>
+            cardId.Equals(WaspCardContent.MagneticDagger)
+                ? CardTextTiming.AfterTheAttack
+                : CardTextTiming.None;
+
+        /// <summary>
+        /// One node: the capability that creates this card's declared Active effect.
+        ///
+        /// Both of milestone 8.9's cards compose to this shape and neither needs more. Everything
+        /// either sentence says is definition content on the Active effect itself - the scope, the
+        /// radius, the restricted actors, the overlay's arms - so an effect tree with branches in it
+        /// would be describing the same rule twice in a second vocabulary. The node is
+        /// <see cref="EffectFailurePolicy.Mandatory"/> because the printed text is not optional and
+        /// creating the effect cannot fail, and it asks no question, which is what lets Magnetic
+        /// Dagger's copy run inside an Attack at all (milestone 8.5's card-text rule).
+        /// </summary>
+        private static EffectDefinition CreateActiveEffect(
+            EffectDefinitionId effectId,
+            string contentRevision,
+            EffectCapabilityReference capability,
+            string nodePrefix)
+        {
+            var root = new EffectNodeId($"{nodePrefix}-root");
+            return new EffectDefinition(
+                effectId,
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        capability,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                ActiveEffectCreationHandler.AffectedOutputName, EffectValueKind.Hero)
+                        })
+                });
         }
 
         /// <summary>
@@ -390,5 +474,12 @@ namespace GuardsDigital.Core.Cards.Verified
 
         private static EffectDefinitionId SkillEffectId(CardDefinitionId cardId) =>
             new EffectDefinitionId($"{cardId.Value}-skill");
+
+        /// <summary>
+        /// A printed Attack's card text names the text rather than the action, because unlike a Skill's
+        /// root it is not the action - p.14 applies it at a moment inside one.
+        /// </summary>
+        private static EffectDefinitionId AttackTextEffectId(CardDefinitionId cardId) =>
+            new EffectDefinitionId($"{cardId.Value}-attack-text");
     }
 }

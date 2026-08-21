@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Setup;
@@ -37,6 +40,12 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// overlay applies "while an enemy hero is performing an action", so which hero that is decides
         /// what the board's spaces are. A caller at a moment when nobody is acting writes
         /// <see cref="RuleObject.None"/>, and every overlay then applies to nobody.
+        ///
+        /// Milestone 8.9 adds the items, and they are nullable rather than required because that is
+        /// what they already are wherever a printed total is composed: p.16's Item Bonus reaches an
+        /// Active effect's declared Radius icon exactly as it reaches the same icon on the card being
+        /// performed, and <c>null</c> is a composition holding no items at all rather than a hero
+        /// holding none.
         /// </summary>
         public static RuleModificationSet Build(
             ActiveEffectLifecycle timing,
@@ -44,7 +53,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             MatchParticipants participants,
             TieBreakerState tieBreaker,
             GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates,
-            RuleObject actingObject)
+            RuleObject actingObject,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             if (board != null && participants == null)
             {
@@ -75,7 +85,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             var applied = new List<AppliedRuleModification>();
             if (timing != null)
             {
-                applied.AddRange(FromActiveEffects(timing, participants));
+                applied.AddRange(FromActiveEffects(timing, board, participants, heroItems));
             }
 
             if (board != null)
@@ -86,7 +96,7 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             var overlays = timing == null || board == null
                 ? (IEnumerable<AppliedObstacleOverlay>)Array.Empty<AppliedObstacleOverlay>()
-                : FromDeclaredOverlays(timing, board, participants, actingObject);
+                : FromDeclaredOverlays(timing, board, participants, actingObject, heroItems);
             return new RuleModificationSet(applied, overlays, tieBreaker);
         }
 
@@ -110,7 +120,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             ActiveEffectLifecycle timing,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            RuleObject actingObject)
+            RuleObject actingObject,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             TeamSide? actingSide = null;
             var actingSpace = default(GuardsDigital.Core.Board.HexCoordinate);
@@ -131,11 +142,13 @@ namespace GuardsDigital.Core.Rules.Modifications
                     continue;
                 }
 
+                var radius = ResolveRadius(effect, heroItems);
                 for (var index = 0; index < effect.Definition.ObstacleOverlays.Count; index++)
                 {
                     yield return AppliedObstacleOverlay.Bind(
                         effect.Definition.ObstacleOverlays[index],
                         anchor,
+                        radius,
                         $"{effect.Id.Value}:overlay:{index}",
                         effect.ControllerHeroId,
                         effect.ControllerTeamSide,
@@ -147,7 +160,9 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         private static IEnumerable<AppliedRuleModification> FromActiveEffects(
             ActiveEffectLifecycle timing,
-            MatchParticipants participants)
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             foreach (var effect in timing.Effects)
             {
@@ -159,7 +174,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                     continue;
                 }
 
-                foreach (var affectedObject in AffectedObjects(effect, participants))
+                foreach (var affectedObject in AffectedObjects(effect, board, participants, heroItems))
                 {
                     foreach (var modification in effect.Definition.Modifications)
                     {
@@ -177,7 +192,9 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         private static IEnumerable<RuleObject> AffectedObjects(
             ActiveEffectInstance effect,
-            MatchParticipants participants)
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             switch (effect.Definition.AffectedScope)
             {
@@ -208,11 +225,111 @@ namespace GuardsDigital.Core.Rules.Modifications
                     }
 
                     break;
+                case ActiveEffectAffectedScopeKind.UnitsInRadius:
+                    foreach (var unit in UnitsInRadius(effect, board, participants, heroItems))
+                    {
+                        yield return unit;
+                    }
+
+                    break;
                 default:
                     throw new InvalidOperationException(
                         $"Active effect '{effect.Id.Value}' declares modifications under an unsupported scope.");
             }
         }
+
+        /// <summary>
+        /// Milestone 8.9. Rulebook p.19's units standing inside the disk this effect draws, on the side
+        /// of its source that it names - Wasp's Magnetic Dagger, "Enemy units in radius".
+        ///
+        /// <para>Three of its four decisions are deliberate refusals to ask a second question. The disk
+        /// is anchored at the controller's current space, which is p.17's Radius moving with its hero
+        /// and the same anchor the overlays take. Membership is geometry alone -
+        /// <see cref="RadiusQuery.Contains"/>, counting spaces through obstacles - because p.9 says
+        /// there are no line-of-sight rules. And the side is
+        /// <see cref="TargetQuery.StandsInRelationTo"/>, the relationship arm milestone 8.8 opened,
+        /// rather than a second reading of who is whose enemy.</para>
+        ///
+        /// <para>The fourth is the one that could not have been otherwise: nothing here consults the
+        /// modification set, because this <em>is</em> its derivation. That costs nothing the rules
+        /// wanted. p.17's <c>Counts As</c> replaces a unit's type, and both types this walks are units,
+        /// so no declaration can move an object in or out of "enemy units" - only off the board, which
+        /// takes it out of the walk itself. A controller who has left the board anchors no disk and the
+        /// effect affects nobody, exactly as p.16's Ultimate supplies nothing from off board.</para>
+        ///
+        /// <para>The source itself is never among them, for the reason
+        /// <see cref="TargetQuery.FindTargetsWithin"/> asks before admitting the object at its origin:
+        /// p.19 keeps self and another distinct. The card that needed this scope excludes its own hero
+        /// by naming the other side anyway, so the exclusion decides nothing today and states the
+        /// page's reading for the declaration that names no side.</para>
+        /// </summary>
+        private static IEnumerable<RuleObject> UnitsInRadius(
+            ActiveEffectInstance effect,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+        {
+            if (board == null)
+            {
+                throw new InvalidOperationException(
+                    $"Active effect '{effect.Id.Value}' affects the units inside a radius, which " +
+                    "cannot be decided without the board they are standing on.");
+            }
+
+            if (!board.TryGetHeroCoordinate(effect.ControllerHeroId, out var anchor))
+            {
+                yield break;
+            }
+
+            var radius = new ValueResult(
+                PrintedValueChannel.Radius,
+                new[]
+                {
+                    new ValueContribution(
+                        ValueContributionKind.PrintedIcon,
+                        effect.SourceCardInstanceId,
+                        effect.SourceActionDefinitionId,
+                        PrintedValueChannel.Radius,
+                        ResolveRadius(effect, heroItems))
+                });
+            var relation = effect.Definition.AffectedUnitRelation;
+            foreach (var occupancy in board.Occupancies)
+            {
+                var hero = BoardObjectReference.ForHero(occupancy.HeroId);
+                if (!occupancy.HeroId.Equals(effect.ControllerHeroId) &&
+                    RadiusQuery.Contains(anchor, radius, occupancy.Coordinate) &&
+                    TargetQuery.StandsInRelationTo(
+                        relation, hero, effect.ControllerHeroId, participants, board))
+                {
+                    yield return RuleObject.ForHero(occupancy.HeroId);
+                }
+            }
+
+            foreach (var minion in board.Minions)
+            {
+                var unit = BoardObjectReference.ForMinion(minion.MinionId);
+                if (RadiusQuery.Contains(anchor, radius, minion.Coordinate) &&
+                    TargetQuery.StandsInRelationTo(
+                        relation, unit, effect.ControllerHeroId, participants, board))
+                {
+                    yield return RuleObject.ForMinion(minion.MinionId);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The disk one effect draws right now: its declared radius with p.16's items composed onto it
+        /// when the declaration is a printed icon. Asked once per effect so the scope and the overlays
+        /// of one definition cannot measure different disks.
+        /// </summary>
+        private static int ResolveRadius(
+            ActiveEffectInstance effect,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems) =>
+            effect.Definition.Radius.Resolve(
+                effect.ControllerHeroId,
+                effect.SourceCardInstanceId,
+                effect.SourceActionDefinitionId,
+                heroItems);
 
         private static IEnumerable<HeroId> HeroesOnSide(
             MatchParticipants participants,
