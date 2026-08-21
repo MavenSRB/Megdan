@@ -221,13 +221,22 @@ namespace GuardsDigital.Tests.PlayMode
                 "LEVEL UP",
                 "RED WASP REACHED LEVEL 2 - UPGRADE A CARD",
                 "PAID 1 COIN - 1 REMAINING",
-                // Three upgradable cards with p.15's two candidates each, which is the shape the
-                // configured hand actually produces: the grid breaks a row per card, and each row
-                // comes out one colour because the page finds both candidates at the chosen card's
-                // own colour.
-                UpgradeOptions(CardColor.Red, "RED BOMBARD", "red-bombard-card")
-                    .Concat(UpgradeOptions(CardColor.Blue, "RED BULWARK", "red-bulwark-card"))
-                    .Concat(UpgradeOptions(CardColor.Green, "RED PURSUIT", "red-pursuit-card")));
+                // Milestone 8.8a: the six choices the configured Wasp hand actually produces, in the
+                // order the pause produces them - the Blue pair, the Red pair, the Green pair, each one
+                // upgraded card with p.15's two candidates. The grid is what turns that into two rows of
+                // Blue, Green, Red, so the capture proves the reordering rather than being handed it.
+                UpgradeOptions(
+                        WaspCardContent.LiftUp,
+                        WaspCardContent.ControlGravity,
+                        WaspCardContent.KineticRepulse)
+                    .Concat(UpgradeOptions(
+                        WaspCardContent.Shock,
+                        WaspCardContent.Electrocute,
+                        WaspCardContent.ChargedBoomerang))
+                    .Concat(UpgradeOptions(
+                        WaspCardContent.StopProjectiles,
+                        WaspCardContent.DeflectProjectiles,
+                        WaspCardContent.Telekinesis)));
             runtime.RoundView.Render(new RoundActionViewModel(
                 current.Version + 1,
                 current.RoundIndex,
@@ -634,19 +643,37 @@ namespace GuardsDigital.Tests.PlayMode
                 $"and it carries the word ACTIVE {because}, so the state is never colour alone.");
         }
 
-        /// <summary>p.15's two answers for one card, both at that card's own colour.</summary>
+        /// <summary>
+        /// p.15's two answers for one upgraded card, both at that card's own colour, from Wasp's printed
+        /// content: taking either candidate sets the other aside, and the item that arrives is the icon
+        /// printed on the card that was not taken.
+        /// </summary>
         private static IEnumerable<SystemTransitionOptionViewModel> UpgradeOptions(
-            CardColor color, string name, string instanceId)
+            CardDefinitionId upgradedId,
+            CardDefinitionId firstCandidateId,
+            CardDefinitionId secondCandidateId)
         {
-            foreach (var variant in new[] { "A", "B" })
+            var upgraded = WaspCardContent.Definition(upgradedId);
+            foreach (var pair in new[]
+                {
+                    new[] { firstCandidateId, secondCandidateId },
+                    new[] { secondCandidateId, firstCandidateId }
+                })
             {
-                var sibling = variant == "A" ? "B" : "A";
+                var taken = WaspCardContent.Definition(pair[0]);
+                var setAside = WaspCardContent.Definition(pair[1]);
                 yield return new SystemTransitionOptionViewModel(
-                    $"UPGRADE TEST - {name} INTO TEST - {name} II-{variant}",
-                    $"SETS TEST - {name} II-{sibling} ASIDE AS A ATK +1 ITEM",
+                    $"UPGRADE {upgraded.DisplayName} INTO {taken.DisplayName}",
+                    $"SETS {setAside.DisplayName} ASIDE AS A " +
+                        $"{MatchHudTheme.ChannelToken(setAside.Progression.ItemIcon)} +1 ITEM",
                     DirectorCommand.AdvanceEndOfRound(),
-                    color,
-                    new CardInstanceId(instanceId));
+                    upgraded.Progression.Color,
+                    new CardInstanceId($"capture-{upgradedId.Value}"),
+                    CurrentRoundCards.DeckCard(
+                        new CardInstanceId($"capture-{taken.Id.Value}"), taken),
+                    upgraded.DisplayName,
+                    setAside.Progression.ItemIcon,
+                    setAside.DisplayName);
             }
         }
 

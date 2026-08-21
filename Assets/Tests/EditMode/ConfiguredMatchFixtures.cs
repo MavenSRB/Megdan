@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
@@ -995,6 +996,60 @@ namespace GuardsDigital.Tests.EditMode
             Accept(session, DirectorCommand.AdvanceEndOfRound());
             Assert.That(session.Projection.PendingSystemTransitionStep, Is.Not.Null,
                 "p.15 stops the end of round on the upgrade the purchased level forces.");
+            return session;
+        }
+
+        /// <summary>
+        /// The verified Wasp mirror stopped exactly where rulebook p.15's Upgrade a Card asks its
+        /// question, with the hero the pause belongs to reported.
+        ///
+        /// <para>Milestone 8.8a. <see cref="CreateSessionPausedOnLevelUpUpgrade"/> reaches the same pause
+        /// from the mechanics-showcase hand, whose faces are synthetic and print no words; this one is
+        /// what a player actually sees, because it is the hand the configured scene deals. It needs the
+        /// verified content for one reason the showcase hand cannot supply: the prompt draws each
+        /// candidate's whole printed face, and only transcribed content can prove that the words on it
+        /// are the words the card prints.</para>
+        ///
+        /// <para>The coin is earned the way every coin in this project is earned - p.13's Defeat - and
+        /// milestone 8.9 is what made that reachable from a Wasp: Magnetic Dagger's printed Attack
+        /// resolves against p.13's minion arm inside one command, so the round collects two coins and
+        /// p.15's table charges one of them for the first level.</para>
+        /// </summary>
+        public static MatchSession CreateVerifiedMirrorPausedOnLevelUpUpgrade(out HeroId levellingHeroId)
+        {
+            var session = CreateMagneticDaggerSession(out var minionId);
+            var red = HandCards(session, TeamSide.Red).Single(card =>
+                card.DefinitionReference.DefinitionId.Equals(WaspCardContent.MagneticDagger));
+            var blue = HandCards(session, TeamSide.Blue).Single(card =>
+                card.DefinitionReference.DefinitionId.Equals(WaspCardContent.StopProjectiles));
+            Accept(session, DirectorCommand.CommitCard(red.OwnerId, red.Id));
+            Accept(session, DirectorCommand.CommitCard(blue.OwnerId, blue.Id));
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id),
+                "Magnetic Dagger's printed Initiative 12 acts before Stop Projectiles' 3, so the " +
+                "Attack is the first thing the round resolves.");
+
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                offer.IsAvailable &&
+                session.Projection.Definitions
+                    .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
+                    .ActionDefinitions
+                    .Single(action => action.Id.Equals(offer.ActionDefinitionId))
+                    .Kind == ActionKind.Attack);
+            Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));
+
+            var choice = session.Projection.PendingAttackTargetChoice;
+            Assert.That(choice.LegalTargetMinionIds, Has.Member(minionId));
+            Accept(session, DirectorCommand.ChooseAttackTarget(
+                choice.ResolutionId, choice.ChoiceId, minionId));
+            Assert.That(session.Projection.Minions.Any(minion => minion.MinionId.Equals(minionId)),
+                Is.False, "The Attack has to defeat the minion, or the round collects no coin.");
+
+            PlayOutTheRestOfTheRound(session);
+            AdvanceToStage(session, EndOfRoundStage.LevelUpAndUpgrade);
+            Accept(session, DirectorCommand.AdvanceEndOfRound());
+            Assert.That(session.Projection.PendingSystemTransitionStep, Is.Not.Null,
+                "p.15 stops the end of round on the upgrade the purchased level forces.");
+            levellingHeroId = session.Projection.PendingSystemTransitionDescription.HeroId;
             return session;
         }
 

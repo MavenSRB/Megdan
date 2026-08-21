@@ -199,6 +199,52 @@ namespace GuardsDigital.Presentation.Match
                 PrintedValueChannel.Radius
             });
 
+        /// <summary>
+        /// The order this HUD reads a set of differently coloured cards in, when the set itself carries
+        /// no order the rules decided: Blue, then Green, then Red, with p.15's two Basic colours after
+        /// them.
+        ///
+        /// <para>Milestone 8.8a, and it is deliberately narrow. Everywhere the authority states an order
+        /// - the tray's three lifecycle groups, a pause's own option list, a round's assignment history -
+        /// that order is the one drawn, and this is not consulted. It exists for the one surface where a
+        /// set of options is laid out as a grid of colour columns rather than as a list: p.15's Upgrade a
+        /// Card offers two candidates per upgradable card, the pause orders those pairs by card instance
+        /// identity, and a column order taken from that identity would put the same three colours in a
+        /// different left-to-right order for every hero. Choosing them nothing decides is not a fact, so
+        /// it is stated once here rather than invented at the surface.</para>
+        ///
+        /// <para>It reorders columns only. Which options exist, which pair each belongs to, and the order
+        /// of the candidates inside a pair all stay the projection's, which is what keeps presentation
+        /// from inventing choice authority.</para>
+        /// </summary>
+        public static readonly IReadOnlyList<CardColor> ColorReadingOrder = Array.AsReadOnly(
+            new[]
+            {
+                CardColor.Blue,
+                CardColor.Green,
+                CardColor.Red,
+                CardColor.Gold,
+                CardColor.Silver
+            });
+
+        /// <summary>
+        /// Where <paramref name="color"/> sits in <see cref="ColorReadingOrder"/>. A colour the list does
+        /// not name sorts after every colour it does, so an unexpected value is still ordered
+        /// deterministically rather than dropped or thrown on.
+        /// </summary>
+        public static int ColorReadingRank(CardColor color)
+        {
+            for (var index = 0; index < ColorReadingOrder.Count; index++)
+            {
+                if (ColorReadingOrder[index] == color)
+                {
+                    return index;
+                }
+            }
+
+            return ColorReadingOrder.Count;
+        }
+
         /// <summary>A signed amount as p.16 states one: "+1", never "1".</summary>
         public static string Signed(int amount) =>
             amount >= 0

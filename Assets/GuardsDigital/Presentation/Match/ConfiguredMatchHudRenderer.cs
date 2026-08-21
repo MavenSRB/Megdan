@@ -149,6 +149,13 @@ namespace GuardsDigital.Presentation.Match
         private PanelSettings panelSettings;
         private VisualElement root;
         private VisualElement trayRegion;
+
+        /// <summary>
+        /// Whether the last layout gave the tray region the taller bound p.15's upgrade grid needs.
+        /// Milestone 8.8a: it is what makes the extra layout happen once per transition instead of once
+        /// per frame.
+        /// </summary>
+        private bool trayUsesTallContext;
         private VisualElement directorDrawer;
         private Button directorToggle;
         private MatchStatusBarUnityView statusBar;
@@ -441,7 +448,16 @@ namespace GuardsDigital.Presentation.Match
             trayRegion.style.height = StyleKeyword.Auto;
             trayRegion.style.bottom = Mathf.Max(0f, height - tray.yMax);
             trayRegion.style.maxWidth = tray.width;
-            trayRegion.style.maxHeight = tray.height;
+            // Milestone 8.8a: p.15's upgrade prompt draws whole card faces in two rows, which is taller
+            // than the share a tray of one row may take. It is allowed the whole space under the status
+            // strip while it stands, and nothing competes for it: the ordinary tray is hidden behind a
+            // mandatory decision, and the board's own framing is computed from the ordinary bound below,
+            // so the map does not move when the prompt opens and closes. The region still sizes to its
+            // own content, so a prompt that fits the ordinary bound occupies no more than it did.
+            trayUsesTallContext = round?.HasUpgradeCardGrid == true;
+            trayRegion.style.maxHeight = trayUsesTallContext
+                ? Mathf.Max(tray.height, CalculateTallContextHeight(height))
+                : tray.height;
             var playfield = CalculatePlayfieldRect(width, height);
             heroOverviews?.Layout(
                 CalculateHeroRailRect(width, height, TeamSide.Red),
@@ -471,6 +487,15 @@ namespace GuardsDigital.Presentation.Match
             }
 
             hands.SetHidden(round.HasExclusiveDecision || minionChoice?.Model != null);
+
+            // Milestone 8.8a. The tray's own bound depends on what the contextual region is drawing, and
+            // that can change without the header changing - a paused prompt is rendered into the region
+            // by its own presenter. Re-laying out only on the transition keeps this a two-state answer
+            // rather than twenty style writes a frame.
+            if (round.HasUpgradeCardGrid != trayUsesTallContext)
+            {
+                Layout();
+            }
         }
 
         private void ApplyDirectorDrawerState()
@@ -534,6 +559,22 @@ namespace GuardsDigital.Presentation.Match
                 height);
         }
 
+        /// <summary>
+        /// The tallest the tray region may be when the contextual region is drawing whole card faces in
+        /// more than one row: everything under the status strip, less the band the `DIRECTOR` toggle
+        /// moves into, inside the same margin every region keeps.
+        ///
+        /// Milestone 8.8a. `CardPanelTallViewportShare` exists to stop an ordinary one-row tray covering
+        /// board nobody asked it to; two rows of whole card faces are taller than that share allows, and
+        /// they are drawn only while a mandatory decision has already hidden the tray, so the bound is
+        /// stated separately here rather than by raising the share for every tray. The reserved toggle
+        /// band is what keeps Undo reachable at the one moment this region is at its largest.
+        /// </summary>
+        public static float CalculateTallContextHeight(float viewportHeight) =>
+            Mathf.Max(
+                0f,
+                viewportHeight - (Margin * 3f) - StatusBarHeight - DirectorToggleHeight);
+
         public static Rect CalculatePlayfieldRect(float viewportWidth, float viewportHeight)
         {
             var tray = CalculateCardPanelRect(viewportWidth, viewportHeight);
@@ -566,8 +607,30 @@ namespace GuardsDigital.Presentation.Match
                 Mathf.Max(0f, StatusBarHeight - (Margin * 2f)));
         }
 
-        private static Rect GetDirectorToggleRect()
+        /// <summary>
+        /// Where the `DIRECTOR` toggle stands: just above the tray, or - milestone 8.8a - just under the
+        /// status strip while p.15's upgrade grid has the tray region taller than its ordinary bound.
+        ///
+        /// The move exists because the toggle is the only way to Undo, and Undo is exactly as legitimate
+        /// while a mandatory decision stands as at any other moment; leaving it under the enlarged region
+        /// would have covered it. <see cref="CalculateTallContextHeight"/> reserves this band, so the
+        /// toggle stays clear even when the grid takes the whole bound.
+        /// </summary>
+        private Rect GetDirectorToggleRect()
         {
+            if (trayUsesTallContext)
+            {
+                // Beside the Red rail rather than on it: the rail owns the left edge from the status
+                // strip down, and the band between it and the board is the only part of this corner
+                // nothing else draws in.
+                var rail = CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Red);
+                return new Rect(
+                    rail.xMax + Margin,
+                    StatusBarHeight + Margin,
+                    DirectorToggleWidth,
+                    DirectorToggleHeight);
+            }
+
             var playfield = CalculatePlayfieldRect(Screen.width, Screen.height);
             return new Rect(
                 Margin,
@@ -576,12 +639,18 @@ namespace GuardsDigital.Presentation.Match
                 DirectorToggleHeight);
         }
 
-        private static Rect GetDirectorDrawerRect()
+        /// <summary>
+        /// The drawer opens upward from the toggle, and downward from it when the toggle has moved to the
+        /// top of its column, because there is nothing above it there to open into.
+        /// </summary>
+        private Rect GetDirectorDrawerRect()
         {
             var toggle = GetDirectorToggleRect();
             return new Rect(
                 toggle.x,
-                Mathf.Max(Margin, toggle.yMin - DirectorDrawerHeight - 6f),
+                trayUsesTallContext
+                    ? toggle.yMax + 6f
+                    : Mathf.Max(Margin, toggle.yMin - DirectorDrawerHeight - 6f),
                 DirectorDrawerWidth,
                 DirectorDrawerHeight);
         }

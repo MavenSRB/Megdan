@@ -1839,7 +1839,11 @@ namespace GuardsDigital.Presentation.Match
             string detail,
             DirectorCommand command,
             CardColor color = CardColor.None,
-            CardInstanceId sourceCardInstanceId = default)
+            CardInstanceId sourceCardInstanceId = default,
+            TrayCardViewModel card = null,
+            string returnedCardName = null,
+            PrintedValueChannel itemIcon = PrintedValueChannel.None,
+            string setAsideCardName = null)
         {
             SourceCardInstanceId = sourceCardInstanceId;
             Label = string.IsNullOrWhiteSpace(label)
@@ -1849,6 +1853,13 @@ namespace GuardsDigital.Presentation.Match
             Command = command ?? throw new ArgumentNullException(nameof(command));
             Color = color;
             ColorName = color == CardColor.None ? string.Empty : MatchHudTheme.ColorName(color);
+            Card = card;
+            ReturnedCardName = returnedCardName ?? string.Empty;
+            ItemIcon = itemIcon;
+            SetAsideCardName = setAsideCardName ?? string.Empty;
+            ItemLabel = itemIcon == PrintedValueChannel.None
+                ? string.Empty
+                : $"{MatchHudTheme.ChannelToken(itemIcon)} {MatchHudTheme.Signed(1)}";
         }
 
         public string Label { get; }
@@ -1882,6 +1893,42 @@ namespace GuardsDigital.Presentation.Match
         /// pause offered them, which is the rule presentation must not bend.
         /// </summary>
         public CardInstanceId SourceCardInstanceId { get; }
+
+        /// <summary>
+        /// The card taking this option puts in the hero's hand, as the tray draws a card, or null for an
+        /// option that is not about a card at all - p.8's Place names a space.
+        ///
+        /// <para>Milestone 8.8a. p.15's decision is a choice between two cards, and every fact a player
+        /// needs to make it - Initiative, the printed values, the action and its qualifier, p.9's Range
+        /// or Radius icon, and the exact words the face prints - is on the card rather than in a name.
+        /// It is built by the same reading the tray builds a card with, so a candidate and the card that
+        /// arrives in hand cannot be drawn as two different cards.</para>
+        /// </summary>
+        public TrayCardViewModel Card { get; }
+
+        /// <summary>
+        /// p.15's "Return this card to your deck": the display name of the card the hero gives up. Empty
+        /// when the option is not an upgrade.
+        /// </summary>
+        public string ReturnedCardName { get; }
+
+        /// <summary>
+        /// p.16's icon on the card p.15 sets aside - the item this option gains - or
+        /// <see cref="PrintedValueChannel.None"/> when nothing is set aside or no dashboard slot accepts
+        /// its icon.
+        ///
+        /// <para>It is the <em>other</em> candidate's icon, which is why it belongs on the option rather
+        /// than on the card face: a player choosing between two cards of one colour is also choosing
+        /// which of the two items they gain, and the item they gain is printed on the card they do not
+        /// take.</para>
+        /// </summary>
+        public PrintedValueChannel ItemIcon { get; }
+
+        /// <summary>`ATK +1` - the gained item as the rails already draw an item bonus, or empty.</summary>
+        public string ItemLabel { get; }
+
+        /// <summary>The display name of the card p.15 sets aside, or empty when none is.</summary>
+        public string SetAsideCardName { get; }
     }
 
     /// <summary>
@@ -2397,7 +2444,18 @@ namespace GuardsDigital.Presentation.Match
                         FormatUpgradeDetail(definitions, option),
                         DirectorCommand.AnswerSystemTransitionStep(Invocation(description, option)),
                         DefinitionColor(definitions, option.UpgradedCard),
-                        option.UpgradedCardInstanceId)));
+                        option.UpgradedCardInstanceId,
+                        // Milestone 8.8a: the candidate itself, as a whole printed face. A definition the
+                        // projection does not carry reads as a face that states nothing, which is what
+                        // `ReadFace` already does for a tray card - one missing registration must not
+                        // take a mandatory decision off the screen.
+                        CurrentRoundCards.DeckCard(
+                            option.TakenCardInstanceId, Definition(definitions, option.TakenCard)),
+                        DefinitionName(definitions, option.UpgradedCard),
+                        option.ItemIcon,
+                        option.SetAsideCardInstanceId.IsDefined
+                            ? DefinitionName(definitions, option.SetAsideCard)
+                            : string.Empty)));
             }
 
             return new SystemTransitionPromptViewModel(
@@ -2443,6 +2501,18 @@ namespace GuardsDigital.Presentation.Match
             (definitions ?? Array.Empty<CardDefinition>())
                 .FirstOrDefault(definition => definition.Reference.Equals(reference))
                 ?.Progression.Color ?? CardColor.None;
+
+        /// <summary>
+        /// The definition behind one reference, or null when this projection does not carry it - which
+        /// only happens for content that was never registered. Milestone 8.8a: the upgrade prompt draws
+        /// a whole card face from it, and <see cref="CurrentRoundCards.ReadFace"/> already states the
+        /// absence as a face rather than faulting.
+        /// </summary>
+        private static CardDefinition Definition(
+            IReadOnlyList<CardDefinition> definitions,
+            CardDefinitionReference reference) =>
+            (definitions ?? Array.Empty<CardDefinition>())
+                .FirstOrDefault(definition => definition.Reference.Equals(reference));
 
         private static string DefinitionName(
             IReadOnlyList<CardDefinition> definitions,

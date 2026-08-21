@@ -27,7 +27,19 @@ namespace GuardsDigital.Presentation.Match
         Available = 2,
 
         /// <summary>In the discard pile, wherever it came from.</summary>
-        Discarded = 3
+        Discarded = 3,
+
+        /// <summary>
+        /// Still in the hero's deck, which p.5 leaves face-down and p.15's Level Up and p.16's unlock are
+        /// the only ways out of.
+        ///
+        /// Milestone 8.8a. The tray never produces it - the tray draws one hero's current round, and a
+        /// deck card is not in one - but p.15's upgrade prompt draws the candidate it is offering as a
+        /// whole card face, and the card it is offering is in the deck. Saying so is the alternative to
+        /// borrowing <see cref="Available"/>, which would put the word `AVAILABLE` on the lifecycle band
+        /// of a card that is not in anybody's hand.
+        /// </summary>
+        Deck = 4
     }
 
     /// <summary>
@@ -240,7 +252,9 @@ namespace GuardsDigital.Presentation.Match
                     ? $"PLAYED · TURN {playedTurnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
                     : group == TrayCardGroup.Discarded
                         ? "DISCARDED"
-                        : "AVAILABLE";
+                        : group == TrayCardGroup.Deck
+                            ? "IN DECK"
+                            : "AVAILABLE";
             ActiveLabel = isActiveEffectSource ? "ACTIVE" : string.Empty;
             AssistiveLabel = $"{DisplayName} - {ColorName} - {Face.ValueLine} - {HistoryLabel}" +
                 (isActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty);
@@ -850,6 +864,28 @@ namespace GuardsDigital.Presentation.Match
                 projection.IsActiveEffectSource(card.Id),
                 isResolving);
         }
+
+        /// <summary>
+        /// One card still in a hero's deck as a tray card, for a surface that offers it: p.15's Upgrade a
+        /// Card draws each candidate replacement as the whole printed face a player will be holding.
+        ///
+        /// <para>Milestone 8.8a. It goes through the same <see cref="ReadFace"/> every tray card goes
+        /// through, so the card a prompt offers and the card that arrives in the hand cannot be drawn as
+        /// two different cards. The two states a deck card cannot be in are stated rather than asked:
+        /// nothing sourced from it can be a live Active effect, because an effect's source is a card that
+        /// was played, and it is not the card being resolved for the same reason.</para>
+        /// </summary>
+        public static TrayCardViewModel DeckCard(
+            CardInstanceId cardInstanceId, CardDefinition definition) =>
+            new TrayCardViewModel(
+                cardInstanceId,
+                definition?.DisplayName ?? cardInstanceId.Value,
+                definition?.Progression.Color ?? CardColor.None,
+                ReadFace(definition),
+                TrayCardGroup.Deck,
+                0,
+                true,
+                false);
 
         /// <summary>
         /// Milestone 8.5a: one card definition read into the four value homes and the printed words its

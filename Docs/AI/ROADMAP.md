@@ -69,6 +69,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 6 - Completed milestone definitions](Roadmap/PHASE_6_COMPLETED.md)
 - [Phase 7 - Progression, victory, and the complete synthetic core loop](Roadmap/PHASE_7.md)
 - [Phase 8 - Verified hero content, deterministic 3v3, and private online validation](Roadmap/PHASE_8.md)
+- [Phase 8 - Completed milestone definitions](Roadmap/PHASE_8_COMPLETED.md)
 - [Phase 9 - Presentation and pitch polish](Roadmap/PHASE_9.md)
 - [Phase 10 - Private publisher pitch package](Roadmap/PHASE_10.md)
 - [Post-pitch production direction - not scheduled](Roadmap/POST_PITCH.md)

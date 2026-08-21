@@ -1562,6 +1562,342 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.8a: p.15's upgrade choices as tray-style cards
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void EachUpgradeChoice_DrawsItsCandidateThroughTheTraysOwnCardFace()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var description = session.Projection.PendingSystemTransitionDescription;
+            var prompt = view.Model.SystemTransitionPrompt;
+            Assert.That(prompt.Options, Has.Count.EqualTo(6),
+                "p.5 leaves Wasp holding one card of each non-basic colour, and p.15 finds two " +
+                "candidates for each of the three.");
+
+            for (var index = 0; index < prompt.Options.Count; index++)
+            {
+                var option = description.Options[index];
+                var drawn = prompt.Options[index];
+                var taken = session.Projection.Definitions
+                    .Single(definition => definition.Reference.Equals(option.TakenCard));
+                var expected = CurrentRoundCards.ReadFace(taken);
+
+                Assert.That(drawn.Card, Is.Not.Null);
+                Assert.That(drawn.Card.CardInstanceId, Is.EqualTo(option.TakenCardInstanceId),
+                    "The face is the candidate replacement card, which is the card the option puts " +
+                    "in the hand - not the card it takes out.");
+                Assert.That(drawn.Card.DisplayName, Is.EqualTo(taken.DisplayName));
+                Assert.That(drawn.Card.Color, Is.EqualTo(taken.Progression.Color));
+                Assert.That(drawn.Card.ColorName,
+                    Is.EqualTo(MatchHudTheme.ColorName(taken.Progression.Color)),
+                    "and its colour is readable as a word, because nothing here means a thing by " +
+                    "colour alone.");
+                Assert.That(drawn.Card.Group, Is.EqualTo(TrayCardGroup.Deck));
+                Assert.That(drawn.Card.HistoryLabel, Is.EqualTo("IN DECK"),
+                    "p.15 finds the candidates in the deck, and the lifecycle band says so rather " +
+                    "than borrowing a word about a card in somebody's hand.");
+                Assert.That(drawn.Card.IsActiveEffectSource, Is.False);
+                Assert.That(drawn.Card.IsResolving, Is.False);
+
+                Assert.That(drawn.Card.Face.ValueLine, Is.EqualTo(expected.ValueLine),
+                    "Every printed value is read into the same regions the tray reads them into.");
+                Assert.That(drawn.Card.Face.PrimaryActionLabel,
+                    Is.EqualTo(expected.PrimaryActionLabel),
+                    "including p.13's Ranged and p.14's Block qualifiers, which are typed facts.");
+                Assert.That(drawn.Card.Face.PrintedTextKind,
+                    Is.EqualTo(CardSourceContentKind.Transcribed),
+                    "Wasp's deck is verified content, so the prompt shows printed words.");
+                Assert.That(drawn.Card.Face.PrintedText, Is.EqualTo(taken.SourceContent.PrintedText),
+                    "and shows them verbatim, without decoding them.");
+                Assert.That(
+                    drawn.Card.Face.Initiative?.Amount,
+                    Is.EqualTo(taken.Initiative.IsDefined ? taken.Initiative.Value : (int?)null));
+            }
+
+            var options = Descendants(view.Root)
+                .Where(element => element.name == "gd-upgrade-option")
+                .ToArray();
+            Assert.That(options, Has.Length.EqualTo(6));
+            foreach (var control in options)
+            {
+                foreach (var region in new[]
+                    {
+                        "gd-card-preview", "gd-card-name-band", "gd-card-secondary-values",
+                        "gd-card-primary-action", "gd-card-rules", "gd-card-history"
+                    })
+                {
+                    Assert.That(Descendants(control).Count(element => element.name == region),
+                        Is.EqualTo(1),
+                        $"Each option draws exactly one {region} - the tray's builder, not a second " +
+                        "abbreviated card design.");
+                }
+            }
+
+            // The user's 2026-08-22 Game View decision. The card returned to the deck and the sibling
+            // set aside are not written under six card faces - the grid already says both, because a
+            // column is one upgraded card and the sibling is the other card in it - but neither fact is
+            // lost: each option's own hover and assistive reading still carries them.
+            var drawnText = options
+                .SelectMany(Descendants)
+                .OfType<Label>()
+                .Select(label => label.text)
+                .ToArray();
+            foreach (var option in prompt.Options)
+            {
+                Assert.That(drawnText.Any(text => text.Contains(option.ReturnedCardName)), Is.False,
+                    "The card p.15 returns to the deck is not written on or under the face.");
+                Assert.That(drawnText.Any(text => text.Contains(option.SetAsideCardName)), Is.False,
+                    "and neither is the card it sets aside.");
+            }
+
+            foreach (var control in options)
+            {
+                var option = prompt.Options.Single(candidate =>
+                    control.tooltip.StartsWith(candidate.Label, StringComparison.Ordinal));
+                Assert.That(control.tooltip,
+                    Does.Contain(option.ReturnedCardName).And.Contain(option.SetAsideCardName),
+                    "Both stay available as words, in the reading this HUD keeps a fact it stops " +
+                    "drawing in.");
+            }
+        }
+
+        [Test]
+        public void TheSixUpgradeChoices_AreTwoRowsOfBlueGreenRedKeepingEachPairsProjectedOrder()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var prompt = view.Model.SystemTransitionPrompt;
+            var rows = Descendants(view.Root)
+                .Where(element => element.name == "gd-upgrade-row")
+                .ToArray();
+            Assert.That(rows, Has.Length.EqualTo(2), "Two candidates per card, so two rows.");
+
+            var drawn = rows
+                .Select(row => row.Children()
+                    .Where(cell => cell.name == "gd-upgrade-option")
+                    .Select(cell => Descendants(cell)
+                        .First(element => element.name == "gd-card-preview"))
+                    .ToArray())
+                .ToArray();
+            foreach (var row in drawn)
+            {
+                Assert.That(row, Has.Length.EqualTo(3), "Three colours, so three columns.");
+            }
+
+            // The reading and focus order is the element order, which is what a pointer follows down a
+            // row and what keyboard focus follows through the tree.
+            var order = rows
+                .SelectMany(row => row.Children().Where(cell => cell.name == "gd-upgrade-option"))
+                .ToArray();
+            Assert.That(order, Has.Length.EqualTo(6));
+
+            var byControl = order
+                .Select(control => prompt.Options.Single(option =>
+                    control.tooltip.StartsWith(option.Label, StringComparison.Ordinal)))
+                .ToArray();
+            Assert.That(
+                byControl.Take(3).Select(option => option.Color),
+                Is.EqualTo(new[] { CardColor.Blue, CardColor.Green, CardColor.Red }),
+                "The first row reads Blue, Green, Red.");
+            Assert.That(
+                byControl.Skip(3).Select(option => option.Color),
+                Is.EqualTo(new[] { CardColor.Blue, CardColor.Green, CardColor.Red }),
+                "and so does the second, so a column is one colour top to bottom.");
+
+            // The pause's own order is not Blue, Green, Red - it orders its pairs by card instance
+            // identity - so the grid is doing real work here rather than being handed the answer.
+            Assert.That(
+                prompt.Options.Select(option => option.Color).Distinct(),
+                Is.Not.EqualTo(new[] { CardColor.Blue, CardColor.Green, CardColor.Red }),
+                "and it is a reordering: the projected order is not already this one.");
+
+            for (var column = 0; column < 3; column++)
+            {
+                var pair = new[] { byControl[column], byControl[column + 3] };
+                Assert.That(pair[0].SourceCardInstanceId, Is.EqualTo(pair[1].SourceCardInstanceId),
+                    "A column is p.15's two answers for one upgraded card.");
+                var projected = prompt.Options
+                    .Where(option => option.SourceCardInstanceId.Equals(pair[0].SourceCardInstanceId))
+                    .ToArray();
+                Assert.That(pair, Is.EqualTo(projected),
+                    "and the two candidates keep the order the pause offered them, so presentation " +
+                    "invents no choice authority.");
+            }
+        }
+
+        [Test]
+        public void AnUpgradeChoice_ForwardsOnlyItsProjectedInvocationAndNamesTheItemItGains()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
+            var view = new RoundActionUnityView();
+            var presenter = new RoundActionPresenter(session, view);
+            presenter.Refresh();
+
+            var description = session.Projection.PendingSystemTransitionDescription;
+            var prompt = view.Model.SystemTransitionPrompt;
+            var forwarded = new List<TypedInvocationViewModel>();
+            view.InvocationSubmitted += invocation => forwarded.Add(invocation);
+
+            for (var index = 0; index < prompt.Options.Count; index++)
+            {
+                var option = description.Options[index];
+                var drawn = prompt.Options[index];
+
+                // The item is printed on the card the option does *not* take, which is why it belongs
+                // to the option rather than to the face: choosing between two cards of one colour is
+                // also choosing which of the two items the hero ends the round holding.
+                var setAside = session.Projection.Definitions
+                    .Single(definition => definition.Reference.Equals(option.SetAsideCard));
+                Assert.That(drawn.SetAsideCardName, Is.EqualTo(setAside.DisplayName));
+                Assert.That(drawn.ItemIcon, Is.EqualTo(option.ItemIcon));
+                Assert.That(drawn.ItemIcon, Is.Not.EqualTo(PrintedValueChannel.None),
+                    "Wasp's dashboard accepts every icon her Tier II cards print.");
+                Assert.That(drawn.ItemLabel,
+                    Is.EqualTo($"{MatchHudTheme.ChannelToken(option.ItemIcon)} +1"),
+                    "and it reads the way p.16's bonus already reads on the hero rail.");
+                Assert.That(drawn.ReturnedCardName,
+                    Is.EqualTo(session.Projection.Definitions
+                        .Single(definition => definition.Reference.Equals(option.UpgradedCard))
+                        .DisplayName),
+                    "p.15's returned card is still stated.");
+                Assert.That(drawn.Card.DisplayName, Is.Not.EqualTo(drawn.SetAsideCardName),
+                    "The card drawn is the one taken; the item comes from the other one.");
+            }
+
+            var items = Descendants(view.Root)
+                .Where(element => element.name == "gd-upgrade-item")
+                .ToArray();
+            Assert.That(items, Has.Length.EqualTo(6),
+                "Every option states the item it gains, beside its card rather than on it.");
+
+            var chosen = prompt.Options[0];
+            Assert.That(view.ForwardUpgradeOption(chosen), Is.True);
+            Assert.That(forwarded, Has.Count.EqualTo(1));
+            Assert.That(forwarded[0].Command, Is.SameAs(chosen.Command),
+                "The whole option card forwards the invocation the continuation itself projected, " +
+                "unchanged.");
+            Assert.That(presenter.Submit(forwarded[0]), Is.True);
+            Assert.That(session.Projection.PendingSystemTransitionStep, Is.Null);
+
+            var stale = chosen;
+            view.Render(view.Model);
+            presenter.Refresh();
+            Assert.That(view.ForwardUpgradeOption(stale), Is.False,
+                "An option this rebuild did not draw forwards nothing at all.");
+            Assert.That(forwarded, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void PointingAtAnUpgradeChoice_MarksExactlyOneWithoutResizingAnyCard()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var prompt = view.Model.SystemTransitionPrompt;
+            var controls = Descendants(view.Root)
+                .Where(element => element.name == "gd-upgrade-option")
+                .ToArray();
+            var widths = controls.Select(control => control.style.width.value.value).ToArray();
+            Assert.That(widths.Distinct().Count(), Is.EqualTo(1), "Every option is one width.");
+
+            Assert.That(view.HighlightedUpgradeOption, Is.Null, "Nothing is marked to begin with.");
+            Assert.That(
+                controls.Count(control =>
+                    control.style.borderTopColor.value == MatchHudTheme.SelectedOutline),
+                Is.EqualTo(0));
+
+            var chosen = prompt.Options[3];
+            view.ForwardUpgradeOptionHighlight(chosen);
+            Assert.That(view.HighlightedUpgradeOption, Is.SameAs(chosen));
+            Assert.That(
+                controls.Count(control =>
+                    control.style.borderTopColor.value == MatchHudTheme.SelectedOutline),
+                Is.EqualTo(1),
+                "Exactly one option wears the HUD's shared selection outline.");
+            Assert.That(
+                controls.Select(control => control.style.width.value.value), Is.EqualTo(widths),
+                "and marking it changes no card's width, so nothing re-wraps and no row moves.");
+
+            var marked = controls.Single(control =>
+                control.style.borderTopColor.value == MatchHudTheme.SelectedOutline);
+            Assert.That(marked.tooltip, Does.Contain(chosen.Label).And.Contain(chosen.Detail),
+                "The selected option states what it is and what taking it does, so the selection is " +
+                "assistive as well as visible.");
+
+            view.ForwardUpgradeOptionHighlight(null);
+            Assert.That(view.HighlightedUpgradeOption, Is.Null);
+            Assert.That(
+                controls.Count(control =>
+                    control.style.borderTopColor.value == MatchHudTheme.SelectedOutline),
+                Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TheUpgradeGrid_IsTheOnlyContextAndFitsTheValidatedViewportsTray()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            Assert.That(view.HasExclusiveDecision, Is.True,
+                "A paused transition is the only usable interaction context, so the ordinary tray, " +
+                "End Turn and the end-of-round advance all step aside.");
+            Assert.That(view.Model.EndTurnInvocation, Is.Null);
+            Assert.That(view.Model.ContinueEndOfRoundInvocation, Is.Null);
+
+            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(2048f, 1152f);
+            var row = Descendants(view.Root).First(element => element.name == "gd-upgrade-row");
+            var cells = row.Children().ToArray();
+            var width = cells.Sum(cell => cell.style.width.value.value) +
+                (DirectorHandsUnityView.CardGap * (cells.Length - 1));
+
+            // The gutter the shared section label reserves, plus the tray region's own padding and
+            // border, are what the three columns have to fit inside beside.
+            Assert.That(width + 96f + 26f, Is.LessThanOrEqualTo(tray.width),
+                "Three whole card faces and their gutters fit the tray's width at the validated " +
+                "desktop viewport, so nothing is reachable only by scrolling sideways.");
+
+            // Two rows of whole card faces are taller than the share an ordinary one-row tray may take,
+            // so the region is allowed the height under the status strip while this prompt stands.
+            Assert.That(view.HasUpgradeCardGrid, Is.True);
+            var tall = ConfiguredMatchHudRenderer.CalculateTallContextHeight(1152f);
+            Assert.That(DirectorHandsUnityView.CardMinimumHeight * 2f, Is.GreaterThan(tray.height),
+                "which the ordinary bound could not hold.");
+            Assert.That(
+                (DirectorHandsUnityView.CardMinimumHeight * 2f) + DirectorHandsUnityView.CardGap,
+                Is.LessThanOrEqualTo(tall),
+                "Both rows of card faces stand inside the viewport at the validated desktop view.");
+            Assert.That(tall, Is.GreaterThan(tray.height),
+                "and the taller bound is only reached while the prompt stands, so the ordinary tray " +
+                "covers exactly as much board as it did.");
+            Assert.That(
+                tall + ConfiguredMatchHudRenderer.StatusBarHeight,
+                Is.LessThan(1152f - 30f),
+                "The bound reserves the band the DIRECTOR toggle moves into, so Undo stays reachable " +
+                "at the one moment this region is at its largest.");
+
+            var controls = Descendants(view.Root)
+                .Where(element => element.name == "gd-upgrade-option")
+                .ToArray();
+            Assert.That(controls, Has.Length.EqualTo(6));
+            Assert.That(controls.All(control => control.focusable), Is.True,
+                "so all six stay keyboard-reachable inside the scrolled body.");
+            Assert.That(controls.All(control => control.enabledSelf), Is.True,
+                "and none of them is drawn as a refusal.");
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-upgrade-gap"),
+                Is.EqualTo(0),
+                "Wasp's six fill the grid exactly, so no column reserves an empty cell.");
+        }
+
         [Test]
         public void AnsweringAProjectedOption_AdvancesTheStageAndSuppressesNothingElseWrongly()
         {

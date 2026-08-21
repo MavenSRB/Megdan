@@ -1532,12 +1532,30 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private const float OptionWidth = 430f;
 
+        /// <summary>
+        /// The frame an upgrade option's card sits in: enough for the shared selection outline and a
+        /// little air, on every side. Milestone 8.8a. Three of these plus their gutters and the section's
+        /// own label are well inside the tray's 1280 bound, which is the constraint the grid has to
+        /// respect - two rows of full-height cards are taller than the tray, and the tray already scrolls.
+        /// </summary>
+        private const float UpgradeOptionInset = 6f;
+
         public static readonly Color DefensePreviewBackgroundColor =
             new Color(0.025f, 0.035f, 0.045f, 1f);
 
         private readonly VisualElement status;
         private readonly VisualElement rows;
         private readonly VisualElement preview;
+
+        /// <summary>
+        /// The upgrade-option controls this rebuild drew, in the order they were drawn. Milestone 8.8a:
+        /// the selection outline belongs to exactly one of them at a time, so marking one means unmarking
+        /// the rest, and a driver with no pointer has to be able to reach them by option.
+        /// </summary>
+        private readonly List<KeyValuePair<SystemTransitionOptionViewModel, VisualElement>>
+            upgradeOptionControls =
+                new List<KeyValuePair<SystemTransitionOptionViewModel, VisualElement>>();
+
         private DefenseBreakdownViewModel activeDefensePreview;
         private Rect defensePreviewAnchor;
         private double dismissPreviewAt = -1d;
@@ -1601,10 +1619,31 @@ namespace GuardsDigital.Presentation.Match
         public ClearTokenCandidateViewModel HighlightedClearToken { get; private set; }
 
         /// <summary>
+        /// The upgrade option the pointer or keyboard focus is on, or null when none is.
+        ///
+        /// Milestone 8.8a. It is view-local and drives nothing outside this region - p.15's choice is
+        /// about two cards rather than about a space, so there is no board cue to raise - and it exists
+        /// so the selection a player sees on the card is a fact a test can read rather than a colour
+        /// only a screenshot carries.
+        /// </summary>
+        public SystemTransitionOptionViewModel HighlightedUpgradeOption { get; private set; }
+
+        /// <summary>
         /// Whether the current model carries a decision that must be answered before anything else can
         /// happen. The tray is hidden while one stands, which is how "at most one usable interaction
         /// context" is kept structurally rather than by discipline.
         /// </summary>
+        /// <summary>
+        /// Whether the region is currently drawing p.15's upgrade choices as card faces, which is the one
+        /// thing this region draws that is taller than one row of cards.
+        ///
+        /// Milestone 8.8a. The renderer asks it so the paused prompt can use the whole height under the
+        /// status strip; every other state this region can be in fits the tray's ordinary bound.
+        /// </summary>
+        public bool HasUpgradeCardGrid =>
+            Model?.SystemTransitionPrompt != null &&
+            Model.SystemTransitionPrompt.Options.All(option => option.Card != null);
+
         public bool HasExclusiveDecision =>
             Model != null &&
             (Model.SystemTransitionPrompt != null ||
@@ -1734,6 +1773,11 @@ namespace GuardsDigital.Presentation.Match
         {
             status.Clear();
             rows.Clear();
+            // Milestone 8.8a: the controls a rebuild is about to discard, and the selection that belonged
+            // to them. A highlight belongs to the model it was read from, exactly as every other one here
+            // does.
+            upgradeOptionControls.Clear();
+            HighlightedUpgradeOption = null;
             status.Add(HudElements.Text(Model.Status, 12f, MatchHudTheme.PrimaryText));
 
             // Milestone 7.8a: a paused system transition is the whole of the region while it stands.
@@ -1798,6 +1842,18 @@ namespace GuardsDigital.Presentation.Match
             grid.style.flexGrow = 1f;
             section.Add(grid);
 
+            // Milestone 8.8a: p.15's decision is a choice between cards, so it is drawn as cards. Every
+            // option of an upgrade carries the candidate's own face; a pause whose options carry none -
+            // p.8's Place names a space - keeps the labelled controls below.
+            if (prompt.Options.All(option => option.Card != null))
+            {
+                // The gutter names the family beside the first row rather than halfway down two rows of
+                // cards, which is where a row's own vertical centring would leave it.
+                section.style.alignItems = Align.FlexStart;
+                BuildUpgradeOptionGrid(grid, prompt);
+                return;
+            }
+
             // One row per card the options are about, which p.15's own option order already groups them
             // by: the page asks which card to upgrade and which of its two next-Tier cards to take, so
             // the answers for one card arrive together. Breaking the line where that card changes is a
@@ -1817,6 +1873,215 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 row.Add(BuildTransitionOption(option));
+            }
+        }
+
+        /// <summary>
+        /// p.15's options as a grid of card faces: one column per upgradable card, one row per candidate.
+        ///
+        /// <para>Milestone 8.8a. The columns are the pairs the pause itself grouped - options for one
+        /// upgraded card arrive together, so grouping them is reading the projection rather than sorting
+        /// it - and the candidates inside a column keep the order the pause offered them, which is what
+        /// decides which of p.15's two cards is drawn above the other.</para>
+        ///
+        /// <para>What this milestone does decide is the left-to-right order of the columns, and it takes
+        /// it from <see cref="MatchHudTheme.ColorReadingOrder"/> rather than from the pause. The pause
+        /// orders its pairs by card instance identity, which puts the same three colours in a different
+        /// order for every hero and in no order a player could learn; the colours are the one thing about
+        /// this decision that is the same every time it is asked, so they are what the columns are read
+        /// by. It reorders columns and nothing else: no option is added, removed, or moved out of its own
+        /// pair.</para>
+        /// </summary>
+        private void BuildUpgradeOptionGrid(
+            VisualElement grid, SystemTransitionPromptViewModel prompt)
+        {
+            var columns = new List<List<SystemTransitionOptionViewModel>>();
+            foreach (var option in prompt.Options)
+            {
+                var column = columns.FirstOrDefault(candidate =>
+                    candidate[0].SourceCardInstanceId.Equals(option.SourceCardInstanceId));
+                if (column == null)
+                {
+                    column = new List<SystemTransitionOptionViewModel>();
+                    columns.Add(column);
+                }
+
+                column.Add(option);
+            }
+
+            // A stable order, so two pairs of one colour - which p.15's "1 card of each color" makes
+            // unreachable, but which nothing in this method needs to assume - keep the pause's order.
+            var ordered = columns
+                .OrderBy(column => MatchHudTheme.ColorReadingRank(column[0].Color))
+                .ToArray();
+            var rows = ordered.Max(column => column.Count);
+            for (var rowIndex = 0; rowIndex < rows; rowIndex++)
+            {
+                var row = HudElements.Row(DirectorHandsUnityView.CardGap);
+                row.name = "gd-upgrade-row";
+                row.style.alignItems = Align.FlexStart;
+                row.style.justifyContent = Justify.FlexStart;
+                row.style.flexWrap = Wrap.NoWrap;
+                grid.Add(row);
+                foreach (var column in ordered)
+                {
+                    row.Add(rowIndex < column.Count
+                        ? BuildUpgradeOption(column[rowIndex])
+                        : BuildUpgradeOptionGap());
+                }
+            }
+        }
+
+        /// <summary>
+        /// One upgrade option: the candidate's whole printed face, and beside it the facts that belong to
+        /// taking it rather than to the card.
+        ///
+        /// <para>The face is <see cref="DirectorHandsUnityView.BuildStandaloneCard"/> - the tray's own
+        /// builder - so this prompt introduces no second, abbreviated card design and cannot decode a
+        /// printed sentence. Everything the decision costs is drawn under it instead of on it: p.16's
+        /// item is the icon printed on the <em>other</em> candidate, so a player choosing between two
+        /// cards of one colour can see which item each choice leaves them holding, and the card returned
+        /// to the deck is named because p.15 takes it out of the hand.</para>
+        ///
+        /// <para>The whole control is the option. Its outline is the HUD's shared selection treatment,
+        /// always drawn and only ever changing colour, so focusing or pointing at a candidate cannot
+        /// change a card's width, re-wrap its rules text, or move the row.</para>
+        /// </summary>
+        private Button BuildUpgradeOption(SystemTransitionOptionViewModel option)
+        {
+            var control = new Button(() => ForwardUpgradeOption(option))
+            {
+                name = "gd-upgrade-option",
+                text = string.Empty
+            };
+            control.style.flexDirection = FlexDirection.Column;
+            control.style.alignItems = Align.Stretch;
+            control.style.flexShrink = 0f;
+            control.style.width = DirectorHandsUnityView.CardWidth + (UpgradeOptionInset * 2f);
+            control.style.marginLeft = 0f;
+            control.style.marginRight = 0f;
+            control.style.marginTop = 0f;
+            control.style.marginBottom = 0f;
+            HudElements.Padding(control, UpgradeOptionInset);
+            control.style.backgroundColor = MatchHudTheme.PanelBackground;
+            HudElements.MarkSelectedWithoutResizing(control, false);
+            upgradeOptionControls.Add(
+                new KeyValuePair<SystemTransitionOptionViewModel, VisualElement>(option, control));
+            HudElements.OnPointedAt(control, pointedAt =>
+                ForwardUpgradeOptionHighlight(pointedAt ? option : null));
+
+            control.Add(DirectorHandsUnityView.BuildStandaloneCard(option.Card));
+            control.Add(BuildUpgradeOptionFacts(option));
+            control.tooltip = option.Detail.Length > 0
+                ? $"{option.Label} - {option.Detail}"
+                : option.Label;
+            return control;
+        }
+
+        /// <summary>
+        /// What taking this option does, under the card it would take: p.16's item, which is the icon
+        /// printed on the candidate this option does <em>not</em> take.
+        /// </summary>
+        private static VisualElement BuildUpgradeOptionFacts(SystemTransitionOptionViewModel option)
+        {
+            var facts = HudElements.Column(3f);
+            facts.name = "gd-upgrade-facts";
+            facts.style.marginTop = 6f;
+
+            var gained = HudElements.Row(4f);
+            gained.name = "gd-upgrade-item";
+            gained.style.flexWrap = Wrap.NoWrap;
+            gained.Add(HudElements.Text("GAINS", 9f, MatchHudTheme.MutedText, FontStyle.Bold));
+            if (option.ItemIcon == PrintedValueChannel.None)
+            {
+                // Two absences p.15 and p.16 produce between them - a deck with no second candidate, and
+                // a dashboard with no slot for the icon that one prints - and `Detail` already states
+                // which of the two this is. The chip is not drawn at all rather than drawn empty.
+                gained.Add(HudElements.Text("NO ITEM", 10f, MatchHudTheme.PrimaryText, FontStyle.Bold));
+            }
+            else
+            {
+                var chip = HudElements.Row(3f);
+                chip.style.flexWrap = Wrap.NoWrap;
+                chip.style.paddingLeft = 5f;
+                chip.style.paddingRight = 5f;
+                chip.style.paddingTop = 1f;
+                chip.style.paddingBottom = 1f;
+                chip.style.backgroundColor = MatchHudTheme.RailBackground;
+                HudElements.Border(chip, MatchHudTheme.PanelBorder, 1f, 3f);
+                chip.Add(HudElements.Text(
+                    MatchHudTheme.ChannelToken(option.ItemIcon), 9f, MatchHudTheme.MutedText,
+                    FontStyle.Bold));
+                chip.Add(HudElements.Text(
+                    MatchHudTheme.Signed(1), 11f, MatchHudTheme.PrimaryText, FontStyle.Bold));
+                chip.tooltip = option.Detail;
+                gained.Add(chip);
+            }
+
+            // The user's 2026-08-22 Game View decision: the item is the only one of the three facts
+            // written under the card. Which card is set aside and which is returned to the deck are
+            // both already on the screen - the sibling is the other card in this column, and the
+            // returned card is the one whose colour the column is - so spelling them out six times
+            // said what the grid says. Both stay in the option's hover and assistive reading, where
+            // this HUD already keeps a fact a surface stops drawing.
+            facts.Add(gained);
+            return facts;
+        }
+
+        /// <summary>
+        /// A column with no candidate on this row. It reserves the option's own footprint so the columns
+        /// stay aligned, and takes no focus stop and no pointer, so an absent candidate is absent rather
+        /// than being an empty control a player can reach.
+        /// </summary>
+        private static VisualElement BuildUpgradeOptionGap()
+        {
+            var gap = new VisualElement { name = "gd-upgrade-gap" };
+            gap.style.width = DirectorHandsUnityView.CardWidth + (UpgradeOptionInset * 2f);
+            gap.style.flexShrink = 0f;
+            gap.pickingMode = PickingMode.Ignore;
+            return gap;
+        }
+
+        /// <summary>
+        /// Activates one drawn upgrade option: the same forwarding its own control does, for a driver
+        /// that has no pointer.
+        ///
+        /// Milestone 8.8a. It forwards the invocation the continuation itself projected and nothing
+        /// composed here, and an option this rebuild did not draw forwards nothing at all - so a stale
+        /// option cannot be answered through the surface any more than a forged command can be submitted
+        /// through the presenter.
+        /// </summary>
+        public bool ForwardUpgradeOption(SystemTransitionOptionViewModel option)
+        {
+            if (option == null ||
+                !upgradeOptionControls.Any(entry => ReferenceEquals(entry.Key, option)))
+            {
+                return false;
+            }
+
+            ForwardInvocation(new TypedInvocationViewModel(option.Label, option.Command));
+            return true;
+        }
+
+        /// <summary>
+        /// Marks one upgrade option as the pointed-at or focused one, and every other as not.
+        ///
+        /// Milestone 8.8a. It is public for the same reason every other highlight here is: a driver with
+        /// no pointer - the build-smoke path, and every fixture that reaches this pause without one -
+        /// has to be able to report the same thing a pointer reports. An option this prompt did not draw
+        /// selects nothing, which is the same refusal <see cref="Submit"/> makes for a forged command.
+        /// </summary>
+        public void ForwardUpgradeOptionHighlight(SystemTransitionOptionViewModel option)
+        {
+            HighlightedUpgradeOption =
+                option != null &&
+                upgradeOptionControls.Any(entry => ReferenceEquals(entry.Key, option))
+                    ? option
+                    : null;
+            foreach (var entry in upgradeOptionControls)
+            {
+                HudElements.MarkSelectedWithoutResizing(
+                    entry.Value, ReferenceEquals(entry.Key, HighlightedUpgradeOption));
             }
         }
 
