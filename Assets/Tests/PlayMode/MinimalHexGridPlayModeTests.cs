@@ -487,6 +487,118 @@ namespace GuardsDigital.Tests.PlayMode
         /// Ends the current turn, however many projected stops that takes and whether or not the action
         /// already closed it. Nothing here assumes a turn shape - only that the round moves on.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.7a in the running scene: the hero rail keeps the card being played in its own
+        /// header marker and only numbers a turn once that card has resolved.
+        ///
+        /// It runs against the saved scene rather than a fixture because the three things the milestone
+        /// asks to see are all layout - the marker fits the compact rail beside the hero's name, the
+        /// mirrored rail puts it on the opposite side, and the whole rail still stands inside the region
+        /// it reserved. The Editor tier proves the states themselves against live authority. The three
+        /// captures are the targeted Game View inspection against the approved mockup.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_SeparatesTheCardInPlayFromResolvedTurnHistoryOnBothRails()
+        {
+            yield return LoadScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            yield return null;
+            yield return null;
+
+            var rails = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToArray();
+            Assert.That(
+                Descendants(hud.RootElement).Count(element => element.name == "gd-current-card-slot"),
+                Is.EqualTo(rails.Length),
+                "Every rail reserves the marker's footprint, so the header never moves.");
+            Assert.That(
+                Descendants(hud.RootElement).Any(element => element.name == "gd-current-card"),
+                Is.False,
+                "Nobody has committed, so no rail draws a marker inside its slot.");
+
+            // One hero committed: a facedown back, and nothing about the card.
+            var red = Hand(runtime, TeamSide.Red).Cards[0];
+            Assert.That(runtime.SelectCommitmentCard(red.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            yield return null;
+            var facedown = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-current-card")
+                .ToArray();
+            Assert.That(facedown, Has.Length.EqualTo(1));
+            Assert.That(
+                Descendants(facedown[0]).Any(element => element.name == "gd-current-card-back"),
+                Is.True,
+                "A commitment nobody may read yet is a neutral back.");
+            Assert.That(
+                Descendants(hud.RootElement).OfType<UnityEngine.UIElements.Label>()
+                    .Where(label => label.name == "gd-current-card-state")
+                    .Select(label => label.text),
+                Is.EquivalentTo(new[] { "FACEDOWN" }),
+                "A back with nothing on it says nothing, so the facedown marker keeps its word.");
+            yield return Capture("tmp/milestone-8-7a-facedown.png");
+
+            // Both committed: p.7's joint reveal, both cards in play, no turn numbered yet.
+            var blue = Hand(runtime, TeamSide.Blue).Cards[0];
+            Assert.That(runtime.SelectCommitmentCard(blue.Id), Is.True);
+            Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            ResolveInitiativeChoice(runtime);
+            yield return null;
+            Assert.That(
+                Descendants(hud.RootElement).Count(element => element.name == "gd-current-card"),
+                Is.EqualTo(2),
+                "Joint reveal puts both heroes' cards in play, one marker each.");
+            Assert.That(
+                Descendants(hud.RootElement).Any(element => element.name == "gd-current-card-state"),
+                Is.False,
+                "and a revealed marker carries its colour and Initiative rather than a caption.");
+            Assert.That(
+                runtime.HeroOverviewsView.Model.Heroes
+                    .SelectMany(hero => hero.TurnSlots).Any(slot => slot.IsOccupied),
+                Is.False,
+                "The round's history names both cards already; neither turn is over.");
+
+            // Every rail stays inside its own reserved region with the marker in it, and the two rails
+            // are mirrored - the marker on the inner corner of each.
+            var playfield = ConfiguredMatchHudRenderer.CalculatePlayfieldRect(Screen.width, Screen.height);
+            foreach (var rail in Descendants(hud.RootElement).Where(element =>
+                element.name == "gd-hero-rail"))
+            {
+                var bounds = rail.worldBound;
+                Assert.That(bounds.width, Is.GreaterThan(0f), "Every rail resolved a real rectangle.");
+                Assert.That(bounds.width,
+                    Is.LessThanOrEqualTo(ConfiguredMatchHudRenderer.HeroRailWidth + 0.5f),
+                    "and the marker did not widen the rail past its reserved band.");
+                var marker = Descendants(rail).First(element => element.name == "gd-current-card-slot");
+                var onLeftEdge = bounds.center.x < playfield.center.x;
+                Assert.That(
+                    marker.worldBound.center.x > bounds.center.x,
+                    Is.EqualTo(onLeftEdge),
+                    "The marker sits on each rail's inner corner: right on the left rail, left on the " +
+                    "mirrored one.");
+            }
+
+            yield return Capture("tmp/milestone-8-7a-resolving.png");
+
+            // The acting hero's card resolves: its marker clears and its turn is numbered history.
+            var acting = runtime.SelectedActor.ActorId;
+            AdvancePastTheCurrentTurn(runtime);
+            yield return null;
+            var resolved = runtime.HeroOverviewsView.Model.Heroes
+                .Single(hero => hero.HeroId.Equals(acting));
+            Assert.That(resolved.CurrentCard, Is.Null);
+            Assert.That(resolved.TurnSlots.Count(slot => slot.IsOccupied), Is.EqualTo(1),
+                "and exactly one numbered turn is now history.");
+            Assert.That(
+                Descendants(hud.RootElement).OfType<UnityEngine.UIElements.Label>()
+                    .Count(label => label.name == "gd-turn-slots-caption" && label.text == "RESOLVED TURNS"),
+                Is.EqualTo(rails.Length),
+                "and both rails caption the numbered row as what it is.");
+            yield return Capture("tmp/milestone-8-7a-resolved.png");
+        }
+
         private static void AdvancePastTheCurrentTurn(ConfiguredMatchSceneRuntime runtime)
         {
             var turnIndex = runtime.TurnIndex;

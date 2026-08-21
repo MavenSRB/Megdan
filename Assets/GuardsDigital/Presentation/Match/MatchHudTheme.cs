@@ -57,6 +57,17 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public static readonly Color ActiveEffectAccent = new Color(0.729f, 0.451f, 0.949f, 1f);
 
+        /// <summary>
+        /// Milestone 8.7a: the neutral back a card committed facedown is drawn as.
+        ///
+        /// It is a colour of its own rather than <see cref="EmptySlot"/> because the two say opposite
+        /// things - an empty slot is a turn nobody has played, and this is a card that has been played
+        /// and may not be read yet - and rather than any <see cref="Face"/> because the whole point of
+        /// a back is that it names no printed colour. Nothing about the card reaches this surface: the
+        /// marker that wears it is built from the commitment status alone.
+        /// </summary>
+        public static readonly Color CardBack = new Color(0.204f, 0.235f, 0.290f, 1f);
+
         public static readonly Color TeamRed = new Color(0.62f, 0.173f, 0.153f, 1f);
         public static readonly Color TeamBlue = new Color(0.157f, 0.416f, 0.667f, 1f);
 

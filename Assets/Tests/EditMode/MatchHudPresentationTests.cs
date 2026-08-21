@@ -635,6 +635,402 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
+        // Milestone 8.7a: the current unresolved card, and the four slots as resolved turn history
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void AFacedownCommitment_IsANeutralBackThatNamesNothingAboutTheCard()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithAFacedownCommitment(out var heroId);
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+
+            var committed = view.Model.Heroes.Single(hero => hero.HeroId.Equals(heroId));
+            var waiting = view.Model.Heroes.Single(hero => !hero.HeroId.Equals(heroId));
+            Assert.That(committed.CurrentCard, Is.Not.Null);
+            Assert.That(committed.CurrentCard.IsFacedown, Is.True);
+            Assert.That(committed.CurrentCard.StateLabel, Is.EqualTo("FACEDOWN"));
+            Assert.That(committed.CurrentCard.Card, Is.Null,
+                "A facedown marker carries no card at all - the authority does not name the instance " +
+                "until joint reveal, and this shape means presentation could not leak it if it did.");
+            Assert.That(committed.CurrentCard.Color, Is.EqualTo(CardColor.None));
+            Assert.That(committed.CurrentCard.InitiativeLabel, Is.Empty);
+            Assert.That(committed.TurnSlots.Any(slot => slot.IsOccupied), Is.False,
+                "and a commitment is not a resolved turn.");
+            Assert.That(waiting.CurrentCard, Is.Null, "The hero who has not responded has nothing yet.");
+
+            // The committed card really is a card this presenter could have found by location, and its
+            // name really is in the director's definition list, so the absence above is a decision.
+            var hidden = session.Projection.Cards.Single(card =>
+                card.OwnerId.Equals(heroId) && card.State.Location == CardLocation.TurnArea);
+            var hiddenName = session.Projection.Definitions
+                .Single(definition => definition.Reference.Equals(hidden.DefinitionReference)).DisplayName;
+            Assert.That(hiddenName, Is.Not.Empty);
+            Assert.That(committed.CurrentCard.AssistiveLabel, Does.Not.Contain(hiddenName));
+            Assert.That(
+                Descendants(view.Root).OfType<Label>().Any(label => label.text.Contains(hiddenName)),
+                Is.False,
+                "and no label anywhere on the rail spells the facedown card's name.");
+            var marker = Descendants(view.Root).Single(element => element.name == "gd-current-card");
+            Assert.That(marker.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.CardBack));
+            foreach (CardColor color in Enum.GetValues(typeof(CardColor)))
+            {
+                Assert.That(marker.style.backgroundColor.value,
+                    Is.Not.EqualTo(MatchHudTheme.FaceFlag(color)),
+                    $"and the back is not {color}'s own plate, so it names no printed colour either.");
+            }
+
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-current-card-slot"),
+                Is.EqualTo(view.Model.Heroes.Count),
+                "Both rails reserve the marker's footprint, so the header does not move when a " +
+                "commitment arrives or resolves.");
+        }
+
+        [Test]
+        public void ARevealedUnresolvedCard_SitsInTheMarkerRatherThanInTheNumberedHistory()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+
+            foreach (var hero in view.Model.Heroes)
+            {
+                var revealed = session.Projection.GetCommitment(hero.HeroId).RevealedCardInstanceId.Value;
+                var instance = session.Projection.Cards.Single(card => card.Id.Equals(revealed));
+                Assert.That(instance.State.ResolutionStatus,
+                    Is.EqualTo(CardResolutionStatus.Unresolved),
+                    "The fixture only proves the split while the card really has not resolved.");
+                Assert.That(
+                    CurrentRoundCards.PlayedTurnIndex(session.Projection, hero.HeroId, revealed),
+                    Is.EqualTo(1),
+                    "and the round's own assignment history already names this card's turn, which is " +
+                    "exactly why occupying a slot from the history alone was wrong.");
+
+                Assert.That(hero.CurrentCard, Is.Not.Null);
+                Assert.That(hero.CurrentCard.IsFacedown, Is.False);
+                Assert.That(hero.CurrentCard.StateLabel, Is.EqualTo("RESOLVING"));
+                Assert.That(hero.CurrentCard.Card.CardInstanceId, Is.EqualTo(revealed));
+                Assert.That(hero.CurrentCard.Card.HistoryLabel, Is.EqualTo("RESOLVING"));
+                Assert.That(hero.CurrentCard.Color, Is.EqualTo(hero.CurrentCard.Card.Color));
+                Assert.That(hero.CurrentCard.InitiativeLabel,
+                    Is.EqualTo(hero.CurrentCard.Card.Face.Initiative.AmountLabel),
+                    "p.7's Initiative is on the marker, from the card's own face.");
+                Assert.That(hero.CurrentCard.AssistiveLabel,
+                    Does.Contain(hero.CurrentCard.Card.ColorName),
+                    "and the colour is named, so the marker means nothing by colour alone.");
+                Assert.That(hero.TurnSlots.Any(slot => slot.IsOccupied), Is.False,
+                    "No turn is history yet: the card is being played, not played.");
+            }
+
+            var initiatives = Descendants(view.Root)
+                .Where(element => element.name == "gd-current-card")
+                .Select(marker => Descendants(marker).OfType<Label>().First().text)
+                .ToArray();
+            Assert.That(initiatives, Is.EqualTo(view.Model.Heroes
+                .Select(hero => hero.CurrentCard.Card.Face.Initiative.AmountLabel).ToArray()),
+                "The marker draws the card's colour and its Initiative, and nothing else.");
+            Assert.That(
+                Descendants(view.Root).Any(element => element.name == "gd-current-card-state"),
+                Is.False,
+                "By the user's 2026-08-21 decision the revealed marker carries no `RESOLVING` caption: " +
+                "a card's own colour and Initiative in the header say it is the card in play.");
+            Assert.That(
+                Descendants(view.Root).Where(element => element.name == "gd-current-card")
+                    .All(marker => marker.tooltip.Contains("RESOLVING")),
+                Is.True,
+                "The word stays in the marker's hover and assistive reading, which is where milestone " +
+                "8.5a keeps a card's printed colour for the same reason.");
+        }
+
+        [Test]
+        public void APausedResolution_KeepsTheCardInTheMarkerUntilTheActionCompletes()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            presenter.Refresh();
+
+            Assert.That(session.Projection.PendingDefenseChoice, Is.Not.Null,
+                "The fixture only proves this while the match really is paused inside an Attack.");
+            foreach (var hero in view.Model.Heroes)
+            {
+                Assert.That(hero.CurrentCard, Is.Not.Null,
+                    "A turn paused mid-action has not resolved either card.");
+                Assert.That(hero.CurrentCard.StateLabel, Is.EqualTo("RESOLVING"));
+                Assert.That(hero.TurnSlots.Any(slot => slot.IsOccupied), Is.False);
+            }
+        }
+
+        [Test]
+        public void AResolvedCard_TakesItsNumberedSlotAndClearsTheMarkerOnTheSameRefresh()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            presenter.Refresh();
+            var acting = session.Projection.SelectedActor.ActorId;
+            var actingCardId = session.Projection.GetCommitment(acting).RevealedCardInstanceId.Value;
+            Assert.That(view.Model.Heroes.All(hero => hero.CurrentCard != null), Is.True);
+
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(actingCardId));
+            presenter.Refresh();
+
+            var resolved = view.Model.Heroes.Single(hero => hero.HeroId.Equals(acting));
+            var stillPlaying = view.Model.Heroes.Single(hero => !hero.HeroId.Equals(acting));
+            Assert.That(
+                session.Projection.Cards.Single(card => card.Id.Equals(actingCardId))
+                    .State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(resolved.CurrentCard, Is.Null, "The marker clears when that card resolves.");
+            var slot = resolved.TurnSlots.Single(value => value.IsOccupied);
+            Assert.That(slot.TurnIndex, Is.EqualTo(1));
+            Assert.That(slot.TurnLabel, Is.EqualTo("1"));
+            Assert.That(slot.PlayedCard.CardInstanceId, Is.EqualTo(actingCardId),
+                "and the same instance is now the numbered turn's history.");
+            Assert.That(slot.PlayedCard.HistoryLabel, Is.EqualTo("PLAYED · TURN 1"));
+            Assert.That(slot.IsActiveEffectSource, Is.False, "This card started no Active effect.");
+            Assert.That(slot.ActiveLabel, Is.Empty);
+
+            // Milestone 8.7a's cross-surface rule: one turn resolves hero by hero in Initiative order,
+            // so this is a real position with one card resolved and one still in play.
+            Assert.That(stillPlaying.CurrentCard, Is.Not.Null);
+            Assert.That(stillPlaying.TurnSlots.Any(value => value.IsOccupied), Is.False,
+                "and nothing from the resolved hero's rail leaked into the other one.");
+
+            var handsView = new DirectorHandsUnityView();
+            var hands = new DirectorHandsPresenter(session, handsView);
+            hands.SelectViewedHero(acting);
+            Assert.That(handsView.Model.ViewedHand.TrayCards.Any(card => card.IsResolving), Is.False,
+                "The tray agrees: a resolved card is no longer the card in play.");
+            hands.SelectViewedHero(stillPlaying.HeroId);
+            Assert.That(
+                handsView.Model.ViewedHand.TrayCards.Single(card => card.IsResolving).CardInstanceId,
+                Is.EqualTo(stillPlaying.CurrentCard.Card.CardInstanceId),
+                "and the hero who has not acted still has one.");
+        }
+
+        [Test]
+        public void AResolvedSlotWhoseCardIsStillActive_WearsTheSameOutlineAndWordTheTrayGivesIt()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithALiveActiveEffect(out var sourceCardId);
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            presenter.Refresh();
+            var ownerId = session.Projection.Cards.Single(card => card.Id.Equals(sourceCardId)).OwnerId;
+
+            Assert.That(session.Projection.ActiveEffectSourceCardInstanceIds,
+                Does.Contain(sourceCardId),
+                "The fixture only proves the indicator while the effect really is live.");
+            var owner = view.Model.Heroes.Single(hero => hero.HeroId.Equals(ownerId));
+            var slot = owner.TurnSlots.Single(value => value.IsOccupied);
+            Assert.That(slot.PlayedCard.CardInstanceId, Is.EqualTo(sourceCardId),
+                "The Skill completed, so its card is resolved history and its slot is occupied.");
+            Assert.That(slot.IsActiveEffectSource, Is.True);
+            Assert.That(slot.ActiveLabel, Is.EqualTo("ACTIVE"));
+            Assert.That(slot.AssistiveLabel, Does.Contain("ACTIVE EFFECT IN EFFECT"));
+            Assert.That(owner.CurrentCard, Is.Null, "and it is not also in the marker.");
+
+            var outlines = Descendants(view.Root)
+                .Where(element => element.name == "gd-turn-slot-outline")
+                .ToArray();
+            Assert.That(outlines,
+                Has.Length.EqualTo(view.Model.Heroes.Count * RoundResolutionAuthority.TurnsPerRound),
+                "Every slot sits in an outline, so a slot does not resize when an effect starts.");
+            Assert.That(
+                outlines.Count(outline =>
+                    outline.style.borderTopColor.value == MatchHudTheme.ActiveEffectAccent),
+                Is.EqualTo(1),
+                "One outline, in milestone 8.5b's own accent - the same mark the tray gives the card.");
+            Assert.That(
+                Descendants(view.Root).OfType<Label>()
+                    .Count(label => label.name == "gd-turn-slot-active" && label.text == "ACTIVE"),
+                Is.EqualTo(1),
+                "and the word is drawn, so the state is never carried by colour alone.");
+
+            // The other surface, from the same projected fact, on the same position.
+            var handsView = new DirectorHandsUnityView();
+            var hands = new DirectorHandsPresenter(session, handsView);
+            hands.SelectViewedHero(ownerId);
+            Assert.That(
+                handsView.Model.ViewedHand.TrayCards
+                    .Single(card => card.IsActiveEffectSource).CardInstanceId,
+                Is.EqualTo(sourceCardId));
+
+            // and both let go on the same refresh when the lifecycle ends it.
+            ConfiguredMatchFixtures.PlayOutTheRestOfTheRound(session);
+            presenter.Refresh();
+            hands.SelectViewedHero(ownerId);
+            Assert.That(session.Projection.ActiveEffectSourceCardInstanceIds, Is.Empty);
+            Assert.That(
+                view.Model.Heroes.SelectMany(hero => hero.TurnSlots)
+                    .Any(value => value.IsActiveEffectSource),
+                Is.False);
+            Assert.That(
+                Descendants(view.Root).OfType<Label>()
+                    .Count(label => label.name == "gd-turn-slot-active" && label.text == "ACTIVE"),
+                Is.EqualTo(0));
+            Assert.That(
+                handsView.Model.ViewedHand.TrayCards.Any(card => card.IsActiveEffectSource), Is.False,
+                "on both surfaces, from the one projected list.");
+        }
+
+        [Test]
+        public void APassedTurn_LeavesNoMarkerAndNoOccupiedSlot()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithAPassingHero(out var passingHeroId);
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            ConfiguredMatchFixtures.CommitAndHoldOneTurn(session);
+            ConfiguredMatchFixtures.CommitBothHands(session);
+            presenter.Refresh();
+
+            Assert.That(session.Projection.GetCommitment(passingHeroId).Status,
+                Is.EqualTo(TurnCardCommitmentStatus.Passed),
+                "The fixture only proves this while p.7's Pass really was the response.");
+            var passed = view.Model.Heroes.Single(hero => hero.HeroId.Equals(passingHeroId));
+            Assert.That(passed.CurrentCard, Is.Null, "A hero who passed has no card in play.");
+            Assert.That(passed.TurnSlots[1].IsOccupied, Is.False,
+                "and the turn they passed on stays an empty slot rather than borrowing one.");
+            Assert.That(passed.TurnSlots[1].AssistiveLabel, Does.Contain("empty"));
+            Assert.That(passed.TurnSlots[0].IsOccupied, Is.True,
+                "while the turn they did play is still their resolved history.");
+
+            var opponent = view.Model.Heroes.Single(hero => !hero.HeroId.Equals(passingHeroId));
+            Assert.That(opponent.CurrentCard, Is.Not.Null,
+                "and the hero who did commit is unaffected by the other one's Pass.");
+        }
+
+        [Test]
+        public void RestingOnARevealedMarker_ShowsTheSameCompleteFaceTheHistorySlotsShow()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            presenter.Refresh();
+
+            var hero = view.Model.Heroes[0];
+            var current = hero.CurrentCard;
+            HeroCurrentCardViewModel reported = null;
+            view.CurrentCardHighlighted += marker => reported = marker;
+            Assert.That(view.HighlightedCurrentCard, Is.Null, "Nothing is revealed until the pointer rests.");
+
+            view.ForwardCurrentCardHighlight(current);
+            Assert.That(view.HighlightedCurrentCard, Is.SameAs(current));
+            Assert.That(reported, Is.SameAs(current));
+            var preview = Descendants(view.Root)
+                .Single(element => element.name == "gd-turn-slot-preview");
+            Assert.That(preview.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(
+                Descendants(preview).OfType<Label>().Any(label =>
+                    label.text == current.Card.DisplayName.ToUpperInvariant()),
+                Is.True,
+                "The revealed face is the card's own, drawn by the builder the tray draws with.");
+            Assert.That(
+                Descendants(preview).OfType<Label>().Any(label =>
+                    label.text == current.Card.Face.PrintedText),
+                Is.True,
+                "including its verified printed words,");
+            Assert.That(
+                Descendants(preview).OfType<Label>().Any(label => label.text == "RESOLVING"),
+                Is.True,
+                "and the face says the card is being played rather than naming a turn already history.");
+
+            var acceptedBefore = session.Projection.Version;
+            view.ForwardCurrentCardHighlight(null);
+            Assert.That(view.HighlightedCurrentCard, Is.Null);
+            Assert.That(preview.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(session.Projection.Version, Is.EqualTo(acceptedBefore),
+                "A hover submits nothing.");
+
+            // A facedown marker reveals nothing, and neither does an empty one.
+            var facedownSession =
+                ConfiguredMatchFixtures.CreateSessionWithAFacedownCommitment(out var committedHeroId);
+            var facedownView = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(facedownSession, facedownView).Refresh();
+            var facedown = facedownView.Model.Heroes
+                .Single(value => value.HeroId.Equals(committedHeroId)).CurrentCard;
+            facedownView.ForwardCurrentCardHighlight(facedown);
+            Assert.That(facedownView.HighlightedCurrentCard, Is.Null);
+            Assert.That(
+                Descendants(facedownView.Root)
+                    .Single(element => element.name == "gd-turn-slot-preview").style.display.value,
+                Is.EqualTo(DisplayStyle.None));
+
+            // and a redraw drops a stale face, exactly as it does for a turn slot.
+            view.ForwardCurrentCardHighlight(current);
+            Assert.That(view.HighlightedCurrentCard, Is.Not.Null);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(
+                session.Projection.SelectedActor.CardInstanceId));
+            presenter.Refresh();
+            Assert.That(view.HighlightedCurrentCard, Is.Null,
+                "A rebuilt rail keeps no face for a marker it no longer draws.");
+            Assert.That(preview.style.display.value, Is.EqualTo(DisplayStyle.None));
+        }
+
+        [Test]
+        public void OneRevealAtATime_IsShownWhicheverRailTheThePointerMovesBetween()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(
+                session.Projection.SelectedActor.CardInstanceId));
+            presenter.Refresh();
+
+            var resolved = view.Model.Heroes.Single(hero => hero.CurrentCard == null);
+            var playing = view.Model.Heroes.Single(hero => hero.CurrentCard != null);
+            var slot = resolved.TurnSlots.Single(value => value.IsOccupied);
+
+            view.ForwardTurnSlotHighlight(slot);
+            Assert.That(view.HighlightedTurnSlot, Is.SameAs(slot));
+            Assert.That(view.HighlightedCurrentCard, Is.Null);
+
+            view.ForwardCurrentCardHighlight(playing.CurrentCard);
+            Assert.That(view.HighlightedCurrentCard, Is.SameAs(playing.CurrentCard));
+            Assert.That(view.HighlightedTurnSlot, Is.Null,
+                "Moving to the other rail's marker takes the first face down - one preview, one card.");
+            Assert.That(
+                Descendants(view.Root)
+                    .Count(element => element.name == "gd-card-preview"),
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TheCardsTitle_SitsBesideTheInitiativeBannerAndStaysCentredOnTheCard()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            var view = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(session, view).Refresh();
+
+            var bands = Descendants(view.Root)
+                .Where(element => element.name == "gd-card-name-band")
+                .ToArray();
+            Assert.That(bands, Has.Length.EqualTo(view.Model.ViewedHand.TrayCards.Count));
+            foreach (var band in bands)
+            {
+                var flag = Descendants(band).Single(element => element.name == "gd-card-initiative");
+                var title = Descendants(band).OfType<Label>()
+                    .Single(element => element.name == "gd-card-name");
+                Assert.That(flag.style.position.value, Is.EqualTo(Position.Absolute),
+                    "The banner is out of the flow, so the title can centre on the card itself.");
+                Assert.That(title.style.paddingLeft.value.value,
+                    Is.EqualTo(title.style.paddingRight.value.value),
+                    "The reservation is symmetric, so the title's centre is the card's centre rather " +
+                    "than the centre of what is left beside the banner.");
+                Assert.That(
+                    title.style.paddingLeft.value.value + band.style.paddingLeft.value.value,
+                    Is.GreaterThanOrEqualTo(flag.style.width.value.value),
+                    "and it is wide enough that a wrapped title cannot reach the banner.");
+                Assert.That(band.style.minHeight.value.value,
+                    Is.LessThan(flag.style.height.value.value + 20f),
+                    "The band is the header strip the banner hangs in, not a line opened below it.");
+                Assert.That(title.style.whiteSpace.value, Is.EqualTo(WhiteSpace.Normal),
+                    "A long title wraps rather than being cut off.");
+            }
+        }
+
+        // -------------------------------------------------------------------------------------------
         // Milestone 8.5b: the card whose Active effect is live, and the card being resolved
         // -------------------------------------------------------------------------------------------
 
@@ -717,16 +1113,22 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheCardBeingResolved_IsDrawnAtFullStrengthWhileItsTurnRuns()
         {
-            var session = ConfiguredMatchFixtures.CreateSessionWithALiveActiveEffect(out var sourceCardId);
+            // Milestone 8.7a moved this off the live-Active-effect fixture. That fixture's Skill has
+            // already completed, so its card is resolved and is no longer the card in play; the position
+            // this rule is about is the one right after joint reveal, where a revealed card has not run.
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
             var view = new DirectorHandsUnityView();
             var presenter = new DirectorHandsPresenter(session, view);
-            presenter.SelectViewedHero(session.Projection.Cards
-                .Single(card => card.Id.Equals(sourceCardId)).OwnerId);
+            var ownerId = session.Projection.Setup.Heroes.First().HeroId;
+            var sourceCardId = session.Projection.GetCommitment(ownerId).RevealedCardInstanceId.Value;
+            presenter.SelectViewedHero(ownerId);
 
             var hand = view.Model.ViewedHand;
             var resolving = hand.TrayCards.Single(card => card.IsResolving);
             Assert.That(resolving.CardInstanceId, Is.EqualTo(sourceCardId),
                 "The card in play is the one this hero revealed for the current turn.");
+            Assert.That(resolving.HistoryLabel, Is.EqualTo("RESOLVING"),
+                "and it says it is being played rather than claiming to be a turn already history.");
             Assert.That(resolving.IsSelectable, Is.False,
                 "It carries no commitment command - the round is past choosing.");
 
@@ -859,9 +1261,11 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(hero.TurnSlots.Take(2).All(slot => slot.IsOccupied), Is.True);
                 Assert.That(hero.TurnSlots.Skip(2).All(slot => !slot.IsOccupied), Is.True);
                 Assert.That(hero.TurnSlots[0].AssistiveLabel, Does.Contain("Turn 1"));
+                Assert.That(hero.TurnSlots[0].TurnLabel, Is.EqualTo("1"),
+                    "Milestone 8.7a writes the ordinal on the slot as well.");
                 Assert.That(hero.TurnSlots[0].AssistiveLabel,
                     Does.Contain(MatchHudTheme.ColorName(hero.TurnSlots[0].Color)),
-                    "The ordinal and the colour are readable, and only from the assistive label.");
+                    "The colour is readable, and only from the assistive label.");
                 Assert.That(hero.TurnSlots[3].AssistiveLabel, Does.Contain("empty"));
             }
         }
@@ -1291,6 +1695,70 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void TheCurrentCardMarker_IsRebuiltByRestoreReplayUndoAndRestartRatherThanRemembered()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            PlayTurns(session, 1);
+            ConfiguredMatchFixtures.CommitBothHands(session);
+            presenter.Refresh();
+            var midTurn = Describe(view);
+            var snapshot = session.CaptureSnapshot();
+            Assert.That(midTurn, Does.Contain("RESOLVING"),
+                "The captured position really is one with a card in play and one turn behind it.");
+            Assert.That(view.Model.Heroes.All(hero =>
+                hero.TurnSlots.Count(slot => slot.IsOccupied) == 1), Is.True);
+
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(
+                session.Projection.SelectedActor.CardInstanceId));
+            presenter.Refresh();
+            Assert.That(Describe(view), Is.Not.EqualTo(midTurn));
+
+            // Retained-prefix Undo, while the live history is still the one that produced this position.
+            while (session.Projection.IsHistoryAvailable && Describe(view) != midTurn)
+            {
+                var undone = session.Undo();
+                Assert.That(undone.Accepted, Is.True, undone.Detail);
+                presenter.Refresh();
+            }
+
+            Assert.That(Describe(view), Is.EqualTo(midTurn),
+                "Undo redraws the marker from the truncated history rather than from anything kept here.");
+
+            // The same position again from bytes.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(
+                session.Projection.SelectedActor.CardInstanceId));
+            presenter.Refresh();
+            Assert.That(session.RestoreSnapshot(snapshot).Accepted, Is.True);
+            presenter.Refresh();
+            Assert.That(Describe(view), Is.EqualTo(midTurn),
+                "and a restored position redraws it from current authority.");
+            Assert.That(view.HighlightedCurrentCard, Is.Null,
+                "A rebuilt rail carries no hover across a reconstruction.");
+
+            // and a restart empties both the marker and the history rather than leaving either
+            // standing. It runs on its own session because a snapshot restore clears the command
+            // history a restart replays from, so the two reconstructions cannot share one.
+            var restarted = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var restartedView = new HeroOverviewsUnityView();
+            var restartedPresenter = new HeroOverviewsPresenter(restarted, restartedView);
+            PlayTurns(restarted, 1);
+            ConfiguredMatchFixtures.CommitBothHands(restarted);
+            restartedPresenter.Refresh();
+            Assert.That(Describe(restartedView), Is.EqualTo(midTurn),
+                "The same commands reach the same position, which is what a restart unwinds.");
+
+            Assert.That(restarted.Restart().Accepted, Is.True);
+            restartedPresenter.Refresh();
+            Assert.That(restartedView.Model.Heroes.All(hero => hero.CurrentCard == null), Is.True);
+            Assert.That(
+                restartedView.Model.Heroes.SelectMany(hero => hero.TurnSlots)
+                    .Any(slot => slot.IsOccupied),
+                Is.False);
+        }
+
+        [Test]
         public void TheStandingLayout_KeepsEveryRegionInsideBothValidatedViewports()
         {
             foreach (var viewport in new[] { new Vector2(2048f, 1152f), new Vector2(778f, 300f) })
@@ -1386,7 +1854,13 @@ namespace GuardsDigital.Tests.EditMode
         private static string Describe(HeroOverviewsUnityView view) =>
             string.Join("|", view.Model.Heroes.Select(hero =>
                 $"{hero.HeroId}:{hero.Level}:{hero.DiscardCount}:" +
-                string.Join(",", hero.TurnSlots.Select(slot => $"{slot.TurnIndex}{slot.Color}"))));
+                // Milestone 8.7a: occupancy and the current-card marker join the description, so the
+                // reconstruction paths are compared on the split this milestone introduced rather than
+                // only on the four colours they always agreed about.
+                $"{hero.CurrentCard?.StateLabel ?? "-"}:" +
+                $"{hero.CurrentCard?.Card?.CardInstanceId.Value ?? "-"}:" +
+                string.Join(",", hero.TurnSlots.Select(slot =>
+                    $"{slot.TurnIndex}{slot.Color}{(slot.IsOccupied ? "+" : "-")}"))));
 
         private static IEnumerable<VisualElement> Descendants(VisualElement element)
         {

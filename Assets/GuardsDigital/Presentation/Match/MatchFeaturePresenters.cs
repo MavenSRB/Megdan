@@ -1252,10 +1252,21 @@ namespace GuardsDigital.Presentation.Match
             // in play, and it is drawn at full strength while its turn runs. It carries no commitment
             // command - the round is past choosing - but "carries no command" and "is spent" are not the
             // same thing, and the shared unavailable treatment said the second about the first.
-            var resolvingCardInstanceId =
+            //
+            // Milestone 8.7a adds the second half of the question. One turn is resolved hero by hero in
+            // Initiative order, so the hero who acted first has a resolved card while the turn is still
+            // running for somebody else; asking the commitment alone left that card reading as in play
+            // on the tray at the same moment the rail moved it into resolved history. The card's own
+            // resolution status is what both surfaces ask now, so one card cannot be in two states.
+            var revealedCardInstanceId =
                 commitment.Status == TurnCardCommitmentStatus.Revealed
                     ? commitment.RevealedCardInstanceId
                     : null;
+            var resolvingCardInstanceId = revealedCardInstanceId.HasValue &&
+                projection.Cards.Any(card => card.Id.Equals(revealedCardInstanceId.Value) &&
+                    card.State.ResolutionStatus != CardResolutionStatus.Resolved)
+                ? revealedCardInstanceId
+                : null;
             var entries = new List<TrayCardViewModel>();
             foreach (var card in projection.Cards.Where(card => card.OwnerId.Equals(heroId)))
             {

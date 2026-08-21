@@ -337,8 +337,19 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement blueColumn;
         private readonly VisualElement preview;
 
-        private readonly Dictionary<HeroTurnSlotViewModel, VisualElement> slotElements =
-            new Dictionary<HeroTurnSlotViewModel, VisualElement>();
+        /// <summary>
+        /// The rail element each revealable model was drawn as, so a revealed face can be placed beside
+        /// the thing the pointer is resting on.
+        ///
+        /// Keyed by object because two kinds of model are revealable since milestone 8.7a - a resolved
+        /// turn slot and the current-card marker - and the one preview element belongs to whichever of
+        /// them the pointer is on. Making it two dictionaries and two previews would have allowed two
+        /// faces on screen at once, which is the one thing a hover reveal must not do.
+        /// </summary>
+        private readonly Dictionary<object, VisualElement> revealAnchors =
+            new Dictionary<object, VisualElement>();
+
+        private object highlighted;
 
         public HeroOverviewsUnityView()
         {
@@ -370,45 +381,82 @@ namespace GuardsDigital.Presentation.Match
         /// card's whole printed face, drawn by the same builder the tray uses. It is a reading of the
         /// model the rail was already rendered from - no command, no projection query, no new authority.
         /// </summary>
-        public HeroTurnSlotViewModel HighlightedTurnSlot { get; private set; }
+        public HeroTurnSlotViewModel HighlightedTurnSlot => highlighted as HeroTurnSlotViewModel;
+
+        /// <summary>
+        /// The current-card marker the pointer or keyboard focus is resting on, or null when none is.
+        ///
+        /// Milestone 8.7a. A revealed unresolved card is readable exactly the way a resolved one is -
+        /// the same complete face, from the same builder - and a facedown marker reveals nothing,
+        /// because there is nothing about it presentation is allowed to know.
+        /// </summary>
+        public HeroCurrentCardViewModel HighlightedCurrentCard => highlighted as HeroCurrentCardViewModel;
 
         public event Action<HeroTurnSlotViewModel> TurnSlotHighlighted;
 
-        /// <summary>Reports a pointed-at slot directly, for a driver with no pointer.</summary>
-        public void ForwardTurnSlotHighlight(HeroTurnSlotViewModel slot) => SetTurnSlotHighlight(slot);
+        public event Action<HeroCurrentCardViewModel> CurrentCardHighlighted;
 
-        private void SetTurnSlotHighlight(HeroTurnSlotViewModel slot)
-        {
+        /// <summary>Reports a pointed-at slot directly, for a driver with no pointer.</summary>
+        public void ForwardTurnSlotHighlight(HeroTurnSlotViewModel slot) =>
             // An empty slot has no card to show, so resting on one is the same as resting on nothing.
-            var resolved = slot != null && slot.IsOccupied ? slot : null;
-            if (ReferenceEquals(HighlightedTurnSlot, resolved))
+            SetHighlight(slot != null && slot.IsOccupied ? slot : null);
+
+        /// <summary>Reports a pointed-at current-card marker directly, for a driver with no pointer.</summary>
+        public void ForwardCurrentCardHighlight(HeroCurrentCardViewModel current) =>
+            SetHighlight(current != null && current.Card != null ? current : null);
+
+        private void SetHighlight(object model)
+        {
+            if (ReferenceEquals(highlighted, model))
             {
                 return;
             }
 
-            HighlightedTurnSlot = resolved;
+            var slotBefore = HighlightedTurnSlot;
+            var currentBefore = HighlightedCurrentCard;
+            highlighted = model;
             preview.Clear();
-            if (resolved == null)
+            var card = CardOf(model);
+            if (card == null)
             {
+                highlighted = null;
                 preview.style.display = DisplayStyle.None;
             }
             else
             {
-                preview.Add(DirectorHandsUnityView.BuildStandaloneCard(resolved.PlayedCard));
+                preview.Add(DirectorHandsUnityView.BuildStandaloneCard(card));
                 preview.style.display = DisplayStyle.Flex;
-                PlacePreview(resolved);
+                PlacePreview(highlighted);
             }
 
-            TurnSlotHighlighted?.Invoke(resolved);
+            if (!ReferenceEquals(slotBefore, HighlightedTurnSlot))
+            {
+                TurnSlotHighlighted?.Invoke(HighlightedTurnSlot);
+            }
+
+            if (!ReferenceEquals(currentBefore, HighlightedCurrentCard))
+            {
+                CurrentCardHighlighted?.Invoke(HighlightedCurrentCard);
+            }
+        }
+
+        private static TrayCardViewModel CardOf(object model)
+        {
+            switch (model)
+            {
+                case HeroTurnSlotViewModel slot: return slot.PlayedCard;
+                case HeroCurrentCardViewModel current: return current.Card;
+                default: return null;
+            }
         }
 
         /// <summary>
         /// Puts the revealed card beside the rail it belongs to and inside the region the rails occupy:
         /// out from the left rail, in from the right one, and never off the top or bottom.
         /// </summary>
-        private void PlacePreview(HeroTurnSlotViewModel slot)
+        private void PlacePreview(object model)
         {
-            if (!slotElements.TryGetValue(slot, out var element))
+            if (!revealAnchors.TryGetValue(model, out var element))
             {
                 return;
             }
@@ -456,8 +504,8 @@ namespace GuardsDigital.Presentation.Match
             // A revealed card belongs to the model it was read from, exactly as milestone 6.5c's board
             // cues do: a rebuilt model drops it, so the rail never keeps a face for a slot that is no
             // longer drawn.
-            SetTurnSlotHighlight(null);
-            slotElements.Clear();
+            SetHighlight(null);
+            revealAnchors.Clear();
             redColumn.Clear();
             blueColumn.Clear();
             foreach (var hero in Model.Heroes)
@@ -502,29 +550,77 @@ namespace GuardsDigital.Presentation.Match
                 rail.style.borderTopColor = MatchHudTheme.SelectedOutline;
             }
 
-            var head = HudElements.Row(7f);
+            // Milestone 8.7a, by the user's 2026-08-21 decision: the rail on the right edge of the
+            // screen is the one on the left mirrored, rather than the same rail repeated. Everything in
+            // it reads outward from the board - the hero's identity, the item strip, the caption and
+            // the discard pile all sit against the screen edge, and the current-card marker sits at the
+            // rail's inner corner - so the two rails frame the board instead of both leaning the same
+            // way. The turn slots are the one row that is not mirrored: they fill the rail's width
+            // edge to edge, and 1-2-3-4 is a sequence rather than a decoration.
+            var mirrored = hero.TeamSide != TeamSide.Red;
+            var outward = mirrored ? TextAnchor.MiddleRight : TextAnchor.MiddleLeft;
+
+            // The header: who this hero is on the outer side, and the card they have in play on the
+            // inner one. `LVL n` moves above the name rather than standing beside it, because the space
+            // it used to take at the row's edge is the space the marker now occupies.
+            var head = HudElements.Row(0f);
+            head.style.flexWrap = Wrap.NoWrap;
+            head.style.justifyContent = Justify.SpaceBetween;
+            head.style.alignItems = Align.FlexStart;
             var icon = new VisualElement { name = "gd-hero-icon" };
             icon.style.width = 30f;
             icon.style.height = 30f;
+            icon.style.flexShrink = 0f;
             icon.style.backgroundColor = accent;
             icon.style.justifyContent = Justify.Center;
             HudElements.Border(icon, accent, 1f, 15f);
             var initial = HudElements.Text(hero.IconInitial, 14f, Color.white, FontStyle.Bold);
             initial.style.unityTextAlign = TextAnchor.MiddleCenter;
             icon.Add(initial);
+            // The team is on the disc's own reading rather than spelled under the hero's name - the
+            // user's 2026-08-21 decision. Two rails, two accents and two edges already say which side a
+            // hero is on, and the word took a third line of the header to repeat it. It is not lost:
+            // this is the same treatment milestone 8.5a gives a card's printed colour, which is named in
+            // the hover and assistive reading rather than written on the face.
+            icon.tooltip = hero.TeamLabel;
             var identity = HudElements.Column(0f);
-            identity.Add(HudElements.Text(hero.TeamLabel, 9f, MatchHudTheme.MutedText));
-            identity.Add(HudElements.Text(hero.HeroDisplayName, 12f, MatchHudTheme.PrimaryText, FontStyle.Bold));
-            head.Add(icon);
-            head.Add(identity);
-            var level = HudElements.Text(hero.LevelLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
-            level.style.marginLeft = 6f;
-            head.Add(level);
+            identity.style.flexShrink = 1f;
+            identity.style.overflow = Overflow.Hidden;
+            identity.style.alignItems = mirrored ? Align.FlexEnd : Align.FlexStart;
+            var level = HudElements.Text(hero.LevelLabel, 9f, MatchHudTheme.MutedText, FontStyle.Bold);
+            level.style.unityTextAlign = outward;
+            identity.Add(level);
+            var displayName = HudElements.Text(
+                hero.HeroDisplayName, 12f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            displayName.style.unityTextAlign = outward;
+            identity.Add(displayName);
+            var who = HudElements.Row(0f);
+            who.style.flexWrap = Wrap.NoWrap;
+            who.style.alignItems = Align.Center;
+            who.style.flexShrink = 1f;
+            if (mirrored)
+            {
+                identity.style.marginRight = 7f;
+                who.Add(identity);
+                who.Add(icon);
+                head.Add(BuildCurrentCard(hero, true));
+                head.Add(who);
+            }
+            else
+            {
+                identity.style.marginLeft = 7f;
+                who.Add(icon);
+                who.Add(identity);
+                head.Add(who);
+                head.Add(BuildCurrentCard(hero, false));
+            }
+
             rail.Add(head);
 
             var bonuses = HudElements.Row(6f);
             bonuses.name = "gd-bonus-strip";
             bonuses.style.marginTop = 7f;
+            bonuses.style.justifyContent = mirrored ? Justify.FlexEnd : Justify.FlexStart;
             foreach (var bonus in hero.ItemBonuses)
             {
                 var chip = HudElements.Row(3f);
@@ -541,24 +637,65 @@ namespace GuardsDigital.Presentation.Match
 
             rail.Add(bonuses);
 
-            var slots = HudElements.Row(4f);
+            // Milestone 8.7a: the four numbered slots are captioned as what they now are. Without the
+            // caption the row is four coloured boxes whose meaning a player has to infer, and the whole
+            // point of this milestone is that they mean resolved turns and the header marker means the
+            // turn being played.
+            var caption = HudElements.Text("RESOLVED TURNS", 9f, MatchHudTheme.MutedText, FontStyle.Bold);
+            caption.name = "gd-turn-slots-caption";
+            caption.style.marginTop = 8f;
+            caption.style.unityTextAlign = outward;
+            rail.Add(caption);
+
+            var slots = HudElements.Row(0f);
             slots.name = "gd-turn-slots";
-            slots.style.marginTop = 8f;
+            slots.style.marginTop = 4f;
             slots.style.flexWrap = Wrap.NoWrap;
+            slots.style.alignItems = Align.Stretch;
+            var first = true;
             foreach (var slot in hero.TurnSlots)
             {
-                var element = new VisualElement();
-                element.style.height = 40f;
-                element.style.flexGrow = 1f;
-                element.style.flexBasis = 0f;
+                var column = new VisualElement();
+                column.style.flexDirection = FlexDirection.Column;
+                column.style.alignItems = Align.Stretch;
+                column.style.flexGrow = 1f;
+                column.style.flexBasis = 0f;
+                column.style.marginLeft = first ? 0f : 4f;
+                first = false;
+
+                // Milestone 8.7a: milestone 8.5b's outline, on the slot the resolved card occupies. It
+                // is the same treatment the tray gives the same card for the same reason - drawn around
+                // the swatch rather than on it, and always drawn so nothing moves when an effect starts
+                // or ends - so one card wears one mark wherever it is shown.
+                var outline = new VisualElement { name = "gd-turn-slot-outline" };
+                HudElements.Padding(outline, 2f);
+                HudElements.Border(
+                    outline,
+                    slot.IsActiveEffectSource
+                        ? MatchHudTheme.ActiveEffectAccent
+                        : new Color(0f, 0f, 0f, 0f),
+                    DirectorHandsUnityView.ActiveOutlineWidth,
+                    7f);
+
+                var element = new VisualElement { name = "gd-turn-slot" };
+                element.style.height = 34f;
+                element.style.alignItems = Align.Center;
+                element.style.justifyContent = Justify.Center;
                 element.style.backgroundColor = slot.IsOccupied
                     ? MatchHudTheme.Face(slot.Color)
                     : MatchHudTheme.EmptySlot;
                 HudElements.Border(
                     element,
                     slot.IsOccupied ? MatchHudTheme.PanelBorder : MatchHudTheme.MutedText,
-                    slot.IsOccupied ? 1f : 1f,
+                    1f,
                     4f);
+                var ordinal = HudElements.Text(
+                    slot.TurnLabel,
+                    12f,
+                    slot.IsOccupied ? MatchHudTheme.FaceText(slot.Color) : MatchHudTheme.MutedText,
+                    FontStyle.Bold);
+                ordinal.style.unityTextAlign = TextAnchor.MiddleCenter;
+                element.Add(ordinal);
                 element.tooltip = slot.AssistiveLabel;
                 if (slot.IsOccupied)
                 {
@@ -568,12 +705,24 @@ namespace GuardsDigital.Presentation.Match
                     // has no reason to make. What a keyboard or screen reader needs is in the slot's own
                     // assistive label, which names the card.
                     var pointed = slot;
-                    slotElements[pointed] = element;
+                    revealAnchors[pointed] = element;
                     HudElements.OnPointedAt(
-                        element, entered => SetTurnSlotHighlight(entered ? pointed : null));
+                        element, entered => SetHighlight(entered ? pointed : null));
                 }
 
-                slots.Add(element);
+                outline.Add(element);
+                column.Add(outline);
+
+                // Always drawn, empty when nothing is live, so a slot's height does not change with an
+                // effect and the four of them stay on one line.
+                var activeLabel = HudElements.Text(
+                    slot.ActiveLabel, 7f, MatchHudTheme.ActiveEffectAccent, FontStyle.Bold);
+                activeLabel.name = "gd-turn-slot-active";
+                activeLabel.style.height = 10f;
+                activeLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+                activeLabel.style.whiteSpace = WhiteSpace.NoWrap;
+                column.Add(activeLabel);
+                slots.Add(column);
             }
 
             rail.Add(slots);
@@ -586,7 +735,8 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Padding(discard, 5f);
             discard.style.backgroundColor = new Color(0.129f, 0.149f, 0.161f, 1f);
             HudElements.Border(discard, MatchHudTheme.PanelBorder, 1f, 4f);
-            discard.Add(HudElements.Text(hero.DiscardLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold));
+            var discardLabel = HudElements.Text(
+                hero.DiscardLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
             var pips = HudElements.Row(3f);
             pips.style.flexWrap = Wrap.NoWrap;
             foreach (var color in hero.DiscardColors)
@@ -600,11 +750,119 @@ namespace GuardsDigital.Presentation.Match
                 pips.Add(pip);
             }
 
+            // The one row the mirror does not touch, by the user's 2026-08-21 decision: a label and the
+            // number it counts read left to right whichever rail they are on, and a count that changed
+            // sides between the two rails made the pair harder to compare rather than easier.
+            discard.Add(discardLabel);
             discard.Add(pips);
             discard.Add(HudElements.Text(
                 hero.DiscardCountLabel, 12f, MatchHudTheme.PrimaryText, FontStyle.Bold));
             rail.Add(discard);
             return rail;
+        }
+
+        /// <summary>The marker's fixed footprint in the rail header's upper right.</summary>
+        private const float CurrentCardWidth = 46f;
+
+        private const float CurrentCardHeight = 52f;
+
+        /// <summary>
+        /// The marker in the hero header's inner top corner: the card this hero has in play and has not
+        /// resolved. Upper right on the left-hand rail, upper left on the mirrored one.
+        ///
+        /// Milestone 8.7a. The slot around it is always drawn at a fixed size and the marker itself only
+        /// appears inside it, for the reason milestone 8.5b's Active outline is always drawn: a header
+        /// that grew and shrank as a turn was committed and resolved would move the hero's name, the
+        /// item strip and the four slots under it four times a round. Nothing here reads a card
+        /// location, a definition or a hand - the whole marker is built from
+        /// <see cref="HeroCurrentCardViewModel"/>, and a facedown one carries no card to build from.
+        /// </summary>
+        private VisualElement BuildCurrentCard(HeroOverviewViewModel hero, bool mirrored)
+        {
+            var slot = new VisualElement { name = "gd-current-card-slot" };
+            slot.style.width = CurrentCardWidth;
+            slot.style.height = CurrentCardHeight;
+            slot.style.flexShrink = 0f;
+            if (mirrored)
+            {
+                slot.style.marginRight = 6f;
+            }
+            else
+            {
+                slot.style.marginLeft = 6f;
+            }
+
+            var current = hero.CurrentCard;
+            if (current == null)
+            {
+                return slot;
+            }
+
+            var ink = current.IsFacedown
+                ? MatchHudTheme.PrimaryText
+                : MatchHudTheme.FaceText(current.Color);
+            var marker = new VisualElement { name = "gd-current-card" };
+            marker.style.flexGrow = 1f;
+            marker.style.flexDirection = FlexDirection.Column;
+            marker.style.alignItems = Align.Center;
+            marker.style.justifyContent = Justify.Center;
+            marker.style.paddingTop = 2f;
+            marker.style.paddingBottom = 2f;
+            marker.style.backgroundColor = current.IsFacedown
+                ? MatchHudTheme.CardBack
+                : MatchHudTheme.FaceFlag(current.Color);
+            HudElements.Border(marker, new Color(ink.r, ink.g, ink.b, 0.45f), 2f, 6f);
+            marker.tooltip = current.AssistiveLabel;
+
+            if (current.IsFacedown)
+            {
+                // A back, and only a back: no name, no colour, no Initiative, no words, no hover. The
+                // motif is a plain lozenge in the marker's own ink rather than anything a card prints,
+                // so there is nothing on it a player could read a commitment from.
+                var back = new VisualElement { name = "gd-current-card-back" };
+                back.style.width = 18f;
+                back.style.height = 18f;
+                back.style.backgroundColor = new Color(ink.r, ink.g, ink.b, 0.16f);
+                HudElements.Border(back, new Color(ink.r, ink.g, ink.b, 0.32f), 1f, 9f);
+                marker.Add(back);
+
+                // The one word the facedown marker cannot do without: a neutral back with nothing on it
+                // says nothing, and this is the only place the state can be read. The revealed marker
+                // does not carry its word - the user's 2026-08-21 decision - because a card's own
+                // colour and Initiative in the header's inner corner already say it is the card in
+                // play, and `RESOLVING` under it was a caption on something not in doubt. It stays in
+                // the marker's hover and assistive reading and on the revealed face's own lifecycle
+                // band, exactly where milestone 8.5a keeps a card's printed colour.
+                var state = HudElements.Text(current.StateLabel, 7f, ink, FontStyle.BoldAndItalic);
+                state.name = "gd-current-card-state";
+                state.style.whiteSpace = WhiteSpace.NoWrap;
+                state.style.unityTextAlign = TextAnchor.MiddleCenter;
+                state.style.marginTop = 3f;
+                marker.Add(state);
+            }
+            else
+            {
+                var initiative = HudElements.Text(
+                    current.InitiativeLabel.Length == 0 ? "-" : current.InitiativeLabel,
+                    20f,
+                    ink,
+                    FontStyle.Bold);
+                // Never wrapped, for the reason the card's own flag is not: p.7 prints two-digit
+                // Initiatives, and a marker breaking "13" across two lines would show a value the card
+                // does not have.
+                initiative.style.whiteSpace = WhiteSpace.NoWrap;
+                initiative.style.unityTextAlign = TextAnchor.MiddleCenter;
+                marker.Add(initiative);
+
+                // The same reveal the four resolved slots offer, on the card that has not resolved yet:
+                // one builder, one preview, no focus stop, and no command.
+                var pointed = current;
+                revealAnchors[pointed] = marker;
+                HudElements.OnPointedAt(marker, entered => SetHighlight(entered ? pointed : null));
+            }
+
+            slot.Add(marker);
+            return slot;
         }
     }
 
@@ -655,7 +913,21 @@ namespace GuardsDigital.Presentation.Match
         /// one at a different height. The rules panel takes whatever is left, which is what makes the
         /// bottoms line up too.
         /// </summary>
-        private const float NameBandMinimumHeight = 70f;
+        /// <remarks>
+        /// Milestone 8.7a lowered this from 70 to the banner's own height plus a little. The name used
+        /// to sit on a line the band opened <em>below</em> the banner, which left the whole strip beside
+        /// the banner empty on every card in the game; the approved current-card mockup puts the title
+        /// in that strip, and the band is then as tall as the thing hanging in it.
+        /// </remarks>
+        private const float NameBandMinimumHeight = InitiativeFlagHeight + 8f;
+
+        /// <summary>
+        /// The name band's own inset. The title reserves the banner's width measured from the band's
+        /// edge, so the reservation on each side is this much less than the banner itself - reserving a
+        /// whole banner width *inside* the inset took another six pixels off each side of the title and
+        /// was enough to break "PROJECTILES" mid-word.
+        /// </summary>
+        private const float NameBandHorizontalPadding = 6f;
 
         private const float SecondaryBandMinimumHeight = 26f;
         private const float PrimaryBandMinimumHeight = 40f;
@@ -926,7 +1198,7 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// The card's upper band: rulebook p.7's Initiative on a flag of its own, and the card's name
-        /// with its printed colour named beneath it.
+        /// beside it.
         ///
         /// The flag is a fixed column so five of them line up down a hand's left edge. p.16's Ultimate
         /// prints no Initiative at all, and says so with an em dash rather than by leaving the column out
@@ -937,16 +1209,14 @@ namespace GuardsDigital.Presentation.Match
             var band = new VisualElement { name = "gd-card-name-band" };
             band.style.flexDirection = FlexDirection.Column;
             band.style.alignItems = Align.Stretch;
-            band.style.justifyContent = Justify.FlexEnd;
+            band.style.justifyContent = Justify.Center;
             band.style.backgroundColor = MatchHudTheme.FaceBand(card.Color);
             band.style.minHeight = NameBandMinimumHeight;
-            // Symmetric horizontally, so the name's centre is the card's. The top padding is what clears
-            // the banner: the name gets the card's whole width on a line of its own below it, rather
-            // than a narrow column beside it that broke long names mid-word.
-            band.style.paddingLeft = 6f;
-            band.style.paddingRight = 6f;
-            band.style.paddingTop = InitiativeFlagHeight + 3f;
-            band.style.paddingBottom = 5f;
+            // Symmetric horizontally, so the name's centre is the card's.
+            band.style.paddingLeft = NameBandHorizontalPadding;
+            band.style.paddingRight = NameBandHorizontalPadding;
+            band.style.paddingTop = 4f;
+            band.style.paddingBottom = 4f;
 
             // A banner in the card's own corner rather than a column in a row: square along the top,
             // where it meets the card's edge, and rounded where it hangs into the card. Taking it out of
@@ -981,12 +1251,17 @@ namespace GuardsDigital.Presentation.Match
             flag.tooltip = initiative?.AssistiveLabel ?? "Prints no Initiative";
             band.Add(flag);
 
-            // The name sits on the card's own centre line and takes the card's whole width, on the line
-            // the band's top padding opens below the banner. Every earlier arrangement traded one of
-            // those against the other: laid out beside the banner the name was pushed off centre, and
-            // squeezed into a centred box narrow enough to clear the banner it broke "PROJECTILES"
-            // across two lines with the rest of the band empty. The band's floor height keeps the bands
-            // below it in step with its neighbours' whether a name takes one line or two.
+            // The name sits on the card's own centre line, in the header strip the banner hangs beside.
+            //
+            // Milestone 8.7a, following the approved current-card mockup. Both of the earlier
+            // arrangements traded one property against the other: laid out beside the banner in a row
+            // the name was pushed off the card's centre, and centred in a box narrow enough to start
+            // clear of the banner it broke "PROJECTILES" mid-word with the rest of the band empty. This
+            // takes the banner out of the flow and reserves its width on *both* sides, so the text box
+            // is narrower than the card but still concentric with it: the title reads as centred on the
+            // card, and a long one wraps inside a box that cannot reach the banner. The band's floor
+            // height keeps the bands below it in step with its neighbours' whether a name takes one
+            // line or two.
             //
             // The printed colour is not written on the face. By the user's 2026-08-21 decision the word
             // came off the card - a card wearing its colour and then also spelling it is saying the same
@@ -994,8 +1269,11 @@ namespace GuardsDigital.Presentation.Match
             // colour's name stays in this card's hover and assistive reading, which is exactly where
             // milestone 7.8a already put the colour of a hero rail's turn slot, so nothing that means
             // something by colour here means it by colour alone.
-            var name = HudElements.Text(card.DisplayName.ToUpperInvariant(), 11f, ink, FontStyle.Bold);
+            var name = HudElements.Text(card.DisplayName.ToUpperInvariant(), 10.5f, ink, FontStyle.Bold);
+            name.name = "gd-card-name";
             name.style.flexShrink = 1f;
+            name.style.paddingLeft = InitiativeFlagWidth - NameBandHorizontalPadding;
+            name.style.paddingRight = InitiativeFlagWidth - NameBandHorizontalPadding;
             name.style.unityTextAlign = TextAnchor.MiddleCenter;
             band.Add(name);
             return band;

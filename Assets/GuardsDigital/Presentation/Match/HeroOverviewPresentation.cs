@@ -229,11 +229,18 @@ namespace GuardsDigital.Presentation.Match
             IsActiveEffectSource = isActiveEffectSource;
             IsResolving = isResolving;
             ColorName = MatchHudTheme.ColorName(color);
-            HistoryLabel = group == TrayCardGroup.Played
-                ? $"PLAYED · TURN {playedTurnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
-                : group == TrayCardGroup.Discarded
-                    ? "DISCARDED"
-                    : "AVAILABLE";
+            // Milestone 8.7a. A card the round is still resolving is not history yet, and the round's
+            // assignment history names its turn from the moment that turn starts - so a card in play
+            // read `PLAYED · TURN 1` while it was being played. The lifecycle line says what the card is
+            // doing instead, on every surface that draws this one view model: the tray, the rail's
+            // current-card marker, and the face that marker reveals.
+            HistoryLabel = isResolving
+                ? "RESOLVING"
+                : group == TrayCardGroup.Played
+                    ? $"PLAYED · TURN {playedTurnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
+                    : group == TrayCardGroup.Discarded
+                        ? "DISCARDED"
+                        : "AVAILABLE";
             ActiveLabel = isActiveEffectSource ? "ACTIVE" : string.Empty;
             AssistiveLabel = $"{DisplayName} - {ColorName} - {Face.ValueLine} - {HistoryLabel}" +
                 (isActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty);
@@ -294,8 +301,80 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public bool IsResolving { get; }
 
-        /// <summary>`PLAYED · TURN n`, `AVAILABLE`, or `DISCARDED` - and never a round number.</summary>
+        /// <summary>
+        /// `RESOLVING`, `PLAYED · TURN n`, `AVAILABLE`, or `DISCARDED` - and never a round number.
+        /// </summary>
         public string HistoryLabel { get; }
+    }
+
+    /// <summary>
+    /// The one card a hero has in play and has not resolved, as the rail's upper-right marker draws it:
+    /// a commitment nobody may read yet, or the revealed card whose turn is being resolved.
+    ///
+    /// Milestone 8.7a, and the separation the rail lacked. The four numbered slots are resolved turn
+    /// history; a card that has been committed or revealed but has not resolved is not history, and
+    /// putting it in a numbered slot said a turn was over while it was still being played.
+    ///
+    /// <para>Which of the two states it is in is the projected
+    /// <see cref="TurnCardCommitmentStatus"/> itself rather than a second word invented beside it, so
+    /// presentation cannot hold a different opinion about a commitment than the authority that recorded
+    /// one. The facedown state carries no card at all - not a card drawn differently, no card - because
+    /// the information boundary is what the type is for: until joint reveal the projection itself
+    /// refuses to name the committed instance, and this shape means presentation could not leak it even
+    /// from the director's complete definition list.</para>
+    /// </summary>
+    public sealed class HeroCurrentCardViewModel
+    {
+        public HeroCurrentCardViewModel(TurnCardCommitmentStatus status, TrayCardViewModel card = null)
+        {
+            if (status != TurnCardCommitmentStatus.CardCommittedFacedown &&
+                status != TurnCardCommitmentStatus.Revealed)
+            {
+                throw new ArgumentException(
+                    "A hero's current card is either committed facedown or revealed.", nameof(status));
+            }
+
+            if ((status == TurnCardCommitmentStatus.Revealed) != (card != null))
+            {
+                throw new ArgumentException(
+                    "A revealed current card names its card, and only a revealed one does.",
+                    nameof(card));
+            }
+
+            Status = status;
+            Card = card;
+            IsFacedown = status == TurnCardCommitmentStatus.CardCommittedFacedown;
+            StateLabel = IsFacedown ? "FACEDOWN" : "RESOLVING";
+            Color = card?.Color ?? CardColor.None;
+            InitiativeLabel = card?.Face?.Initiative?.AmountLabel ?? string.Empty;
+            AssistiveLabel = IsFacedown
+                ? "Current card: committed facedown, not revealed"
+                : $"Current card: {card.DisplayName} - {card.ColorName} - {card.ValueLine} - " +
+                    StateLabel;
+        }
+
+        /// <summary>The projected commitment this marker is a reading of.</summary>
+        public TurnCardCommitmentStatus Status { get; }
+
+        /// <summary>Whether the commitment is still facedown, so nothing about the card may be shown.</summary>
+        public bool IsFacedown { get; }
+
+        /// <summary>
+        /// The revealed card, drawn by the same builder the tray and the history slots draw one with,
+        /// or null while the commitment is facedown.
+        /// </summary>
+        public TrayCardViewModel Card { get; }
+
+        /// <summary>The revealed card's printed colour, or <c>None</c> while it is facedown.</summary>
+        public CardColor Color { get; }
+
+        /// <summary>p.7's Initiative as the marker prints it, or empty while the card is facedown.</summary>
+        public string InitiativeLabel { get; }
+
+        /// <summary>`FACEDOWN` or `RESOLVING` - the word the marker carries beside its colour.</summary>
+        public string StateLabel { get; }
+
+        public string AssistiveLabel { get; }
     }
 
     /// <summary>One of rulebook p.16's item bonuses, as a compact signed chip.</summary>
@@ -323,11 +402,15 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// One of the four fixed slots standing for this hero's turns in the current round.
+    /// One of the four fixed slots standing for this hero's <em>resolved</em> turns in the current
+    /// round.
     ///
-    /// It carries no visible text at all - milestone 7.8a's acceptance rule - and the ordinal and colour
-    /// live in <see cref="AssistiveLabel"/>, which is the hover and accessibility reading of the same
-    /// slot. That is the mockup's own arrangement: a swatch with an `aria-label` behind it.
+    /// Milestone 8.7a made both of those words true. A slot is occupied only once the card played on
+    /// its turn has reached <see cref="CardResolutionStatus.Resolved"/>, and the ordinal it stands for
+    /// is written on it: the approved mockup numbers the four slots under one `RESOLVED TURNS` caption,
+    /// which is what tells a player that this row is history rather than what is happening now. The
+    /// colour stays a swatch with <see cref="AssistiveLabel"/> behind it, exactly as milestone 7.8a
+    /// left it.
     /// </summary>
     public sealed class HeroTurnSlotViewModel
     {
@@ -353,15 +436,35 @@ namespace GuardsDigital.Presentation.Match
             Color = color;
             IsOccupied = isOccupied;
             PlayedCard = playedCard;
+            TurnLabel = turnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            // Milestone 8.7a: the same projected active-source fact the tray reads, asked of the card
+            // in the slot rather than derived again here, so the two surfaces mark and unmark one card
+            // on the same refresh.
+            IsActiveEffectSource = isOccupied && playedCard.IsActiveEffectSource;
+            ActiveLabel = IsActiveEffectSource ? "ACTIVE" : string.Empty;
             AssistiveLabel = isOccupied
-                ? $"Turn {turnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}: " +
-                    $"{MatchHudTheme.ColorName(color)} card - {playedCard.DisplayName}"
-                : $"Turn {turnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}: empty";
+                ? $"Turn {TurnLabel}: {MatchHudTheme.ColorName(color)} card - {playedCard.DisplayName}" +
+                    (IsActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty)
+                : $"Turn {TurnLabel}: empty";
         }
 
         public int TurnIndex { get; }
+
+        /// <summary>The turn ordinal as the slot prints it, which milestone 8.7a made visible.</summary>
+        public string TurnLabel { get; }
+
         public CardColor Color { get; }
         public bool IsOccupied { get; }
+
+        /// <summary>
+        /// Milestone 8.7a: whether the card resolved on this turn is still sourcing a live Active
+        /// effect, so the resolved slot wears milestone 8.5b's outline and word for exactly as long as
+        /// the tray card does.
+        /// </summary>
+        public bool IsActiveEffectSource { get; }
+
+        /// <summary>`ACTIVE`, or empty when nothing this slot's card sourced is live.</summary>
+        public string ActiveLabel { get; }
 
         /// <summary>
         /// The card this hero played on that turn, as the tray draws it, or null for an empty slot.
@@ -395,7 +498,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HeroTurnSlotViewModel> turnSlots,
             int discardCount,
             IEnumerable<CardColor> discardColors,
-            bool isViewed)
+            bool isViewed,
+            HeroCurrentCardViewModel currentCard = null)
         {
             if (!heroId.IsDefined)
             {
@@ -418,6 +522,7 @@ namespace GuardsDigital.Presentation.Match
             DiscardCount = discardCount;
             DiscardColors = Array.AsReadOnly((discardColors ?? Enumerable.Empty<CardColor>()).ToArray());
             IsViewed = isViewed;
+            CurrentCard = currentCard;
             TeamLabel = teamSide == TeamSide.Red ? "RED HERO" : "BLUE HERO";
             LevelLabel = "LVL " + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
             DiscardLabel = "DISCARD";
@@ -434,6 +539,13 @@ namespace GuardsDigital.Presentation.Match
         public HeroId HeroId { get; }
         public TeamSide TeamSide { get; }
         public string HeroDisplayName { get; }
+        /// <summary>
+        /// `RED HERO` or `BLUE HERO`. Milestone 8.7a took it off the rail's face by the user's
+        /// 2026-08-21 decision - two rails on two edges in two accent colours already say which side a
+        /// hero is on, and the line repeated it a third time in the header the current-card marker
+        /// needed - and left it on the hero disc's own hover and assistive reading, which is where
+        /// milestone 8.5a put a card's printed colour for the same reason.
+        /// </summary>
         public string TeamLabel { get; }
         public string IconInitial { get; }
 
@@ -456,6 +568,12 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Whether the tray is currently showing this hero, which the rail marks.</summary>
         public bool IsViewed { get; }
+
+        /// <summary>
+        /// Milestone 8.7a: the card this hero has in play and has not resolved, or null when they have
+        /// none - awaiting a commitment, passed, or already resolved this turn's card.
+        /// </summary>
+        public HeroCurrentCardViewModel CurrentCard { get; }
     }
 
     public sealed class HeroOverviewsViewModel
@@ -547,7 +665,8 @@ namespace GuardsDigital.Presentation.Match
                     .Select(card => CurrentRoundCards.ColorOf(projection, card))
                     .Distinct()
                     .OrderBy(color => (int)color),
-                heroId.Equals(viewedHeroId));
+                heroId.Equals(viewedHeroId),
+                CurrentRoundCards.CurrentCard(projection, heroId));
         }
     }
 
@@ -602,7 +721,16 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// The four fixed slots of the current round for one hero, in turn order. A turn the round has
-        /// not reached, or one this hero passed on, is an empty slot rather than a missing one.
+        /// not reached, one this hero passed on, and one whose card is still being resolved are all an
+        /// empty slot rather than a missing one.
+        ///
+        /// <para>Milestone 8.7a: the slot fills on the card's own
+        /// <see cref="CardResolutionStatus.Resolved"/> rather than on the assignment existing. The
+        /// round records its assignment at the moment a turn starts - which is the same command as
+        /// joint reveal - so until now the four slots occupied themselves the instant a card was
+        /// revealed and presented a turn as history while it was still being played. Nothing here
+        /// remembers a resolution: it is asked of the same card state the authority owns, so restore,
+        /// replay and a retained-prefix Undo answer it without a presentation-side lifetime.</para>
         /// </summary>
         public static IReadOnlyList<HeroTurnSlotViewModel> TurnSlots(
             MatchSessionProjection projection,
@@ -620,7 +748,8 @@ namespace GuardsDigital.Presentation.Match
                     ? null
                     : projection.Cards.FirstOrDefault(value =>
                         value.Id.Equals(assignment.CardInstanceId.Value));
-                slots.Add(card == null
+                slots.Add(card == null ||
+                    card.State.ResolutionStatus != CardResolutionStatus.Resolved
                     ? new HeroTurnSlotViewModel(turnIndex, CardColor.None, false)
                     : new HeroTurnSlotViewModel(
                         turnIndex,
@@ -630,6 +759,60 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return Array.AsReadOnly(slots.ToArray());
+        }
+
+        /// <summary>
+        /// The card this hero has in play and has not resolved: the facedown commitment of a turn that
+        /// has not been revealed, or the revealed card whose turn is still being resolved. Null when
+        /// the hero has nothing in play - awaiting a commitment, passed, or resolved.
+        ///
+        /// <para>Milestone 8.7a. The facedown case is the reason the answer is taken from the
+        /// commitment rather than by looking for a card in the turn area: until joint reveal the
+        /// authority's own projection refuses to name the committed instance, and reading a location to
+        /// find it would be presentation deciding to know something the rules are withholding. What is
+        /// left after that refusal is exactly a status, which is all the facedown marker draws.</para>
+        /// </summary>
+        public static HeroCurrentCardViewModel CurrentCard(
+            MatchSessionProjection projection,
+            HeroId heroId)
+        {
+            if (projection == null) throw new ArgumentNullException(nameof(projection));
+            var commitment = projection.Commitments
+                .FirstOrDefault(value => value.HeroId.Equals(heroId));
+            if (commitment.Status == TurnCardCommitmentStatus.CardCommittedFacedown)
+            {
+                return new HeroCurrentCardViewModel(commitment.Status);
+            }
+
+            if (commitment.Status != TurnCardCommitmentStatus.Revealed ||
+                !commitment.RevealedCardInstanceId.HasValue)
+            {
+                return null;
+            }
+
+            var card = projection.Cards
+                .FirstOrDefault(value => value.Id.Equals(commitment.RevealedCardInstanceId.Value));
+            if (card == null || card.State.ResolutionStatus == CardResolutionStatus.Resolved)
+            {
+                // The turn is not over - the other hero may still be acting - but this hero's card is,
+                // and the numbered slot it belongs to is now occupied. One card, one place.
+                return null;
+            }
+
+            // The turn ordinal is read the way the tray reads it, including the fallback for a turn-area
+            // card this round's history does not name: the group only decides which lifecycle line the
+            // face would otherwise carry, and a card in play carries `RESOLVING` in place of all of them.
+            var playedTurnIndex = PlayedTurnIndex(projection, heroId, card.Id);
+            return new HeroCurrentCardViewModel(
+                commitment.Status,
+                TrayCard(
+                    projection,
+                    card,
+                    playedTurnIndex > 0 ? TrayCardGroup.Played : TrayCardGroup.Discarded,
+                    playedTurnIndex,
+                    false,
+                    false,
+                    true));
         }
 
         /// <summary>

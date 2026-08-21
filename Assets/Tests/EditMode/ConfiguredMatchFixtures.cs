@@ -650,7 +650,15 @@ namespace GuardsDigital.Tests.EditMode
             PlayOneOrdinaryRound(session);
         }
 
-        public static void CommitAndHoldOneTurn(MatchSession session)
+        /// <summary>
+        /// Both hands' response to the current turn's commitment, and the Initiative tie it may raise:
+        /// each hero commits their first held card, or passes when p.7 leaves them nothing to commit.
+        ///
+        /// Split out of <see cref="CommitAndHoldOneTurn"/> at milestone 8.7a, which needed the position
+        /// that turn reaches halfway through - both cards revealed, neither resolved - rather than only
+        /// the one it ends at.
+        /// </summary>
+        public static void CommitBothHands(MatchSession session)
         {
             foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
             {
@@ -673,7 +681,11 @@ namespace GuardsDigital.Tests.EditMode
                 Accept(session, DirectorCommand.ChooseTiedActor(
                     tie.OwningSide, tie.CandidateCardInstanceIds[0]));
             }
+        }
 
+        public static void CommitAndHoldOneTurn(MatchSession session)
+        {
+            CommitBothHands(session);
             var turnIndex = session.Projection.TurnIndex;
             while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn &&
                 session.Projection.TurnIndex == turnIndex)
@@ -681,6 +693,95 @@ namespace GuardsDigital.Tests.EditMode
                 Accept(session, DirectorCommand.PerformHold(
                     session.Projection.SelectedActor.CardInstanceId));
             }
+        }
+
+        /// <summary>
+        /// A configured match with exactly one hero's card committed facedown: the other has not
+        /// responded, so rulebook p.7's joint reveal has not happened and the committed card's identity
+        /// is not in the projection at all.
+        ///
+        /// Milestone 8.7a. It is the position the rail's facedown marker exists for, and the one that
+        /// proves the marker cannot leak a card it is never told.
+        /// </summary>
+        public static MatchSession CreateSessionWithAFacedownCommitment(out HeroId committedHeroId)
+        {
+            var session = CreateConfiguredSession();
+            var card = session.Projection.Cards.First(candidate =>
+                session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == TeamSide.Red &&
+                candidate.State.Location == CardLocation.Hand);
+            committedHeroId = card.OwnerId;
+            Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            Assert.That(
+                session.Projection.GetCommitment(card.OwnerId).Status,
+                Is.EqualTo(TurnCardCommitmentStatus.CardCommittedFacedown),
+                "The fixture only proves the marker while the commitment really is still facedown.");
+            return session;
+        }
+
+        /// <summary>
+        /// A configured match at the moment rulebook p.7's joint reveal ends a turn's commitment: both
+        /// heroes' cards are face up in the turn area, both unresolved, and nobody has acted.
+        ///
+        /// Milestone 8.7a. It is the position the round's own assignment history already names both
+        /// cards in, which is what made the four numbered slots fill before a turn was played. It deals
+        /// the verified mirror rather than the showcase hands, so the face the marker reveals carries
+        /// Wasp's own transcribed words rather than a synthetic card that prints none.
+        /// </summary>
+        public static MatchSession CreateSessionWithARevealedUnresolvedTurn()
+        {
+            var session = CreateVerifiedMirrorSession();
+            CommitBothHands(session);
+            Assert.That(
+                session.Projection.Commitments.All(commitment =>
+                    commitment.Status == TurnCardCommitmentStatus.Revealed),
+                Is.True,
+                "The fixture only proves the marker while both cards really are revealed.");
+            return session;
+        }
+
+        /// <summary>
+        /// A configured match in which the Blue hero was dealt one card instead of p.6's five, so that
+        /// from the round's second turn onwards they have an empty hand and rulebook p.7's Pass is the
+        /// only response they can make.
+        ///
+        /// Milestone 8.7a. A Pass is unreachable in ordinary configured play - four turns are spent out
+        /// of a hand of five and the end of round retrieves what was played - so the hand is trimmed at
+        /// setup rather than emptied by commands that do not exist. The trim is the one thing changed:
+        /// the four dropped instances are removed from the configuration before it is restored, and
+        /// every definition, the map, the participants and the Tie Breaker are the configured ones.
+        /// <see cref="ConfiguredHand"/> re-derives its dealt/deck split from the upgrade closure when it
+        /// restores, so its own split no longer matches where each card actually is; nothing a match
+        /// reads uses that split, because the session is composed from the instances and their states.
+        /// </summary>
+        public static MatchSession CreateSessionWithAPassingHero(out HeroId passingHeroId)
+        {
+            var source = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var state = source.CaptureRestoreState();
+            var dropped = new HashSet<CardInstanceId>(
+                source.BlueHand.Instances.Skip(1).Select(instance => instance.Id));
+            var configuration = PlaceholderOneVsOneTestConfiguration.Restore(
+                new PlaceholderConfigurationRestoreState(
+                    state.Participants,
+                    state.Definitions,
+                    state.Instances.Where(instance => !dropped.Contains(instance.Id)),
+                    state.TieBreakerState,
+                    state.SetupSeed));
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var session = CreateSession(configuration, map, setup);
+            var blueHeroId = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            passingHeroId = blueHeroId;
+            Assert.That(
+                session.Projection.Cards.Count(card =>
+                    card.OwnerId.Equals(blueHeroId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(1),
+                "The trim leaves exactly the one card that empties the hand after the first turn.");
+            return session;
         }
 
         /// <summary>
