@@ -39,7 +39,19 @@ namespace GuardsDigital.Core.Effects
         /// part of that was ever checked, so a directed acyclic graph loaded cleanly into machinery
         /// that assumes each node has one parent.
         /// </summary>
-        NodeReachableThroughTwoParents = 14
+        NodeReachableThroughTwoParents = 14,
+
+        /// <summary>
+        /// Milestone 8.5. A printed Attack's or Defense's card text contains a node that would open an
+        /// authoritative choice. Rulebook p.14 applies that text inside an Attack whose remaining steps
+        /// are produced in the same command that began them, and this build persists no state that
+        /// could hold them while a question stands - so the composition is refused at content load
+        /// rather than faulting halfway through an attack that has already been announced. A Skill's
+        /// effect is the action itself and pauses freely; only text applied inside another action is
+        /// bound by this. The slice that first transcribes a rider needing a question owns the nesting
+        /// and the schema move it costs.
+        /// </summary>
+        CardTextCannotPauseInsideAnAttack = 15
     }
 
     public readonly struct EffectDefinitionRejection
@@ -71,6 +83,55 @@ namespace GuardsDigital.Core.Effects
     /// </summary>
     public static class EffectDefinitionValidator
     {
+        /// <summary>
+        /// Everything <see cref="Validate"/> checks, plus the one extra rule text applied inside
+        /// another action is bound by: no node in it may open an authoritative choice.
+        ///
+        /// <para>Milestone 8.5. Rulebook p.14 applies a card's text at three numbered points inside an
+        /// Attack whose remaining steps are produced in the same command that began them. Nothing in
+        /// this build's persisted state can hold those steps while a question stands, so a composition
+        /// that could ask one is refused here - at content load, before a match runs - rather than
+        /// faulting halfway through an attack that has already been announced. A Skill is unaffected:
+        /// its effect is the action, and pausing it is what the whole frame exists for.</para>
+        ///
+        /// <para>The rule is about the three node shapes that open a choice on their own: p.10's
+        /// <c>Choose</c>, anything policied <c>May</c> (which opens the page's confirm-or-decline), and
+        /// <c>RepeatAction</c>, whose eligible <c>may</c> does the same. A capability that requests one
+        /// is caught at execution instead, because nothing a definition declares says whether a handler
+        /// will ask.</para>
+        /// </summary>
+        public static IReadOnlyList<EffectDefinitionRejection> ValidateCardText(
+            EffectDefinition definition,
+            EffectCapabilityCatalog catalog)
+        {
+            var rejections = Validate(definition, catalog).ToList();
+            if (definition == null)
+            {
+                return rejections;
+            }
+
+            foreach (var node in definition.Nodes)
+            {
+                var pausingShape =
+                    node.Kind == EffectNodeKind.Choose ? "rulebook p.10's Choose" :
+                    node.Kind == EffectNodeKind.RepeatAction ? "a repeat the actor may decline" :
+                    node.FailurePolicy == EffectFailurePolicy.May ? "a `may` step" :
+                    null;
+                if (pausingShape == null)
+                {
+                    continue;
+                }
+
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.CardTextCannotPauseInsideAnAttack,
+                    $"Node '{node.Id}' is {pausingShape}, which asks the player a question. Card text " +
+                    "applied at one of rulebook p.14's Attack moments has to finish inside the command " +
+                    "that reached it."));
+            }
+
+            return Array.AsReadOnly(rejections.ToArray());
+        }
+
         public static IReadOnlyList<EffectDefinitionRejection> Validate(
             EffectDefinition definition,
             EffectCapabilityCatalog catalog)

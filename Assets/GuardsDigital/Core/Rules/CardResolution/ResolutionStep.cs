@@ -13,7 +13,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
         Fact = 1,
 
         /// <summary>A timing checkpoint the resolver raises at this exact position in the action.</summary>
-        Checkpoint = 2
+        Checkpoint = 2,
+
+        /// <summary>
+        /// Milestone 8.5. Rulebook p.14 applies a card's printed text at three numbered moments
+        /// inside an Attack, and this is the resolver saying it has reached one of them. The step
+        /// carries the card and action whose text applies and nothing about what the text does: the
+        /// backend knows p.14's order and owns it, and the authority that holds the effect catalog,
+        /// the components and the timing service is what runs the composition.
+        /// </summary>
+        CardText = 3
     }
 
     /// <summary>
@@ -35,13 +44,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardActionResolutionEvent fact,
             TimingCheckpoint checkpoint,
             HeroId checkpointAffectedHeroId,
-            CardInstanceId checkpointSourceCardInstanceId)
+            CardInstanceId checkpointSourceCardInstanceId,
+            ActionDefinitionId cardTextActionDefinitionId = default,
+            HeroId cardTextActorId = default,
+            CardTextTiming cardTextTiming = CardTextTiming.None)
         {
             Kind = kind;
             Fact = fact;
             Checkpoint = checkpoint;
             CheckpointAffectedHeroId = checkpointAffectedHeroId;
             CheckpointSourceCardInstanceId = checkpointSourceCardInstanceId;
+            CardTextActionDefinitionId = cardTextActionDefinitionId;
+            CardTextActorId = cardTextActorId;
+            CardTextTiming = cardTextTiming;
         }
 
         public ResolutionStepKind Kind { get; }
@@ -81,5 +96,52 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 checkpointAffectedHeroId,
                 checkpointSourceCardInstanceId);
         }
+
+        /// <summary>
+        /// Milestone 8.5. One of rulebook p.14's numbered card-text moments, at the exact position in
+        /// the stream the page puts it: step 1 for the attacker's "Before the attack" text, step 4 for
+        /// the defender's Defense action text, step 7 for the attacker's "After the attack:" text.
+        ///
+        /// <paramref name="actorId"/> is whose card it is, which is the attacker at steps 1 and 7 and
+        /// the defender at step 4; p.10 gives every choice inside a card's text to that hero.
+        /// </summary>
+        public static ResolutionStep ApplyCardText(
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            CardTextTiming timing)
+        {
+            if (!sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined || !actorId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A card-text step names the card, the action and the hero whose text applies.",
+                    nameof(sourceCardInstanceId));
+            }
+
+            if (timing == CardTextTiming.None)
+            {
+                throw new ArgumentException(
+                    "A card-text step names which of rulebook p.14's moments it is.", nameof(timing));
+            }
+
+            return new ResolutionStep(
+                ResolutionStepKind.CardText,
+                default,
+                TimingCheckpoint.None,
+                default,
+                sourceCardInstanceId,
+                actionDefinitionId,
+                actorId,
+                timing);
+        }
+
+        /// <summary>Defined only when <see cref="Kind"/> is <see cref="ResolutionStepKind.CardText"/>.</summary>
+        public ActionDefinitionId CardTextActionDefinitionId { get; }
+
+        /// <summary>The hero whose card text this is; defined only on a card-text step.</summary>
+        public HeroId CardTextActorId { get; }
+
+        /// <summary>Which of p.14's moments this is; defined only on a card-text step.</summary>
+        public CardTextTiming CardTextTiming { get; }
     }
 }

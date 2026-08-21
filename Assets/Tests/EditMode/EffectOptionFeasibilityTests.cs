@@ -503,7 +503,7 @@ namespace GuardsDigital.Tests.EditMode
                 ActionInvocationContext.PrintedPrimary,
                 new EffectResolutionContext(
                     definition, SyntheticEffectCapabilities.CreateCatalog(), participants, timing,
-                    1, 1, RuleModificationSet.Empty, EffectCardState.Absent));
+                    1, 1, RuleModificationSet.Empty, EffectCardState.Absent, ActionKind.Skill));
 
             Assert.That(paused.Frame.PendingChoice.UnavailableCandidates
                     .Select(candidate => candidate.OptionNodeId),
@@ -531,7 +531,7 @@ namespace GuardsDigital.Tests.EditMode
         private static EffectResolutionContext Context(EffectDefinition definition) =>
             new EffectResolutionContext(
                 definition, SyntheticEffectCapabilities.CreateCatalog(), null, null, 1, 1,
-                RuleModificationSet.Empty, EffectCardState.Absent);
+                RuleModificationSet.Empty, EffectCardState.Absent, ActionKind.Skill);
 
         private static IReadOnlyList<string> Kinds(EffectResolutionStepResult result) =>
             result.Events.Select(value => $"{value.NodeId}={value.ResultKind}").ToArray();

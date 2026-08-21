@@ -74,7 +74,7 @@ Milestones 8.5 through 8.14 were assigned their definitions by milestone 8.2's d
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-84-load-both-wasp-hands-into-the-director-turn-loop-completion-evidence).
 
-### [ ] 8.5 Open the general card-text seam on Attack and Defense actions
+### [x] 8.5 Open the general card-text seam on Attack and Defense actions
 
 Observable outcome: a printed non-Skill action can declare an `EffectRoot` and a typed target policy, and its text runs at the p.14 checkpoint its keyword names, proven on synthetic definitions before any Wasp card consumes it.
 
@@ -86,6 +86,8 @@ Acceptance checks:
 - A `Conditional` node publishes its predicate result as typed facts and routes a non-Applied result through `ApplyCapabilityResult` rather than silently reporting false (closes F-CARD-07; `EffectNodePolicyTests.AConditionalPredicate_PublishesItsFactsAndCannotSilentlyReportFalse` observed failing pre-fix).
 
 Non-goals: no Wasp card composition (8.8-8.11 own the consumers), no Block resolution mode (8.11), no trigger-window execution (8.12).
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-85-open-the-general-card-text-seam-on-attack-and-defense-actions-completion-evidence).
 
 ### [ ] 8.6 Complete the Wasp telekinetic skills
 
@@ -118,7 +120,7 @@ Non-goals: no Wasp card composition (8.9 owns the configured consumers); no new 
 
 ### [!] 8.8 Complete the Wasp kinetic skills
 
-Blocked by: milestones 8.5 (published predicate facts) and 8.7 (the consumption regime). Milestone 8.4 supplied the hands.
+Blocked by: milestone 8.7 (the consumption regime). Milestones 8.4 and 8.5 supplied the hands and the published predicate facts.
 
 Observable outcome: Kinetic Repulse and Kinetic Blast resolve their complete printed text, including the stopped-hero discard rider.
 
@@ -132,7 +134,7 @@ Non-goals: no Attack text, no new push geometry.
 
 ### [!] 8.9 Complete the Wasp basic cards
 
-Blocked by: milestones 8.5 (Attack text seam) and 8.7 (restriction and overlay consumers). Milestone 8.4 supplied the hands.
+Blocked by: milestone 8.7 (restriction and overlay consumers). Milestones 8.4 and 8.5 supplied the hands and the Attack text seam.
 
 Observable outcome: Magnetic Dagger and Static Barrier resolve their complete printed text in the configured mirror, and the performed-basic-action fact High Voltage's trigger will read exists.
 
@@ -147,7 +149,7 @@ Non-goals: no rider discards (no basic card has one), no trigger execution.
 
 ### [!] 8.10 Complete the Wasp Attack cards
 
-Blocked by: milestones 8.5 (text seam and target policies), 8.6 (straight-line query), and 8.8 (discard rider family).
+Blocked by: milestones 8.6 (straight-line query) and 8.8 (discard rider family). Milestone 8.5 supplied the text seam and the target policies.
 
 Observable outcome: Shock, Electrocute, Electroblast, Charged Boomerang, and Thunder Boomerang resolve their complete printed text, including the escalating and repeating riders.
 
@@ -164,7 +166,7 @@ Non-goals: no Defense text (8.11), no trigger windows (8.12).
 
 ### [!] 8.11 Complete the Wasp Defense cards
 
-Blocked by: milestones 8.5 (Defense text seam) and 8.8 (discard rider family).
+Blocked by: milestone 8.8 (discard rider family). Milestone 8.5 supplied the Defense text seam.
 
 Observable outcome: Stop Projectiles, Deflect Projectiles, and Reflect Projectiles resolve their complete printed text as p.14 Block cards.
 

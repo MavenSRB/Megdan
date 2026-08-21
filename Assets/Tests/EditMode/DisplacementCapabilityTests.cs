@@ -711,6 +711,7 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 modifications,
                 EffectCardState.Absent,
+                ActionKind.Skill,
                 new MatchComponents(
                     SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
                     board, board, board));

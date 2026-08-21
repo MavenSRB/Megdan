@@ -5,6 +5,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -725,6 +726,30 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 actorId,
                 new ActionResolutionStepId(nodeId));
         }
+
+        /// <summary>
+        /// Milestone 8.5: one node of a printed Attack's or Defense's card text, applied at one of
+        /// rulebook p.14's numbered moments.
+        ///
+        /// It reuses the Skill fact shape because what it reports is the same thing - a node of an
+        /// effect definition resolved against a source card by an actor - and differs only in what
+        /// surrounds it. The step id carries the moment and the node together, so the ordered log
+        /// places the text inside p.14's order without a reader inferring anything from position.
+        /// </summary>
+        public static CardActionResolutionEvent CardTextApplied(
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            CardTextTiming timing,
+            EffectResolutionEvent node) =>
+            Skill(
+                CardActionResolutionEventKind.CardTextApplied,
+                new ActionResolutionId(
+                    $"card-text-{sourceCardInstanceId.Value}-{actionDefinitionId.Value}"),
+                sourceCardInstanceId,
+                actionDefinitionId,
+                actorId,
+                new ActionResolutionStepId($"{timing}:{node.NodeId.Value}:{node.ResultKind}"));
 
         public static CardActionResolutionEvent SkillChoiceRequested(
             ActionResolutionId resolutionId,

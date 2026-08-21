@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Units.Heroes;
@@ -251,5 +253,156 @@ namespace GuardsDigital.Tests.EditMode
                         "GuardsDigital.Tests", StringComparison.Ordinal))
                 .Where(type => type != typeof(CardDefinition) && type != typeof(CardSourceContent))
                 .ToArray();
+
+        /// <summary>
+        /// Milestone 8.5, the definition half of the 7.9a review's F-CARD-01. A printed Attack or
+        /// Defense may now declare an <c>EffectRoot</c>, and because that root is card text rather than
+        /// the action itself, it has to say which of rulebook p.14's numbered moments applies it. The
+        /// refusals below are the shapes that statement could be false in.
+        /// </summary>
+        [Test]
+        public void APrintedAttacksEffectRoot_IsCardTextAndNamesTheMomentItIsApplied()
+        {
+            Assert.DoesNotThrow(() => AttackWithText(CardTextTiming.AfterTheAttack),
+                "An Attack carrying its rider at p.14's step 7 is exactly what the seam is for.");
+            Assert.DoesNotThrow(() => AttackWithText(CardTextTiming.BeforeTheAttack));
+
+            Assert.That(
+                Assert.Throws<ArgumentException>(() => AttackWithText(CardTextTiming.None)).Message,
+                Does.Contain("names the moment"),
+                "A root on a non-Skill action with no moment could never be applied.");
+
+            Assert.That(
+                Assert.Throws<ArgumentException>(() => AttackWithText(CardTextTiming.DefenseAction)).Message,
+                Does.Contain("p.14"),
+                "p.14 step 4 belongs to the defender's card, not to the Attack.");
+
+            Assert.That(
+                Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                    new ActionDefinitionId("text-timing-without-a-root"),
+                    ActionKind.Attack,
+                    ActionDefinitionOrigin.PrintedPrimary,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, 3) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                    AttackRangeKind.NonRanged,
+                    default,
+                    null,
+                    default,
+                    PrintedDefenseResolution.None,
+                    CardTextTiming.AfterTheAttack)).Message,
+                Does.Contain("cannot be stated without one"),
+                "A moment with no text to apply at it states nothing.");
+
+            // p.13's own sentence, and the rules consumer the CardTextApplication policy gained: "When
+            // you perform a primary action, apply the card text." An action that suppresses its source
+            // card's text performs none, so it has no moment to apply one at.
+            Assert.That(
+                Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                    new ActionDefinitionId("suppressed-text"),
+                    ActionKind.Attack,
+                    ActionDefinitionOrigin.PrintedSecondary,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, 3) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true),
+                    AttackRangeKind.NonRanged,
+                    default,
+                    SingleNodeText(),
+                    default,
+                    PrintedDefenseResolution.None,
+                    CardTextTiming.AfterTheAttack)).Message,
+                Does.Contain("applies its source card's text"));
+
+            // A Movement, a Hold, a Fast Travel and a Clear are algorithms rather than effect content,
+            // and stay so: the seam widened by exactly two kinds.
+            Assert.That(
+                Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                    new ActionDefinitionId("movement-with-text"),
+                    ActionKind.Movement,
+                    ActionDefinitionOrigin.PrintedPrimary,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, 2) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                    AttackRangeKind.None,
+                    default,
+                    SingleNodeText())).Message,
+                Does.Contain("Skill, an Attack or a Defense"));
+        }
+
+        /// <summary>
+        /// Milestone 8.5. p.13 states an Attack's reach as a rule about the card, so every Attack
+        /// carries the page's default and a card that narrows it declares the narrowing. Both of the
+        /// page's own sentences are enforced at construction.
+        /// </summary>
+        [Test]
+        public void APrintedAttack_CarriesRulebookPage13sTargetPolicyAndRefusesWhatThePageForbids()
+        {
+            var ordinary = AttackWithText(CardTextTiming.AfterTheAttack);
+            Assert.That(ordinary.AttackTargetPolicy, Is.Not.Null,
+                "Every classified Attack has a target policy; narrowing nothing is the page's default.");
+            Assert.That(ordinary.AttackTargetPolicy.Value.TargetableUnits,
+                Is.EqualTo(AttackTargetableUnits.HeroesAndMinions),
+                "p.13: 'You may attack enemy heroes and minions.'");
+            Assert.That(ordinary.AttackTargetPolicy.Value.Reach,
+                Is.EqualTo(AttackTargetReach.AdjacentOnly),
+                "p.13: 'Non-Ranged Attacks can only target units adjacent to you.'");
+            Assert.That(
+                ordinary.AttackTargetPolicy.Value.NarrowsTheDefault(AttackRangeKind.NonRanged),
+                Is.False);
+
+            var heroesOnly = ordinary.AttackTargetPolicy.Value.NarrowedToHeroes();
+            Assert.That(heroesOnly.NarrowsTheDefault(AttackRangeKind.NonRanged), Is.True,
+                "and Crackling Dagger's 'Target a hero adjacent to you' does narrow it.");
+
+            Assert.That(
+                Assert.Throws<ArgumentException>(() => new ActionDefinition(
+                    new ActionDefinitionId("non-ranged-reaching-further"),
+                    ActionKind.Attack,
+                    ActionDefinitionOrigin.PrintedPrimary,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, 3) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                    AttackRangeKind.NonRanged,
+                    default,
+                    null,
+                    default,
+                    PrintedDefenseResolution.None,
+                    CardTextTiming.None,
+                    new PrintedAttackTargetPolicy(
+                        AttackTargetableUnits.HeroesAndMinions, AttackTargetReach.PrintedRange))).Message,
+                Does.Contain("even if the card has a radius icon"),
+                "p.13 gives a non-Ranged Attack's adjacency no exception.");
+
+            // And nothing but an Attack declares one, because nothing else targets an enemy unit.
+            Assert.That(
+                SyntheticShowcaseHand.CreateRed(new HeroId("target-policy-hero")).Definitions
+                    .SelectMany(definition => definition.ActionDefinitions)
+                    .Where(action => action.Kind != ActionKind.Attack)
+                    .All(action => action.AttackTargetPolicy == null),
+                Is.True);
+        }
+
+        private static ActionDefinition AttackWithText(CardTextTiming timing) =>
+            new ActionDefinition(
+                new ActionDefinitionId("attack-with-text"),
+                ActionKind.Attack,
+                ActionDefinitionOrigin.PrintedPrimary,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, 3) },
+                new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                AttackRangeKind.NonRanged,
+                default,
+                SingleNodeText(),
+                default,
+                PrintedDefenseResolution.None,
+                timing);
+
+        private static EffectDefinition SingleNodeText() =>
+            new EffectDefinition(
+                new EffectDefinitionId("card-text-rules-fixture"),
+                "rev-1",
+                new EffectNodeId("note"),
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("note"), EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.NoteActorV1)
+                });
     }
 }

@@ -215,6 +215,7 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 RuleModificationSet.Empty,
                 EffectCardState.Absent,
+                ActionKind.Skill,
                 components);
     }
 }

@@ -186,7 +186,7 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 roundIndex,
                 1,
-                RuleModificationSet.Empty, EffectCardState.Absent);
+                RuleModificationSet.Empty, EffectCardState.Absent, ActionKind.Skill);
 
         /// <summary>A Sequence of the selection and the step that consumes what it publishes.</summary>
         private static EffectDefinition SelectionOnly(EffectNodeId consumer) =>

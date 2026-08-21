@@ -260,6 +260,56 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.5. The two heroes standing beside each other with the card-text cards dealt, so
+        /// a fixture can watch rulebook p.14's numbered order with real text in it.
+        /// </summary>
+        public static MatchSession CreateAttackTextSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForAttackTextFixture(
+                TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroBesideTheRedOne(map, setup),
+                setup.Minions));
+        }
+
+        /// <summary>
+        /// The same, with a Blue melee minion moved beside the Red hero as well, so a fixture can ask
+        /// what an Attack narrowed to p.13's heroes alone is offered when both a hero and a minion
+        /// stand next to it.
+        /// </summary>
+        public static MatchSession CreateAttackTextSessionWithAnAdjacentMinion(out MinionId minionId)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForAttackTextFixture(
+                TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var withMinion = WithAMeleeMinionBesideTheRedHero(map, setup, out minionId);
+
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                withMinion.SelectedMap,
+                withMinion.WaveCount,
+                withMinion.TieBreakerState,
+                withMinion.Teams,
+                WithBlueHeroBesideTheRedOne(map, withMinion),
+                withMinion.Minions));
+        }
+
+        /// <summary>
         /// The configured match milestone 8.4 made verified: two mirrored Wasps on the official map,
         /// dealt rulebook p.5's starting five with the remaining thirteen in their decks, with p.5's
         /// coin flip replaced by an explicit side so a fixture can play it deterministically.

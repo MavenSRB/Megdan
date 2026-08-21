@@ -35,13 +35,51 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int rangeTotal,
             MatchParticipants participants,
             AdjacentMoveAuthority board,
+            RuleModificationSet modifications) =>
+            FindLegalEnemyTargets(
+                attackerId,
+                PrintedAttackTargetPolicy.ForClassification(attackRange),
+                rangeTotal,
+                participants,
+                board,
+                modifications);
+
+        /// <summary>
+        /// The same question asked of the card rather than of its subtype label. Milestone 8.5.
+        ///
+        /// <para>p.13 attributes both halves of an Attack's targeting to the card: "You may attack enemy
+        /// heroes and minions", narrowed where a card's own words say otherwise, and a reach that is
+        /// adjacency for a non-Ranged Attack "even if the card has a radius icon" or the printed Range
+        /// for a Ranged one. The overload above is that page's default for a card that narrows nothing,
+        /// so nothing about an ordinary Attack changed; what changed is that a card which does narrow it
+        /// now has somewhere to say so as typed content instead of in a sentence something parses.</para>
+        /// </summary>
+        public static IReadOnlyList<AttackTarget> FindLegalEnemyTargets(
+            HeroId attackerId,
+            PrintedAttackTargetPolicy policy,
+            int rangeTotal,
+            MatchParticipants participants,
+            AdjacentMoveAuthority board,
             RuleModificationSet modifications)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
 
+            var attackRange = policy.Reach == AttackTargetReach.PrintedRange
+                ? AttackRangeKind.Ranged
+                : AttackRangeKind.NonRanged;
             var heroes = FindLegalEnemyHeroes(
                 attackerId, attackRange, rangeTotal, participants, board, modifications)
                 .Select(AttackTarget.Hero);
+
+            // p.13's narrowing, and the only place it is applied: Crackling Dagger prints "Target a
+            // hero adjacent to you", so a minion standing beside her is not a legal target of it even
+            // though the same page's default admits one.
+            if (policy.TargetableUnits == AttackTargetableUnits.HeroesOnly)
+            {
+                return Array.AsReadOnly(heroes
+                    .OrderBy(target => target.HeroId.Value, StringComparer.Ordinal)
+                    .ToArray());
+            }
             var attackerOccupancy = board.Occupancies.SingleOrDefault(value => value.HeroId.Equals(attackerId));
             if (!attackerOccupancy.HeroId.IsDefined)
             {

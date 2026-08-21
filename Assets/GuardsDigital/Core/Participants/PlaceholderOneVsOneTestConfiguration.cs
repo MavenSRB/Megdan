@@ -210,6 +210,25 @@ namespace GuardsDigital.Core.Participants
             ownerId => WaspCardContent.CreateHand(
                 ownerId, side == TeamSide.Red ? "red" : "blue");
 
+        /// <summary>
+        /// The ordinary configuration plus milestone 8.5's card-text cards: two printed Attacks in the
+        /// Red hand applying their text at rulebook p.14's steps 1 and 7, and one card in the Blue hand
+        /// whose printed secondary Defense applies its text at step 4.
+        ///
+        /// Separate from every configuration before it for the reason each of those is separate, and
+        /// for one more: these are the first non-Skill actions in this project to carry an
+        /// <c>EffectRoot</c> at all, so a fixture that watches p.14's order must be the only thing that
+        /// can change what applies inside it.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForAttackTextFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRedWithAttackText,
+                SyntheticShowcaseHand.CreateBlueWithAttackText);
+        }
+
         public static PlaceholderOneVsOneTestConfiguration CreateForInternalTest(
             TeamSide initialTieBreakerSide)
         {
@@ -458,8 +477,14 @@ namespace GuardsDigital.Core.Participants
                         continue;
                     }
 
-                    var rejections = GuardsDigital.Core.Effects.EffectDefinitionValidator.Validate(
-                        action.EffectRoot, catalog);
+                    // Milestone 8.5. Text applied at one of rulebook p.14's Attack moments is validated
+                    // under the stricter rule, because it also has to finish inside the command that
+                    // reached it; a Skill's own effect is the action and may pause freely.
+                    var rejections = action.CardTextTiming != CardTextTiming.None
+                        ? GuardsDigital.Core.Effects.EffectDefinitionValidator.ValidateCardText(
+                            action.EffectRoot, catalog)
+                        : GuardsDigital.Core.Effects.EffectDefinitionValidator.Validate(
+                            action.EffectRoot, catalog);
                     if (rejections.Count > 0)
                     {
                         throw new ArgumentException(

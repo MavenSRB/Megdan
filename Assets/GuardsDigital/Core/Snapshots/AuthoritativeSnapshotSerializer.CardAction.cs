@@ -516,9 +516,15 @@ namespace GuardsDigital.Core.Snapshots
             // come from a hand must be re-asked against the cards this same payload just restored, for
             // the same reason milestone 6.2 re-asks a board capability against the restored board. The
             // cards are read before any pending action is decoded, which is what makes it possible.
+            // Milestone 8.5. The enclosing action's kind is read off the trusted definition the frame
+            // names rather than persisted beside it: the payload already records which card and which
+            // action the resolution began from, so re-deriving the kind from the content is exact and
+            // adds no wire field, while a written one could disagree with the definition it names.
             var resolution = new EffectResolutionContext(
                 trusted, capabilities, participants, null, 1, 1, modifications,
-                EffectCardState.Of(definitions, cards), components: components, heroItems: heroItems);
+                EffectCardState.Of(definitions, cards),
+                EnclosingActionKindOf(definitions, common.DefinitionReference, common.ActionId),
+                components: components, heroItems: heroItems);
 
             // Candidates are never written. A control node's options come from the trusted
             // definition; a capability's come from asking the trusted handler again. Either way a
@@ -616,6 +622,7 @@ namespace GuardsDigital.Core.Snapshots
                 null,
                 resolution.Modifications,
                 resolution.CardState,
+                resolution.EnclosingActionKind,
                 resolution.Components,
                 resolution.HeroItems));
             if (offered.Choice == null)
@@ -631,6 +638,31 @@ namespace GuardsDigital.Core.Snapshots
                 .ToArray();
         }
 
+
+        /// <summary>
+        /// The kind of action a restored effect frame is running inside, read from the trusted card
+        /// definition the frame names. Milestone 8.5: p.18's immunity is declared per action type, so a
+        /// capability that filters by activity has to be told the same activity after a restore that it
+        /// was told live.
+        /// </summary>
+        private static ActionKind EnclosingActionKindOf(
+            IReadOnlyList<CardDefinition> definitions,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId)
+        {
+            var definition = definitions.FirstOrDefault(candidate =>
+                candidate.Reference.Equals(sourceDefinitionReference));
+            var action = definition?.ActionDefinitions
+                .FirstOrDefault(candidate => candidate.Id.Equals(actionDefinitionId));
+            if (action == null)
+            {
+                throw Malformed(
+                    $"Snapshot pending effect resolution names action '{actionDefinitionId}' on card " +
+                    $"definition '{sourceDefinitionReference}', which this build does not supply.");
+            }
+
+            return action.Kind;
+        }
         private static EffectDefinition FindTrustedEffectRoot(
             IReadOnlyList<CardDefinition> definitions,
             CommonResolution common,

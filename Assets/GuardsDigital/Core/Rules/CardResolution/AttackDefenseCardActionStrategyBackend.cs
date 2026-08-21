@@ -346,7 +346,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (command.Target.Kind == AttackTargetKind.Minion)
             {
-                return ResolveMinionTarget(command.TargetMinionId, participants, modifications);
+                return ResolveMinionTarget(
+                    command.TargetMinionId, participants, modifications, materializedDefinitions);
             }
 
             var attackValue = CalculateAttackValue(offer.Value, materializedDefinitions);
@@ -381,25 +382,111 @@ namespace GuardsDigital.Core.Rules.CardResolution
             pendingAttackTargetChoice = null;
             pendingDefenseChoice = defenseChoice;
 
+            var openingSteps = new List<ResolutionStep>
+            {
+                ResolutionStep.FromFact(
+                    CardActionResolutionEvent.AttackTargetValidated(pendingAttackResolution)),
+                ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted),
+                ResolutionStep.AtCheckpoint(TimingCheckpoint.BeforeAttack)
+            };
+
+            // p.14 step 1: "Attacker applies 'Before the attack' text, if any." p.13 puts it "at the
+            // very beginning", which is before the Attack Total is announced and therefore before the
+            // defender has anything to answer - and p.17's own note keeps it applied whether or not the
+            // attack later succeeds.
+            openingSteps.AddRange(CardTextAt(
+                CardTextTiming.BeforeTheAttack,
+                pendingAttackResolution,
+                pendingAttackResolution.ActorId,
+                materializedDefinitions));
+            openingSteps.Add(ResolutionStep.FromFact(
+                CardActionResolutionEvent.AttackStarted(pendingAttackResolution)));
+            openingSteps.Add(ResolutionStep.FromFact(
+                CardActionResolutionEvent.AttackTotalCalculated(pendingAttackResolution)));
+            openingSteps.Add(ResolutionStep.AtCheckpoint(
+                TimingCheckpoint.DefenseResponse, pendingAttackResolution.TargetHeroId));
+            openingSteps.Add(ResolutionStep.FromFact(
+                CardActionResolutionEvent.DefenseResponseChoiceRequested(pendingAttackResolution)));
+
             return AttackActionResolutionResult.Accept(
                 pendingAttackResolution,
                 null,
                 pendingDefenseChoice,
-                new[]
-                {
-                    ResolutionStep.FromFact(
-                        CardActionResolutionEvent.AttackTargetValidated(pendingAttackResolution)),
-                    ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted),
-                    ResolutionStep.AtCheckpoint(TimingCheckpoint.BeforeAttack),
-                    ResolutionStep.FromFact(
-                        CardActionResolutionEvent.AttackStarted(pendingAttackResolution)),
-                    ResolutionStep.FromFact(
-                        CardActionResolutionEvent.AttackTotalCalculated(pendingAttackResolution)),
-                    ResolutionStep.AtCheckpoint(
-                        TimingCheckpoint.DefenseResponse, pendingAttackResolution.TargetHeroId),
-                    ResolutionStep.FromFact(
-                        CardActionResolutionEvent.DefenseResponseChoiceRequested(pendingAttackResolution))
-                });
+                openingSteps);
+        }
+
+        /// <summary>
+        /// The card-text step rulebook p.14 applies at this moment, or nothing at all.
+        ///
+        /// <para>Milestone 8.5, opening the seam the 7.9a review recorded as F-CARD-01. Three of p.14's
+        /// nine numbered steps are card text - the attacker's at 1 and 7 and the defender's at 4 - and
+        /// this is where each is offered, in the exact position of the stream the page puts it. What the
+        /// text does is not decided here: the step names the card, the action and the hero, and the
+        /// authority that holds the effect catalog runs the composition.</para>
+        ///
+        /// <para>p.13 is the reason the policy is read rather than assumed: "Most Attacks are Primary
+        /// actions. When you perform a primary action, apply the card text." An action that suppresses
+        /// its source card's text performs none, which is what keeps a printed secondary - and the
+        /// replacements p.13 gives a Movement or an Attack - from applying the card's rider.</para>
+        /// </summary>
+        private static IEnumerable<ResolutionStep> CardTextAt(
+            CardTextTiming timing,
+            PendingAttackResolution resolution,
+            HeroId actorId,
+            IReadOnlyList<CardDefinition> definitions) =>
+            CardTextAt(
+                timing,
+                resolution,
+                actorId,
+                definitions,
+                resolution.SourceDefinitionReference,
+                resolution.ActionDefinitionId,
+                resolution.SourceCardInstanceId);
+
+        /// <summary>
+        /// The same, for text on a card that is not the Attack's own - p.14's step 4 applies the
+        /// defender's card, which the attacker's resolution does not name.
+        /// </summary>
+        private static IEnumerable<ResolutionStep> CardTextAt(
+            CardTextTiming timing,
+            PendingAttackResolution resolution,
+            HeroId actorId,
+            IReadOnlyList<CardDefinition> definitions,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            CardInstanceId sourceCardInstanceId)
+        {
+            var action = FindCardTextAction(sourceDefinitionReference, actionDefinitionId, definitions);
+            if (action == null || action.CardTextTiming != timing)
+            {
+                return Array.Empty<ResolutionStep>();
+            }
+
+            return new[]
+            {
+                ResolutionStep.ApplyCardText(sourceCardInstanceId, action.Id, actorId, timing)
+            };
+        }
+
+        /// <summary>
+        /// One card's action, when it carries card text this build may apply. Null covers every ordinary
+        /// case: the action prints no text at all, its composition is still owed to an 8.6-8.13 slice,
+        /// or p.13 suppresses it.
+        /// </summary>
+        private static ActionDefinition FindCardTextAction(
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            var definition = definitions.FirstOrDefault(candidate =>
+                candidate.Reference.Equals(sourceDefinitionReference));
+            var action = definition?.ActionDefinitions
+                .FirstOrDefault(candidate => candidate.Id.Equals(actionDefinitionId));
+            return action?.EffectRoot != null &&
+                action.CardTextTiming != CardTextTiming.None &&
+                action.DefaultPolicy.CardTextApplication == CardTextApplicationPolicy.Applies
+                ? action
+                : null;
         }
 
         /// <summary>
@@ -411,7 +498,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private AttackActionResolutionResult ResolveMinionTarget(
             MinionId targetMinionId,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            IReadOnlyList<CardDefinition> definitions)
         {
             var target = adjacentMoveAuthority.Minions.Single(minion => minion.MinionId.Equals(targetMinionId));
             var resolution = new PendingAttackResolution(
@@ -449,12 +537,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 ResolutionStep.FromFact(CardActionResolutionEvent.AttackTargetValidated(resolution)),
                 ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted),
-                ResolutionStep.AtCheckpoint(TimingCheckpoint.BeforeAttack),
-                ResolutionStep.FromFact(CardActionResolutionEvent.AttackStarted(resolution))
+                ResolutionStep.AtCheckpoint(TimingCheckpoint.BeforeAttack)
             };
+
+            // p.14 step 1, on the arm p.13 says has no steps 3 to 5: "Minions cannot defend. When you
+            // target an enemy minion with an attack, it is simply defeated." The two card-text moments
+            // that survive are the attacker's own, and they keep the page's positions around the
+            // defeat that replaces the comparison.
+            events.AddRange(CardTextAt(
+                CardTextTiming.BeforeTheAttack, resolution, resolution.ActorId, definitions));
+            events.Add(ResolutionStep.FromFact(CardActionResolutionEvent.AttackStarted(resolution)));
             events.AddRange(defeat.Facts.Select(fact => ResolutionStep.FromFact(
                 CardActionResolutionEvent.MinionDefeatFact(resolution, defeat, fact))));
             events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.AfterAttack));
+            events.AddRange(CardTextAt(
+                CardTextTiming.AfterTheAttack, resolution, resolution.ActorId, definitions));
             events.Add(ResolutionStep.FromFact(CardActionResolutionEvent.AttackResolutionCompleted(
                 resolution, AttackResolutionOutcome.AttackSuccessful)));
             events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
@@ -679,21 +776,36 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             pendingAttackResolution = resumedWithDefense;
             pendingDefenseChoice = null;
+            var defenseSteps = new List<ResolutionStep>
+            {
+                ResolutionStep.FromFact(
+                    CardActionResolutionEvent.DefenseCardDiscarded(pendingAttackResolution))
+            };
+
+            // p.14 step 4: "Defender applies Defense action text, if any." It sits between step 3's
+            // discard and step 5's Defense total, which is why it is emitted here and not beside the
+            // attacker's own text: the defender's card is chosen by then, and p.10 gives the choices
+            // inside it to the defending hero rather than to the attacker.
+            defenseSteps.AddRange(CardTextAt(
+                CardTextTiming.DefenseAction,
+                pendingAttackResolution,
+                pendingAttackResolution.TargetHeroId,
+                materializedDefinitions,
+                defenseOffer.SourceDefinitionReference,
+                defenseOffer.ActionDefinitionId,
+                defenseCard.Id));
+            defenseSteps.Add(ResolutionStep.FromFact(
+                CardActionResolutionEvent.DefenseTotalCalculated(pendingAttackResolution)));
+            defenseSteps.Add(ResolutionStep.FromFact(
+                CardActionResolutionEvent.DefenseResponseCompleted(pendingAttackResolution)));
+            defenseSteps.Add(ResolutionStep.AtCheckpoint(
+                TimingCheckpoint.AttackResultComparison, pendingAttackResolution.TargetHeroId));
+
             return AttackActionResolutionResult.Accept(
                 pendingAttackResolution,
                 null,
                 null,
-                new[]
-                {
-                    ResolutionStep.FromFact(
-                        CardActionResolutionEvent.DefenseCardDiscarded(pendingAttackResolution)),
-                    ResolutionStep.FromFact(
-                        CardActionResolutionEvent.DefenseTotalCalculated(pendingAttackResolution)),
-                    ResolutionStep.FromFact(
-                        CardActionResolutionEvent.DefenseResponseCompleted(pendingAttackResolution)),
-                    ResolutionStep.AtCheckpoint(
-                        TimingCheckpoint.AttackResultComparison, pendingAttackResolution.TargetHeroId)
-                });
+                defenseSteps);
         }
 
 
@@ -779,6 +891,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.AfterAttack));
+
+            // p.14 step 7: "Apply 'After the attack:' text on the Attack card, if any" - after step 6
+            // has checked the attack and removed the defending hero if it succeeded, which is why this
+            // sits below the Defeat stage above rather than beside the outcome. p.13 says the same
+            // thing in words: the text is applied "at the very end, after the target either defends, or
+            // is defeated and removed".
+            events.AddRange(CardTextAt(
+                CardTextTiming.AfterTheAttack,
+                completedResolution,
+                completedResolution.ActorId,
+                materializedDefinitions));
             events.Add(ResolutionStep.FromFact(
                 CardActionResolutionEvent.AttackResolutionCompleted(completedResolution, outcome)));
             events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionEnded));
@@ -1253,9 +1376,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var rangeTotal = offer.AttackRange == AttackRangeKind.Ranged
                 ? RangeValue(offer, definitions).Total
                 : 1;
+
+            // Milestone 8.5. The policy is the card's own, not the classification's: p.13 states what
+            // an Attack may target as a rule about the card, and a card that narrows it - a hero-only
+            // Attack - says so in its definition. A definition that narrows nothing supplies the page's
+            // default, so every Attack in this build reaches exactly what it reached before.
+            var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
             return AttackTargetQuery.FindLegalEnemyTargets(
                 attackerId,
-                offer.AttackRange,
+                action.AttackTargetPolicy ?? PrintedAttackTargetPolicy.ForClassification(offer.AttackRange),
                 rangeTotal,
                 participants,
                 adjacentMoveAuthority,

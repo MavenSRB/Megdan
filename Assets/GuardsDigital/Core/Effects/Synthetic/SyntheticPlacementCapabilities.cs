@@ -252,7 +252,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var unit = subject.AsRuleObject();
                 if (unit.IsDefined && ImmunityQuery.IsImmuneTo(
                         unit,
-                        RuleActivity.Skill,
+                        context.EnclosingActivity,
                         RuleObject.ForHero(context.ActorId),
                         components.Board,
                         context.Participants,

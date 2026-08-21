@@ -361,6 +361,55 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, BlueProfiles, BlueUltimateProfile, null, radiusSkillProfile: BlueRadiusSkillProfile);
         }
 
+
+        /// <summary>
+        /// Milestone 8.5's fixture cards: printed Attacks and a printed Defense that carry card text.
+        ///
+        /// <para>Their own hands, for the reason every fixture hand before them has one - the five
+        /// ordinary cards are what the approved card matrix and every pinned digest measure, so a card
+        /// that opens a new seam must not join them. These are the first non-Skill actions in this
+        /// project to carry an <c>EffectRoot</c>, which is the seam the 7.9a review recorded as
+        /// F-CARD-01, and each one names exactly one of rulebook p.14's three card-text moments so a
+        /// fixture can watch the order the page prints.</para>
+        ///
+        /// <para>The text itself is deliberately the smallest thing that can be observed: one
+        /// unconditional <c>NoteActor</c> node, which applies and publishes the acting hero. What is
+        /// under test is <i>when</i> a card's text is applied and by whom, not what any particular
+        /// sentence does; the cards that do something land at their own Wasp slices.</para>
+        /// </summary>
+        private static readonly SyntheticAttackTextProfile RedBeforeTextProfile =
+            new SyntheticAttackTextProfile(
+                "red-foretell", "Red Foretell", 6, 4, 2, 2, CardTextTiming.BeforeTheAttack, false, false);
+
+        private static readonly SyntheticAttackTextProfile RedAfterTextProfile =
+            new SyntheticAttackTextProfile(
+                "red-aftermath", "Red Aftermath", 4, 4, 2, 2, CardTextTiming.AfterTheAttack, false, true);
+
+        private static readonly SyntheticAttackTextProfile BlueDefenseTextProfile =
+            new SyntheticAttackTextProfile(
+                "blue-rejoinder", "Blue Rejoinder", 3, 3, 3, 2, CardTextTiming.None, true, false);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.5's two Attack-text cards: one applying its text at
+        /// p.14's step 1 and one at step 7, the second also narrowed to p.13's heroes alone.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithAttackText(HeroId ownerId)
+        {
+            return Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedBeforeTextProfile, RedAfterTextProfile });
+        }
+
+        /// <summary>
+        /// The five ordinary cards plus one whose <i>secondary Defense</i> carries text, which is
+        /// p.14's step 4 - the only card-text moment that belongs to the defender.
+        /// </summary>
+        public static ConfiguredHand CreateBlueWithAttackText(HeroId ownerId)
+        {
+            return Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                attackTextProfiles: new[] { BlueDefenseTextProfile });
+        }
         private static ConfiguredHand Create(
             HeroId ownerId,
             IReadOnlyList<SyntheticCardProfile> profiles,
@@ -372,7 +421,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile repeatSkillProfile = null,
             SyntheticSkillProfile cardStateSkillProfile = null,
             HeroId cardStateDiscardingHeroId = default,
-            SyntheticSkillProfile radiusSkillProfile = null)
+            SyntheticSkillProfile radiusSkillProfile = null,
+            IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
             {
@@ -460,6 +510,15 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 AddCard(
                     definitions, instances, CreateRadiusSkillDefinition(radiusSkillProfile),
                     radiusSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
+            // after the ordinary five so no existing hand position moves.
+            foreach (var attackText in attackTextProfiles ?? Array.Empty<SyntheticAttackTextProfile>())
+            {
+                AddCard(
+                    definitions, instances, CreateAttackTextDefinition(attackText),
+                    attackText.Id, instancePrefix, ownerId);
             }
 
             return new ConfiguredHand(
@@ -1243,6 +1302,118 @@ namespace GuardsDigital.Core.Cards.Synthetic
             public int Initiative { get; }
         }
 
+
+        /// <summary>
+        /// Milestone 8.5. One fixture card whose printed Attack, or whose printed secondary Defense,
+        /// carries card text applied at one of rulebook p.14's numbered moments.
+        /// </summary>
+        private sealed class SyntheticAttackTextProfile
+        {
+            public SyntheticAttackTextProfile(
+                string id,
+                string displayName,
+                int initiative,
+                int attackValue,
+                int defenseValue,
+                int movementValue,
+                CardTextTiming primaryTiming,
+                bool defenseCarriesText,
+                bool narrowedToHeroes)
+            {
+                Id = id;
+                DisplayName = displayName;
+                Initiative = initiative;
+                AttackValue = attackValue;
+                DefenseValue = defenseValue;
+                MovementValue = movementValue;
+                PrimaryTiming = primaryTiming;
+                DefenseCarriesText = defenseCarriesText;
+                NarrowedToHeroes = narrowedToHeroes;
+            }
+
+            public string Id { get; }
+            public string DisplayName { get; }
+            public int Initiative { get; }
+            public int AttackValue { get; }
+            public int DefenseValue { get; }
+            public int MovementValue { get; }
+            public CardTextTiming PrimaryTiming { get; }
+            public bool DefenseCarriesText { get; }
+            public bool NarrowedToHeroes { get; }
+        }
+
+        /// <summary>
+        /// The smallest card text that can be watched: one unconditional node that applies and publishes
+        /// the acting hero. It opens no choice, which is what
+        /// <see cref="EffectDefinitionValidator.ValidateCardText"/> requires of text applied inside an
+        /// Attack, and it is enough to say exactly when the text ran and whose it was.
+        /// </summary>
+        private static EffectDefinition CardTextEffect(string id) =>
+            new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{id}-text"),
+                "phase-8-5-rev-1",
+                new EffectNodeId("note"),
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("note"), EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.NoteActorV1,
+                        outputs: new[] { new EffectOutputBinding("hero", EffectValueKind.Hero) })
+                });
+
+        private static CardDefinition CreateAttackTextDefinition(SyntheticAttackTextProfile profile)
+        {
+            var actions = new List<ActionDefinition>
+            {
+                new ActionDefinition(
+                    new ActionDefinitionId("primary-attack-text"),
+                    ActionKind.Attack,
+                    ActionDefinitionOrigin.PrintedPrimary,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, profile.AttackValue) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                    AttackRangeKind.NonRanged,
+                    default,
+                    profile.PrimaryTiming == CardTextTiming.None
+                        ? null
+                        : CardTextEffect(profile.Id),
+                    default,
+                    PrintedDefenseResolution.None,
+                    profile.PrimaryTiming,
+                    profile.NarrowedToHeroes
+                        ? PrintedAttackTargetPolicy
+                            .ForClassification(AttackRangeKind.NonRanged).NarrowedToHeroes()
+                        : (PrintedAttackTargetPolicy?)null),
+                CreateMovementAction(profile.MovementValue)
+            };
+
+            actions.Add(new ActionDefinition(
+                new ActionDefinitionId("secondary-defense"),
+                ActionKind.Defense,
+                ActionDefinitionOrigin.Reaction,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, profile.DefenseValue) },
+                new ActionDefinitionPolicy(
+                    profile.DefenseCarriesText
+                        ? CardTextApplicationPolicy.Applies
+                        : CardTextApplicationPolicy.Suppressed,
+                    false,
+                    false),
+                AttackRangeKind.None,
+                new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile),
+                profile.DefenseCarriesText ? CardTextEffect($"{profile.Id}-defense") : null,
+                default,
+                PrintedDefenseResolution.None,
+                profile.DefenseCarriesText ? CardTextTiming.DefenseAction : CardTextTiming.None));
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-5-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                actions);
+        }
         private static CardDefinition CreateDefinition(SyntheticCardProfile profile)
         {
             var actions = new[]

@@ -260,7 +260,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static EffectResolutionContext Context(EffectDefinition definition) =>
             new EffectResolutionContext(
-                definition, SyntheticEffectCapabilities.CreateCatalog(), null, null, 1, 1, RuleModificationSet.Empty, EffectCardState.Absent);
+                definition, SyntheticEffectCapabilities.CreateCatalog(), null, null, 1, 1, RuleModificationSet.Empty, EffectCardState.Absent, ActionKind.Skill);
 
         private static IReadOnlyList<string> Nodes(EffectResolutionStepResult result) =>
             result.Events.Select(value => value.NodeId.Value).ToArray();

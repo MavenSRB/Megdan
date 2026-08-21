@@ -6,6 +6,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
@@ -640,6 +641,141 @@ namespace GuardsDigital.Tests.EditMode
         // Helpers
         // ---------------------------------------------------------------------------------------
 
+
+        /// <summary>
+        /// Milestone 8.5, closing the 7.9a review's F-BOARD-03.
+        ///
+        /// Rulebook p.18 draws a line the four capability sites could not see: a unit that is immune "to
+        /// a specific action type" is unaffected by that type "but is affected by other effects and
+        /// actions". Each of those sites answered the question with the constant
+        /// <c>RuleActivity.Skill</c>, which was true only because a Skill was the only action an effect
+        /// could run inside. Milestone 8.5 lets a printed Attack's card text run the same handlers, so
+        /// the constant would have started reporting an Attack's operations as a Skill's - protecting a
+        /// Skill-immune unit from an Attack's text, and failing to protect an Attack-immune one.
+        ///
+        /// The context is asked instead. Below is one handler, one board, one immunity, executed twice
+        /// and differing in nothing but the action the text is inside.
+        /// </summary>
+        [Test]
+        public void CardTextOperationsAskTheEnclosingActionsActivity()
+        {
+            var board = CardTextImmunityBoard();
+            var handler = SyntheticEffectCapabilities.CreateCatalog()
+                .Load(SyntheticTargetingCapabilities.ChooseTargetV3);
+            var immuneToSkills = CardTextSkillImmunity();
+
+            var insideASkill = handler.Execute(CardTextContext(board, immuneToSkills, ActionKind.Skill));
+            Assert.That(insideASkill.Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                "The one adjacent unit is immune to Skills, so a Skill's own text can name nobody - " +
+                "the reading milestone 6.8b established, unchanged.");
+
+            var insideAnAttack = handler.Execute(CardTextContext(board, immuneToSkills, ActionKind.Attack));
+            Assert.That(insideAnAttack.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice),
+                "and the same immunity leaves an Attack's card text alone, because p.18 says a unit " +
+                "immune to one action type is still affected by the others.");
+            Assert.That(
+                insideAnAttack.Choice.Candidates.Any(candidate =>
+                    candidate.Kind == EffectValueKind.Coordinate &&
+                    candidate.Coordinate.Equals(new HexCoordinate(1, 0))),
+                Is.True,
+                "and it is that very unit the Attack's text is offered.");
+        }
+
+        /// <summary>
+        /// The same context twice over, differing only in the action whose text is running. Everything
+        /// else a handler may see is held identical on purpose: the case above is about one input.
+        /// </summary>
+        private static EffectCapabilityContext CardTextContext(
+            AdjacentMoveAuthority board, RuleModificationSet modifications, ActionKind enclosingActionKind) =>
+            new EffectCapabilityContext(
+                new EffectNodeId("card-text-activity-node"),
+                EffectFailurePolicy.Mandatory,
+                new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                new CardInstanceId("card-text-activity-card"),
+                new CardDefinitionReference(new CardDefinitionId("fixture-radius-context"), "fixture-rev-1"),
+                new ActionDefinitionId("card-text-activity-action"),
+                new Dictionary<string, EffectValue>
+                {
+                    ["range"] = EffectValue.Integer(1),
+                    ["includeSelf"] = EffectValue.Boolean(false)
+                },
+                1,
+                1,
+                PlaceholderOneVsOneParticipants.Create(),
+                null,
+                modifications,
+                EffectCardState.Absent,
+                enclosingActionKind,
+                new MatchComponents(
+                    SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
+                    board, board, board));
+
+        private static AdjacentMoveAuthority CardTextImmunityBoard()
+        {
+            var coordinates = Enumerable.Range(-3, 8).Select(q => new HexCoordinate(q, 0)).ToArray();
+            var map = BoardMapDefinition.CreateSynthetic(
+                new MapId("card-text-activity-map"), 1, coordinates);
+            return new AdjacentMoveAuthority(
+                map,
+                new[]
+                {
+                    new HeroOccupancy(
+                        new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue), new HexCoordinate(0, 0)),
+                    new HeroOccupancy(
+                        new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue), new HexCoordinate(1, 0))
+                },
+                Array.Empty<ObstacleOccupancy>());
+        }
+
+        /// <summary>
+        /// A live set carrying one Skill immunity on the Blue hero, built the way a match builds one -
+        /// from an Active effect in its active phase - rather than hand-assembled.
+        /// </summary>
+        private static RuleModificationSet CardTextSkillImmunity()
+        {
+            var blue = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var definition = new ActiveEffectDefinition(
+                "card-text-activity-immunity-effect",
+                ActiveEffectAffectedScopeKind.ControllerHero,
+                ActiveEffectDurationKind.NextTurnAfterPlayingCards,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.CardsPlayedAndRevealed,
+                TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                new[] { ActiveEffectCancellationCondition.CardsRetrieved },
+                true,
+                "CardTextActivityImmunity",
+                "card-text-activity-immunity",
+                Array.Empty<TimingCheckpoint>(),
+                new[] { RuleModification.ForImmunity(RuleActivity.Skill) });
+
+            var timing = new ActiveEffectLifecycle();
+            timing.Create(
+                new ActiveEffectId("card-text-activity-immunity"),
+                definition,
+                blue,
+                TeamSide.Blue,
+                default,
+                new CardInstanceId("card-text-activity-immunity-source"),
+                new ActionDefinitionId("card-text-activity-immunity-action"),
+                1,
+                1);
+            timing.ApplyCheckpoint(
+                new ActiveEffectCheckpointContext(TimingCheckpoint.CardsPlayedAndRevealed, 2, 1),
+                new TieBreakerState(TeamSide.Red));
+
+            var set = RuleModificationQuery.Build(
+                timing, null, PlaceholderOneVsOneParticipants.Create(),
+                new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
+            Assert.That(
+                set.IsImmuneTo(
+                    RuleObject.ForHero(blue),
+                    RuleActivity.Skill,
+                    RuleObject.ForHero(new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue))),
+                Is.True,
+                "The fixture must actually hold the immunity, or the case above proves nothing.");
+            return set;
+        }
         private static EffectDefinition FeintEffect() =>
             SyntheticShowcaseHand.CreateBlue(new HeroId("blue-synthetic-hero"))
                 .Definitions.Single(candidate => candidate.DisplayName == "TEST - Blue Feint")

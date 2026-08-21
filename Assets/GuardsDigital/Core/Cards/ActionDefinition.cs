@@ -34,7 +34,9 @@ namespace GuardsDigital.Core.Cards
             ActionCardStateTransition sourceCardStateTransition,
             EffectDefinition effectRoot = null,
             PrintedTextComposition textComposition = default,
-            PrintedDefenseResolution defenseResolution = PrintedDefenseResolution.None)
+            PrintedDefenseResolution defenseResolution = PrintedDefenseResolution.None,
+            CardTextTiming cardTextTiming = CardTextTiming.None,
+            PrintedAttackTargetPolicy? attackTargetPolicy = null)
         {
             if (!id.IsDefined)
             {
@@ -67,6 +69,12 @@ namespace GuardsDigital.Core.Cards
                     "Action definition requires a valid printed Defense resolution.", nameof(defenseResolution));
             }
 
+            if (!Enum.IsDefined(typeof(CardTextTiming), cardTextTiming))
+            {
+                throw new ArgumentException(
+                    "Action definition requires a valid card-text timing.", nameof(cardTextTiming));
+            }
+
             ValidatePolicy(origin, defaultPolicy);
 
             Id = id;
@@ -79,6 +87,24 @@ namespace GuardsDigital.Core.Cards
             SourceCardStateTransition = sourceCardStateTransition;
             EffectRoot = effectRoot;
             TextComposition = textComposition;
+            CardTextTiming = cardTextTiming;
+
+            // Milestone 8.5. p.13 states an Attack's reach as a rule about the card - adjacent for a
+            // non-Ranged one "even if the card has a radius icon", the printed Range for a Ranged one -
+            // so every Attack has a target policy and one that narrows nothing is the page's own
+            // default rather than an absence. Nothing but an Attack has one, because no other action
+            // kind targets an enemy unit.
+            AttackTargetPolicy = kind == ActionKind.Attack &&
+                (attackRange == AttackRangeKind.Ranged || attackRange == AttackRangeKind.NonRanged)
+                ? attackTargetPolicy ?? PrintedAttackTargetPolicy.ForClassification(attackRange)
+                : (PrintedAttackTargetPolicy?)null;
+
+            if (attackTargetPolicy.HasValue && !AttackTargetPolicy.HasValue)
+            {
+                throw new ArgumentException(
+                    "Only a classified Attack action definition declares what it may target.",
+                    nameof(AttackTargetPolicy));
+            }
 
             // Milestone 8.3. A Defense action that names no resolution resolves the way every Defense
             // action in this build has since milestone 2.3 - by comparing its printed number - so the
@@ -136,6 +162,20 @@ namespace GuardsDigital.Core.Cards
         /// and <see cref="PrintedDefenseResolution.None"/> for every other kind.
         /// </summary>
         public PrintedDefenseResolution DefenseResolution { get; }
+
+        /// <summary>
+        /// Milestone 8.5. Which of p.14's numbered moments this action's <see cref="EffectRoot"/> is
+        /// applied at, for a printed Attack or Defense whose root is card text rather than the action
+        /// itself. <see cref="CardTextTiming.None"/> on a Skill, whose effect runs when the action does,
+        /// and on everything carrying no root.
+        /// </summary>
+        public CardTextTiming CardTextTiming { get; }
+
+        /// <summary>
+        /// Milestone 8.5. What a printed Attack may target and how far it reaches, as rulebook p.13
+        /// states it - present on every classified Attack and null on every other kind.
+        /// </summary>
+        public PrintedAttackTargetPolicy? AttackTargetPolicy { get; }
 
         private void ValidateActionShape(IEnumerable<PrintedValueDefinition> baseValues)
         {
@@ -324,10 +364,73 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
-            if (Kind != ActionKind.Skill && EffectRoot != null)
+            // Milestone 8.5 opens the seam the 7.9a review recorded as F-CARD-01. Until now a
+            // non-Skill action could carry no effect root at all, so a printed Attack's "After the
+            // attack:" rider had nowhere to live and Movement, Hold, Fast Travel and Clear were told
+            // apart from it by the same absence. The two are separated here instead. A Skill's root is
+            // the action - p.12: "When you perform a Skill action, simply apply the card text" - and an
+            // Attack's or a Defense's root is card text applied at one of p.14's numbered moments,
+            // which is why the second kind must name its moment and the first must not. Movement, Hold,
+            // Fast Travel and Clear still carry none: each is an algorithm, and the two replacements
+            // suppress their source card's text by their own definition.
+            if (EffectRoot != null &&
+                Kind != ActionKind.Skill && Kind != ActionKind.Attack && Kind != ActionKind.Defense)
             {
                 throw new ArgumentException(
-                    "Only Skill action definitions execute through the typed effect frame.", nameof(EffectRoot));
+                    "Only a Skill, an Attack or a Defense action definition executes through the " +
+                    "typed effect frame.", nameof(EffectRoot));
+            }
+
+            if (CardTextTiming != CardTextTiming.None)
+            {
+                if (EffectRoot == null)
+                {
+                    throw new ArgumentException(
+                        "A card-text timing states when this action's effect root is applied, so it " +
+                        "cannot be stated without one.", nameof(CardTextTiming));
+                }
+
+                if (Kind != CardTextTimingQuery.OwningActionKind(CardTextTiming))
+                {
+                    throw new ArgumentException(
+                        $"Rulebook p.14 applies {CardTextTiming} inside a " +
+                        $"{CardTextTimingQuery.OwningActionKind(CardTextTiming)} action, not a {Kind} one.",
+                        nameof(CardTextTiming));
+                }
+
+                // p.13: "When you perform a primary action, apply the card text." An action whose
+                // source-card text is suppressed performs none, so it has no moment to apply one at -
+                // which is exactly what keeps a replacement from inheriting the replaced card's rider.
+                if (DefaultPolicy.CardTextApplication != CardTextApplicationPolicy.Applies)
+                {
+                    throw new ArgumentException(
+                        "Only an action that applies its source card's text applies it at one of " +
+                        "rulebook p.14's moments.", nameof(CardTextTiming));
+                }
+            }
+            else if (EffectRoot != null && Kind != ActionKind.Skill)
+            {
+                throw new ArgumentException(
+                    "An Attack or Defense action's effect root is card text, so it names the moment " +
+                    "rulebook p.14 applies it at.", nameof(CardTextTiming));
+            }
+
+            if (AttackTargetPolicy.HasValue &&
+                AttackRange == AttackRangeKind.NonRanged &&
+                AttackTargetPolicy.Value.Reach != AttackTargetReach.AdjacentOnly)
+            {
+                throw new ArgumentException(
+                    "Rulebook p.13: \"Non-Ranged Attacks can only target units adjacent to you (even " +
+                    "if the card has a radius icon).\"", nameof(AttackTargetPolicy));
+            }
+
+            if (AttackTargetPolicy.HasValue &&
+                AttackTargetPolicy.Value.Reach == AttackTargetReach.PrintedRange &&
+                BaseValues.All(value => value.Channel != PrintedValueChannel.Range))
+            {
+                throw new ArgumentException(
+                    "Rulebook p.13 reaches \"based on the Range value on the card\", so an Attack " +
+                    "declaring that reach prints one.", nameof(AttackTargetPolicy));
             }
 
             // Milestone 8.3. An outstanding composition is a statement about this action's printed card

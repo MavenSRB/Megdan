@@ -279,7 +279,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var unit = mover.AsRuleObject();
                 return !unit.IsDefined || !ImmunityQuery.IsImmuneTo(
                     unit,
-                    RuleActivity.Skill,
+                    context.EnclosingActivity,
                     RuleObject.ForHero(context.ActorId),
                     components.Board,
                     context.Participants,

@@ -437,7 +437,8 @@ namespace GuardsDigital.Tests.EditMode
                 1,
                 1,
                 RuleModificationSet.Empty,
-                cardState);
+                cardState,
+                ActionKind.Skill);
 
             return EffectResolutionSession.Start(
                 new EffectResolutionId("card-state-probe"),
@@ -473,7 +474,8 @@ namespace GuardsDigital.Tests.EditMode
                 1,
                 1,
                 RuleModificationSet.Empty,
-                cardState);
+                cardState,
+                ActionKind.Skill);
 
             Assert.That(step.Frame, Is.Not.Null, "This helper is about a frame that paused.");
             return step.Frame;

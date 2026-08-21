@@ -673,6 +673,182 @@ namespace GuardsDigital.Tests.EditMode
                 "second one.");
         }
 
+
+        /// <summary>
+        /// Milestone 8.5, closing the 7.9a review's F-CARD-01.
+        ///
+        /// Until now <c>ActionDefinition</c> refused an <c>EffectRoot</c> on anything but a Skill, so a
+        /// printed Attack's "After the attack:" rider had nowhere to live and the whole of rulebook
+        /// p.14's card-text order was unreachable. This plays one attack with text on both sides of it
+        /// and reads the ordered facts back: the attacker's text at the page's step 1, the defender's
+        /// at step 4, and nothing else moved.
+        ///
+        /// The order is asserted against the surrounding facts rather than by index, because what p.14
+        /// fixes is the position relative to the attack's own steps: step 1 is "the very beginning",
+        /// before the Attack Total is announced, and step 4 sits between step 3's discard and step 5's
+        /// Defense total.
+        /// </summary>
+        [Test]
+        public void APrintedAttackWhoseTextApplies_RunsItsEffectRootInsideItsAttackTimingOrder()
+        {
+            var session = ConfiguredMatchFixtures.CreateAttackTextSession();
+            var attacker = CommitAttackTextTurn(session, "red-foretell-card", "blue-longbow-card");
+
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                offer.ActionDefinitionId.Value == "primary-attack-text");
+            Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));
+            var target = session.Projection.PendingAttackTargetChoice;
+            Accept(session, DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId, target.ChoiceId, target.LegalTargetHeroIds.Single()));
+
+            var afterTargeting = AttackTextLog(session);
+            Assert.That(afterTargeting, Does.Contain("Action.CardTextApplied:BeforeTheAttack:note:Applied"),
+                "p.14 step 1: the attacker applies its 'Before the attack' text.");
+            Assert.That(
+                afterTargeting.IndexOf("Action.CardTextApplied:BeforeTheAttack:note:Applied"),
+                Is.LessThan(afterTargeting.IndexOf("Action.AttackTotalCalculated")),
+                "and p.13 puts it 'at the very beginning', which is before the total is announced.");
+
+            var defense = session.Projection.PendingDefenseChoice;
+            var rejoinder = defense.LegalDefenseOffers.Single(offer =>
+                offer.SourceCardInstanceId.Value == "blue-rejoinder-card");
+            Accept(session, DirectorCommand.ChooseDefenseCard(
+                defense.ResolutionId, defense.ChoiceId, rejoinder.SourceCardInstanceId));
+
+            var log = AttackTextLog(session);
+            Assert.That(log, Does.Contain("Action.CardTextApplied:DefenseAction:note:Applied"),
+                "p.14 step 4: the defender applies its own Defense action text.");
+            Assert.That(
+                log.IndexOf("Action.DefenseCardDiscarded"),
+                Is.LessThan(log.IndexOf("Action.CardTextApplied:DefenseAction:note:Applied")),
+                "after step 3's discard,");
+            Assert.That(
+                log.IndexOf("Action.CardTextApplied:DefenseAction:note:Applied"),
+                Is.LessThan(log.IndexOf("Action.DefenseTotalCalculated")),
+                "and before step 5's Defense total.");
+            Assert.That(attacker.IsDefined, Is.True);
+        }
+
+        /// <summary>
+        /// p.14 step 7 on the other half of the same seam: "Apply 'After the attack:' text on the
+        /// Attack card, if any" - after step 6 has checked the attack and removed the defending hero if
+        /// it succeeded. p.13 says the same in words, "at the very end, after the target either
+        /// defends, or is defeated and removed".
+        /// </summary>
+        [Test]
+        public void AnAfterTheAttackRider_IsAppliedAfterTheAttackWasCheckedAndTheTargetRemoved()
+        {
+            var session = ConfiguredMatchFixtures.CreateAttackTextSession();
+            CommitAttackTextTurn(session, "red-aftermath-card", "blue-longbow-card");
+
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                offer.ActionDefinitionId.Value == "primary-attack-text");
+            Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));
+            var target = session.Projection.PendingAttackTargetChoice;
+            Accept(session, DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId, target.ChoiceId, target.LegalTargetHeroIds.Single()));
+            var defense = session.Projection.PendingDefenseChoice;
+            Accept(session, DirectorCommand.DeclineDefense(defense.ResolutionId, defense.ChoiceId));
+
+            var log = AttackTextLog(session);
+            Assert.That(log, Does.Contain("Action.CardTextApplied:AfterTheAttack:note:Applied"));
+            Assert.That(
+                log.IndexOf("Action.AttackOutcomeDetermined"),
+                Is.LessThan(log.IndexOf("Action.CardTextApplied:AfterTheAttack:note:Applied")),
+                "Step 6 checks the attack before step 7 applies the rider,");
+            Assert.That(
+                log.IndexOf("Action.CardTextApplied:AfterTheAttack:note:Applied"),
+                Is.LessThan(log.IndexOf("Action.AttackResolutionCompleted")),
+                "and the rider is still inside the Attack, which p.14 ends at step 9.");
+            Assert.That(log, Has.None.EqualTo("Action.CardTextApplied:BeforeTheAttack:note:Applied"),
+                "One card states one moment; this card prints no 'Before the attack' text.");
+        }
+
+        /// <summary>
+        /// p.13's other half of the same declaration: "You may attack enemy heroes and minions", which
+        /// a card may narrow in its own words. Wasp's Crackling Dagger prints "Target a hero adjacent to
+        /// you", and this is that shape - the same Attack, the same adjacency, one fewer legal target.
+        /// </summary>
+        [Test]
+        public void APrintedAttackNarrowedToHeroes_OffersNoAdjacentMinion()
+        {
+            var session = ConfiguredMatchFixtures.CreateAttackTextSessionWithAnAdjacentMinion(
+                out var adjacentMinion);
+            CommitAttackTextTurn(session, "red-aftermath-card", "blue-longbow-card");
+
+            var narrowed = session.Projection.AvailableTurnActions.Single(offer =>
+                offer.ActionDefinitionId.Value == "primary-attack-text");
+            Accept(session, DirectorCommand.StartAction(narrowed.ActionDefinitionId));
+            var choice = session.Projection.PendingAttackTargetChoice;
+
+            Assert.That(choice.LegalTargetMinionIds, Has.None.EqualTo(adjacentMinion),
+                "The card narrows p.13's default to heroes, so the minion beside the attacker is not " +
+                "one of its targets.");
+            Assert.That(choice.LegalTargetHeroIds, Is.Not.Empty,
+                "and the hero beside it still is, or the narrowing has nothing to be measured against.");
+
+            // The same position, asked of a card that narrows nothing: the minion is a target there,
+            // which is what makes the absence above the card's own doing rather than the board's.
+            var control = ConfiguredMatchFixtures.CreateAttackTextSessionWithAnAdjacentMinion(out var same);
+            CommitAttackTextTurn(control, "red-pursuit-card", "blue-longbow-card");
+            var ordinary = control.Projection.AvailableTurnActions.Single(offer =>
+                DefinitionOf(control, offer).ActionDefinitions
+                    .Single(action => action.Id.Equals(offer.ActionDefinitionId))
+                    .Kind == ActionKind.Attack);
+            Accept(control, DirectorCommand.StartAction(ordinary.ActionDefinitionId));
+
+            Assert.That(control.Projection.PendingAttackTargetChoice.LegalTargetMinionIds,
+                Has.Member(same));
+        }
+
+        /// <summary>
+        /// Commits the named Red and Blue cards and settles any Initiative tie so the Red card acts,
+        /// which is what puts the card-text Attack in front of the fixture.
+        /// </summary>
+        private static HeroId CommitAttackTextTurn(
+            MatchSession session, string redCardId, string blueCardId)
+        {
+            var red = session.Projection.Cards.Single(card =>
+                card.Id.Value == redCardId && card.State.Location == CardLocation.Hand);
+            var blue = session.Projection.Cards.Single(card =>
+                card.Id.Value == blueCardId && card.State.Location == CardLocation.Hand);
+            Accept(session, DirectorCommand.CommitCard(red.OwnerId, red.Id));
+            Accept(session, DirectorCommand.CommitCard(blue.OwnerId, blue.Id));
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                Accept(session, DirectorCommand.ChooseTiedActor(tie.OwningSide, red.Id));
+            }
+
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id),
+                "The Red card must be the one acting, or this fixture is watching the wrong turn.");
+            return red.OwnerId;
+        }
+
+        /// <summary>
+        /// The ordered rule-event log as this fixture reads it: the event type, plus the step id for a
+        /// card-text fact, which is where the p.14 moment and the node are recorded.
+        /// </summary>
+        private static List<string> AttackTextLog(MatchSession session) =>
+            session.Projection.DiagnosticEvents
+                .Select(entry => entry.EventType == "Action.CardTextApplied"
+                    ? entry.EventType + ":" + StepOf(entry)
+                    : entry.EventType)
+                .ToList();
+
+        private static string StepOf(GuardsDigital.Core.Diagnostics.RuleEventLogEntry entry)
+        {
+            var marker = "step=";
+            var start = entry.Detail.IndexOf(marker, StringComparison.Ordinal);
+            if (start < 0)
+            {
+                return entry.Detail;
+            }
+
+            var value = entry.Detail.Substring(start + marker.Length);
+            var end = value.IndexOf(';');
+            return end < 0 ? value : value.Substring(0, end);
+        }
         private static void StartSkill(MatchSession session, ActionDefinitionId skill)
         {
             var offer = session.Projection.AvailableTurnActions

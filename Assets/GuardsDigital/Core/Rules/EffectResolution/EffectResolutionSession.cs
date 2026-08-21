@@ -146,10 +146,23 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             int turnIndex,
             RuleModificationSet modifications,
             EffectCardState cardState,
+            ActionKind enclosingActionKind,
             HeroId opposingHeroId = default,
             MatchComponents components = null,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
         {
+            if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
+                enclosingActionKind == ActionKind.None)
+            {
+                throw new ArgumentException(
+                    "An effect resolution names the action it is running inside. Rulebook p.18 makes " +
+                    "an immunity declared against one action type unaffected by the others, so a " +
+                    "capability that filters by activity has to be told which one it is in rather " +
+                    "than assuming the Skill it used to be.",
+                    nameof(enclosingActionKind));
+            }
+
+            EnclosingActionKind = enclosingActionKind;
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
             Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             Participants = participants;
@@ -170,6 +183,17 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public int RoundIndex { get; }
         public int TurnIndex { get; }
         public HeroId OpposingHeroId { get; }
+
+        /// <summary>
+        /// The kind of action this effect is running inside. Milestone 8.5, closing the 7.9a review's
+        /// F-BOARD-03: four capability handlers asked p.18's immunity about
+        /// <c>RuleActivity.Skill</c> because a Skill was the only action an effect could run inside,
+        /// and the answer would have quietly stayed Skill the moment an Attack's card text ran the same
+        /// handler. Card text has no activity of its own - p.11 says so for movement written on a card,
+        /// and nothing on p.19 gives Swap, Replace or Remove one either - so it borrows the enclosing
+        /// action's, which is what this carries.
+        /// </summary>
+        public ActionKind EnclosingActionKind { get; }
 
         /// <summary>
         /// The modifications in effect for this resolution. Required since milestone 6.4, which added
@@ -459,6 +483,42 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied);
                     break;
 
+                // Milestone 8.5. A predicate that asked a question can be answered, for the same reason
+                // its non-Applied results are routed at all: the alternative is a frame that paused on
+                // a node this switch refuses, which no command could ever close. Nothing in this build
+                // pauses a predicate - a boolean query has nobody to ask - so this is the path that
+                // keeps the routing above honest rather than one current content reaches.
+                case EffectNodeKind.Conditional:
+                    var predicateSelection = choice.SelectedCandidates
+                        .Select(candidate => candidate.Value)
+                        .ToArray();
+                    var resumedPredicate = context.Catalog.Load(node.Capability).Resume(
+                        BuildCapabilityContext(frame, node, outcomes, context), predicateSelection);
+                    if (resumedPredicate.Kind != EffectExecutionResultKind.Applied)
+                    {
+                        var routedPredicate = ApplyCapabilityResult(
+                            frame, node, resumedPredicate, continuation, outcomes, choices, events,
+                            context);
+                        if (routedPredicate != null)
+                        {
+                            return routedPredicate;
+                        }
+
+                        break;
+                    }
+
+                    Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied, resumedPredicate);
+                    var resumedBranch = ReadsTrue(resumedPredicate)
+                        ? node.ChildNodeIds[0]
+                        : node.ChildNodeIds.Count > 1 ? node.ChildNodeIds[1] : default;
+                    AdvanceTop(continuation);
+                    if (resumedBranch.IsDefined)
+                    {
+                        continuation.Add(new EffectContinuationFrame(resumedBranch, 0));
+                    }
+
+                    break;
+
                 case EffectNodeKind.Capability:
                     var selected = choice.SelectedCandidates
                         .Select(candidate => candidate.Value)
@@ -598,8 +658,37 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     case EffectNodeKind.Conditional:
                         if (top.ChildIndex == 0)
                         {
-                            var predicate = Evaluate(frame, node, outcomes, context);
-                            var branch = predicate
+                            // Milestone 8.5, closing the 7.9a review's F-CARD-07. A predicate used to be
+                            // executed for one boolean and everything else it returned was discarded:
+                            // its typed outcomes never reached the outcome list, so no later node could
+                            // bind to what it had established, and a handler that paused, refused, or
+                            // declined arrived here as "no true outcome" and was read as false. Those
+                            // are three different answers being spelled the same way, and the false one
+                            // silently takes the else branch of a rule the card actually printed.
+                            //
+                            // So the result is routed through the one place that knows what each kind
+                            // means, and only an Applied one decides a branch. The facts are recorded
+                            // here rather than when the node finishes, because the branch below may
+                            // pause and this pass may not come back: the outcome list is what survives,
+                            // and a second factless record at the end would shadow this one, since an
+                            // input binding reads the last outcome a node published.
+                            var predicate = context.Catalog.Load(node.Capability)
+                                .Execute(BuildCapabilityContext(frame, node, outcomes, context));
+                            if (predicate.Kind != EffectExecutionResultKind.Applied)
+                            {
+                                var routed = ApplyCapabilityResult(
+                                    frame, node, predicate, continuation, outcomes, choices, events,
+                                    context);
+                                if (routed != null)
+                                {
+                                    return routed;
+                                }
+
+                                continue;
+                            }
+
+                            Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied, predicate);
+                            var branch = ReadsTrue(predicate)
                                 ? node.ChildNodeIds[0]
                                 : node.ChildNodeIds.Count > 1 ? node.ChildNodeIds[1] : default;
                             AdvanceTop(continuation);
@@ -612,7 +701,6 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         }
 
                         Pop(continuation);
-                        Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied);
                         continue;
 
                     case EffectNodeKind.RepeatAction:
@@ -813,17 +901,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             }
         }
 
-        private static bool Evaluate(
-            PendingResolution frame,
-            EffectNodeDefinition node,
-            IReadOnlyList<EffectNodeOutcome> outcomes,
-            EffectResolutionContext context)
-        {
-            var handler = context.Catalog.Load(node.Capability);
-            var result = handler.Execute(BuildCapabilityContext(frame, node, outcomes, context));
-            return result.Outcomes.Any(outcome =>
+        /// <summary>
+        /// Whether an applied predicate reported true. Only the boolean facts it published are read,
+        /// and only from a result that applied: milestone 8.5 made "the predicate could not be asked"
+        /// a separate answer from "the predicate said no", because a `Conditional` reading the second
+        /// where the first is true takes the else branch of a rule the card printed.
+        /// </summary>
+        private static bool ReadsTrue(EffectExecutionResult predicate) =>
+            predicate.Outcomes.Any(outcome =>
                 outcome.Value.Kind == EffectValueKind.Boolean && outcome.Value.BooleanValue);
-        }
 
         internal static EffectCapabilityContext BuildCapabilityContext(
             PendingResolution frame,
@@ -883,6 +969,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.Timing,
                 context.Modifications,
                 context.CardState,
+                context.EnclosingActionKind,
                 context.Components,
                 context.HeroItems);
         }

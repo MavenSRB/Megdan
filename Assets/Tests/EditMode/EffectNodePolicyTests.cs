@@ -5,6 +5,7 @@ using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -172,6 +173,170 @@ namespace GuardsDigital.Tests.EditMode
                 "A mandatory Choose is not declinable.");
         }
 
+
+        /// <summary>
+        /// Milestone 8.5, closing the 7.9a review's F-CARD-07.
+        ///
+        /// A `Conditional` used to execute its predicate for one boolean and throw the rest away. Two
+        /// things were lost with it. The typed facts the predicate published never reached the outcome
+        /// list, so no later node could bind to what it had established - which is exactly what Wasp's
+        /// Thunder Boomerang needs when it asks whether the attack targeted a hero. And a predicate
+        /// that paused, refused, or declined arrived here indistinguishable from one that had answered
+        /// no, so the else branch of a rule the card printed was taken because the question could not
+        /// be asked.
+        ///
+        /// Both halves are asserted here against the same node kind.
+        /// </summary>
+        [Test]
+        public void AConditionalPredicate_PublishesItsFactsAndCannotSilentlyReportFalse()
+        {
+            // The facts half: a later node binds the predicate's own published output.
+            var publishing = ConditionalDefinition(
+                SyntheticEffectCapabilities.IsFlaggedV1,
+                new[] { EffectInputBinding.FromLiteral("flag", EffectValue.Boolean(true)) },
+                thenChild: new EffectNodeDefinition(
+                    new EffectNodeId("then"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    PredicateReaderCapability.Reference,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "flag", new EffectNodeId("root"), "value", EffectValueKind.Boolean)
+                    }));
+
+            var published = Start(publishing, PredicateCatalog());
+
+            Assert.That(published.Accepted, Is.True);
+            Assert.That(Kinds(published), Does.Contain("root=Applied"),
+                "The predicate's own result is recorded, because that is where its facts live.");
+            Assert.That(Kinds(published), Does.Contain("then=Applied"),
+                "and the branch node could bind the value the predicate published - which is the " +
+                "whole point of publishing it, and which resolved to nothing before this milestone.");
+
+            // The silence half: a predicate that cannot be asked is not an answer of no.
+            var refusing = ConditionalDefinition(
+                RefusingPredicateCapability.Reference,
+                System.Array.Empty<EffectInputBinding>(),
+                thenChild: Leaf("then", SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory));
+
+            var refused = Start(refusing, PredicateCatalog());
+
+            Assert.That(refused.Accepted, Is.True);
+            Assert.That(Kinds(refused), Does.Contain("root=ImpossibleMandatory"),
+                "A mandatory predicate that cannot be asked stops the action, exactly as any other " +
+                "mandatory step that cannot be taken does.");
+            Assert.That(Kinds(refused), Has.None.EqualTo("then=Applied"),
+                "and above all it does not quietly take a branch: the else arm of a rule the card " +
+                "printed must not be reached because the question was unanswerable.");
+            Assert.That(Kinds(refused), Has.None.EqualTo("else=Applied"));
+        }
+
+        /// <summary>
+        /// A `Conditional` root over one predicate, with a `then` branch supplied by the caller and an
+        /// `else` branch that would be visible if it were ever taken. Milestone 8.5.
+        /// </summary>
+        private static EffectDefinition ConditionalDefinition(
+            EffectCapabilityReference predicate,
+            IReadOnlyList<EffectInputBinding> predicateInputs,
+            EffectNodeDefinition thenChild)
+        {
+            var elseChild = Leaf(
+                "else", SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory);
+            var root = new EffectNodeDefinition(
+                new EffectNodeId("root"), EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                predicate,
+                childNodeIds: new[] { thenChild.Id, elseChild.Id },
+                inputs: predicateInputs);
+            return new EffectDefinition(
+                new EffectDefinitionId("predicate-fixture-definition"), "rev-1", root.Id,
+                new[] { root, thenChild, elseChild });
+        }
+
+        /// <summary>
+        /// The registered set plus this fixture's two predicate handlers. Built by loading each
+        /// registered reference back out of the synthetic catalog rather than by listing handlers, so a
+        /// capability added there arrives here without this fixture being edited.
+        /// </summary>
+        private static EffectCapabilityCatalog PredicateCatalog()
+        {
+            var synthetic = SyntheticEffectCapabilities.CreateCatalog();
+            return new EffectCapabilityCatalog(synthetic.Registered
+                .Select(synthetic.Load)
+                .Concat(new IEffectCapabilityHandler[]
+                {
+                    new PredicateReaderCapability(),
+                    new RefusingPredicateCapability()
+                }));
+        }
+
+        /// <summary>Consumes a Boolean a prior node published, so a binding has somewhere to land.</summary>
+        private sealed class PredicateReaderCapability : IEffectCapabilityHandler
+        {
+            public static EffectCapabilityReference Reference { get; } =
+                new EffectCapabilityReference(new EffectCapabilityId("fixture-predicate-reader"), 1);
+
+            EffectCapabilityReference IEffectCapabilityHandler.Reference => Reference;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[] { new EffectCapabilityParameter("flag", EffectValueKind.Boolean) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                System.Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
+                context.Input("flag").Kind == EffectValueKind.Boolean
+                    ? EffectExecutionResult.Applied()
+                    : EffectExecutionResult.ImpossibleMandatory();
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new System.InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
+        }
+
+        /// <summary>
+        /// A predicate that cannot be asked at all. It is the shape the old reading collapsed into
+        /// "false": there is no boolean in the result, so the branch selection had nothing to read.
+        /// </summary>
+        private sealed class RefusingPredicateCapability : IEffectCapabilityHandler
+        {
+            public static EffectCapabilityReference Reference { get; } =
+                new EffectCapabilityReference(new EffectCapabilityId("fixture-refusing-predicate"), 1);
+
+            EffectCapabilityReference IEffectCapabilityHandler.Reference => Reference;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    outputs: new[] { new EffectOutputBinding("value", EffectValueKind.Boolean) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                System.Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
+                EffectExecutionResult.ImpossibleMandatory();
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new System.InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.ImpossibleMandatory;
+        }
+
+        private static EffectResolutionStepResult Start(
+            EffectDefinition definition, EffectCapabilityCatalog catalog) =>
+            EffectResolutionSession.Start(
+                new EffectResolutionId("policy-fixture"),
+                new CardInstanceId("policy-card"),
+                default,
+                new ActionDefinitionId("policy-action"),
+                Actor,
+                Controller,
+                ActionInvocationContext.PrintedPrimary,
+                new EffectResolutionContext(
+                    definition, catalog, null, null, 1, 1, RuleModificationSet.Empty,
+                    EffectCardState.Absent, ActionKind.Skill));
         private static EffectResolutionStepResult Start(EffectDefinition definition) =>
             EffectResolutionSession.Start(
                 new EffectResolutionId("policy-fixture"),
@@ -185,7 +350,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static EffectResolutionContext Context(EffectDefinition definition) =>
             new EffectResolutionContext(
-                definition, SyntheticEffectCapabilities.CreateCatalog(), null, null, 1, 1, RuleModificationSet.Empty, EffectCardState.Absent);
+                definition, SyntheticEffectCapabilities.CreateCatalog(), null, null, 1, 1, RuleModificationSet.Empty, EffectCardState.Absent, ActionKind.Skill);
 
         private static IReadOnlyList<string> Kinds(EffectResolutionStepResult result) =>
             result.Events.Select(value => $"{value.NodeId}={value.ResultKind}").ToArray();

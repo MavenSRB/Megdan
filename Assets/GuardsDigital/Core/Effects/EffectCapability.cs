@@ -113,9 +113,19 @@ namespace GuardsDigital.Core.Effects
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             EffectCardState cardState,
+            ActionKind enclosingActionKind,
             MatchComponents components = null,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
         {
+            if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
+                enclosingActionKind == ActionKind.None)
+            {
+                throw new ArgumentException(
+                    "An effect capability context names the action its effect is running inside.",
+                    nameof(enclosingActionKind));
+            }
+
+            EnclosingActionKind = enclosingActionKind;
             if (!nodeId.IsDefined)
             {
                 throw new ArgumentException("An effect capability context requires a node.", nameof(nodeId));
@@ -160,6 +170,23 @@ namespace GuardsDigital.Core.Effects
         public CardDefinitionReference SourceDefinitionReference { get; }
 
         public ActionDefinitionId ActionDefinitionId { get; }
+
+        /// <summary>
+        /// The kind of action this effect is running inside, and therefore the activity its operations
+        /// are performed as. Milestone 8.5 (F-BOARD-03). Ask
+        /// <see cref="EnclosingActivity"/> rather than mapping this yourself: the two enums are
+        /// different vocabularies and only one bridge between them exists.
+        /// </summary>
+        public ActionKind EnclosingActionKind { get; }
+
+        /// <summary>
+        /// p.18's activity this effect's operations count as - the enclosing action's, because card
+        /// text has none of its own. Milestone 6.5b settled that reading for card-text direct Move and
+        /// milestone 8.5 made it true for every action an effect can run inside rather than for the
+        /// Skill alone.
+        /// </summary>
+        public RuleActivity EnclosingActivity => RuleActivityQuery.ForAction(EnclosingActionKind);
+
         public IReadOnlyDictionary<string, EffectValue> Inputs { get; }
         public int RoundIndex { get; }
         public int TurnIndex { get; }

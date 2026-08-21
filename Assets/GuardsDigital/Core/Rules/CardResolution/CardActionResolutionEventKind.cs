@@ -69,6 +69,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         TeamLifeSpent = 47,
 
         /// <summary>Milestone 7.4: p.13's last counter was spent, so that team loses the game.</summary>
-        TeamEliminated = 48
+        TeamEliminated = 48,
+
+        /// <summary>
+        /// Milestone 8.5: one node of a printed Attack's or Defense's card text was applied at the
+        /// moment rulebook p.14 numbers it. The fact names the card, the action, the hero whose text it
+        /// is, and which of the page's three moments this was, so a reader can place it in the order
+        /// without inferring anything from position.
+        /// </summary>
+        CardTextApplied = 49
     }
 }

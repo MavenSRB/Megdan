@@ -141,7 +141,8 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.Participants,
                 null,
                 RuleModificationSet.Empty,
-                EffectCardState.Of(configuration.CardDefinitions, configuration.CardInstances));
+                EffectCardState.Of(configuration.CardDefinitions, configuration.CardInstances),
+                ActionKind.Skill);
 
         /// <summary>
         /// The configured Red hand on a hand-built board, with the round that owns the items and the

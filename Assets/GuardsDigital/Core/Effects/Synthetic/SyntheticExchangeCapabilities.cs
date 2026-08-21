@@ -92,12 +92,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
             };
 
         /// <summary>
-        /// The activity every one of these capabilities declares. Card text has no activity of its own -
-        /// p.11 makes that explicit for movement written on a card, and nothing on p.19 gives Swap,
-        /// Replace, or Remove one either - so each asks the enclosing Skill's activity, which is the
-        /// reading milestone 6.5b settled when it converted card-text direct Move.
+        /// The activity every one of these capabilities performs as. Card text has no activity of its
+        /// own - p.11 makes that explicit for movement written on a card, and nothing on p.19 gives
+        /// Swap, Replace, or Remove one either - so each asks the enclosing action's activity, which is
+        /// the reading milestone 6.5b settled when it converted card-text direct Move. It was the
+        /// constant `RuleActivity.Skill` until milestone 8.5, when an Attack's card text became able to
+        /// run these handlers and the constant would have started lying (F-BOARD-03).
         /// </summary>
-        private const RuleActivity Activity = RuleActivity.Skill;
+        private static RuleActivity ActivityOf(EffectCapabilityContext context) =>
+            context.EnclosingActivity;
 
         /// <summary>
         /// Rulebook p.19's Swap: "Two objects on the board swap places with each other. This does not
@@ -609,7 +612,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             private static RemovalStageDecision RemovalStage(EffectCapabilityContext context) =>
                 new RemovalStageDecision(
-                    Activity,
+                    ActivityOf(context),
                     RuleObject.ForHero(context.ActorId),
                     context.Components.Board,
                     context.Components.Units,
@@ -619,7 +622,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         }
 
         /// <summary>
-        /// p.18's immunity for one exchanged object, asked with the enclosing Skill's activity. A token
+        /// p.18's immunity for one exchanged object, asked with the enclosing action's activity. A token
         /// is never immune - p.19 states that tokens are not units - so it reports the named absence
         /// rather than a unit with nothing declared about it.
         /// </summary>
@@ -628,7 +631,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             var unit = subject.AsRuleObject();
             return unit.IsDefined && context.Participants != null && ImmunityQuery.IsImmuneTo(
                 unit,
-                Activity,
+                ActivityOf(context),
                 RuleObject.ForHero(context.ActorId),
                 context.Components.Board,
                 context.Participants,

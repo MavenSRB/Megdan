@@ -11,6 +11,8 @@ using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Placement;
+using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -296,7 +298,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// pass what they hold.
         /// </summary>
         public RuleModificationSet CurrentModifications(
-            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            ActiveEffectLifecycle timing,
             MatchParticipants participants,
             TieBreakerState tieBreaker,
             GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates) =>
@@ -312,7 +314,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             TieBreakerState tieBreaker,
             int roundIndex,
@@ -355,7 +357,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             int roundIndex,
             int turnIndex) =>
@@ -380,7 +382,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
+            ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             TieBreakerState tieBreaker,
             int roundIndex,
@@ -1142,6 +1144,96 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications);
         }
 
+
+        /// <summary>
+        /// Applies one card's printed text at the moment rulebook p.14 reached, and returns the ordered
+        /// facts it produced.
+        ///
+        /// <para>Milestone 8.5, closing the 7.9a review's F-CARD-01. The Attack backend owns p.14's
+        /// order and says where each of the page's three card-text steps falls; this is what actually
+        /// composes one, because the effect catalog, the component ports and the item state live here
+        /// rather than in a backend that resolves numbers. The enclosing action's kind goes into the
+        /// resolution context, so a capability that asks p.18's immunity asks about the Attack it is
+        /// running inside rather than about a Skill (F-BOARD-03).</para>
+        ///
+        /// <para><b>Card text applied inside an Attack cannot pause.</b> An Attack's remaining steps
+        /// are produced in the same command that began them, and no persisted state can hold them while
+        /// a choice stands, so a nested pause would need a wire field this milestone deliberately does
+        /// not add. <see cref="GuardsDigital.Core.Effects.EffectDefinitionValidator"/> refuses a
+        /// card-text root that could open one, at configuration, before any match runs; the throw below
+        /// is the case that rule failed to catch, and it is a content fault rather than a rules
+        /// outcome. The slice that first transcribes a rider needing a question - 8.10's discard
+        /// riders, 8.11's Block riders - owns the nesting and the schema move it costs.</para>
+        /// </summary>
+        public IReadOnlyList<CardActionResolutionEvent> ApplyCardText(
+            ResolutionStep step,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            if (step.Kind != ResolutionStepKind.CardText)
+            {
+                throw new ArgumentException(
+                    "Only a card-text step applies card text.", nameof(step));
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var card = (instances ?? throw new ArgumentNullException(nameof(instances)))
+                .Single(candidate => candidate.Id.Equals(step.CheckpointSourceCardInstanceId));
+            var definition = materializedDefinitions.Single(candidate =>
+                candidate.Reference.Equals(card.DefinitionReference));
+            var action = definition.ActionDefinitions.Single(candidate =>
+                candidate.Id.Equals(step.CardTextActionDefinitionId));
+
+            var context = new EffectResolutionContext(
+                action.EffectRoot,
+                ContentCatalogs.Capabilities,
+                participants,
+                timing,
+                roundIndex,
+                turnIndex,
+                modifications,
+                EffectCardState.Of(materializedDefinitions, instances),
+                action.Kind,
+                components: components,
+                heroItems: skillBackend.HeroItems);
+            var result = EffectResolutionSession.Start(
+                new EffectResolutionId(
+                    $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
+                card.Id,
+                card.DefinitionReference,
+                action.Id,
+                step.CardTextActorId,
+                step.CardTextActorId,
+                ActionInvocationContext.PrintedPrimary,
+                context);
+            if (!result.Accepted)
+            {
+                throw new InvalidOperationException(
+                    $"Card text on '{definition.Id}' action '{action.Id}' was refused at resolution " +
+                    $"({result.RejectionReason}); the effect-definition validator admits only text a " +
+                    "match can apply.");
+            }
+
+            if (result.Frame?.PendingChoice != null)
+            {
+                throw new InvalidOperationException(
+                    $"Card text on '{definition.Id}' action '{action.Id}' asked a question inside " +
+                    "rulebook p.14's order, which no persisted state can hold. The effect-definition " +
+                    "validator refuses such a composition at configuration; this build loaded one it " +
+                    "should have rejected.");
+            }
+
+            return Array.AsReadOnly(result.Events
+                .Select(value => CardActionResolutionEvent.CardTextApplied(
+                    card.Id, action.Id, step.CardTextActorId, step.CardTextTiming, value))
+                .ToArray());
+        }
         public AttackActionResolutionResult AnswerAttackTarget(
             AttackTargetChoiceCommand command,
             IEnumerable<CardDefinition> definitions,

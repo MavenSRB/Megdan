@@ -47,6 +47,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             heroItems = items;
         }
 
+        /// <summary>
+        /// The match items an effect this backend resolves composes p.16's bonus from. Milestone 8.5
+        /// reads it from here rather than binding a second copy, because card text applied inside an
+        /// Attack has to compose the identical bonus a Skill running the same capability would.
+        /// </summary>
+        internal GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems => heroItems;
+
         private SkillCardActionStrategyBackend(
             EffectCapabilityCatalog catalog,
             PendingResolution pendingResolution)
@@ -108,8 +115,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), components: components,
-                heroItems: heroItems);
+                EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
+                components: components, heroItems: heroItems);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 offer.SourceCardInstanceId,
@@ -182,8 +189,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), components: components,
-                heroItems: heroItems);
+                EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
+                components: components, heroItems: heroItems);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 repeat.SourceCardInstanceId,
@@ -264,8 +271,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), components: components,
-                heroItems: heroItems);
+                EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
+                components: components, heroItems: heroItems);
             return EffectOptionFeasibilityQuery.CanApplyAnything(
                 EffectResolutionSession.BuildStartFrame(
                     new EffectResolutionId($"probe-{offer.SourceCardInstanceId.Value}-{offer.ActionDefinitionId.Value}"),
@@ -309,8 +316,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), components: components,
-                heroItems: heroItems);
+                EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
+                components: components, heroItems: heroItems);
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
             {

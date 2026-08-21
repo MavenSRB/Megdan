@@ -475,6 +475,69 @@ namespace GuardsDigital.Tests.EditMode
                 Is.Empty);
         }
 
+
+        /// <summary>
+        /// Milestone 8.5. Card text applied at one of rulebook p.14's Attack moments has to finish
+        /// inside the command that reached it, because an Attack's remaining steps are produced there
+        /// and no persisted state can hold them while a question stands. The three node shapes that
+        /// open a question on their own are refused, with the compliant twin beside each so the rule
+        /// states what it accepts as well as what it rejects.
+        ///
+        /// A Skill is deliberately unaffected. Its effect <i>is</i> the action, and pausing it is what
+        /// the whole frame exists for, which is why the ordinary <c>Validate</c> below admits every one
+        /// of these.
+        /// </summary>
+        [Test]
+        public void CardTextThatCouldPauseInsideAnAttack_IsRefusedWithItsCompliantTwin()
+        {
+            var choose = new EffectNodeDefinition(
+                new EffectNodeId("root"), EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                childNodeIds: new[] { new EffectNodeId("a"), new EffectNodeId("b") },
+                chooser: EffectChooserRole.Actor,
+                minimumSelections: 1,
+                maximumSelections: 1);
+            var mayStep = new EffectNodeDefinition(
+                new EffectNodeId("root"), EffectNodeKind.Optional, EffectFailurePolicy.May,
+                childNodeIds: new[] { new EffectNodeId("a") },
+                chooser: EffectChooserRole.Actor);
+            var repeat = new EffectNodeDefinition(
+                new EffectNodeId("root"), EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                childNodeIds: new[] { new EffectNodeId("a"), new EffectNodeId("b") });
+
+            AssertCardTextRefuses(choose, Leaf("a"), Leaf("b"));
+            AssertCardTextRefuses(mayStep, Leaf("a"));
+            AssertCardTextRefuses(
+                repeat,
+                Leaf("a"),
+                new EffectNodeDefinition(
+                    new EffectNodeId("b"), EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble));
+
+            // The compliant twin: the same table with no node that opens a question.
+            var compliant = ValidateCardText(Sequence("root", "a", "b"), Leaf("a"), Leaf("b"));
+            Assert.That(compliant, Is.Empty,
+                "Text that only performs is admitted, which is what the seam exists to run.");
+
+            // And the rule is the card-text one alone: a Skill's own effect may ask anything.
+            Assert.That(
+                Validate(choose, Leaf("a"), Leaf("b")).Select(rejection => rejection.Reason),
+                Has.None.EqualTo(EffectDefinitionRejectionReason.CardTextCannotPauseInsideAnAttack));
+        }
+
+        private static void AssertCardTextRefuses(params EffectNodeDefinition[] nodes)
+        {
+            Assert.That(
+                ValidateCardText(nodes).Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.CardTextCannotPauseInsideAnAttack),
+                $"'{nodes[0].Kind}/{nodes[0].FailurePolicy}' can open a question, so it cannot be " +
+                "card text applied inside an Attack.");
+        }
+
+        private static System.Collections.Generic.IReadOnlyList<EffectDefinitionRejection> ValidateCardText(
+            params EffectNodeDefinition[] nodes) =>
+            EffectDefinitionValidator.ValidateCardText(
+                new EffectDefinition(
+                    new EffectDefinitionId("validator-fixture"), "rev-1", nodes[0].Id, nodes),
+                SyntheticEffectCapabilities.CreateCatalog());
         private static System.Collections.Generic.IReadOnlyList<EffectDefinitionRejection> Validate(
             params EffectNodeDefinition[] nodes) =>
             EffectDefinitionValidator.Validate(

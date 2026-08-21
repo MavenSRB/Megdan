@@ -370,9 +370,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HexCoordinate>();
                 }
 
+                // Milestone 8.5 (F-BOARD-03). A node that names its own activity still wins - that is
+                // what the declaration is for - and one that names none performs as the action it is
+                // running inside rather than as the Skill it used to be the only one of.
                 var activity = declaresActivity
                     ? (RuleActivity)context.Input("activity").IntegerValue
-                    : RuleActivity.Skill;
+                    : context.EnclosingActivity;
                 if (activity == RuleActivity.None || !Enum.IsDefined(typeof(RuleActivity), activity))
                 {
                     return Array.Empty<HexCoordinate>();

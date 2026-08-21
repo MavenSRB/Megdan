@@ -1584,6 +1584,23 @@ namespace GuardsDigital.Core.Cards
                     continue;
                 }
 
+                // Milestone 8.5. Rulebook p.14 applies card text at three numbered points inside an
+                // Attack, and the resolver says where each one falls. It is applied here, in stream
+                // order, for the same reason a checkpoint is: this is the one place that turns the
+                // ordered stream a card action produced into the ordered events a turn emits, so the
+                // text lands exactly where the page puts it and nothing downstream has to infer it.
+                if (step.Kind == ResolutionStepKind.CardText)
+                {
+                    foreach (var fact in cardActions.ApplyCardText(
+                        step, definitions, instances, participants, timing, CurrentModifications(),
+                        roundIndex, turnIndex))
+                    {
+                        events.Add(toTurnEvent(fact));
+                    }
+
+                    continue;
+                }
+
                 events.Add(toTurnEvent(step.Fact));
             }
 
