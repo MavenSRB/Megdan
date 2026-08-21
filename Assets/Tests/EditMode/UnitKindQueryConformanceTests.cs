@@ -82,15 +82,6 @@ namespace GuardsDigital.Tests.EditMode
                 "If RuleModificationSet stopped reading declared effective kinds, Counts As could " +
                 "not answer anything.");
 
-            Assert.That(
-                ILConformanceScanner.References(
-                    ILConformanceScanner.WithNestedTypes(typeof(ImmunityQuery)),
-                    ILConformanceScanner.Method(
-                        typeof(EffectiveUnitKindQuery), nameof(EffectiveUnitKindQuery.Is))),
-                Is.True,
-                "The shared p.13 Heavy-immunity accompaniment clause must ask the effective type " +
-                "question, so Counts As protects the Heavy for every activity rather than Attack alone.");
-
             // Milestone 6.6 moved the effective reading of "the minions in the Battle Zone" into the
             // shared Battle-Zone query, so p.8's last-minion Lane-Push cause counts the same set. The
             // rule follows the same two links rather than weakening: the resolution must reach that
@@ -113,6 +104,31 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True,
                 "The shared Battle-Zone count must ask the effective minion type, including a " +
                 "counts-as hero, or every consumer of it silently counts miniatures alone.");
+
+            // Milestone 8.7, closing the 7.9a review's F-BOARD-04: p.13's Heavy accompaniment clause
+            // counted "the units in the Battle Zone" with a derivation of its own - its own zone
+            // lookup over the minion register concatenated with its own hero-space search - beside
+            // the shared one this rule already follows for the Minion Battle. Two derivations of one
+            // set is the two-locally-correct-readings defect milestone 6.5ad was written to correct,
+            // and the second one silently disagreed the moment the first gained a member.
+            //
+            // It replaces 6.8g's direct ImmunityQuery-to-EffectiveUnitKindQuery link, which was that
+            // second derivation asking the effective question itself. The chain is now the same two
+            // links the Minion Battle's is, and the assertion above supplies the second one: nothing
+            // weakened, because a query that reached the shared set without the shared set asking the
+            // effective type would fail there instead.
+            //
+            // The link is asserted rather than tested behaviourally because what went wrong was
+            // structural: both readings answered the configured board identically, so no scenario
+            // could tell them apart.
+            Assert.That(
+                ILConformanceScanner.References(
+                    ILConformanceScanner.WithNestedTypes(typeof(ImmunityQuery)),
+                    ILConformanceScanner.Method(
+                        typeof(BattleZoneQuery), nameof(BattleZoneQuery.FindEffectiveMinionsInside))),
+                Is.True,
+                "p.13's Heavy accompaniment clause must read the Battle Zone through the shared " +
+                "effective query, or a second derivation of the same set drifts from it unnoticed.");
         }
 
         [Test]

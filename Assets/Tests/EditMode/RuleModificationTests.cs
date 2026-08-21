@@ -10,7 +10,10 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
@@ -141,6 +144,7 @@ namespace GuardsDigital.Tests.EditMode
                     Applied(Bonus(1), hero, "red-early", 1, TeamSide.Red),
                     Applied(Bonus(4), hero, "red-early-twin", 1, TeamSide.Red)
                 },
+                Array.Empty<AppliedObstacleOverlay>(),
                 new TieBreakerState(TeamSide.Red));
 
             Assert.That(
@@ -149,7 +153,9 @@ namespace GuardsDigital.Tests.EditMode
 
             // The same modifications with the coin showing the other side reorder, and nothing flips it.
             var flipped = new RuleModificationSet(
-                modifications.Modifications, new TieBreakerState(TeamSide.Blue));
+                modifications.Modifications,
+                modifications.ObstacleOverlays,
+                new TieBreakerState(TeamSide.Blue));
             Assert.That(
                 flipped.Modifications.Select(value => value.SourceId),
                 Is.EqualTo(new[] { "blue-early", "red-early", "red-early-twin", "red-late" }));
@@ -270,11 +276,13 @@ namespace GuardsDigital.Tests.EditMode
                 "move-through",
                 0));
 
-            Assert.That(ObstacleQuery.IsObstacle(board, occupied), Is.True);
-            Assert.That(ObstacleQuery.IsObstacle(board, empty), Is.False);
-            Assert.That(ObstacleQuery.IsObstacle(board, offBoard), Is.True);
+            Assert.That(ObstacleQuery.IsObstacle(board, occupied, RuleModificationSet.Empty), Is.True);
+            Assert.That(ObstacleQuery.IsObstacle(board, empty, RuleModificationSet.Empty), Is.False);
+            Assert.That(ObstacleQuery.IsObstacle(board, offBoard, RuleModificationSet.Empty), Is.True);
 
-            Assert.That(ObstacleQuery.BlocksTransit(board, occupied, mover, null), Is.True);
+            Assert.That(
+                ObstacleQuery.BlocksTransit(board, occupied, mover, RuleModificationSet.Empty),
+                Is.True);
             Assert.That(ObstacleQuery.BlocksTransit(board, occupied, mover, permitted), Is.False);
             Assert.That(ObstacleQuery.BlocksTransit(board, offBoard, mover, permitted), Is.True);
             Assert.That(
@@ -282,9 +290,254 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True);
 
             // p.18: no unit may end its movement on an obstacle, permission or not.
-            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, occupied), Is.True);
-            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, empty), Is.False);
+            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, occupied, RuleModificationSet.Empty), Is.True);
+            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, empty, RuleModificationSet.Empty), Is.False);
         }
+
+        // ---------------------------------------------------------------------------------------
+        // Milestone 8.7: the two declaration shapes Wasp's persistent texts need
+        // ---------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.7 acceptance check 2, on the discriminating case: a restriction that names its
+        /// actors must leave the actors it does not name alone.
+        ///
+        /// Wasp's Magnetic Dagger is "Enemy units in radius cannot be swapped or placed by themselves,
+        /// or by enemy heroes", written from her side of the board - so her own team may still
+        /// reposition the units she pinned, and a declaration that barred everyone would be a different
+        /// and stronger card. The team relations are resolved against the source's controller, which
+        /// <see cref="AppliedRuleModification.ControllerTeamSide"/> already carries.
+        /// </summary>
+        [Test]
+        public void ActorQualifiedRestriction_BarsTheNamedActorsAndLeavesTheRest()
+        {
+            var pinned = RuleObject.ForMinion(new MinionId("pinned-minion"));
+            var qualified = Set(Applied(
+                RuleModification.ForRestriction(
+                    RuleActivity.Swap,
+                    RestrictedActorScope.Of(
+                        RestrictedActorRelation.AffectedObjectItself,
+                        RestrictedActorRelation.HeroesOpposingSource)),
+                pinned,
+                "magnetic-shape",
+                0,
+                TeamSide.Red));
+            var participants = PlaceholderOneVsOneParticipants.Create();
+            var sourceAlly = RuleObject.ForHero(RedHero);
+            var sourceEnemy = RuleObject.ForHero(BlueHero);
+
+            Assert.That(
+                RestrictionQuery.IsRestricted(
+                    pinned, RuleActivity.Swap, pinned, participants, qualified),
+                Is.True,
+                "\"by themselves\" names the affected object acting on itself.");
+            Assert.That(
+                RestrictionQuery.IsRestricted(
+                    pinned, RuleActivity.Swap, sourceEnemy, participants, qualified),
+                Is.True,
+                "A hero opposing the source is the card's \"enemy heroes\", read from the source's side.");
+            Assert.That(
+                RestrictionQuery.IsRestricted(
+                    pinned, RuleActivity.Swap, sourceAlly, participants, qualified),
+                Is.False,
+                "The source's own team is unrestricted, which is the half of the sentence a blanket " +
+                "prohibition would lose.");
+            Assert.That(
+                RestrictionQuery.IsRestricted(
+                    pinned, RuleActivity.Swap, RuleObject.None, participants, qualified),
+                Is.False,
+                "With nobody acting, a qualification about who is acting cannot be met - which is how " +
+                "p.18's own corrections stay outside a card's restriction.");
+            Assert.That(
+                RestrictionQuery.IsRestricted(
+                    pinned, RuleActivity.Place, sourceEnemy, participants, qualified),
+                Is.False,
+                "A restriction reaches only the activity it names; this one says nothing about Place.");
+
+            // The undirected question an offer query asks is the same declaration read the other way:
+            // the affected object is among the named actors, so it may not do it itself.
+            Assert.That(qualified.IsRestricted(pinned, RuleActivity.Swap), Is.True);
+
+            var unqualified = Set(Applied(
+                RuleModification.ForRestriction(RuleActivity.Swap), pinned, "blanket", 0, TeamSide.Red));
+            Assert.That(
+                RestrictionQuery.IsRestricted(
+                    pinned, RuleActivity.Swap, sourceAlly, participants, unqualified),
+                Is.True,
+                "An unqualified restriction bars the activity however it is reached, which is what " +
+                "every declaration written before this milestone means.");
+            Assert.That(
+                RestrictionQuery.IsRestricted(
+                    pinned, RuleActivity.Swap, RuleObject.None, participants, unqualified),
+                Is.True,
+                "Including when nobody in particular is acting.");
+        }
+
+        /// <summary>
+        /// Milestone 8.7 acceptance check 3: a declared overlay closes the side of its disk the
+        /// acting hero is not on, the disk is anchored at the source hero's current space and moves
+        /// with it (p.17), and the one obstacle query hands the same answer to movement, push and
+        /// place alike.
+        ///
+        /// This is Static Barrier's shape without her card's numbers: "While an enemy hero outside of
+        /// radius is performing an action, spaces in radius count as obstacles. While an enemy hero in
+        /// radius is performing an action, spaces outside of radius count as obstacles."
+        /// </summary>
+        [Test]
+        public void ConditionalObstacleOverlay_ClosesTheDeclaredSide_MovesWithItsHero_AndReachesEveryConsumer()
+        {
+            var sourceAt = new HexCoordinate(0, 0);
+            var actorAt = new HexCoordinate(3, 0);
+            var board = CreateBoard(new[]
+            {
+                new HeroOccupancy(RedHero, sourceAt),
+                new HeroOccupancy(BlueHero, actorAt)
+            });
+            var participants = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red)
+                .Participants;
+            var timing = new ActiveEffectLifecycle();
+            timing.Create(
+                new ActiveEffectId("synthetic-barrier"),
+                BarrierDefinition,
+                RedHero,
+                TeamSide.Red,
+                default,
+                SourceCard,
+                SourceAction,
+                1,
+                1);
+
+            var inside = new HexCoordinate(1, 0);
+            var outside = new HexCoordinate(2, 0);
+            var againstTheEnemy = Overlays(timing, board, participants, RuleObject.ForHero(BlueHero));
+
+            Assert.That(ObstacleQuery.IsObstacle(board, inside, againstTheEnemy), Is.True,
+                "The acting hero stands outside the disk, so the spaces inside it are closed to it.");
+            Assert.That(ObstacleQuery.IsObstacle(board, outside, againstTheEnemy), Is.False,
+                "and nothing beyond the disk is, because only one arm's condition is met at a time.");
+
+            // p.17: an Active effect's Radius moves with its hero. Nothing is stored, so moving the
+            // source hero re-anchors the disk on the next ask rather than needing an update.
+            Assert.That(
+                board.CommitValidatedDisplacement(
+                    BoardObjectReference.ForHero(RedHero), new HexCoordinate(-1, 0)).Accepted,
+                Is.True);
+            var afterTheSourceMoved = Overlays(timing, board, participants, RuleObject.ForHero(BlueHero));
+            Assert.That(ObstacleQuery.IsObstacle(board, inside, afterTheSourceMoved), Is.False,
+                "The space the disk used to cover is ordinary again.");
+            Assert.That(
+                ObstacleQuery.IsObstacle(board, new HexCoordinate(-2, 0), afterTheSourceMoved), Is.True,
+                "and the space the disk now covers is closed.");
+            Assert.That(
+                board.CommitValidatedDisplacement(
+                    BoardObjectReference.ForHero(RedHero), sourceAt).Accepted, Is.True);
+
+            // The two conditions the declaration states, each answered by the state rather than by a
+            // second declaration: whose action it is, and where that hero stands.
+            Assert.That(
+                ObstacleQuery.IsObstacle(
+                    board, inside, Overlays(timing, board, participants, RuleObject.ForHero(RedHero))),
+                Is.False,
+                "The overlay conditions on heroes opposing its source, so the source's own side acts " +
+                "through it untouched.");
+            Assert.That(
+                ObstacleQuery.IsObstacle(
+                    board, inside, Overlays(timing, board, participants, RuleObject.None)),
+                Is.False,
+                "With no hero performing an action there is nobody for the condition to hold of.");
+
+            Assert.That(
+                board.CommitValidatedDisplacement(
+                    BoardObjectReference.ForHero(BlueHero), inside).Accepted, Is.True);
+            var fromInside = Overlays(timing, board, participants, RuleObject.ForHero(BlueHero));
+            Assert.That(ObstacleQuery.IsObstacle(board, outside, fromInside), Is.True,
+                "Standing inside the disk, the enemy hero finds everything beyond it closed - the " +
+                "second arm, and what makes the boundary one it cannot cross in either direction.");
+            Assert.That(
+                board.CommitValidatedDisplacement(
+                    BoardObjectReference.ForHero(BlueHero), actorAt).Accepted, Is.True);
+
+            // p.18 lists obstacles once, so movement, push and place all read the same closure.
+            var blocked = Overlays(timing, board, participants, RuleObject.ForHero(BlueHero));
+            Assert.That(
+                MovementReachabilityQuery.FindReachableDestinations(
+                        actorAt, RuleObject.ForHero(BlueHero), board, 3, blocked)
+                    .Select(destination => destination.Destination),
+                Has.None.EqualTo(inside),
+                "Movement may not end inside a closed space.");
+            var pushed = new HexCoordinate(2, 0);
+            Assert.That(
+                PushPathQuery.Resolve(
+                        board, actorAt, pushed, 3, RuleObject.None, false, blocked)
+                    .Endpoint,
+                Is.EqualTo(pushed),
+                "A push away from the acting hero cannot cross the boundary, so the pushed piece " +
+                "keeps the last space it could legally stand on - its own.");
+            Assert.That(
+                PushPathQuery.Resolve(
+                        board, actorAt, pushed, 3, RuleObject.None, false, RuleModificationSet.Empty)
+                    .Endpoint,
+                Is.EqualTo(inside),
+                "With no barrier declared the same push crosses into that space, which is what makes " +
+                "the refusal above the overlay's doing rather than the board's.");
+            Assert.That(
+                PlaceDestinationQuery.FindDestinations(
+                    new PlacePolicy(
+                        PlaceSourceContainer.Board,
+                        PlaceEligiblePieceKind.UnitOrToken,
+                        PlaceDestinationScope.EmptySpacesWithinRadius,
+                        3,
+                        PlaceChooserKind.ActingHero,
+                        PlaceNoDestinationPolicy.Impossible,
+                        PlaceDestinationAnchor.PlacedPiece),
+                    board,
+                    actorAt,
+                    Array.Empty<HexCoordinate>(),
+                    blocked),
+                Has.None.EqualTo(inside),
+                "and a Place may not put a piece into one either, which is the acceptance line that " +
+                "puts all three on one classification.");
+        }
+
+        /// <summary>
+        /// The live derivation, so every assertion above is about what an Active effect supplies rather
+        /// than about a set assembled by hand.
+        /// </summary>
+        private static RuleModificationSet Overlays(
+            ActiveEffectLifecycle timing,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            RuleObject actingObject) =>
+            RuleModificationQuery.Build(
+                timing, board, participants, new TieBreakerState(TeamSide.Red),
+                UnlockedUltimateSet.None, actingObject);
+
+        /// <summary>
+        /// Static Barrier's shape as definition content: `This Turn`, both arms, radius 1, conditioned
+        /// on heroes opposing the source. None of the values is official; what is not synthetic is the
+        /// declaration itself, which is exactly what milestone 8.9 will fill Wasp's numbers into.
+        /// </summary>
+        private static readonly ActiveEffectDefinition BarrierDefinition = new ActiveEffectDefinition(
+            "synthetic-barrier-effect",
+            ActiveEffectAffectedScopeKind.ControllerHero,
+            ActiveEffectDurationKind.ThisTurn,
+            TimingCheckpoint.ActionStarted,
+            TimingCheckpoint.ActionStarted,
+            TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+            new[] { ActiveEffectCancellationCondition.CardsRetrieved },
+            false,
+            "SyntheticBarrier",
+            "synthetic-barrier",
+            Array.Empty<TimingCheckpoint>(),
+            null,
+            new[]
+            {
+                ConditionalObstacleOverlay.Declare(
+                    1,
+                    SourceTeamRelation.OpposingSource,
+                    ObstacleOverlayArm.SpacesInsideWhileActorOutside,
+                    ObstacleOverlayArm.SpacesOutsideWhileActorInside)
+            });
 
         // ---------------------------------------------------------------------------------------
         // Deriving the set from authoritative state
@@ -319,7 +572,7 @@ namespace GuardsDigital.Tests.EditMode
             var hero = RuleObject.ForHero(RedHero);
 
             var beforeActivation = RuleModificationQuery.Build(
-                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
+                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None);
             Assert.That(
                 beforeActivation.HasPermission(hero, RulePermissionKind.MoveThroughObstacles), Is.False);
             Assert.That(beforeActivation.ValueContributions(hero, PrintedValueChannel.Defense).Count, Is.EqualTo(1));
@@ -328,7 +581,7 @@ namespace GuardsDigital.Tests.EditMode
                 new ActiveEffectCheckpointContext(TimingCheckpoint.TurnStarted, 1, 2, RedHero),
                 new TieBreakerState(TeamSide.Red));
             var afterActivation = RuleModificationQuery.Build(
-                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
+                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None);
             Assert.That(
                 afterActivation.HasPermission(hero, RulePermissionKind.MoveThroughObstacles), Is.True);
 
@@ -338,7 +591,7 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 CreateToken("hazard-1", new HexCoordinate(1, 0)));
             var tokenModifications = RuleModificationQuery.Build(
-                timing, withToken, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
+                timing, withToken, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None);
             var tokenContribution = tokenModifications
                 .ValueContributions(hero, PrintedValueChannel.Defense)
                 .Single(value => value.Kind == ValueContributionKind.ContinuousSourceModifier);
@@ -350,7 +603,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 RuleModificationQuery.Build(
                         timing, board, participants, TieBreakerState.Unrevealed,
-                        UnlockedUltimateSet.None)
+                        UnlockedUltimateSet.None, RuleObject.None)
                     .ValueContributions(hero, PrintedValueChannel.Defense)
                     .Any(value => value.Kind == ValueContributionKind.ContinuousSourceModifier),
                 Is.False);
@@ -383,7 +636,7 @@ namespace GuardsDigital.Tests.EditMode
                 1);
 
             var modifications = RuleModificationQuery.Build(
-                timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
+                timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None);
 
             Assert.That(
                 modifications.For(RuleObject.ForHero(RedHero)).Select(value => value.SourceId),
@@ -422,7 +675,7 @@ namespace GuardsDigital.Tests.EditMode
                 1,
                 1);
             var modifications = RuleModificationQuery.Build(
-                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
+                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None);
             var authority = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board);
             var attackOffer = ActionOfferQuery.GetAvailableOffers(
                     configuration.CardDefinitions,
@@ -623,12 +876,12 @@ namespace GuardsDigital.Tests.EditMode
                 payload, configuration.CardDefinitions, new[] { board.MapDefinition });
             var original = RuleModificationQuery.Build(
                 timing, board, configuration.Participants, configuration.TieBreakerState,
-                UnlockedUltimateSet.None);
+                UnlockedUltimateSet.None, RuleObject.None);
             var reconstructed = RuleModificationQuery.Build(
                 restored.Round.Timing,
                 restored.Board,
                 restored.Participants,
-                configuration.TieBreakerState, UnlockedUltimateSet.None);
+                configuration.TieBreakerState, UnlockedUltimateSet.None, RuleObject.None);
 
             Assert.That(Facts(reconstructed), Is.EqualTo(Facts(original)));
             Assert.That(
@@ -695,7 +948,8 @@ namespace GuardsDigital.Tests.EditMode
                 sequence);
 
         private static RuleModificationSet Set(params AppliedRuleModification[] modifications) =>
-            new RuleModificationSet(modifications, new TieBreakerState(TeamSide.Red));
+            new RuleModificationSet(
+                modifications, Array.Empty<AppliedObstacleOverlay>(), new TieBreakerState(TeamSide.Red));
 
         private static ActiveEffectDefinition TeamScopedDefinition(
             ActiveEffectAffectedScopeKind scope,

@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -15,7 +16,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionDefinitionId replacedAttackActionDefinitionId,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board,
+            RuleModificationSet modifications)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
             var materializedDefinitions = definitions?.ToArray() ??
@@ -26,7 +28,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     replacementOffer,
                     replacedAttackActionDefinitionId,
                     materializedDefinitions,
-                    materializedInstances) ||
+                    materializedInstances,
+                    modifications) ||
                 !board.TryGetHeroCoordinate(replacementOffer.ActorId, out var actorCoordinate))
             {
                 return Array.Empty<TokenInstanceId>();
@@ -49,7 +52,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<TokenInstanceId> selectedTokenIds,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board,
+            RuleModificationSet modifications)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
             var materializedDefinitions = definitions?.ToArray() ??
@@ -62,7 +66,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     replacementOffer,
                     replacedAttackActionDefinitionId,
                     materializedDefinitions,
-                    materializedInstances))
+                    materializedInstances,
+                    modifications))
             {
                 return CardActionResolutionRejectionReason.UnavailableOffer;
             }
@@ -82,7 +87,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 replacedAttackActionDefinitionId,
                 materializedDefinitions,
                 materializedInstances,
-                board));
+                board,
+                modifications));
             return selected.All(legal.Contains)
                 ? CardActionResolutionRejectionReason.None
                 : CardActionResolutionRejectionReason.ClearTokenSelectionUnavailable;
@@ -92,14 +98,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer replacementOffer,
             ActionDefinitionId replacedAttackActionDefinitionId,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications)
         {
             var expected = GeneralRuleActionOfferQuery.GetAvailableClearOffer(
                 replacedAttackActionDefinitionId,
                 replacementOffer.SourceCardInstanceId,
                 replacementOffer.ActorId,
                 definitions,
-                instances);
+                instances,
+                modifications);
             return expected.HasValue && expected.Value.Equals(replacementOffer);
         }
     }

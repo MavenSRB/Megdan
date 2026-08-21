@@ -191,7 +191,11 @@ namespace GuardsDigital.Core.Snapshots
                         board,
                         participants,
                         tieBreaker,
-                        GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, cards)),
+                        GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, cards),
+                        // Nothing is in flight at this restore point - the pending action is
+                        // absent by construction - so no hero is performing an action for a
+                        // conditional overlay to apply during.
+                        GuardsDigital.Core.Rules.Modifications.RuleObject.None),
                     verifyingHeroItems);
             }
 

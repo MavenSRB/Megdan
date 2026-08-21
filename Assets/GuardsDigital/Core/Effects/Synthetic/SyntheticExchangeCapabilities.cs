@@ -299,7 +299,33 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return false;
             }
 
-            return !IsImmune(context, first) && !IsImmune(context, second);
+            return !IsImmune(context, first) && !IsImmune(context, second) &&
+                !IsRestrictedFromBeingSwapped(context, first) &&
+                !IsRestrictedFromBeingSwapped(context, second);
+        }
+
+        /// <summary>
+        /// Milestone 8.7. Whether a declared restriction forbids this actor exchanging this piece.
+        ///
+        /// Wasp's Magnetic Dagger is the text that needs it - "Enemy units in radius cannot be
+        /// swapped or placed by themselves, or by enemy heroes" - and it is asked here, in the pair
+        /// derivation, rather than at the commit: a piece the rules will not let this hero move is not
+        /// one to offer and then refuse. Both objects are asked, because p.19's Swap moves both.
+        ///
+        /// It is a separate question from immunity above and asked separately. p.18's immunity is
+        /// about being targeted at all and carries its own fixed actor rule; a restriction is about one
+        /// named thing being done and carries declared actors. A card can print either.
+        /// </summary>
+        private static bool IsRestrictedFromBeingSwapped(
+            EffectCapabilityContext context, BoardObjectReference subject)
+        {
+            var piece = subject.AsRuleObject();
+            return piece.IsDefined && RestrictionQuery.IsRestricted(
+                piece,
+                RuleActivity.Swap,
+                RuleObject.ForHero(context.ActorId),
+                context.Participants,
+                context.Modifications);
         }
 
         /// <summary>
@@ -622,20 +648,35 @@ namespace GuardsDigital.Core.Effects.Synthetic
         }
 
         /// <summary>
-        /// p.18's immunity for one exchanged object, asked with the enclosing action's activity. A token
-        /// is never immune - p.19 states that tokens are not units - so it reports the named absence
-        /// rather than a unit with nothing declared about it.
+        /// p.18's immunity for one exchanged object, asked with the enclosing action's activity and
+        /// with p.19's Swap itself. A token is never immune - p.19 states that tokens are not units -
+        /// so it reports the named absence rather than a unit with nothing declared about it.
+        ///
+        /// The second ask is milestone 8.7's, and it is the shape milestone 6.4 gave the Push: an
+        /// effect family the rules name is something a unit can be immune to in its own right, quite
+        /// apart from which action reached it. "Immune to Skills" and "immune to being swapped" are
+        /// different declarations, and a Swap inside a Skill has to honour both.
         /// </summary>
         private static bool IsImmune(EffectCapabilityContext context, BoardObjectReference subject)
         {
             var unit = subject.AsRuleObject();
-            return unit.IsDefined && context.Participants != null && ImmunityQuery.IsImmuneTo(
+            if (!unit.IsDefined || context.Participants == null)
+            {
+                return false;
+            }
+
+            return IsImmuneTo(context, unit, ActivityOf(context)) ||
+                IsImmuneTo(context, unit, RuleActivity.Swap);
+        }
+
+        private static bool IsImmuneTo(
+            EffectCapabilityContext context, RuleObject unit, RuleActivity activity) =>
+            ImmunityQuery.IsImmuneTo(
                 unit,
-                ActivityOf(context),
+                activity,
                 RuleObject.ForHero(context.ActorId),
                 context.Components.Board,
                 context.Participants,
                 context.Modifications);
-        }
     }
 }

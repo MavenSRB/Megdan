@@ -301,8 +301,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActiveEffectLifecycle timing,
             MatchParticipants participants,
             TieBreakerState tieBreaker,
-            GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates) =>
-            RuleModificationQuery.Build(timing, board, participants, tieBreaker, ultimates);
+            GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates,
+            RuleObject actingObject) =>
+            RuleModificationQuery.Build(
+                timing, board, participants, tieBreaker, ultimates, actingObject);
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
@@ -556,7 +558,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     boundary.Participants,
                     boundary.TieBreaker,
                     GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
-                        boundary.Definitions, boundary.Instances)));
+                        boundary.Definitions, boundary.Instances),
+                    RuleObject.ForHero(actorId)));
 
             pendingRepeat = repeat;
             var steps = new List<ResolutionStep>(result.Steps);
@@ -611,7 +614,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     boundary.Participants,
                     boundary.TieBreaker,
                     GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
-                        boundary.Definitions, boundary.Instances)),
+                        boundary.Definitions, boundary.Instances),
+                    RuleObject.ForHero(repeat.ActorId)),
                 components,
                 boundary.RoundIndex,
                 boundary.TurnIndex,
@@ -753,7 +757,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     subject,
                     origin,
                     step.Destination.Destination,
-                    BattleZoneQuery.FindCurrentBattleZoneCoordinates(board)).Accepted
+                    BattleZoneQuery.FindCurrentBattleZoneCoordinates(board),
+                    // The planner derived this destination with no modifications in effect, for the
+                    // reason recorded there; the commit asks the same question the same way, or the
+                    // two would disagree about the same state.
+                    RuleModificationSet.Empty).Accepted
                 : board.CommitValidatedDisplacement(subject, step.Destination.Destination).Accepted;
             if (!accepted)
             {
@@ -1063,7 +1071,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionDefinitionId replacedAttackActionDefinitionId,
             IEnumerable<TokenInstanceId> selectedTokenIds,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications)
         {
             if (HasPendingResolution)
             {
@@ -1079,7 +1088,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 replacedAttackActionDefinitionId,
                 selectedTokenIds,
                 definitions,
-                instances);
+                instances,
+                modifications);
         }
 
         public AttackActionResolutionResult StartAttackResolution(

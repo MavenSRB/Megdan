@@ -16,7 +16,12 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// <summary>A typed contribution to one printed value channel (p.9-10, p.14).</summary>
         ValueModifier = 1,
 
-        /// <summary>The affected object cannot perform the named activity.</summary>
+        /// <summary>
+        /// The named activity may not happen to or from the affected object. Unqualified, that is the
+        /// object itself performing it. Milestone 8.7 lets a declaration also name <em>who</em> is
+        /// barred (<see cref="RestrictedActorScope"/>), which is how card text that forbids an object
+        /// being repositioned by one side and not by the other reads.
+        /// </summary>
         Restriction = 2,
 
         /// <summary>The affected object may do something the general rules otherwise forbid (p.18).</summary>
@@ -70,7 +75,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             RulePermissionKind permission,
             PrintedValueChannel channel,
             int amount,
-            EffectiveUnitKind effectiveUnitKind)
+            EffectiveUnitKind effectiveUnitKind,
+            RestrictedActorScope restrictedActors)
         {
             Kind = kind;
             Activity = activity;
@@ -78,6 +84,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             Channel = channel;
             Amount = amount;
             EffectiveUnitKind = effectiveUnitKind;
+            RestrictedActors = restrictedActors;
         }
 
         /// <summary>A typed contribution of <paramref name="amount"/> to one value channel.</summary>
@@ -101,17 +108,35 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RulePermissionKind.None,
                 channel,
                 amount,
-                EffectiveUnitKind.None);
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor);
         }
 
+        /// <summary>
+        /// A restriction naming no actor, which is p.18's ordinary form: the activity is barred
+        /// however it is reached.
+        /// </summary>
         public static RuleModification ForRestriction(RuleActivity activity) =>
+            ForRestriction(activity, RestrictedActorScope.AnyActor);
+
+        /// <summary>
+        /// Milestone 8.7. A restriction that also names who is barred - Magnetic Dagger's "by
+        /// themselves, or by enemy heroes". The scope is required rather than defaulted, for the
+        /// reason milestone 6.8f required the modification set: a qualification dropped by omission
+        /// silently widens a card's text into a blanket prohibition, and
+        /// <see cref="RestrictedActorScope.AnyActor"/> is where a declaration that qualifies nobody
+        /// says so. The overload above is that statement written once for every existing declaration.
+        /// </summary>
+        public static RuleModification ForRestriction(
+            RuleActivity activity, RestrictedActorScope restrictedActors) =>
             new RuleModification(
                 RuleModificationKind.Restriction,
                 RequireActivity(activity, "restriction"),
                 RulePermissionKind.None,
                 PrintedValueChannel.None,
                 0,
-                EffectiveUnitKind.None);
+                EffectiveUnitKind.None,
+                restrictedActors ?? throw new ArgumentNullException(nameof(restrictedActors)));
 
         public static RuleModification ForPermission(RulePermissionKind permission)
         {
@@ -126,7 +151,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                 permission,
                 PrintedValueChannel.None,
                 0,
-                EffectiveUnitKind.None);
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor);
         }
 
         public static RuleModification ForImmunity(RuleActivity activity) =>
@@ -136,7 +162,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RulePermissionKind.None,
                 PrintedValueChannel.None,
                 0,
-                EffectiveUnitKind.None);
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor);
 
         public static RuleModification ForCountsAs(EffectiveUnitKind effectiveUnitKind)
         {
@@ -152,7 +179,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RulePermissionKind.None,
                 PrintedValueChannel.None,
                 0,
-                effectiveUnitKind);
+                effectiveUnitKind,
+                RestrictedActorScope.AnyActor);
         }
 
         public RuleModificationKind Kind { get; }
@@ -171,6 +199,15 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         /// <summary>The supplied effective type for a <c>Counts As</c>; otherwise <c>None</c>.</summary>
         public EffectiveUnitKind EffectiveUnitKind { get; }
+
+        /// <summary>
+        /// Which actors a restriction bars. <see cref="RestrictedActorScope.AnyActor"/> on every other
+        /// kind, because the question is not asked of them - a value modifier, a permission, an
+        /// immunity and a <c>Counts As</c> are all about the affected object rather than about who is
+        /// acting on it, and p.18's one actor rule for immunity ("you are never immune to your own
+        /// actions") is a fixed exception rather than a declaration.
+        /// </summary>
+        public RestrictedActorScope RestrictedActors { get; }
 
         /// <summary>
         /// Whether this declaration reaches <paramref name="activity"/>. An <see cref="RuleActivity.All"/>
@@ -194,7 +231,9 @@ namespace GuardsDigital.Core.Rules.Modifications
                 case RuleModificationKind.ValueModifier:
                     return $"{Channel} {(Amount > 0 ? "+" : string.Empty)}{Amount}";
                 case RuleModificationKind.Restriction:
-                    return $"Cannot {Activity}";
+                    return RestrictedActors.IsUnqualified
+                        ? $"Cannot {Activity}"
+                        : $"Cannot {Activity} {RestrictedActors}";
                 case RuleModificationKind.Permission:
                     return $"May {Permission}";
                 case RuleModificationKind.Immunity:

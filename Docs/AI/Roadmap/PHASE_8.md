@@ -150,7 +150,7 @@ Non-goals: no discard riders (Kinetic Repulse and Kinetic Blast are 8.8's), no A
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-86-complete-the-wasp-telekinetic-skills-completion-evidence).
 
-### [ ] 8.7 Consume the declared modifier vocabulary
+### [x] 8.7 Consume the declared modifier vocabulary
 
 Observable outcome: every declarable `RuleModification` member has a production consumer or a by-name reasoned exclusion, and the two consumption families Wasp's persistent texts need exist as general capabilities proven on synthetic sources.
 
@@ -162,6 +162,14 @@ Acceptance checks:
 - `HasStandingHeavyImmunity` consumes `FindEffectiveMinionsInside` instead of deriving Battle-Zone membership a second way (closes F-BOARD-04; the `UnitKindQueryConformanceTests` link assertion observed failing pre-fix).
 
 Non-goals: no Wasp card composition (8.9 owns the configured consumers); no new value-channel consumers without a verified card.
+
+- **The declarable space grew while this milestone enumerated it, 2026-08-21.** The check says nine restriction activities and the rule now reports eleven, because Magnetic Dagger's text is not expressible without them: p.19's Swap and p.18's Place joined `RuleActivity` as effect families beside milestone 6.4's `ObjectPush`, which was already a family rather than an action kind. The vocabulary is enumerated from the enums rather than from a list precisely so that growth fails the rule until someone decides what the new member means, and this is that decision recorded rather than a count kept true by not looking.
+- **The overlay conditions on the acting hero at derivation, not at each ask.** `RuleModificationQuery.Build` gained a required acting object, so the live set *is* the rules in force for the action being resolved and `ObstacleQuery` needs to know nothing about teams or Active effects. Reading the actor's position once is not an approximation: an overlay declaring both arms is a boundary its subject cannot cross, so the hero stands on the same side of it at every step of its own action. A moment with nobody acting writes `RuleObject.None`, and every overlay then applies to nobody.
+- **p.18's after-action correction asks with no modifications in effect**, recorded rather than defaulted: the correction is bookkeeping the rules carry out rather than something a hero performs, so a conditional overlay has nobody to condition on - the same treatment its shortest-path arm already gives the Move-Through permission. Planner and commit ask identically, so the two cannot disagree about one state.
+- **The two new declaration shapes are proven on test-local definitions rather than on new registered capabilities**, for the reason this milestone's own non-goal gives: 8.9 owns the configured consumers, and a synthetic showcase card declaring a barrier would be content invented to satisfy a rule. What is proven here is the whole live path - an Active-effect definition, the lifecycle, the derivation, and all three obstacle consumers - which is what 8.9 fills Wasp's numbers into.
+- **F-BOARD-04's fix replaced 6.8g's direct immunity-to-effective-type link with the two-link chain** the Minion Battle already uses. Nothing weakened: the shared Battle-Zone query is separately asserted to ask the effective-type question. One reading moved with the derivation and is recorded in the code - the old local walk asked the effective question of minion miniatures too, so a miniature counting as a hero stopped accompanying a Heavy, while the shared set takes every miniature in the zone as intrinsic. No source declares `CountsAs Hero`, so nothing observable changed; the answer is now wrong in one place instead of disagreeing in two, which is the whole of the finding.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-87-consume-the-declared-modifier-vocabulary-completion-evidence).
 
 ### [!] 8.8 Complete the Wasp kinetic skills
 

@@ -32,13 +32,19 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// with genuinely no card content to read writes
         /// <see cref="GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet.None"/> rather than
         /// leaving it to a default.
+        ///
+        /// Milestone 8.7 requires the acting object for the third time over: a conditional obstacle
+        /// overlay applies "while an enemy hero is performing an action", so which hero that is decides
+        /// what the board's spaces are. A caller at a moment when nobody is acting writes
+        /// <see cref="RuleObject.None"/>, and every overlay then applies to nobody.
         /// </summary>
         public static RuleModificationSet Build(
             ActiveEffectLifecycle timing,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
             TieBreakerState tieBreaker,
-            GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates)
+            GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates,
+            RuleObject actingObject)
         {
             if (board != null && participants == null)
             {
@@ -78,9 +84,65 @@ namespace GuardsDigital.Core.Rules.Modifications
                 applied.AddRange(FromUnlockedUltimates(ultimates, board, participants));
             }
 
-            return applied.Count == 0
-                ? new RuleModificationSet(Array.Empty<AppliedRuleModification>(), tieBreaker)
-                : new RuleModificationSet(applied, tieBreaker);
+            var overlays = timing == null || board == null
+                ? (IEnumerable<AppliedObstacleOverlay>)Array.Empty<AppliedObstacleOverlay>()
+                : FromDeclaredOverlays(timing, board, participants, actingObject);
+            return new RuleModificationSet(applied, overlays, tieBreaker);
+        }
+
+        /// <summary>
+        /// Milestone 8.7's conditional obstacle overlays, bound to the moment this set describes.
+        ///
+        /// Two things are resolved here rather than left to the consumer, and both for the reason the
+        /// team and global affected scopes are expanded here: this derivation holds the board and the
+        /// participants. The anchor is the source hero's current space, which is p.17's "the Radius
+        /// moves with its hero" stated once; and whether the hero performing the current action
+        /// qualifies, and on which side of the disk it stands, is decided from
+        /// <paramref name="actingObject"/>.
+        ///
+        /// A set built with <see cref="RuleObject.None"/> carries every overlay applying to nobody.
+        /// That is the honest answer rather than an omission: an overlay conditions on a hero
+        /// performing an action, and at a round boundary or a restore with nothing in flight, none is.
+        /// A source whose hero has left the board supplies nothing at all, exactly as p.16's Ultimate
+        /// does.
+        /// </summary>
+        private static IEnumerable<AppliedObstacleOverlay> FromDeclaredOverlays(
+            ActiveEffectLifecycle timing,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            RuleObject actingObject)
+        {
+            TeamSide? actingSide = null;
+            var actingSpace = default(GuardsDigital.Core.Board.HexCoordinate);
+            if (actingObject.IsDefined &&
+                IntrinsicKindQuery.IntrinsicUnitKind(actingObject) == EffectiveUnitKind.Hero &&
+                participants != null &&
+                board.TryGetHeroCoordinate(actingObject.HeroId, out actingSpace))
+            {
+                actingSide = participants.GetTeamForHero(actingObject.HeroId).Side;
+            }
+
+            foreach (var effect in timing.Effects)
+            {
+                if (effect.Phase != ActiveEffectPhase.Active ||
+                    effect.Definition.ObstacleOverlays.Count == 0 ||
+                    !board.TryGetHeroCoordinate(effect.ControllerHeroId, out var anchor))
+                {
+                    continue;
+                }
+
+                for (var index = 0; index < effect.Definition.ObstacleOverlays.Count; index++)
+                {
+                    yield return AppliedObstacleOverlay.Bind(
+                        effect.Definition.ObstacleOverlays[index],
+                        anchor,
+                        $"{effect.Id.Value}:overlay:{index}",
+                        effect.ControllerHeroId,
+                        effect.ControllerTeamSide,
+                        actingSide,
+                        actingSpace);
+                }
+            }
         }
 
         private static IEnumerable<AppliedRuleModification> FromActiveEffects(

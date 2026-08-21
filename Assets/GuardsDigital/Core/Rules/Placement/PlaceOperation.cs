@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Rules.Placement
 {
@@ -145,7 +146,8 @@ namespace GuardsDigital.Core.Rules.Placement
             BoardObjectReference subject,
             HexCoordinate measuredFrom,
             HexCoordinate destination,
-            IReadOnlyList<HexCoordinate> scopedCoordinates)
+            IReadOnlyList<HexCoordinate> scopedCoordinates,
+            RuleModificationSet modifications)
         {
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (board == null) throw new ArgumentNullException(nameof(board));
@@ -175,7 +177,7 @@ namespace GuardsDigital.Core.Rules.Placement
             }
 
             var admitted = PlaceDestinationQuery.FindDestinations(
-                policy, spaces, measuredFrom, scopedCoordinates);
+                policy, spaces, measuredFrom, scopedCoordinates, modifications);
             if (!admitted.Contains(destination))
             {
                 return PlaceOutcome.Reject(
@@ -208,7 +210,8 @@ namespace GuardsDigital.Core.Rules.Placement
             ComponentDefinitionCatalog catalog,
             PlacedToken token,
             HexCoordinate measuredFrom,
-            IReadOnlyList<HexCoordinate> scopedCoordinates)
+            IReadOnlyList<HexCoordinate> scopedCoordinates,
+            RuleModificationSet modifications)
         {
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (spaces == null) throw new ArgumentNullException(nameof(spaces));
@@ -240,7 +243,7 @@ namespace GuardsDigital.Core.Rules.Placement
             }
 
             var admitted = PlaceDestinationQuery.FindDestinations(
-                policy, spaces, measuredFrom, scopedCoordinates);
+                policy, spaces, measuredFrom, scopedCoordinates, modifications);
             if (!admitted.Contains(token.Coordinate))
             {
                 return PlaceOutcome.Reject(

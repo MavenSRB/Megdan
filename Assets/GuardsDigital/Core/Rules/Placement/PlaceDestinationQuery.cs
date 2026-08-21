@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
 
 namespace GuardsDigital.Core.Rules.Placement
@@ -12,10 +13,16 @@ namespace GuardsDigital.Core.Rules.Placement
     ///
     /// Nothing here walks a path. Rulebook p.18 states that placing "does not count as movement", so a
     /// Place asks a geometric or set-membership question and never a reachability one - which is also
-    /// why a piece can be placed somewhere it could not walk to. Emptiness and playability are the
-    /// board's own single answer (<see cref="ITokenPlacementAuthority.IsEmptyPlayableSpace"/>), which
-    /// already carries p.19's one-obstacle-per-space rule and milestone 6.8e's terrain classification,
-    /// so this query never re-derives either.
+    /// why a piece can be placed somewhere it could not walk to. Whether a space is available is
+    /// <see cref="ObstacleQuery"/>'s answer since milestone 8.7, and it was the board's own
+    /// <see cref="ITokenPlacementAuthority.IsEmptyPlayableSpace"/> before that; either way this query
+    /// never re-derives p.19's one-obstacle-per-space rule or milestone 6.8e's terrain classification.
+    ///
+    /// The move to the shared query is what closes 8.7's third acceptance line. A conditional obstacle
+    /// overlay makes spaces count as obstacles, and p.18 lists obstacles once for every rule that
+    /// consults them - so a space a barrier closed has to be closed to a Place as much as to a walk or
+    /// a push. Asking one query is what makes that true by construction rather than by three
+    /// algorithms remembering to agree.
     ///
     /// The "different space" requirement is p.18's own wording - "put it into a different space" - and
     /// it is enforced here rather than at the commit, because a space the piece already occupies is
@@ -41,15 +48,17 @@ namespace GuardsDigital.Core.Rules.Placement
             PlacePolicy policy,
             ITokenPlacementAuthority spaces,
             HexCoordinate origin,
-            IReadOnlyList<HexCoordinate> scopedCoordinates)
+            IReadOnlyList<HexCoordinate> scopedCoordinates,
+            RuleModificationSet modifications)
         {
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (spaces == null) throw new ArgumentNullException(nameof(spaces));
+            if (modifications == null) throw new ArgumentNullException(nameof(modifications));
 
             switch (policy.DestinationScope)
             {
                 case PlaceDestinationScope.EmptySpacesWithinRadius:
-                    return WithinRadius(policy.DestinationRadius, spaces, origin);
+                    return WithinRadius(policy.DestinationRadius, spaces, origin, modifications);
 
                 case PlaceDestinationScope.NearestEmptySpacesInScope:
                     if (scopedCoordinates == null)
@@ -59,7 +68,7 @@ namespace GuardsDigital.Core.Rules.Placement
                             "A nearest-in-scope Place is measured over a declared coordinate set.");
                     }
 
-                    return NearestEmptyInScope(spaces, origin, scopedCoordinates);
+                    return NearestEmptyInScope(spaces, origin, scopedCoordinates, modifications);
 
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -77,7 +86,8 @@ namespace GuardsDigital.Core.Rules.Placement
         private static IReadOnlyList<HexCoordinate> WithinRadius(
             int radius,
             ITokenPlacementAuthority spaces,
-            HexCoordinate origin)
+            HexCoordinate origin,
+            RuleModificationSet modifications)
         {
             var found = new List<HexCoordinate>();
             for (var dq = -radius; dq <= radius; dq++)
@@ -85,7 +95,8 @@ namespace GuardsDigital.Core.Rules.Placement
                 for (var dr = Math.Max(-radius, -dq - radius); dr <= Math.Min(radius, -dq + radius); dr++)
                 {
                     var coordinate = new HexCoordinate(origin.Q + dq, origin.R + dr);
-                    if (coordinate.Equals(origin) || !spaces.IsEmptyPlayableSpace(coordinate))
+                    if (coordinate.Equals(origin) ||
+                        ObstacleQuery.BlocksPlacement(spaces, coordinate, modifications))
                     {
                         continue;
                     }
@@ -108,10 +119,12 @@ namespace GuardsDigital.Core.Rules.Placement
         private static IReadOnlyList<HexCoordinate> NearestEmptyInScope(
             ITokenPlacementAuthority spaces,
             HexCoordinate origin,
-            IReadOnlyList<HexCoordinate> scopedCoordinates)
+            IReadOnlyList<HexCoordinate> scopedCoordinates,
+            RuleModificationSet modifications)
         {
             var empty = scopedCoordinates
-                .Where(candidate => !candidate.Equals(origin) && spaces.IsEmptyPlayableSpace(candidate))
+                .Where(candidate => !candidate.Equals(origin) &&
+                    !ObstacleQuery.BlocksPlacement(spaces, candidate, modifications))
                 .ToArray();
             return empty.Length == 0
                 ? Array.Empty<HexCoordinate>()

@@ -248,7 +248,7 @@ namespace GuardsDigital.Tests.EditMode
                 restored.Round.Timing,
                 restored.Board,
                 restored.Participants,
-                restored.Round.TieBreakerState, UnlockedUltimateSet.None);
+                restored.Round.TieBreakerState, UnlockedUltimateSet.None, RuleObject.None);
         }
 
         private static GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority RestoreBoard(

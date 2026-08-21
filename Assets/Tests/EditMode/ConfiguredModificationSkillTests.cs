@@ -326,10 +326,10 @@ namespace GuardsDigital.Tests.EditMode
                 .First(heroId => !heroId.Equals(actorId));
             Assert.That(board.TryGetHeroCoordinate(enemyId, out var occupied), Is.True);
             var modifications = Modifications(session);
-            Assert.That(ObstacleQuery.IsObstacle(board, occupied), Is.True);
+            Assert.That(ObstacleQuery.IsObstacle(board, occupied, RuleModificationSet.Empty), Is.True);
             Assert.That(ObstacleQuery.BlocksTransit(board, occupied, mover, modifications), Is.False,
                 "Rulebook p.18: a unit ignoring obstacles may enter and leave an occupied space.");
-            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, occupied), Is.True,
+            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, occupied, RuleModificationSet.Empty), Is.True,
                 "p.18 allows no unit to end its movement on an obstacle, permission or not.");
 
             CompleteCurrentTurn(session);
@@ -700,7 +700,7 @@ namespace GuardsDigital.Tests.EditMode
                 restored.Round.Timing,
                 restored.Board,
                 restored.Participants,
-                restored.Round.TieBreakerState, UnlockedUltimateSet.None);
+                restored.Round.TieBreakerState, UnlockedUltimateSet.None, RuleObject.None);
         }
 
         private static ActiveEffectLifecycle RestoreTiming(MatchSession session) =>

@@ -8,6 +8,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -183,7 +184,7 @@ namespace GuardsDigital.Tests.EditMode
                 card.Id,
                 actorId,
                 new[] { definition },
-                new[] { card });
+                new[] { card }, RuleModificationSet.Empty);
 
             Assert.That(offer.HasValue, Is.True);
             Assert.That(offer.Value.SourceCardInstanceId, Is.EqualTo(card.Id));
@@ -201,7 +202,7 @@ namespace GuardsDigital.Tests.EditMode
                 card.Id,
                 actorId,
                 new[] { definition },
-                new[] { card }), Is.Null);
+                new[] { card }, RuleModificationSet.Empty), Is.Null);
         }
 
         [Test]

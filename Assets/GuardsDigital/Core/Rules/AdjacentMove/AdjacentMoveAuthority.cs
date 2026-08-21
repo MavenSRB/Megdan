@@ -557,7 +557,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
                 var isEndpoint = index == route.Count - 1;
                 var refused = isEndpoint
-                    ? ObstacleQuery.BlocksEndOfMovement(this, space)
+                    ? ObstacleQuery.BlocksEndOfMovement(this, space, modifications)
                     : ObstacleQuery.BlocksTransit(this, space, mover, modifications);
                 if (refused)
                 {

@@ -430,7 +430,8 @@ namespace GuardsDigital.Application
                 turn.SelectedActor.CardInstanceId,
                 turn.SelectedActor.ActorId,
                 configuration.CardDefinitions,
-                configuration.CardInstances);
+                configuration.CardInstances,
+                turn.CurrentModifications());
             if (!replacementOffer.HasValue)
             {
                 return DispatchResult.Unavailable(
@@ -697,6 +698,19 @@ namespace GuardsDigital.Application
             // the two queries the `PerformClear` dispatch already asks - which Clear offer stands, and
             // which adjacent tokens it admits - so the surface and the command agree by construction
             // rather than by both being written to agree. An option with no adjacent token is kept:
+            // Milestone 8.7. p.12's Hold, decided here rather than by whatever draws it. The offer now
+            // consults the rules in effect, and two derivations of one rules answer is exactly the
+            // shape the 7.9a review found as F-PRES-01 - a control drawn live beside a command that
+            // refuses it.
+            var availableHoldOffer = turn != null && turn.SelectedActor.IsDefined
+                ? GeneralRuleActionOfferQuery.GetAvailableHoldOffer(
+                    turn.SelectedActor.CardInstanceId,
+                    turn.SelectedActor.ActorId,
+                    configuration.CardDefinitions,
+                    configuration.CardInstances,
+                    turnModifications)
+                : null;
+
             // p.13 permits clearing none, and milestone 6.3 accepts the empty selection, so an
             // available replaceable Attack always offers the replacement.
             // Milestone 7.8a1: the Attack's own availability is deliberately not consulted here. A
@@ -724,7 +738,8 @@ namespace GuardsDigital.Application
                             offer.SourceCardInstanceId,
                             offer.ActorId,
                             configuration.CardDefinitions,
-                            configuration.CardInstances);
+                            configuration.CardInstances,
+                            turnModifications);
                         if (!replacementOffer.HasValue)
                         {
                             return null;
@@ -735,7 +750,8 @@ namespace GuardsDigital.Application
                             action.Id,
                             configuration.CardDefinitions,
                             configuration.CardInstances,
-                            board);
+                            board,
+                            turnModifications);
                         return new ClearOptionProjection(
                             replacementOffer.Value,
                             action.Id,
@@ -785,6 +801,7 @@ namespace GuardsDigital.Application
                 canRecordHistory,
                 board.Minions,
                 board.PlacedTokens,
+                availableHoldOffer,
                 availableFastTravelOptions,
                 defensePreview,
                 round.PendingMinionBattleChoice,

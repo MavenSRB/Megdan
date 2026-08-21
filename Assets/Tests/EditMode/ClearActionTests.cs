@@ -6,6 +6,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -35,7 +36,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.Card.Id,
                 fixture.ActorId,
                 fixture.Definitions,
-                fixture.Instances), Is.Null,
+                fixture.Instances, RuleModificationSet.Empty), Is.Null,
                 "Clear replaces Attack, not another replaceable action kind.");
         }
 
@@ -49,7 +50,7 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.AttackAction.Id,
                 fixture.Definitions,
                 fixture.Instances,
-                fixture.Board);
+                fixture.Board, RuleModificationSet.Empty);
 
             Assert.That(legal, Is.EqualTo(new[] { fixture.AdjacentB.Id, fixture.AdjacentA.Id }));
             Assert.That(legal, Has.None.EqualTo(fixture.NonAdjacent.Id));
@@ -242,7 +243,7 @@ namespace GuardsDigital.Tests.EditMode
                 Board.CommitValidatedTokenPlacement(NonAdjacent);
 
                 ClearOffer = GeneralRuleActionOfferQuery.GetAvailableClearOffer(
-                    AttackAction.Id, Card.Id, ActorId, Definitions, Instances).Value;
+                    AttackAction.Id, Card.Id, ActorId, Definitions, Instances, RuleModificationSet.Empty).Value;
             }
 
             public HeroId ActorId { get; }
@@ -269,7 +270,7 @@ namespace GuardsDigital.Tests.EditMode
                     AttackAction.Id,
                     selectedTokenIds,
                     Definitions,
-                    Instances);
+                    Instances, RuleModificationSet.Empty);
 
             private PlacedToken CreateToken(string id, HexCoordinate coordinate) =>
                 new PlacedToken(

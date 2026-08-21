@@ -55,7 +55,8 @@ namespace GuardsDigital.Core.Timing
             string effectKind,
             string uniquenessKey,
             IEnumerable<TimingCheckpoint> triggerCheckpoints,
-            IEnumerable<RuleModification> modifications = null)
+            IEnumerable<RuleModification> modifications = null,
+            IEnumerable<ConditionalObstacleOverlay> obstacleOverlays = null)
         {
             if (string.IsNullOrWhiteSpace(definitionId))
                 throw new ArgumentException("An Active-effect definition requires a stable ID.", nameof(definitionId));
@@ -82,6 +83,10 @@ namespace GuardsDigital.Core.Timing
             var declaredModifications = (modifications ?? Enumerable.Empty<RuleModification>()).ToArray();
             if (declaredModifications.Any(modification => modification == null))
                 throw new ArgumentException("Declared modifications must be non-null.", nameof(modifications));
+            var declaredOverlays =
+                (obstacleOverlays ?? Enumerable.Empty<ConditionalObstacleOverlay>()).ToArray();
+            if (declaredOverlays.Any(overlay => overlay == null))
+                throw new ArgumentException("Declared obstacle overlays must be non-null.", nameof(obstacleOverlays));
 
             ValidateDuration(durationKind, creationCheckpoint, activationCheckpoint, expirationCheckpoint, carriesAcrossRoundBoundary);
             DefinitionId = definitionId;
@@ -96,6 +101,7 @@ namespace GuardsDigital.Core.Timing
             UniquenessKey = uniquenessKey;
             TriggerCheckpoints = new ReadOnlyCollection<TimingCheckpoint>(triggers);
             Modifications = new ReadOnlyCollection<RuleModification>(declaredModifications);
+            ObstacleOverlays = new ReadOnlyCollection<ConditionalObstacleOverlay>(declaredOverlays);
         }
 
         public string DefinitionId { get; }
@@ -120,6 +126,17 @@ namespace GuardsDigital.Core.Timing
         /// not a modifier.
         /// </summary>
         public IReadOnlyList<RuleModification> Modifications { get; }
+
+        /// <summary>
+        /// Milestone 8.7. The conditional obstacle overlays this effect supplies while it is active,
+        /// as definition content, beside <see cref="Modifications"/> and for the same reasons.
+        ///
+        /// They are a separate collection because they are a different kind of rule: a modification
+        /// names an object and changes something about it, while an overlay changes what p.18 counts
+        /// as an obstacle and names no object at all. An effect that declares neither is a timing
+        /// marker; one that declares both is Wasp's Static Barrier's shape without her card's numbers.
+        /// </summary>
+        public IReadOnlyList<ConditionalObstacleOverlay> ObstacleOverlays { get; }
 
         private static void ValidateDuration(
             ActiveEffectDurationKind duration,

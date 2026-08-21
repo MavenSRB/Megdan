@@ -314,7 +314,7 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 PlaceholderOneVsOneParticipants.Create(),
                 new TieBreakerState(TeamSide.Red),
-                UnlockedUltimateSet.None);
+                UnlockedUltimateSet.None, RuleObject.None);
             Assert.That(
                 set.HasPermission(RuleObject.ForHero(heroId), RulePermissionKind.MoveThroughObstacles),
                 Is.True,

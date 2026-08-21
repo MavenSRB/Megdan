@@ -49,7 +49,7 @@ namespace GuardsDigital.Tests.EditMode
             var mover = RuleObject.ForHero(Mover);
             var permitted = MoveThroughFor(Mover);
 
-            Assert.That(ObstacleQuery.IsObstacle(board, Terrain), Is.True,
+            Assert.That(ObstacleQuery.IsObstacle(board, Terrain, RuleModificationSet.Empty), Is.True,
                 "p.18 lists terrain as an obstacle exactly like a unit or token.");
             Assert.That(ObstacleQuery.BlocksTransit(board, Terrain, mover, permitted), Is.False,
                 "A unit ignoring obstacles may enter and leave a terrain space while moving.");
@@ -57,7 +57,7 @@ namespace GuardsDigital.Tests.EditMode
                 ObstacleQuery.BlocksTransit(board, Terrain, mover, RuleModificationSet.Empty),
                 Is.True,
                 "Without the permission terrain blocks transit like any obstacle.");
-            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, Terrain), Is.True,
+            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, Terrain, RuleModificationSet.Empty), Is.True,
                 "No unit may end its movement on an obstacle, permission or not.");
         }
 
@@ -72,7 +72,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True,
                 "A coordinate that is not on the map is not an obstacle to ignore; nothing lets a " +
                 "unit leave the board.");
-            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, OffBoard), Is.True);
+            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, OffBoard, RuleModificationSet.Empty), Is.True);
         }
 
         // ---------------------------------------------------------------------------------------
@@ -234,14 +234,14 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var cell in declaredTerrain)
             {
                 var label = $"q{cell.Q} r{cell.R}";
-                Assert.That(ObstacleQuery.IsObstacle(board, cell), Is.True, label);
+                Assert.That(ObstacleQuery.IsObstacle(board, cell, RuleModificationSet.Empty), Is.True, label);
                 Assert.That(ObstacleQuery.BlocksTransit(board, cell, mover, permitted), Is.False,
                     label + ": every declared terrain cell is crossable under the permission; " +
                     "before 6.8e each one answered as off-board.");
                 Assert.That(
                     ObstacleQuery.BlocksTransit(board, cell, mover, RuleModificationSet.Empty),
                     Is.True, label);
-                Assert.That(ObstacleQuery.BlocksEndOfMovement(board, cell), Is.True, label);
+                Assert.That(ObstacleQuery.BlocksEndOfMovement(board, cell, RuleModificationSet.Empty), Is.True, label);
             }
         }
 
@@ -287,16 +287,16 @@ namespace GuardsDigital.Tests.EditMode
             var terrain = new HexCoordinate(4, 0);
             var offMap = new HexCoordinate(99, 99);
 
-            Assert.That(ObstacleQuery.IsObstacle(board, terrain), Is.True);
+            Assert.That(ObstacleQuery.IsObstacle(board, terrain, RuleModificationSet.Empty), Is.True);
             Assert.That(ObstacleQuery.BlocksTransit(board, terrain, mover, MoveThroughFor(Mover)),
                 Is.False);
             Assert.That(
                 ObstacleQuery.BlocksTransit(board, terrain, mover, RuleModificationSet.Empty),
                 Is.True);
-            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, terrain), Is.True);
+            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, terrain, RuleModificationSet.Empty), Is.True);
             Assert.That(ObstacleQuery.BlocksTransit(board, offMap, mover, MoveThroughFor(Mover)),
                 Is.True);
-            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, offMap), Is.True);
+            Assert.That(ObstacleQuery.BlocksEndOfMovement(board, offMap, RuleModificationSet.Empty), Is.True);
         }
 
         // ---------------------------------------------------------------------------------------
@@ -330,7 +330,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var participants = PlaceholderOneVsOneParticipants.Create();
             var set = RuleModificationQuery.Build(
-                timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None);
+                timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None);
             Assert.That(
                 set.HasPermission(RuleObject.ForHero(heroId), RulePermissionKind.MoveThroughObstacles),
                 Is.True,

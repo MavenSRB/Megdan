@@ -52,7 +52,7 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardInstance> instances,
             RuleModificationSet modifications)
         {
-            if (IsRestricted(actorId, ActionKind.FastTravel, modifications))
+            if (ActionRestrictionQuery.IsRestrictedFrom(actorId, ActionKind.FastTravel, modifications))
             {
                 return null;
             }
@@ -68,29 +68,25 @@ namespace GuardsDigital.Core.Cards
         }
 
         /// <summary>
-        /// Whether a restriction currently bars this actor from an action kind. Restrictions are consulted
-        /// per named activity, so a restriction on one general-rule action leaves the others offered.
-        /// </summary>
-        private static bool IsRestricted(
-            HeroId actorId,
-            ActionKind actionKind,
-            RuleModificationSet modifications) =>
-            modifications != null && actorId.IsDefined && modifications.IsRestricted(
-                RuleObject.ForHero(actorId), RuleActivityQuery.ForAction(actionKind));
-
-        /// <summary>
-        /// Takes no modification set by the 6.8f audit's explicit disposition: no implemented
-        /// modification family can change a Clear offer today - restrictions reach activities through
-        /// <see cref="RuleActivityQuery.ForAction"/>, and no declared restriction names Clear. The
-        /// milestone that first makes Clear restrictable adds the parameter with its consumer.
+        /// Milestone 8.7 supplies the parameter the 6.8f audit deferred to "the milestone that first
+        /// makes Clear restrictable". It is not that a card now prints one - none does - but that the
+        /// consumption regime no longer lets an activity be declarable and unread: p.13's Clear is an
+        /// action a hero performs, so a restriction naming it removes the offer exactly as Fast
+        /// Travel's does.
         /// </summary>
         public static ActionOffer? GetAvailableClearOffer(
             ActionDefinitionId replacedAttackActionDefinitionId,
             CardInstanceId sourceCardInstanceId,
             HeroId actorId,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications)
         {
+            if (ActionRestrictionQuery.IsRestrictedFrom(actorId, ActionKind.Clear, modifications))
+            {
+                return null;
+            }
+
             return GetAvailableReplacementOffer(
                 replacedAttackActionDefinitionId,
                 sourceCardInstanceId,
@@ -148,7 +144,8 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId sourceCardInstanceId,
             HeroId actorId,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications)
         {
             if (!sourceCardInstanceId.IsDefined)
             {
@@ -158,6 +155,15 @@ namespace GuardsDigital.Core.Cards
             if (!actorId.IsDefined)
             {
                 throw new ArgumentException("Hold offer query requires an actor ID.", nameof(actorId));
+            }
+
+            // Milestone 8.7. p.12 makes Hold the thing a hero does instead of acting, which is why it
+            // is the one offer whose removal could strand a turn - and exactly why a rule that
+            // forbade it has to be obeyed rather than quietly dropped. No source declares one; the
+            // consumer exists so that none can be declared and ignored.
+            if (ActionRestrictionQuery.IsRestrictedFrom(actorId, ActionKind.Hold, modifications))
+            {
+                return null;
             }
 
             var definitionsByReference = ActionOfferQuery.BuildDefinitionLookup(definitions);

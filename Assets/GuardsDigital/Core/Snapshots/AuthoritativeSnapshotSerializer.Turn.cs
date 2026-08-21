@@ -67,7 +67,13 @@ namespace GuardsDigital.Core.Snapshots
                     board,
                     participants,
                     tieBreaker,
-                    GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, cards)),
+                    GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, cards),
+                    // Milestone 8.7: the restored set is derived for the same acting hero the live
+                    // one was, or a conditional obstacle overlay would classify spaces differently
+                    // after a restore than before it.
+                    selectedActor.IsDefined
+                        ? GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(selectedActor.ActorId)
+                        : GuardsDigital.Core.Rules.Modifications.RuleObject.None),
                 heroItems,
                 tieBreaker);
             return TurnResolutionAuthority.Restore(

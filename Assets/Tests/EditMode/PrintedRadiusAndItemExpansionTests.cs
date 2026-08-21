@@ -231,6 +231,7 @@ namespace GuardsDigital.Tests.EditMode
                         TeamSide.Blue,
                         0)
                 },
+                Array.Empty<AppliedObstacleOverlay>(),
                 new TieBreakerState(TeamSide.Red));
 
             // p.18: "if a unit is immune, you cannot target that unit."

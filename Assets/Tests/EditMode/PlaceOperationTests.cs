@@ -8,6 +8,7 @@ using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -101,7 +102,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateBoard(otherAt: new HexCoordinate(1, 0));
 
             var destinations = PlaceDestinationQuery.FindDestinations(
-                BoardRadius(1), board, ActorAt, Array.Empty<HexCoordinate>());
+                BoardRadius(1), board, ActorAt, Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(destinations, Has.No.Member(ActorAt),
                 "p.18 puts the piece into a different space, so its own space is never a candidate.");
@@ -125,7 +126,7 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateBoard(otherAt: new HexCoordinate(1, 0));
 
             var destinations = PlaceDestinationQuery.FindDestinations(
-                BoardRadius(2), board, ActorAt, Array.Empty<HexCoordinate>());
+                BoardRadius(2), board, ActorAt, Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(destinations, Has.Member(new HexCoordinate(2, 0)),
                 "The hero at (1,0) screens (2,0) from every route, and a Place reaches it anyway.");
@@ -149,7 +150,7 @@ namespace GuardsDigital.Tests.EditMode
                 new HexCoordinate(2, -1), new HexCoordinate(3, 0)
             };
 
-            var destinations = PlaceDestinationQuery.FindDestinations(policy, board, ActorAt, scope);
+            var destinations = PlaceDestinationQuery.FindDestinations(policy, board, ActorAt, scope, RuleModificationSet.Empty);
 
             Assert.That(destinations, Is.EqualTo(new[] { new HexCoordinate(2, -1), new HexCoordinate(2, 0) }),
                 "The occupied space drops out and both remaining nearest spaces are returned: p.18 " +
@@ -165,7 +166,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var outcome = PlaceOperation.PlaceFromBoard(
                 BoardRadius(2), board, board,
-                BoardObjectReference.ForHero(Other), OtherAt, destination, Array.Empty<HexCoordinate>());
+                BoardObjectReference.ForHero(Other), OtherAt, destination, Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(outcome.Accepted, Is.True);
             Assert.That(outcome.SourceContainer, Is.EqualTo(PlaceSourceContainer.Board));
@@ -195,7 +196,7 @@ namespace GuardsDigital.Tests.EditMode
             var outcome = PlaceOperation.PlaceFromBoard(
                 minionsOnly, board, board,
                 BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(2, 0),
-                Array.Empty<HexCoordinate>());
+                Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(outcome.Accepted, Is.False);
             Assert.That(outcome.RejectionReason, Is.EqualTo(PlaceRejectionReason.IneligiblePiece));
@@ -212,14 +213,14 @@ namespace GuardsDigital.Tests.EditMode
             var tooFar = PlaceOperation.PlaceFromBoard(
                 BoardRadius(1), board, board,
                 BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(3, 0),
-                Array.Empty<HexCoordinate>());
+                Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
             var ownSpace = PlaceOperation.PlaceFromBoard(
                 BoardRadius(2), board, board,
                 BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(1, 0),
-                Array.Empty<HexCoordinate>());
+                Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
             var occupied = PlaceOperation.PlaceFromBoard(
                 BoardRadius(2), board, board,
-                BoardObjectReference.ForHero(Other), OtherAt, ActorAt, Array.Empty<HexCoordinate>());
+                BoardObjectReference.ForHero(Other), OtherAt, ActorAt, Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(tooFar.RejectionReason, Is.EqualTo(PlaceRejectionReason.DestinationNotAdmitted));
             Assert.That(ownSpace.RejectionReason, Is.EqualTo(PlaceRejectionReason.DestinationNotAdmitted),
@@ -239,7 +240,7 @@ namespace GuardsDigital.Tests.EditMode
             var outcome = PlaceOperation.PlaceFromBoard(
                 BoardRadius(2), board, board,
                 BoardObjectReference.ForHero(Other), ActorAt, new HexCoordinate(2, 0),
-                Array.Empty<HexCoordinate>());
+                Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(outcome.RejectionReason,
                 Is.EqualTo(PlaceRejectionReason.DestinationAnchorMismatch),
@@ -267,11 +268,11 @@ namespace GuardsDigital.Tests.EditMode
             var accepted = PlaceOperation.PlaceFromBoard(
                 anchored, board, board,
                 BoardObjectReference.ForHero(Other), ActorAt, new HexCoordinate(0, 1),
-                Array.Empty<HexCoordinate>());
+                Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
             var besideThePiece = PlaceOperation.PlaceFromBoard(
                 anchored, board, board,
                 BoardObjectReference.ForHero(Other), ActorAt, new HexCoordinate(3, 0),
-                Array.Empty<HexCoordinate>());
+                Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(accepted.Accepted, Is.True,
                 "A space adjacent to the actor is admitted however far the piece was standing.");
@@ -298,7 +299,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var outcome = PlaceOperation.PlaceFromSupply(
                 impossible, board, catalog, Hazard(catalog, new HexCoordinate(0, 1)),
-                ActorAt, Array.Empty<HexCoordinate>());
+                ActorAt, Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(outcome.RejectionReason,
                 Is.EqualTo(PlaceRejectionReason.DestinationAnchorMismatch),
@@ -327,7 +328,7 @@ namespace GuardsDigital.Tests.EditMode
             var outcome = PlaceOperation.PlaceFromBoard(
                 unitOrToken, board, board,
                 BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(2, 0),
-                Array.Empty<HexCoordinate>());
+                Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(outcome.Accepted, Is.True, "A hero is a unit.");
             Assert.That(unitOrToken.EligiblePiece, Is.Not.EqualTo(PlaceEligiblePieceKind.GamePiece),
@@ -342,7 +343,7 @@ namespace GuardsDigital.Tests.EditMode
             var outcome = PlaceOperation.PlaceFromBoard(
                 BoardRadius(2), board, board,
                 BoardObjectReference.ForMinion(new MinionId("absent-minion")),
-                OtherAt, new HexCoordinate(2, 0), Array.Empty<HexCoordinate>());
+                OtherAt, new HexCoordinate(2, 0), Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(outcome.RejectionReason, Is.EqualTo(PlaceRejectionReason.SubjectNotOnBoard));
         }
@@ -357,11 +358,11 @@ namespace GuardsDigital.Tests.EditMode
 
             var boardArm = PlaceOperation.PlaceFromSupply(
                 BoardRadius(1), board, catalog, Hazard(catalog, new HexCoordinate(0, 1)),
-                ActorAt, Array.Empty<HexCoordinate>());
+                ActorAt, Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
             var supplyArm = PlaceOperation.PlaceFromBoard(
                 SupplyRadius(1), board, board,
                 BoardObjectReference.ForHero(Other), OtherAt, new HexCoordinate(0, 1),
-                Array.Empty<HexCoordinate>());
+                Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(boardArm.RejectionReason, Is.EqualTo(PlaceRejectionReason.SourceContainerMismatch));
             Assert.That(supplyArm.RejectionReason, Is.EqualTo(PlaceRejectionReason.SourceContainerMismatch));
@@ -375,7 +376,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var outcome = PlaceOperation.PlaceFromSupply(
                 SupplyRadius(1), board, catalog, Hazard(catalog, new HexCoordinate(0, 1)),
-                ActorAt, Array.Empty<HexCoordinate>());
+                ActorAt, Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(outcome.Accepted, Is.True);
             Assert.That(outcome.SourceContainer, Is.EqualTo(PlaceSourceContainer.Supply));
@@ -395,11 +396,11 @@ namespace GuardsDigital.Tests.EditMode
             var catalog = SyntheticComponentDefinitions.CreateCatalog();
             Assert.That(PlaceOperation.PlaceFromSupply(
                 SupplyRadius(1), board, catalog, Hazard(catalog, new HexCoordinate(0, 1)),
-                ActorAt, Array.Empty<HexCoordinate>()).Accepted, Is.True);
+                ActorAt, Array.Empty<HexCoordinate>(), RuleModificationSet.Empty).Accepted, Is.True);
 
             var exhausted = PlaceOperation.PlaceFromSupply(
                 SupplyRadius(1), board, catalog, Hazard(catalog, new HexCoordinate(-1, 0)),
-                ActorAt, Array.Empty<HexCoordinate>());
+                ActorAt, Array.Empty<HexCoordinate>(), RuleModificationSet.Empty);
 
             Assert.That(exhausted.RejectionReason, Is.EqualTo(PlaceRejectionReason.SupplyEmpty));
             Assert.That(board.PlacedTokens.Count,

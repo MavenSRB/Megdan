@@ -6,6 +6,7 @@ using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -160,7 +161,7 @@ namespace GuardsDigital.Tests.EditMode
                     session.Projection.SelectedActor.CardInstanceId,
                     session.Projection.SelectedActor.ActorId,
                     session.Projection.Definitions,
-                    session.Projection.Cards).HasValue,
+                    session.Projection.Cards, RuleModificationSet.Empty).HasValue,
                 Is.True,
                 "p.12's Hold keeps the card spendable while its text is owed.");
         }

@@ -173,7 +173,7 @@ namespace GuardsDigital.Core.Rules.Displacement
                     break;
                 }
 
-                if (!mayPassObstacles && ObstacleQuery.IsObstacle(board, current))
+                if (!mayPassObstacles && ObstacleQuery.IsObstacle(board, current, modifications))
                 {
                     stoppingReason = PushStoppingReason.BlockedByObstacle;
                     break;
@@ -182,7 +182,7 @@ namespace GuardsDigital.Core.Rules.Displacement
                 // Passed through, but only an empty space may be kept. A permitted target that ends the
                 // walk standing on an obstacle keeps the last empty space it crossed, which is what
                 // "as long as it can reach an empty space" means when the full distance lands badly.
-                if (!ObstacleQuery.BlocksEndOfMovement(board, current))
+                if (!ObstacleQuery.BlocksEndOfMovement(board, current, modifications))
                 {
                     endpoint = current;
                     actualDistance = step;

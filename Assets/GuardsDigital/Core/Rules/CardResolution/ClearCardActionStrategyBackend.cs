@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -27,7 +28,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionDefinitionId replacedAttackActionDefinitionId,
             IEnumerable<TokenInstanceId> selectedTokenIds,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications)
         {
             if (!resolutionId.IsDefined)
             {
@@ -46,7 +48,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 selected,
                 materializedDefinitions,
                 materializedInstances,
-                board);
+                board,
+                modifications);
             if (rejection != CardActionResolutionRejectionReason.None)
             {
                 return CardActionResolutionResult.Reject(rejection, null, null);

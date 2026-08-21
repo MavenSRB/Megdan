@@ -414,6 +414,7 @@ namespace GuardsDigital.Application
             bool isHistoryAvailable,
             IEnumerable<MinionOccupancy> minions,
             IEnumerable<PlacedToken> placedTokens,
+            ActionOffer? availableHoldOffer,
             IEnumerable<FastTravelOptionProjection> availableFastTravelOptions = null,
             PendingDefensePreviewProjection pendingDefensePreview = null,
             PendingMinionBattleChoice pendingMinionBattleChoice = null,
@@ -497,6 +498,7 @@ namespace GuardsDigital.Application
             PendingEffectChoicePreview = Array.AsReadOnly((pendingEffectChoicePreview ??
                 Enumerable.Empty<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>())
                 .ToArray());
+            AvailableHoldOffer = availableHoldOffer;
             AvailableClearOptions = Array.AsReadOnly((availableClearOptions ??
                 Enumerable.Empty<ClearOptionProjection>()).ToArray());
 
@@ -677,6 +679,17 @@ namespace GuardsDigital.Application
         /// may take the replacement and resolve the card either way.
         /// </summary>
         public IReadOnlyList<ClearOptionProjection> AvailableClearOptions { get; }
+
+        /// <summary>
+        /// Milestone 8.7. p.12's Hold, offered or absent, decided once by the authority.
+        ///
+        /// <para>The presentation used to ask the offer query itself, which meant the control beside a
+        /// turn and the command that ends it were two derivations of one answer - the shape the 7.9a
+        /// review found as F-PRES-01, a live control drawn beside a refusal. It moved here when the
+        /// offer began consulting the rules in effect: a restriction naming Hold is authoritative
+        /// state, and a projection is where authoritative state is published.</para>
+        /// </summary>
+        public ActionOffer? AvailableHoldOffer { get; }
         public PendingDefensePreviewProjection PendingDefensePreview { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }

@@ -362,13 +362,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AttackResolutionPhase.DefenseResponse,
                 command.TargetHeroId,
                 attackValue);
-            var defenseOffers = ActionOfferQuery.GetAvailableOffers(
-                materializedDefinitions,
-                materializedInstances,
-                command.TargetHeroId,
-                ActionOfferWindow.Reaction)
-                .Where(candidate => ActionOfferQuery.FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
-                .ToArray();
+            var defenseOffers = FindDefenseOffers(
+                materializedDefinitions, materializedInstances, command.TargetHeroId, modifications);
             var defenseChoice = new PendingDefenseResponseChoice(
                 defenseResolution.ResolutionId,
                 defenseResolution.CurrentStepId,
@@ -685,13 +680,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }
 
-            var currentDefenseOffers = ActionOfferQuery.GetAvailableOffers(
-                    materializedDefinitions,
-                    materializedInstances,
-                    pendingAttackResolution.TargetHeroId,
-                    ActionOfferWindow.Reaction)
-                .Where(candidate => ActionOfferQuery.FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
-                .ToArray();
+            var currentDefenseOffers = FindDefenseOffers(
+                materializedDefinitions, materializedInstances,
+                pendingAttackResolution.TargetHeroId, modifications);
             if (!DefenseChoicesMatch(pendingAttackResolution, currentDefenseOffers, pendingDefenseChoice))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
@@ -1193,13 +1184,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
                 if (pendingResolution.Phase == AttackResolutionPhase.DefenseResponse)
                 {
-                    var expectedDefenseOffers = ActionOfferQuery.GetAvailableOffers(
-                        materializedDefinitions,
-                        materializedInstances,
-                        pendingResolution.TargetHeroId,
-                        ActionOfferWindow.Reaction)
-                        .Where(candidate => ActionOfferQuery.FindActionDefinition(candidate, materializedDefinitions).Kind == ActionKind.Defense)
-                        .ToArray();
+                    var expectedDefenseOffers = FindDefenseOffers(
+                        materializedDefinitions, materializedInstances,
+                        pendingResolution.TargetHeroId, modifications);
                     if (verifiedDefenseChoice != null &&
                         !DefenseChoicesMatch(pendingResolution, expectedDefenseOffers, verifiedDefenseChoice))
                     {
@@ -1435,6 +1422,40 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 expected.ChoiceId.Equals(actual.ChoiceId) &&
                 expected.ChooserId.Equals(actual.ChooserId) &&
                 expected.LegalTargets.SequenceEqual(actual.LegalTargets);
+        }
+
+        /// <summary>
+        /// The Defense cards p.14 lets this defender answer with, derived in one place.
+        ///
+        /// Three sites asked this question with the same four lines - the live opening, the
+        /// re-derivation that validates an answer, and the restore that cross-checks a saved choice -
+        /// and milestone 8.7 needed all three to agree about one more thing, so they became one call.
+        /// That the restore path passes the same modifications the live one did is what keeps a
+        /// restriction from changing a defender's legal answers across a save.
+        ///
+        /// The restriction itself is p.14's own reading: a hero barred from Defense is not offered
+        /// Defense cards, which is the treatment every other action kind gets from the offer set.
+        /// Declining stays available regardless, because p.14 already lets a defender decline - so a
+        /// restriction narrows what may be played and never strands the attack.
+        /// </summary>
+        private static ActionOffer[] FindDefenseOffers(
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            HeroId defenderId,
+            RuleModificationSet modifications)
+        {
+            if (GuardsDigital.Core.Rules.Modifications.ActionRestrictionQuery.IsRestrictedFrom(
+                    defenderId, ActionKind.Defense, modifications))
+            {
+                return Array.Empty<ActionOffer>();
+            }
+
+            return ActionOfferQuery.GetAvailableOffers(
+                    definitions, instances, defenderId, ActionOfferWindow.Reaction)
+                .Where(candidate =>
+                    ActionOfferQuery.FindActionDefinition(candidate, definitions).Kind ==
+                    ActionKind.Defense)
+                .ToArray();
         }
 
         private static bool DefenseChoicesMatch(

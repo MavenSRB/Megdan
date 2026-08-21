@@ -171,7 +171,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var destinations = PlaceDestinationQuery.FindDestinations(
-                    policy, context.Components.Tokens, origin, Array.Empty<HexCoordinate>());
+                    policy, context.Components.Tokens, origin, Array.Empty<HexCoordinate>(),
+                    context.Modifications);
                 if (destinations.Count == 0)
                 {
                     return policy.NoDestinationPolicy == PlaceNoDestinationPolicy.Decline
@@ -205,7 +206,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     subject,
                     measuredFrom,
                     selected[0].Coordinate,
-                    Array.Empty<HexCoordinate>());
+                    Array.Empty<HexCoordinate>(),
+                    context.Modifications);
                 return outcome.Accepted
                     ? EffectExecutionResult.Applied(new[]
                     {
@@ -228,7 +230,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var destinations = PlaceDestinationQuery.FindDestinations(
-                    policy, context.Components.Tokens, origin, Array.Empty<HexCoordinate>());
+                    policy, context.Components.Tokens, origin, Array.Empty<HexCoordinate>(),
+                    context.Modifications);
                 if (destinations.Count > 0)
                 {
                     return EffectExecutionResultKind.NeedsChoice;
@@ -289,11 +292,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var unit = subject.AsRuleObject();
-                if (unit.IsDefined && ImmunityQuery.IsImmuneTo(
+                if (unit.IsDefined && (
+                        IsImmuneTo(context, unit, context.EnclosingActivity) ||
+                        IsImmuneTo(context, unit, RuleActivity.Place)))
+                {
+                    return false;
+                }
+
+                // Milestone 8.7. Wasp's Magnetic Dagger forbids a unit being "swapped or placed by
+                // themselves, or by enemy heroes", so the piece is asked whether this actor may place
+                // it at all - here, where the piece is named, rather than at the commit, because a
+                // piece the rules will not let this hero move is not one to offer and then refuse.
+                if (unit.IsDefined && RestrictionQuery.IsRestricted(
                         unit,
-                        context.EnclosingActivity,
+                        RuleActivity.Place,
                         RuleObject.ForHero(context.ActorId),
-                        components.Board,
                         context.Participants,
                         context.Modifications))
                 {
@@ -325,6 +338,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     anchor);
                 return true;
             }
+
+            /// <summary>
+            /// p.18's immunity for the named piece, asked once per activity the question has: the
+            /// action this Place sits inside, and p.18's Place itself. Milestone 8.7 adds the second
+            /// for the reason milestone 6.4 gave the Push one - an effect family the rules name is
+            /// something a unit can be immune to in its own right.
+            /// </summary>
+            private static bool IsImmuneTo(
+                EffectCapabilityContext context, RuleObject unit, RuleActivity activity) =>
+                ImmunityQuery.IsImmuneTo(
+                    unit,
+                    activity,
+                    RuleObject.ForHero(context.ActorId),
+                    context.Components.Board,
+                    context.Participants,
+                    context.Modifications);
         }
 
         /// <summary>

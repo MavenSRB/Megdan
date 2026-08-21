@@ -1,10 +1,8 @@
 using System;
 using System.Linq;
-using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
-using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.Modifications
 {
@@ -59,46 +57,32 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            var battleZone = BattleZoneQuery.GetCurrentBattleZone(board).Id;
-            var units = board.Minions
-                .Where(minion =>
-                    board.MapDefinition.GetZoneForSpace(minion.OccupiedSpace.SpaceId).Id.Equals(battleZone))
-                .Select(minion => RuleObject.ForMinion(minion.MinionId))
-                .Concat(board.Occupancies
-                    .Where(hero =>
-                    {
-                        var space = board.MapDefinition.Spaces.SingleOrDefault(candidate =>
-                            candidate.Kind == BoardMapSpaceKind.Playable &&
-                            candidate.Coordinate.Equals(hero.Coordinate));
-                        return space != null &&
-                            board.MapDefinition.GetZoneForSpace(space.Id).Id.Equals(battleZone);
-                    })
-                    .Select(hero => RuleObject.ForHero(hero.HeroId)))
-                .Where(unit => EffectiveUnitKindQuery.Is(unit, EffectiveUnitKind.Minion, modifications));
-
-            return units.Any(unit => Accompanies(unit, heavy, board, participants));
+            return BattleZoneQuery.FindEffectiveMinionsInside(board, participants, modifications)
+                .Any(candidate => Accompanies(candidate, target, heavy.TeamSide));
         }
 
+        /// <summary>
+        /// Whether one member of the Battle Zone's effective minion set accompanies the Heavy.
+        ///
+        /// Milestone 8.7 closes the 7.9a review's F-BOARD-04 here. The set itself now comes from
+        /// <see cref="BattleZoneQuery.FindEffectiveMinionsInside"/> - the one derivation the Minion
+        /// Battle and p.8's last-minion Lane-Push cause already count - rather than from a second
+        /// zone walk of this query's own. The three conditions below are all that was ever local to
+        /// p.13's clause: not the Heavy itself, not another Heavy, and standing on the Heavy's side.
+        ///
+        /// The side comparison replaces a <c>TeamId</c> one. The shared set reports the side each
+        /// unit belongs to, and a match has exactly one team per side, so the two are the same
+        /// question asked of the discriminator the shared set publishes.
+        ///
+        /// One reading moved with the derivation and is recorded rather than smuggled: the old local
+        /// walk asked the effective-type question of minion miniatures too, so a miniature counting
+        /// as a hero stopped accompanying, while the shared set takes every miniature in the zone as
+        /// intrinsic. Adopting the shared reading makes that answer wrong in one place instead of
+        /// disagreeing in two, which is the whole of the finding; no source declares
+        /// <see cref="EffectiveUnitKind.Hero"/> today, so nothing observable changes.
+        /// </summary>
         private static bool Accompanies(
-            RuleObject unit,
-            MinionOccupancy heavy,
-            IBoardDisplacementAuthority board,
-            MatchParticipants participants)
-        {
-            if (IntrinsicKindQuery.IsMinionMiniature(unit))
-            {
-                if (unit.MinionId.Equals(heavy.MinionId))
-                {
-                    return false;
-                }
-
-                var minion = board.Minions.Single(candidate => candidate.MinionId.Equals(unit.MinionId));
-                return minion.TeamId.Equals(heavy.TeamId) &&
-                    minion.MinionType != StandardMinionType.Heavy;
-            }
-
-            return IntrinsicKindQuery.IntrinsicUnitKind(unit) == EffectiveUnitKind.Hero &&
-                participants.GetTeamForHero(unit.HeroId).Id.Equals(heavy.TeamId);
-        }
+            EffectiveBattleZoneMinion candidate, RuleObject heavy, TeamSide heavySide) =>
+            !candidate.Unit.Equals(heavy) && !candidate.IsHeavy && candidate.TeamSide == heavySide;
     }
 }

@@ -548,12 +548,24 @@ namespace GuardsDigital.Core.Cards
         /// The modifications in effect for this turn's authoritative state, or an empty set when no
         /// card-action authority is composed. Rebuilt at every command so an effect that expired or a
         /// token that was removed since the last one cannot still supply a rule.
+        ///
+        /// Milestone 8.7's conditional obstacle overlays make the acting hero part of that state:
+        /// p.17's "while an enemy hero is performing an action" is a condition about who is acting, so
+        /// the turn's own selected actor is what the set is derived for. Before an actor is selected
+        /// there is nobody acting, and <see cref="RuleObject.None"/> says so.
         /// </summary>
         public RuleModificationSet CurrentModifications() =>
             cardActions == null
                 ? RuleModificationSet.Empty
                 : cardActions.CurrentModifications(
-                    timing, participants, TieBreakerState, CurrentUltimates());
+                    timing,
+                    participants,
+                    TieBreakerState,
+                    CurrentUltimates(),
+                    initiative.SelectedActor.IsDefined
+                        ? GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(
+                            initiative.SelectedActor.ActorId)
+                        : GuardsDigital.Core.Rules.Modifications.RuleObject.None);
 
         /// <summary>
         /// Milestone 7.3's unlocked Ultimates, read off this turn's own card instances at the moment
@@ -756,7 +768,8 @@ namespace GuardsDigital.Core.Cards
                 cardInstanceId,
                 initiative.SelectedActor.ActorId,
                 definitions,
-                instances);
+                instances,
+                CurrentModifications());
             if (!offer.HasValue)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.HoldNotAvailable);
@@ -1013,7 +1026,8 @@ namespace GuardsDigital.Core.Cards
                 replacedAttackActionDefinitionId,
                 selectedTokenIds,
                 definitions,
-                instances);
+                instances,
+                CurrentModifications());
             if (!result.Accepted || !result.IsComplete)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ClearActionRejected);
@@ -1140,7 +1154,28 @@ namespace GuardsDigital.Core.Cards
         /// place the offer set is post-processed - which is exactly what the third one was.
         /// </summary>
         private bool CanStart(ActionOffer offer) =>
-            CanStartSkill(offer) && CanStartAttack(offer) && CardTextIsComposed(offer);
+            CanStartSkill(offer) && CanStartAttack(offer) && CardTextIsComposed(offer) &&
+            ActorMayPerform(offer);
+
+        /// <summary>
+        /// Milestone 8.7: whether a rule currently in effect bars this hero from an action of this
+        /// kind at all.
+        ///
+        /// It is the fourth clause rather than a fourth place the offer set is post-processed, which
+        /// is what the comment above this method asks for. What it adds over the other three is a
+        /// different kind of reason: they refuse an action the board leaves nothing to do, while this
+        /// refuses one a declared rule forbids doing. Milestone 6.8c gave Fast Travel this treatment
+        /// alone; the shared predicate gives every action kind the same one, so a card that first
+        /// prints "cannot Attack" is obeyed without another consumer being written.
+        ///
+        /// Answered <c>true</c> wherever the offer names no readable action, for the reason
+        /// <see cref="CardTextIsComposed"/> is: this refuses an action a rule forbids and never one
+        /// that could not be judged.
+        /// </summary>
+        private bool ActorMayPerform(ActionOffer offer) =>
+            !ActionOfferQuery.TryFindActionDefinition(offer, definitions, out var action) ||
+            !GuardsDigital.Core.Rules.Modifications.ActionRestrictionQuery.IsRestrictedFrom(
+                offer.ActorId, action.Kind, CurrentModifications());
 
         /// <summary>
         /// Milestone 8.4: whether this offer's action can perform the whole of what its card prints.

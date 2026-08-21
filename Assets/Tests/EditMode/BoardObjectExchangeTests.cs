@@ -201,6 +201,70 @@ namespace GuardsDigital.Tests.EditMode
                 "Asking whether a Swap can be performed must never perform it.");
         }
 
+        /// <summary>
+        /// Milestone 8.7. A restriction that names who may not swap a piece is asked with the acting
+        /// hero, so the same board and the same node answer differently for two different actors.
+        ///
+        /// This is the half of Wasp's Magnetic Dagger that a blanket prohibition would lose: "Enemy
+        /// units in radius cannot be swapped or placed by themselves, or by enemy heroes" is written
+        /// from her side, so heroes on her own team may still reposition the pinned units. Declaring
+        /// the effect under the Blue hero's control makes Red the opposing actor here.
+        /// </summary>
+        [Test]
+        public void Swap_RefusesAPieceThisActorIsRestrictedFromMoving_AndAllowsTheOthers()
+        {
+            var board = CreateLineBoard();
+            var minion = PlaceMinion(board, NextTo);
+            var pinned = RestrictedFromRepositioning(RuleObject.ForMinion(minion), TeamSide.Blue);
+
+            var againstTheOpposingActor = Handler(SyntheticExchangeCapabilities.SwapV2)
+                .Anticipate(Context(board, RedActor, SwapInputs(ActorAt, NextTo), pinned));
+            var againstTheSourcesOwnSide = Handler(SyntheticExchangeCapabilities.SwapV2)
+                .Anticipate(Context(board, BlueActor, SwapInputs(ActorAt, NextTo), pinned));
+
+            Assert.That(
+                againstTheOpposingActor, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                "A hero opposing the source is one of the actors the declaration names.");
+            Assert.That(
+                againstTheSourcesOwnSide, Is.EqualTo(EffectExecutionResultKind.Applied),
+                "and a hero on the source's own side is not, so the same Swap is legal for them.");
+            Assert.That(HeroAt(board, RedActor), Is.EqualTo(ActorAt),
+                "Neither probe exchanged anything.");
+
+            Assert.That(
+                Handler(SyntheticExchangeCapabilities.SwapV2).Execute(
+                    Context(board, RedActor, SwapInputs(ActorAt, NextTo), pinned)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                "The refusal is the same answer read at both moments, not a probe the commit " +
+                "disagrees with.");
+            Assert.That(HeroAt(board, RedActor), Is.EqualTo(ActorAt));
+            Assert.That(MinionAt(board, minion), Is.EqualTo(NextTo));
+        }
+
+        /// <summary>
+        /// Magnetic Dagger's declaration without its card: the piece may not be repositioned by
+        /// itself or by heroes opposing the source that declared it.
+        /// </summary>
+        private static RuleModificationSet RestrictedFromRepositioning(
+            RuleObject piece, TeamSide sourceSide) =>
+            new RuleModificationSet(
+                new[]
+                {
+                    AppliedRuleModification.FromActiveEffect(
+                        RuleModification.ForRestriction(
+                            RuleActivity.Swap,
+                            RestrictedActorScope.Of(
+                                RestrictedActorRelation.AffectedObjectItself,
+                                RestrictedActorRelation.HeroesOpposingSource)),
+                        piece,
+                        new GuardsDigital.Core.Timing.ActiveEffectId("exchange-pin"),
+                        sourceSide == TeamSide.Blue ? BlueActor : RedActor,
+                        sourceSide,
+                        0)
+                },
+                Array.Empty<AppliedObstacleOverlay>(),
+                TieBreakerState.Unrevealed);
+
         // ---------------------------------------------------------------------------------------
         // Replace
         // ---------------------------------------------------------------------------------------
@@ -259,7 +323,7 @@ namespace GuardsDigital.Tests.EditMode
             PlaceHazard(board, NextTo);
             var participants = PlaceholderOneVsOneParticipants.Create();
             var before = RuleModificationQuery.Build(
-                null, board, participants, TieBreakerState.Unrevealed, UnlockedUltimateSet.None);
+                null, board, participants, TieBreakerState.Unrevealed, UnlockedUltimateSet.None, RuleObject.None);
             Assert.That(before.Modifications.Count, Is.EqualTo(1),
                 "The Hazard supplies its declared property while it remains placed (p.19).");
 
@@ -267,7 +331,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Execute(Context(board, RedActor, SubjectInput(NextTo)));
 
             var after = RuleModificationQuery.Build(
-                null, board, participants, TieBreakerState.Unrevealed, UnlockedUltimateSet.None);
+                null, board, participants, TieBreakerState.Unrevealed, UnlockedUltimateSet.None, RuleObject.None);
             Assert.That(after.Modifications, Is.Empty,
                 "p.19 ties a token's properties to the instance, so a no-transfer substitution ends " +
                 "them rather than handing them to an object whose definition never declared them.");
@@ -748,6 +812,15 @@ namespace GuardsDigital.Tests.EditMode
             HeroId actor,
             IReadOnlyDictionary<string, EffectValue> inputs,
             string node = "exchange-node") =>
+            Context(board, actor, inputs, RuleModificationSet.Empty, node);
+
+        /// <summary>The same node judged against declared rules (milestone 8.7).</summary>
+        private static EffectCapabilityContext Context(
+            AdjacentMoveAuthority board,
+            HeroId actor,
+            IReadOnlyDictionary<string, EffectValue> inputs,
+            RuleModificationSet modifications,
+            string node = "exchange-node") =>
             new EffectCapabilityContext(
                 new EffectNodeId(node),
                 EffectFailurePolicy.Mandatory,
@@ -761,7 +834,7 @@ namespace GuardsDigital.Tests.EditMode
                 1,
                 PlaceholderOneVsOneParticipants.Create(),
                 null,
-                RuleModificationSet.Empty,
+                modifications,
                 EffectCardState.Absent,
                 ActionKind.Skill,
                 new MatchComponents(
@@ -792,6 +865,7 @@ namespace GuardsDigital.Tests.EditMode
                         TeamSide.Red,
                         1)
                 },
+                Array.Empty<AppliedObstacleOverlay>(),
                 TieBreakerState.Unrevealed);
 
         private static HexCoordinate HeroAt(AdjacentMoveAuthority board, HeroId heroId) =>

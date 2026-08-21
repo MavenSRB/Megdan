@@ -351,11 +351,9 @@ namespace GuardsDigital.Presentation.Interaction
             // A Hold rather than an action: p.7 derives it from the selected unresolved card, it is
             // legal on every turn this path reaches, and spending the turn on it is what keeps the
             // smoke path short enough to run inside a build's start-up.
-            var hold = GeneralRuleActionOfferQuery.GetAvailableHoldOffer(
-                projection.SelectedActor.CardInstanceId,
-                projection.SelectedActor.ActorId,
-                projection.Definitions,
-                projection.Cards);
+            // Milestone 8.7: read from the projection rather than re-derived here, so the smoke path
+            // takes the same Hold the authority offers.
+            var hold = projection.AvailableHoldOffer;
             return hold.HasValue && hold.Value.IsAvailable
                 ? DirectorCommand.PerformHold(projection.SelectedActor.CardInstanceId)
                 : null;

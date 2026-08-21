@@ -506,8 +506,18 @@ namespace GuardsDigital.Core.Rules.Displacement
 
             // The fallback's destinations are the general Place's own question, asked through the
             // shared query rather than re-derived here (milestone 6.5).
+            // Milestone 8.7: asked with no modifications in effect, which is this correction's own
+            // reading rather than an omission. p.18 returns the minion as bookkeeping the rules carry
+            // out, not as something a hero performs, so a conditional obstacle overlay - which
+            // conditions on a hero performing an action - has nobody to condition on here. It is also
+            // the treatment the shortest-path arm above already gives: that walk ignores the
+            // Move-Through permission too, because the correction is not a movement.
             var placements = PlaceDestinationQuery.FindDestinations(
-                FallbackPlacePolicy, board, subject.Coordinate, zoneCoordinates);
+                FallbackPlacePolicy,
+                board,
+                subject.Coordinate,
+                zoneCoordinates,
+                RuleModificationSet.Empty);
             if (placements.Count == 0)
             {
                 kind = DisplacedMinionCorrectionKind.None;

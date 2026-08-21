@@ -788,7 +788,8 @@ namespace GuardsDigital.Core.Cards
                     board,
                     participants,
                     cardActions?.CurrentModifications(
-                        timing, participants, tieBreakerState, authority.CurrentUltimates()) ??
+                        timing, participants, tieBreakerState, authority.CurrentUltimates(),
+                        GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
                         GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
                 if (expectedPlan.PendingChoice == null)
                 {
@@ -1059,7 +1060,8 @@ namespace GuardsDigital.Core.Cards
                 board,
                 participants,
                 cardActions?.CurrentModifications(
-                        timing, participants, TieBreakerState, CurrentUltimates()) ??
+                        timing, participants, TieBreakerState, CurrentUltimates(),
+                        GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
                     GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
             if (plan.PendingChoice != null)
             {
@@ -1111,7 +1113,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             var modifications = cardActions?.CurrentModifications(
-                timing, participants, TieBreakerState, CurrentUltimates()) ??
+                timing, participants, TieBreakerState, CurrentUltimates(),
+                GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
                 GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty;
             var candidates = units.Select(unit => ResolveBattleCandidate(unit, modifications)).ToArray();
             if (candidates.Any(value => !value.HasValue) || candidates.Any(value =>
@@ -1163,7 +1166,8 @@ namespace GuardsDigital.Core.Cards
 
             PendingMinionBattleChoice = null;
             var postRoundModifications = cardActions?.CurrentModifications(
-                timing, participants, TieBreakerState, CurrentUltimates()) ??
+                timing, participants, TieBreakerState, CurrentUltimates(),
+                GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
                 GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty;
             if (losingTeam != null && ordered.Length > 0 &&
                 !HasEffectiveMinionInBattleZone(losingTeam.Side, postRoundModifications))

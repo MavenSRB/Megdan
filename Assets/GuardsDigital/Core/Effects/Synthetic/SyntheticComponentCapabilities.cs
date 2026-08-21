@@ -264,7 +264,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.SourceCardInstanceId,
                         coordinate),
                     origin,
-                    Array.Empty<HexCoordinate>());
+                    Array.Empty<HexCoordinate>(),
+                    context.Modifications);
                 if (!outcome.Accepted)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -304,7 +305,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 MatchComponents components) =>
                 components.Tokens.TryGetHeroCoordinate(context.ActorId, out var origin)
                     ? PlaceDestinationQuery.FindDestinations(
-                        Policy, components.Tokens, origin, Array.Empty<HexCoordinate>())
+                        Policy, components.Tokens, origin, Array.Empty<HexCoordinate>(),
+                        context.Modifications)
                     : Array.Empty<HexCoordinate>();
         }
 

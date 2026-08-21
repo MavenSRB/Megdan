@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Setup;
 
@@ -18,6 +19,12 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// when resolving tied initiative (See page 7), but do not flip the Tie Breaker coin". The revealed
     /// side therefore orders first, the source's creation sequence second, and its stable identity last so
     /// the order is total rather than merely mostly determined.
+    ///
+    /// Milestone 8.7 adds a second collection beside the modifications: the conditional obstacle
+    /// overlays in effect, which change p.18's classification of spaces rather than anything about an
+    /// object. They ride here because this value is what every rules seam already means by "the rules
+    /// right now", and because carrying them separately would have given the obstacle question two
+    /// sources to consult and one of them to forget.
     /// </summary>
     public sealed class RuleModificationSet
     {
@@ -26,15 +33,23 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// Tie Breaker is genuinely unrevealed rather than merely unsupplied.
         /// </summary>
         public static RuleModificationSet Empty { get; } =
-            new RuleModificationSet(Array.Empty<AppliedRuleModification>(), TieBreakerState.Unrevealed);
+            new RuleModificationSet(
+                Array.Empty<AppliedRuleModification>(),
+                Array.Empty<AppliedObstacleOverlay>(),
+                TieBreakerState.Unrevealed);
 
         /// <summary>
         /// The Tie Breaker is required since milestone 6.8i, because it decides the order this set
         /// resolves in; a caller with genuinely no ordering state passes
         /// <see cref="TieBreakerState.Unrevealed"/>.
+        ///
+        /// Milestone 8.7's obstacle overlays are required for the same reason and are stated the same
+        /// way: a caller holding none passes an empty sequence, and one that forgot them would have
+        /// produced a board whose spaces quietly stopped being obstacles.
         /// </summary>
         public RuleModificationSet(
             IEnumerable<AppliedRuleModification> modifications,
+            IEnumerable<AppliedObstacleOverlay> obstacleOverlays,
             TieBreakerState tieBreaker)
         {
             var materialized = (modifications ?? throw new ArgumentNullException(nameof(modifications)))
@@ -44,6 +59,20 @@ namespace GuardsDigital.Core.Rules.Modifications
                 throw new ArgumentException("Applied modifications must be non-null.", nameof(modifications));
             }
 
+            var materializedOverlays =
+                (obstacleOverlays ?? throw new ArgumentNullException(nameof(obstacleOverlays)))
+                .ToArray();
+            if (materializedOverlays.Any(overlay => overlay == null))
+            {
+                throw new ArgumentException(
+                    "Applied obstacle overlays must be non-null.", nameof(obstacleOverlays));
+            }
+
+            ObstacleOverlays = new ReadOnlyCollection<AppliedObstacleOverlay>(materializedOverlays
+                .OrderBy(overlay => tieBreaker.IsDefined &&
+                    overlay.ControllerTeamSide == tieBreaker.RevealedSide ? 0 : 1)
+                .ThenBy(overlay => overlay.SourceId, StringComparer.Ordinal)
+                .ToArray());
             TieBreaker = tieBreaker;
             Modifications = new ReadOnlyCollection<AppliedRuleModification>(materialized
                 .OrderBy(modification => tieBreaker.IsDefined &&
@@ -59,7 +88,33 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         public IReadOnlyList<AppliedRuleModification> Modifications { get; }
 
-        public bool IsEmpty => Modifications.Count == 0;
+        /// <summary>
+        /// Milestone 8.7's conditional obstacle overlays, already bound to this moment's anchor and
+        /// acting hero. They are carried here rather than threaded separately because this value is
+        /// already "the rules in effect right now" and already reaches every seam that asks p.18's
+        /// obstacle question.
+        /// </summary>
+        public IReadOnlyList<AppliedObstacleOverlay> ObstacleOverlays { get; }
+
+        public bool IsEmpty => Modifications.Count == 0 && ObstacleOverlays.Count == 0;
+
+        /// <summary>
+        /// Whether any overlay in effect makes <paramref name="space"/> count as an obstacle right
+        /// now. <see cref="ObstacleQuery"/> is the consumer; nothing else may ask, because p.18 gives
+        /// the classification one owner.
+        /// </summary>
+        public bool AnyOverlayMakesAnObstacleOf(HexCoordinate space)
+        {
+            for (var index = 0; index < ObstacleOverlays.Count; index++)
+            {
+                if (ObstacleOverlays[index].CountsAsObstacle(space))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>Everything affecting one object, in canonical order.</summary>
         public IReadOnlyList<AppliedRuleModification> For(RuleObject affectedObject) =>
@@ -68,26 +123,55 @@ namespace GuardsDigital.Core.Rules.Modifications
                 .ToArray());
 
         /// <summary>
-        /// Whether <paramref name="affectedObject"/> is currently barred from <paramref name="activity"/>.
+        /// Whether <paramref name="affectedObject"/> is currently barred from performing
+        /// <paramref name="activity"/> itself.
+        ///
         /// A permission never answers this question: p.18's one general permission allows a unit to enter
         /// an obstacle's space, which is a grant against a general rule, not a licence that cancels an
         /// unrelated prohibition. Keeping the two families in separate queries is what makes a narrow
         /// permission structurally unable to disable a restriction it does not name.
+        ///
+        /// Since milestone 8.7 a restriction may name who is barred, and this asks the one question an
+        /// offer query has: the actor and the restricted object are the same hero, so a declaration
+        /// that names only other people's heroes leaves the offer standing.
+        /// <see cref="RestrictionQuery"/> answers the directed form, where they differ.
         /// </summary>
         public bool IsRestricted(RuleObject affectedObject, RuleActivity activity) =>
             TryGetRestriction(affectedObject, activity, out _);
 
         /// <summary>
-        /// The first restriction in canonical order that bars the activity, which is the one whose source
-        /// explains the refusal.
+        /// The first restriction in canonical order that bars the object from performing the activity,
+        /// which is the one whose source explains the refusal.
         /// </summary>
         public bool TryGetRestriction(
             RuleObject affectedObject,
             RuleActivity activity,
             out AppliedRuleModification restriction)
         {
-            restriction = FirstCovering(affectedObject, RuleModificationKind.Restriction, activity);
+            restriction = CoveringRestrictions(affectedObject, activity)
+                .FirstOrDefault(applied => applied.Modification.RestrictedActors.CoversTheAffectedObject);
             return restriction != null;
+        }
+
+        /// <summary>
+        /// Every restriction on this object that reaches this activity, in canonical order, whatever
+        /// actors each names. <see cref="RestrictionQuery"/> is the consumer: it holds the participants
+        /// a declared team relation is resolved against, which this value deliberately does not.
+        /// </summary>
+        public IReadOnlyList<AppliedRuleModification> CoveringRestrictions(
+            RuleObject affectedObject, RuleActivity activity)
+        {
+            if (activity == RuleActivity.None)
+            {
+                throw new ArgumentException("This query requires a named activity.", nameof(activity));
+            }
+
+            return Array.AsReadOnly(Modifications
+                .Where(modification =>
+                    modification.AffectedObject.Equals(affectedObject) &&
+                    modification.Modification.Kind == RuleModificationKind.Restriction &&
+                    modification.Modification.Covers(activity))
+                .ToArray());
         }
 
         public bool HasPermission(RuleObject affectedObject, RulePermissionKind permission) =>

@@ -13,6 +13,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -144,7 +145,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var hold = GeneralRuleActionOfferQuery.GetAvailableHoldOffer(
                 actor.CardInstanceId, actor.ActorId,
-                live.Projection.Definitions, live.Projection.Cards);
+                live.Projection.Definitions, live.Projection.Cards, RuleModificationSet.Empty);
             Assert.That(hold.HasValue, Is.True);
             Assert.That(hold.Value.IsAvailable, Is.True);
             Assert.That(hold.Value.InvocationContext,

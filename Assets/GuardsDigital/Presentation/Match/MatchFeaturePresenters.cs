@@ -2763,11 +2763,10 @@ namespace GuardsDigital.Presentation.Match
                 return null;
             }
 
-            var hold = GeneralRuleActionOfferQuery.GetAvailableHoldOffer(
-                projection.SelectedActor.CardInstanceId,
-                projection.SelectedActor.ActorId,
-                projection.Definitions,
-                projection.Cards);
+            // Milestone 8.7: the authority decides whether p.12's Hold is offered, and this draws its
+            // answer. Deriving it here a second time is what made the control and the command able to
+            // disagree.
+            var hold = projection.AvailableHoldOffer;
             return hold.HasValue && hold.Value.IsAvailable
                 ? new TypedInvocationViewModel(
                     "END TURN",

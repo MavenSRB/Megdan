@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Victory;
 using NUnit.Framework;
 
@@ -451,7 +452,7 @@ namespace GuardsDigital.Tests.EditMode
                 projection.SelectedActor.CardInstanceId,
                 projection.SelectedActor.ActorId,
                 projection.Definitions,
-                projection.Cards);
+                projection.Cards, RuleModificationSet.Empty);
             if (hold.HasValue && hold.Value.IsAvailable)
             {
                 candidates.Add(DirectorCommand.PerformHold(projection.SelectedActor.CardInstanceId));

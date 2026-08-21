@@ -11,9 +11,10 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// affected by other effects and actions". <see cref="All"/> is the first form; every other member is
     /// the second, so a declaration cannot be silently widened by omission.
     ///
-    /// The members mirror <see cref="ActionKind"/> plus <see cref="ObjectPush"/>, which is an effect
-    /// family rather than an action kind (p.18, Push). <see cref="RuleActivityQuery.ForAction"/> is the
-    /// only bridge between the two enums; neither is cast into the other.
+    /// The members mirror <see cref="ActionKind"/> plus the three effect families that are not action
+    /// kinds - <see cref="ObjectPush"/> (p.18, Push), <see cref="Swap"/> (p.19) and <see cref="Place"/>
+    /// (p.18). <see cref="RuleActivityQuery.ForAction"/> is the only bridge between the two enums;
+    /// neither is cast into the other, and it deliberately maps no action kind to the three families.
     /// </summary>
     public enum RuleActivity
     {
@@ -34,7 +35,21 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// the consumer that reads this member; milestone 6.8b's immunity mode then names it as its
         /// originating effect family, which is why 6.8b is scheduled after 6.4 rather than before it.
         /// </summary>
-        ObjectPush = 9
+        ObjectPush = 9,
+
+        /// <summary>
+        /// Rulebook p.19's Swap: "Exchange the position of two objects on the board." Milestone 8.7
+        /// names it for the reason milestone 6.4 named <see cref="ObjectPush"/> - it is a thing the
+        /// rules do to an object, which a source can be immune to or restricted from, and which no
+        /// action kind is. Wasp's Magnetic Dagger is the first verified text to name it.
+        /// </summary>
+        Swap = 10,
+
+        /// <summary>
+        /// Rulebook p.18's Place: "Take an object and put it into a different space (without moving)."
+        /// Named beside <see cref="Swap"/> and by the same card.
+        /// </summary>
+        Place = 11
     }
 
     public static class RuleActivityQuery

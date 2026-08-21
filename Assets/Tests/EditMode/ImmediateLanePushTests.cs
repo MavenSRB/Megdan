@@ -711,6 +711,7 @@ namespace GuardsDigital.Tests.EditMode
                         TeamSide.Blue,
                         0)
                 },
+                Array.Empty<AppliedObstacleOverlay>(),
                 TieBreakerState.Unrevealed);
 
         private static QuickGameMinionSetupState Minion(string id, TeamSide side, HexCoordinate at) =>

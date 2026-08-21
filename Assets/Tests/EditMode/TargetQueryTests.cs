@@ -236,7 +236,7 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 PlaceholderOneVsOneParticipants.Create(),
                 new TieBreakerState(TeamSide.Red),
-                UnlockedUltimateSet.None);
+                UnlockedUltimateSet.None, RuleObject.None);
             Assert.That(
                 set.IsImmuneTo(RuleObject.ForHero(heroId), activity, RuleObject.ForHero(Actor)),
                 Is.True,

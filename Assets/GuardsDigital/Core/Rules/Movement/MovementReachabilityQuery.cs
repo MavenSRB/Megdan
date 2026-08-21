@@ -84,7 +84,7 @@ namespace GuardsDigital.Core.Rules.Movement
                 origin,
                 onMap,
                 coordinate => ObstacleQuery.BlocksTransit(board, coordinate, mover, modifications),
-                coordinate => ObstacleQuery.BlocksEndOfMovement(board, coordinate),
+                coordinate => ObstacleQuery.BlocksEndOfMovement(board, coordinate, modifications),
                 movementAllowance);
         }
 
