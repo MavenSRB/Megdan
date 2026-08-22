@@ -88,11 +88,11 @@ determination, or distribution authorization.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811a-official-map-underlay-and-transparent-interaction-overlay-completion-evidence).
 
-### [ ] 8.11b Replace the Wasp pins and Defense buttons with verified card-table visuals
+### [ ] 8.11b Replace Wasp pins and abbreviated card indicators with verified card-table visuals
 
 Blocked by: milestone 8.11, so Wasp's complete printed Defense set and the response path it uses are available before this bounded presentation pass begins.
 
-Observable outcome: the configured mirrored match renders each primitive Wasp pin as the official team-coloured Wasp token, and a pending Defense response renders every legal Defense card as the same complete portrait card face used in the ordinary tray instead of as an abbreviated text button.
+Observable outcome: the configured mirrored match renders each primitive Wasp pin as the official team-coloured Wasp token, a pending Defense response renders every legal Defense card as the same complete portrait card face used in the ordinary tray, and each hero rail represents resolved and discarded cards with individual mini-card icons whose complete faces appear on mouseover.
 
 Acceptance checks:
 
@@ -101,11 +101,14 @@ Acceptance checks:
 - The token replaces only the primitive prism's visible mesh/material. Existing pointer selection, collider footprint, target and choice cues, movement refresh, Defeat/respawn visibility, Undo, restart, snapshot restore, replay, and presentation rebuild continue to bind the same stable `HeroId` without duplicate or stale views.
 - Every legal Defense-card invocation is drawn through the tray's shared complete card-face builder, including Initiative, name, printed values and qualifiers, exact source text, Range or Radius badge when present, and assistive colour reading. The whole card is the selectable control and forwards only its projected response invocation; `DECLINE DEFENSE` remains a distinct non-card control.
 - Hover and keyboard focus on a Defense card retain the authority-computed Attack/Defense/result preview, including the offer-bound `PRINTED DEFENSE` reading, without presentation recomputing totals, Block results, eligibility, or predicted outcome. Visible order and keyboard order match the projected response order, and selection changes no card width, wrapping, or row height.
+- Each occupied resolved-turn slot is a compact card-shaped icon derived from that exact resolved card. The `1`, `2`, `3`, and `4` text is removed from the slots; their fixed left-to-right positions under `RESOLVED TURNS` retain sequence, while an unoccupied reserved slot remains an empty card outline with no invented card or number.
+- The discard row replaces its aggregate number and colour pips with one compact card-shaped icon for each projected discarded card. It displays no numeric count: the visible icons are the count. Their deterministic display order is derived from projected card state rather than from presentation-observed discard events.
+- Resting the pointer on any occupied resolved-turn or discard icon opens the same single complete card-face preview used by the tray and current-card rail. Moving between icons replaces that preview, leaving the rail or rebuilding it closes the preview, and empty slots reveal nothing. Visible colour is supplemented by an assistive label naming the exact card and lifecycle location.
 - Four legal Defense cards plus Decline remain simultaneously pointer- and keyboard-reachable at the validated 2048-by-1152 Game View, with the existing bounded-scroll fallback on short desktop viewports. A targeted Game View inspection covers both team-coloured Wasp tokens, a numeric Defense face, a Block face, Decline, preview hover/focus, and board cues against the current board presentation.
-- Focused `MatchHudPresentationTests` cover shared card-face reuse, exact response forwarding, preview retention, order and constrained-viewport reachability. Directly affected Play Mode coverage proves both Wasp token variants across movement, selection, Defeat/respawn and rebuild, plus the configured pending-Defense interaction path. T2 validation includes one targeted Game View inspection.
+- Focused `MatchHudPresentationTests` cover shared card-face reuse, exact response forwarding, Defense-preview retention, response order, constrained-viewport reachability, icon-per-card discard representation, number-free resolved/discard slots, full-face rail previews, empty slots, and refresh without stale icons. Directly affected Play Mode coverage proves both Wasp token variants across movement, selection, Defeat/respawn and rebuild, plus the configured pending-Defense and hero-rail interaction paths. T2 validation includes one targeted Game View inspection.
 - With the private token assets absent, the tracked project loads and plays through the existing generated primitive hero fallback without a missing-reference exception, compile failure, or rules/state difference. The private artwork is included only in specifically authorized internal builds and is not added to the public source repository or otherwise distributed by this milestone.
 
-Non-goals: no change to hero or team authority, occupancy, movement, targeting, Defense eligibility or resolution, contribution totals, Block semantics, response projection, snapshots or replay; no official-map underlay, 3D miniature, animation, camera change, general Phase 9 hero-art pipeline, HUD redesign, public build, publication-rights determination, or distribution authorization.
+Non-goals: no change to hero or team authority, occupancy, movement, targeting, Defense eligibility or resolution, contribution totals, Block semantics, card lifecycle, discard or resolved-turn authority, snapshots or replay; no official-map underlay, 3D miniature, animation, camera change, general Phase 9 hero-art pipeline, broader HUD redesign, public build, publication-rights determination, or distribution authorization.
 
 ### [ ] 8.11c Answer identity-named effect-choice candidates on the board
 
