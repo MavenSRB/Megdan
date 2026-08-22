@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Cards;
 
 namespace GuardsDigital.Core.Effects
 {
@@ -93,14 +94,23 @@ namespace GuardsDigital.Core.Effects
     {
         /// <summary>
         /// Everything <see cref="Validate"/> checks, plus the one extra rule text applied inside
-        /// another action is bound by: no node in it may open an authoritative choice.
+        /// another action is bound by at the one of rulebook p.14's moments that cannot hold a
+        /// question.
         ///
-        /// <para>Milestone 8.5. Rulebook p.14 applies a card's text at three numbered points inside an
-        /// Attack whose remaining steps are produced in the same command that began them. Nothing in
-        /// this build's persisted state can hold those steps while a question stands, so a composition
-        /// that could ask one is refused here - at content load, before a match runs - rather than
-        /// faulting halfway through an attack that has already been announced. A Skill is unaffected:
-        /// its effect is the action, and pausing it is what the whole frame exists for.</para>
+        /// <para>Milestone 8.5 refused a pausing shape at all three of the page's moments, because an
+        /// attack's remaining steps were produced in the command that began them and nothing could hold
+        /// them while a question stood. Milestone 8.10 supplied the holding for two of the three: what
+        /// p.14 leaves after step 4 and after step 7 is a function of the attack's own identity, so a
+        /// paused frame plus that identity is enough to finish the page, and Wasp's riders - which
+        /// choose an enemy hero and then let that hero choose a card - resolve through it.</para>
+        ///
+        /// <para><b>Step 1 still cannot.</b> What follows the attacker's "Before the attack" text is
+        /// not a function of identity: on the arm where p.13 simply defeats a targeted minion, it
+        /// contains the facts of a Defeat the resolver has already computed and applied, and no
+        /// persisted identity reproduces those. A composition that could ask a question there is
+        /// therefore still refused here, at content load, rather than faulting halfway through an
+        /// attack that has already been announced. A Skill is unaffected at every moment: its effect is
+        /// the action, and pausing it is what the whole frame exists for.</para>
         ///
         /// <para>The rule is about the three node shapes that open a choice on their own: p.10's
         /// <c>Choose</c>, anything policied <c>May</c> (which opens the page's confirm-or-decline), and
@@ -110,12 +120,13 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         public static IReadOnlyList<EffectDefinitionRejection> ValidateCardText(
             EffectDefinition definition,
-            EffectCapabilityCatalog catalog)
+            EffectCapabilityCatalog catalog,
+            CardTextTiming moment)
         {
             var rejections = Validate(definition, catalog).ToList();
-            if (definition == null)
+            if (definition == null || moment != CardTextTiming.BeforeTheAttack)
             {
-                return rejections;
+                return Array.AsReadOnly(rejections.ToArray());
             }
 
             foreach (var node in definition.Nodes)
@@ -133,8 +144,8 @@ namespace GuardsDigital.Core.Effects
                 rejections.Add(new EffectDefinitionRejection(
                     EffectDefinitionRejectionReason.CardTextCannotPauseInsideAnAttack,
                     $"Node '{node.Id}' is {pausingShape}, which asks the player a question. Card text " +
-                    "applied at one of rulebook p.14's Attack moments has to finish inside the command " +
-                    "that reached it."));
+                    "applied at rulebook p.14's step 1 has to finish inside the command that reached " +
+                    "it, because what the page does next is not a function of the attack's identity."));
             }
 
             return Array.AsReadOnly(rejections.ToArray());

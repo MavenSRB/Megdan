@@ -1315,6 +1315,15 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(commonRejection);
             }
 
+            // Milestone 8.10. A question standing inside rulebook p.14's card text is answered with the
+            // same command a Skill's is, because it is the same frame paused in the same way. What
+            // differs is what finishes when the frame completes: the rest of the page, rather than the
+            // Skill that was the whole action.
+            if (cardActions?.PendingCardTextResolution != null)
+            {
+                return AnswerPausedCardText(command);
+            }
+
             if (cardActions?.PendingSkillResolution == null || !initiative.SelectedActor.IsDefined)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
@@ -1342,6 +1351,72 @@ namespace GuardsDigital.Core.Cards
             if (!answered.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
             return CompleteSkillStep(answered);
+        }
+
+        /// <summary>
+        /// Milestone 8.10. Answers the question rulebook p.14's card text stopped on, then finishes
+        /// whatever the page still owes.
+        ///
+        /// <para>The gate is the <em>attack</em> the page belongs to rather than the card whose text is
+        /// being applied, because at step 4 those are two different cards on two different sides: the
+        /// defender's Defense action supplies the text, and the attack it interrupts is still the
+        /// selected actor's. Which hero may answer is not decided here at all - the frame carries its
+        /// own chooser and refuses a command from anyone else, which is the same rule p.10 gives every
+        /// other choice in this engine.</para>
+        /// </summary>
+        private TurnResolutionResult AnswerPausedCardText(EffectChoiceCommand command)
+        {
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            }
+
+            var paused = cardActions.PendingCardTextResolution;
+            if (!paused.Attack.SourceCardInstanceId.Equals(initiative.SelectedActor.CardInstanceId) ||
+                !paused.Attack.ActorId.Equals(initiative.SelectedActor.ActorId))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            }
+
+            var answered = cardActions.AnswerCardTextChoice(
+                command, definitions, instances, participants, timing, CurrentModifications(),
+                roundIndex, turnIndex);
+            if (!answered.Accepted)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            }
+
+            var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromAttackAction);
+            if (!answered.IsComplete || cardActions.PendingCardTextResolution != null)
+            {
+                // The text asked again - Wasp's riders choose a hero and then let that hero choose a
+                // card - so the page is still stopped and nothing below it is owed yet.
+                return TurnResolutionResult.Accept(events);
+            }
+
+            // What the finished text hands back differs by moment. Step 7's remainder ends the action,
+            // so the attack is over; step 4's ends at the comparison p.14 opens next, which is the call
+            // the Defense response would have made had nothing paused.
+            if (paused.Moment == CardTextTiming.DefenseAction)
+            {
+                var outcome = cardActions.ResolveAttackOutcome(
+                    definitions, instances, participants, CurrentModifications());
+                if (!outcome.Accepted)
+                {
+                    throw new InvalidOperationException(
+                        "An answered Defense-action card text could not resume its prevalidated " +
+                        "Attack outcome.");
+                }
+
+                events.AddRange(MaterializeSteps(outcome.Steps, TurnResolutionEvent.FromAttackAction));
+                if (cardActions.PendingCardTextResolution != null)
+                {
+                    // The attacker's own step 7 text is inside that outcome and has now stopped too.
+                    return TurnResolutionResult.Accept(events);
+                }
+            }
+
+            return CompleteAttackOrStartItsRepeat(events);
         }
 
         /// <summary>Milestone 6.4a's paused after-action correction, or <c>null</c>.</summary>
@@ -1505,8 +1580,8 @@ namespace GuardsDigital.Core.Cards
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
             var targetEvents = MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction);
-            return result.MinionDefeat != null
-                ? CompleteAttackAndAdvance(targetEvents)
+            return result.MinionDefeat != null && cardActions.PendingCardTextResolution == null
+                ? CompleteAttackOrStartItsRepeat(targetEvents)
                 : TurnResolutionResult.Accept(targetEvents);
         }
 
@@ -1537,6 +1612,15 @@ namespace GuardsDigital.Core.Cards
             // The result-comparison checkpoint is emitted by the Defense resolver itself, as the last
             // step of its own stream, rather than raised here between two backend calls.
             var events = MaterializeSteps(response.Steps, TurnResolutionEvent.FromAttackAction);
+
+            // Milestone 8.10. p.14's step 4 is the defender's own text, and a question standing in it
+            // stops the page before step 5's total - so the comparison this method would run next is
+            // not owed yet. It is resumed by the answer, through the same generator.
+            if (cardActions.PendingCardTextResolution != null)
+            {
+                return TurnResolutionResult.Accept(events);
+            }
+
             var outcome = cardActions.ResolveAttackOutcome(
                 definitions, instances, participants, CurrentModifications());
             if (!outcome.Accepted)
@@ -1546,7 +1630,33 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.AddRange(MaterializeSteps(outcome.Steps, TurnResolutionEvent.FromAttackAction));
-            return CompleteAttackAndAdvance(events);
+            return cardActions.PendingCardTextResolution != null
+                ? TurnResolutionResult.Accept(events)
+                : CompleteAttackOrStartItsRepeat(events);
+        }
+
+        /// <summary>
+        /// Milestone 8.10. An Attack whose own card text asked for the Attack again does not end the
+        /// turn: rulebook p.10's repeat is a second instance of the same action, so the card resolves
+        /// and Initiative moves only once the last instance has finished.
+        ///
+        /// <para>A repeat that cannot start - no unit the card admits is left, once the instance that
+        /// asked has taken one out of the set - simply does not happen, and the Attack that asked ends
+        /// exactly as it would have. That is p.10 offering a repeat rather than owing one.</para>
+        /// </summary>
+        private TurnResolutionResult CompleteAttackOrStartItsRepeat(List<TurnResolutionEvent> events)
+        {
+            if (!cardActions.HasOwedAttackRepeat)
+            {
+                return CompleteAttackAndAdvance(events);
+            }
+
+            var repeated = cardActions.StartOwedAttackRepeat(
+                definitions, instances, participants, CurrentModifications());
+            events.AddRange(MaterializeSteps(repeated.Steps, TurnResolutionEvent.FromAttackAction));
+            return repeated.IsComplete
+                ? CompleteAttackAndAdvance(events)
+                : TurnResolutionResult.Accept(events);
         }
 
         private TurnResolutionResult CompleteAttackAndAdvance(List<TurnResolutionEvent> events)
@@ -1720,11 +1830,34 @@ namespace GuardsDigital.Core.Cards
                 // text lands exactly where the page puts it and nothing downstream has to infer it.
                 if (step.Kind == ResolutionStepKind.CardText)
                 {
-                    foreach (var fact in cardActions.ApplyCardText(
+                    // Milestone 8.10. Card text can now produce checkpoints as well as facts, because
+                    // rulebook p.13's Defeat list reaches it: Electroblast's rider escalates into the
+                    // page, and cancelling the defeated hero's Active effects is a checkpoint the list
+                    // raises. It cannot produce a card-text step of its own, so this does not recurse.
+                    foreach (var produced in cardActions.ApplyCardText(
                         step, definitions, instances, participants, timing, CurrentModifications(),
                         roundIndex, turnIndex))
                     {
-                        events.Add(toTurnEvent(fact));
+                        if (produced.Kind == ResolutionStepKind.Checkpoint)
+                        {
+                            AddTiming(
+                                events,
+                                produced.Checkpoint,
+                                produced.CheckpointAffectedHeroId,
+                                produced.CheckpointSourceCardInstanceId);
+                            continue;
+                        }
+
+                        events.Add(toTurnEvent(produced.Fact));
+                    }
+
+                    // Milestone 8.10. The text asked the player something, so rulebook p.14 stops
+                    // here. The steps below this one are not carried anywhere - they are regenerated
+                    // from the continuation's own identity when the answer arrives - which is what
+                    // keeps a paused attack and an unpaused one producing the one same order.
+                    if (cardActions.PendingCardTextResolution != null)
+                    {
+                        break;
                     }
 
                     continue;

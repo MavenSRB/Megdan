@@ -57,6 +57,21 @@ namespace GuardsDigital.Core.Snapshots
                 WriteCorrectionResolution(writer, state.PendingCorrection);
                 WriteRepeatedAction(writer, state.PendingRepeat);
             }
+
+            // Milestone 8.10, schema v23. An Attack stopped inside rulebook p.14's card text writes
+            // three things and no fourth: the frame that asked - the same section a paused Skill writes
+            // - the attack the rest of the page belongs to, and which of the page's moments it stopped
+            // at. The steps still owed are deliberately absent, because they are facts about an attack
+            // rather than identity; the backend regenerates them from exactly this on the way back, and
+            // regenerates them the same way when nothing paused at all.
+            if (continuationKind == CardActionContinuationKind.AttackCardText)
+            {
+                var cardText = state.PendingCardText;
+                WriteSkillResolution(writer, cardText.Frame);
+                WriteAttackResolution(writer, cardText.Attack);
+                writer.Write((int)cardText.Moment);
+                writer.Write((int)cardText.Outcome);
+            }
         }
 
         /// <summary>
@@ -316,6 +331,21 @@ namespace GuardsDigital.Core.Snapshots
                     var correction = ReadCorrectionResolution(reader, board, participants, tieBreaker);
                     state = CardActionResolutionRestoreState.WithPendingCorrection(
                         correction, coinLedger, ReadRepeatedAction(reader, definitions), lanePush);
+                    break;
+                case CardActionContinuationKind.AttackCardText:
+                    var frame = ReadSkillResolution(
+                        reader, definitions, cards, catalogs.Capabilities, participants,
+                        CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
+                        modifications, heroItems);
+                    var pausedAttack = ReadAttackResolution(reader);
+                    var moment = SnapshotEnumReader.Read<CardTextTiming>(
+                        reader, "paused card-text moment");
+                    var pausedOutcome = SnapshotEnumReader.Read<AttackResolutionOutcome>(
+                        reader, "paused card-text attack outcome");
+                    state = CardActionResolutionRestoreState.WithPendingCardText(
+                        new PendingAttackCardTextResolution(frame, moment, pausedAttack, pausedOutcome),
+                        coinLedger,
+                        lanePush);
                     break;
                 default:
                     throw Malformed("Unknown pending card-action kind.");
@@ -916,6 +946,16 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(pending.DefenseOffer.HasValue);
             if (pending.DefenseOffer.HasValue) WriteActionOffer(writer, pending.DefenseOffer.Value);
             WritePrintedValue(writer, pending.DefenseValue);
+
+            // Milestone 8.10, schema v23. The unit a repeated instance may not take - Thunder
+            // Boomerang's "on a different target". It has to cross the wire because the legal target
+            // set is re-derived on restore rather than stored, so a restored repeat with no exclusion
+            // would offer the target the card just forbade.
+            writer.Write((int)pending.ExcludedTarget.Kind);
+            if (pending.ExcludedTarget.Kind == AttackTargetKind.Hero)
+                writer.Write(pending.ExcludedTarget.HeroId.Value);
+            if (pending.ExcludedTarget.Kind == AttackTargetKind.Minion)
+                writer.Write(pending.ExcludedTarget.MinionId.Value);
         }
 
         private static PendingAttackResolution ReadAttackResolution(BinaryReader reader)
@@ -947,10 +987,28 @@ namespace GuardsDigital.Core.Snapshots
             var attackValue = ReadPrintedValue(reader);
             var defenseOffer = reader.ReadBoolean() ? (ActionOffer?)ReadActionOffer(reader) : null;
             var defenseValue = ReadPrintedValue(reader);
+            var excludedKind = SnapshotEnumReader.Read<AttackTargetKind>(
+                reader, "repeated attack excluded target kind");
+            AttackTarget excludedTarget;
+            switch (excludedKind)
+            {
+                case AttackTargetKind.Hero:
+                    excludedTarget = AttackTarget.Hero(new HeroId(reader.ReadString()));
+                    break;
+                case AttackTargetKind.Minion:
+                    excludedTarget = AttackTarget.Minion(new MinionId(reader.ReadString()));
+                    break;
+                case AttackTargetKind.None:
+                    excludedTarget = default;
+                    break;
+                default:
+                    throw Malformed($"Unhandled excluded attack target kind '{excludedKind}'.");
+            }
+
             return new PendingAttackResolution(
                 common.ResolutionId, common.CardId, common.DefinitionReference, common.ActionId,
                 common.ActorId, common.InvocationContext, common.StepId, phase, target,
-                attackValue, defenseOffer, defenseValue);
+                attackValue, defenseOffer, defenseValue, excludedTarget);
         }
 
         private static void WriteCoinLedger(BinaryWriter writer, HeroCoinLedgerRestoreStateHolder holder)

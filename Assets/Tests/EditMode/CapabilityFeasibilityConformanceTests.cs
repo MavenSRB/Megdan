@@ -96,8 +96,13 @@ namespace GuardsDigital.Tests.EditMode
             // reads card state - the chooser-owned in-hand discard - so it moves by one again, and
             // milestone 7.2b registers the first that reads a printed value - the target selection
             // bounded by rulebook p.9's Radius icon - and 7.2c the first that publishes one, so it
-            // moves by one more twice.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(26),
+            // moves by one more twice. Milestone 8.10 moves it by one, and it is worth saying which of
+            // its two new declarations did: the printed-Radius hero selection did *not*, because it
+            // shares the implementation the other three printed-icon declarations use; the capability
+            // that reaches rulebook p.13's Defeat list did, because nothing before it declared a
+            // consequence. Both are proved on showcase content before the verified card names them,
+            // which is what milestone 7.9's deferral gate requires of a hero slice.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(28),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

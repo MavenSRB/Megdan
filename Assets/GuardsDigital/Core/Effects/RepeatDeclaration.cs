@@ -33,7 +33,20 @@ namespace GuardsDigital.Core.Effects
         /// that is no longer eligible makes the repeated instance's selection impossible rather than
         /// free.
         /// </summary>
-        SameTarget = 1
+        SameTarget = 1,
+
+        /// <summary>
+        /// Milestone 8.10. `on a different target`: the repeated instance chooses as freely as an
+        /// unbound one does, out of a legal set with one unit taken out of it - the one the instance
+        /// that asked for the repeat took.
+        ///
+        /// <para>It is the complement of <see cref="SameTarget"/> and not a variation on it: that one
+        /// supplies a target and asks nothing, this one asks the ordinary question of a smaller set.
+        /// Thunder Boomerang is what prints it, and it prints it about the Attack it repeats rather
+        /// than about a selection node - which is why the exclusion is carried by the repeated Attack
+        /// instance rather than bound to a node id.</para>
+        /// </summary>
+        DifferentTarget = 2
     }
 
     /// <summary>

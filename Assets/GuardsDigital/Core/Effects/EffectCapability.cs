@@ -116,8 +116,10 @@ namespace GuardsDigital.Core.Effects
             ActionKind enclosingActionKind,
             MatchComponents components = null,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
-            IReadOnlyList<IReadOnlyList<EffectValue>> answersAlreadyGiven = null)
+            IReadOnlyList<IReadOnlyList<EffectValue>> answersAlreadyGiven = null,
+            HeroId enclosingAttackHeroTargetId = default)
         {
+            EnclosingAttackHeroTargetId = enclosingAttackHeroTargetId;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
                 enclosingActionKind == ActionKind.None)
             {
@@ -180,6 +182,13 @@ namespace GuardsDigital.Core.Effects
         /// different vocabularies and only one bridge between them exists.
         /// </summary>
         public ActionKind EnclosingActionKind { get; }
+
+        /// <summary>
+        /// The hero the enclosing Attack targeted, or the undefined hero when it took a minion or when
+        /// this effect is not card text inside an Attack at all. Milestone 8.10, for Thunder
+        /// Boomerang's "If you targeted a hero".
+        /// </summary>
+        public HeroId EnclosingAttackHeroTargetId { get; }
 
         /// <summary>
         /// p.18's activity this effect's operations count as - the enclosing action's, because card

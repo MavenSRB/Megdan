@@ -194,6 +194,90 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications);
         }
 
+        /// <summary>
+        /// Milestone 8.10. A second instance of an Attack that has just finished, asked for by that
+        /// Attack's own card text: Thunder Boomerang prints "If you targeted a hero may repeat once on
+        /// a different target."
+        ///
+        /// <para><b>Why it is not <see cref="StartTurnAttack"/>.</b> That entry point validates the
+        /// offer against what the hero may take right now, and by the time a repeat is owed the answer
+        /// is no - the card has been played and its action performed, which is precisely why p.10 has a
+        /// repeat at all. The identity therefore comes from the instance that just completed, exactly
+        /// as milestone 6.7's repeated Skill takes its identity from the frame that asked, and the
+        /// offer is rebuilt from that identity rather than re-chosen.</para>
+        ///
+        /// <para>Everything after this point is the ordinary Attack: the same target choice, the same
+        /// Defense response, the same p.13 consequences and the same p.14 order. What the repeated
+        /// instance carries that the first did not is the target it may not take.</para>
+        /// </summary>
+        internal AttackActionResolutionResult StartRepeatedAttack(
+            PendingAttackResolution completed,
+            AttackTarget excludedTarget,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (completed == null) throw new ArgumentNullException(nameof(completed));
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
+            if (pendingAttackResolution != null)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.ResolutionAlreadyPending);
+            }
+
+            var repeated = new PendingAttackResolution(
+                completed.ResolutionId,
+                completed.SourceCardInstanceId,
+                completed.SourceDefinitionReference,
+                completed.ActionDefinitionId,
+                completed.ActorId,
+                completed.InvocationContext,
+                new ActionResolutionStepId("attack-target"),
+                AttackResolutionPhase.ChooseTarget,
+                default(AttackTarget),
+                null,
+                excludedTarget: excludedTarget);
+            var offer = FindPendingAttackOffer(
+                repeated, materializedDefinitions, materializedInstances);
+            if (!offer.HasValue)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
+            }
+
+            if (!adjacentMoveAuthority.Occupancies.Any(
+                occupancy => occupancy.HeroId.Equals(repeated.ActorId)))
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.ActorUnavailable);
+            }
+
+            pendingAttackResolution = repeated;
+            pendingAttackTargetChoice = CreateAttackTargetChoice(
+                repeated, offer.Value, materializedDefinitions, participants, modifications);
+            pendingDefenseChoice = null;
+
+            if (pendingAttackTargetChoice.LegalTargets.Count == 0)
+            {
+                // p.10's repeat is offered, not owed: an instance with nobody left to take simply does
+                // not happen, and the action that asked for it is already complete.
+                pendingAttackResolution = null;
+                pendingAttackTargetChoice = null;
+                return RejectAttack(CardActionResolutionRejectionReason.TargetUnavailable);
+            }
+
+            return AttackActionResolutionResult.Accept(
+                pendingAttackResolution,
+                pendingAttackTargetChoice,
+                null,
+                new[]
+                {
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.AttackTargetChoiceRequested(pendingAttackResolution))
+                });
+        }
+
         private AttackActionResolutionResult StartAttackResolution(
             ActionResolutionId resolutionId,
             ActionOffer offer,
@@ -361,7 +445,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new ActionResolutionStepId("defense-response"),
                 AttackResolutionPhase.DefenseResponse,
                 command.TargetHeroId,
-                attackValue);
+                attackValue,
+                excludedTarget: pendingAttackResolution.ExcludedTarget);
             var defenseOffers = FindDefenseOffers(
                 materializedDefinitions, materializedInstances, command.TargetHeroId, modifications);
             var defenseChoice = new PendingDefenseResponseChoice(
@@ -428,7 +513,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardTextTiming timing,
             PendingAttackResolution resolution,
             HeroId actorId,
-            IReadOnlyList<CardDefinition> definitions) =>
+            IReadOnlyList<CardDefinition> definitions,
+            AttackResolutionOutcome remainderOutcome = AttackResolutionOutcome.None) =>
             CardTextAt(
                 timing,
                 resolution,
@@ -436,7 +522,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 definitions,
                 resolution.SourceDefinitionReference,
                 resolution.ActionDefinitionId,
-                resolution.SourceCardInstanceId);
+                resolution.SourceCardInstanceId,
+                remainderOutcome);
 
         /// <summary>
         /// The same, for text on a card that is not the Attack's own - p.14's step 4 applies the
@@ -449,7 +536,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             CardDefinitionReference sourceDefinitionReference,
             ActionDefinitionId actionDefinitionId,
-            CardInstanceId sourceCardInstanceId)
+            CardInstanceId sourceCardInstanceId,
+            AttackResolutionOutcome remainderOutcome = AttackResolutionOutcome.None)
         {
             var action = FindCardTextAction(sourceDefinitionReference, actionDefinitionId, definitions);
             if (action == null || action.CardTextTiming != timing)
@@ -457,10 +545,85 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return Array.Empty<ResolutionStep>();
             }
 
+            // Milestone 8.10. Only the two moments whose remainder is a function of the attack's
+            // identity can carry one, so only they can hold a question; step 1 hands over nothing and
+            // is refused at configuration instead.
+            var carriesARemainder =
+                timing == CardTextTiming.AfterTheAttack || timing == CardTextTiming.DefenseAction;
+
             return new[]
             {
-                ResolutionStep.ApplyCardText(sourceCardInstanceId, action.Id, actorId, timing)
+                ResolutionStep.ApplyCardText(
+                    sourceCardInstanceId,
+                    action.Id,
+                    actorId,
+                    timing,
+                    carriesARemainder ? resolution : null,
+                    remainderOutcome)
             };
+        }
+
+        /// <summary>
+        /// The steps rulebook p.14 leaves after one of its card-text moments, produced from the
+        /// attack's own identity rather than from anything a run remembered. Milestone 8.10.
+        ///
+        /// <para><b>Why it is a generator rather than a list.</b> Card text applied inside an Attack
+        /// may now ask the player a question, and the steps standing after it cannot be carried across
+        /// that pause: they are facts about an attack, not identity, and this engine persists identity
+        /// alone. So they are generated here from the pending resolution the pause does persist - and
+        /// the same generator is what emits them when nothing pauses at all. There is one of them, so
+        /// the paused and unpaused orders cannot drift apart.</para>
+        ///
+        /// <para><b>Why only two of the page's three moments.</b> What follows step 4 and what follows
+        /// step 7 are each a function of the resolution: the Defense total and its comparison, or the
+        /// outcome and the end of the action. What follows step 1 is not - on the minion arm it
+        /// contains the facts of a Defeat this backend has already computed and applied, which no
+        /// identity can reproduce. A card whose text could pause at step 1 is therefore still refused
+        /// at configuration by <see cref="GuardsDigital.Core.Effects.EffectDefinitionValidator"/>, and
+        /// that refusal now names the moment rather than the whole Attack.</para>
+        /// </summary>
+        internal static IReadOnlyList<ResolutionStep> StepsAfterCardText(
+            CardTextTiming moment,
+            PendingAttackResolution resolution,
+            AttackResolutionOutcome outcome)
+        {
+            if (resolution == null) throw new ArgumentNullException(nameof(resolution));
+
+            switch (moment)
+            {
+                // p.14 step 7 is the last thing the page does, so what stands after it is the outcome
+                // this attack reached and the end of the action that carried it.
+                case CardTextTiming.AfterTheAttack:
+                    return Array.AsReadOnly(new[]
+                    {
+                        ResolutionStep.FromFact(
+                            CardActionResolutionEvent.AttackResolutionCompleted(resolution, outcome)),
+                        ResolutionStep.AtActionEnded(
+                            resolution.SourceCardInstanceId,
+                            resolution.ActionDefinitionId,
+                            resolution.ActorId,
+                            ActionKind.Attack)
+                    });
+
+                // p.14 step 4 sits inside the defender's response, so what stands after it is step 5's
+                // total, the end of the response, and the comparison step 6 opens.
+                case CardTextTiming.DefenseAction:
+                    return Array.AsReadOnly(new[]
+                    {
+                        ResolutionStep.FromFact(
+                            CardActionResolutionEvent.DefenseTotalCalculated(resolution)),
+                        ResolutionStep.FromFact(
+                            CardActionResolutionEvent.DefenseResponseCompleted(resolution)),
+                        ResolutionStep.AtCheckpoint(
+                            TimingCheckpoint.AttackResultComparison, resolution.TargetHeroId)
+                    });
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(moment), moment,
+                        "Only rulebook p.14's steps 4 and 7 leave a remainder this backend can " +
+                        "produce from the attack's identity alone.");
+            }
         }
 
         /// <summary>
@@ -507,7 +670,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new ActionResolutionStepId("minion-defeat"),
                 AttackResolutionPhase.ResolveMinionDefeat,
                 AttackTarget.Minion(targetMinionId),
-                null);
+                null,
+                excludedTarget: pendingAttackResolution.ExcludedTarget);
             // Finding `F-ER2-09`: p.13's coin values are read from the declared standard-minion content
             // rather than restated here as a Heavy-versus-other literal. The number is unchanged.
             var coins = StandardMinionProfileCatalog.Rulebook.Get(target.MinionType).DefeatCoins;
@@ -546,14 +710,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CardActionResolutionEvent.MinionDefeatFact(resolution, defeat, fact))));
             events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.AfterAttack));
             events.AddRange(CardTextAt(
-                CardTextTiming.AfterTheAttack, resolution, resolution.ActorId, definitions));
-            events.Add(ResolutionStep.FromFact(CardActionResolutionEvent.AttackResolutionCompleted(
-                resolution, AttackResolutionOutcome.AttackSuccessful)));
-            events.Add(ResolutionStep.AtActionEnded(
-                resolution.SourceCardInstanceId,
-                resolution.ActionDefinitionId,
-                resolution.ActorId,
-                ActionKind.Attack));
+                CardTextTiming.AfterTheAttack, resolution, resolution.ActorId, definitions,
+                AttackResolutionOutcome.AttackSuccessful));
+            events.AddRange(StepsAfterCardText(
+                CardTextTiming.AfterTheAttack, resolution, AttackResolutionOutcome.AttackSuccessful));
 
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;
@@ -789,12 +949,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 defenseOffer.SourceDefinitionReference,
                 defenseOffer.ActionDefinitionId,
                 defenseCard.Id));
-            defenseSteps.Add(ResolutionStep.FromFact(
-                CardActionResolutionEvent.DefenseTotalCalculated(pendingAttackResolution)));
-            defenseSteps.Add(ResolutionStep.FromFact(
-                CardActionResolutionEvent.DefenseResponseCompleted(pendingAttackResolution)));
-            defenseSteps.Add(ResolutionStep.AtCheckpoint(
-                TimingCheckpoint.AttackResultComparison, pendingAttackResolution.TargetHeroId));
+            defenseSteps.AddRange(StepsAfterCardText(
+                CardTextTiming.DefenseAction,
+                pendingAttackResolution,
+                AttackResolutionOutcome.None));
 
             return AttackActionResolutionResult.Accept(
                 pendingAttackResolution,
@@ -873,6 +1031,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 heroDefeat = ResolveHeroDefeat(
                     completedResolution,
+                    completedResolution.TargetHeroId,
                     materializedDefinitions,
                     materializedInstances,
                     participants,
@@ -896,14 +1055,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CardTextTiming.AfterTheAttack,
                 completedResolution,
                 completedResolution.ActorId,
-                materializedDefinitions));
-            events.Add(ResolutionStep.FromFact(
-                CardActionResolutionEvent.AttackResolutionCompleted(completedResolution, outcome)));
-            events.Add(ResolutionStep.AtActionEnded(
-                completedResolution.SourceCardInstanceId,
-                completedResolution.ActionDefinitionId,
-                completedResolution.ActorId,
-                ActionKind.Attack));
+                materializedDefinitions,
+                outcome));
+            events.AddRange(StepsAfterCardText(
+                CardTextTiming.AfterTheAttack, completedResolution, outcome));
 
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;
@@ -936,6 +1091,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private HeroDefeatResolution ResolveHeroDefeat(
             PendingAttackResolution completedResolution,
+            HeroId defeatedHeroId,
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
             MatchParticipants participants,
@@ -947,7 +1103,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return null;
             }
 
-            var defeatedHeroId = completedResolution.TargetHeroId;
             var defeatedTeamId = participants.GetTeamForHero(defeatedHeroId).Id;
 
             // p.13's two readings of the defeated hero, taken before anything moves. The Level is
@@ -1086,19 +1241,52 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     {
                         events.Add(ResolutionStep.FromFact(
                             CardActionResolutionEvent.MarkerReturnedOnHeroDefeat(
-                                completedResolution, attachment)));
+                                completedResolution, defeatedHeroId, attachment)));
                     }
                 }
 
                 events.Add(fact == HeroDefeatFactKind.DefeatRecorded
                     ? ResolutionStep.FromFact(
-                        CardActionResolutionEvent.HeroDefeatRecorded(completedResolution, resolved))
+                        CardActionResolutionEvent.HeroDefeatRecorded(completedResolution, defeatedHeroId, resolved))
                     : ResolutionStep.FromFact(
-                        CardActionResolutionEvent.HeroDefeatFact(completedResolution, resolved, fact)));
+                        CardActionResolutionEvent.HeroDefeatFact(completedResolution, defeatedHeroId, resolved, fact)));
             }
 
             return resolved;
         }
+
+        /// <summary>
+        /// Milestone 8.10. Rulebook p.13's "When a Hero is Defeated" list run against a hero this
+        /// Attack did not target, which is what Electroblast's rider escalates to when the hero it
+        /// chose has no card to give: "An enemy hero in radius and not adjacent to you discards a card,
+        /// or is defeated."
+        ///
+        /// <para>It is the same list, in the same order, through the same method - not a second one.
+        /// Everything p.13 prices and spends is authority state this backend already holds, and a
+        /// second copy of the chain is exactly the disagreement milestone 6.6b closed between the hero
+        /// and minion removal paths. What the caller supplies is only which hero the page is being run
+        /// about; the acting hero, the activity and the action identity are the attack's own, because
+        /// the rider is printed on the card performing it.</para>
+        ///
+        /// <para><c>null</c>, having changed nothing, when this composition cannot price a Defeat -
+        /// the same answer the Attack path gets, for the same reason.</para>
+        /// </summary>
+        internal HeroDefeatResolution ResolveEffectInvokedHeroDefeat(
+            PendingAttackResolution attack,
+            HeroId defeatedHeroId,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            ICollection<ResolutionStep> events) =>
+            ResolveHeroDefeat(
+                attack ?? throw new ArgumentNullException(nameof(attack)),
+                defeatedHeroId,
+                definitions,
+                instances,
+                participants,
+                modifications,
+                events);
 
         internal AttackDefenseBackendRestoreState CaptureRestoreState() =>
             new AttackDefenseBackendRestoreState(pendingAttackResolution);
@@ -1263,7 +1451,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.TargetHeroId,
                 pendingAttackResolution.AttackValue,
                 defenseOffer,
-                defenseValue);
+                defenseValue,
+                pendingAttackResolution.ExcludedTarget);
         }
 
         private PendingAttackTargetChoice CreateAttackTargetChoice(
@@ -1273,16 +1462,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications)
         {
+            // Milestone 8.10. "on a different target" is the repeated instance's own narrowing, taken
+            // out of the same legal set the first instance chose from rather than out of a second
+            // query, so everything else the page decides about a target - reach, the printed policy,
+            // p.18's immunity - is decided once and the exclusion is the only difference.
+            var legal = FindLegalAttackTargets(
+                resolution.ActorId, offer, definitions, participants, modifications);
             return new PendingAttackTargetChoice(
                 resolution.ResolutionId,
                 resolution.CurrentStepId,
                 resolution.ActorId,
-                FindLegalAttackTargets(
-                    resolution.ActorId,
-                    offer,
-                    definitions,
-                    participants,
-                    modifications));
+                resolution.ExcludedTarget.IsDefined
+                    ? legal.Where(target => !target.Equals(resolution.ExcludedTarget)).ToArray()
+                    : legal);
         }
 
         /// <summary>

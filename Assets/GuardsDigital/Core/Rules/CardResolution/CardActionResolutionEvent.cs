@@ -393,12 +393,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         public static CardActionResolutionEvent MarkerReturnedOnHeroDefeat(
             PendingAttackResolution resolution,
+            HeroId defeatedHeroId,
             MarkerAttachment attachment)
         {
             if (resolution == null) throw new ArgumentNullException(nameof(resolution));
             if (attachment == null) throw new ArgumentNullException(nameof(attachment));
-            if (!resolution.TargetHeroId.IsDefined ||
-                !attachment.HolderHeroId.Equals(resolution.TargetHeroId))
+            if (!defeatedHeroId.IsDefined ||
+                !attachment.HolderHeroId.Equals(defeatedHeroId))
             {
                 throw new ArgumentException(
                     "A p.13 defeat return reports a marker the defeated hero held.", nameof(attachment));
@@ -411,7 +412,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.ActionDefinitionId,
                 default,
                 resolution.ActorId,
-                resolution.TargetHeroId,
+                defeatedHeroId,
                 new ActionResolutionStepId($"defeat-return-marker-{attachment.Id.Value}"),
                 0,
                 0,
@@ -424,15 +425,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 returnedMarkerDefinitionReference: attachment.Definition.Reference);
         }
 
+        /// <summary>
+        /// <paramref name="defeatedHeroId"/> was the Attack's own hero target until milestone 8.10, and
+        /// is now stated because it is no longer always that hero: Electroblast's rider escalates into
+        /// rulebook p.13's list against a hero the Attack did not target and may never have been able
+        /// to. What the guard still holds is the pairing - the event and the resolution it reports have
+        /// to be about the same hero - which is the whole of what reading it off the Attack was for.
+        /// </summary>
         public static CardActionResolutionEvent HeroDefeatRecorded(
             PendingAttackResolution resolution,
+            HeroId defeatedHeroId,
             HeroDefeatResolution defeat)
         {
             if (resolution == null || defeat == null ||
-                !resolution.TargetHeroId.IsDefined ||
-                !string.Equals(defeat.Defeat.TargetId.Value, resolution.TargetHeroId.Value, StringComparison.Ordinal))
+                !defeatedHeroId.IsDefined ||
+                !string.Equals(defeat.Defeat.TargetId.Value, defeatedHeroId.Value, StringComparison.Ordinal))
             {
-                throw new ArgumentException("Hero Defeat event requires the Attack's exact hero target.");
+                throw new ArgumentException("Hero Defeat event requires the defeated hero it reports.");
             }
 
             return new CardActionResolutionEvent(
@@ -442,7 +451,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.ActionDefinitionId,
                 default,
                 resolution.ActorId,
-                resolution.TargetHeroId,
+                defeatedHeroId,
                 resolution.CurrentStepId,
                 0,
                 resolution.AttackTotal,
@@ -498,11 +507,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         public static CardActionResolutionEvent HeroDefeatFact(
             PendingAttackResolution resolution,
+            HeroId defeatedHeroId,
             HeroDefeatResolution defeat,
             HeroDefeatFactKind factKind)
         {
             if (resolution == null || defeat == null ||
-                !defeat.Facts.Contains(factKind) || !resolution.TargetHeroId.IsDefined)
+                !defeat.Facts.Contains(factKind) || !defeatedHeroId.IsDefined)
             {
                 throw new ArgumentException("Hero Defeat event requires one recorded typed fact.");
             }
@@ -533,7 +543,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.ActionDefinitionId,
                 default,
                 resolution.ActorId,
-                resolution.TargetHeroId,
+                defeatedHeroId,
                 new ActionResolutionStepId($"hero-defeat-{FactStepSuffix(factKind)}"),
                 0,
                 resolution.AttackTotal,

@@ -196,6 +196,20 @@ namespace GuardsDigital.Core.Cards.Synthetic
             new SyntheticSkillProfile("blue-demand", "Blue Demand", 5);
 
         /// <summary>
+        /// Milestone 8.10's escalation, on content that is nobody's card: the named hero discards, and
+        /// is defeated when they had nothing to give.
+        ///
+        /// It exists so that the capability reaching rulebook p.13's Defeat list is proved here rather
+        /// than arriving with the verified card that binds it, which is the deferral milestone 7.9's
+        /// gate refuses. Electroblast is that card; this is the seam it names.
+        /// </summary>
+        private static readonly SyntheticSkillProfile RedEscalatingSkillProfile =
+            new SyntheticSkillProfile("red-ultimatum", "Red Ultimatum", 19);
+
+        private static readonly SyntheticSkillProfile BlueEscalatingSkillProfile =
+            new SyntheticSkillProfile("blue-ultimatum", "Blue Ultimatum", 4);
+
+        /// <summary>
         /// Milestone 7.2b's Skill cards: the first cards in this build that print rulebook p.9's Radius
         /// icon.
         ///
@@ -385,6 +399,28 @@ namespace GuardsDigital.Core.Cards.Synthetic
         }
 
         /// <summary>
+        /// The five ordinary cards plus milestone 8.10's escalating Skill alone: the named hero
+        /// discards a card, or is defeated if they had none to give.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithEscalatingSkill(
+            HeroId ownerId, HeroId discardingHeroId)
+        {
+            return Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                escalatingSkillProfile: RedEscalatingSkillProfile,
+                cardStateDiscardingHeroId: discardingHeroId);
+        }
+
+        public static ConfiguredHand CreateBlueWithEscalatingSkill(
+            HeroId ownerId, HeroId discardingHeroId)
+        {
+            return Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                escalatingSkillProfile: BlueEscalatingSkillProfile,
+                cardStateDiscardingHeroId: discardingHeroId);
+        }
+
+        /// <summary>
         /// The five ordinary cards plus milestone 7.2b's printed-Radius Skill alone.
         ///
         /// Its own configuration for the reason the four fixture hands before it have one, and because
@@ -468,6 +504,15 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 "blue-rejoinder", "Blue Rejoinder", 3, 3, 3, 2, CardTextTiming.None, true, false);
 
         /// <summary>
+        /// Milestone 8.10. An After-the-attack text whose whole content is the question Thunder
+        /// Boomerang asks before its repeat: did this Attack take a hero?
+        /// </summary>
+        private static readonly SyntheticAttackTextProfile RedConditionalTextProfile =
+            new SyntheticAttackTextProfile(
+                "red-reckoning", "Red Reckoning", 7, 4, 2, 2, CardTextTiming.AfterTheAttack,
+                false, false, readsTheAttacksTarget: true);
+
+        /// <summary>
         /// The five ordinary cards plus milestone 8.5's two Attack-text cards: one applying its text at
         /// p.14's step 1 and one at step 7, the second also narrowed to p.13's heroes alone.
         /// </summary>
@@ -476,6 +521,21 @@ namespace GuardsDigital.Core.Cards.Synthetic
             return Create(
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 attackTextProfiles: new[] { RedBeforeTextProfile, RedAfterTextProfile });
+        }
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.10's Attack-text card alone: an After-the-attack
+        /// text whose content is the question about what the Attack took.
+        ///
+        /// Its own hand rather than a third card in the one above, for the reason every fixture hand
+        /// here has one: milestone 8.5's cases assert over the hand that milestone dealt, and a card
+        /// appended to it would make those assertions read past something they were not written about.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithConditionalAttackText(HeroId ownerId)
+        {
+            return Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedConditionalTextProfile });
         }
 
         /// <summary>
@@ -499,6 +559,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile repeatSkillProfile = null,
             SyntheticSkillProfile cardStateSkillProfile = null,
             HeroId cardStateDiscardingHeroId = default,
+            SyntheticSkillProfile escalatingSkillProfile = null,
             SyntheticSkillProfile radiusSkillProfile = null,
             SyntheticSkillProfile orbitSkillProfile = null,
             SyntheticSkillProfile kinesisSkillProfile = null,
@@ -583,6 +644,21 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateCardStateSkillDefinition(cardStateSkillProfile, cardStateDiscardingHeroId),
                     cardStateSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (escalatingSkillProfile != null)
+            {
+                if (!cardStateDiscardingHeroId.IsDefined)
+                {
+                    throw new ArgumentException(
+                        "An escalating Skill names the hero who must discard or be defeated.",
+                        nameof(cardStateDiscardingHeroId));
+                }
+
+                AddCard(
+                    definitions, instances,
+                    CreateEscalatingSkillDefinition(escalatingSkillProfile, cardStateDiscardingHeroId),
+                    escalatingSkillProfile.Id, instancePrefix, ownerId);
             }
 
             if (radiusSkillProfile != null)
@@ -1332,6 +1408,106 @@ namespace GuardsDigital.Core.Cards.Synthetic
         }
 
         /// <summary>
+        /// Milestone 8.10's fixture Skill: the named hero discards one card of their own choosing, or
+        /// is defeated if they had none to give.
+        ///
+        /// <para>It is here so the seam reaching rulebook p.13's Defeat list from card text exists on
+        /// content that is nobody's card, before the verified card that binds it - which is what
+        /// milestone 7.9's deferral gate requires and what Electroblast then names. Nothing about the
+        /// escalation is Wasp's: the shape is p.10's mandatory step with two ways to complete, read
+        /// from <see cref="EffectNodeKind.Conditional"/>'s then-and-else.</para>
+        ///
+        /// <para>The discard is revision 2, which reports whether it happened rather than declining in
+        /// silence; the conditional reads that report; and the defeat node declares the request the
+        /// card action performs the page from. No node here performs p.13 itself.</para>
+        /// </summary>
+        private static CardDefinition CreateEscalatingSkillDefinition(
+            SyntheticSkillProfile profile,
+            HeroId discardingHeroId)
+        {
+            var root = new EffectNodeId("ultimatum-root");
+            var discard = new EffectNodeId("ultimatum-discard");
+            var escalation = new EffectNodeId("ultimatum-escalation");
+            var defeat = new EffectNodeId("ultimatum-defeat");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-10-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { discard, escalation }),
+                    new EffectNodeDefinition(
+                        discard, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticCardStateCapabilities.DiscardChosenCardV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticCardStateCapabilities.HeroParameter,
+                                EffectValue.Hero(discardingHeroId))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticCardStateCapabilities.DiscardedOutput,
+                                EffectValueKind.CardInstance),
+                            new EffectOutputBinding(
+                                SyntheticCardStateCapabilities.UnableToDiscardOutput,
+                                EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        escalation, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.IsFlaggedV1,
+                        childNodeIds: new[] { defeat },
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "flag",
+                                discard,
+                                SyntheticCardStateCapabilities.UnableToDiscardOutput,
+                                EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        defeat, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticConsequenceCapabilities.DefeatHeroV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticConsequenceCapabilities.HeroParameter,
+                                EffectValue.Hero(discardingHeroId))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticConsequenceCapabilities.DefeatedHeroOutput,
+                                EffectValueKind.Hero)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-10-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-escalating-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
         /// Milestone 7.2b's card: a Skill that prints rulebook p.9's Radius icon, chooses one unit
         /// inside that Radius, and pushes it one space.
         ///
@@ -1637,8 +1813,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 int movementValue,
                 CardTextTiming primaryTiming,
                 bool defenseCarriesText,
-                bool narrowedToHeroes)
+                bool narrowedToHeroes,
+                bool readsTheAttacksTarget = false)
             {
+                ReadsTheAttacksTarget = readsTheAttacksTarget;
                 Id = id;
                 DisplayName = displayName;
                 Initiative = initiative;
@@ -1657,6 +1835,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
             public int DefenseValue { get; }
             public int MovementValue { get; }
             public CardTextTiming PrimaryTiming { get; }
+
+            /// <summary>Milestone 8.10: whether this card.s text asks what the Attack took.</summary>
+            public bool ReadsTheAttacksTarget { get; }
             public bool DefenseCarriesText { get; }
             public bool NarrowedToHeroes { get; }
         }
@@ -1681,6 +1862,34 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("hero", EffectValueKind.Hero) })
                 });
 
+        /// <summary>
+        /// Milestone 8.10's card text: the same note, applied only where the Attack this text is
+        /// printed inside took a hero.
+        ///
+        /// It exists so the predicate over the enclosing Attack's target is proved on content that is
+        /// nobody's card, before Thunder Boomerang names it - which is what milestone 7.9's deferral
+        /// gate requires. What is under test is the predicate, so its then-branch is the same
+        /// unconditional note every other fixture text applies.
+        /// </summary>
+        private static EffectDefinition ConditionalCardTextEffect(string id) =>
+            new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{id}-text"),
+                "phase-8-10-rev-1",
+                new EffectNodeId("took-a-hero"),
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("took-a-hero"), EffectNodeKind.Conditional,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticConsequenceCapabilities.AttackTookAHeroV1,
+                        childNodeIds: new[] { new EffectNodeId("note") }),
+                    new EffectNodeDefinition(
+                        new EffectNodeId("note"), EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.NoteActorV1,
+                        outputs: new[] { new EffectOutputBinding("hero", EffectValueKind.Hero) })
+                });
+
         private static CardDefinition CreateAttackTextDefinition(SyntheticAttackTextProfile profile)
         {
             var actions = new List<ActionDefinition>
@@ -1695,7 +1904,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     default,
                     profile.PrimaryTiming == CardTextTiming.None
                         ? null
-                        : CardTextEffect(profile.Id),
+                        : profile.ReadsTheAttacksTarget
+                            ? ConditionalCardTextEffect(profile.Id)
+                            : CardTextEffect(profile.Id),
                     default,
                     PrintedDefenseResolution.None,
                     profile.PrimaryTiming,

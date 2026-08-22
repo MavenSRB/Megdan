@@ -295,6 +295,14 @@ namespace GuardsDigital.Core.Effects
                         BoundSelectionNodeId.IsDefined)
                         throw new ArgumentException(
                             "An unbound repeat binds no selection, so it must name none.");
+                    // Milestone 8.10. A different-target repeat names no selection either: what it
+                    // excludes is the target the action itself took, which is the action's own state
+                    // and not a node's published output.
+                    if (RepeatTargetBinding == RepeatTargetBinding.DifferentTarget &&
+                        BoundSelectionNodeId.IsDefined)
+                        throw new ArgumentException(
+                            "A different-target repeat excludes the action's own target, so it names " +
+                            "no selection node.");
                     if (BoundSelectionNodeId.Equals(Id))
                         throw new ArgumentException(
                             "A repeat cannot bind its own target; the selection it binds is another node.");

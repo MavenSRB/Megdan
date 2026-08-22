@@ -82,11 +82,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId targetHeroId,
             ValueResult attackValue,
             ActionOffer? defenseOffer = null,
-            ValueResult defenseValue = null)
+            ValueResult defenseValue = null,
+            AttackTarget excludedTarget = default)
             : this(resolutionId, sourceCardInstanceId, sourceDefinitionReference, actionDefinitionId,
                 actorId, invocationContext, currentStepId, phase,
                 targetHeroId.IsDefined ? AttackTarget.Hero(targetHeroId) : default,
-                attackValue, defenseOffer, defenseValue)
+                attackValue, defenseOffer, defenseValue, excludedTarget)
         {
         }
 
@@ -102,8 +103,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackTarget target,
             ValueResult attackValue,
             ActionOffer? defenseOffer = null,
-            ValueResult defenseValue = null)
+            ValueResult defenseValue = null,
+            AttackTarget excludedTarget = default)
         {
+            ExcludedTarget = excludedTarget;
             if (!resolutionId.IsDefined ||
                 !sourceCardInstanceId.IsDefined ||
                 !sourceDefinitionReference.IsDefined ||
@@ -186,6 +189,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public AttackTarget Target { get; }
         public HeroId TargetHeroId => Target.HeroId;
         public MinionId TargetMinionId => Target.MinionId;
+
+        /// <summary>
+        /// Milestone 8.10. The unit this instance may not take, or the undefined target on every
+        /// instance that may take anything.
+        ///
+        /// <para>Thunder Boomerang prints "may repeat once on a <b>different target</b>", and the
+        /// exclusion belongs to the repeated instance rather than to the node that asked for it: the
+        /// legal target set is re-derived whenever it is asked - when the choice opens, when the answer
+        /// arrives, and again when a snapshot restores the pause - so what makes the repeat's set
+        /// smaller has to be state the instance carries rather than a filter someone remembered to
+        /// apply.</para>
+        /// </summary>
+        public AttackTarget ExcludedTarget { get; }
         public ValueResult AttackValue { get; }
         public int AttackTotal => AttackValue?.Total ?? 0;
         public ActionOffer? DefenseOffer { get; }

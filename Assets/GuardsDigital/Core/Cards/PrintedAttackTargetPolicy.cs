@@ -36,6 +36,28 @@ namespace GuardsDigital.Core.Cards
         PrintedRange = 1
     }
 
+    /// <summary>Whether a printed Attack's own words exclude rulebook p.19's straight line.</summary>
+    public enum AttackTargetLine
+    {
+        /// <summary>
+        /// p.13's default. The page says nothing about files, so every enemy unit within the reach
+        /// above is a legal target of an ordinary Attack.
+        /// </summary>
+        AnyLine = 0,
+
+        /// <summary>
+        /// The narrowing both of Wasp's Boomerangs print - "Target a unit in range and not in a
+        /// straight line" - measured from the attacker's own space.
+        ///
+        /// <para>Charged Boomerang's face adds "( Adjacent units are in a straight line as well. )",
+        /// which p.9 makes clarification rather than a second rule, and it is not modelled as one:
+        /// <see cref="GuardsDigital.Core.Board.StraightLineQuery"/> already answers adjacency as
+        /// p.19's separation-of-one case, so the reminder is describing the one query rather than
+        /// adding to it.</para>
+        /// </summary>
+        NotInStraightLine = 1
+    }
+
     /// <summary>
     /// What a printed Attack may target, as typed content rather than as a sentence something reads at
     /// runtime.
@@ -55,10 +77,19 @@ namespace GuardsDigital.Core.Cards
     /// sentences: a reach of <see cref="AttackTargetReach.PrintedRange"/> needs a printed Range to
     /// read, and a non-Ranged Attack may not have one, because p.13 gives its adjacency no
     /// exception.</para>
+    ///
+    /// <para>Milestone 8.10 added the third dimension for the same reason the first two are here.
+    /// Both Boomerangs print "Target a unit in range and not in a straight line", which is a sentence
+    /// about what the Attack may target rather than a rider hanging off it, so it belongs to the
+    /// Attack's own target set and not to milestone 8.5's card-text seam. Declaring it here is what
+    /// keeps the offer, the target choice and the resolution reading one answer.</para>
     /// </summary>
     public readonly struct PrintedAttackTargetPolicy : IEquatable<PrintedAttackTargetPolicy>
     {
-        public PrintedAttackTargetPolicy(AttackTargetableUnits targetableUnits, AttackTargetReach reach)
+        public PrintedAttackTargetPolicy(
+            AttackTargetableUnits targetableUnits,
+            AttackTargetReach reach,
+            AttackTargetLine line = AttackTargetLine.AnyLine)
         {
             if (!Enum.IsDefined(typeof(AttackTargetableUnits), targetableUnits))
             {
@@ -73,13 +104,36 @@ namespace GuardsDigital.Core.Cards
                     "A printed Attack target policy states how far it reaches.", nameof(reach));
             }
 
+            if (!Enum.IsDefined(typeof(AttackTargetLine), line))
+            {
+                throw new ArgumentException(
+                    "A printed Attack target policy states whether it excludes the straight line.",
+                    nameof(line));
+            }
+
+            // Milestone 8.10. p.19 makes adjacency the separation-of-one case of one file, so every
+            // space beside the attacker is in a straight line with it. A policy pairing the line
+            // complement with p.13's adjacent-only reach would therefore be a printed Attack that can
+            // never have a target, which no face states and no match could resolve; it is refused here
+            // rather than left to produce an empty offer that reads like a board position.
+            if (line == AttackTargetLine.NotInStraightLine && reach == AttackTargetReach.AdjacentOnly)
+            {
+                throw new ArgumentException(
+                    "Rulebook p.19 counts an adjacent space as a straight line, so an Attack reaching " +
+                    "only adjacent units and excluding the straight line could never target anything.",
+                    nameof(line));
+            }
+
             TargetableUnits = targetableUnits;
             Reach = reach;
+            Line = line;
         }
 
         public AttackTargetableUnits TargetableUnits { get; }
 
         public AttackTargetReach Reach { get; }
+
+        public AttackTargetLine Line { get; }
 
         /// <summary>
         /// p.13's default for an Attack of this subtype: every enemy unit, adjacent for a non-Ranged
@@ -104,14 +158,22 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>The same policy narrowed to p.13's heroes alone, which is Crackling Dagger's shape.</summary>
         public PrintedAttackTargetPolicy NarrowedToHeroes() =>
-            new PrintedAttackTargetPolicy(AttackTargetableUnits.HeroesOnly, Reach);
+            new PrintedAttackTargetPolicy(AttackTargetableUnits.HeroesOnly, Reach, Line);
+
+        /// <summary>
+        /// The same policy with p.19's straight line taken out of it, which is both Boomerangs' shape.
+        /// Milestone 8.10.
+        /// </summary>
+        public PrintedAttackTargetPolicy ExcludingTheStraightLine() =>
+            new PrintedAttackTargetPolicy(
+                TargetableUnits, Reach, AttackTargetLine.NotInStraightLine);
 
         /// <summary>Whether this policy says anything the subtype's default does not.</summary>
         public bool NarrowsTheDefault(AttackRangeKind attackRange) =>
             !Equals(ForClassification(attackRange));
 
         public bool Equals(PrintedAttackTargetPolicy other) =>
-            TargetableUnits == other.TargetableUnits && Reach == other.Reach;
+            TargetableUnits == other.TargetableUnits && Reach == other.Reach && Line == other.Line;
 
         public override bool Equals(object obj) =>
             obj is PrintedAttackTargetPolicy other && Equals(other);
@@ -120,10 +182,10 @@ namespace GuardsDigital.Core.Cards
         {
             unchecked
             {
-                return ((int)TargetableUnits * 397) ^ (int)Reach;
+                return (((int)TargetableUnits * 397) ^ (int)Reach) * 397 ^ (int)Line;
             }
         }
 
-        public override string ToString() => $"{TargetableUnits}, {Reach}";
+        public override string ToString() => $"{TargetableUnits}, {Reach}, {Line}";
     }
 }

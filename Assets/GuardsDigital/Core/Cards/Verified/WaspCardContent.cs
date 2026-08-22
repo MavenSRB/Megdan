@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// every synthetic revision in this build already has, and the reason a slice's compatibility
         /// decision is a real decision rather than a formality.
         /// </summary>
-        public const string ContentRevision = "wasp-8-9-rev-1";
+        public const string ContentRevision = "wasp-8-10-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity. It is not a
@@ -246,7 +246,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     Electrocute, ChargedBoomerang),
                 "Target a unit adjacent to you. After the attack: An enemy hero in radius and not " +
                 "adjacent to you discards a card, if able.",
-                PrintedTextComposition.AwaitedAt("8.10")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 Electrocute, "Electrocute", 9, 6, 4,
@@ -256,7 +256,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     Electroblast, ThunderBoomerang),
                 "Target a unit adjacent to you. After the attack: An enemy hero in radius and not " +
                 "adjacent to you discards a card, if able.",
-                PrintedTextComposition.AwaitedAt("8.10")),
+                PrintedTextComposition.None),
 
             // The one card whose face and the second-printing rulebook differ, and only in p.9 reminder
             // text: the rulebook's p.9 illustration reads "( Units adjacent to you are in a straight
@@ -270,7 +270,11 @@ namespace GuardsDigital.Core.Cards.Verified
                     Electroblast, ThunderBoomerang),
                 "Target a unit in range and not in a straight line. ( Adjacent units are in a straight " +
                 "line as well. )",
-                PrintedTextComposition.AwaitedAt("8.10")),
+                // Milestone 8.10 owes this card nothing further. Its whole printed text is the
+                // sentence that says what the Attack targets, and that sentence is composed as the
+                // action's own PrintedAttackTargetPolicy rather than as an effect root - so the debt
+                // is discharged here even though this is the one composed Wasp Attack with no rider.
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 Electroblast, "Electroblast", 9, 7, 4,
@@ -279,7 +283,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Red, CardTier.III, PrintedValueChannel.Initiative),
                 "Target a unit adjacent to you. After the attack: An enemy hero in radius and not " +
                 "adjacent to you discards a card, or is defeated.",
-                PrintedTextComposition.AwaitedAt("8.10")),
+                PrintedTextComposition.None),
 
             // The face prints no comma after "hero"; the transcription keeps its punctuation rather
             // than correcting it.
@@ -290,7 +294,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Red, CardTier.III, PrintedValueChannel.Movement),
                 "Target a unit in range and not in a straight line. After the attack: If you targeted " +
                 "a hero may repeat once on a different target.",
-                PrintedTextComposition.AwaitedAt("8.10")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 LiftUp, "Lift Up", 10, 5, 3,
@@ -493,6 +497,10 @@ namespace GuardsDigital.Core.Cards.Verified
                         WaspEffectContent.AttackTextTimingFor(profile.Id));
 
                 case WaspPrimaryKind.RangedAttack:
+                    // Milestone 8.10. A Ranged Attack whose face narrows what it may target says so
+                    // through its own printed target policy, asked per card below - and one whose face
+                    // also prints a rider carries that rider on the same seam the non-Ranged arm uses.
+                    // Charged Boomerang has only the first; Thunder Boomerang has both.
                     return new ActionDefinition(
                         PrimaryRangedAttack,
                         ActionKind.Attack,
@@ -502,8 +510,11 @@ namespace GuardsDigital.Core.Cards.Verified
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.Ranged,
                         default,
-                        null,
-                        profile.TextComposition);
+                        WaspEffectContent.AttackTextFor(profile.Id, ContentRevision),
+                        profile.TextComposition,
+                        PrintedDefenseResolution.None,
+                        WaspEffectContent.AttackTextTimingFor(profile.Id),
+                        AttackTargetPolicyFor(profile.Id));
 
                 case WaspPrimaryKind.Skill:
                     // Milestone 8.6. A Skill whose composition has landed carries its effect root and
@@ -547,6 +558,24 @@ namespace GuardsDigital.Core.Cards.Verified
                         nameof(profile), profile.Primary, "Unknown Wasp primary action kind.");
             }
         }
+
+        /// <summary>
+        /// What this card's printed Attack narrows rulebook p.13's default targeting to, or
+        /// <c>null</c> where the face narrows nothing. Milestone 8.10.
+        ///
+        /// <para>It is asked per card rather than per subtype for the reason milestone 8.5 moved the
+        /// reach onto the card in the first place: "Attack - Ranged" is a classification, and what a
+        /// card may target is its own printed sentence. Both Boomerangs print "Target a unit in range
+        /// and not in a straight line"; every other Wasp Attack prints "Target a unit adjacent to
+        /// you", which is p.13's own sentence for a non-Ranged Attack word for word and therefore
+        /// narrows nothing at all.</para>
+        /// </summary>
+        private static PrintedAttackTargetPolicy? AttackTargetPolicyFor(CardDefinitionId cardId) =>
+            cardId.Equals(ChargedBoomerang) || cardId.Equals(ThunderBoomerang)
+                ? PrintedAttackTargetPolicy
+                    .ForClassification(AttackRangeKind.Ranged)
+                    .ExcludingTheStraightLine()
+                : (PrintedAttackTargetPolicy?)null;
 
         /// <summary>
         /// p.9's one Range or Radius icon, or nothing when the face prints neither. Three of Wasp's

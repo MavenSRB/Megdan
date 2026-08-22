@@ -7,6 +7,7 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Effects.Synthetic
 {
@@ -101,9 +102,51 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityReference(RangeTarget, 1);
 
         /// <summary>
+        /// Milestone 8.10. The printed-Radius selection asked about heroes rather than about board
+        /// objects, for card text that names one: Wasp's Shock, Electrocute and Electroblast each print
+        /// "An enemy hero in radius and not adjacent to you".
+        ///
+        /// <para>A second capability ID rather than a revision of the Radius selection above, by the
+        /// same rule that made the Range twin one: these are two live declarations of different
+        /// content. That one offers every board object p.19 admits and publishes the space it stands
+        /// on, because what consumes it is a displacement and a token has no other name; this one
+        /// offers heroes and publishes the hero, because what consumes it is a discard and a space
+        /// cannot be asked for a card. The handler beneath is nevertheless the same one, exactly as it
+        /// is for the Range twin - so p.9's disk, p.18's immunity and p.16's item composition are
+        /// written once, and milestone 7.9's deferral gate keeps holding: this slice registers a hero's
+        /// declaration on an implementation the showcase already proves, rather than introducing an
+        /// implementation inside a hero slice.</para>
+        ///
+        /// <para>It declares two things the object selection does not, and both are printed words
+        /// rather than defaults: the side of the board the hero must be on - "enemy", read from the
+        /// acting hero's own perspective - and p.9's disk without its innermost ring, which is what
+        /// "and not adjacent to you" removes.</para>
+        /// </summary>
+        public static EffectCapabilityId RadiusHeroTarget { get; } =
+            new EffectCapabilityId("synthetic-radius-hero-target");
+
+        public static EffectCapabilityReference RadiusHeroTargetV1 =>
+            new EffectCapabilityReference(RadiusHeroTarget, 1);
+
+        /// <summary>
         /// The straight-line filter parameter's name, spelled once so a definition cannot mistype it.
         /// </summary>
         public const string ExcludeStraightLineParameterName = "excludeStraightLine";
+
+        /// <summary>
+        /// The adjacency filter parameter's name, spelled once so a definition cannot mistype it.
+        /// Milestone 8.10.
+        /// </summary>
+        public const string ExcludeAdjacentParameterName = "excludeAdjacent";
+
+        /// <summary>
+        /// The side-of-the-board parameter's name, carrying a <see cref="SourceTeamRelation"/>.
+        /// Milestone 8.10.
+        /// </summary>
+        public const string TargetRelationParameterName = "relation";
+
+        /// <summary>The hero a printed-Radius hero selection chose.</summary>
+        public const string ChosenHeroOutputName = "chosenHero";
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
@@ -113,8 +156,112 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PrintedIconTargetHandler(
                     RadiusTargetV1, PrintedValueChannel.Radius, declaresStraightLineFilter: false),
                 new PrintedIconTargetHandler(
-                    RangeTargetV1, PrintedValueChannel.Range, declaresStraightLineFilter: true)
+                    RangeTargetV1, PrintedValueChannel.Range, declaresStraightLineFilter: true),
+                new PrintedIconTargetHandler(
+                    RadiusHeroTargetV1, PrintedValueChannel.Radius,
+                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Hero)
             };
+
+        /// <summary>
+        /// Which kind of thing a printed-icon selection offers, and therefore what it publishes.
+        /// Milestone 8.10.
+        /// </summary>
+        private enum PrintedIconSelectionSubject
+        {
+            /// <summary>Milestone 7.2b's: every board object in the disk, published as its space.</summary>
+            BoardObject = 0,
+
+            /// <summary>The heroes on a declared side of it, published as the hero.</summary>
+            Hero = 1
+        }
+
+        /// <summary>
+        /// Every board object the acting hero may target inside its card's printed icon, with the
+        /// origin the disk was measured from.
+        ///
+        /// <para>Shared by both selections this class builds on p.9's icons - milestone 7.2b's, which
+        /// publishes the chosen object's space, and milestone 8.10's, which publishes the chosen hero -
+        /// so p.9's disk, p.18's immunity and p.16's item composition are asked in exactly one place
+        /// and the two selections cannot come to disagree about who is inside a card's icon.</para>
+        ///
+        /// <para>The total is re-derived on every ask rather than captured, which is what makes the
+        /// offered disk and the disk an answer is checked against the same one: an item gained between
+        /// the two would widen both, and neither is written to the snapshot.</para>
+        /// </summary>
+        private static IReadOnlyList<BoardObjectReference> PrintedIconTargets(
+            EffectCapabilityContext context,
+            PrintedValueChannel channel,
+            bool includeSelf,
+            out HexCoordinate origin)
+        {
+            origin = default;
+            var components = context.Components;
+            if (components == null || !components.CanDisplace || !context.CardState.IsAvailable)
+            {
+                return Array.Empty<BoardObjectReference>();
+            }
+
+            var activity = (RuleActivity)context.Input("activity").IntegerValue;
+            if (activity == RuleActivity.None || !Enum.IsDefined(typeof(RuleActivity), activity))
+            {
+                return Array.Empty<BoardObjectReference>();
+            }
+
+            var board = components.Board;
+            var selector = BoardObjectReference.ForHero(context.ActorId);
+            if (!board.TryGetObjectCoordinate(selector, out origin))
+            {
+                return Array.Empty<BoardObjectReference>();
+            }
+
+            var printedTotal = channel == PrintedValueChannel.Radius
+                ? RadiusValueQuery.Calculate(
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.CardState.Definitions,
+                    context.ActorId,
+                    context.HeroItems)
+                : RangeValueQuery.Calculate(
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.CardState.Definitions,
+                    context.ActorId,
+                    context.HeroItems);
+            if (printedTotal.Total <= 0)
+            {
+                // A card printing no icon of this channel has no such bound at all, and p.16 does
+                // not give it one: an item raises a printed icon and never invents one. The
+                // selection is therefore impossible rather than adjacent-by-default.
+                return Array.Empty<BoardObjectReference>();
+            }
+
+            // p.9 states one geometry for both icons - "targets up to 3 spaces away", counted
+            // through obstacles because there are no line-of-sight rules - so the Range reading
+            // asks the same disk question. RadiusQuery is where that question lives and it refuses
+            // a total of the wrong channel by construction, which is why the Range arm asks
+            // TargetQuery, the shared contract underneath it, rather than mislabelling its total.
+            return channel == PrintedValueChannel.Radius
+                ? RadiusQuery.Targets(
+                    origin,
+                    printedTotal,
+                    includeSelf,
+                    selector.AsRuleObject(),
+                    activity,
+                    board,
+                    context.Participants,
+                    context.Modifications)
+                : TargetQuery.FindTargetsWithin(
+                    origin,
+                    printedTotal.Total,
+                    includeSelf,
+                    selector.AsRuleObject(),
+                    activity,
+                    board,
+                    context.Participants,
+                    context.Modifications);
+        }
 
         /// <summary>
         /// Milestone 7.2b's printed-icon selection: the same chooser-owned target selection, whose
@@ -139,21 +286,38 @@ namespace GuardsDigital.Core.Effects.Synthetic
         {
             private readonly PrintedValueChannel channel;
             private readonly bool declaresStraightLineFilter;
+            private readonly PrintedIconSelectionSubject subject;
 
             public PrintedIconTargetHandler(
                 EffectCapabilityReference reference,
                 PrintedValueChannel channel,
-                bool declaresStraightLineFilter)
+                bool declaresStraightLineFilter,
+                PrintedIconSelectionSubject subject = PrintedIconSelectionSubject.BoardObject)
             {
                 Reference = reference;
                 this.channel = channel;
                 this.declaresStraightLineFilter = declaresStraightLineFilter;
+                this.subject = subject;
 
                 var parameters = new List<EffectCapabilityParameter>
                 {
-                    new EffectCapabilityParameter("includeSelf", EffectValueKind.Boolean),
                     new EffectCapabilityParameter("activity", EffectValueKind.Integer)
                 };
+                if (subject == PrintedIconSelectionSubject.BoardObject)
+                {
+                    // Only an object selection can be asked about the actor's own space; a selection
+                    // that names heroes on a declared side answers that question through the side.
+                    parameters.Insert(0, new EffectCapabilityParameter(
+                        "includeSelf", EffectValueKind.Boolean));
+                }
+                else
+                {
+                    parameters.Add(new EffectCapabilityParameter(
+                        TargetRelationParameterName, EffectValueKind.Integer));
+                    parameters.Add(new EffectCapabilityParameter(
+                        ExcludeAdjacentParameterName, EffectValueKind.Boolean));
+                }
+
                 if (declaresStraightLineFilter)
                 {
                     parameters.Add(new EffectCapabilityParameter(
@@ -166,7 +330,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     isRequired: false));
                 Schema = new EffectCapabilityParameterSchema(
                     parameters,
-                    new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
+                    new[]
+                    {
+                        subject == PrintedIconSelectionSubject.BoardObject
+                            ? new EffectOutputBinding("chosen", EffectValueKind.Coordinate)
+                            : new EffectOutputBinding(ChosenHeroOutputName, EffectValueKind.Hero)
+                    });
             }
 
             public EffectCapabilityReference Reference { get; }
@@ -178,22 +347,35 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
-                var candidates = Candidates(context);
+                var candidates = AnticipateCandidates(context);
                 if (candidates.Count == 0)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
                 return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                    EffectChooserRole.Actor,
-                    candidates.Select(candidate => EffectValue.Space(candidate)).ToArray(),
-                    1,
-                    1));
+                    EffectChooserRole.Actor, candidates, 1, 1));
             }
 
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
+                if (subject == PrintedIconSelectionSubject.Hero)
+                {
+                    if (selected == null || selected.Count != 1 ||
+                        selected[0].Kind != EffectValueKind.Hero ||
+                        !HeroCandidates(context).Contains(selected[0].HeroId))
+                    {
+                        return EffectExecutionResult.ImpossibleMandatory();
+                    }
+
+                    return EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(
+                            ChosenHeroOutputName, EffectValue.Hero(selected[0].HeroId))
+                    });
+                }
+
                 if (selected == null || selected.Count != 1 ||
                     selected[0].Kind != EffectValueKind.Coordinate)
                 {
@@ -213,12 +395,70 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                Candidates(context).Count == 0
+                AnticipateCandidates(context).Count == 0
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.NeedsChoice;
 
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
-                Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
+                subject == PrintedIconSelectionSubject.Hero
+                    ? HeroCandidates(context).Select(EffectValue.Hero).ToArray()
+                    : Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
+
+            /// <summary>
+            /// Milestone 8.10. The heroes on the declared side of the board inside the same disk, which
+            /// is what card text naming "an enemy hero in radius" chooses among.
+            ///
+            /// <para>The acting hero is never among them: the disk is asked without self, and the side
+            /// would exclude them in any case. An empty result is
+            /// <see cref="EffectExecutionResultKind.ImpossibleMandatory"/> rather than a decline,
+            /// because by p.10 the sentence is one mandatory step and a step with nobody to perform it
+            /// is one that cannot complete; the `if able` its lower-Tier printings add is about the
+            /// card, and is declared on the discard node where the page puts it.</para>
+            /// </summary>
+            private IReadOnlyList<HeroId> HeroCandidates(EffectCapabilityContext context)
+            {
+                var relation = (SourceTeamRelation)context
+                    .Input(TargetRelationParameterName).IntegerValue;
+                if (relation == SourceTeamRelation.None ||
+                    !Enum.IsDefined(typeof(SourceTeamRelation), relation))
+                {
+                    return Array.Empty<HeroId>();
+                }
+
+                var targets = PrintedIconTargets(context, channel, includeSelf: false, out var origin);
+                var board = context.Components?.Board;
+                if (board == null)
+                {
+                    return Array.Empty<HeroId>();
+                }
+
+                var excludeAdjacent = context.Input(ExcludeAdjacentParameterName).BooleanValue;
+                var heroes = new List<HeroId>(targets.Count);
+                foreach (var target in targets)
+                {
+                    if (target.Kind != BoardObjectKind.Hero ||
+                        !TargetQuery.StandsInRelationTo(
+                            relation, target, context.ActorId, context.Participants, board))
+                    {
+                        continue;
+                    }
+
+                    // p.9's disk without its innermost ring, which is what "and not adjacent to you"
+                    // removes. It is stated as the exact distance the word means rather than as
+                    // "further than one", so it says nothing about the actor's own space and does not
+                    // quietly depend on that space having been excluded above.
+                    if (excludeAdjacent &&
+                        board.TryGetObjectCoordinate(target, out var at) &&
+                        HexDistanceQuery.Calculate(origin, at) == 1)
+                    {
+                        continue;
+                    }
+
+                    heroes.Add(target.HeroId);
+                }
+
+                return heroes;
+            }
 
             /// <summary>
             /// The spaces of every object the acting hero may target inside its card's printed icon, in
@@ -230,72 +470,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             private IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
             {
-                var components = context.Components;
-                if (components == null || !components.CanDisplace || !context.CardState.IsAvailable)
+                var targets = PrintedIconTargets(
+                    context, channel, context.Input("includeSelf").BooleanValue, out var origin);
+                var board = context.Components?.Board;
+                if (board == null)
                 {
                     return Array.Empty<HexCoordinate>();
                 }
-
-                var activity = (RuleActivity)context.Input("activity").IntegerValue;
-                if (activity == RuleActivity.None || !Enum.IsDefined(typeof(RuleActivity), activity))
-                {
-                    return Array.Empty<HexCoordinate>();
-                }
-
-                var board = components.Board;
-                var selector = BoardObjectReference.ForHero(context.ActorId);
-                if (!board.TryGetObjectCoordinate(selector, out var origin))
-                {
-                    return Array.Empty<HexCoordinate>();
-                }
-
-                var printedTotal = channel == PrintedValueChannel.Radius
-                    ? RadiusValueQuery.Calculate(
-                        context.SourceCardInstanceId,
-                        context.SourceDefinitionReference,
-                        context.ActionDefinitionId,
-                        context.CardState.Definitions,
-                        context.ActorId,
-                        context.HeroItems)
-                    : RangeValueQuery.Calculate(
-                        context.SourceCardInstanceId,
-                        context.SourceDefinitionReference,
-                        context.ActionDefinitionId,
-                        context.CardState.Definitions,
-                        context.ActorId,
-                        context.HeroItems);
-                if (printedTotal.Total <= 0)
-                {
-                    // A card printing no icon of this channel has no such bound at all, and p.16 does
-                    // not give it one: an item raises a printed icon and never invents one. The
-                    // selection is therefore impossible rather than adjacent-by-default.
-                    return Array.Empty<HexCoordinate>();
-                }
-
-                // p.9 states one geometry for both icons - "targets up to 3 spaces away", counted
-                // through obstacles because there are no line-of-sight rules - so the Range reading
-                // asks the same disk question. RadiusQuery is where that question lives and it refuses
-                // a total of the wrong channel by construction, which is why the Range arm asks
-                // TargetQuery, the shared contract underneath it, rather than mislabelling its total.
-                var targets = channel == PrintedValueChannel.Radius
-                    ? RadiusQuery.Targets(
-                        origin,
-                        printedTotal,
-                        context.Input("includeSelf").BooleanValue,
-                        selector.AsRuleObject(),
-                        activity,
-                        board,
-                        context.Participants,
-                        context.Modifications)
-                    : TargetQuery.FindTargetsWithin(
-                        origin,
-                        printedTotal.Total,
-                        context.Input("includeSelf").BooleanValue,
-                        selector.AsRuleObject(),
-                        activity,
-                        board,
-                        context.Participants,
-                        context.Modifications);
 
                 var spaces = new List<HexCoordinate>(targets.Count);
                 foreach (var target in targets)

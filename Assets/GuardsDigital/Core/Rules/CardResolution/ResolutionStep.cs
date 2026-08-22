@@ -50,8 +50,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardTextTiming cardTextTiming = CardTextTiming.None,
             ActionDefinitionId completedActionDefinitionId = default,
             HeroId completedActorId = default,
-            ActionKind completedActionKind = ActionKind.None)
+            ActionKind completedActionKind = ActionKind.None,
+            PendingAttackResolution cardTextRemainderResolution = null,
+            AttackResolutionOutcome cardTextRemainderOutcome = AttackResolutionOutcome.None)
         {
+            CardTextRemainderResolution = cardTextRemainderResolution;
+            CardTextRemainderOutcome = cardTextRemainderOutcome;
             Kind = kind;
             Fact = fact;
             Checkpoint = checkpoint;
@@ -162,12 +166,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
         ///
         /// <paramref name="actorId"/> is whose card it is, which is the attacker at steps 1 and 7 and
         /// the defender at step 4; p.10 gives every choice inside a card's text to that hero.
+        ///
+        /// <para>Milestone 8.10 added the last two arguments, which are what this moment's remainder is
+        /// a function of. Card text may now ask a question, and the steps standing after it cannot
+        /// cross that pause on the wire - they are facts about an attack rather than identity - so what
+        /// crosses instead is the resolution and outcome
+        /// <see cref="AttackDefenseCardActionStrategyBackend.StepsAfterCardText"/> rebuilds them from.
+        /// A step that carries none is a moment whose remainder is not a function of identity, which
+        /// today is p.14's step 1, and text that paused there would be a content fault rather than a
+        /// rules outcome. They never reach the wire themselves: a step is an in-memory instruction to
+        /// the materializer, and it is the continuation the pause creates that is persisted.</para>
         /// </summary>
         public static ResolutionStep ApplyCardText(
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
             HeroId actorId,
-            CardTextTiming timing)
+            CardTextTiming timing,
+            PendingAttackResolution remainderResolution = null,
+            AttackResolutionOutcome remainderOutcome = AttackResolutionOutcome.None)
         {
             if (!sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined || !actorId.IsDefined)
             {
@@ -190,7 +206,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 sourceCardInstanceId,
                 actionDefinitionId,
                 actorId,
-                timing);
+                timing,
+                cardTextRemainderResolution: remainderResolution,
+                cardTextRemainderOutcome: remainderOutcome);
         }
 
         /// <summary>Defined only when <see cref="Kind"/> is <see cref="ResolutionStepKind.CardText"/>.</summary>
@@ -201,6 +219,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Which of p.14's moments this is; defined only on a card-text step.</summary>
         public CardTextTiming CardTextTiming { get; }
+
+        /// <summary>
+        /// The attack whose remainder stands after this moment, or <c>null</c> at a moment whose
+        /// remainder no identity can reproduce. Milestone 8.10; defined only on a card-text step.
+        /// </summary>
+        public PendingAttackResolution CardTextRemainderResolution { get; }
+
+        /// <summary>The outcome that remainder reports; defined only beside the resolution above.</summary>
+        public AttackResolutionOutcome CardTextRemainderOutcome { get; }
 
         /// <summary>
         /// The action that ended; defined only on an <see cref="TimingCheckpoint.ActionEnded"/> step,

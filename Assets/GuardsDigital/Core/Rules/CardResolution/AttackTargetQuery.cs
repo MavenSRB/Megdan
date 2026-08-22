@@ -53,6 +53,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// for a Ranged one. The overload above is that page's default for a card that narrows nothing,
         /// so nothing about an ordinary Attack changed; what changed is that a card which does narrow it
         /// now has somewhere to say so as typed content instead of in a sentence something parses.</para>
+        ///
+        /// <para>Milestone 8.10 applies the third half of that declaration, p.19's straight-line
+        /// complement, here rather than in card text: both Boomerangs print it as the sentence that
+        /// says what the Attack targets, so the offer, the target choice and the resolution all read
+        /// it from this one query and cannot disagree about which units the card admits.</para>
         /// </summary>
         public static IReadOnlyList<AttackTarget> FindLegalEnemyTargets(
             HeroId attackerId,
@@ -67,8 +72,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var attackRange = policy.Reach == AttackTargetReach.PrintedRange
                 ? AttackRangeKind.Ranged
                 : AttackRangeKind.NonRanged;
+            var attackerOccupancy = board.Occupancies.SingleOrDefault(value => value.HeroId.Equals(attackerId));
+            var occupancies = board.Occupancies.ToArray();
+
+            // Milestone 8.10. The Boomerangs' "not in a straight line", measured from the attacker's
+            // own space. Nothing is written here for the reminder that adjacent units are in one:
+            // p.19 makes adjacency the separation-of-one case of a file, so the single membership
+            // question already answers it, and a second adjacency test would be a second rule.
+            bool StandsOnAnExcludedLine(HexCoordinate candidate) =>
+                policy.Line == AttackTargetLine.NotInStraightLine &&
+                StraightLineQuery.AreInStraightLine(attackerOccupancy.Coordinate, candidate);
+
             var heroes = FindLegalEnemyHeroes(
                 attackerId, attackRange, rangeTotal, participants, board, modifications)
+                .Where(heroId => !StandsOnAnExcludedLine(
+                    occupancies.Single(value => value.HeroId.Equals(heroId)).Coordinate))
                 .Select(AttackTarget.Hero);
 
             // p.13's narrowing, and the only place it is applied: Crackling Dagger prints "Target a
@@ -80,7 +98,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     .OrderBy(target => target.HeroId.Value, StringComparer.Ordinal)
                     .ToArray());
             }
-            var attackerOccupancy = board.Occupancies.SingleOrDefault(value => value.HeroId.Equals(attackerId));
             if (!attackerOccupancy.HeroId.IsDefined)
             {
                 return Array.AsReadOnly(heroes.ToArray());
@@ -93,6 +110,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .Where(minion =>
                     !minion.TeamId.Equals(attackerTeam) &&
                     HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, minion.Coordinate) <= maximumDistance &&
+                    !StandsOnAnExcludedLine(minion.Coordinate) &&
                     !ImmunityQuery.IsImmuneTo(
                         RuleObject.ForMinion(minion.MinionId), RuleActivity.Attack, attacker,
                         board, participants, modifications))

@@ -104,9 +104,9 @@ Non-goals: no rider discards (no basic card has one), no trigger execution.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-89-complete-the-wasp-basic-cards-completion-evidence).
 
-### [!] 8.10 Complete the Wasp Attack cards
+### [x] 8.10 Complete the Wasp Attack cards
 
-Blocked by: milestone 8.8 (discard rider family). Milestone 8.5 supplied the text seam and the target policies, and milestone 8.6 supplied the straight-line query and its complement.
+Blocked by: milestone 8.8 (discard rider family) - discharged. Milestone 8.5 supplied the text seam and the target policies, and milestone 8.6 supplied the straight-line query and its complement.
 
 Observable outcome: Shock, Electrocute, Electroblast, Charged Boomerang, and Thunder Boomerang resolve their complete printed text, including the escalating and repeating riders.
 
@@ -120,6 +120,14 @@ Acceptance checks:
 - Any new pending state these riders add rides the existing continuation contract; a new pending kind is an explicit schema decision with the full ceremony.
 
 Non-goals: no Defense text (8.11), no trigger windows (8.12).
+
+- **The nesting landed at two of rulebook p.14's three moments, and the third is a stated boundary rather than an oversight.** What the page leaves after step 4 and after step 7 is a function of the attack's own identity - the Defense total and its comparison, or the outcome and the end of the action - so one generator produces it, used both when nothing pauses and when resuming, and the paused and unpaused orders cannot drift apart. What follows step 1 is not such a function: on the arm where p.13 simply defeats a targeted minion it contains the facts of a Defeat the resolver has already computed and applied. Card text that could ask a question at step 1 is therefore still refused at configuration, and the refusal now names the moment instead of the whole Attack. Every verified face this milestone and 8.11 need prints "After the attack:" or Defense-action text, so nothing verified is excluded.
+- **The continuation persists identity and never steps.** `CardActionContinuationKind.AttackCardText` carries the paused frame - the same section a paused Skill writes - the moment the page stopped at, and the attack whose remainder is owed. It is captured before the attack's own continuation, because at step 4 the attack is still pending underneath the paused text and asking about the attack first would keep the attack and lose the frame holding the page.
+- **Milestone 8.4's honesty rule has no turn-action subject left in Wasp's set.** Composing Shock removed the last one, exactly as 8.9's composing Static Barrier removed the Skill one. Its remaining verified subjects are 8.11's three Defense primaries, which are performed in reaction and which no start site asks the question of yet, plus Crackling Dagger's deferral, which p.5 returns to the box before a hand exists. **Milestone 8.11 owes this rule its refusal case**, on the path it reaches a Defense by; what is left here is the release.
+- **Three new declarations, one new implementation.** The printed-Radius hero selection shares the handler the three other printed-icon declarations use, so milestone 7.9's deferral gate stays green on composition rather than on an exclusion entry; the capability reaching p.13's Defeat list and the predicate reading the enclosing Attack's target are genuinely new implementations, and both are proved on showcase content - "Red/Blue Ultimatum" and "Red Reckoning" - before a verified card names them.
+- **The defeat capability declares and performs nothing**, which is milestone 6.9's mid-turn Lane-Push shape: p.13's list prices a reward by Level, spends Life counters, returns markers, resolves an unresolved card and cancels Active effects, all of it authority state no capability holds and all of it already written once in the Attack resolver. Three of that resolver's event factories read the defeated hero off the Attack's own target and now take it explicitly, because a rider can defeat a hero the Attack never targeted.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-810-complete-the-wasp-attack-cards-completion-evidence).
 
 ### [!] 8.11 Complete the Wasp Defense cards
 

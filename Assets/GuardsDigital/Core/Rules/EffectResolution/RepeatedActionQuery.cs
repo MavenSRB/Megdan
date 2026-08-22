@@ -17,10 +17,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     /// </summary>
     public readonly struct RepeatRequest : IEquatable<RepeatRequest>
     {
-        private RepeatRequest(bool isRequested, RepeatContinuation continuation)
+        private RepeatRequest(
+            bool isRequested, RepeatContinuation continuation, RepeatTargetBinding binding)
         {
             IsRequested = isRequested;
             Continuation = continuation;
+            Binding = binding;
         }
 
         /// <summary>No repeat was asked for - the default, and what every non-repeating action reports.</summary>
@@ -31,11 +33,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// <summary>The state the requested instance starts in. Meaningful only when requested.</summary>
         public RepeatContinuation Continuation { get; }
 
-        public static RepeatRequest For(RepeatContinuation continuation) =>
-            new RepeatRequest(true, continuation);
+        /// <summary>
+        /// What the requesting node declared about the repeated instance.s target. Milestone 8.10
+        /// carries it here so a dispatcher can honour "on a different target" without reading the
+        /// effect nodes itself, which is a seam the architecture conformance rules hold closed.
+        /// </summary>
+        public RepeatTargetBinding Binding { get; }
+
+        public static RepeatRequest For(
+            RepeatContinuation continuation,
+            RepeatTargetBinding binding = RepeatTargetBinding.Unbound) =>
+            new RepeatRequest(true, continuation, binding);
 
         public bool Equals(RepeatRequest other) =>
-            IsRequested == other.IsRequested && Continuation.Equals(other.Continuation);
+            IsRequested == other.IsRequested && Continuation.Equals(other.Continuation) &&
+            Binding == other.Binding;
 
         public override bool Equals(object obj) => obj is RepeatRequest other && Equals(other);
 
@@ -123,7 +135,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 var completedRepeats = frame.Repeat.CompletedRepeats + 1;
                 if (node.RepeatTargetBinding != RepeatTargetBinding.SameTarget)
                 {
-                    return RepeatRequest.For(RepeatContinuation.Next(completedRepeats));
+                    return RepeatRequest.For(
+                        RepeatContinuation.Next(completedRepeats), node.RepeatTargetBinding);
                 }
 
                 // The piece was recorded onto the frame when the selection named it, because that is

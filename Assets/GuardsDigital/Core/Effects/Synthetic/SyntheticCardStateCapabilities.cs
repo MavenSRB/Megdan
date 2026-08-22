@@ -32,15 +32,39 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference DiscardChosenCardV1 =>
             new EffectCapabilityReference(DiscardChosenCard, 1);
 
+        /// <summary>
+        /// Revision 2, minted at milestone 8.10: the same discard, reporting whether it happened.
+        ///
+        /// <para>Both revisions stay live, the way <c>ChooseTargetV3</c> and <c>V4</c> do, because they
+        /// are two different contracts rather than two versions of one. Revision 1 is rulebook p.17's
+        /// `if able`: a hero with no card to give simply gives none, the step declines, and nothing
+        /// downstream is told - which is exactly right for Shock and Electrocute, whose sentence ends
+        /// there. Revision 2 is for a sentence that does <em>not</em> end there. Electroblast prints
+        /// "discards a card, <b>or is defeated</b>", which ledger question 13 reads as one mandatory
+        /// step with two ways to complete, so the step always applies and says which way it went.</para>
+        ///
+        /// <para>That is why revision 2 never declines. A declined step publishes nothing by design,
+        /// and a rider whose second arm has to know that the first one could not happen needs to be
+        /// told.</para>
+        /// </summary>
+        public static EffectCapabilityReference DiscardChosenCardV2 =>
+            new EffectCapabilityReference(DiscardChosenCard, 2);
+
         /// <summary>The parameter naming the hero whose hand is read and whose decision this is.</summary>
         public const string HeroParameter = "hero";
 
         /// <summary>The card this capability discarded, so a later node can bind it.</summary>
         public const string DiscardedOutput = "discarded";
 
+        /// <summary>
+        /// Revision 2's answer to whether the named hero had a card to give at all. Milestone 8.10.
+        /// </summary>
+        public const string UnableToDiscardOutput = "unableToDiscard";
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers()
         {
-            yield return new DiscardChosenCardHandler();
+            yield return new DiscardChosenCardHandler(DiscardChosenCardV1, reportsInability: false);
+            yield return new DiscardChosenCardHandler(DiscardChosenCardV2, reportsInability: true);
         }
 
         /// <summary>
@@ -58,11 +82,27 @@ namespace GuardsDigital.Core.Effects.Synthetic
         private sealed class DiscardChosenCardHandler
             : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
         {
-            public EffectCapabilityReference Reference => DiscardChosenCardV1;
+            private readonly bool reportsInability;
 
-            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                new[] { new EffectCapabilityParameter(HeroParameter, EffectValueKind.Hero) },
-                new[] { new EffectOutputBinding(DiscardedOutput, EffectValueKind.CardInstance) });
+            public DiscardChosenCardHandler(
+                EffectCapabilityReference reference, bool reportsInability)
+            {
+                Reference = reference;
+                this.reportsInability = reportsInability;
+                Schema = new EffectCapabilityParameterSchema(
+                    new[] { new EffectCapabilityParameter(HeroParameter, EffectValueKind.Hero) },
+                    reportsInability
+                        ? new[]
+                        {
+                            new EffectOutputBinding(DiscardedOutput, EffectValueKind.CardInstance),
+                            new EffectOutputBinding(UnableToDiscardOutput, EffectValueKind.Boolean)
+                        }
+                        : new[] { new EffectOutputBinding(DiscardedOutput, EffectValueKind.CardInstance) });
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; }
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -84,9 +124,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // distinguishable in the recorded stream without a fifth result kind: declining here
                 // opens no choice, so no choice-requested fact is written, while a chooser who declines
                 // an optional step they could have taken has one recorded before the decline.
-                return offer == null
-                    ? EffectExecutionResult.DeclinedOptional()
-                    : EffectExecutionResult.NeedsChoice(offer);
+                if (offer != null)
+                {
+                    return EffectExecutionResult.NeedsChoice(offer);
+                }
+
+                // Milestone 8.10. Revision 2 answers the same empty hand differently, and the
+                // difference is the whole of what it exists for: the step applies, reporting that the
+                // hero had nothing to give, so the sentence's second arm can read it. Ledger question
+                // 13 is why that is not a decline - "discards a card, or is defeated" is one mandatory
+                // step with two ways to complete, and a step that declined would have completed
+                // neither.
+                return reportsInability
+                    ? EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(UnableToDiscardOutput, EffectValue.Boolean(true))
+                    })
+                    : EffectExecutionResult.DeclinedOptional();
             }
 
             public EffectExecutionResult Resume(
@@ -107,14 +161,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.CardState.Definitions,
                     context.CardState.Instances);
 
-                return result.Accepted
-                    ? EffectExecutionResult.Applied(
-                        new[]
-                        {
-                            new EffectOutcomeFact(
-                                DiscardedOutput, EffectValue.Card(result.DiscardedCardId))
-                        })
-                    : EffectExecutionResult.ImpossibleMandatory();
+                if (!result.Accepted)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var facts = new List<EffectOutcomeFact>
+                {
+                    new EffectOutcomeFact(DiscardedOutput, EffectValue.Card(result.DiscardedCardId))
+                };
+                if (reportsInability)
+                {
+                    // Published on both arms rather than only on the empty one, so a reader binding it
+                    // gets an answer whatever happened instead of an absence it has to interpret.
+                    facts.Add(new EffectOutcomeFact(
+                        UnableToDiscardOutput, EffectValue.Boolean(false)));
+                }
+
+                return EffectExecutionResult.Applied(facts);
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>

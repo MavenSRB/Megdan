@@ -24,7 +24,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// authoritative continuation - the source card resolves and Initiative advances only when
         /// the correction completes.
         /// </summary>
-        Correction = 4
+        Correction = 4,
+
+        /// <summary>
+        /// Milestone 8.10: an Attack stopped inside rulebook p.14's card text, because the text applied
+        /// at one of the page's moments asked a question. It is a kind of its own rather than a flag on
+        /// <see cref="Attack"/> because the two are genuinely different states - the attack's own
+        /// resolution may already be finished and cleared while its text is still being applied - and
+        /// because what resumes it is an effect-frame answer rather than an attack command.
+        /// </summary>
+        AttackCardText = 5
     }
 
     /// <summary>
@@ -50,8 +59,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroCoinLedgerRestoreStateHolder coinLedger,
             PendingDisplacedMinionCorrection pendingCorrection = null,
             PendingRepeatedAction pendingRepeat = null,
-            PendingImmediateLanePushRequest pendingLanePush = null)
+            PendingImmediateLanePushRequest pendingLanePush = null,
+            PendingAttackCardTextResolution pendingCardText = null)
         {
+            PendingCardText = pendingCardText;
             ContinuationKind = continuationKind;
             PendingSkillResolution = pendingSkillResolution;
             PendingMovementResolution = pendingMovementResolution;
@@ -171,6 +182,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 null,
                 null,
                 pendingLanePush);
+
+        /// <summary>Set only when <see cref="ContinuationKind"/> is AttackCardText. Milestone 8.10.</summary>
+        public PendingAttackCardTextResolution PendingCardText { get; }
+
+        public static CardActionResolutionRestoreState WithPendingCardText(
+            PendingAttackCardTextResolution pendingCardText,
+            HeroCoinLedgerRestoreStateHolder coinLedger,
+            PendingImmediateLanePushRequest pendingLanePush = null) =>
+            new CardActionResolutionRestoreState(
+                CardActionContinuationKind.AttackCardText,
+                null,
+                null,
+                null,
+                coinLedger ?? throw new ArgumentNullException(nameof(coinLedger)),
+                null,
+                null,
+                pendingLanePush,
+                pendingCardText ?? throw new ArgumentNullException(nameof(pendingCardText)));
 
         public static CardActionResolutionRestoreState WithPendingCorrection(
             PendingDisplacedMinionCorrection pendingCorrection,

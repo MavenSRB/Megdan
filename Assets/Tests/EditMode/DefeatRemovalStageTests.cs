@@ -265,7 +265,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(22),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(23),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
                 "own. The version has since moved ten times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +

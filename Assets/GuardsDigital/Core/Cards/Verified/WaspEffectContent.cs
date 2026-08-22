@@ -120,6 +120,28 @@ namespace GuardsDigital.Core.Cards.Verified
                     WaspActiveEffectContent.PinEnemyUnitsInRadiusV1, "pin");
             }
 
+            if (cardId.Equals(WaspCardContent.Shock) || cardId.Equals(WaspCardContent.Electrocute))
+            {
+                // The two print the same sentence and differ only in the Radius icon beside it, which
+                // the selection reads off the card rather than out of the definition - so one
+                // composition is not a shortcut here, it is what the two cards actually share.
+                return CreateRadiusDiscardRider(cardId, contentRevision, escalatesToDefeat: false);
+            }
+
+            if (cardId.Equals(WaspCardContent.ThunderBoomerang))
+            {
+                return CreateConditionalRepeat(cardId, contentRevision);
+            }
+
+            if (cardId.Equals(WaspCardContent.Electroblast))
+            {
+                // The same sentence with its last three words changed: "or is defeated" where the two
+                // below print "if able". Ledger question 13 reads that as one mandatory step with two
+                // ways to complete rather than a choice either player makes, so what differs in the
+                // composition is one conditional arm and nothing about the question the actor answers.
+                return CreateRadiusDiscardRider(cardId, contentRevision, escalatesToDefeat: true);
+            }
+
             return null;
         }
 
@@ -133,9 +155,198 @@ namespace GuardsDigital.Core.Cards.Verified
         /// at the wrong one silently.
         /// </summary>
         public static CardTextTiming AttackTextTimingFor(CardDefinitionId cardId) =>
-            cardId.Equals(WaspCardContent.MagneticDagger)
+            cardId.Equals(WaspCardContent.MagneticDagger) ||
+            cardId.Equals(WaspCardContent.Shock) ||
+            cardId.Equals(WaspCardContent.Electrocute) ||
+            cardId.Equals(WaspCardContent.Electroblast) ||
+            cardId.Equals(WaspCardContent.ThunderBoomerang)
                 ? CardTextTiming.AfterTheAttack
                 : CardTextTiming.None;
+
+        /// <summary>
+        /// "After the attack: If you targeted a hero may repeat once on a different target." - Thunder
+        /// Boomerang's sentence, and the only Wasp Attack that asks for itself again. Milestone 8.10.
+        ///
+        /// <para><b>Three printed clauses, three declarations.</b> "If you targeted a hero" is a
+        /// predicate over the Attack this text is printed inside, so it reads that Attack's own target
+        /// rather than anything a node here did. "may" is p.10's confirm-or-decline, which is the node
+        /// policy. "once" is the repeat's declared maximum. "on a different target" is the repeat's
+        /// declared binding, and it excludes the unit this instance took rather than naming a selection
+        /// node, because the target of an Attack is the action's own state.</para>
+        ///
+        /// <para>The repeated instance is an ordinary Attack: it chooses its own target out of the
+        /// smaller set, takes its own Defense response, and applies this same text again - where the
+        /// repeat node is no longer eligible, because one is all the card allows.</para>
+        /// </summary>
+        private static EffectDefinition CreateConditionalRepeat(
+            CardDefinitionId cardId, string contentRevision)
+        {
+            var root = new EffectNodeId("thunder-repeat-root");
+            var repeat = new EffectNodeId("thunder-repeat");
+
+            return new EffectDefinition(
+                AttackTextEffectId(cardId),
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticConsequenceCapabilities.AttackTookAHeroV1,
+                        childNodeIds: new[] { repeat }),
+                    new EffectNodeDefinition(
+                        repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
+                        // p.10 gives an unassigned decision to the card's controller, and "may repeat"
+                        // assigns none - so the hero performing the Attack is the one asked.
+                        chooser: EffectChooserRole.Actor,
+                        maximumRepeats: 1,
+                        repeatTargetBinding: RepeatTargetBinding.DifferentTarget)
+                });
+        }
+
+        /// <summary>
+        /// "After the attack: An enemy hero in radius and not adjacent to you discards a card, if
+        /// able." - Shock's sentence and Electrocute's, which are the same sentence. Milestone 8.10.
+        ///
+        /// <para><b>Two questions, both the page's.</b> p.10 gives an unassigned choice to the card's
+        /// controller, so the acting hero picks which enemy hero the sentence lands on; the discard
+        /// itself is the chosen hero's own, out of their own hand, which is milestone 7.1a's
+        /// chooser-owned shape. Both stop the attack where they stand - the first card text in this
+        /// build to do so - and milestone 8.10's continuation is what holds rulebook p.14 open across
+        /// them.</para>
+        ///
+        /// <para><b>What is deliberately not declared.</b> The selection names no consuming node, even
+        /// though the vocabulary has one. Declaring it would narrow the offer to heroes the discard can
+        /// act on, and that is the opposite of what the face says: `if able` exists precisely because
+        /// the chosen hero may hold nothing, so a choice restricted to heroes holding something would
+        /// make the printed words unreachable. The actor chooses among every enemy hero in the disk,
+        /// and the discard then applies to whoever was chosen.</para>
+        /// </summary>
+        private static EffectDefinition CreateRadiusDiscardRider(
+            CardDefinitionId cardId, string contentRevision, bool escalatesToDefeat)
+        {
+            var root = new EffectNodeId("radius-discard-root");
+            var select = new EffectNodeId("radius-discard-select");
+            var discard = new EffectNodeId("radius-discard-discard");
+            var escalation = new EffectNodeId("radius-discard-escalation");
+            var defeat = new EffectNodeId("radius-discard-defeat");
+
+            return new EffectDefinition(
+                AttackTextEffectId(cardId),
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: escalatesToDefeat
+                            ? new[] { select, discard, escalation }
+                            : new[] { select, discard }),
+                    new EffectNodeDefinition(
+                        select, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.RadiusHeroTargetV1,
+                        inputs: new[]
+                        {
+                            // The enclosing action is the Attack this text is printed on, and p.18
+                            // declares immunity per activity - so the offer asks immunity the same
+                            // question the Attack itself asked.
+                            EffectInputBinding.FromLiteral(
+                                "activity", EffectValue.Integer((int)RuleActivity.Attack)),
+                            // "enemy", from the card's perspective, which is the acting hero's.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.TargetRelationParameterName,
+                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                            // "and not adjacent to you".
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.ExcludeAdjacentParameterName,
+                                EffectValue.Boolean(true))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        }),
+                    escalatesToDefeat
+                        ? new EffectNodeDefinition(
+                            // No `if able` here, because the face prints none. Ledger question 13 reads
+                            // "discards a card, or is defeated" as one mandatory step with two ways to
+                            // complete, so the step always applies and reports which way it went -
+                            // which is the whole of what revision 2 adds.
+                            discard, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                            SyntheticCardStateCapabilities.DiscardChosenCardV2,
+                            inputs: new[]
+                            {
+                                EffectInputBinding.FromNodeOutput(
+                                    SyntheticCardStateCapabilities.HeroParameter,
+                                    select,
+                                    SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                    EffectValueKind.Hero)
+                            },
+                            outputs: new[]
+                            {
+                                new EffectOutputBinding(
+                                    SyntheticCardStateCapabilities.DiscardedOutput,
+                                    EffectValueKind.CardInstance),
+                                new EffectOutputBinding(
+                                    SyntheticCardStateCapabilities.UnableToDiscardOutput,
+                                    EffectValueKind.Boolean)
+                            })
+                        : new EffectNodeDefinition(
+                            // `if able` is p.17's keyword and p.10's non-mandatory wording, and it is
+                            // over the discard alone: a chosen hero with an empty hand gives nothing
+                            // and the attack goes on.
+                            discard, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                            SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                            inputs: new[]
+                            {
+                                EffectInputBinding.FromNodeOutput(
+                                    SyntheticCardStateCapabilities.HeroParameter,
+                                    select,
+                                    SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                    EffectValueKind.Hero)
+                            })
+                }
+                .Concat(escalatesToDefeat
+                    ? new[]
+                    {
+                        new EffectNodeDefinition(
+                            // The second arm, reached only where the first could not complete. It is a
+                            // branch and not a question: p.10 gives nobody a decision here, and the
+                            // reading that made "discards a card" unreachable text is exactly the one
+                            // ledger question 13 withdrew.
+                            escalation, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                            SyntheticEffectCapabilities.IsFlaggedV1,
+                            childNodeIds: new[] { defeat },
+                            inputs: new[]
+                            {
+                                EffectInputBinding.FromNodeOutput(
+                                    "flag",
+                                    discard,
+                                    SyntheticCardStateCapabilities.UnableToDiscardOutput,
+                                    EffectValueKind.Boolean)
+                            }),
+                        new EffectNodeDefinition(
+                            defeat, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                            SyntheticConsequenceCapabilities.DefeatHeroV1,
+                            inputs: new[]
+                            {
+                                EffectInputBinding.FromNodeOutput(
+                                    SyntheticConsequenceCapabilities.HeroParameter,
+                                    select,
+                                    SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                    EffectValueKind.Hero)
+                            },
+                            outputs: new[]
+                            {
+                                new EffectOutputBinding(
+                                    SyntheticConsequenceCapabilities.DefeatedHeroOutput,
+                                    EffectValueKind.Hero)
+                            })
+                    }
+                    : Enumerable.Empty<EffectNodeDefinition>())
+                .ToArray());
+        }
 
         /// <summary>
         /// One node: the capability that creates this card's declared Active effect.

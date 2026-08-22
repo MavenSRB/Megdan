@@ -201,19 +201,24 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(action => $"{action.EffectRoot.Id.Value}@{action.EffectRoot.ContentRevision}"),
                 Is.EqualTo(new[]
                 {
-                    "wasp-magnetic-dagger-attack-text@wasp-8-9-rev-1",
-                    "wasp-static-barrier-skill@wasp-8-9-rev-1",
-                    "wasp-lift-up-skill@wasp-8-9-rev-1",
-                    "wasp-control-gravity-skill@wasp-8-9-rev-1",
-                    "wasp-kinetic-repulse-skill@wasp-8-9-rev-1",
-                    "wasp-center-of-mass-skill@wasp-8-9-rev-1",
-                    "wasp-kinetic-blast-skill@wasp-8-9-rev-1",
-                    "wasp-telekinesis-skill@wasp-8-9-rev-1",
-                    "wasp-mass-telekinesis-skill@wasp-8-9-rev-1"
+                    "wasp-magnetic-dagger-attack-text@wasp-8-10-rev-1",
+                    "wasp-static-barrier-skill@wasp-8-10-rev-1",
+                    "wasp-shock-attack-text@wasp-8-10-rev-1",
+                    "wasp-electrocute-attack-text@wasp-8-10-rev-1",
+                    "wasp-electroblast-attack-text@wasp-8-10-rev-1",
+                    "wasp-thunder-boomerang-attack-text@wasp-8-10-rev-1",
+                    "wasp-lift-up-skill@wasp-8-10-rev-1",
+                    "wasp-control-gravity-skill@wasp-8-10-rev-1",
+                    "wasp-kinetic-repulse-skill@wasp-8-10-rev-1",
+                    "wasp-center-of-mass-skill@wasp-8-10-rev-1",
+                    "wasp-kinetic-blast-skill@wasp-8-10-rev-1",
+                    "wasp-telekinesis-skill@wasp-8-10-rev-1",
+                    "wasp-mass-telekinesis-skill@wasp-8-10-rev-1"
                 }),
-                "The two basic cards, the five telekinetic Skills and the two kinetic ones are " +
-                "composed; every other card's composition lands at its own 8.10-8.13 slice under a " +
-                "content-revision advance, so no half-implemented card text can run in between.");
+                "The two basic cards, the five telekinetic Skills, the two kinetic ones and milestone " +
+                "8.10's two radius riders are composed; every other card's composition lands at its " +
+                "own slice under a content-revision advance, so no half-implemented card text can run " +
+                "in between.");
 
             var owedByCard = WaspCardContent.AllDefinitions
                 .Select(definition => new
@@ -236,11 +241,11 @@ namespace GuardsDigital.Tests.EditMode
                     "wasp-magnetic-dagger -> composed",
                     "wasp-crackling-dagger -> first odd-player-count configuration",
                     "wasp-static-barrier -> composed",
-                    "wasp-shock -> 8.10",
-                    "wasp-electrocute -> 8.10",
-                    "wasp-charged-boomerang -> 8.10",
-                    "wasp-electroblast -> 8.10",
-                    "wasp-thunder-boomerang -> 8.10",
+                    "wasp-shock -> composed",
+                    "wasp-electrocute -> composed",
+                    "wasp-charged-boomerang -> composed",
+                    "wasp-electroblast -> composed",
+                    "wasp-thunder-boomerang -> composed",
                     "wasp-lift-up -> composed",
                     "wasp-control-gravity -> composed",
                     "wasp-kinetic-repulse -> composed",

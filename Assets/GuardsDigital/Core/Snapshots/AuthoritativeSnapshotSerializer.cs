@@ -145,7 +145,19 @@ namespace GuardsDigital.Core.Snapshots
         // payload a v21 build could produce - no v21 content declares a maximum above one or a target
         // binding - and wrong for the first payload this milestone writes, where a second repeat would
         // come back believing it was the first and could ask for one more than the card allows.
-        public const int CurrentSchemaVersion = 22;
+        // Milestone 8.10 moves it to 23, for two sections a v22 build cannot read and a v22 payload
+        // cannot describe. The first is a continuation kind: card text applied inside rulebook p.14 can
+        // now stop on a question, and a match holding one persists the paused frame, the moment it
+        // stopped at, and the attack whose remaining steps are owed. The second rides the Attack
+        // resolution itself - the unit a repeated instance may not take, which Thunder Boomerang prints
+        // as "on a different target".
+        //
+        // v22 is rejected rather than migrated, for the reason v21 was: the only reading available for
+        // the new continuation's absence is "no card text is paused", which is true of every payload a
+        // v22 build could produce and false of the first payload this milestone writes. The excluded
+        // target has the same shape of answer - its absence reads as "this instance may take anyone",
+        // which is right for every v22 Attack and wrong for a restored repeat.
+        public const int CurrentSchemaVersion = 23;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

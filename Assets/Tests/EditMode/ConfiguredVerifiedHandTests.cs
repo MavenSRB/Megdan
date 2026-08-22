@@ -129,12 +129,24 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The same rule on an Attack, in a position where milestone 7.8a1's rule provably cannot be
-        /// the cause: an enemy minion stands beside the attacker, which is the position that fixture
-        /// exists to prove an Attack offer stays available in.
+        /// What milestone 8.10 changed about the same rule, on the Attack side.
+        ///
+        /// <para>Shock used to be this fixture's Attack-shaped subject, chosen for a position where
+        /// milestone 7.8a1's no-target rule provably could not be the cause: an enemy minion stands
+        /// beside the attacker, so the Attack has somebody to hit and only the composition rule could
+        /// have greyed it. Milestone 8.10 composed Shock's printed text, and with it every Attack of
+        /// Wasp's that a starting hand can hold, so that subject no longer exists either.</para>
+        ///
+        /// <para><b>The rule now has no turn-action subject in Wasp's set at all</b>, and that is
+        /// recorded here rather than left to be discovered. Its remaining verified subjects are the
+        /// three Defense primaries milestone 8.11 owes, which are performed in reaction rather than on
+        /// a turn and which no start site asks this question of yet; Crackling Dagger's deferral is a
+        /// fourth, and p.5 returns that card to the box before a hand exists. Milestone 8.11 therefore
+        /// owes this rule its refusal case, on the path it reaches a Defense by. What is left to state
+        /// here is the release, on the same board that used to record the refusal.</para>
         /// </summary>
         [Test]
-        public void AnAttackPrimaryWhoseCardTextHasNoComposition_IsGreyedEvenWithATargetBesideIt()
+        public void TheAttackPrimaryThisRuleUsedToGrey_IsOfferedAndStartsOnceItsTextIsComposed()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorWithAnAdjacentEnemyMinion(out _);
             CommitAgainstStopProjectiles(session, WaspCardContent.Shock, 8);
@@ -148,9 +160,21 @@ namespace GuardsDigital.Tests.EditMode
                         neighbor.Equals(minion.Coordinate))),
                 Is.True,
                 "An enemy minion stands adjacent, so Shock's non-Ranged Attack has somebody to hit and " +
-                "the greying below cannot be milestone 7.8a1's no-target rule.");
+                "the availability below is not milestone 7.8a1's no-target rule answering instead.");
 
-            AssertGreyedAndRefusedAtomically(session, SingleAwaitedPrimary(session, ActionKind.Attack));
+            var offer = session.Projection.AvailableTurnActions.Single(candidate =>
+                ActionOf(session, candidate).Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                ActionOf(session, candidate).Kind == ActionKind.Attack);
+            Assert.That(ActionOf(session, offer).TextComposition.IsAwaited, Is.False,
+                "Milestone 8.10 composed Shock's printed text.");
+            Assert.That(ActionOf(session, offer).EffectRoot, Is.Not.Null,
+                "and its rider is an effect root on the action rather than a cleared debt row.");
+            Assert.That(offer.IsAvailable, Is.True,
+                "A primary that owes nothing is offered as takeable.");
+            Assert.That(
+                session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId)).Accepted,
+                Is.True,
+                "and starts, which is the refusal this fixture used to record being released.");
         }
 
         [Test]

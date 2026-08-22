@@ -627,12 +627,22 @@ namespace GuardsDigital.Tests.EditMode
                 repeatTargetBinding: RepeatTargetBinding.SameTarget,
                 boundSelectionNodeId: new EffectNodeId(selectionId));
 
+        /// <summary>
+        /// Milestone 8.10 made p.14's moment part of the question, and step 1 is the one that still
+        /// cannot hold one - so it is the moment these cases ask about.
+        /// </summary>
         private static System.Collections.Generic.IReadOnlyList<EffectDefinitionRejection> ValidateCardText(
+            params EffectNodeDefinition[] nodes) =>
+            ValidateCardTextAt(GuardsDigital.Core.Cards.CardTextTiming.BeforeTheAttack, nodes);
+
+        private static System.Collections.Generic.IReadOnlyList<EffectDefinitionRejection> ValidateCardTextAt(
+            GuardsDigital.Core.Cards.CardTextTiming moment,
             params EffectNodeDefinition[] nodes) =>
             EffectDefinitionValidator.ValidateCardText(
                 new EffectDefinition(
                     new EffectDefinitionId("validator-fixture"), "rev-1", nodes[0].Id, nodes),
-                SyntheticEffectCapabilities.CreateCatalog());
+                SyntheticEffectCapabilities.CreateCatalog(),
+                moment);
         private static System.Collections.Generic.IReadOnlyList<EffectDefinitionRejection> Validate(
             params EffectNodeDefinition[] nodes) =>
             EffectDefinitionValidator.Validate(

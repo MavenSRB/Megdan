@@ -105,6 +105,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingDisplacedMinionCorrection pendingCorrection;
         private PendingRepeatedAction pendingRepeat;
         private PendingImmediateLanePushRequest pendingLanePush;
+        private PendingAttackCardTextResolution pendingCardText;
+        private PendingAttackResolution owedAttackRepeat;
+        private AttackTarget owedAttackRepeatExclusion;
 
         private CardActionResolutionAuthority(
             MatchContentCatalogs catalogs,
@@ -228,8 +231,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
             skillBackend.PendingResolution;
 
+        /// <summary>
+        /// The question an effect frame is waiting on, whichever frame is holding it. Milestone 8.10
+        /// added the second source: card text applied inside rulebook p.14 pauses on the same frame a
+        /// Skill does, so a reader that already knew how to draw and answer one needs nothing new to
+        /// draw and answer the other, and a match can only ever be holding one of the two.
+        /// </summary>
         public GuardsDigital.Core.Rules.EffectResolution.PendingEffectChoice PendingEffectChoice =>
-            skillBackend.PendingChoice;
+            pendingCardText?.Frame.PendingChoice ?? skillBackend.PendingChoice;
 
         /// <summary>
         /// Milestone 6.5c: what each space-valued candidate of the pending effect choice currently
@@ -243,8 +252,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 IEnumerable<CardDefinition> definitions,
                 RuleModificationSet modifications)
         {
-            var pending = skillBackend.PendingResolution;
-            var choice = skillBackend.PendingChoice;
+            var pending = pendingCardText?.Frame ?? skillBackend.PendingResolution;
+            var choice = pending?.PendingChoice;
             if (pending == null || choice == null)
             {
                 return Array.Empty<
@@ -288,6 +297,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public PendingImmediateLanePushRequest PendingImmediateLanePush => pendingLanePush;
 
         /// <summary>
+        /// Milestone 8.10's Attack stopped inside rulebook p.14's card text, or <c>null</c>. Non-null
+        /// only while the text applied at one of the page's moments is waiting on an answer; text that
+        /// asks nothing finishes inside the command that reached it, exactly as it did before.
+        /// </summary>
+        public PendingAttackCardTextResolution PendingCardTextResolution => pendingCardText;
+
+        /// <summary>
+        /// Milestone 8.10. Whether an Attack's own card text asked for that Attack to happen again -
+        /// Thunder Boomerang's "may repeat once on a different target" - and the instance that asked
+        /// has finished the page.
+        ///
+        /// <para>It is not persisted, and does not need to be: the request is recorded and consumed
+        /// inside one command, between the card text completing and the turn deciding what to do with a
+        /// finished Attack. Every pause the repeated instance then opens is the ordinary Attack's own,
+        /// which already crosses the wire.</para>
+        /// </summary>
+        public bool HasOwedAttackRepeat => owedAttackRepeat != null;
+
+        /// <summary>
         /// The modifications in effect right now, derived from the supplied timing state and this
         /// authority's board. Built per command rather than cached: an Active effect can expire, a
         /// token can be removed, and milestone 7.3's hero can leave the board between two commands, and
@@ -312,7 +340,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
-            skillBackend.HasPendingResolution || pendingCorrection != null || pendingRepeat != null;
+            skillBackend.HasPendingResolution || pendingCorrection != null || pendingRepeat != null ||
+            pendingCardText != null;
 
         public CardActionResolutionResult StartTurnSkill(
             ActionResolutionId resolutionId,
@@ -789,6 +818,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var ledger = CoinLedger == null
                 ? HeroCoinLedgerRestoreStateHolder.Absent()
                 : HeroCoinLedgerRestoreStateHolder.Present(CoinLedger.CaptureRestoreState());
+            // Milestone 8.10 first, and deliberately: at p.14's step 4 the attack's own resolution is
+            // still pending underneath the paused text, so asking about the attack before asking about
+            // the text would capture the attack alone and lose the frame that is holding the page.
+            if (pendingCardText != null)
+            {
+                return CardActionResolutionRestoreState.WithPendingCardText(
+                    pendingCardText, ledger, pendingLanePush);
+            }
+
             if (PendingResolution != null)
             {
                 return CardActionResolutionRestoreState.WithPendingMovement(
@@ -960,6 +998,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     restored.pendingCorrection = state.PendingCorrection;
                     restored.pendingRepeat = state.PendingRepeat;
                     return restored;
+
+                // Milestone 8.10. Nothing about the attack underneath is rebuilt here: what the page
+                // has left to do is regenerated from the continuation's own identity when the question
+                // is answered, so a restored pause owns exactly what the live one owned.
+                case CardActionContinuationKind.AttackCardText:
+                    var restoredCardText = new CardActionResolutionAuthority(
+                        catalogs,
+                        new MovementCardActionStrategyBackend(adjacentMoveAuthority),
+                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
+                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
+                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
+                        components,
+                        adjacentMoveAuthority);
+                    restoredCardText.pendingCardText = state.PendingCardText;
+                    return restoredCardText;
 
                 default:
                     return new CardActionResolutionAuthority(
@@ -1192,16 +1246,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// resolution context, so a capability that asks p.18's immunity asks about the Attack it is
         /// running inside rather than about a Skill (F-BOARD-03).</para>
         ///
-        /// <para><b>Card text applied inside an Attack cannot pause.</b> An Attack's remaining steps
-        /// are produced in the same command that began them, and no persisted state can hold them while
-        /// a choice stands, so a nested pause would need a wire field this milestone deliberately does
-        /// not add. <see cref="GuardsDigital.Core.Effects.EffectDefinitionValidator"/> refuses a
-        /// card-text root that could open one, at configuration, before any match runs; the throw below
-        /// is the case that rule failed to catch, and it is a content fault rather than a rules
-        /// outcome. The slice that first transcribes a rider needing a question - 8.10's discard
-        /// riders, 8.11's Block riders - owns the nesting and the schema move it costs.</para>
+        /// <para><b>Card text applied inside an Attack may pause, at two of p.14's three moments.</b>
+        /// Milestone 8.10. What the page leaves after step 4 and after step 7 is a function of the
+        /// attack's own identity, so a question standing at either is held in a
+        /// <see cref="PendingAttackCardTextResolution"/> and the rest of the page is rebuilt from that
+        /// identity when it is answered. What follows step 1 is not such a function - on the minion arm
+        /// it contains the facts of a Defeat this backend has already applied - so text that could ask
+        /// there is still refused at configuration by
+        /// <see cref="GuardsDigital.Core.Effects.EffectDefinitionValidator"/>, and the throw below is
+        /// the case that rule failed to catch. It stays a content fault rather than a rules
+        /// outcome.</para>
         /// </summary>
-        public IReadOnlyList<CardActionResolutionEvent> ApplyCardText(
+        public IReadOnlyList<ResolutionStep> ApplyCardText(
             ResolutionStep step,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
@@ -1237,7 +1293,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 EffectCardState.Of(materializedDefinitions, instances),
                 action.Kind,
                 components: components,
-                heroItems: skillBackend.HeroItems);
+                heroItems: skillBackend.HeroItems,
+                // Milestone 8.10. What the Attack this text is printed inside took, which Thunder
+                // Boomerang's "If you targeted a hero" asks about. Undefined where the Attack took a
+                // minion, and undefined at p.14's step 1 for a different reason - the page has not
+                // chosen a target yet - which is the same honest answer either way.
+                enclosingAttackHeroTargetId:
+                    step.CardTextRemainderResolution?.TargetHeroId ?? default);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
@@ -1258,18 +1320,237 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (result.Frame?.PendingChoice != null)
             {
-                throw new InvalidOperationException(
-                    $"Card text on '{definition.Id}' action '{action.Id}' asked a question inside " +
-                    "rulebook p.14's order, which no persisted state can hold. The effect-definition " +
-                    "validator refuses such a composition at configuration; this build loaded one it " +
-                    "should have rejected.");
+                if (step.CardTextRemainderResolution == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Card text on '{definition.Id}' action '{action.Id}' asked a question at " +
+                        $"rulebook p.14's {step.CardTextTiming}, whose remaining steps no identity can " +
+                        "reproduce. The effect-definition validator refuses such a composition at " +
+                        "configuration; this build loaded one it should have rejected.");
+                }
+
+                // Milestone 8.10. The page stops here. What is kept is the frame that asked, the moment
+                // it asked at, and the attack the rest of the page belongs to - never the steps
+                // themselves, which are regenerated from that identity when the answer arrives.
+                pendingCardText = new PendingAttackCardTextResolution(
+                    result.Frame,
+                    step.CardTextTiming,
+                    step.CardTextRemainderResolution,
+                    step.CardTextRemainderOutcome);
             }
 
-            return Array.AsReadOnly(result.Events
+            var steps = result.Events
                 .Select(value => CardActionResolutionEvent.CardTextApplied(
                     card.Id, action.Id, step.CardTextActorId, step.CardTextTiming, value))
-                .ToArray());
+                .Select(ResolutionStep.FromFact)
+                .ToList();
+            AppendRequestedHeroDefeats(
+                result, step.CardTextRemainderResolution, materializedDefinitions, instances,
+                participants, modifications, steps);
+            RecordOwedAttackRepeat(result, step.CardTextRemainderResolution);
+            return Array.AsReadOnly(steps.ToArray());
         }
+
+        /// <summary>
+        /// Milestone 8.10. Runs rulebook p.13's Defeat list for every hero this card text asked it to be
+        /// run about, in the order the frame recorded them, and splices its facts into the same stream.
+        ///
+        /// <para>The requests are read only from a step that <em>completed</em>, which is the same rule
+        /// milestone 6.9's Lane-Push cause is read under and for the same reason: a frame carries its
+        /// outcomes cumulatively, so a request seen while the text is still paused would be seen again
+        /// on the next step and the page would be run twice about one hero. Electroblast's defeat is
+        /// the last node of its rider, so completion is exactly where it belongs.</para>
+        ///
+        /// <para>It is the Attack's own resolver that runs the list - not a second copy of p.13 - which
+        /// is why the attack this text is printed inside has to be the one identity handed over.</para>
+        /// </summary>
+        /// <summary>
+        /// Milestone 8.10. Remembers that this Attack's card text asked for the Attack again, and what
+        /// the repeated instance may not take.
+        ///
+        /// <para>The exclusion is read from the declaration the request carries rather than from the
+        /// effect nodes, which this dispatcher does not inspect: a repeat that declared nothing chooses
+        /// freely by p.10, and only <c>DifferentTarget</c> - which is what Thunder Boomerang prints -
+        /// takes the finished instance's target out of the set.</para>
+        /// </summary>
+        private void RecordOwedAttackRepeat(
+            EffectResolutionStepResult result,
+            PendingAttackResolution attack)
+        {
+            if (!result.IsComplete || !result.RepeatRequested.IsRequested || attack == null)
+            {
+                return;
+            }
+
+            owedAttackRepeat = attack;
+            owedAttackRepeatExclusion =
+                result.RepeatRequested.Binding == RepeatTargetBinding.DifferentTarget
+                    ? attack.Target
+                    : default;
+        }
+
+        /// <summary>
+        /// Milestone 8.10. Starts the Attack instance the finished one asked for, once that instance's
+        /// page is closed.
+        ///
+        /// <para>The repeated instance is an ordinary Attack from here on: it opens its own target
+        /// choice, takes its own Defense response, and runs p.13's consequences and p.14's order for
+        /// itself. It may also refuse to start at all - a board with nobody left the card admits is a
+        /// repeat that simply does not happen, because p.10 offers a repeat rather than owing one - and
+        /// that is reported as a completed action rather than as a rejected command.</para>
+        /// </summary>
+        public CardActionResolutionResult StartOwedAttackRepeat(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var attack = owedAttackRepeat;
+            var excluded = owedAttackRepeatExclusion;
+            owedAttackRepeat = null;
+            owedAttackRepeatExclusion = default;
+            if (attack == null)
+            {
+                return CardActionResolutionResult.Accept(
+                    true, null, null, Array.Empty<ResolutionStep>());
+            }
+
+            var repeated = attackDefenseBackend.StartRepeatedAttack(
+                attack, excluded, definitions, instances, participants, modifications);
+            return repeated.Accepted
+                ? CardActionResolutionResult.Accept(false, null, null, repeated.Steps)
+                : CardActionResolutionResult.Accept(true, null, null, Array.Empty<ResolutionStep>());
+        }
+
+        private void AppendRequestedHeroDefeats(
+            EffectResolutionStepResult result,
+            PendingAttackResolution attack,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            ICollection<ResolutionStep> steps)
+        {
+            if (!result.IsComplete || result.RequestedHeroDefeats.Count == 0)
+            {
+                return;
+            }
+
+            var materializedInstances = instances as IReadOnlyList<CardInstance> ?? instances.ToArray();
+            foreach (var heroId in result.RequestedHeroDefeats)
+            {
+                var defeat = attackDefenseBackend.ResolveEffectInvokedHeroDefeat(
+                    attack, heroId, definitions, materializedInstances, participants, modifications,
+                    steps);
+                if (defeat == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Card text asked for hero '{heroId.Value}' to be defeated, and this " +
+                        "composition cannot price a Defeat. A card that can reach p.13's list is " +
+                        "dealt only into a match that binds the Levels and Life counters it spends.");
+                }
+            }
+        }
+        /// <summary>
+        /// Milestone 8.10. Answers the question rulebook p.14's card text stopped on, and - when the
+        /// text has finished - hands back the rest of the page.
+        ///
+        /// <para>The frame resumes through the same <c>EffectResolutionSession.Answer</c> a paused
+        /// Skill resumes through, and the effect itself is resolved from the trusted card definitions
+        /// rather than from anything the continuation carried, which is why the continuation carries
+        /// identity alone. Text that asks a second question simply pauses again: the continuation is
+        /// replaced and no steps are produced, so Wasp's riders - which choose a hero and then let that
+        /// hero choose a card - stop twice inside one attack without either half being special.</para>
+        ///
+        /// <para>The steps returned when it finishes are
+        /// <see cref="AttackDefenseCardActionStrategyBackend.StepsAfterCardText"/>'s, the same
+        /// generator that emits them when nothing paused at all.</para>
+        /// </summary>
+        public CardActionResolutionResult AnswerCardTextChoice(
+            EffectChoiceCommand command,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            if (pendingCardText == null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.NoPendingResolution, null, null);
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var effectRoot = SkillCardActionStrategyBackend.FindEffectRoot(
+                materializedDefinitions, pendingCardText.Frame);
+            if (effectRoot == null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.UnavailableOffer, null, null);
+            }
+
+            var context = new EffectResolutionContext(
+                effectRoot,
+                ContentCatalogs.Capabilities,
+                participants,
+                timing,
+                roundIndex,
+                turnIndex,
+                modifications,
+                EffectCardState.Of(materializedDefinitions, instances),
+                ActionKind.Attack,
+                components: components,
+                heroItems: skillBackend.HeroItems,
+                enclosingAttackHeroTargetId: pendingCardText.Attack.TargetHeroId);
+            var step = EffectResolutionSession.Answer(pendingCardText.Frame, command, context);
+            if (!step.Accepted)
+            {
+                switch (step.RejectionReason)
+                {
+                    case EffectResolutionRejectionReason.StaleChoice:
+                        return CardActionResolutionResult.Reject(
+                            CardActionResolutionRejectionReason.StaleChoice, null, null);
+                    case EffectResolutionRejectionReason.WrongChooser:
+                        return CardActionResolutionResult.Reject(
+                            CardActionResolutionRejectionReason.WrongChooser, null, null);
+                    default:
+                        return CardActionResolutionResult.Reject(
+                            CardActionResolutionRejectionReason.InvalidChoice, null, null);
+                }
+            }
+
+            var paused = pendingCardText;
+            var facts = step.Events
+                .Select(value => CardActionResolutionEvent.CardTextApplied(
+                    paused.Frame.SourceCardInstanceId,
+                    paused.Frame.ActionDefinitionId,
+                    paused.Frame.ActorId,
+                    paused.Moment,
+                    value))
+                .Select(ResolutionStep.FromFact)
+                .ToList();
+
+            if (step.Frame?.PendingChoice != null)
+            {
+                pendingCardText = new PendingAttackCardTextResolution(
+                    step.Frame, paused.Moment, paused.Attack, paused.Outcome);
+                return CardActionResolutionResult.Accept(false, null, null, facts);
+            }
+
+            pendingCardText = null;
+            AppendRequestedHeroDefeats(
+                step, paused.Attack, materializedDefinitions, instances, participants, modifications,
+                facts);
+            RecordOwedAttackRepeat(step, paused.Attack);
+            facts.AddRange(AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
+                paused.Moment, paused.Attack, paused.Outcome));
+            return CardActionResolutionResult.Accept(true, null, null, facts);
+        }
+
         public AttackActionResolutionResult AnswerAttackTarget(
             AttackTargetChoiceCommand command,
             IEnumerable<CardDefinition> definitions,

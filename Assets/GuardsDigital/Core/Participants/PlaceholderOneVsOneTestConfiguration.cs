@@ -509,11 +509,12 @@ namespace GuardsDigital.Core.Participants
                     }
 
                     // Milestone 8.5. Text applied at one of rulebook p.14's Attack moments is validated
-                    // under the stricter rule, because it also has to finish inside the command that
-                    // reached it; a Skill's own effect is the action and may pause freely.
+                    // under the stricter rule; a Skill's own effect is the action and may pause freely.
+                    // Milestone 8.10 made the moment part of the question, because only step 1 still
+                    // has to finish inside the command that reached it.
                     var rejections = action.CardTextTiming != CardTextTiming.None
                         ? GuardsDigital.Core.Effects.EffectDefinitionValidator.ValidateCardText(
-                            action.EffectRoot, catalog)
+                            action.EffectRoot, catalog, action.CardTextTiming)
                         : GuardsDigital.Core.Effects.EffectDefinitionValidator.Validate(
                             action.EffectRoot, catalog);
                     if (rejections.Count > 0)

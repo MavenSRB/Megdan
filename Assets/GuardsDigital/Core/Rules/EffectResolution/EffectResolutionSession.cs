@@ -65,7 +65,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool isComplete,
             IEnumerable<EffectResolutionEvent> events,
             RepeatRequest repeatRequested,
-            GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause)
+            GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause,
+            IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats)
         {
             Accepted = accepted;
             RejectionReason = rejectionReason;
@@ -75,6 +76,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 (events ?? Enumerable.Empty<EffectResolutionEvent>()).ToArray());
             RepeatRequested = repeatRequested;
             LanePushCause = lanePushCause;
+            RequestedHeroDefeats = new ReadOnlyCollection<GuardsDigital.Core.Units.Heroes.HeroId>(
+                (requestedHeroDefeats ?? Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>())
+                    .ToArray());
         }
 
         public bool Accepted { get; }
@@ -112,16 +116,28 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind LanePushCause { get; }
 
+        /// <summary>
+        /// Milestone 8.10. The heroes this step's completed outcomes asked rulebook p.13's Defeat list
+        /// to be run about, in the order the frame recorded them. Empty on every step that asked for
+        /// none, which is every step in this build before Electroblast.
+        ///
+        /// It says nothing about whether the list can be run: that needs the coin ledger, the Levels
+        /// and the Life counters, and the card action asks it - the same division
+        /// <see cref="LanePushCause"/> draws.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> RequestedHeroDefeats { get; }
+
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
             bool isComplete,
             IEnumerable<EffectResolutionEvent> events,
             RepeatRequest repeatRequested = default,
             GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause =
-                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None) =>
+                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None,
+            IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats = null) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
-                repeatRequested, lanePushCause);
+                repeatRequested, lanePushCause, requestedHeroDefeats);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -134,7 +150,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
             return new EffectResolutionStepResult(
                 false, reason, frame, false, null, RepeatRequest.None,
-                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None);
+                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None, null);
         }
     }
 
@@ -153,8 +169,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             ActionKind enclosingActionKind,
             HeroId opposingHeroId = default,
             MatchComponents components = null,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
+            HeroId enclosingAttackHeroTargetId = default)
         {
+            EnclosingAttackHeroTargetId = enclosingAttackHeroTargetId;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
                 enclosingActionKind == ActionKind.None)
             {
@@ -187,6 +205,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public int RoundIndex { get; }
         public int TurnIndex { get; }
         public HeroId OpposingHeroId { get; }
+
+        /// <summary>
+        /// The hero the enclosing Attack targeted, or the undefined hero when it targeted a minion or
+        /// when there is no enclosing Attack at all. Milestone 8.10.
+        ///
+        /// <para>Thunder Boomerang prints "If you targeted a hero may repeat once on a different
+        /// target", and that condition is about the action the text is printed inside rather than about
+        /// anything the text itself did - so it arrives the way
+        /// <see cref="EnclosingActionKind"/> does, as context, rather than as a fact some node
+        /// published. The undefined hero is the honest answer for both of the ways there is none: p.13
+        /// lets an Attack take a minion, and every effect that is not card text inside an Attack has no
+        /// target of its own to report.</para>
+        /// </summary>
+        public HeroId EnclosingAttackHeroTargetId { get; }
 
         /// <summary>
         /// The kind of action this effect is running inside. Milestone 8.5, closing the 7.9a review's
@@ -436,7 +468,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             return EffectResolutionStepResult.Accept(
                 Rebuild(frame, continuation, outcomes, frame.AcceptedChoices), true, events,
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
-                RecordedLanePushQuery.Recorded(context.Definition, outcomes));
+                RecordedLanePushQuery.Recorded(context.Definition, outcomes),
+                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult Resume(
@@ -582,7 +615,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     return EffectResolutionStepResult.Accept(
                         Rebuild(frame, continuation, outcomes, choices), true, events,
                         RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
-                        RecordedLanePushQuery.Recorded(context.Definition, outcomes));
+                        RecordedLanePushQuery.Recorded(context.Definition, outcomes),
+                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes));
                 }
 
                 var top = continuation[continuation.Count - 1];
@@ -857,7 +891,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             return EffectResolutionStepResult.Accept(
                 Rebuild(frame, continuation, outcomes, choices), true, events,
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
-                RecordedLanePushQuery.Recorded(context.Definition, outcomes));
+                RecordedLanePushQuery.Recorded(context.Definition, outcomes),
+                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult PauseOn(
@@ -995,7 +1030,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.EnclosingActionKind,
                 context.Components,
                 context.HeroItems,
-                AnswersAlreadyGiven(frame, node));
+                AnswersAlreadyGiven(frame, node),
+                context.EnclosingAttackHeroTargetId);
         }
 
         /// <summary>

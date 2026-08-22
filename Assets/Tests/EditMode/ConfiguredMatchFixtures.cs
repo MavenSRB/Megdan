@@ -410,34 +410,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateKineticSession(CardDefinitionId kineticCardId, bool stoppedShort)
         {
-            var source = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
-                TeamSide.Red);
-            var state = source.CaptureRestoreState();
-            var redHeroId = state.Participants.Heroes
-                .Single(hero => state.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
-            var upgraded = state.Definitions.Single(definition => definition.Id.Equals(kineticCardId));
-            var replaced = source.RedHand.Instances.Single(instance =>
-                state.Definitions
-                    .Single(definition =>
-                        definition.Reference.Equals(instance.DefinitionReference))
-                    .Progression.Color == upgraded.Progression.Color);
-
-            var configuration = PlaceholderOneVsOneTestConfiguration.Restore(
-                new PlaceholderConfigurationRestoreState(
-                    state.Participants,
-                    state.Definitions,
-                    state.Instances.Select(instance =>
-                        instance.OwnerId.Equals(redHeroId) &&
-                        instance.DefinitionReference.DefinitionId.Equals(kineticCardId)
-                            ? CardInstance.CreateInHand(
-                                instance.Id, instance.DefinitionReference, instance.OwnerId)
-                            : instance.Id.Equals(replaced.Id)
-                                ? CardInstance.CreateInDeck(
-                                    instance.Id, instance.DefinitionReference, instance.OwnerId)
-                                : instance),
-                    state.TieBreakerState,
-                    state.SetupSeed));
-
+            var configuration = WithCardSwappedIntoTheRedHand(kineticCardId, out var redHeroId);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -453,13 +426,218 @@ namespace GuardsDigital.Tests.EditMode
                 WithBlueHeroOnAPushLine(map, setup, stoppedShort),
                 setup.Minions));
 
+            AssertTheHandStillHoldsFive(session, redHeroId);
+            return session;
+        }
+
+        /// <summary>
+        /// Milestone 8.10. The verified mirror with one of Wasp's Boomerangs in the Red hand, the Blue
+        /// Wasp standing beside her, and one Blue melee minion inside Range 3 on no file through her.
+        ///
+        /// <para>It is the discriminating board for "Target a unit in range and not in a straight
+        /// line". The adjacent hero is exactly what p.19 puts on a straight line at separation one -
+        /// which is what the face's own reminder says - and the minion is the only unit in reach the
+        /// sentence admits, so a build that dropped the complement would offer two targets where the
+        /// card prints one. Both stand inside Range 3, so nothing here is decided by distance.</para>
+        /// </summary>
+        public static MatchSession CreateBoomerangSession(
+            CardDefinitionId boomerangCardId, out MinionId outOfLineMinionId)
+        {
+            var configuration = WithCardSwappedIntoTheRedHand(boomerangCardId, out var redHeroId);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var engaged = new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroBesideTheRedOne(map, setup),
+                setup.Minions);
+
+            var session = CreateSession(
+                configuration, map,
+                WithAMeleeMinionOutOfLineFromTheRedHero(map, engaged, out outOfLineMinionId));
+
+            AssertTheHandStillHoldsFive(session, redHeroId);
+            return session;
+        }
+
+        /// <summary>
+        /// The verified mirror with one named card swapped into the Red hand at setup, in place of the
+        /// printed starting card of its own colour.
+        ///
+        /// <para>Milestone 8.8 first needed this and milestone 8.10 needs the same move for both
+        /// Boomerangs, so it is stated once. p.6 leaves Tier II and III cards in the deck; what puts
+        /// one in a hand is p.15's Level Up, which swaps a card for one of its own upgrade candidates,
+        /// and this performs exactly that swap at setup rather than playing the rounds needed to reach
+        /// it. Only the Red seat is touched, because only the Red seat acts, and matching the colour is
+        /// what keeps the hand at p.15's "exactly 5 cards, 1 of each color".</para>
+        /// </summary>
+        /// <summary>
+        /// Milestone 8.10. Electroblast's rider on a board where its second arm is the one that can
+        /// happen: the Blue hero holds exactly the card they commit to this turn, so by the time
+        /// rulebook p.14's step 7 asks them for one, they have none.
+        ///
+        /// <para>The board is otherwise the rider's own - a minion beside the Red hero to attack, and
+        /// the Blue hero at distance 2, inside Electroblast's Radius 3 and off the ring its sentence
+        /// removes. What differs is the hand, and it is emptied by putting four of p.5's starting five
+        /// in the deck rather than by playing rounds to spend them, so nothing about the case depends
+        /// on which cards those rounds happened to take.</para>
+        /// </summary>
+        public static MatchSession CreateEscalatingRiderSession(out MinionId adjacentMinionId)
+        {
+            var configuration = WithCardSwappedIntoTheRedHand(
+                WaspCardContent.Electroblast, out var redHeroId, emptyTheOpposingHand: true);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var withMinion = WithAMeleeMinionBesideTheRedHero(map, setup, out adjacentMinionId);
+            var session = CreateSession(configuration, map, new QuickGameSetupState(
+                withMinion.SelectedMap,
+                withMinion.WaveCount,
+                withMinion.TieBreakerState,
+                withMinion.Teams,
+                WithBlueHeroAtDistance(map, withMinion, 2),
+                withMinion.Minions));
+
+            AssertTheHandStillHoldsFive(session, redHeroId);
+            return session;
+        }
+
+        /// <summary>
+        /// Milestone 8.10. Thunder Boomerang's board: both the Blue hero and a Blue melee minion stand
+        /// inside Range 3 and on no file through the Red hero, so the card admits both of them.
+        ///
+        /// <para>Two off-line units is what the repeat needs and what nothing before it needed. The
+        /// hero is there because "If you targeted a hero" is only true of a hero, and the minion is
+        /// there because "on a different target" needs somewhere else to go - a board with one legal
+        /// target would end the repeat for lack of anyone rather than for the reason under test.</para>
+        /// </summary>
+        public static MatchSession CreateThunderBoomerangSession(out MinionId outOfLineMinionId)
+        {
+            var configuration = WithCardSwappedIntoTheRedHand(
+                WaspCardContent.ThunderBoomerang, out var redHeroId);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var withHero = new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroOutOfLineFromTheRedHero(map, setup),
+                setup.Minions);
+
+            var session = CreateSession(
+                configuration, map,
+                WithAMeleeMinionOutOfLineFromTheRedHero(map, withHero, out outOfLineMinionId));
+
+            AssertTheHandStillHoldsFive(session, redHeroId);
+            return session;
+        }
+
+        /// <summary>
+        /// The Blue hero moved to the nearest empty playable space inside Range 3 of the Red hero and
+        /// on no file through them - the same search
+        /// <see cref="WithAMeleeMinionOutOfLineFromTheRedHero"/> runs, asked about the hero.
+        /// </summary>
+        private static IReadOnlyList<QuickGameHeroSetupState> WithBlueHeroOutOfLineFromTheRedHero(
+            BoardMapDefinition map, QuickGameSetupState setup)
+        {
+            var redHero = setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Heroes.Select(hero => hero.Coordinate)
+                    .Concat(setup.Minions.Select(minion => minion.Coordinate)));
+            var destination = map.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Playable)
+                .Where(space => !occupied.Contains(space.Coordinate))
+                .Where(space =>
+                    HexDistanceQuery.Calculate(redHero.Coordinate, space.Coordinate) <= 3 &&
+                    !StraightLineQuery.AreInStraightLine(redHero.Coordinate, space.Coordinate))
+                .OrderBy(space => HexDistanceQuery.Calculate(redHero.Coordinate, space.Coordinate))
+                .ThenBy(space => space.Coordinate.Q)
+                .ThenBy(space => space.Coordinate.R)
+                .First();
+
+            return setup.Heroes
+                .Select(hero => hero.TeamSide == TeamSide.Blue
+                    ? new QuickGameHeroSetupState(
+                        hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
+                        hero.SpawnPoint,
+                        new ConfiguredSpaceReference(map.Id, destination.Id),
+                        destination.Coordinate)
+                    : hero)
+                .ToArray();
+        }
+
+        private static PlaceholderOneVsOneTestConfiguration WithCardSwappedIntoTheRedHand(
+            CardDefinitionId cardId, out HeroId redHeroId) =>
+            WithCardSwappedIntoTheRedHand(cardId, out redHeroId, emptyTheOpposingHand: false);
+
+        private static PlaceholderOneVsOneTestConfiguration WithCardSwappedIntoTheRedHand(
+            CardDefinitionId cardId, out HeroId redHeroId, bool emptyTheOpposingHand)
+        {
+            var source = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                TeamSide.Red);
+            var state = source.CaptureRestoreState();
+            redHeroId = state.Participants.Heroes
+                .Single(hero => state.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            var upgraded = state.Definitions.Single(definition => definition.Id.Equals(cardId));
+            var replaced = source.RedHand.Instances.Single(instance =>
+                state.Definitions
+                    .Single(definition =>
+                        definition.Reference.Equals(instance.DefinitionReference))
+                    .Progression.Color == upgraded.Progression.Color);
+
+            var owner = redHeroId;
+
+            // Milestone 8.10. Everything the opposing hero holds except the card they will commit goes
+            // to the deck, so p.14's step 7 finds a hero with nothing to give. Stop Projectiles is the
+            // one kept because it is what every fixture here commits against: its printed Initiative 3
+            // is the lowest in the starting hand, so the Red card still acts first.
+            CardInstance Opposing(CardInstance instance) =>
+                emptyTheOpposingHand &&
+                !instance.OwnerId.Equals(owner) &&
+                instance.State.Location == CardLocation.Hand &&
+                !instance.DefinitionReference.DefinitionId.Equals(WaspCardContent.StopProjectiles)
+                    ? CardInstance.CreateInDeck(
+                        instance.Id, instance.DefinitionReference, instance.OwnerId)
+                    : instance;
+
+            return PlaceholderOneVsOneTestConfiguration.Restore(
+                new PlaceholderConfigurationRestoreState(
+                    state.Participants,
+                    state.Definitions,
+                    state.Instances.Select(instance =>
+                        instance.OwnerId.Equals(owner) &&
+                        instance.DefinitionReference.DefinitionId.Equals(cardId)
+                            ? CardInstance.CreateInHand(
+                                instance.Id, instance.DefinitionReference, instance.OwnerId)
+                            : instance.Id.Equals(replaced.Id)
+                                ? CardInstance.CreateInDeck(
+                                    instance.Id, instance.DefinitionReference, instance.OwnerId)
+                                : Opposing(instance)),
+                    state.TieBreakerState,
+                    state.SetupSeed));
+        }
+
+        private static void AssertTheHandStillHoldsFive(MatchSession session, HeroId redHeroId) =>
             Assert.That(
                 session.Projection.Cards.Count(card =>
                     card.OwnerId.Equals(redHeroId) && card.State.Location == CardLocation.Hand),
                 Is.EqualTo(5),
                 "p.15 leaves the hand at five cards, one of each colour; the swap has to keep it there.");
-            return session;
-        }
 
         /// <summary>
         /// The Blue hero moved to the neighbouring space of the Red one whose push line closes early or
@@ -554,6 +732,21 @@ namespace GuardsDigital.Tests.EditMode
                 WithBlueHeroAtDistance(map, withMinion, 2),
                 withMinion.Minions));
         }
+
+        /// <summary>
+        /// Milestone 8.10. Shock's and Electrocute's After-the-attack rider needs exactly the board
+        /// milestone 8.9 built for Magnetic Dagger, for exactly the same two reasons: a Blue melee
+        /// minion beside the Red hero, so p.13's minion arm runs the whole attack inside one command
+        /// and reaches p.14's step 7, and the Blue hero at distance 2, which is inside Shock's printed
+        /// Radius 2 and outside the ring "and not adjacent to you" removes.
+        ///
+        /// <para>It delegates rather than copying. A second board that happened to differ would make
+        /// the two milestones' claims incomparable, and the position is the only one where "an enemy
+        /// hero in radius and not adjacent to you" has a subject that the Attack did not itself
+        /// remove.</para>
+        /// </summary>
+        public static MatchSession CreateRadiusDiscardRiderSession(out MinionId adjacentMinionId) =>
+            CreateMagneticDaggerSession(out adjacentMinionId);
 
         /// <summary>
         /// The Blue hero moved to a free playable space exactly <paramref name="spaces"/> from the Red
