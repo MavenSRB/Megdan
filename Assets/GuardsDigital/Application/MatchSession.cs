@@ -47,6 +47,7 @@ namespace GuardsDigital.Application
 
         private long version;
         private bool canRecordHistory;
+        private Exception nextProjectionFaultForTest;
 
         /// <summary>
         /// Every session verifies every refusal, in every build configuration. Milestone 6.1i made
@@ -85,14 +86,18 @@ namespace GuardsDigital.Application
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
 
-            // One boundary decides whether this command's state and its ordered events are kept.
+            // The application transaction begins before the aggregate mutates. The aggregate owns
+            // the authoritative graphs and event streams; this outer boundary additionally owns
+            // accepted history, version/checkpoints, and publication of their one immutable view.
+            var rollback = aggregate.CapturePreImage();
+            var rollbackHistory = history.Commands;
+            var rollbackVersion = version;
             var outcome = aggregate.Commit(() => Dispatch(command));
             if (outcome.Status == MatchCommitStatus.Faulted)
             {
                 // A throw is a defect in this engine, not a rule saying no. Naming the exception
                 // type puts that distinction in the log as well as in the reported reason, so a
                 // NullReferenceException can never be read back as a rules outcome.
-                Projection = CreateProjection();
                 return Rejected(
                     command,
                     MatchSessionRejectionReason.EngineFault,
@@ -101,7 +106,6 @@ namespace GuardsDigital.Application
 
             if (outcome.Status == MatchCommitStatus.AtomicityViolation)
             {
-                Projection = CreateProjection();
                 return Rejected(
                     command,
                     MatchSessionRejectionReason.AtomicityViolation,
@@ -111,7 +115,6 @@ namespace GuardsDigital.Application
             var dispatch = outcome.Plan;
             if (outcome.Status == MatchCommitStatus.Rejected)
             {
-                Projection = CreateProjection();
                 return new MatchCommandResult(
                     false,
                     command,
@@ -124,23 +127,48 @@ namespace GuardsDigital.Application
                     Projection);
             }
 
-            if (canRecordHistory)
+            try
             {
-                history.Append(command);
-            }
-            version++;
-            if (!deferAcceptedProjectionRefresh)
-            {
-                Projection = CreateProjection();
-                // After the refresh, so the pre-image reads the memoized capture the projection
-                // just took rather than serializing again. Replay candidates defer their
-                // projections and take no checkpoints: an adopted candidate's prefix states are
-                // already covered by the checkpoints the live session kept.
-                if (canRecordHistory && history.Count % UndoCheckpointInterval == 0)
+                if (canRecordHistory)
                 {
-                    checkpoints.Add(new UndoCheckpoint(history.Count, aggregate.CapturePreImage()));
+                    history.Append(command);
                 }
+
+                version++;
+                MatchSessionProjection nextProjection = Projection;
+                UndoCheckpoint nextCheckpoint = null;
+                if (!deferAcceptedProjectionRefresh)
+                {
+                    nextProjection = CreateProjection();
+                    // After the refresh, so the pre-image reads the memoized capture the projection
+                    // just took rather than serializing again. Replay candidates defer their
+                    // projections and take no checkpoints: an adopted candidate's prefix states are
+                    // already covered by the checkpoints the live session kept.
+                    if (canRecordHistory && history.Count % UndoCheckpointInterval == 0)
+                    {
+                        nextCheckpoint = new UndoCheckpoint(
+                            history.Count, aggregate.CapturePreImage());
+                    }
+                }
+
+                if (nextCheckpoint != null)
+                {
+                    checkpoints.Add(nextCheckpoint);
+                }
+
+                Projection = nextProjection;
             }
+            catch (Exception exception)
+            {
+                aggregate.Rollback(rollback);
+                history.ReplaceWith(rollbackHistory);
+                version = rollbackVersion;
+                return Rejected(
+                    command,
+                    MatchSessionRejectionReason.EngineFault,
+                    $"{exception.GetType().Name}: {exception.Message}");
+            }
+
             return new MatchCommandResult(
                 true,
                 command,
@@ -176,17 +204,31 @@ namespace GuardsDigital.Application
         public MatchSessionOperationResult RestoreSnapshot(string payload)
         {
             var rollback = aggregate.CapturePreImage();
+            var rollbackHistory = history.Commands;
+            var rollbackCheckpoints = checkpoints.ToArray();
+            var rollbackCanRecordHistory = canRecordHistory;
+            var rollbackVersion = version;
             try
             {
                 // A snapshot restore begins a fresh round position, so it installs no prior round
                 // events. A rollback goes through the aggregate instead, carrying the pre-image it
                 // captured, because a refused operation must leave that stream as it found it.
                 aggregate.Restore(payload);
+            }
+            catch (Exception exception)
+            {
+                aggregate.Rollback(rollback);
+                return OperationRejected(MatchSessionRejectionReason.SnapshotRejected, exception.Message);
+            }
+
+            try
+            {
                 history.Clear();
                 checkpoints.Clear();
                 canRecordHistory = false;
                 version++;
-                Projection = CreateProjection();
+                var nextProjection = CreateProjection();
+                Projection = nextProjection;
                 return new MatchSessionOperationResult(
                     true,
                     MatchSessionRejectionReason.None,
@@ -196,8 +238,14 @@ namespace GuardsDigital.Application
             catch (Exception exception)
             {
                 aggregate.Rollback(rollback);
-                Projection = CreateProjection();
-                return OperationRejected(MatchSessionRejectionReason.SnapshotRejected, exception.Message);
+                history.ReplaceWith(rollbackHistory);
+                checkpoints.Clear();
+                checkpoints.AddRange(rollbackCheckpoints);
+                canRecordHistory = rollbackCanRecordHistory;
+                version = rollbackVersion;
+                return OperationRejected(
+                    MatchSessionRejectionReason.EngineFault,
+                    $"{exception.GetType().Name}: {exception.Message}");
             }
         }
 
@@ -524,7 +572,9 @@ namespace GuardsDigital.Application
             var rollback = aggregate.CapturePreImage();
             // The history's snapshot survives any replacement, so holding it is the rollback copy.
             var rollbackHistory = history.Commands;
+            var rollbackCheckpoints = checkpoints.ToArray();
             var oldVersion = version;
+            ReplayCandidate first;
             try
             {
                 // Milestone 7.9b: reconstruct from the latest retained point at or before the
@@ -532,7 +582,7 @@ namespace GuardsDigital.Application
                 // by the match length. Both candidates start from the same retained point, so the
                 // determinism comparison still proves the replayed segment reproduces itself.
                 var checkpoint = LatestCheckpointCovering(commands.Count);
-                var first = Replay(commands, checkpoint);
+                first = Replay(commands, checkpoint);
                 var second = Replay(commands, checkpoint);
                 if (!string.Equals(first.Snapshot, second.Snapshot, StringComparison.Ordinal) ||
                     !first.Commands.SequenceEqual(second.Commands))
@@ -541,10 +591,21 @@ namespace GuardsDigital.Application
                         "Replaying the same initial scenario and command prefix produced different state, events, or accepted history.");
                 }
 
+            }
+            catch (Exception exception)
+            {
+                return OperationRejected(
+                    MatchSessionRejectionReason.ReplayFailed,
+                    $"{operation} replay failed without changing the match: {exception.Message}");
+            }
+
+            try
+            {
                 Adopt(first);
-                checkpoints.RemoveAll(retained => retained.CommandCount > commands.Count);
                 version = oldVersion + 1;
-                Projection = CreateProjection();
+                var nextProjection = CreateProjection();
+                checkpoints.RemoveAll(retained => retained.CommandCount > commands.Count);
+                Projection = nextProjection;
                 return new MatchSessionOperationResult(
                     true,
                     MatchSessionRejectionReason.None,
@@ -555,11 +616,12 @@ namespace GuardsDigital.Application
             {
                 aggregate.Rollback(rollback);
                 history.ReplaceWith(rollbackHistory);
+                checkpoints.Clear();
+                checkpoints.AddRange(rollbackCheckpoints);
                 version = oldVersion;
-                Projection = CreateProjection();
                 return OperationRejected(
-                    MatchSessionRejectionReason.ReplayFailed,
-                    $"{operation} replay failed without changing the match: {exception.Message}");
+                    MatchSessionRejectionReason.EngineFault,
+                    $"{exception.GetType().Name}: {exception.Message}");
             }
         }
 
@@ -767,7 +829,7 @@ namespace GuardsDigital.Application
             // here at all: the projection assembles each on demand from the same immutable capture,
             // so a reader pays for what it reads and a command does not.
             var authoritative = aggregate.CaptureAuthoritative();
-            return new MatchSessionProjection(
+            var projection = new MatchSessionProjection(
                 version,
                 initialState.Setup,
                 board.MapDefinition,
@@ -821,6 +883,24 @@ namespace GuardsDigital.Application
                 // authority, so a reader can never hold a description of one pause beside another one.
                 round.SystemTransitions.DescribePendingStep(),
                 CreateActiveEffectSourceCards(round));
+            if (nextProjectionFaultForTest != null)
+            {
+                var fault = nextProjectionFaultForTest;
+                nextProjectionFaultForTest = null;
+                throw fault;
+            }
+
+            return projection;
+        }
+
+        /// <summary>
+        /// One-shot friend-assembly seam for proving the application transaction. It is deliberately
+        /// internal, instance-scoped, and exception-only: no runtime mode or public construction path
+        /// can suppress projection validation or alter a successful projection.
+        /// </summary>
+        internal void FaultNextProjectionForTest(Exception fault)
+        {
+            nextProjectionFaultForTest = fault ?? throw new ArgumentNullException(nameof(fault));
         }
 
         /// <summary>

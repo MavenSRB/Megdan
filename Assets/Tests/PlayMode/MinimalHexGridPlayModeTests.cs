@@ -1443,20 +1443,35 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator Scene_RoutesConfiguredMinionAttackCuePointerAndRemovalThroughFeatureBoundary()
         {
-            yield return LoadShowcaseScene();
+            yield return RunConfiguredRangedAttackPointerScenario(false);
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_HeroAttackTargetClickWithBlockAndMinionDefenseAdvancesToDefenseWithoutEngineFault()
+        {
+            yield return RunConfiguredRangedAttackPointerScenario(true);
+        }
+
+        private static IEnumerator RunConfiguredRangedAttackPointerScenario(
+            bool continueThroughHeroDefenseRegression)
+        {
+            yield return continueThroughHeroDefenseRegression ? LoadScene() : LoadShowcaseScene();
             var root = Root();
             var runtime = root.Runtime;
             var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
-            var transientSetupField = ReflectedMember.RequiredInstanceField(
-                typeof(StandardMinionView),
-                "occupancy");
-            foreach (var configuredMinion in Object.FindObjectsByType<StandardMinionView>())
+            if (!continueThroughHeroDefenseRegression)
             {
-                transientSetupField.SetValue(configuredMinion, null);
-            }
+                var transientSetupField = ReflectedMember.RequiredInstanceField(
+                    typeof(StandardMinionView),
+                    "occupancy");
+                foreach (var configuredMinion in Object.FindObjectsByType<StandardMinionView>())
+                {
+                    transientSetupField.SetValue(configuredMinion, null);
+                }
 
-            mapView.Rebuild(mapView.RenderedDefinition, runtime.Setup);
+                mapView.Rebuild(mapView.RenderedDefinition, runtime.Setup);
+            }
             yield return null;
 
             var reboundViews = Object.FindObjectsByType<StandardMinionView>();
@@ -1475,13 +1490,48 @@ namespace GuardsDigital.Tests.PlayMode
                 .Where(card => runtime.Definitions.Single(definition =>
                     definition.Reference.Equals(card.DefinitionReference)).ActionDefinitions.Any(action =>
                         action.Kind == GuardsDigital.Core.Cards.ActionKind.Attack &&
-                        action.AttackRange == AttackRangeKind.Ranged))
+                        (continueThroughHeroDefenseRegression ||
+                            action.AttackRange == AttackRangeKind.Ranged)))
+                .OrderByDescending(card => runtime.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
+                .First();
+            var reservedNumericDefenseCard = Hand(runtime, TeamSide.Blue).Cards
+                .Where(card => runtime.Definitions.Single(definition =>
+                        definition.Reference.Equals(card.DefinitionReference))
+                    .ActionDefinitions.Any(action =>
+                        action.Kind == GuardsDigital.Core.Cards.ActionKind.Defense &&
+                        action.DefenseResolution == PrintedDefenseResolution.Value))
                 .OrderByDescending(card => runtime.Definitions.Single(definition =>
                     definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
                 .First();
 
-            for (var approachTurn = 0; approachTurn < 3; approachTurn++)
+            var approachTurnCount = continueThroughHeroDefenseRegression ? 8 : 3;
+            for (var approachTurn = 0; approachTurn < approachTurnCount; approachTurn++)
             {
+                if (continueThroughHeroDefenseRegression)
+                {
+                    while (runtime.Phase == RoundResolutionPhase.EndOfRound)
+                    {
+                        Assert.That(runtime.ContinueEndOfRound(), Is.True,
+                            "Each bounded approach round must close before the next one starts.");
+                    }
+
+                    var attackerCoordinate = runtime.Heroes.Single(value =>
+                        value.HeroId.Equals(redHeroId)).Coordinate;
+                    var defenderCoordinate = runtime.Heroes.Single(value =>
+                        !value.HeroId.Equals(redHeroId)).Coordinate;
+                    var friendlyMinionDistance = runtime.BoardView.Model.Minions
+                        .Where(value => value.TeamSide == TeamSide.Blue &&
+                            value.MinionType == StandardMinionType.Melee)
+                        .Min(value => HexDistance(defenderCoordinate, value.Coordinate));
+                    if (approachTurn >= 4 &&
+                        HexDistance(attackerCoordinate, defenderCoordinate) <= 1 &&
+                        friendlyMinionDistance <= 1)
+                    {
+                        break;
+                    }
+                }
+
                 // The approach card is named by the printed action it has to perform rather than by
                 // being the top of the band. Milestone 6.2d needed that, because the scene was dealt
                 // milestone 6.2's Cache card as a sixth - its only printed action a Skill, and its
@@ -1490,7 +1540,8 @@ namespace GuardsDigital.Tests.PlayMode
                 // filter stays because naming the action a fixture needs is the right way round: it
                 // survives whatever a later conversion does to the top of the band.
                 var red = Hand(runtime, TeamSide.Red).Cards
-                    .Where(card => !card.Id.Equals(attackCard.Id) &&
+                    .Where(card => (!card.Id.Equals(attackCard.Id) ||
+                            (continueThroughHeroDefenseRegression && approachTurn % 4 == 3)) &&
                         runtime.Definitions.Single(definition =>
                             definition.Reference.Equals(card.DefinitionReference))
                         .ActionDefinitions.Any(action =>
@@ -1499,6 +1550,14 @@ namespace GuardsDigital.Tests.PlayMode
                         definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
                     .First();
                 var blue = Hand(runtime, TeamSide.Blue).Cards
+                    .Where(card => !continueThroughHeroDefenseRegression ||
+                        runtime.Definitions.Single(definition =>
+                                definition.Reference.Equals(card.DefinitionReference))
+                            .ActionDefinitions.All(action =>
+                                action.Kind != GuardsDigital.Core.Cards.ActionKind.Defense ||
+                                action.DefenseResolution != PrintedDefenseResolution.Block))
+                    .Where(card => !continueThroughHeroDefenseRegression || approachTurn < 4 ||
+                        !card.Id.Equals(reservedNumericDefenseCard.Id))
                     .OrderBy(card => runtime.Definitions.Single(definition =>
                         definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
                     .First();
@@ -1513,8 +1572,9 @@ namespace GuardsDigital.Tests.PlayMode
 
                 if (!runtime.SelectedActor.ActorId.Equals(redHeroId))
                 {
-                    Assert.That(runtime.SubmitEndTurn(), Is.True,
-                        "The earlier opposing actor should complete by Hold before the Red approach action.");
+                    CompleteBlueApproachTurn(runtime,
+                        continueThroughHeroDefenseRegression && approachTurn >= 4,
+                        "The earlier opposing actor should complete before the Red approach action.");
                 }
 
                 Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
@@ -1528,9 +1588,14 @@ namespace GuardsDigital.Tests.PlayMode
                         .Where(value => value.TeamSide == TeamSide.Blue &&
                             value.MinionType != StandardMinionType.Heavy)
                         .ToArray();
+                    var blueHeroCoordinate = runtime.Heroes.Single(value =>
+                        runtime.Setup.Heroes.Single(hero =>
+                            hero.HeroId.Equals(value.HeroId)).TeamSide == TeamSide.Blue).Coordinate;
                     var destination = runtime.PendingMovementChoice.LegalDestinations
-                        .OrderBy(value => blueMinions.Min(minion =>
-                            HexDistance(value.Destination, minion.Coordinate)))
+                        .OrderBy(value => continueThroughHeroDefenseRegression
+                            ? HexDistance(value.Destination, blueHeroCoordinate)
+                            : blueMinions.Min(minion =>
+                                HexDistance(value.Destination, minion.Coordinate)))
                         .ThenByDescending(value => value.Cost)
                         .First().Destination;
                     Assert.That(runtime.BoardPresenter.SubmitDestination(destination), Is.True);
@@ -1539,12 +1604,25 @@ namespace GuardsDigital.Tests.PlayMode
                 if (runtime.IsTurnActive)
                 {
                     Assert.That(runtime.SelectedActor.ActorId, Is.Not.EqualTo(redHeroId));
-                    Assert.That(runtime.SubmitEndTurn(), Is.True,
-                        "The later opposing actor should complete by Hold after the approach action.");
+                    CompleteBlueApproachTurn(runtime,
+                        continueThroughHeroDefenseRegression && approachTurn >= 4,
+                        "The later opposing actor should complete after the Red approach action.");
                 }
             }
 
+            while (runtime.Phase == RoundResolutionPhase.EndOfRound)
+            {
+                Assert.That(runtime.ContinueEndOfRound(), Is.True,
+                    "The fourth approach turn must close its round before the reserved Attack is replayed.");
+            }
+
             var finalBlueCard = Hand(runtime, TeamSide.Blue).Cards
+                .Where(card => !continueThroughHeroDefenseRegression ||
+                    runtime.Definitions.Single(definition =>
+                            definition.Reference.Equals(card.DefinitionReference))
+                        .ActionDefinitions.All(action =>
+                            action.Kind != GuardsDigital.Core.Cards.ActionKind.Defense ||
+                            action.DefenseResolution != PrintedDefenseResolution.Block))
                 .OrderBy(card => runtime.Definitions.Single(definition =>
                     definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
                 .First();
@@ -1568,6 +1646,12 @@ namespace GuardsDigital.Tests.PlayMode
                 ActionKind(runtime, value.Command.ActionDefinitionId) ==
                 GuardsDigital.Core.Cards.ActionKind.Attack);
             Assert.That(runtime.RoundPresenter.Submit(attack), Is.True);
+            var pendingTargetSnapshot = runtime.CaptureSnapshot();
+            if (continueThroughHeroDefenseRegression)
+            {
+                goto HeroDefenseRegression;
+            }
+
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Is.Not.Empty);
             var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.First();
             var minion = Object.FindObjectsByType<StandardMinionView>()
@@ -1600,7 +1684,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(tile.IsHighlighted, Is.False,
                 "A piece target ring stays distinct from a filled destination hex.");
             Assert.That(minion.GetComponent<StandardMinionPointerSelector>(), Is.Not.Null);
-            var pendingTargetSnapshot = runtime.CaptureSnapshot();
             var commandCount = runtime.AcceptedCommands.Count;
             Assert.That(pointerInput.TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
             yield return null;
@@ -1680,6 +1763,67 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(minion.gameObject.activeSelf, Is.False);
             Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
             Assert.That(retainedRing.IsVisible, Is.False);
+
+            if (!continueThroughHeroDefenseRegression)
+            {
+                yield break;
+            }
+
+        HeroDefenseRegression:
+            var redCoordinate = runtime.Heroes.Single(value => value.HeroId.Equals(redHeroId)).Coordinate;
+            var blueHero = runtime.Heroes.Single(value => !value.HeroId.Equals(redHeroId));
+            var nearestFriendlyMinionDistance = runtime.BoardView.Model.Minions
+                .Where(value => value.TeamSide == TeamSide.Blue &&
+                    value.MinionType == StandardMinionType.Melee)
+                .Min(value => HexDistance(blueHero.Coordinate, value.Coordinate));
+            Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds, Is.Not.Empty,
+                $"The verified Attack must reach the defending hero after the bounded approach; " +
+                $"attacker={redCoordinate}, defender={blueHero.Coordinate}, " +
+                $"distance={HexDistance(redCoordinate, blueHero.Coordinate)}.");
+            var heroTargetId = runtime.PendingAttackTargetChoice.LegalTargetHeroIds.Single();
+            var hero = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(value => value.Occupancy.HeroId.Equals(heroTargetId));
+            var heroRing = hero.TargetRing;
+            Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            var beforeHeroTarget = runtime.AcceptedCommands.Count;
+
+            Physics.SyncTransforms();
+            var heroPointerRay = new Ray(hero.transform.position + (Vector3.up * 10f), Vector3.down);
+            Assert.That(pointerInput.TryHandlePointerRay(heroPointerRay), Is.True,
+                "The configured Input System ray, hero collider, selector and board presenter must " +
+                "claim the projected hero target.");
+            yield return null;
+
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(beforeHeroTarget + 1));
+            Assert.That(runtime.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.ChooseAttackTarget));
+            Assert.That(runtime.AcceptedCommands.Last().HeroId, Is.EqualTo(heroTargetId));
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
+            Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(heroRing.IsVisible, Is.False);
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
+            Assert.That(runtime.RoundView.Model.Status, Does.Contain("Defense"));
+
+            var blockCard = runtime.Cards.Single(card =>
+                card.OwnerId.Equals(heroTargetId) &&
+                card.DefinitionReference.DefinitionId.Equals(WaspCardContent.StopProjectiles));
+            Assert.That(runtime.PendingDefenseChoice.LegalDefenseOffers.Select(value =>
+                value.SourceCardInstanceId), Does.Contain(blockCard.Id),
+                "The defending Wasp must still hold the legal printed Block.");
+            var blockChoice = runtime.RoundView.Model.DefenseChoices.Single(value =>
+                value.Command.CardInstanceId.Equals(blockCard.Id));
+            Assert.That(blockChoice.DefenseBreakdown, Is.Not.Null);
+            Assert.That(blockChoice.DefenseBreakdown.Text, Does.Contain("BLOCK"));
+            Assert.That(blockChoice.DefenseBreakdown.Text.ToUpperInvariant(), Does.Not.Contain("MINION"),
+                "The Block remains value-free beside numeric choices with minion contributions.");
+            Assert.That(runtime.BoardView.Model.MinionDefenseCues, Is.Not.Empty,
+                "The player-reported mixed preview requires at least one nearby defending minion; " +
+                $"nearest friendly minion distance was {nearestFriendlyMinionDistance}.");
+            Assert.That(runtime.RoundView.Model.DefenseChoices.Any(value =>
+                value.DefenseBreakdown != null &&
+                value.DefenseBreakdown.Text.Contains("DEFENSE TOTAL:")), Is.True,
+                "At least one ordinary numeric Defense is published beside the Block; the board's " +
+                "nonempty signed minion cues carry their shared contribution.");
         }
 
         [UnityTest]
@@ -2378,6 +2522,41 @@ namespace GuardsDigital.Tests.PlayMode
                 effectChoiceResultingSpace: baseBoard.EffectChoiceResultingSpace,
                 heroRespawnHighlight: baseBoard.HeroRespawnHighlight,
                 heroRespawnDestinations: baseBoard.HeroRespawnDestinations));
+        }
+
+        private static void CompleteBlueApproachTurn(
+            ConfiguredMatchSceneRuntime runtime,
+            bool moveTowardFriendlyMinion,
+            string failureMessage)
+        {
+            if (moveTowardFriendlyMinion)
+            {
+                var movement = runtime.RoundView.Model.Actions.FirstOrDefault(value =>
+                    ActionKind(runtime, value.Command.ActionDefinitionId) ==
+                    GuardsDigital.Core.Cards.ActionKind.Movement);
+                if (movement != null)
+                {
+                    Assert.That(runtime.RoundPresenter.Submit(movement), Is.True, failureMessage);
+                    while (runtime.PendingMovementChoice != null)
+                    {
+                        var friendlyMinions = runtime.BoardView.Model.Minions
+                            .Where(value => value.TeamSide == TeamSide.Blue &&
+                                value.MinionType == StandardMinionType.Melee)
+                            .ToArray();
+                        var destination = runtime.PendingMovementChoice.LegalDestinations
+                            .OrderBy(value => friendlyMinions.Min(minion =>
+                                HexDistance(value.Destination, minion.Coordinate)))
+                            .ThenByDescending(value => value.Cost)
+                            .First().Destination;
+                        Assert.That(runtime.BoardPresenter.SubmitDestination(destination), Is.True,
+                            failureMessage);
+                    }
+
+                    return;
+                }
+            }
+
+            Assert.That(runtime.SubmitEndTurn(), Is.True, failureMessage);
         }
 
         [UnityTest]

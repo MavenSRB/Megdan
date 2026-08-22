@@ -45,6 +45,143 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.DiagnosticEvents.Count, Is.GreaterThan(initial.DiagnosticEvents.Count));
         }
 
+        /// <summary>
+        /// Milestone 8.11e closing regression. Before the fix the aggregate had already committed
+        /// the second card and advanced the round when projection construction threw, while the
+        /// session still exposed the first-card prompt and history.
+        /// </summary>
+        [Test]
+        public void AcceptedCommandWhoseProjectionFaults_RollsBackAuthorityEventsHistoryVersionAndCheckpointAndReturnsEngineFault()
+        {
+            var session = CreateSession();
+            var red = GetCards(session, TeamSide.Red)[0];
+            var blue = GetCards(session, TeamSide.Blue)[0];
+            var first = session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id));
+            Assert.That(first.Accepted, Is.True, first.Detail);
+            var before = session.Projection;
+            var command = DirectorCommand.CommitCard(blue.OwnerId, blue.Id);
+            session.FaultNextProjectionForTest(
+                new InvalidOperationException("one-shot projection failure"));
+
+            var faulted = session.Execute(command);
+
+            Assert.That(faulted.Accepted, Is.False);
+            Assert.That(faulted.RejectionReason, Is.EqualTo(MatchSessionRejectionReason.EngineFault));
+            Assert.That(faulted.Detail, Does.StartWith("InvalidOperationException:"));
+            Assert.That(faulted.Projection, Is.SameAs(before));
+            Assert.That(session.Projection, Is.SameAs(before),
+                "A fault must leave the exact previous immutable projection published.");
+            AssertProjectionTransactionState(session.Projection, before);
+
+            var retried = session.Execute(command);
+            Assert.That(retried.Accepted, Is.True, retried.Detail);
+            Assert.That(retried.Projection, Is.SameAs(session.Projection));
+            Assert.That(retried.Projection.Version, Is.EqualTo(before.Version + 1));
+            Assert.That(retried.Projection.AcceptedCommands.Count(value => value.Equals(command)),
+                Is.EqualTo(1), "The failed publication must not leave a command for the retry to duplicate.");
+
+            var acceptedProjection = retried.Projection;
+            var undo = session.Undo();
+            Assert.That(undo.Accepted, Is.True, undo.Detail);
+            Assert.That(undo.Projection.AuthoritativeSnapshot, Is.EqualTo(before.AuthoritativeSnapshot));
+            Assert.That(undo.Projection.AcceptedCommands, Is.EqualTo(before.AcceptedCommands));
+
+            var replayed = CreateSession();
+            Assert.That(replayed.Execute(first.Command).Accepted, Is.True);
+            var replayResult = replayed.Execute(command);
+            Assert.That(replayResult.Accepted, Is.True, replayResult.Detail);
+            Assert.That(replayResult.Projection.AuthoritativeSnapshot,
+                Is.EqualTo(acceptedProjection.AuthoritativeSnapshot));
+            Assert.That(replayResult.Projection.AcceptedCommands,
+                Is.EqualTo(acceptedProjection.AcceptedCommands));
+        }
+
+        [Test]
+        public void RestoreWhoseProjectionFaults_LeavesThePreviousSessionTransactionPublished()
+        {
+            var source = CreateSession();
+            var sourceCard = GetCards(source, TeamSide.Red)[0];
+            Assert.That(source.Execute(
+                DirectorCommand.CommitCard(sourceCard.OwnerId, sourceCard.Id)).Accepted, Is.True);
+            var payload = source.CaptureSnapshot();
+
+            var session = CreateSession();
+            var currentCard = GetCards(session, TeamSide.Red)[1];
+            Assert.That(session.Execute(
+                DirectorCommand.CommitCard(currentCard.OwnerId, currentCard.Id)).Accepted, Is.True);
+            var before = session.Projection;
+            session.FaultNextProjectionForTest(new ArgumentException("restore projection failure"));
+
+            var faulted = session.RestoreSnapshot(payload);
+
+            Assert.That(faulted.Accepted, Is.False);
+            Assert.That(faulted.RejectionReason, Is.EqualTo(MatchSessionRejectionReason.EngineFault));
+            Assert.That(faulted.Detail, Does.StartWith("ArgumentException:"));
+            Assert.That(session.Projection, Is.SameAs(before));
+            AssertProjectionTransactionState(session.Projection, before);
+
+            var retried = session.RestoreSnapshot(payload);
+            Assert.That(retried.Accepted, Is.True, retried.Detail);
+            Assert.That(retried.Projection.AuthoritativeSnapshot,
+                Is.EqualTo(source.Projection.AuthoritativeSnapshot));
+            Assert.That(retried.Projection.AcceptedCommands, Is.Empty);
+            Assert.That(retried.Projection.IsHistoryAvailable, Is.False);
+        }
+
+        [Test]
+        public void RetainedPrefixUndoWhoseProjectionFaults_LeavesCheckpointsAndPublishedStateIntact()
+        {
+            const int commandCount = MatchSession.UndoCheckpointInterval + 8;
+            var session = CreateSession();
+            var record = DeterministicMatchLoop.Play(session, 81105, commandCount);
+            Assert.That(record.Commands, Has.Count.EqualTo(commandCount));
+            var before = session.Projection;
+            session.FaultNextProjectionForTest(
+                new InvalidOperationException("retained-prefix projection failure"));
+
+            var faulted = session.Undo();
+
+            Assert.That(faulted.Accepted, Is.False);
+            Assert.That(faulted.RejectionReason, Is.EqualTo(MatchSessionRejectionReason.EngineFault));
+            Assert.That(session.Projection, Is.SameAs(before));
+            AssertProjectionTransactionState(session.Projection, before);
+
+            var retried = session.Undo();
+            Assert.That(retried.Accepted, Is.True, retried.Detail);
+            var expected = CreateSession();
+            DeterministicMatchLoop.Replay(
+                expected, record.Commands.Take(commandCount - 1).ToArray());
+            Assert.That(retried.Projection.AuthoritativeSnapshot,
+                Is.EqualTo(expected.Projection.AuthoritativeSnapshot));
+            Assert.That(retried.Projection.AcceptedCommands,
+                Is.EqualTo(expected.Projection.AcceptedCommands));
+        }
+
+        [Test]
+        public void RestartWhoseProjectionFaults_LeavesThePreviousSessionPublishedAndRetriesOnce()
+        {
+            var session = CreateSession();
+            var red = GetCards(session, TeamSide.Red)[0];
+            Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
+            var before = session.Projection;
+            session.FaultNextProjectionForTest(new InvalidOperationException("restart projection failure"));
+
+            var faulted = session.Restart();
+
+            Assert.That(faulted.Accepted, Is.False);
+            Assert.That(faulted.RejectionReason, Is.EqualTo(MatchSessionRejectionReason.EngineFault));
+            Assert.That(session.Projection, Is.SameAs(before));
+            AssertProjectionTransactionState(session.Projection, before);
+
+            var retried = session.Restart();
+            Assert.That(retried.Accepted, Is.True, retried.Detail);
+            var fresh = CreateSession();
+            Assert.That(retried.Projection.AuthoritativeSnapshot,
+                Is.EqualTo(fresh.Projection.AuthoritativeSnapshot));
+            Assert.That(retried.Projection.AcceptedCommands, Is.Empty);
+            Assert.That(retried.Projection.IsHistoryAvailable, Is.True);
+        }
+
         [Test]
         public void RestoreSnapshot_MalformedEnvelopeRejectsWithoutPartialRestore()
         {
@@ -706,6 +843,32 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.Projection.AuthoritativeSnapshot, Is.EqualTo(before.AuthoritativeSnapshot));
             Assert.That(result.Projection.DiagnosticSnapshot, Is.EqualTo(before.DiagnosticSnapshot));
             Assert.That(result.Projection.AcceptedCommands, Is.EqualTo(before.AcceptedCommands));
+        }
+
+        private static void AssertProjectionTransactionState(
+            MatchSessionProjection actual,
+            MatchSessionProjection expected)
+        {
+            Assert.That(actual.Version, Is.EqualTo(expected.Version));
+            Assert.That(actual.AuthoritativeSnapshot, Is.EqualTo(expected.AuthoritativeSnapshot));
+            Assert.That(actual.DiagnosticSnapshot, Is.EqualTo(expected.DiagnosticSnapshot));
+            Assert.That(actual.DiagnosticEvents, Is.EqualTo(expected.DiagnosticEvents));
+            Assert.That(actual.RoundEvents, Is.EqualTo(expected.RoundEvents));
+            Assert.That(actual.AcceptedCommands, Is.EqualTo(expected.AcceptedCommands));
+            Assert.That(actual.IsHistoryAvailable, Is.EqualTo(expected.IsHistoryAvailable));
+            Assert.That(actual.PendingInitiativeChoice, Is.SameAs(expected.PendingInitiativeChoice));
+            Assert.That(actual.PendingMovementChoice, Is.SameAs(expected.PendingMovementChoice));
+            Assert.That(actual.PendingAttackTargetChoice, Is.SameAs(expected.PendingAttackTargetChoice));
+            Assert.That(actual.PendingDefenseChoice, Is.SameAs(expected.PendingDefenseChoice));
+            Assert.That(actual.PendingEffectChoice, Is.SameAs(expected.PendingEffectChoice));
+            Assert.That(actual.PendingDisplacedMinionCorrection,
+                Is.SameAs(expected.PendingDisplacedMinionCorrection));
+            Assert.That(actual.PendingMinionBattleChoice,
+                Is.SameAs(expected.PendingMinionBattleChoice));
+            Assert.That(actual.PendingHeroRespawnChoice,
+                Is.SameAs(expected.PendingHeroRespawnChoice));
+            Assert.That(actual.PendingSystemTransitionStep,
+                Is.SameAs(expected.PendingSystemTransitionStep));
         }
 
         private static IReadOnlyList<DirectorCommand> BuildCompletedRoundCommandSequence(MatchSession session)

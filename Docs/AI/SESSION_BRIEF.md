@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-08-22
+Last updated: 2026-08-23
 
 ## Purpose and authority
 
@@ -8,13 +8,15 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through **8.11d**. The configured vertical slice uses a pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound snapshots, and passive Unity presentation; schema v24 persists every continuation the slice can pause on, together with every hero's progression, every team's counters, and the board's own components. It plays rulebook p.7's turn inside p.8's round: cards commit and reveal under Initiative, a turn spends one action or Holds, an Attack runs p.13's whole consequence list, the round closes through p.8's six ordered steps, and the match ends by one derived outcome naming winner, loser and cause. It is dealt from verified content: both mirrored seats hold Wasp's printed cards, and a printed primary whose text has no composition yet is offered greyed and refused rather than performed without it. A player sees all of it on one runtime UI Toolkit panel. The exact inventory of implemented behavior, configured setup, compatibility boundaries and gaps lives in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the shards the routing table below names; every statement this summary compresses is stated once by the shard that owns it.
+The project has completed roadmap milestones through **8.11e**. The configured vertical slice uses a pure match application service, typed action handlers, authoritative projections, deterministic replay/Undo, map-bound snapshots, and passive Unity presentation; accepted commands, restore, Undo, and restart now publish authority, events, history, version/checkpoints, and their one immutable projection atomically. The current schema v24 persists every continuation the slice can pause on, together with every hero's progression, every team's counters, and the board's own components. It plays rulebook p.7's turn inside p.8's round: cards commit and reveal under Initiative, a turn spends one action or Holds, an Attack runs p.13's whole consequence list, the round closes through p.8's six ordered steps, and the match ends by one derived outcome naming winner, loser and cause. It is dealt from verified content: both mirrored seats hold Wasp's printed cards, and a printed primary whose text has no composition yet is offered greyed and refused rather than performed without it. A player sees all of it on one runtime UI Toolkit panel. The exact inventory of implemented behavior, configured setup, compatibility boundaries and gaps lives in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the shards the routing table below names; every statement this summary compresses is stated once by the shard that owns it.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.11d**.
+- Current completed milestone: **8.11e**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.11e**.
+- Next proposed milestone: **8.12**.
+
+Milestone **8.11e** completed on 2026-08-23 and is addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). A command is not accepted until its resulting immutable projection has been built; projection faults are `EngineFault`s and roll authority, both event streams, accepted history, version/checkpoints, and the exact previous public projection back together. The same publication boundary now protects valid restore, retained-prefix Undo, and restart adoption. The configured pending-choice matrix and a real hero collider/Input System Attack click cover the player paths, including a legal value-free Block beside numeric Defense with minion contributions. **Schema v24 and its digests are unchanged.**
 
 Milestone **8.11b** completed on 2026-08-22 and is addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md): each mirrored Wasp is the official circular token ringed in this project's own team colour, every legal Defense offer is the tray's own complete card face beside a `DECLINE DEFENSE` that is not one, and each resolved turn and discarded card is one hover-previewing mini-card icon, so the slot numbers and the discard count are gone. **The token art is private and ignored.**
 
@@ -26,7 +28,7 @@ Milestones **8.1** through **8.9**, **8.28b**, **8.8a** and **8.8b** completed o
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1 through 7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 hard gate, 7.9b retired `RISK-PERF-001`, and 7.9c and 7.9d closed the defects and gaps its 7.9a review found. **Two of that review's three general seams closed at 8.5 and 8.7, and the last is 8.12.**
 
-The remaining route is **Phase 8**: the already-approved 8.11e atomic-publication correction is next, then 8.12 with its consumers; the mirror gate is 8.16. Each otherwise proposed item requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+The remaining route is **Phase 8**: 8.12 with its Active-effect and continuous-trigger consumers is next; the mirror gate is 8.16. Each proposed item requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
 
 **User-approved amendment, 2026-08-22:** Wasp question **W-05** is answered from source, generalised into [ledger question 13](RULES_LEDGER.md#open-source-and-rules-questions), and 8.10 unblocked. "Discards a card, or is defeated" is one mandatory step with two ways to complete, not a choice for either player; 8.2's recorded reasoning was withdrawn as non-discriminating, and the construction proved not to be Wasp's, which is why the rule left the hero shard. The same day inserted **8.8b**, now complete above.
 

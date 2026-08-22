@@ -139,9 +139,22 @@ namespace GuardsDigital.Application
                 var choiceMinions = choice.DefenseContributions
                     .Where(value => value.Kind == ValueContributionKind.MinionDefenseModifier)
                     .Select(value => value.Contribution);
+                // Rulebook p.14 gives a Defense card two mutually exclusive shapes. Only an
+                // ordinary numeric Defense calculates a Total and composes the shared minion
+                // modifiers. A Block skips that comparison entirely, so its preview deliberately
+                // carries neither a Total nor contributions even when nearby minions would modify a
+                // numeric card. Decline has the same empty contribution shape for a different reason:
+                // no Defense action was performed. Treating every non-decline card as numeric made a
+                // valid Block beside a contributing minion throw while projecting the accepted
+                // Attack-target command, leaving the live board looking as though its click failed.
+                var usesNumericDefense = !choice.IsDecline &&
+                    choice.BlockResult == DefenseBlockResult.None;
+                var hasExpectedMinionSemantics = usesNumericDefense
+                    ? choiceMinions.SequenceEqual(
+                        projectedMinions.Select(value => value.Contribution))
+                    : !choiceMinions.Any();
                 if (choice.Outcome != expected.Outcome ||
-                    (!choice.IsDecline && !choiceMinions.SequenceEqual(
-                        projectedMinions.Select(value => value.Contribution))))
+                    !hasExpectedMinionSemantics)
                 {
                     throw new ArgumentException("A Defense choice preview must match shared comparison and minion semantics.");
                 }

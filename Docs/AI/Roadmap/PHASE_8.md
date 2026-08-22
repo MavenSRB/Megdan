@@ -151,7 +151,7 @@ Non-goals: no change to target candidates, legality, selection commands, occupan
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811d-replace-piece-target-triangles-with-fitted-rings-and-washes-completion-evidence).
 
-### [ ] 8.11e Make accepted commands and their resulting projections atomic
+### [x] 8.11e Make accepted commands and their resulting projections atomic
 
 Blocked by: milestone 8.11d, whose live hero-Attack target defect supplied the concrete failure: authority accepted the target and advanced to Defense, then Defense-preview projection threw and left the public projection and prompt on the already-consumed Attack choice. This correction lands before 8.12 so every later triggered-effect continuation inherits the repaired session boundary rather than another command-specific workaround.
 
@@ -175,6 +175,8 @@ Acceptance checks:
 - This is T3 broad-risk validation: the shared `IMatchSession.Execute` command/event/pending-choice boundary reaches every Edit Mode rules consumer and every configured Play Mode presenter/input path, and its downstream blast radius is not safely bounded by the files changed. Run the focused application/atomicity, all pending-family authority, presenter/HUD, pointer, Block/minion-preview, snapshot/replay/Undo, `CompleteCoreMatchLoopTests`, and `ConfiguredEffectLifetimeGateTests` filters first; run `MinimalHexGridPlayModeTests` for the actual input paths; then run both unfiltered Edit Mode and Play Mode suites at the final revision. No non-batch visual capture or player build is required because this milestone changes publication/recovery behavior, not rendering.
 
 Non-goals: no game-rule, verified-card, candidate, legality, action-offer, consequence, command, event, pending-choice, snapshot-schema, or content-revision change; no card/hero/display-name branch or runtime text parsing; no new prompt, error dialog, control, cue, layout, board, HUD, or other UI redesign; no public fault-injection/configuration surface, broad conversion of all in-place authorities to a new state model, replay/checkpoint redesign, networking work, or build artifact; no speculative combinations of pending states the configured authority cannot reach; and no Active-effect/continuous-trigger execution or other part of milestone 8.12.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811e-make-accepted-commands-and-their-resulting-projections-atomic-completion-evidence).
 
 ### [ ] 8.12 Execute Active-effect and continuous trigger windows
 

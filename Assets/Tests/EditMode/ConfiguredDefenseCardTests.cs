@@ -1,14 +1,18 @@
 using System;
 using System.Linq;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -188,6 +192,137 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(blockPreview.Outcome, Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended),
                 "and the outcome that verdict produces, which is what the defender is choosing between.");
         }
+
+        /// <summary>
+        /// Regression found by selecting a hero Attack target in the configured scene: a nearby
+        /// minion contributes to every ordinary numeric Defense offer, but never to a Block. The
+        /// projection used to require the Block's deliberately empty contribution list to equal the
+        /// shared numeric-minion list and threw after the target command had already advanced the
+        /// authority, leaving the board looking as though the click did nothing.
+        /// </summary>
+        [Test]
+        public void ABlockPreview_DoesNotBorrowNearbyMinionContributionsFromNumericDefense()
+        {
+            var attack = new ValueContributionProjection(
+                new ValueContribution(
+                    ValueContributionKind.PrintedIcon,
+                    new CardInstanceId("block-preview-attack-card"),
+                    new ActionDefinitionId("block-preview-attack"),
+                    PrintedValueChannel.Attack,
+                    3),
+                "Attack Card");
+            var printedDefense = new ValueContributionProjection(
+                new ValueContribution(
+                    ValueContributionKind.PrintedIcon,
+                    new CardInstanceId("numeric-defense-card"),
+                    new ActionDefinitionId("numeric-defense"),
+                    PrintedValueChannel.Defense,
+                    2),
+                "Numeric Defense Card");
+            var supportingMinion = new ValueContributionProjection(
+                new ValueContribution(
+                    ValueContributionKind.MinionDefenseModifier,
+                    new MinionId("nearby-friendly-minion"),
+                    PrintedValueChannel.Defense,
+                    1),
+                "Nearby Friendly Minion");
+            var numeric = new DefenseChoicePreviewProjection(
+                printedDefense.Contribution.SourceCardInstanceId,
+                "Numeric Defense Card",
+                new[] { printedDefense, supportingMinion },
+                3,
+                DefenseBlockResult.None,
+                AttackResolutionOutcome.SuccessfullyDefended);
+            var block = new DefenseChoicePreviewProjection(
+                new CardInstanceId("block-defense-card"),
+                "Block Card",
+                Array.Empty<ValueContributionProjection>(),
+                null,
+                DefenseBlockResult.Blocked,
+                AttackResolutionOutcome.SuccessfullyDefended);
+
+            PendingDefensePreviewProjection preview = null;
+            Assert.DoesNotThrow(() => preview = new PendingDefensePreviewProjection(
+                new ActionResolutionId("block-preview-resolution"),
+                new ActionResolutionStepId("block-preview-choice"),
+                new[] { attack },
+                3,
+                new[] { numeric, block },
+                new[] { supportingMinion }));
+
+            Assert.That(preview.MinionContributions, Is.EqualTo(new[] { supportingMinion }),
+                "The shared numeric-defense explanation still names the nearby minion.");
+            Assert.That(preview.Choices.Single(choice =>
+                    choice.CardInstanceId.Equals(numeric.CardInstanceId)).DefenseContributions,
+                Does.Contain(supportingMinion),
+                "The ordinary Defense still composes the shared minion modifier.");
+            Assert.That(preview.Choices.Single(choice =>
+                    choice.CardInstanceId.Equals(block.CardInstanceId)).DefenseContributions,
+                Is.Empty,
+                "A Block skips the numeric comparison, so it neither borrows nor displays that bonus.");
+        }
+
+        /// <summary>
+        /// The application-boundary regression for the configured-scene failure above. The real
+        /// target command used to advance the Attack authority and then throw while publishing the
+        /// mixed Block/numeric preview, so the click appeared unclaimed and the target prompt stayed
+        /// on screen. This fixture carries both response shapes and a real adjacent minion modifier
+        /// through one legal hero target submission.
+        /// </summary>
+        [Test]
+        public void HeroAttackTarget_WithBlockAndNumericMinionDefense_IsAcceptedAndPublishesDefensePreview()
+        {
+            var session = CreateHeroDefensePreviewSession(
+                out var defender, out var supportingMinion);
+            CommitRedAgainst(session, WaspCardContent.MagneticDagger, WaspCardContent.Shock);
+            var attack = session.Projection.AvailableTurnActions.Single(candidate =>
+                ActionOf(session, candidate).Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                ActionOf(session, candidate).Kind == ActionKind.Attack);
+            ConfiguredMatchFixtures.Accept(
+                session, DirectorCommand.StartAction(attack.ActionDefinitionId));
+
+            var targetChoice = session.Projection.PendingAttackTargetChoice;
+            Assert.That(targetChoice.LegalTargetHeroIds, Does.Contain(defender),
+                "The regression must submit the hero target the board click names.");
+            var result = session.Execute(DirectorCommand.ChooseAttackTarget(
+                targetChoice.ResolutionId,
+                targetChoice.ChoiceId,
+                defender));
+
+            Assert.That(result.Accepted, Is.True, result.Detail);
+            Assert.That(session.Projection.PendingAttackTargetChoice, Is.Null,
+                "The accepted target command clears the Attack target prompt.");
+            Assert.That(session.Projection.PendingAttackResolution, Is.Not.Null,
+                "The Attack itself remains pending while the defender answers p.14 step 3.");
+            var defense = session.Projection.PendingDefenseChoice;
+            Assert.That(defense, Is.Not.Null,
+                "A hero Attack continues to Defense instead of resolving like a minion Attack.");
+            var preview = session.Projection.PendingDefensePreview;
+            Assert.That(preview, Is.Not.Null,
+                "The same accepted command publishes the response surface the HUD renders.");
+            Assert.That(preview.MinionContributions.Select(value => value.SourceMinionId),
+                Does.Contain(supportingMinion),
+                "The adjacent friendly melee minion is a real shared numeric modifier.");
+
+            var block = BlockOffer(session, defense, WaspCardContent.StopProjectiles);
+            var blockPreview = preview.Choices.Single(value =>
+                value.CardInstanceId.HasValue &&
+                value.CardInstanceId.Value.Equals(block.SourceCardInstanceId));
+            Assert.That(blockPreview.DefenseTotal, Is.Null,
+                "A Block still has no numeric total when numeric choices share minion modifiers.");
+            Assert.That(blockPreview.DefenseContributions, Is.Empty,
+                "and the Block never borrows the shared numeric contribution list.");
+
+            var numericPreview = preview.Choices.First(value =>
+                value.CardInstanceId.HasValue && value.DefenseTotal.HasValue);
+            Assert.That(
+                numericPreview.DefenseContributions
+                    .Where(value => value.Kind == ValueContributionKind.MinionDefenseModifier)
+                    .Select(value => value.SourceMinionId),
+                Is.EquivalentTo(preview.MinionContributions.Select(value => value.SourceMinionId)),
+                "An ordinary Defense choice still carries every shared minion contribution.");
+        }
+
         /// <summary>
         /// p.14's Block, fulfilled: the attack being answered is Ranged, so the defence succeeds
         /// "regardless of the attack value" - and Thunder Boomerang's Attack 4 is higher than any
@@ -426,6 +561,89 @@ namespace GuardsDigital.Tests.EditMode
 
             return (definition, owner => CardInstance.CreateInHand(
                 new CardInstanceId($"defense-honesty-{suffix}-card"), definition.Reference, owner));
+        }
+
+        private static MatchSession CreateHeroDefensePreviewSession(
+            out HeroId defender, out MinionId supportingMinion)
+        {
+            var configuration =
+                PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(TeamSide.Red);
+            var map = BoardMapDefinition.CreateSynthetic(
+                new MapId("block-minion-defense-preview"),
+                1,
+                new[]
+                {
+                    new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0),
+                    new HexCoordinate(1, 1)
+                });
+            var redHero = configuration.RedHand.Instances[0].OwnerId;
+            defender = configuration.BlueHand.Instances[0].OwnerId;
+            var redTeam = configuration.Participants.GetTeamForHero(redHero);
+            var blueTeam = configuration.Participants.GetTeamForHero(defender);
+            var redCoordinate = new HexCoordinate(0, 0);
+            var blueCoordinate = new HexCoordinate(1, 0);
+            var minionCoordinate = new HexCoordinate(1, 1);
+            supportingMinion = new MinionId("block-preview-blue-support");
+            var minion = new QuickGameMinionSetupState(
+                supportingMinion,
+                blueTeam.Id,
+                TeamSide.Blue,
+                StandardMinionType.Melee,
+                new ConfiguredSpawnPointReference(
+                    map.Id, new SpawnPointId("block-preview-blue-support-spawn")),
+                new ConfiguredSpaceReference(map.Id, new SpaceId("q1_r1")),
+                minionCoordinate);
+            var setup = new QuickGameSetupState(
+                map.Reference,
+                3,
+                configuration.TieBreakerState,
+                new[]
+                {
+                    new QuickGameTeamSetupState(
+                        redTeam.Id, TeamSide.Red, 4, new ZoneId("red-zone")),
+                    new QuickGameTeamSetupState(
+                        blueTeam.Id, TeamSide.Blue, 4, new ZoneId("blue-zone"))
+                },
+                new[]
+                {
+                    new QuickGameHeroSetupState(
+                        redHero,
+                        new HeroContentId("red-block-preview"),
+                        "Red Wasp",
+                        redTeam.Id,
+                        TeamSide.Red,
+                        new ConfiguredSpawnPointReference(
+                            map.Id, new SpawnPointId("red-block-preview-spawn")),
+                        new ConfiguredSpaceReference(map.Id, new SpaceId("q0_r0")),
+                        redCoordinate),
+                    new QuickGameHeroSetupState(
+                        defender,
+                        new HeroContentId("blue-block-preview"),
+                        "Blue Wasp",
+                        blueTeam.Id,
+                        TeamSide.Blue,
+                        new ConfiguredSpawnPointReference(
+                            map.Id, new SpawnPointId("blue-block-preview-spawn")),
+                        new ConfiguredSpaceReference(map.Id, new SpaceId("q1_r0")),
+                        blueCoordinate)
+                },
+                new[] { minion });
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                new[]
+                {
+                    new HeroOccupancy(redHero, redCoordinate),
+                    new HeroOccupancy(defender, blueCoordinate)
+                },
+                Array.Empty<ObstacleOccupancy>());
+
+            return new MatchSession(new MatchSessionInitialState(
+                scenario, setup, new[] { map }));
         }
 
         private static ActionDefinition PrimaryOf(CardDefinitionId cardId, ActionDefinitionId actionId) =>
