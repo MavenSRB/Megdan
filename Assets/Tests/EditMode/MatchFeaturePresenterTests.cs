@@ -6,6 +6,7 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
@@ -264,6 +265,14 @@ namespace GuardsDigital.Tests.EditMode
             presenter.Refresh();
             Assert.That(view.Model.Minions.Select(value => value.MinionId), Is.EqualTo(new[] { targetId }));
             Assert.That(view.Model.MinionAttackTargets, Is.EqualTo(new[] { targetId }));
+            var targetCue = view.Model.PieceTargetCues.Single(value =>
+                value.Target.Equals(BoardObjectReference.ForMinion(targetId)));
+            Assert.That(targetCue.Target, Is.EqualTo(BoardObjectReference.ForMinion(targetId)));
+            Assert.That(targetCue.State, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(targetCue.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Attack),
+                "Attack carries its own typed blood-red intent even when this fixture will defeat " +
+                "the minion; it is not inferred as Removal from that later result.");
             var snapshot = session.CaptureSnapshot();
             var commandCount = session.Projection.AcceptedCommands.Count;
             Assert.That(presenter.SubmitMinion(new MinionId("stale-minion")), Is.False);
@@ -289,6 +298,8 @@ namespace GuardsDigital.Tests.EditMode
             presenter.Refresh();
             Assert.That(view.Model.Minions, Is.Empty);
             Assert.That(view.Model.MinionAttackTargets, Is.Empty);
+            Assert.That(view.Model.PieceTargetCues, Is.Empty,
+                "The identity-keyed cue leaves with the removed target.");
         }
 
         [Test]
@@ -307,12 +318,22 @@ namespace GuardsDigital.Tests.EditMode
             presenter.Refresh();
             Assert.That(view.Model.AttackTargets, Is.EqualTo(new[] { targetId }));
             Assert.That(view.Model.MinionAttackTargets, Is.Empty);
+            var targetCue = view.Model.PieceTargetCues.Single();
+            Assert.That(targetCue.Target, Is.EqualTo(BoardObjectReference.ForHero(targetId)));
+            Assert.That(targetCue.State, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(targetCue.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Attack),
+                "Attack's invoked operation carries the typed blood-red Attack intent without " +
+                "predicting the later Defense outcome.");
             Assert.That(presenter.SubmitHero(targetId), Is.True);
             Assert.That(session.Projection.AcceptedCommands.Last().Kind,
                 Is.EqualTo(DirectorCommandKind.ChooseAttackTarget));
             Assert.That(session.Projection.AcceptedCommands.Last().HeroId, Is.EqualTo(targetId));
             Assert.That(session.Projection.AcceptedCommands.Last().MinionId.IsDefined, Is.False);
             Assert.That(session.Projection.PendingDefenseChoice, Is.Not.Null);
+            presenter.Refresh();
+            Assert.That(view.Model.PieceTargetCues, Is.Empty,
+                "Answering the target choice clears its cue before Defense continues.");
         }
 
         [Test]
@@ -1007,11 +1028,28 @@ namespace GuardsDigital.Tests.EditMode
             presenter.Refresh();
 
             Assert.That(view.Model.EffectChoiceTargetSpace, Is.Null, "Nothing is pointed at yet.");
+            var blueTarget = BoardObjectReference.ForHero(BlueHeroId(session));
+            var eligibleCue = view.Model.PieceTargetCues.Single(value =>
+                value.Target.Equals(blueTarget));
+            Assert.That(eligibleCue.State, Is.EqualTo(BoardTargetCueState.Eligible),
+                "Every selectable object carries its static eligible ring before anything is hovered.");
+            Assert.That(eligibleCue.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect),
+                "Push is a typed piece-affecting operation, not a removal prediction.");
+            Assert.That(view.Model.PieceTargetCues.Select(value => value.Target),
+                Is.EquivalentTo(session.Projection.PendingEffectChoicePreview
+                    .Where(value => value.NamesObject)
+                    .Select(value => value.Occupant)),
+                "The board projection is keyed by the authority preview's stable identities.");
             Assert.That(presenter.HighlightEffectChoiceCandidate(NeedleBlueAt), Is.True);
             presenter.Refresh();
 
             Assert.That(view.Model.EffectChoiceTargetSpace, Is.EqualTo(NeedleBlueAt));
             Assert.That(view.Model.EffectChoiceResultingSpace, Is.EqualTo(NeedleBeyondBlue));
+            Assert.That(view.Model.PieceTargetCues.Single(value =>
+                    value.Target.Equals(blueTarget)).State,
+                Is.EqualTo(BoardTargetCueState.Eligible),
+                "Current hover remains reserved: pointing does not project the future hover state.");
             Assert.That(view.Model.EffectChoiceDestinations, Is.Empty,
                 "The resulting space is a prediction, so it never joins the selectable set.");
 
@@ -1024,10 +1062,30 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(presenter.HighlightEffectChoiceCandidate(NeedleBlueAt), Is.True);
             presenter.Refresh();
+            var selectBlue = session.Projection.PendingEffectChoice.SelectInvocations.Single(value =>
+                value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
+                value.Candidate.Value.Kind == EffectValueKind.Coordinate &&
+                value.Candidate.Value.Coordinate.Equals(NeedleBlueAt));
+            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(selectBlue)).Accepted,
+                Is.True);
+            presenter.Refresh();
+            var selectedCue = view.Model.PieceTargetCues.Single(value =>
+                value.Target.Equals(blueTarget));
+            Assert.That(selectedCue.State, Is.EqualTo(BoardTargetCueState.Selected),
+                "The target's selected state comes from the pending authoritative choice.");
+            Assert.That(selectedCue.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect));
+            Assert.That(view.Model.EffectChoiceTargetSpace, Is.Null,
+                "The accepted selection rebuild drops the older projection's pointed-at state.");
             Assert.That(session.Undo().Accepted, Is.True);
             presenter.Refresh();
             Assert.That(view.Model.EffectChoiceTargetSpace, Is.Null,
                 "Undo rebuilds authoritative state, and the cue does not outlive its projection.");
+            Assert.That(view.Model.PieceTargetCues.Single(value =>
+                    value.Target.Equals(blueTarget)).State,
+                Is.EqualTo(BoardTargetCueState.Eligible),
+                "Undo rebuilds the identity cue from restored authority rather than retaining its " +
+                "selected treatment.");
         }
 
         /// <summary>

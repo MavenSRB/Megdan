@@ -2,6 +2,7 @@ using System.Collections;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.EffectResolution;
@@ -141,31 +142,70 @@ namespace GuardsDigital.Tests.PlayMode
                 "Milestone 6.5c settled for TOKEN #1 because there was no projection to read a name " +
                 "from; there is one now, and one Hazard needs no ordinal to be told apart.");
 
-            // Milestone 6.3a: the second half of milestone 6.6a's handoff finding. The control read
-            // correctly and the board said nothing at all, so a player could read which token was
-            // meant only by counting spaces. Pointing at the control now marks the exact piece.
+            // Milestone 8.11d: every eligible piece is marked statically. Pointing at the control
+            // still carries the projected resulting-space preview, but the future hover treatment is
+            // reserved and cannot replace the candidate's eligible treatment yet.
             Assert.That(target.TokenId, Is.EqualTo(runtime.BoardView.Model.PlacedTokens.Single().Id),
                 "The control carries the token's own identity, so the board never has to work out " +
                 "which piece stands on a space.");
-            // The board is marked by the view's own hover route, which this driver goes through, so
-            // what is asserted is the cue that results rather than the call's own return.
-            runtime.HighlightEffectChoiceTarget(placed);
-            yield return null;
+            var targetReference = BoardObjectReference.ForToken(target.TokenId);
+            var projected = runtime.BoardView.Model.PieceTargetCues.Single(value =>
+                value.Target.Equals(targetReference));
+            Assert.That(projected.State, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(projected.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect),
+                "This exchange mode affects the token; presentation does not infer removal from its " +
+                "name or from a predicted outcome.");
 
             var marked = runtime.BoardView.TokenViews.Single(value =>
                 value.BoundTokenId.Equals(target.TokenId));
-            Assert.That(runtime.BoardView.Model.TokenChoiceCues.Single().TokenId,
-                Is.EqualTo(target.TokenId));
-            Assert.That(marked.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
-            AssertCueIsReadableThroughTheCamera(marked);
+            var retainedRing = marked.TargetRing;
+            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(marked.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect));
+            Assert.That(retainedRing.VisibleConsequenceColor,
+                Is.EqualTo(BoardTargetRing.AffectColor));
+            var retainedWashMaterial = retainedRing.GetComponent<MeshRenderer>()
+                .sharedMaterials[2];
+            AssertWash(
+                retainedRing,
+                BoardTargetRing.AffectColor,
+                BoardTargetRing.EligibleWashAlpha);
+            AssertTargetRingIsReadableThroughTheCamera(marked);
+
+            runtime.HighlightEffectChoiceTarget(placed);
+            yield return null;
+
+            Assert.That(runtime.BoardView.Model.EffectChoiceTargetSpace, Is.EqualTo(placed));
+            Assert.That(marked.TargetRing, Is.SameAs(retainedRing),
+                "Pointing changes one retained cue instance rather than building another.");
+            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial));
+            AssertWash(
+                retainedRing,
+                BoardTargetRing.AffectColor,
+                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
+                "Current pointer state does not project the future Hovered construction.");
+            Assert.That(marked.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect));
 
             runtime.HighlightEffectChoiceTarget(null);
             yield return null;
 
-            Assert.That(runtime.BoardView.Model.TokenChoiceCues, Is.Empty);
-            Assert.That(marked.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None),
-                "The cue is dropped when the pointer leaves, exactly as milestone 6.5c requires of " +
-                "every other board cue.");
+            Assert.That(runtime.BoardView.Model.EffectChoiceTargetSpace, Is.Null);
+            Assert.That(runtime.BoardView.Model.PieceTargetCues.Single(value =>
+                    value.Target.Equals(targetReference)).State,
+                Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
+                "Leaving the control clears only the pointed-at preview; the static eligible ring " +
+                "stands while the authority still offers that target.");
+            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial));
+            AssertWash(
+                retainedRing,
+                BoardTargetRing.AffectColor,
+                BoardTargetRing.EligibleWashAlpha);
         }
 
         /// <summary>
@@ -209,14 +249,38 @@ namespace GuardsDigital.Tests.PlayMode
 
             var view = runtime.BoardView.TokenViews.Single(value =>
                 value.BoundTokenId.Equals(token.Id));
-            Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
-            AssertCueIsReadableThroughTheCamera(view);
+            var ring = view.TargetRing;
+            var eligible = runtime.BoardView.Model.PieceTargetCues.Single();
+            Assert.That(eligible.Target, Is.EqualTo(BoardObjectReference.ForToken(token.Id)));
+            Assert.That(eligible.State, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(eligible.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(view.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+            Assert.That(ring.VisibleConsequenceColor, Is.EqualTo(BoardTargetRing.BloodRedColor));
+            var retainedWashMaterial = ring.GetComponent<MeshRenderer>().sharedMaterials[2];
+            AssertWash(
+                ring,
+                BoardTargetRing.BloodRedColor,
+                BoardTargetRing.EligibleWashAlpha);
+            AssertTargetRingIsReadableThroughTheCamera(view);
 
             Assert.That(runtime.ToggleClearToken(token.Id), Is.True);
             yield return null;
 
-            Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected),
+            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected),
                 "A chosen piece keeps its own treatment while the pointer moves on.");
+            Assert.That(view.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+            Assert.That(view.TargetRing, Is.SameAs(ring),
+                "Selection changes the retained ring's state rather than adding a second cue.");
+            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial));
+            AssertWash(
+                ring,
+                BoardTargetRing.BloodRedColor,
+                BoardTargetRing.SelectedWashAlpha);
             Assert.That(runtime.ClearSelection.Confirm.Command.TokenInstanceIds,
                 Is.EqualTo(new[] { token.Id }));
 
@@ -226,6 +290,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.BoardView.Model.PlacedTokens, Is.Empty);
             Assert.That(view.gameObject.activeSelf, Is.False,
                 "The piece stops being drawn, because projection presence owns visibility.");
+            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
+                "Removal clears the retained cue before the pooled piece is hidden.");
+            Assert.That(ring.IsVisible, Is.False);
+            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial));
             Assert.That(runtime.ClearSelection, Is.Null);
 
             Assert.That(runtime.Undo(), Is.True);
@@ -234,38 +303,52 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.BoardView.Model.PlacedTokens.Single().Id, Is.EqualTo(token.Id));
             Assert.That(view.gameObject.activeSelf, Is.True);
-            Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None),
+            Assert.That(view.TargetRing, Is.SameAs(ring));
+            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
                 "Undo rebuilds the surface from the position as it now is, carrying no cue across.");
+            Assert.That(ring.IsVisible, Is.False);
+            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial));
+            Assert.That(runtime.BoardView.Model.PieceTargetCues, Is.Empty);
         }
 
         /// <summary>
-        /// Asserts a cue reads at the configured camera rather than only sitting at the right local
-        /// offset - the lesson milestone 6.5c recorded when the hero choice cue shipped invisible.
+        /// Asserts a fitted base ring reads at the configured camera and lies on the board plane.
         /// </summary>
-        private static void AssertCueIsReadableThroughTheCamera(PlacedTokenView view)
+        private static void AssertTargetRingIsReadableThroughTheCamera(PlacedTokenView view)
         {
             var camera = Object.FindAnyObjectByType<Camera>();
-            var cue = view.ChoiceCue;
-            Assert.That(cue, Is.Not.Null);
-            Assert.That(cue.gameObject.activeInHierarchy, Is.True);
-            var onScreen = camera.WorldToViewportPoint(cue.transform.position);
+            var ring = view.TargetRing;
+            Assert.That(ring, Is.Not.Null);
+            Assert.That(ring.IsVisible, Is.True);
+            Assert.That(Vector3.Dot(ring.transform.up, Vector3.up), Is.GreaterThan(0.99f),
+                "The ring lies flat on the board rather than standing edge-on.");
+            var onScreen = camera.WorldToViewportPoint(ring.transform.position);
             Assert.That(onScreen.z, Is.GreaterThan(0f),
-                "The cue is in front of the configured camera rather than behind it.");
+                "The ring is in front of the configured camera rather than behind it.");
             Assert.That(onScreen.x, Is.InRange(0f, 1f));
             Assert.That(onScreen.y, Is.InRange(0f, 1f),
                 "And inside the framed board rather than off the edge of it.");
 
-            var bounds = cue.GetComponent<Renderer>().bounds;
+            var bounds = ring.GetComponent<Renderer>().bounds;
             var lowLeft = camera.WorldToScreenPoint(bounds.min);
             var topRight = camera.WorldToScreenPoint(bounds.max);
             Assert.That(Mathf.Abs(topRight.x - lowLeft.x), Is.GreaterThan(2f));
             Assert.That(Mathf.Abs(topRight.y - lowLeft.y), Is.GreaterThan(2f),
-                "It covers real screen area in both directions - an edge-on glyph is a sliver in one " +
+                "It covers real screen area in both directions - an edge-on ring is a sliver in one " +
                 "of them while every local-offset assertion still passes.");
+            Assert.That(ring.VisibleKeylineColor, Is.EqualTo(BoardTargetRing.KeylineColor));
+        }
 
-            var tokenOnScreen = camera.WorldToViewportPoint(view.transform.position);
-            Assert.That(onScreen.y, Is.GreaterThan(tokenOnScreen.y),
-                "It sits above the piece it marks, which is what makes a downward triangle read.");
+        private static void AssertWash(
+            BoardTargetRing ring,
+            Color expectedColor,
+            float expectedAlpha)
+        {
+            Assert.That(ring.VisibleWashColor.r, Is.EqualTo(expectedColor.r).Within(0.0001f));
+            Assert.That(ring.VisibleWashColor.g, Is.EqualTo(expectedColor.g).Within(0.0001f));
+            Assert.That(ring.VisibleWashColor.b, Is.EqualTo(expectedColor.b).Within(0.0001f));
+            Assert.That(ring.VisibleWashColor.a, Is.EqualTo(expectedAlpha).Within(0.0001f));
         }
 
         /// <summary>

@@ -1,5 +1,4 @@
 using GuardsDigital.Core.Board;
-using GuardsDigital.Presentation.Units.Minions;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Board
@@ -43,100 +42,15 @@ namespace GuardsDigital.Presentation.Board
         /// <summary>How much wider a highlight's rim is drawn than the ordinary debug perimeter.</summary>
         public const float RimWidthMultiplier = 2.4f;
 
-        /// <summary>
-        /// Where the cue sits over the space. Milestone 8.11a, at the user's request: high enough to
-        /// clear the piece standing there rather than sitting inside it, which is where the Minion
-        /// Battle's own marker sits relative to the minion it names.
-        /// </summary>
-        private static readonly Vector3 ChoiceCueAnchorLocalPosition = new Vector3(0f, 0.45f, 0f);
-
-        private static readonly Vector3 ChoiceCueLocalPosition = new Vector3(0f, 0.96f, -0.15f);
-
         private Material defaultEdgeMaterial;
         private bool defaultEdgeEnabled;
         private float defaultEdgeWidth;
         private bool rimmed;
-        private Transform choiceCueAnchor;
-        private TextMesh choiceCue;
-        private TextMesh choiceCueBackground;
 
         public bool IsHighlighted { get; private set; }
 
         /// <summary>True while this space is drawing a highlight rim around its perimeter.</summary>
         public bool IsRimmed => rimmed;
-
-        /// <summary>
-        /// Milestone 8.11a, at the user's suggestion. Which board-facing cue this space is wearing -
-        /// the same marker a minion wears when the Minion Battle asks which one to remove.
-        /// </summary>
-        public MinionChoiceCueKind ChoiceCueKind { get; private set; }
-
-        /// <summary>
-        /// Marks this space with the shared board choice cue, or clears it.
-        ///
-        /// <para>Milestone 8.11a, at the user's suggestion, and it is the answer to a problem colour
-        /// could not solve. A rim and a tint have to contrast with whatever is painted underneath, and
-        /// this board is painted pale sand, mid brown, jungle green and near-black rock - no single
-        /// colour reads on all four. The cue does not have to: it carries its own dark backing, which is
-        /// exactly why it was built that way for the Minion Battle, so it reads the same everywhere.</para>
-        ///
-        /// <para>Reusing it also means a player learns one mark. The glyph that says "this minion" when
-        /// the Battle asks, and the glyph that says "this space" when a card's text asks, are the same
-        /// glyph in the same two colours.</para>
-        /// </summary>
-        public void SetChoiceCue(MinionChoiceCueKind kind)
-        {
-            if (kind != MinionChoiceCueKind.None && kind != MinionChoiceCueKind.Highlighted &&
-                kind != MinionChoiceCueKind.Selected)
-            {
-                throw new System.ArgumentOutOfRangeException(nameof(kind));
-            }
-
-            ChoiceCueKind = kind;
-            if (kind == MinionChoiceCueKind.None)
-            {
-                if (choiceCue != null)
-                {
-                    choiceCue.gameObject.SetActive(false);
-                    choiceCueBackground.gameObject.SetActive(false);
-                }
-
-                return;
-            }
-
-            if (choiceCue == null)
-            {
-                // A tile's own transform lies flat with no rotation, so a cue parented straight to it
-                // would stand edge-on to the overhead camera and be invisible. The anchor carries the
-                // board-facing rotation for the same reason the upright hero prism's does.
-                var anchor = new GameObject("Space Choice Cue Anchor");
-                anchor.transform.SetParent(transform, false);
-                anchor.transform.localPosition = ChoiceCueAnchorLocalPosition;
-                anchor.transform.localRotation = BoardChoiceCue.BoardFacingRotation;
-                choiceCueAnchor = anchor.transform;
-                BoardChoiceCue.CreatePair(
-                    choiceCueAnchor,
-                    "Space Choice Cue",
-                    ChoiceCueLocalPosition,
-                    mirrored: true,
-                    out choiceCue,
-                    out choiceCueBackground);
-                choiceCue.characterSize = BoardChoiceCue.MarkerCharacterSize;
-            }
-
-            // Re-applied on every call rather than only at construction. The direction the framing
-            // camera calls up is settled when the board is framed, which can be after an anchor already
-            // exists, and an anchor holding a stale one is drawn visibly crooked.
-            choiceCueAnchor.localRotation = BoardChoiceCue.BoardFacingRotation;
-            choiceCue.gameObject.SetActive(true);
-            choiceCueBackground.gameObject.SetActive(true);
-            choiceCue.text = BoardChoiceCue.Marker;
-            choiceCue.color = kind == MinionChoiceCueKind.Selected
-                ? BoardChoiceCue.SelectedColor
-                : BoardChoiceCue.HighlightedColor;
-            BoardChoiceCue.Center(
-                choiceCueAnchor, choiceCue, choiceCueBackground, ChoiceCueLocalPosition);
-        }
 
         public void Configure(HexCoordinate coordinate, float radius)
         {

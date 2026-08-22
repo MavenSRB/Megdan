@@ -6,6 +6,8 @@ using System.IO;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
@@ -13,6 +15,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
@@ -749,6 +752,219 @@ namespace GuardsDigital.Tests.PlayMode
                 $"The targeted Game View visual evidence must be captured at {relativePath}.");
         }
 
+        private static System.Action SelectFixedGameViewResolution(int width, int height)
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Static |
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+            var requestedLabel = $"8.11d {width}x{height}";
+            var gameViewType = System.Type.GetType(
+                "UnityEditor.GameView,UnityEditor" /* absence-intended: Editor-only capture API */) ??
+                throw new System.InvalidOperationException("Unity Editor Game View type is unavailable.");
+            var sizesType = System.Type.GetType(
+                "UnityEditor.GameViewSizes,UnityEditor" /* absence-intended: Editor-only capture API */) ??
+                throw new System.InvalidOperationException("Unity Editor Game View sizes are unavailable.");
+            var sizeType = System.Type.GetType(
+                "UnityEditor.GameViewSize,UnityEditor" /* absence-intended: Editor-only capture API */) ??
+                throw new System.InvalidOperationException("Unity Editor Game View size type is unavailable.");
+            var sizeKindType = System.Type.GetType(
+                "UnityEditor.GameViewSizeType,UnityEditor" /* absence-intended: Editor-only capture API */) ??
+                throw new System.InvalidOperationException("Unity Editor Game View size kind is unavailable.");
+
+            var sizes = sizesType.GetProperty("instance", flags)?.GetValue(null) ??
+                throw new System.InvalidOperationException("Unity Editor Game View sizes have no instance.");
+            var group = sizesType.GetProperty("currentGroup", flags)?.GetValue(sizes) ??
+                throw new System.InvalidOperationException("Unity Editor Game View has no current size group.");
+            var getBuiltinCount = group.GetType().GetMethod("GetBuiltinCount", flags) ??
+                throw new System.InvalidOperationException("Game View built-in size count is unavailable.");
+            var getCustomCount = group.GetType().GetMethod("GetCustomCount", flags) ??
+                throw new System.InvalidOperationException("Game View custom size count is unavailable.");
+            var getSize = group.GetType().GetMethod("GetGameViewSize", flags) ??
+                throw new System.InvalidOperationException("Game View size lookup is unavailable.");
+            var addCustom = group.GetType().GetMethod("AddCustomSize", flags) ??
+                throw new System.InvalidOperationException("Game View custom-size insertion is unavailable.");
+            var removeCustom = group.GetType().GetMethod("RemoveCustomSize", flags) ??
+                throw new System.InvalidOperationException("Game View custom-size removal is unavailable.");
+            var widthProperty = sizeType.GetProperty("width", flags) ??
+                throw new System.InvalidOperationException("Game View size width is unavailable.");
+            var heightProperty = sizeType.GetProperty("height", flags) ??
+                throw new System.InvalidOperationException("Game View size height is unavailable.");
+            var kindProperty = sizeType.GetProperty("sizeType", flags) ??
+                throw new System.InvalidOperationException("Game View size kind is unavailable.");
+            var displayTextProperty = sizeType.GetProperty("displayText", flags) ??
+                throw new System.InvalidOperationException("Game View size label is unavailable.");
+            var gameViews = Resources.FindObjectsOfTypeAll(gameViewType);
+            Assert.That(gameViews, Is.Not.Empty,
+                "The dedicated nonbatch recipe must own a Game View to inspect.");
+            var selection = gameViewType.GetProperty("selectedSizeIndex", flags) ??
+                throw new System.InvalidOperationException("Game View size selection is unavailable.");
+            var repaint = gameViewType.GetMethod("Repaint", flags);
+            var priorSelections = gameViews
+                .Select(gameView => (GameView: gameView, Index: (int)selection.GetValue(gameView)))
+                .ToArray();
+
+            // Everything above is read-only pre-state. From this point onward any insertion or
+            // partial selection is rolled back here if setup fails before the cleanup is returned.
+            var builtinCount = (int)getBuiltinCount.Invoke(group, null);
+            var customCount = (int)getCustomCount.Invoke(group, null);
+            var selectedIndex = -1;
+            var customIndexToRemove = -1;
+            var createdThisCall = false;
+
+            void RestorePriorSelections()
+            {
+                System.Exception restoreFailure = null;
+                foreach (var prior in priorSelections)
+                {
+                    try
+                    {
+                        if (prior.GameView != null)
+                        {
+                            selection.SetValue(prior.GameView, prior.Index);
+                            repaint?.Invoke(prior.GameView, null);
+                        }
+                    }
+                    catch (System.Exception exception)
+                    {
+                        restoreFailure ??= exception;
+                    }
+                }
+
+                if (restoreFailure != null)
+                {
+                    throw new System.InvalidOperationException(
+                        "Failed to restore one or more prior Game View selections.",
+                        restoreFailure);
+                }
+            }
+
+            void RemoveCreatedSize()
+            {
+                if (!createdThisCall || customIndexToRemove < 0)
+                {
+                    return;
+                }
+
+                var liveCustomCount = (int)getCustomCount.Invoke(group, null);
+                if (customIndexToRemove >= liveCustomCount)
+                {
+                    createdThisCall = false;
+                    return;
+                }
+
+                var candidate = getSize.Invoke(
+                    group, new object[] { builtinCount + customIndexToRemove });
+                var isCreatedSize = (int)widthProperty.GetValue(candidate) == width &&
+                    (int)heightProperty.GetValue(candidate) == height &&
+                    kindProperty.GetValue(candidate).ToString() == "FixedResolution" &&
+                    displayTextProperty.GetValue(candidate).ToString() == requestedLabel;
+                if (isCreatedSize)
+                {
+                    removeCustom.Invoke(group, new object[] { customIndexToRemove });
+                }
+
+                createdThisCall = false;
+            }
+
+            try
+            {
+                for (var index = 0; index < builtinCount + customCount; index++)
+                {
+                    var candidate = getSize.Invoke(group, new object[] { index });
+                    var candidateWidth = (int)widthProperty.GetValue(candidate);
+                    var candidateHeight = (int)heightProperty.GetValue(candidate);
+                    var candidateKind = kindProperty.GetValue(candidate).ToString();
+                    if (candidateWidth == width && candidateHeight == height &&
+                        candidateKind == "FixedResolution")
+                    {
+                        selectedIndex = index;
+                        break;
+                    }
+                }
+
+                if (selectedIndex < 0)
+                {
+                    var fixedResolution = System.Enum.Parse(sizeKindType, "FixedResolution");
+                    var constructor = sizeType.GetConstructor(
+                        flags,
+                        null,
+                        new[] { sizeKindType, typeof(int), typeof(int), typeof(string) },
+                        null) ?? throw new System.InvalidOperationException(
+                        "Game View fixed-resolution constructor is unavailable.");
+                    var custom = constructor.Invoke(new[]
+                    {
+                        fixedResolution,
+                        (object)width,
+                        height,
+                        requestedLabel
+                    });
+                    customIndexToRemove = customCount;
+                    // Mark the insertion attempt before reflection invokes Editor code. If that
+                    // code mutates and then throws, RemoveCreatedSize can still identify and remove
+                    // only the exact appended size owned by this call.
+                    createdThisCall = true;
+                    addCustom.Invoke(group, new[] { custom });
+                    selectedIndex = builtinCount + customIndexToRemove;
+                }
+
+                foreach (var gameView in gameViews)
+                {
+                    selection.SetValue(gameView, selectedIndex);
+                    repaint?.Invoke(gameView, null);
+                }
+
+                return () =>
+                {
+                    System.Exception cleanupFailure = null;
+                    try
+                    {
+                        RestorePriorSelections();
+                    }
+                    catch (System.Exception exception)
+                    {
+                        cleanupFailure = exception;
+                    }
+
+                    try
+                    {
+                        RemoveCreatedSize();
+                    }
+                    catch (System.Exception exception)
+                    {
+                        cleanupFailure ??= exception;
+                    }
+
+                    if (cleanupFailure != null)
+                    {
+                        throw new System.InvalidOperationException(
+                            "Failed to restore the Game View resolution after capture.",
+                            cleanupFailure);
+                    }
+                };
+            }
+            catch
+            {
+                try
+                {
+                    RestorePriorSelections();
+                }
+                catch
+                {
+                    // Preserve the setup exception after making the best possible rollback.
+                }
+
+                try
+                {
+                    RemoveCreatedSize();
+                }
+                catch
+                {
+                    // Preserve the setup exception after making the best possible rollback.
+                }
+
+                throw;
+            }
+        }
+
         private static UnityEngine.UIElements.VisualElement Named(
             UnityEngine.UIElements.VisualElement root, string name) =>
             Descendants(root).FirstOrDefault(element => element.name == name);
@@ -860,15 +1076,10 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 6.5c, corrected after review. The hero choice cue, checked against the scene's
-        /// own camera rather than against an assumption about which axis is up.
-        ///
-        /// This is the check the milestone should have carried. It asserted where the marker sat in
-        /// the hero's local space, which stayed true while the marker was edge-on to a camera that
-        /// looks straight down the board and therefore invisible - the defect a player saw
-        /// immediately and no automated check did. Milestone 6.1a already had the honest form for a
-        /// minion, projecting through the configured camera, and this is that form for the hero,
-        /// which the two views now share one cue construction for.
+        /// Milestone 8.11d replaces the hero's downward triangle with the shared fitted base ring.
+        /// This keeps the old validation filter name while measuring the new contract through the
+        /// configured camera: flat on the board, visible on screen, outside the current footprint,
+        /// and cleared in place.
         /// </summary>
         [UnityTest]
         public IEnumerator Scene_ShowsTheHeroChoiceCueFacingTheConfiguredCamera()
@@ -879,24 +1090,354 @@ namespace GuardsDigital.Tests.PlayMode
                     PlaceholderOneVsOneParticipants.RedHeroIdValue);
             var camera = Object.FindAnyObjectByType<Camera>();
 
-            hero.SetChoiceCue(MinionChoiceCueKind.Highlighted);
+            hero.SetTargetCue(
+                BoardTargetCueState.Eligible,
+                BoardTargetConsequenceIntent.Affect);
             yield return null;
 
-            var cue = hero.GetComponentsInChildren<TextMesh>(true)
-                .Single(value => value.gameObject.name == "Hero Choice Cue");
-            Assert.That(cue.text, Is.EqualTo(BoardChoiceCue.Marker));
-            Assert.That(cue.gameObject.activeInHierarchy, Is.True);
+            var ring = hero.TargetRing;
+            Assert.That(ring, Is.Not.Null);
+            Assert.That(ring.IsVisible, Is.True);
+            Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(hero.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect));
+            Assert.That(Vector3.Dot(ring.transform.up, Vector3.up), Is.GreaterThan(0.99f),
+                "The generated ring lies on the board plane rather than standing edge-on.");
+            Assert.That(ring.InnerRadius,
+                Is.EqualTo(Mathf.Max(
+                    hero.GetComponent<Renderer>().bounds.extents.x,
+                    hero.GetComponent<Renderer>().bounds.extents.z)).Within(0.001f),
+                "Its inner edge is fitted to the hero's current rendered footprint.");
+            var onScreen = camera.WorldToViewportPoint(ring.transform.position);
+            Assert.That(onScreen.z, Is.GreaterThan(0f));
+            Assert.That(onScreen.x, Is.InRange(0f, 1f));
+            Assert.That(onScreen.y, Is.InRange(0f, 1f));
+            var ringBounds = ring.GetComponent<Renderer>().bounds;
+            Assert.That(Mathf.Abs(
+                camera.WorldToScreenPoint(ringBounds.max).x -
+                camera.WorldToScreenPoint(ringBounds.min).x), Is.GreaterThan(2f));
+            Assert.That(Mathf.Abs(
+                camera.WorldToScreenPoint(ringBounds.max).y -
+                camera.WorldToScreenPoint(ringBounds.min).y), Is.GreaterThan(2f));
+            Assert.That(hero.GetComponentsInChildren<TextMesh>(true),
+                Has.None.Matches<TextMesh>(value => value.text == "▼"),
+                "No triangle survives beside the fitted base ring.");
 
-            var toCamera = (camera.transform.position - cue.transform.position).normalized;
-            Assert.That(Vector3.Dot(cue.transform.forward, toCamera), Is.GreaterThan(0.9f),
-                "The marker faces the camera instead of standing edge-on to it.");
-            Assert.That(camera.WorldToViewportPoint(cue.transform.position).y,
-                Is.GreaterThan(camera.WorldToViewportPoint(hero.transform.position).y),
-                "And it reads above its hero, exactly as the minion cue reads above its minion.");
-
-            hero.SetChoiceCue(MinionChoiceCueKind.None);
+            hero.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
             yield return null;
-            Assert.That(cue.gameObject.activeInHierarchy, Is.False);
+            Assert.That(ring.IsVisible, Is.False);
+            Assert.That(hero.TargetRing, Is.SameAs(ring),
+                "Clearing changes state on the retained cue rather than destroying it.");
+        }
+
+        /// <summary>
+        /// Milestone 8.11d's Play boundary for the 8.11c identity-shaped effect candidate. The
+        /// EditMode presenter fixture proves Reflect Projectiles produces this stable hero identity
+        /// and Affect intent from live authority. Here the saved scene's passive board consumes that
+        /// authority-shaped model directly: no test-only session or production injection seam is
+        /// introduced, and moving the occupancy proves the cue follows identity rather than space.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_IdentityNamedEffectChoiceUsesHeroTargetRing()
+        {
+            yield return LoadScene();
+            var runtime = Root().Runtime;
+            var baseBoard = runtime.BoardView.Model;
+            var target = baseBoard.Heroes.Single(value => value.HeroId.Equals(
+                runtime.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue).HeroId));
+            var targetReference = BoardObjectReference.ForHero(target.HeroId);
+            var cue = new PieceTargetCueViewModel(
+                targetReference,
+                BoardTargetCueState.Eligible,
+                BoardTargetConsequenceIntent.Affect);
+
+            RenderBoard(
+                runtime,
+                baseBoard,
+                baseBoard.Version + 1,
+                baseBoard.Heroes,
+                baseBoard.Minions,
+                baseBoard.PlacedTokens,
+                new[] { cue });
+            yield return null;
+
+            var heroView = Object.FindObjectsByType<PrimitiveHeroView>().Single(value =>
+                value.Occupancy.HeroId.Equals(target.HeroId));
+            var ring = heroView.TargetRing;
+            Assert.That(runtime.BoardView.Model.PieceTargetCues.Single().Target,
+                Is.EqualTo(targetReference));
+            Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(heroView.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect));
+            Assert.That(ring.VisibleConsequenceColor, Is.EqualTo(BoardTargetRing.AffectColor));
+            var retainedWashMaterial = ring.GetComponent<MeshRenderer>().sharedMaterials[2];
+            AssertWash(
+                ring,
+                BoardTargetRing.AffectColor,
+                BoardTargetRing.EligibleWashAlpha);
+
+            var occupied = new HashSet<HexCoordinate>(baseBoard.Heroes.Select(value => value.Coordinate));
+            occupied.UnionWith(baseBoard.Minions.Select(value => value.Coordinate));
+            occupied.UnionWith(baseBoard.PlacedTokens.Select(value => value.Coordinate));
+            var movedTo = runtime.BoardView.TileViews.First(value =>
+                value.IsPlayable && !occupied.Contains(value.Coordinate)).Coordinate;
+            var movedHeroes = baseBoard.Heroes.Select(value => value.HeroId.Equals(target.HeroId)
+                    ? new HeroOccupancy(value.HeroId, movedTo)
+                    : value)
+                .ToArray();
+            RenderBoard(
+                runtime,
+                baseBoard,
+                baseBoard.Version + 2,
+                movedHeroes,
+                baseBoard.Minions,
+                baseBoard.PlacedTokens,
+                new[] { cue });
+            yield return null;
+
+            Assert.That(heroView.Occupancy.Coordinate, Is.EqualTo(movedTo));
+            Assert.That(heroView.TargetRing, Is.SameAs(ring));
+            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial));
+            AssertWash(
+                ring,
+                BoardTargetRing.AffectColor,
+                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
+                "The ring follows the stable HeroId to its rebuilt occupancy; no coordinate is the " +
+                "target identity.");
+
+            runtime.BoardPresenter.Refresh();
+            yield return null;
+            Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(ring.IsVisible, Is.False,
+                "Returning to the live authority projection clears the hand-rendered boundary model.");
+            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial),
+                "Clearing hides the wash with its retained ring instead of replacing its material.");
+        }
+
+        /// <summary>
+        /// The milestone's dedicated 2048x1152 Game View evidence. It renders an authority-shaped
+        /// representative cluster into the saved passive board so all three piece classes and their
+        /// current footprints,
+        /// both palette families, all three typed intents, eligible and selected construction, neutral
+        /// keylines, and a destination fill can be judged in one frame.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_CapturesTargetRingsForGameViewInspection()
+        {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                Assert.That(UnityEngine.Application.isBatchMode, Is.True,
+                    "The screenshot branch is exercised by the dedicated nonbatch recipe.");
+                yield break;
+            }
+
+            var restoreGameView = SelectFixedGameViewResolution(2048, 1152);
+            try
+            {
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2048 || Screen.height != 1152);
+                     frame++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(Screen.width, Is.EqualTo(2048));
+                Assert.That(Screen.height, Is.EqualTo(1152));
+                yield return LoadScene();
+                Assert.That(Screen.width, Is.EqualTo(2048));
+                Assert.That(Screen.height, Is.EqualTo(1152));
+
+            var root = Root();
+            var runtime = root.Runtime;
+            var baseBoard = runtime.BoardView.Model;
+            var camera = Object.FindAnyObjectByType<Camera>();
+            var availableTiles = runtime.BoardView.TileViews
+                .Where(value => value.IsPlayable)
+                .ToList();
+
+            HexTileView TakeNearest(float viewportX, float viewportY)
+            {
+                var picked = availableTiles
+                    .OrderBy(value =>
+                    {
+                        var viewport = camera.WorldToViewportPoint(value.transform.position);
+                        return Mathf.Pow(viewport.x - viewportX, 2f) +
+                            Mathf.Pow(viewport.y - viewportY, 2f);
+                    })
+                    .First();
+                availableTiles.Remove(picked);
+                return picked;
+            }
+
+            var eligibleHeroAt = TakeNearest(0.47f, 0.72f).Coordinate;
+            var selectedHeroAt = TakeNearest(0.61f, 0.72f).Coordinate;
+            var eligibleMinionAt = TakeNearest(0.47f, 0.58f).Coordinate;
+            var selectedMinionAt = TakeNearest(0.61f, 0.58f).Coordinate;
+            var tokenAt = TakeNearest(0.76f, 0.72f).Coordinate;
+            var destination = TakeNearest(0.76f, 0.58f).Coordinate;
+
+            var heroes = baseBoard.Heroes.OrderBy(value => value.HeroId.Value).ToArray();
+            Assert.That(heroes, Has.Length.EqualTo(2));
+            var captureHeroes = new[]
+            {
+                new HeroOccupancy(heroes[0].HeroId, eligibleHeroAt),
+                new HeroOccupancy(heroes[1].HeroId, selectedHeroAt)
+            };
+            var minions = baseBoard.Minions
+                .OrderBy(value => value.MinionId.Value, System.StringComparer.Ordinal)
+                .Take(2)
+                .ToArray();
+            var captureMinions = new[]
+            {
+                minions[0].WithPosition(default, eligibleMinionAt),
+                minions[1].WithPosition(default, selectedMinionAt)
+            };
+            var token = new PlacedToken(
+                new TokenInstanceId("8-11d-capture-token"),
+                SyntheticComponentDefinitions.HazardDefinition,
+                heroes[0].HeroId,
+                heroes[0].HeroId,
+                new CardInstanceId("8-11d-capture-source"),
+                tokenAt);
+            var cues = new[]
+            {
+                new PieceTargetCueViewModel(
+                    BoardObjectReference.ForHero(heroes[0].HeroId),
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Affect),
+                new PieceTargetCueViewModel(
+                    BoardObjectReference.ForHero(heroes[1].HeroId),
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Attack),
+                new PieceTargetCueViewModel(
+                    BoardObjectReference.ForMinion(minions[0].MinionId),
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Removal),
+                new PieceTargetCueViewModel(
+                    BoardObjectReference.ForMinion(minions[1].MinionId),
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Removal),
+                new PieceTargetCueViewModel(
+                    BoardObjectReference.ForToken(token.Id),
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Affect)
+            };
+
+            runtime.BoardView.Render(new BoardInteractionViewModel(
+                baseBoard.Version + 1,
+                captureHeroes,
+                captureMinions,
+                new[] { destination },
+                System.Array.Empty<HeroId>(),
+                System.Array.Empty<MinionId>(),
+                heroes[0].HeroId,
+                placedTokens: new[] { token },
+                pieceTargetCues: cues));
+            yield return null;
+            yield return new WaitForEndOfFrame();
+
+            var rings = Object.FindObjectsByType<BoardTargetRing>()
+                .Where(value => value.IsVisible)
+                .ToArray();
+            Assert.That(rings, Has.Length.EqualTo(cues.Length));
+            Assert.That(rings.Any(value => value.State == BoardTargetCueState.Eligible), Is.True);
+            Assert.That(rings.Any(value => value.State == BoardTargetCueState.Selected), Is.True);
+            Assert.That(rings.Any(value =>
+                value.ConsequenceIntent == BoardTargetConsequenceIntent.Affect), Is.True);
+            Assert.That(rings.Any(value =>
+                value.ConsequenceIntent == BoardTargetConsequenceIntent.Removal), Is.True);
+            Assert.That(rings.Any(value =>
+                value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack), Is.True,
+                "The inspection frame includes typed Attack in the shared blood-red palette.");
+            var attackRing = rings.Single(value =>
+                value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack);
+            var removalRing = rings.First(value =>
+                value.ConsequenceIntent == BoardTargetConsequenceIntent.Removal);
+            Assert.That(attackRing.VisibleConsequenceColor,
+                Is.EqualTo(BoardTargetRing.BloodRedColor));
+            Assert.That(attackRing.VisibleConsequenceColor,
+                Is.EqualTo(removalRing.VisibleConsequenceColor),
+                "Attack remains typed apart from Removal while sharing its blood-red palette.");
+            Assert.That(rings, Has.All.Matches<BoardTargetRing>(value =>
+                value.VisibleKeylineColor == BoardTargetRing.KeylineColor));
+            foreach (var ring in rings)
+            {
+                var expectedWashAlpha = ring.State == BoardTargetCueState.Eligible
+                    ? BoardTargetRing.EligibleWashAlpha
+                    : BoardTargetRing.SelectedWashAlpha;
+                var expectedWashColor = ring.ConsequenceIntent ==
+                    BoardTargetConsequenceIntent.Affect
+                    ? BoardTargetRing.AffectColor
+                    : BoardTargetRing.BloodRedColor;
+                Assert.That(ring.VisibleWashColor.a,
+                    Is.EqualTo(expectedWashAlpha).Within(0.0001f));
+                Assert.That(ring.VisibleWashColor.r,
+                    Is.EqualTo(expectedWashColor.r).Within(1f / 255f));
+                Assert.That(ring.VisibleWashColor.g,
+                    Is.EqualTo(expectedWashColor.g).Within(1f / 255f));
+                Assert.That(ring.VisibleWashColor.b,
+                    Is.EqualTo(expectedWashColor.b).Within(1f / 255f));
+                Assert.That(ring.VisibleWashColor.a, Is.LessThan(0.3f),
+                    "Every active wash remains transparent enough to preserve the piece artwork.");
+                Assert.That(ring.GeneratedMesh.GetTriangles(2), Is.Not.Empty,
+                    "Every visible ring repeats its typed intent over the actual piece face.");
+                var washMaximumRadius = ring.GeneratedMesh.GetTriangles(2)
+                    .Distinct()
+                    .Select(index => ring.GeneratedMesh.vertices[index])
+                    .Max(vertex => Mathf.Sqrt(
+                        (vertex.x * vertex.x) + (vertex.z * vertex.z)));
+                Assert.That(washMaximumRadius,
+                    Is.EqualTo(ring.InnerRadius).Within(0.0001f),
+                    "Each wash ends at the exact fitted footprint used by its ring.");
+
+                var footprint = ring.transform.parent.GetComponent<Renderer>();
+                Assert.That(footprint, Is.Not.Null);
+                Assert.That(footprint.enabled, Is.True,
+                    "The translucent wash supplements rather than replaces the source art.");
+                if (footprint is SpriteRenderer sprite)
+                {
+                    Assert.That(sprite.sprite, Is.Not.Null);
+                }
+                else
+                {
+                    Assert.That(footprint.GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
+                }
+
+                var ringRenderer = ring.GetComponent<MeshRenderer>();
+                Assert.That(ringRenderer.sortingLayerID, Is.EqualTo(footprint.sortingLayerID));
+                Assert.That(ringRenderer.sortingOrder, Is.EqualTo(footprint.sortingOrder + 1));
+                foreach (var index in ring.GeneratedMesh.GetTriangles(0)
+                             .Concat(ring.GeneratedMesh.GetTriangles(1))
+                             .Distinct())
+                {
+                    var screen = camera.WorldToScreenPoint(
+                        ring.transform.TransformPoint(ring.GeneratedMesh.vertices[index]));
+                    Assert.That(screen.z, Is.GreaterThan(0f));
+                    Assert.That(screen.x, Is.InRange(0f, Screen.width));
+                    Assert.That(screen.y, Is.InRange(0f, Screen.height));
+                    Assert.That(root.Hud.BlocksPointerAt(new Vector2(screen.x, screen.y)),
+                        Is.False,
+                        "Every inspected ring must remain outside the HUD-covered screen region.");
+                }
+            }
+            Assert.That(runtime.BoardView.TokenViews.Single(value =>
+                value.BoundTokenId.Equals(token.Id)).TargetRing.IsVisible, Is.True,
+                "The representative frame includes the placed-token footprint.");
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(destination)).IsHighlighted, Is.True,
+                "The same frame includes a filled destination beside the piece rings.");
+            Assert.That(Object.FindObjectsByType<TextMesh>(FindObjectsInactive.Include, FindObjectsSortMode.None),
+                Has.None.Matches<TextMesh>(value => value.text == "▼"));
+
+                yield return Capture("tmp/8-11d-target-rings.png");
+            }
+            finally
+            {
+                restoreGameView();
+            }
         }
 
         [UnityTest]
@@ -1034,10 +1575,30 @@ namespace GuardsDigital.Tests.PlayMode
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(minion.Occupancy.Coordinate));
             Assert.That(runtime.BoardView.Model.MinionAttackTargets, Does.Contain(targetId));
-            // Milestone 8.11a: the target cue is the Minion Battle's own marker rather than a fill, so
-            // that it reads the same over painted sand, jungle and rock.
-            Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted),
-                "The exact projected minion occupancy must receive the configured target cue.");
+            var projectedCue = runtime.BoardView.Model.PieceTargetCues.Single(value =>
+                value.Target.Equals(BoardObjectReference.ForMinion(targetId)));
+            Assert.That(projectedCue.State, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(projectedCue.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Attack),
+                "Attack carries its typed blood-red intent even though this live attack will defeat " +
+                "its target; it is distinct from Removal rather than predicted from the result.");
+            var retainedRing = minion.TargetRing;
+            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(minion.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Attack));
+            Assert.That(retainedRing.IsVisible, Is.True);
+            Assert.That(retainedRing.VisibleConsequenceColor,
+                Is.EqualTo(BoardTargetRing.BloodRedColor),
+                "Typed Attack and Removal share the approved blood-red palette.");
+            Assert.That(retainedRing.VisibleKeylineColor,
+                Is.EqualTo(BoardTargetRing.KeylineColor));
+            var retainedWashMaterial = retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2];
+            AssertWash(
+                retainedRing,
+                BoardTargetRing.BloodRedColor,
+                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(tile.IsHighlighted, Is.False,
+                "A piece target ring stays distinct from a filled destination hex.");
             Assert.That(minion.GetComponent<StandardMinionPointerSelector>(), Is.Not.Null);
             var pendingTargetSnapshot = runtime.CaptureSnapshot();
             var commandCount = runtime.AcceptedCommands.Count;
@@ -1054,6 +1615,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.BoardView.Model.Minions.Select(value => value.MinionId),
                 Has.None.EqualTo(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.False);
+            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
+                "Removal clears the cue before the retained minion view is hidden.");
+            Assert.That(retainedRing.IsVisible, Is.False);
             Assert.That(tile.IsHighlighted, Is.False);
             Assert.That(runtime.DiagnosticEvents.Select(value => value.EventType), Does.Contain(
                 "Action.MinionDefeatRecorded"));
@@ -1067,28 +1631,55 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null);
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.True);
-            // Milestone 8.11a: an Attack target says "this one" with the Minion Battle's marker rather
-            // than with a fill, so Undo restoring the choice restores the marker.
-            Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
+            Assert.That(minion.TargetRing, Is.SameAs(retainedRing));
+            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial));
+            AssertWash(
+                retainedRing,
+                BoardTargetRing.BloodRedColor,
+                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(minion.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Attack),
+                "Undo restores typed Attack without turning it into Removal.");
 
             Assert.That(runtime.Restart(), Is.True);
             yield return null;
             Assert.That(runtime.BoardView.Model.Minions, Has.Count.EqualTo(12));
             Assert.That(runtime.BoardView.MinionViews.Count, Is.EqualTo(12));
             Assert.That(pointerInput.MinionSelectors.Count, Is.EqualTo(12));
+            Assert.That(runtime.BoardView.Model.PieceTargetCues, Is.Empty);
+            Assert.That(runtime.BoardView.MinionViews,
+                Has.All.Matches<StandardMinionView>(value =>
+                    value.TargetCueState == BoardTargetCueState.None),
+                "Restart rebuilds every retained minion without a stale ring.");
+            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial));
+            Assert.That(retainedRing.IsVisible, Is.False);
 
             Assert.That(runtime.RestoreSnapshot(pendingTargetSnapshot), Is.True, runtime.LastOperationDetail);
             yield return null;
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.True);
-            Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted),
-                "and a snapshot restore restores the target marker with the choice.");
+            Assert.That(minion.TargetRing, Is.SameAs(retainedRing));
+            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial));
+            AssertWash(
+                retainedRing,
+                BoardTargetRing.BloodRedColor,
+                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(minion.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Attack),
+                "and a snapshot restore restores the fitted target ring with the choice.");
             Assert.That(pointerInput.TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
             yield return null;
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
             Assert.That(runtime.BoardView.Model.Minions.Select(value => value.MinionId),
                 Has.None.EqualTo(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.False);
+            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(retainedRing.IsVisible, Is.False);
         }
 
         [UnityTest]
@@ -1544,8 +2135,8 @@ namespace GuardsDigital.Tests.PlayMode
             var acceptedBefore = runtime.AcceptedCommands.Count;
             var snapshotBefore = runtime.CaptureSnapshot();
 
-            // Nothing selected yet: both candidates carry a removal control and there is nothing to
-            // confirm. The board marks only the candidate the pointer is on.
+            // Nothing selected yet: both authority-shaped candidates carry static eligible removal
+            // rings and there is nothing to confirm. Hover remains reserved for a later milestone.
             var unselected = blue.Select((minion, index) => new MinionChoiceCandidateViewModel(
                     minion.MinionId,
                     $"REMOVE {MinionChoiceLabels.CandidateLabel(TeamSide.Blue, minion.MinionType, index + 1)}",
@@ -1565,10 +2156,11 @@ namespace GuardsDigital.Tests.PlayMode
                 0,
                 unselected,
                 null));
-            RenderChoiceCues(runtime, baseBoard, baseBoard.Version + 1, new[]
-            {
-                new MinionChoiceCueViewModel(blue[1].MinionId, MinionChoiceCueKind.Highlighted)
-            });
+            RenderTargetCues(runtime, baseBoard, baseBoard.Version + 1,
+                blue.Select(value => new PieceTargetCueViewModel(
+                    BoardObjectReference.ForMinion(value.MinionId),
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Removal)));
             yield return null;
 
             Assert.That(runtime.MinionChoiceView.Model.PromptLabel,
@@ -1582,12 +2174,30 @@ namespace GuardsDigital.Tests.PlayMode
                 value.BoundMinionId.Equals(blue[0].MinionId));
             var secondView = runtime.BoardView.MinionViews.Single(value =>
                 value.BoundMinionId.Equals(blue[1].MinionId));
-            Assert.That(firstView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
-            Assert.That(secondView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
-            Assert.That(secondView.GetComponentsInChildren<TextMesh>(true)
-                    .Single(value => value.gameObject.name == "Minion Choice Cue").text,
-                Is.EqualTo(StandardMinionView.ChoiceCueMarker),
-                "The cue above the minion is the one marker every visible kind uses.");
+            var firstRing = firstView.TargetRing;
+            var secondRing = secondView.TargetRing;
+            var firstWashMaterial = firstRing.GetComponent<MeshRenderer>().sharedMaterials[2];
+            var secondWashMaterial = secondRing.GetComponent<MeshRenderer>().sharedMaterials[2];
+            Assert.That(firstView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(firstView.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+            Assert.That(secondView.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+            Assert.That(firstRing.VisibleConsequenceColor, Is.EqualTo(BoardTargetRing.BloodRedColor));
+            Assert.That(secondRing.VisibleKeylineColor, Is.EqualTo(BoardTargetRing.KeylineColor));
+            AssertWash(
+                firstRing,
+                BoardTargetRing.BloodRedColor,
+                BoardTargetRing.EligibleWashAlpha);
+            AssertWash(
+                secondRing,
+                BoardTargetRing.BloodRedColor,
+                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(firstView.GetComponentsInChildren<TextMesh>(true)
+                    .Concat(secondView.GetComponentsInChildren<TextMesh>(true)),
+                Has.None.Matches<TextMesh>(value => value.text == "▼"),
+                "The former triangle glyph is absent from both candidate pieces.");
 
             // One selected at the required count: the chosen minion keeps its board cue, its control
             // becomes the projected deselect, and the confirmation appears.
@@ -1613,10 +2223,16 @@ namespace GuardsDigital.Tests.PlayMode
                 1,
                 new[] { selectedCandidate },
                 confirm));
-            RenderChoiceCues(runtime, baseBoard, baseBoard.Version + 2, new[]
+            RenderTargetCues(runtime, baseBoard, baseBoard.Version + 2, new[]
             {
-                new MinionChoiceCueViewModel(blue[0].MinionId, MinionChoiceCueKind.Selected),
-                new MinionChoiceCueViewModel(blue[1].MinionId, MinionChoiceCueKind.Highlighted)
+                new PieceTargetCueViewModel(
+                    BoardObjectReference.ForMinion(blue[0].MinionId),
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Removal),
+                new PieceTargetCueViewModel(
+                    BoardObjectReference.ForMinion(blue[1].MinionId),
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Removal)
             });
             yield return null;
 
@@ -1624,30 +2240,41 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.MinionChoiceView.Model.Candidates.Single().IsSelected, Is.True);
             Assert.That(runtime.MinionChoiceView.Model.ConfirmInvocation.Command.Kind,
                 Is.EqualTo(DirectorCommandKind.ConfirmMinionBattleRemovals));
-            Assert.That(firstView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected));
-            Assert.That(secondView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted),
+            Assert.That(firstView.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected));
+            Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
                 "A selected minion keeps its cue while the player points at another.");
-
-            var selectedCue = firstView.GetComponentsInChildren<TextMesh>(true).Single(value =>
-                value.gameObject.name == "Minion Choice Cue");
-            var selectedBacking = firstView.GetComponentsInChildren<TextMesh>(true).Single(value =>
-                value.gameObject.name == "Minion Choice Cue Background");
-            var highlightedCue = secondView.GetComponentsInChildren<TextMesh>(true).Single(value =>
-                value.gameObject.name == "Minion Choice Cue");
-            Assert.That(selectedCue.text, Is.EqualTo(StandardMinionView.ChoiceCueMarker));
-            Assert.That(highlightedCue.text, Is.EqualTo(selectedCue.text),
-                "Both kinds mean the same thing about the minion, so both draw the same marker.");
-            Assert.That(highlightedCue.color, Is.Not.EqualTo(selectedCue.color),
-                "Selection and the pointed-at control stay apart by color.");
-            Assert.That(selectedCue.characterSize, Is.EqualTo(StandardMinionView.ChoiceCueCharacterSize));
-            Assert.That(selectedCue.transform.localScale, Is.EqualTo(new Vector3(-1f, 1f, 1f)),
-                "The cue reuses the token-orientation correction of the Defense contribution cue.");
-            Assert.That(selectedBacking.transform.localScale.y,
-                Is.GreaterThan(selectedBacking.transform.localScale.x));
+            Assert.That(firstView.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+            Assert.That(secondView.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+            Assert.That(firstView.TargetRing, Is.SameAs(firstRing));
+            Assert.That(secondView.TargetRing, Is.SameAs(secondRing));
+            Assert.That(firstRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(firstWashMaterial));
+            Assert.That(secondRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(secondWashMaterial));
+            AssertWash(
+                firstRing,
+                BoardTargetRing.BloodRedColor,
+                BoardTargetRing.SelectedWashAlpha);
+            AssertWash(
+                secondRing,
+                BoardTargetRing.BloodRedColor,
+                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(firstRing.GeneratedMesh.vertexCount,
+                Is.GreaterThan(secondRing.GeneratedMesh.vertexCount),
+                "Selected is the shared double-ring construction; eligible remains segmented.");
+            Assert.That(firstRing.VisibleConsequenceColor,
+                Is.EqualTo(secondRing.VisibleConsequenceColor),
+                "Selection is distinguished by the double ring above, while both keep the same " +
+                "typed blood-red removal intent.");
             var camera = Object.FindAnyObjectByType<Camera>();
-            Assert.That(camera.WorldToViewportPoint(selectedCue.transform.position).y,
-                Is.GreaterThan(camera.WorldToViewportPoint(firstView.transform.position).y),
-                "The cue reads above its minion under the configured top-down camera.");
+            var selectedOnScreen = camera.WorldToViewportPoint(firstRing.transform.position);
+            Assert.That(selectedOnScreen.z, Is.GreaterThan(0f));
+            Assert.That(selectedOnScreen.x, Is.InRange(0f, 1f));
+            Assert.That(selectedOnScreen.y, Is.InRange(0f, 1f));
+            Assert.That(Vector3.Dot(firstRing.transform.up, Vector3.up), Is.GreaterThan(0.99f),
+                "The double ring lies flat around the minion base under the top-down camera.");
 
             if (!UnityEngine.Application.isBatchMode)
             {
@@ -1690,21 +2317,26 @@ namespace GuardsDigital.Tests.PlayMode
 
             // Back to the ordinary no-choice state the configured scene actually sits in.
             runtime.MinionChoicePresenter.Refresh();
-            RenderChoiceCues(runtime, baseBoard, baseBoard.Version + 3,
-                System.Array.Empty<MinionChoiceCueViewModel>());
+            RenderTargetCues(runtime, baseBoard, baseBoard.Version + 3,
+                System.Array.Empty<PieceTargetCueViewModel>());
             yield return null;
 
             Assert.That(runtime.MinionChoiceView.Model, Is.Null);
-            Assert.That(firstView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
-            Assert.That(secondView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
-            Assert.That(selectedCue.gameObject.activeSelf, Is.False);
+            Assert.That(firstView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(firstRing.IsVisible, Is.False);
+            Assert.That(secondRing.IsVisible, Is.False);
+            Assert.That(firstRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(firstWashMaterial));
+            Assert.That(secondRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(secondWashMaterial));
         }
 
-        private static void RenderChoiceCues(
+        private static void RenderTargetCues(
             ConfiguredMatchSceneRuntime runtime,
             BoardInteractionViewModel baseBoard,
             long version,
-            IEnumerable<MinionChoiceCueViewModel> cues)
+            IEnumerable<PieceTargetCueViewModel> cues)
         {
             runtime.BoardView.Render(new BoardInteractionViewModel(
                 version,
@@ -1716,7 +2348,36 @@ namespace GuardsDigital.Tests.PlayMode
                 baseBoard.FocusedHeroId,
                 fastTravelDestinations: baseBoard.FastTravelDestinations,
                 minionDefenseCues: baseBoard.MinionDefenseCues,
-                minionChoiceCues: cues));
+                pieceTargetCues: cues));
+        }
+
+        private static void RenderBoard(
+            ConfiguredMatchSceneRuntime runtime,
+            BoardInteractionViewModel baseBoard,
+            long version,
+            IEnumerable<HeroOccupancy> heroes,
+            IEnumerable<MinionOccupancy> minions,
+            IEnumerable<PlacedToken> tokens,
+            IEnumerable<PieceTargetCueViewModel> cues)
+        {
+            runtime.BoardView.Render(new BoardInteractionViewModel(
+                version,
+                heroes,
+                minions,
+                baseBoard.MovementDestinations,
+                baseBoard.AttackTargets,
+                baseBoard.MinionAttackTargets,
+                baseBoard.FocusedHeroId,
+                placedTokens: tokens,
+                fastTravelDestinations: baseBoard.FastTravelDestinations,
+                minionDefenseCues: baseBoard.MinionDefenseCues,
+                pieceTargetCues: cues,
+                correctionDestination: baseBoard.CorrectionDestination,
+                effectChoiceDestinations: baseBoard.EffectChoiceDestinations,
+                effectChoiceTargetSpace: baseBoard.EffectChoiceTargetSpace,
+                effectChoiceResultingSpace: baseBoard.EffectChoiceResultingSpace,
+                heroRespawnHighlight: baseBoard.HeroRespawnHighlight,
+                heroRespawnDestinations: baseBoard.HeroRespawnDestinations));
         }
 
         [UnityTest]
@@ -1811,18 +2472,38 @@ namespace GuardsDigital.Tests.PlayMode
             var remainingHeroes = baseBoard.Heroes
                 .Where(value => !value.HeroId.Equals(blueHeroId))
                 .ToArray();
-
-            runtime.BoardView.Render(new BoardInteractionViewModel(
+            RenderBoard(
+                runtime,
+                baseBoard,
                 baseBoard.Version + 1,
+                baseBoard.Heroes,
+                baseBoard.Minions,
+                baseBoard.PlacedTokens,
+                new[]
+                {
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForHero(blueHeroId),
+                        BoardTargetCueState.Selected,
+                        BoardTargetConsequenceIntent.Removal)
+                });
+            yield return null;
+            var retainedRing = blueView.TargetRing;
+            Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected));
+
+            RenderBoard(
+                runtime,
+                baseBoard,
+                baseBoard.Version + 2,
                 remainingHeroes,
                 baseBoard.Minions,
-                System.Array.Empty<HexCoordinate>(),
-                baseBoard.AttackTargets,
-                baseBoard.MinionAttackTargets,
-                default));
+                baseBoard.PlacedTokens,
+                System.Array.Empty<PieceTargetCueViewModel>());
 
             Assert.That(blueView.gameObject.activeSelf, Is.False,
                 "A Minion-Battle-removed hero must disappear when its occupancy leaves projection.");
+            Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
+                "An absent hero cannot retain the choice state it carried before removal.");
+            Assert.That(blueView.TargetRing, Is.SameAs(retainedRing));
 
             var returnedCoordinate = Object.FindObjectsByType<HexTileView>()
                 .First(tile => tile.IsPlayable && remainingHeroes.All(hero =>
@@ -1832,18 +2513,29 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 new HeroOccupancy(blueHeroId, returnedCoordinate)
             });
-            runtime.BoardView.Render(new BoardInteractionViewModel(
-                baseBoard.Version + 2,
+            RenderBoard(
+                runtime,
+                baseBoard,
+                baseBoard.Version + 3,
                 returnedHeroes,
                 baseBoard.Minions,
-                System.Array.Empty<HexCoordinate>(),
-                baseBoard.AttackTargets,
-                baseBoard.MinionAttackTargets,
-                default));
+                baseBoard.PlacedTokens,
+                new[]
+                {
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForHero(blueHeroId),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Affect)
+                });
 
             Assert.That(blueView.gameObject.activeSelf, Is.True);
             Assert.That(blueView.Occupancy.Coordinate, Is.EqualTo(returnedCoordinate),
                 "Respawn, Undo, or restore reuses and repositions the configured hero view.");
+            Assert.That(blueView.TargetRing, Is.SameAs(retainedRing));
+            Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(blueView.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect),
+                "The returned identity rebuilds the retained ring from the new projection state.");
             // Milestone 8.11b: and it comes back as the piece it went away as. The swap is a mesh and
             // a material on the view's own components, so visibility, position and the piece are one
             // object's state rather than three that could disagree after a Defeat.
@@ -1873,15 +2565,43 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
             Assert.That(CountResultingSpaceMaterials(), Is.EqualTo(1));
             AssertCurrentMinionBindings(first);
+            var firstTargetRings = Object.FindObjectsByType<BoardTargetRing>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+            Assert.That(firstTargetRings, Is.Not.Empty);
+            Assert.That(firstTargetRings,
+                Has.All.Matches<BoardTargetRing>(value =>
+                    value.OwnedNativeResourceCount == 4 &&
+                    value.GetComponent<MeshRenderer>().sharedMaterials.Length == 3));
+            var retiredRing = firstTargetRings[0];
+            var retiredMesh = retiredRing.GeneratedMesh;
+            var retiredMaterials = retiredRing.GetComponent<MeshRenderer>()
+                .sharedMaterials.ToArray();
 
             yield return LoadScene();
             yield return null;
+            Assert.That(retiredRing == null, Is.True,
+                "Reload destroys the prior scene's retained target-ring component.");
+            Assert.That(retiredMesh == null, Is.True,
+                "The runtime Destroy branch releases the ring's owned native mesh.");
+            Assert.That(retiredMaterials,
+                Has.All.Matches<Material>(value => value == null),
+                "The runtime Destroy branch releases keyline, consequence, and wash materials.");
             var second = Root();
             Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(4),
                 "and a reload rebuilds the same four rather than accumulating them.");
             Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
             Assert.That(CountResultingSpaceMaterials(), Is.EqualTo(1));
             AssertCurrentMinionBindings(second);
+            var secondTargetRings = Object.FindObjectsByType<BoardTargetRing>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+            Assert.That(secondTargetRings, Has.Length.EqualTo(firstTargetRings.Length));
+            Assert.That(secondTargetRings,
+                Has.All.Matches<BoardTargetRing>(value =>
+                    value.OwnedNativeResourceCount == 4 &&
+                    value.GetComponent<MeshRenderer>().sharedMaterials.Length == 3),
+                "Reload recreates one mesh plus exactly three retained materials per piece ring.");
         }
 
         [UnityTest]
@@ -2065,6 +2785,17 @@ namespace GuardsDigital.Tests.PlayMode
             Resources.FindObjectsOfTypeAll<Material>().Count(value =>
                 value != null &&
                 value.name == DestinationHighlightMaterialOwner.GeneratedResultingSpaceMaterialName);
+
+        private static void AssertWash(
+            BoardTargetRing ring,
+            Color expectedColor,
+            float expectedAlpha)
+        {
+            Assert.That(ring.VisibleWashColor.r, Is.EqualTo(expectedColor.r).Within(0.0001f));
+            Assert.That(ring.VisibleWashColor.g, Is.EqualTo(expectedColor.g).Within(0.0001f));
+            Assert.That(ring.VisibleWashColor.b, Is.EqualTo(expectedColor.b).Within(0.0001f));
+            Assert.That(ring.VisibleWashColor.a, Is.EqualTo(expectedAlpha).Within(0.0001f));
+        }
 
         private static void AssertCurrentMinionBindings(MatchSceneCompositionRoot root)
         {

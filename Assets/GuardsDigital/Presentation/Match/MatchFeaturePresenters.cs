@@ -18,7 +18,7 @@ using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
-using GuardsDigital.Presentation.Units.Minions;
+using GuardsDigital.Presentation.Board;
 
 namespace GuardsDigital.Presentation.Match
 {
@@ -40,73 +40,45 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// What a board cue says about one minion in a pending minion choice. Both visible kinds point
-    /// at the same thing - this minion - so the board draws one marker for both and distinguishes
-    /// them by color: a selected minion keeps its marker while the pointer moves across the other
-    /// controls, and a highlighted one answers "which minion is this control".
+    /// One passive, identity-keyed target cue for every kind of piece the board can draw. State says
+    /// how the candidate relates to the current choice; consequence says what the invoked operation
+    /// intends. Neither field is legality, and neither asks presentation to predict the result.
     /// </summary>
-    public readonly struct MinionChoiceCueViewModel
+    public readonly struct PieceTargetCueViewModel
     {
-        public MinionChoiceCueViewModel(MinionId minionId, MinionChoiceCueKind kind)
+        public PieceTargetCueViewModel(
+            BoardObjectReference target,
+            BoardTargetCueState state,
+            BoardTargetConsequenceIntent consequenceIntent)
         {
-            if (!minionId.IsDefined || kind == MinionChoiceCueKind.None)
+            if (!target.IsDefined || state == BoardTargetCueState.None)
             {
                 throw new ArgumentException(
-                    "A minion choice cue requires a stable identity and a visible kind.");
+                    "A piece target cue requires a stable identity and a visible state.");
             }
 
-            MinionId = minionId;
-            Kind = kind;
-        }
-
-        public MinionId MinionId { get; }
-        public MinionChoiceCueKind Kind { get; }
-    }
-
-    public readonly struct HeroChoiceCueViewModel
-    {
-        public HeroChoiceCueViewModel(HeroId heroId, MinionChoiceCueKind kind)
-        {
-            if (!heroId.IsDefined || kind == MinionChoiceCueKind.None)
+            if (state != BoardTargetCueState.Eligible &&
+                state != BoardTargetCueState.Selected &&
+                state != BoardTargetCueState.Hovered)
             {
-                throw new ArgumentException(
-                    "A hero choice cue requires a stable identity and a visible kind.");
+                throw new ArgumentOutOfRangeException(nameof(state));
             }
 
-            HeroId = heroId;
-            Kind = kind;
-        }
-
-        public HeroId HeroId { get; }
-        public MinionChoiceCueKind Kind { get; }
-    }
-
-    /// <summary>
-    /// Milestone 6.3a: the same cue over the third kind of board object a prompt can name.
-    ///
-    /// A token is addressed by its stable <see cref="TokenInstanceId"/> rather than by the space it
-    /// stands on, which is what separates it from the hero and minion arms milestone 6.5c built. Those
-    /// two resolve a pointed-at effect-choice target by coordinate, because the effect definition
-    /// binds a target by space and whichever unit stands there is the one meant. A token control has a
-    /// piece to name directly, and reading occupancy back out of a coordinate would be presentation
-    /// deriving which object a space holds - the one thing a passive view must not do.
-    /// </summary>
-    public readonly struct TokenChoiceCueViewModel
-    {
-        public TokenChoiceCueViewModel(TokenInstanceId tokenId, MinionChoiceCueKind kind)
-        {
-            if (!tokenId.IsDefined || kind == MinionChoiceCueKind.None)
+            if (consequenceIntent != BoardTargetConsequenceIntent.Affect &&
+                consequenceIntent != BoardTargetConsequenceIntent.Removal &&
+                consequenceIntent != BoardTargetConsequenceIntent.Attack)
             {
-                throw new ArgumentException(
-                    "A token choice cue requires a stable identity and a visible kind.");
+                throw new ArgumentOutOfRangeException(nameof(consequenceIntent));
             }
 
-            TokenId = tokenId;
-            Kind = kind;
+            Target = target;
+            State = state;
+            ConsequenceIntent = consequenceIntent;
         }
 
-        public TokenInstanceId TokenId { get; }
-        public MinionChoiceCueKind Kind { get; }
+        public BoardObjectReference Target { get; }
+        public BoardTargetCueState State { get; }
+        public BoardTargetConsequenceIntent ConsequenceIntent { get; }
     }
 
     /// <summary>
@@ -231,15 +203,12 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<PlacedToken> placedTokens = null,
             IEnumerable<HexCoordinate> fastTravelDestinations = null,
             IEnumerable<MinionDefenseCueViewModel> minionDefenseCues = null,
-            IEnumerable<MinionChoiceCueViewModel> minionChoiceCues = null,
+            IEnumerable<PieceTargetCueViewModel> pieceTargetCues = null,
             HexCoordinate? correctionDestination = null,
             IEnumerable<HexCoordinate> effectChoiceDestinations = null,
             HexCoordinate? effectChoiceTargetSpace = null,
             HexCoordinate? effectChoiceResultingSpace = null,
             HexCoordinate? heroRespawnHighlight = null,
-            IEnumerable<HeroChoiceCueViewModel> heroChoiceCues = null,
-            IEnumerable<TokenChoiceCueViewModel> tokenChoiceCues = null,
-            IEnumerable<HexCoordinate> effectChoiceTargetSpaces = null,
             IEnumerable<HexCoordinate> heroRespawnDestinations = null)
         {
             Version = version;
@@ -258,32 +227,31 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             MinionDefenseCues = Array.AsReadOnly((minionDefenseCues ??
                 Enumerable.Empty<MinionDefenseCueViewModel>()).ToArray());
-            MinionChoiceCues = Array.AsReadOnly((minionChoiceCues ??
-                Enumerable.Empty<MinionChoiceCueViewModel>()).ToArray());
-            HeroChoiceCues = Array.AsReadOnly((heroChoiceCues ??
-                Enumerable.Empty<HeroChoiceCueViewModel>()).ToArray());
-            TokenChoiceCues = Array.AsReadOnly((tokenChoiceCues ??
-                Enumerable.Empty<TokenChoiceCueViewModel>()).ToArray());
-            if (MinionChoiceCues.Select(value => value.MinionId).Distinct().Count() !=
-                MinionChoiceCues.Count)
+            PieceTargetCues = Array.AsReadOnly((pieceTargetCues ??
+                Enumerable.Empty<PieceTargetCueViewModel>()).ToArray());
+            if (PieceTargetCues.Select(value => value.Target).Distinct().Count() !=
+                PieceTargetCues.Count)
             {
                 throw new ArgumentException(
-                    "One minion carries at most one choice cue.",
-                    nameof(minionChoiceCues));
+                    "One projected piece carries exactly zero or one target cue.",
+                    nameof(pieceTargetCues));
             }
 
-            if (TokenChoiceCues.Select(value => value.TokenId).Distinct().Count() !=
-                TokenChoiceCues.Count)
+            var projectedPieces = new HashSet<BoardObjectReference>(
+                Heroes.Select(value => BoardObjectReference.ForHero(value.HeroId))
+                    .Concat(Minions.Select(value =>
+                        BoardObjectReference.ForMinion(value.MinionId)))
+                    .Concat(PlacedTokens.Select(value =>
+                        BoardObjectReference.ForToken(value.Id))));
+            if (PieceTargetCues.Any(value => !projectedPieces.Contains(value.Target)))
             {
                 throw new ArgumentException(
-                    "One token carries at most one choice cue.",
-                    nameof(tokenChoiceCues));
+                    "A target cue must name a piece carried by the same board projection.",
+                    nameof(pieceTargetCues));
             }
 
             CorrectionDestination = correctionDestination;
             EffectChoiceDestinations = Array.AsReadOnly((effectChoiceDestinations ??
-                Enumerable.Empty<HexCoordinate>()).ToArray());
-            EffectChoiceTargetSpaces = Array.AsReadOnly((effectChoiceTargetSpaces ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             HeroRespawnDestinations = Array.AsReadOnly((heroRespawnDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
@@ -322,18 +290,13 @@ namespace GuardsDigital.Presentation.Match
         public HeroId FocusedHeroId { get; }
         public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
         public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
-        public IReadOnlyList<MinionChoiceCueViewModel> MinionChoiceCues { get; }
-        public IReadOnlyList<HeroChoiceCueViewModel> HeroChoiceCues { get; }
 
         /// <summary>
-        /// Milestone 6.3a: which drawn tokens a control currently names, and how.
-        ///
-        /// Every entry is an identity this projection also lists in <see cref="PlacedTokens"/>, so a
-        /// cue can never outlive the piece it marks. That is the whole reason the presenter resolves a
-        /// reported identity against the projected list before it reaches here: a stale control naming
-        /// a token that has since moved, been replaced, or been removed marks nothing.
+        /// The one stable-identity cue projection consumed by hero, minion, and token views. Attack,
+        /// Minion Battle, effect choices, correction, and Clear all meet here; a view never resolves a
+        /// coordinate back into an occupant and never receives two independently drifting cues.
         /// </summary>
-        public IReadOnlyList<TokenChoiceCueViewModel> TokenChoiceCues { get; }
+        public IReadOnlyList<PieceTargetCueViewModel> PieceTargetCues { get; }
 
         /// <summary>
         /// The pending correction's route endpoint or Place space that the player is currently
@@ -355,13 +318,6 @@ namespace GuardsDigital.Presentation.Match
         /// control, because the board already says everything the control would have.
         /// </summary>
         public IReadOnlyList<HexCoordinate> EffectChoiceDestinations { get; }
-
-        /// <summary>
-        /// Milestone 8.11a: the spaces of the candidates that name a board object - a hero, a minion or
-        /// a token. They are marked rather than lit, because they hold a piece, and clicking one answers
-        /// the choice exactly as clicking an empty destination does.
-        /// </summary>
-        public IReadOnlyList<HexCoordinate> EffectChoiceTargetSpaces { get; }
 
         /// <summary>
         /// Milestone 8.11a: every space p.7's Hero Respawn offers, marked so the choice is made on the
@@ -437,9 +393,9 @@ namespace GuardsDigital.Presentation.Match
         private HexCoordinate? highlightedEffectChoiceSpace;
         private MatchSessionProjection respawnHighlightProjection;
         private HexCoordinate? highlightedRespawnSpace;
-        private MatchSessionProjection tokenCueProjection;
-        private TokenInstanceId highlightedToken;
-        private IReadOnlyList<TokenInstanceId> selectedTokens = Array.Empty<TokenInstanceId>();
+        private MatchSessionProjection clearCueProjection;
+        private TokenInstanceId highlightedClearToken;
+        private IReadOnlyList<TokenInstanceId> selectedClearTokens = Array.Empty<TokenInstanceId>();
 
         public BoardInteractionPresenter(IMatchSession session, IBoardInteractionView view)
         {
@@ -487,11 +443,11 @@ namespace GuardsDigital.Presentation.Match
             // presenter rather than authoritative state, so nothing else would drop it when the
             // projection moves on, and a subset held across a command is a subset a player never
             // chose for the position they are now in.
-            if (!ReferenceEquals(projection, tokenCueProjection))
+            if (!ReferenceEquals(projection, clearCueProjection))
             {
-                highlightedToken = default;
-                selectedTokens = Array.Empty<TokenInstanceId>();
-                tokenCueProjection = null;
+                highlightedClearToken = default;
+                selectedClearTokens = Array.Empty<TokenInstanceId>();
+                clearCueProjection = null;
             }
 
             if (!ReferenceEquals(projection, lastProjection))
@@ -512,22 +468,16 @@ namespace GuardsDigital.Presentation.Match
                     projection.PendingDefensePreview?.MinionContributions.Select(value =>
                         new MinionDefenseCueViewModel(value.SourceMinionId, value.Amount)) ??
                         Enumerable.Empty<MinionDefenseCueViewModel>(),
-                    CreateMinionChoiceCues(
-                        projection.PendingMinionBattleChoice,
-                        projection.PendingDisplacedMinionCorrection,
-                        highlightedChoiceUnit.Kind == RuleObjectKind.Minion
-                            ? highlightedChoiceUnit.MinionId
-                            : default),
+                    CreatePieceTargetCues(
+                        projection,
+                        highlightedChoiceUnit,
+                        highlightedClearToken,
+                        selectedClearTokens),
                     highlightedCorrectionDestination,
                     SelectableEffectChoiceDestinations(projection),
                     highlightedEffectChoiceSpace,
                     FindResultingSpace(projection, highlightedEffectChoiceSpace),
                     highlightedRespawnSpace,
-                    CreateHeroChoiceCues(
-                        projection.PendingMinionBattleChoice,
-                        highlightedChoiceUnit),
-                    CreateTokenChoiceCues(projection, highlightedToken, selectedTokens),
-                    EffectChoiceTargetSpaces(projection),
                     projection.PendingHeroRespawnChoice?.Destinations
                         .Select(destination => destination.Coordinate));
             }
@@ -613,22 +563,23 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 6.3a: marks the token a hovered or keyboard-focused control names, so the board
-        /// says which piece the words on that control mean. Passing an undefined identity clears it.
+        /// Marks the Clear candidate a hovered or keyboard-focused control names, so its eligible
+        /// removal ring says which token the words on that control mean. Passing an undefined
+        /// identity clears the local cue.
         ///
         /// The identity is resolved against the projected token list and nothing else. That is what
         /// makes a stale control harmless - a token that has since been replaced, removed or moved is
         /// simply not there to mark - and it is why no display name and no coordinate is consulted:
         /// two Hazards read alike and a space says nothing about which piece stands on it.
         /// </summary>
-        public bool HighlightTokenChoiceCandidate(TokenInstanceId tokenId)
+        public bool HighlightClearTokenCandidate(TokenInstanceId tokenId)
         {
             var projection = session.Projection;
             var resolved = tokenId.IsDefined &&
                 projection.PlacedTokens.Any(token => token.Id.Equals(tokenId))
                     ? tokenId
                     : default;
-            return SetTokenCues(projection, resolved, selectedTokens);
+            return SetClearTokenCues(projection, resolved, selectedClearTokens);
         }
 
         /// <summary>
@@ -644,25 +595,25 @@ namespace GuardsDigital.Presentation.Match
                     projection.PlacedTokens.Any(token => token.Id.Equals(tokenId)))
                 .Distinct()
                 .ToArray();
-            return SetTokenCues(projection, highlightedToken, resolved);
+            return SetClearTokenCues(projection, highlightedClearToken, resolved);
         }
 
-        private bool SetTokenCues(
+        private bool SetClearTokenCues(
             MatchSessionProjection projection,
             TokenInstanceId highlighted,
             IReadOnlyList<TokenInstanceId> selected)
         {
             var marksSomething = highlighted.IsDefined || selected.Count > 0;
-            if (highlighted.Equals(highlightedToken) &&
-                selected.SequenceEqual(selectedTokens) &&
-                (!marksSomething || ReferenceEquals(projection, tokenCueProjection)))
+            if (highlighted.Equals(highlightedClearToken) &&
+                selected.SequenceEqual(selectedClearTokens) &&
+                (!marksSomething || ReferenceEquals(projection, clearCueProjection)))
             {
                 return false;
             }
 
-            highlightedToken = highlighted;
-            selectedTokens = selected;
-            tokenCueProjection = marksSomething ? projection : null;
+            highlightedClearToken = highlighted;
+            selectedClearTokens = selected;
+            clearCueProjection = marksSomething ? projection : null;
             lastProjection = null;
             return true;
         }
@@ -734,23 +685,6 @@ namespace GuardsDigital.Presentation.Match
                 .ToArray();
         }
 
-        /// <summary>
-        /// Milestone 8.11a: the spaces of the candidates that name a board object, which the board marks
-        /// so that a player can see what there is to pick before picking it.
-        /// </summary>
-        private static IReadOnlyList<HexCoordinate> EffectChoiceTargetSpaces(
-            MatchSessionProjection projection)
-        {
-            var all = SelectableEffectChoiceSpaces(projection);
-            if (all.Count == 0)
-            {
-                return Array.Empty<HexCoordinate>();
-            }
-
-            var empty = new HashSet<HexCoordinate>(SelectableEffectChoiceDestinations(projection));
-            return all.Where(space => !empty.Contains(space)).ToArray();
-        }
-
         private static HexCoordinate? FindResultingSpace(
             MatchSessionProjection projection, HexCoordinate? targetSpace)
         {
@@ -770,123 +704,157 @@ namespace GuardsDigital.Presentation.Match
             return null;
         }
 
-        private static IReadOnlyList<MinionChoiceCueViewModel> CreateMinionChoiceCues(
-            PendingMinionBattleChoice choice,
-            PendingDisplacedMinionCorrection correction,
-            MinionId highlightedMinionId)
+        /// <summary>
+        /// Merges every piece-target consumer into one identity-keyed projection. This is a routing
+        /// operation over authority-shaped offers: it does not discover occupants, re-run legality,
+        /// or predict whether the declared consequence will succeed. Selected outranks eligible;
+        /// different consequence intents for one identity are an impossible concurrent projection.
+        /// </summary>
+        private static IReadOnlyList<PieceTargetCueViewModel> CreatePieceTargetCues(
+            MatchSessionProjection projection,
+            RuleObject highlightedChoiceUnit,
+            TokenInstanceId highlightedClearTokenId,
+            IReadOnlyList<TokenInstanceId> selectedClearTokenIds)
         {
-            if (choice != null)
+            var cues = new Dictionary<BoardObjectReference, PieceTargetCueViewModel>();
+
+            void Add(
+                BoardObjectReference target,
+                BoardTargetCueState state,
+                BoardTargetConsequenceIntent consequenceIntent)
             {
-                var cues = new List<MinionChoiceCueViewModel>();
-                foreach (var candidate in choice.Candidates.Where(candidate =>
-                    candidate.MinionId.IsDefined))
+                var next = new PieceTargetCueViewModel(target, state, consequenceIntent);
+                if (!cues.TryGetValue(target, out var current))
                 {
-                    // Milestone 8.11a, at the user's request. Until now an unselected candidate was
-                    // marked only while a control in the prompt was pointing at it, because the prompt
-                    // was where the choice was made and the board was echoing it. The board is where
-                    // the choice is made now, so an offered piece is marked whether or not anything is
-                    // pointing at it: a piece a player may click has to be a piece they can see is
-                    // clickable. `highlightedMinionId` still separates the two on the correction path
-                    // below, which keeps its own controls.
-                    //
-                    // What is marked is what the authority says may be selected *now*, not every unit
-                    // in the Battle Zone. Rulebook p.8 removes Heavy minions last, so a Heavy is a
-                    // candidate but not a legal selection while any non-Heavy stands - and marking a
-                    // piece the rules would refuse is an offer the board cannot honour.
-                    var isSelected = choice.SelectedMinionIds.Contains(candidate.MinionId);
-                    if (!isSelected && !choice.LegalSelectMinionIds.Contains(candidate.MinionId))
+                    cues.Add(target, next);
+                    return;
+                }
+
+                if (current.ConsequenceIntent != consequenceIntent)
+                {
+                    throw new InvalidOperationException(
+                        $"One piece cannot carry conflicting target consequence intents: {target}.");
+                }
+
+                if ((int)state > (int)current.State)
+                {
+                    cues[target] = next;
+                }
+            }
+
+            var attack = projection.PendingAttackTargetChoice;
+            if (attack != null)
+            {
+                foreach (var heroId in attack.LegalTargetHeroIds)
+                {
+                    Add(
+                        BoardObjectReference.ForHero(heroId),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Attack);
+                }
+
+                foreach (var minionId in attack.LegalTargetMinionIds)
+                {
+                    Add(
+                        BoardObjectReference.ForMinion(minionId),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Attack);
+                }
+            }
+
+            var battle = projection.PendingMinionBattleChoice;
+            if (battle != null)
+            {
+                foreach (var candidate in battle.Candidates)
+                {
+                    var isSelected = battle.SelectedUnits.Contains(candidate.Unit);
+                    if (!isSelected && !battle.LegalSelectUnits.Contains(candidate.Unit))
                     {
                         continue;
                     }
 
-                    var kind = isSelected
-                        ? MinionChoiceCueKind.Selected
-                        : MinionChoiceCueKind.Highlighted;
-                    cues.Add(new MinionChoiceCueViewModel(candidate.MinionId, kind));
+                    Add(
+                        BoardReference(candidate.Unit),
+                        isSelected ? BoardTargetCueState.Selected : BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Removal);
                 }
-
-                return cues;
             }
 
-            // Milestone 6.4b: the correction's board cues ride the same vocabulary. During a subject
-            // choice the pointed-at candidate is highlighted; during a destination choice the one
-            // displaced subject is marked selected, so the board says which minion the offered
-            // destinations would receive.
-            if (correction == null)
+            var correction = projection.PendingDisplacedMinionCorrection;
+            if (correction?.Stage == DisplacedMinionCorrectionStage.SelectSubject &&
+                highlightedChoiceUnit.Kind == RuleObjectKind.Minion &&
+                correction.SubjectCandidates.Any(candidate =>
+                    candidate.MinionId.Equals(highlightedChoiceUnit.MinionId)))
             {
-                return Array.Empty<MinionChoiceCueViewModel>();
+                Add(
+                    BoardObjectReference.ForMinion(highlightedChoiceUnit.MinionId),
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Affect);
+            }
+            else if (correction?.Stage == DisplacedMinionCorrectionStage.SelectDestination)
+            {
+                Add(
+                    BoardObjectReference.ForMinion(correction.SubjectMinionId),
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Affect);
             }
 
-            if (correction.Stage == DisplacedMinionCorrectionStage.SelectSubject)
+            var effectChoice = projection.PendingEffectChoice;
+            if (effectChoice != null)
             {
-                return correction.SubjectCandidates
-                    .Where(subject => subject.MinionId.Equals(highlightedMinionId))
-                    .Select(subject => new MinionChoiceCueViewModel(
-                        subject.MinionId, MinionChoiceCueKind.Highlighted))
-                    .ToArray();
-            }
-
-            return new[]
-            {
-                new MinionChoiceCueViewModel(correction.SubjectMinionId, MinionChoiceCueKind.Selected)
-            };
-        }
-
-        private static IReadOnlyList<HeroChoiceCueViewModel> CreateHeroChoiceCues(
-            PendingMinionBattleChoice choice,
-            RuleObject highlightedUnit)
-        {
-            if (choice == null)
-            {
-                return Array.Empty<HeroChoiceCueViewModel>();
-            }
-
-            return choice.Candidates
-                .Where(candidate => candidate.HeroId.IsDefined)
-                .Select(candidate =>
+                foreach (var preview in projection.PendingEffectChoicePreview.Where(value =>
+                    value.NamesObject))
                 {
-                    // Milestone 8.11a: as for the minion candidates, a hero the Battle offers is marked
-                    // whether or not a control is pointing at it - and only while the authority says it
-                    // may be selected, so the board never offers a piece the rules would refuse.
-                    var kind = choice.SelectedUnits.Contains(candidate.Unit)
-                        ? MinionChoiceCueKind.Selected
-                        : choice.LegalSelectUnits.Contains(candidate.Unit)
-                            ? MinionChoiceCueKind.Highlighted
-                            : MinionChoiceCueKind.None;
-                    return new { candidate.HeroId, Kind = kind };
-                })
-                .Where(value => value.Kind != MinionChoiceCueKind.None)
-                .Select(value => new HeroChoiceCueViewModel(value.HeroId, value.Kind))
+                    var candidate = EffectChoiceCandidate.Value_(preview.CandidateValue);
+                    var isSelected = effectChoice.SelectedCandidates.Contains(candidate);
+                    var isEligible = effectChoice.SelectInvocations.Any(invocation =>
+                        invocation.Candidate.Equals(candidate));
+                    if (!isSelected && !isEligible)
+                    {
+                        continue;
+                    }
+
+                    Add(
+                        preview.Occupant,
+                        isSelected ? BoardTargetCueState.Selected : BoardTargetCueState.Eligible,
+                        preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Removal
+                            ? BoardTargetConsequenceIntent.Removal
+                            : BoardTargetConsequenceIntent.Affect);
+                }
+            }
+
+            foreach (var token in projection.PlacedTokens)
+            {
+                var isSelected = selectedClearTokenIds.Contains(token.Id);
+                var isEligible = token.Id.Equals(highlightedClearTokenId);
+                if (isSelected || isEligible)
+                {
+                    Add(
+                        BoardObjectReference.ForToken(token.Id),
+                        isSelected ? BoardTargetCueState.Selected : BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Removal);
+                }
+            }
+
+            return cues.Values
+                .OrderBy(value => value.Target.Kind)
+                .ThenBy(value => value.Target.ToString(), StringComparer.Ordinal)
                 .ToArray();
         }
 
-        /// <summary>
-        /// Milestone 6.3a: one cue per token a control currently names. `Selected` outranks
-        /// `Highlighted` on exactly the terms the minion prompt set - a piece already chosen keeps
-        /// saying so while the player points at the others - and a piece the projection no longer
-        /// carries gets nothing, which is what the two callers already guaranteed and this restates
-        /// because a view must never be handed an identity it cannot draw.
-        /// </summary>
-        private static IReadOnlyList<TokenChoiceCueViewModel> CreateTokenChoiceCues(
-            MatchSessionProjection projection,
-            TokenInstanceId highlightedTokenId,
-            IReadOnlyList<TokenInstanceId> selectedTokenIds)
+        private static BoardObjectReference BoardReference(RuleObject unit)
         {
-            var cues = new List<TokenChoiceCueViewModel>();
-            foreach (var token in projection.PlacedTokens)
+            if (unit.Kind == RuleObjectKind.Hero)
             {
-                var kind = selectedTokenIds.Contains(token.Id)
-                    ? MinionChoiceCueKind.Selected
-                    : token.Id.Equals(highlightedTokenId)
-                        ? MinionChoiceCueKind.Highlighted
-                        : MinionChoiceCueKind.None;
-                if (kind != MinionChoiceCueKind.None)
-                {
-                    cues.Add(new TokenChoiceCueViewModel(token.Id, kind));
-                }
+                return BoardObjectReference.ForHero(unit.HeroId);
             }
 
-            return cues;
+            if (unit.Kind == RuleObjectKind.Minion)
+            {
+                return BoardObjectReference.ForMinion(unit.MinionId);
+            }
+
+            throw new ArgumentException("A piece target cue requires a hero or minion.", nameof(unit));
         }
 
         public bool ActivateFastTravel(ActionDefinitionId replacedMovementActionDefinitionId)
@@ -3579,10 +3547,10 @@ namespace GuardsDigital.Presentation.Match
         /// Milestone 8.11a, at the user's request. Answers the Minion Battle by clicking the unit it is
         /// asking about, which is the same click that takes an Attack target.
         ///
-        /// <para>The board already marked every candidate before this milestone - that is what
-        /// <see cref="MinionChoiceCueViewModel"/> has always been for - so the piece a player was being
-        /// asked about was already the piece they were looking at. What was missing was only that
-        /// clicking it did anything.</para>
+        /// <para>The board already identified every candidate before this milestone; the unified
+        /// <see cref="PieceTargetCueViewModel"/> now carries that same fact. The piece a player was
+        /// being asked about was already the piece they were looking at. What was missing was only
+        /// that clicking it did anything.</para>
         /// </summary>
         public bool SubmitUnit(RuleObject unit)
         {

@@ -12,6 +12,18 @@ using GuardsDigital.Core.Units.Heroes;
 namespace GuardsDigital.Core.Rules.EffectResolution
 {
     /// <summary>
+    /// What kind of consequence the operation consuming an effect choice declares for the piece the
+    /// choice names. This is a projection fact, not an outcome prediction: removal intent stays
+    /// removal intent even when prevention later leaves the piece on the board.
+    /// </summary>
+    public enum EffectChoiceConsequenceIntent
+    {
+        None = 0,
+        Affect = 1,
+        Removal = 2
+    }
+
+    /// <summary>
     /// What one candidate of a pending effect choice currently means on the board: the space it puts
     /// the chooser's finger on, the object standing there, and where the operation waiting on this
     /// choice would leave that object.
@@ -32,7 +44,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectValue candidateValue,
             HexCoordinate coordinate,
             BoardObjectReference occupant,
-            HexCoordinate? resultingCoordinate)
+            HexCoordinate? resultingCoordinate,
+            EffectChoiceConsequenceIntent consequenceIntent = EffectChoiceConsequenceIntent.Affect)
         {
             if (resultingCoordinate.HasValue && !occupant.IsDefined)
             {
@@ -48,10 +61,17 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     nameof(candidateValue));
             }
 
+            if (consequenceIntent != EffectChoiceConsequenceIntent.Affect &&
+                consequenceIntent != EffectChoiceConsequenceIntent.Removal)
+            {
+                throw new ArgumentOutOfRangeException(nameof(consequenceIntent));
+            }
+
             CandidateValue = candidateValue;
             Coordinate = coordinate;
             Occupant = occupant;
             ResultingCoordinate = resultingCoordinate;
+            ConsequenceIntent = consequenceIntent;
         }
 
         /// <summary>
@@ -74,6 +94,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// A zero-space Push is a value, not a null: p.18 makes standing still a legal result.
         /// </summary>
         public HexCoordinate? ResultingCoordinate { get; }
+
+        /// <summary>
+        /// The typed intent of the declared operation consuming this choice. Presentation may use it
+        /// to distinguish a removal choice from every other piece-affecting choice without reading a
+        /// capability name, card text, display name, target kind, or colour.
+        /// </summary>
+        public EffectChoiceConsequenceIntent ConsequenceIntent { get; }
 
         /// <summary>Whether this candidate names a board object rather than an empty space.</summary>
         public bool NamesObject => Occupant.IsDefined;
@@ -127,6 +154,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             var pusherAt = default(HexCoordinate);
             var hasPush = TryFindConsumingPush(definition, choice.NodeId, out var push) &&
                 board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out pusherAt);
+            var consequenceIntent = DescribeConsequenceIntent(definition, choice.NodeId);
 
             var previews = new List<EffectChoiceCandidatePreview>(values.Length);
             var claimed = new Dictionary<HexCoordinate, EffectValue>();
@@ -170,10 +198,40 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     }
                 }
 
-                previews.Add(new EffectChoiceCandidatePreview(value, space, occupant, resulting));
+                previews.Add(new EffectChoiceCandidatePreview(
+                    value, space, occupant, resulting, consequenceIntent));
             }
 
             return previews;
+        }
+
+        /// <summary>
+        /// Reads the selection's declared consumer, which is the same typed definition link used to
+        /// decide whether the consumer can act on a candidate. Defeat and Remove are distinct rules
+        /// operations, but both tell presentation that the choice is invoking a removal consequence.
+        /// Every other consumer remains an ordinary piece-affecting intent.
+        /// </summary>
+        private static EffectChoiceConsequenceIntent DescribeConsequenceIntent(
+            EffectDefinition definition, EffectNodeId choiceNodeId)
+        {
+            var selection = definition.Nodes.SingleOrDefault(node => node.Id.Equals(choiceNodeId));
+            if (selection == null ||
+                !EffectSelectionDeclaration.TryReadConsumer(selection, out var consumerNodeId))
+            {
+                return EffectChoiceConsequenceIntent.Affect;
+            }
+
+            var consumer = definition.Nodes.SingleOrDefault(node => node.Id.Equals(consumerNodeId));
+            if (consumer == null || consumer.Kind != EffectNodeKind.Capability)
+            {
+                return EffectChoiceConsequenceIntent.Affect;
+            }
+
+            var capabilityId = consumer.Capability.CapabilityId;
+            return capabilityId.Equals(SyntheticExchangeCapabilities.Remove) ||
+                capabilityId.Equals(SyntheticConsequenceCapabilities.DefeatHero)
+                    ? EffectChoiceConsequenceIntent.Removal
+                    : EffectChoiceConsequenceIntent.Affect;
         }
 
         /// <summary>

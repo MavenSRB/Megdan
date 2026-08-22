@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
@@ -252,9 +253,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(choice.LegalSelectMinionIds, Has.No.Member(heavy.MinionId),
                 "which the authority withholds while a non-Heavy still stands.");
             Assert.That(
-                boardView.Model.MinionChoiceCues.Select(value => (value.MinionId, value.Kind)),
+                boardView.Model.PieceTargetCues.Select(value =>
+                    (value.Target, value.State, value.ConsequenceIntent)),
                 Is.EquivalentTo(choice.LegalSelectMinionIds
-                    .Select(id => (id, MinionChoiceCueKind.Highlighted))),
+                    .Select(id => (
+                        BoardObjectReference.ForMinion(id),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Removal))),
                 "Every legal selection is marked, and nothing else is - the Heavy included.");
 
             var chosen = choice.LegalSelectMinionIds[0];
@@ -264,21 +269,24 @@ namespace GuardsDigital.Tests.EditMode
             board.Refresh();
 
             var afterSelection = session.Projection.PendingMinionBattleChoice;
-            Assert.That(
-                boardView.Model.MinionChoiceCues.Single(value => value.MinionId.Equals(chosen)).Kind,
-                Is.EqualTo(MinionChoiceCueKind.Selected),
+            var selectedCue = boardView.Model.PieceTargetCues.Single(value =>
+                value.Target.Equals(BoardObjectReference.ForMinion(chosen)));
+            Assert.That(selectedCue.State, Is.EqualTo(BoardTargetCueState.Selected),
                 "A chosen piece says so.");
+            Assert.That(selectedCue.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal),
+                "Minion Battle invokes removal, so its cue carries the removal palette intent.");
             Assert.That(
-                boardView.Model.MinionChoiceCues
-                    .Where(value => value.Kind == MinionChoiceCueKind.Highlighted)
-                    .Select(value => value.MinionId),
+                boardView.Model.PieceTargetCues
+                    .Where(value => value.State == BoardTargetCueState.Eligible)
+                    .Select(value => value.Target.MinionId),
                 Is.EquivalentTo(afterSelection.LegalSelectMinionIds),
                 "and the rest of the board still offers exactly what the authority still offers.");
 
             Assert.That(session.Execute(DirectorCommand.ConfirmMinionBattleRemovals(
                 session.Projection.PendingMinionBattleChoice.ConfirmInvocation)).Accepted, Is.True);
             board.Refresh();
-            Assert.That(boardView.Model.MinionChoiceCues, Is.Empty);
+            Assert.That(boardView.Model.PieceTargetCues, Is.Empty);
             Assert.That(boardView.Model.MinionDefenseCues, Is.Empty,
                 "Choice cues stay separate from the Defense contribution cues.");
         }
@@ -571,11 +579,14 @@ namespace GuardsDigital.Tests.EditMode
                 "of them proves nothing.");
             Assert.That(boardView.Model.CorrectionDestination, Is.Null,
                 "Nobody is pointing at a control yet, so no endpoint is lit.");
-            Assert.That(boardView.Model.MinionChoiceCues.Single().MinionId,
-                Is.EqualTo(pending.SubjectMinionId),
+            var subjectCue = boardView.Model.PieceTargetCues.Single();
+            Assert.That(subjectCue.Target,
+                Is.EqualTo(BoardObjectReference.ForMinion(pending.SubjectMinionId)),
                 "The board marks which minion the offered destinations would receive, throughout.");
-            Assert.That(boardView.Model.MinionChoiceCues.Single().Kind,
-                Is.EqualTo(MinionChoiceCueKind.Selected));
+            Assert.That(subjectCue.State, Is.EqualTo(BoardTargetCueState.Selected));
+            Assert.That(subjectCue.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect),
+                "Correction moves the subject; presentation does not predict a removal consequence.");
 
             var subject = RuleObject.ForMinion(pending.SubjectMinionId);
             var pointedAt = pending.DestinationCandidates[1].Destination;
@@ -584,8 +595,8 @@ namespace GuardsDigital.Tests.EditMode
                 "An unchanged hover rebuilds nothing.");
             boardPresenter.Refresh();
             Assert.That(boardView.Model.CorrectionDestination, Is.EqualTo(pointedAt));
-            Assert.That(boardView.Model.MinionChoiceCues.Single().MinionId,
-                Is.EqualTo(pending.SubjectMinionId),
+            Assert.That(boardView.Model.PieceTargetCues.Single().Target,
+                Is.EqualTo(BoardObjectReference.ForMinion(pending.SubjectMinionId)),
                 "Pointing at a destination says where it would land as well as which minion lands " +
                 "there; the pair is what the prompt names.");
 
@@ -615,7 +626,7 @@ namespace GuardsDigital.Tests.EditMode
 
             boardPresenter.Refresh();
             Assert.That(boardView.Model.CorrectionDestination, Is.Null);
-            Assert.That(boardView.Model.MinionChoiceCues, Is.Empty);
+            Assert.That(boardView.Model.PieceTargetCues, Is.Empty);
         }
 
 

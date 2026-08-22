@@ -446,29 +446,34 @@ namespace GuardsDigital.Tests.EditMode
             presenter.Refresh();
             boardPresenter.Refresh();
 
-            Assert.That(board.Model.TokenChoiceCues, Is.Empty,
+            Assert.That(board.Model.PieceTargetCues, Is.Empty,
                 "Nothing is pointed at and nothing is chosen, so the board says nothing.");
 
-            Assert.That(boardPresenter.HighlightTokenChoiceCandidate(token.Id), Is.True);
+            Assert.That(boardPresenter.HighlightClearTokenCandidate(token.Id), Is.True);
             boardPresenter.Refresh();
 
-            var pointed = board.Model.TokenChoiceCues.Single();
-            Assert.That(pointed.TokenId, Is.EqualTo(token.Id));
-            Assert.That(pointed.Kind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
+            var pointed = board.Model.PieceTargetCues.Single();
+            Assert.That(pointed.Target, Is.EqualTo(BoardObjectReference.ForToken(token.Id)));
+            Assert.That(pointed.State, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(pointed.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal),
+                "Clear invokes removal, so its target uses the removal consequence palette.");
 
             Assert.That(boardPresenter.SetSelectedClearTokens(new[] { token.Id }), Is.True);
             boardPresenter.Refresh();
 
-            Assert.That(board.Model.TokenChoiceCues.Single().Kind,
-                Is.EqualTo(MinionChoiceCueKind.Selected),
+            Assert.That(board.Model.PieceTargetCues.Single().State,
+                Is.EqualTo(BoardTargetCueState.Selected),
                 "A chosen piece keeps saying so while the pointer is still on its control.");
 
-            Assert.That(boardPresenter.HighlightTokenChoiceCandidate(default), Is.True);
+            Assert.That(boardPresenter.HighlightClearTokenCandidate(default), Is.True);
             boardPresenter.Refresh();
 
-            Assert.That(board.Model.TokenChoiceCues.Single().Kind,
-                Is.EqualTo(MinionChoiceCueKind.Selected),
+            var selected = board.Model.PieceTargetCues.Single();
+            Assert.That(selected.State, Is.EqualTo(BoardTargetCueState.Selected),
                 "Moving the pointer away leaves the selection's own cue standing.");
+            Assert.That(selected.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
         }
 
         [Test]
@@ -479,12 +484,12 @@ namespace GuardsDigital.Tests.EditMode
             var boardPresenter = new BoardInteractionPresenter(session, board);
 
             Assert.That(
-                boardPresenter.HighlightTokenChoiceCandidate(new TokenInstanceId("gone")), Is.False);
+                boardPresenter.HighlightClearTokenCandidate(new TokenInstanceId("gone")), Is.False);
             Assert.That(
                 boardPresenter.SetSelectedClearTokens(new[] { new TokenInstanceId("gone") }), Is.False);
             boardPresenter.Refresh();
 
-            Assert.That(board.Model.TokenChoiceCues, Is.Empty,
+            Assert.That(board.Model.PieceTargetCues, Is.Empty,
                 "A stale control names a piece that is no longer drawn, and marks nothing.");
         }
 

@@ -4,7 +4,6 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
-using GuardsDigital.Presentation.Units.Minions;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Units.Heroes
@@ -68,28 +67,10 @@ namespace GuardsDigital.Presentation.Units.Heroes
         [SerializeField]
         private float verticalOffset = DefaultVerticalOffset;
 
-        /// <summary>
-        /// Milestone 6.5c: the choice cue hangs from a board-facing anchor rather than from this
-        /// transform directly.
-        ///
-        /// The board is the XZ plane and the camera looks down it, so a cue is only visible when it
-        /// lies flat. `StandardMinionView` gets that for free - its whole token is rotated flat and
-        /// the cue inherits it - but this view is an upright prism at identity rotation, so a cue
-        /// parented straight to it faces sideways and renders as an invisible sliver, which is what
-        /// the first attempt did. The anchor carries exactly the minion's own orientation, so the
-        /// shared construction, the reviewed proportions, and the marker's screen position and size
-        /// are one thing for both unit kinds instead of two that have to be kept in step.
-        /// </summary>
-        private static readonly Vector3 ChoiceCueAnchorLocalPosition = new Vector3(0f, 0.3f, 0f);
-
-        private static readonly Vector3 ChoiceCueLocalPosition = new Vector3(0f, 0.85f, -0.15f);
-
         private Mesh ownedMesh;
         private Material ownedMaterial;
         private Material ownedRimMaterial;
-        private Transform choiceCueAnchor;
-        private TextMesh choiceCue;
-        private TextMesh choiceCueBackground;
+        private BoardTargetRing targetRing;
 
         public HeroOccupancy Occupancy => new HeroOccupancy(new HeroId(heroId), Coordinate);
 
@@ -129,13 +110,33 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// </summary>
         public float SelectionRadius => HasTokenVisual ? HeroTokenArtwork.TokenOuterRadius : baseRadius;
 
+        public BoardTargetRing TargetRing => targetRing;
+
+        public BoardTargetCueState TargetCueState => targetRing == null
+            ? BoardTargetCueState.None
+            : targetRing.State;
+
+        public BoardTargetConsequenceIntent TargetConsequenceIntent => targetRing == null
+            ? BoardTargetConsequenceIntent.None
+            : targetRing.ConsequenceIntent;
+
         public void Configure(HeroOccupancy occupancy, float radius)
         {
+            var identityChanged = !string.IsNullOrWhiteSpace(heroId) &&
+                !string.Equals(heroId, occupancy.HeroId.Value, System.StringComparison.Ordinal);
             heroId = occupancy.HeroId.Value;
             q = occupancy.Coordinate.Q;
             r = occupancy.Coordinate.R;
             outerRadius = radius;
             ApplyLayout();
+            if (identityChanged)
+            {
+                SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
+            }
+            else
+            {
+                RefreshTargetCueIfCreated();
+            }
         }
 
         public void ConfigureFromSetup(QuickGameHeroSetupState setupState, BoardMapDefinition definition, float radius)
@@ -202,64 +203,49 @@ namespace GuardsDigital.Presentation.Units.Heroes
             transform.localPosition = HexWorldLayout.ToWorld(Coordinate, outerRadius) + (Vector3.up * verticalOffset);
         }
 
-        /// <summary>Which cue kind this hero currently carries; <c>None</c> unless one is pointed at.</summary>
-        public MinionChoiceCueKind ChoiceCueKind { get; private set; }
-
         /// <summary>
-        /// Milestone 6.5c: says "this one" above the hero with the marker every other choice prompt
-        /// uses. An effect choice can name a hero as its target, so the cue that already answered
-        /// "which minion is this control" has to answer it for a hero without becoming a second
-        /// vocabulary.
+        /// Projects this hero's typed target state into its one retained fitted ring and translucent
+        /// exact-footprint wash.
+        /// The cue follows either generated prism or official token without changing the hero's
+        /// collider, stable identity, or command path.
         /// </summary>
-        public void SetChoiceCue(MinionChoiceCueKind kind)
+        public void SetTargetCue(
+            BoardTargetCueState state,
+            BoardTargetConsequenceIntent consequenceIntent)
         {
-            if (kind != MinionChoiceCueKind.None && kind != MinionChoiceCueKind.Highlighted &&
-                kind != MinionChoiceCueKind.Selected)
-            {
-                throw new System.ArgumentOutOfRangeException(nameof(kind));
-            }
+            EnsureTargetRing().SetCue(
+                state,
+                consequenceIntent,
+                state == BoardTargetCueState.None ? null : GetComponent<MeshRenderer>(),
+                BoardPlaneWorldY(),
+                TargetFootprintKind());
+        }
 
-            ChoiceCueKind = kind;
-            if (kind == MinionChoiceCueKind.None)
-            {
-                if (choiceCue != null)
-                {
-                    choiceCue.gameObject.SetActive(false);
-                    choiceCueBackground.gameObject.SetActive(false);
-                }
+        private BoardTargetRing EnsureTargetRing() =>
+            targetRing != null ? targetRing : targetRing = BoardTargetRing.GetOrCreate(transform);
 
+        private void RefreshTargetCueIfCreated()
+        {
+            if (targetRing == null)
+            {
                 return;
             }
 
-            if (choiceCue == null)
-            {
-                var anchor = new GameObject("Hero Choice Cue Anchor");
-                anchor.transform.SetParent(transform, false);
-                anchor.transform.localPosition = ChoiceCueAnchorLocalPosition;
-                anchor.transform.localRotation = BoardChoiceCue.BoardFacingRotation;
-                choiceCueAnchor = anchor.transform;
-                BoardChoiceCue.CreatePair(
-                    choiceCueAnchor,
-                    "Hero Choice Cue",
-                    ChoiceCueLocalPosition,
-                    mirrored: true,
-                    out choiceCue,
-                    out choiceCueBackground);
-                choiceCue.characterSize = BoardChoiceCue.MarkerCharacterSize;
-            }
-
-            // Milestone 8.11a: re-applied on every call, because the direction the framing camera calls
-            // up is settled when the board is framed and an anchor may already exist by then.
-            choiceCueAnchor.localRotation = BoardChoiceCue.BoardFacingRotation;
-            choiceCue.gameObject.SetActive(true);
-            choiceCueBackground.gameObject.SetActive(true);
-            choiceCue.text = BoardChoiceCue.Marker;
-            choiceCue.color = kind == MinionChoiceCueKind.Selected
-                ? BoardChoiceCue.SelectedColor
-                : BoardChoiceCue.HighlightedColor;
-            BoardChoiceCue.Center(
-                choiceCueAnchor, choiceCue, choiceCueBackground, ChoiceCueLocalPosition);
+            targetRing.SetCue(
+                targetRing.State,
+                targetRing.ConsequenceIntent,
+                targetRing.State == BoardTargetCueState.None ? null : GetComponent<MeshRenderer>(),
+                BoardPlaneWorldY(),
+                TargetFootprintKind());
         }
+
+        private BoardTargetFootprintKind TargetFootprintKind() => HasTokenVisual
+            ? BoardTargetFootprintKind.Circular
+            : BoardTargetFootprintKind.ConvexMeshBase;
+
+        private float BoardPlaneWorldY() => transform.parent == null
+            ? transform.position.y - verticalOffset
+            : transform.parent.TransformPoint(Vector3.zero).y;
 
         /// <summary>
         /// Draws this hero as the official token when a prepared face is present, and as the generated
@@ -269,9 +255,9 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// views: the mesh and the materials on this object's own <see cref="MeshFilter"/> and
         /// <see cref="MeshRenderer"/> are replaced, and nothing else about the object changes - not its
         /// transform, not its collider's owner, not the <see cref="HeroId"/> everything binds to. That
-        /// is why selection, the choice cue, movement, Defeat and respawn visibility, Undo, restore and
-        /// replay are untouched by the swap, and why an absent face is an ordinary state rather than a
-        /// missing reference.</para>
+        /// is why selection, the target ring, movement, Defeat and respawn visibility, Undo, restore
+        /// and replay are untouched by the swap, and why an absent face is an ordinary state rather
+        /// than a missing reference.</para>
         /// </summary>
         public void EnsureVisual()
         {
@@ -279,9 +265,15 @@ namespace GuardsDigital.Presentation.Units.Heroes
             {
                 ApplyPrimitiveVisual();
             }
+
+            RefreshTargetCueIfCreated();
         }
 
-        public void EnsurePrimitiveVisual() => ApplyPrimitiveVisual();
+        public void EnsurePrimitiveVisual()
+        {
+            ApplyPrimitiveVisual();
+            RefreshTargetCueIfCreated();
+        }
 
         /// <summary>
         /// Milestone 8.11b. Replaces the visible mesh and materials with the official token: this
@@ -574,10 +566,16 @@ namespace GuardsDigital.Presentation.Units.Heroes
         {
             ApplyLayout();
             EnsureVisual();
+            EnsureTargetRing();
         }
 
         private void OnDestroy()
         {
+            if (!ReferenceEquals(targetRing, null))
+            {
+                targetRing.ReleaseOwnedResources();
+            }
+
             DestroyOwnedResource(ownedMesh);
             DestroyOwnedResource(ownedMaterial);
             DestroyOwnedResource(ownedRimMaterial);

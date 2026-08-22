@@ -5,6 +5,7 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
@@ -12,6 +13,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 
@@ -121,11 +123,17 @@ namespace GuardsDigital.Tests.EditMode
             var model = view.Model;
             var prompt = RoundActionPresenter.CreateViewModel(session.Projection);
 
-            var onTheBoard = new HashSet<HexCoordinate>(model.EffectChoiceDestinations);
-            onTheBoard.UnionWith(model.EffectChoiceTargetSpaces);
-            Assert.That(
-                model.EffectChoiceDestinations.Intersect(model.EffectChoiceTargetSpaces), Is.Empty,
-                "No space is both lit and marked - the board says the two in different vocabularies.");
+            var boardDestinations = new HashSet<HexCoordinate>(model.EffectChoiceDestinations);
+            var pieceCues = model.PieceTargetCues.ToDictionary(value => value.Target);
+            var expectedPieceTargets = choice.SelectInvocations
+                .Select(value => OccupiedObjectOf(session.Projection, value.Candidate))
+                .Where(value => value.HasValue)
+                .Select(value => value.Value)
+                .Distinct()
+                .ToArray();
+            Assert.That(pieceCues.Keys, Is.EquivalentTo(expectedPieceTargets),
+                "Every offered candidate naming a live piece is projected by stable identity, and " +
+                "no coordinate marker or unrelated piece joins that set.");
 
             var promptControls = new HashSet<DirectorCommand>(
                 prompt.EffectChoices.Select(value => value.Command));
@@ -137,13 +145,27 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var candidate = invocation.Candidate;
                 var command = DirectorCommand.AnswerEffectChoice(invocation);
-                var occupied = OccupiedSpaceOf(session.Projection, candidate);
+                var occupied = OccupiedObjectOf(session.Projection, candidate);
                 if (occupied.HasValue)
                 {
-                    Assert.That(onTheBoard, Contains.Item(occupied.Value),
+                    Assert.That(pieceCues.ContainsKey(occupied.Value), Is.True,
                         $"The candidate on option node '{candidate.OptionNodeId.Value}' names the piece " +
-                        $"standing on {occupied.Value}, so that piece is marked and a click on it " +
+                        $"'{occupied.Value}', so that identity is marked and a click on it " +
                         "answers the choice.");
+                    var cue = pieceCues[occupied.Value];
+                    var preview = session.Projection.PendingEffectChoicePreview.Single(value =>
+                        value.CandidateValue.Equals(candidate.Value));
+                    Assert.That(cue.State,
+                        Is.EqualTo(choice.SelectedCandidates.Contains(candidate)
+                            ? BoardTargetCueState.Selected
+                            : BoardTargetCueState.Eligible),
+                        "Selection state is forwarded from the pending choice rather than inferred " +
+                        "from hover or occupancy.");
+                    Assert.That(cue.ConsequenceIntent,
+                        Is.EqualTo(preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Removal
+                            ? BoardTargetConsequenceIntent.Removal
+                            : BoardTargetConsequenceIntent.Affect),
+                        "The ring palette follows the authority preview's typed invoked consequence.");
                     Assert.That(promptControls, Has.No.Member(command),
                         $"and the candidate on option node '{candidate.OptionNodeId.Value}' keeps no " +
                         "prompt control, because two ways to say one thing is one of them redundant.");
@@ -153,7 +175,7 @@ namespace GuardsDigital.Tests.EditMode
                 var namesASpace =
                     candidate.Kind == EffectChoiceCandidateKind.Value &&
                     candidate.Value.Kind == EffectValueKind.Coordinate &&
-                    onTheBoard.Contains(candidate.Value.Coordinate);
+                    boardDestinations.Contains(candidate.Value.Coordinate);
                 Assert.That(namesASpace || answeredByAControl.Contains(command), Is.True,
                     $"The candidate on option node '{candidate.OptionNodeId.Value}' can be " +
                     "answered on the board or from the prompt. On neither, it is a question with no " +
@@ -162,12 +184,13 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The space a candidate's own value puts a board object on, or null when it names none.
+        /// The stable identity a candidate's own value names on the board, or null when it names no
+        /// live piece.
         ///
         /// Read straight from projected occupancy, by value kind, so this case decides for itself what
         /// counts as naming an object rather than inheriting the production path's answer.
         /// </summary>
-        private static HexCoordinate? OccupiedSpaceOf(
+        private static BoardObjectReference? OccupiedObjectOf(
             MatchSessionProjection projection, EffectChoiceCandidate candidate)
         {
             if (candidate.Kind != EffectChoiceCandidateKind.Value)
@@ -180,18 +203,36 @@ namespace GuardsDigital.Tests.EditMode
                 case EffectValueKind.Hero:
                     var hero = projection.Heroes.FirstOrDefault(value =>
                         value.HeroId.Equals(candidate.Value.HeroId));
-                    return hero.HeroId.IsDefined ? hero.Coordinate : (HexCoordinate?)null;
+                    return hero.HeroId.IsDefined
+                        ? BoardObjectReference.ForHero(hero.HeroId)
+                        : (BoardObjectReference?)null;
                 case EffectValueKind.Minion:
                     var minion = projection.Minions.FirstOrDefault(value =>
                         value.MinionId.Equals(candidate.Value.MinionId));
-                    return minion?.Coordinate;
+                    return minion != null
+                        ? BoardObjectReference.ForMinion(minion.MinionId)
+                        : (BoardObjectReference?)null;
                 case EffectValueKind.Coordinate:
                     var space = candidate.Value.Coordinate;
-                    var occupied =
-                        projection.Heroes.Any(value => value.Coordinate.Equals(space)) ||
-                        projection.Minions.Any(value => value.Coordinate.Equals(space)) ||
-                        projection.PlacedTokens.Any(value => value.Coordinate.Equals(space));
-                    return occupied ? space : (HexCoordinate?)null;
+                    var heroAtSpace = projection.Heroes.FirstOrDefault(value =>
+                        value.Coordinate.Equals(space));
+                    if (heroAtSpace.HeroId.IsDefined)
+                    {
+                        return BoardObjectReference.ForHero(heroAtSpace.HeroId);
+                    }
+
+                    var minionAtSpace = projection.Minions.FirstOrDefault(value =>
+                        value.Coordinate.Equals(space));
+                    if (minionAtSpace != null)
+                    {
+                        return BoardObjectReference.ForMinion(minionAtSpace.MinionId);
+                    }
+
+                    var tokenAtSpace = projection.PlacedTokens.FirstOrDefault(value =>
+                        value.Coordinate.Equals(space));
+                    return tokenAtSpace != null
+                        ? BoardObjectReference.ForToken(tokenAtSpace.Id)
+                        : (BoardObjectReference?)null;
                 default:
                     return null;
             }
@@ -214,11 +255,19 @@ namespace GuardsDigital.Tests.EditMode
 
             board.Refresh();
             var model = view.Model;
-            var marked = model.MinionChoiceCues.Select(value => value.MinionId).ToArray();
+            var marked = model.PieceTargetCues.Select(value => value.Target.MinionId).ToArray();
 
             Assert.That(marked, Is.EquivalentTo(
                     choice.LegalSelectMinionIds.Concat(choice.SelectedMinionIds).Distinct()),
                 "Exactly the selections the authority allows, plus the ones already made.");
+            Assert.That(model.PieceTargetCues, Has.All.Matches<PieceTargetCueViewModel>(value =>
+                    value.Target.Kind == BoardObjectKind.Minion &&
+                    value.ConsequenceIntent == BoardTargetConsequenceIntent.Removal &&
+                    value.State == (choice.SelectedMinionIds.Contains(value.Target.MinionId)
+                        ? BoardTargetCueState.Selected
+                        : BoardTargetCueState.Eligible)),
+                "Minion Battle projects only identity-keyed removal cues, with selected state read " +
+                "from the authority's pending choice.");
             foreach (var withheld in choice.Candidates
                 .Select(candidate => candidate.MinionId)
                 .Where(id => id.IsDefined)

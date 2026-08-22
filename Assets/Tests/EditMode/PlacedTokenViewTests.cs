@@ -10,7 +10,6 @@ using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
-using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -115,17 +114,8 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        /// <summary>
-        /// Milestone 6.3a: the piece wears the shared board cue while a control names it.
-        ///
-        /// Both visible kinds say "this one", so the marker is the minion prompt's and only the colour
-        /// separates a chosen piece from the one being pointed at. The cue hangs from an anchor
-        /// carrying the shared board-facing rotation for the reason milestone 6.5c recorded: the board
-        /// is the XZ plane under a top-down camera, so a glyph at identity rotation on this upright
-        /// transform would render edge-on while every local-offset assertion about it still passed.
-        /// </summary>
         [Test]
-        public void APointedAtToken_WearsTheSharedBoardCueAndDropsItWhenNothingNamesIt()
+        public void ATargetedToken_WearsOneBoundsFittedRingAndDropsItWhenNothingNamesIt()
         {
             var space = new HexCoordinate(1, 0);
             using (var board = new TokenBoard(space))
@@ -133,35 +123,92 @@ namespace GuardsDigital.Tests.EditMode
                 var token = Token("hazard-1", SyntheticComponentDefinitions.HazardDefinition, space);
                 board.Render(1, token);
                 var view = board.View.TokenViews.Single();
+                var ring = view.TargetRing;
+                var retainedMesh = ring.GeneratedMesh;
+                var sourceRenderer = view.GetComponent<MeshRenderer>();
+                var sourceMesh = view.GetComponent<MeshFilter>().sharedMesh;
+                var sourceMaterial = sourceRenderer.sharedMaterial;
+                var nameText = view.GetComponentsInChildren<TextMesh>(true).Single();
 
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
-                Assert.That(view.ChoiceCue, Is.Null, "No cue is built until one is asked for.");
+                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(view.GetComponentsInChildren<BoardTargetRing>(true),
+                    Has.Length.EqualTo(1));
+                Assert.That(ring.IsVisible, Is.False);
 
                 board.Render(2, new[] { token },
-                    new TokenChoiceCueViewModel(token.Id, MinionChoiceCueKind.Highlighted));
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForToken(token.Id),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Affect));
 
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
-                Assert.That(view.ChoiceCue.gameObject.activeSelf, Is.True);
-                Assert.That(view.ChoiceCue.text, Is.EqualTo(BoardChoiceCue.Marker));
-                // `TextMesh` quantises to 8 bits per channel, so the comparison is to that precision
-                // rather than to the float the shared construction declares.
-                Assert.That(view.ChoiceCue.color,
-                    Is.EqualTo(BoardChoiceCue.HighlightedColor).Using(ColorComparer));
-                Assert.That(view.ChoiceCue.transform.rotation,
-                    Is.EqualTo(BoardChoiceCue.BoardFacingRotation).Using(RotationComparer),
-                    "It faces the camera that looks down the board rather than lying edge-on to it.");
+                var footprint = sourceRenderer.bounds;
+                Assert.That(view.TargetRing, Is.SameAs(ring));
+                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.Eligible));
+                Assert.That(ring.ConsequenceIntent, Is.EqualTo(BoardTargetConsequenceIntent.Affect));
+                Assert.That(ring.IsVisible, Is.True);
+                Assert.That(ring.VisibleConsequenceColor,
+                    Is.EqualTo(BoardTargetRing.AffectColor).Using(ColorComparer));
+                Assert.That(ring.VisibleWashColor,
+                    Is.EqualTo(new Color(
+                        BoardTargetRing.AffectColor.r,
+                        BoardTargetRing.AffectColor.g,
+                        BoardTargetRing.AffectColor.b,
+                        BoardTargetRing.EligibleWashAlpha)).Using(ColorComparer));
+                Assert.That(ring.VisibleWashColor.a, Is.LessThan(0.3f),
+                    "The wash makes the named piece immediate without painting over its artwork.");
+                Assert.That(ring.GeneratedMesh.GetTriangles(2), Has.Length.EqualTo(18),
+                    "The wash uses the placed token's exact six-sided footprint.");
+                Assert.That(ring.GeneratedMesh.GetTriangles(2)
+                        .Distinct()
+                        .Select(index => ring.transform.TransformPoint(
+                            ring.GeneratedMesh.vertices[index]).y),
+                    Has.All.GreaterThan(footprint.max.y),
+                    "The wash is rendered over the actual token face rather than below its base.");
+                var ringRenderer = ring.GetComponent<MeshRenderer>();
+                Assert.That(ringRenderer.sortingLayerID, Is.EqualTo(sourceRenderer.sortingLayerID));
+                Assert.That(ringRenderer.sortingOrder, Is.EqualTo(sourceRenderer.sortingOrder + 1));
+                Assert.That(nameText.GetComponent<MeshRenderer>().sortingOrder,
+                    Is.GreaterThan(ringRenderer.sortingOrder),
+                    "The token's name remains above the translucent target wash.");
+                Assert.That(view.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(sourceMesh));
+                Assert.That(sourceRenderer.sharedMaterial, Is.SameAs(sourceMaterial));
+                Assert.That(nameText.text, Is.EqualTo("TEST - HAZARD"),
+                    "Targeting overlays the token without replacing its shape, material, or name.");
+                Assert.That(ring.InnerRadius,
+                    Is.EqualTo(Mathf.Max(footprint.extents.x, footprint.extents.z)).Within(0.0001f));
+                Assert.That(ring.transform.position.x,
+                    Is.EqualTo(footprint.center.x).Within(0.0001f));
+                Assert.That(ring.transform.position.z,
+                    Is.EqualTo(footprint.center.z).Within(0.0001f));
+                Assert.That(Vector3.Angle(ring.transform.up, Vector3.up), Is.LessThan(0.001f));
+                Assert.That(ring.GetComponentsInChildren<Collider>(true), Is.Empty);
+                Assert.That(view.GetComponentsInChildren<TextMesh>(true), Has.Length.EqualTo(1),
+                    "Only the token name remains; targeting creates no triangle text or backing.");
 
                 board.Render(3, new[] { token },
-                    new TokenChoiceCueViewModel(token.Id, MinionChoiceCueKind.Selected));
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForToken(token.Id),
+                        BoardTargetCueState.Selected,
+                        BoardTargetConsequenceIntent.Removal));
 
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected));
-                Assert.That(view.ChoiceCue.color,
-                    Is.EqualTo(BoardChoiceCue.SelectedColor).Using(ColorComparer));
+                Assert.That(view.TargetRing, Is.SameAs(ring));
+                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.Selected));
+                Assert.That(ring.ConsequenceIntent, Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+                Assert.That(ring.VisibleConsequenceColor,
+                    Is.EqualTo(BoardTargetRing.BloodRedColor).Using(ColorComparer));
+                Assert.That(ring.VisibleWashColor,
+                    Is.EqualTo(new Color(
+                        BoardTargetRing.BloodRedColor.r,
+                        BoardTargetRing.BloodRedColor.g,
+                        BoardTargetRing.BloodRedColor.b,
+                        BoardTargetRing.SelectedWashAlpha)).Using(ColorComparer));
 
                 board.Render(4, token);
 
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
-                Assert.That(view.ChoiceCue.gameObject.activeSelf, Is.False);
+                Assert.That(view.TargetRing, Is.SameAs(ring));
+                Assert.That(ring.GeneratedMesh, Is.SameAs(retainedMesh));
+                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(ring.IsVisible, Is.False);
             }
         }
 
@@ -177,34 +224,32 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var hazard = Token("hazard-1", SyntheticComponentDefinitions.HazardDefinition, space);
                 board.Render(1, new[] { hazard },
-                    new TokenChoiceCueViewModel(hazard.Id, MinionChoiceCueKind.Selected));
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForToken(hazard.Id),
+                        BoardTargetCueState.Selected,
+                        BoardTargetConsequenceIntent.Removal));
                 var view = board.View.TokenViews.Single();
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected));
+                var ring = view.TargetRing;
+                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected));
 
                 board.Render(2);
 
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
+                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(ring.IsVisible, Is.False);
 
                 board.Render(3, Token("ward-1", SyntheticComponentDefinitions.WardDefinition, space));
 
                 Assert.That(board.View.TokenViews.Single(), Is.SameAs(view));
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None),
-                    "The pooled view draws the incoming piece plainly rather than inheriting a cue.");
+                Assert.That(view.TargetRing, Is.SameAs(ring));
+                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
+                    "The pooled view draws the incoming identity plainly rather than inheriting a cue.");
+                Assert.That(view.GetComponentsInChildren<BoardTargetRing>(true),
+                    Has.Length.EqualTo(1),
+                    "Pool reuse retains exactly one cue child.");
             }
         }
 
-        private static readonly IEqualityComparer<Quaternion> RotationComparer =
-            new QuaternionComparer();
-
         private static readonly IEqualityComparer<Color> ColorComparer = new EightBitColorComparer();
-
-        private sealed class QuaternionComparer : IEqualityComparer<Quaternion>
-        {
-            public bool Equals(Quaternion left, Quaternion right) =>
-                Quaternion.Angle(left, right) < 0.01f;
-
-            public int GetHashCode(Quaternion value) => 0;
-        }
 
         private sealed class EightBitColorComparer : IEqualityComparer<Color>
         {
@@ -266,10 +311,10 @@ namespace GuardsDigital.Tests.EditMode
             public int Created { get; private set; }
 
             public void Render(long version, params PlacedToken[] tokens) =>
-                Render(version, tokens, Array.Empty<TokenChoiceCueViewModel>());
+                Render(version, tokens, Array.Empty<PieceTargetCueViewModel>());
 
             public void Render(
-                long version, PlacedToken[] tokens, params TokenChoiceCueViewModel[] cues)
+                long version, PlacedToken[] tokens, params PieceTargetCueViewModel[] cues)
             {
                 View.Render(new BoardInteractionViewModel(
                     version,
@@ -280,7 +325,7 @@ namespace GuardsDigital.Tests.EditMode
                     Array.Empty<MinionId>(),
                     default,
                     placedTokens: tokens,
-                    tokenChoiceCues: cues));
+                    pieceTargetCues: cues));
             }
 
             public void Dispose()

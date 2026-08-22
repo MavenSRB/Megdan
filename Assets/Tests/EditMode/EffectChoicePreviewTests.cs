@@ -3,13 +3,18 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -79,6 +84,11 @@ namespace GuardsDigital.Tests.EditMode
                 "Every candidate is described, in the projection's own candidate order.");
             Assert.That(preview.All(value => value.NamesObject), Is.True,
                 "Every target of `choose another adjacent unit` stands on the space it names.");
+            Assert.That(
+                preview.All(value =>
+                    value.ConsequenceIntent == EffectChoiceConsequenceIntent.Affect),
+                Is.True,
+                "Push directly consumes this selection, but displacement is not removal intent.");
 
             var blue = preview.Single(value => value.Coordinate.Equals(BlueAt));
             Assert.That(blue.Occupant.Kind, Is.EqualTo(BoardObjectKind.Hero));
@@ -117,6 +127,98 @@ namespace GuardsDigital.Tests.EditMode
                 "Nothing consumes this choice with an operation that relocates what stands there.");
             Assert.That(preview.Any(value => value.Coordinate.Equals(RedAt)), Is.False,
                 "The actor's own space is not among them, so nothing is previewed for it.");
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.11d: typed consequence intent from the selection's declared consumer
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void ARemoveDirectlyConsumingTheSelection_HasRemovalIntent()
+        {
+            var preview = DescribeSentinelTokenChoice(
+                new EffectNodeId("sentinel-remove-select"));
+
+            Assert.That(preview.NamesObject, Is.True,
+                "The fixture's offered space names the Hazard the Remove can consume.");
+            Assert.That(preview.Occupant.Kind, Is.EqualTo(BoardObjectKind.Token));
+            Assert.That(
+                preview.ConsequenceIntent,
+                Is.EqualTo(EffectChoiceConsequenceIntent.Removal),
+                "The typed Remove capability declares removal intent without presentation reading " +
+                "a node name or card text.");
+        }
+
+        [Test]
+        public void ADefeatHeroDirectlyConsumingTheSelection_HasRemovalIntent()
+        {
+            var actor = new HeroId("direct-defeat-actor");
+            var target = new HeroId("direct-defeat-target");
+            var targetAt = new HexCoordinate(1, 0);
+            var board = CreatePreviewBoard(
+                new HeroOccupancy(actor, new HexCoordinate(0, 0)),
+                new HeroOccupancy(target, targetAt));
+
+            var preview = DescribeSingleCandidate(
+                CreateDirectHeroDefeatDefinition(),
+                new EffectNodeId("direct-defeat-select"),
+                EffectValue.Hero(target),
+                actor,
+                board);
+
+            Assert.That(preview.Occupant.HeroId, Is.EqualTo(target));
+            Assert.That(
+                preview.ConsequenceIntent,
+                Is.EqualTo(EffectChoiceConsequenceIntent.Removal),
+                "Defeat and Remove are different rule operations, but both declare that the named " +
+                "piece is being selected for a removal consequence.");
+        }
+
+        [Test]
+        public void AReplaceDirectlyConsumingTheSelection_HasAffectIntent()
+        {
+            var preview = DescribeSentinelTokenChoice(
+                new EffectNodeId("sentinel-replace-select"));
+
+            Assert.That(preview.NamesObject, Is.True);
+            Assert.That(preview.Occupant.Kind, Is.EqualTo(BoardObjectKind.Token));
+            Assert.That(
+                preview.ConsequenceIntent,
+                Is.EqualTo(EffectChoiceConsequenceIntent.Affect),
+                "Replace affects the selected piece but is not the removal intent the cue colour " +
+                "distinguishes.");
+        }
+
+        [Test]
+        public void ADefeatReachedOnlyAfterTheSelection_RemainsAffectIntent()
+        {
+            var session = ConfiguredMatchFixtures.CreateEscalatingRiderSession(out var minionId);
+            StartElectroblastRider(session, minionId);
+
+            var choice = session.Projection.PendingEffectChoice;
+            var effect = WaspCardContent.Definition(WaspCardContent.Electroblast)
+                .ActionDefinitions.Single(action => action.Id.Equals(WaspCardContent.PrimaryAttack))
+                .EffectRoot;
+            var selection = effect.Nodes.Single(node => node.Id.Equals(choice.NodeId));
+
+            Assert.That(
+                EffectSelectionDeclaration.TryReadConsumer(selection, out _),
+                Is.False,
+                "Electroblast deliberately does not narrow the hero offer to a later discard or " +
+                "conditional Defeat arm.");
+            Assert.That(
+                effect.Nodes.Any(node =>
+                    node.Kind == EffectNodeKind.Capability &&
+                    node.Capability.Equals(SyntheticConsequenceCapabilities.DefeatHeroV1)),
+                Is.True,
+                "The control is meaningful only while the later conditional Defeat remains present.");
+            Assert.That(session.Projection.PendingEffectChoicePreview, Is.Not.Empty);
+            Assert.That(
+                session.Projection.PendingEffectChoicePreview.All(value =>
+                    value.ConsequenceIntent == EffectChoiceConsequenceIntent.Affect),
+                Is.True,
+                "A later possible Defeat is not the operation directly consuming this selection, " +
+                "so it cannot turn every offered hero into removal intent.");
         }
 
         [Test]
@@ -337,6 +439,159 @@ namespace GuardsDigital.Tests.EditMode
         {
             var result = session.Execute(command);
             Assert.That(result.Accepted, Is.True, result.Detail);
+        }
+
+        private static EffectChoiceCandidatePreview DescribeSentinelTokenChoice(
+            EffectNodeId selectionNodeId)
+        {
+            var actor = new HeroId("sentinel-preview-actor");
+            var tokenAt = new HexCoordinate(1, 0);
+            var board = CreatePreviewBoard(
+                new HeroOccupancy(actor, new HexCoordinate(0, 0)));
+            var catalog = SyntheticComponentDefinitions.CreateCatalog();
+            board.CommitValidatedTokenPlacement(new PlacedToken(
+                new TokenInstanceId("sentinel-preview-hazard"),
+                catalog.LoadToken(SyntheticComponentDefinitions.HazardV4),
+                actor,
+                actor,
+                new CardInstanceId("sentinel-preview-source"),
+                tokenAt));
+            var effect = SyntheticShowcaseHand.CreateBlue(actor)
+                .Definitions.Single(candidate => candidate.DisplayName == "TEST - Blue Sentinel")
+                .ActionDefinitions.Single(action =>
+                    action.Id.Equals(new ActionDefinitionId("primary-exchange-skill")))
+                .EffectRoot;
+
+            return DescribeSingleCandidate(
+                effect, selectionNodeId, EffectValue.Space(tokenAt), actor, board);
+        }
+
+        private static EffectChoiceCandidatePreview DescribeSingleCandidate(
+            EffectDefinition definition,
+            EffectNodeId selectionNodeId,
+            EffectValue candidate,
+            HeroId actor,
+            AdjacentMoveAuthority board)
+        {
+            var choice = new PendingEffectChoice(
+                new EffectResolutionId("consequence-preview-resolution"),
+                new EffectChoiceId("consequence-preview-choice"),
+                selectionNodeId,
+                actor,
+                EffectChoiceKind.SelectTarget,
+                new[] { EffectChoiceCandidate.Value_(candidate) },
+                1,
+                1);
+            var components = new MatchComponents(
+                SyntheticComponentDefinitions.CreateCatalog(),
+                null,
+                new MarkerAttachmentRegister(),
+                board,
+                null,
+                null);
+
+            return EffectChoicePreviewQuery.Describe(
+                    definition, choice, actor, components, RuleModificationSet.Empty)
+                .Single();
+        }
+
+        private static AdjacentMoveAuthority CreatePreviewBoard(
+            params HeroOccupancy[] heroes) =>
+            new AdjacentMoveAuthority(
+                BoardMapDefinition.CreateSynthetic(
+                    new MapId("typed-consequence-preview"),
+                    1,
+                    Enumerable.Range(-2, 5).Select(q => new HexCoordinate(q, 0)).ToArray()),
+                heroes,
+                Array.Empty<ObstacleOccupancy>());
+
+        private static EffectDefinition CreateDirectHeroDefeatDefinition()
+        {
+            var root = new EffectNodeId("direct-defeat-root");
+            var select = new EffectNodeId("direct-defeat-select");
+            var defeat = new EffectNodeId("direct-defeat-consumer");
+
+            return new EffectDefinition(
+                new EffectDefinitionId("direct-defeat-preview"),
+                "milestone-8-11d-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root,
+                        EffectNodeKind.Sequence,
+                        EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { select, defeat }),
+                    new EffectNodeDefinition(
+                        select,
+                        EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.RadiusHeroTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                "activity", EffectValue.Integer((int)RuleActivity.Skill)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.TargetRelationParameterName,
+                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.ExcludeAdjacentParameterName,
+                                EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(defeat))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        }),
+                    new EffectNodeDefinition(
+                        defeat,
+                        EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticConsequenceCapabilities.DefeatHeroV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticConsequenceCapabilities.HeroParameter,
+                                select,
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticConsequenceCapabilities.DefeatedHeroOutput,
+                                EffectValueKind.Hero)
+                        })
+                });
+        }
+
+        private static void StartElectroblastRider(MatchSession session, MinionId minionId)
+        {
+            var red = session.Projection.Cards.Single(card =>
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Red &&
+                card.State.Location == CardLocation.Hand &&
+                card.DefinitionReference.DefinitionId.Equals(WaspCardContent.Electroblast));
+            var blue = session.Projection.Cards.Single(card =>
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue &&
+                card.State.Location == CardLocation.Hand &&
+                card.DefinitionReference.DefinitionId.Equals(WaspCardContent.StopProjectiles));
+            Accept(session, DirectorCommand.CommitCard(red.OwnerId, red.Id));
+            Accept(session, DirectorCommand.CommitCard(blue.OwnerId, blue.Id));
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id));
+
+            Accept(session, DirectorCommand.StartAction(WaspCardContent.PrimaryAttack));
+            var targetChoice = session.Projection.PendingAttackTargetChoice;
+            Assert.That(targetChoice.LegalTargetMinionIds, Does.Contain(minionId));
+            Accept(
+                session,
+                DirectorCommand.ChooseAttackTarget(
+                    targetChoice.ResolutionId, targetChoice.ChoiceId, minionId));
+            Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
+                "The defeated minion is followed by Electroblast's hero selection.");
         }
 
         private static MatchSession CreateNeedleSession(HexCoordinate redAt, HexCoordinate blueAt)

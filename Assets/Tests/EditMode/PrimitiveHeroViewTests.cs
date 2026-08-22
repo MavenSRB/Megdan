@@ -1,5 +1,11 @@
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Components.Synthetic;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -133,63 +139,106 @@ namespace GuardsDigital.Tests.EditMode
                 "The rim stands outside the face rather than over it.");
         }
 
-        /// <summary>
-        /// Milestone 6.5c. An effect choice can name a hero as its target, so the hero view carries
-        /// the same marker the minion view does - the shared construction, the shared marker size,
-        /// and the two colors that separate a selection from the control being pointed at - hung
-        /// clear of the prism rather than at the minion's sprite offset.
-        /// </summary>
         [Test]
-        public void SetChoiceCue_ShowsTheSharedMarkerAboveTheHeroAndClearsIt()
+        public void TargetRing_FitsHeroBoundsAndRetainsOneInstanceAcrossStateChanges()
         {
             var gameObject = new GameObject("Primitive Hero Test");
 
             try
             {
                 var view = gameObject.AddComponent<PrimitiveHeroView>();
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
+                view.Configure(
+                    new HeroOccupancy(new HeroId("ring-hero"), new HexCoordinate(2, -1)),
+                    HexWorldLayout.DefaultOuterRadius);
+                view.EnsurePrimitiveVisual();
+
+                var ring = view.TargetRing;
+                Assert.That(ring, Is.Not.Null);
+                var sourceRenderer = gameObject.GetComponent<MeshRenderer>();
+                var sourceMesh = gameObject.GetComponent<MeshFilter>().sharedMesh;
+                var sourceMaterials = sourceRenderer.sharedMaterials.ToArray();
+                var retainedMesh = ring.GeneratedMesh;
+                var retainedMaterials = ring.GetComponent<MeshRenderer>().sharedMaterials.ToArray();
+                Assert.That(gameObject.GetComponentsInChildren<BoardTargetRing>(true),
+                    Has.Length.EqualTo(1));
+                Assert.That(ring.OwnedNativeResourceCount, Is.EqualTo(4));
+                Assert.That(ring.IsVisible, Is.False);
                 Assert.That(gameObject.GetComponentsInChildren<TextMesh>(true), Is.Empty,
-                    "A hero carrying no cue builds no cue objects at all.");
+                    "Piece targeting no longer creates the old triangle TextMesh or its backing.");
 
-                view.SetChoiceCue(MinionChoiceCueKind.Highlighted);
+                view.SetTargetCue(
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Affect);
 
-                var cue = gameObject.GetComponentsInChildren<TextMesh>(true)
-                    .Single(value => value.text == BoardChoiceCue.Marker);
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
-                Assert.That(cue.characterSize, Is.EqualTo(BoardChoiceCue.MarkerCharacterSize).Within(Tolerance));
-                AssertColor(cue.color, BoardChoiceCue.HighlightedColor);
-                Assert.That(cue.gameObject.activeSelf, Is.True);
-
-                // The regression this fixture exists for. The board is the XZ plane and the camera
-                // looks down it, so a cue is visible only when it lies flat facing up; parented
-                // straight to this upright view it faced sideways and rendered as an invisible
-                // sliver. Asserting the facing rather than a local offset is what makes that
-                // observable at all - the first version was in the right place and unseeable.
-                Assert.That(Vector3.Distance(cue.transform.forward, Vector3.up), Is.LessThan(0.001f),
-                    "The marker faces the camera that looks down the board plane.");
-                // Milestone 8.11a: up-screen is what the framing camera calls up, which is world +Z
-                // until the official artwork puts the camera on the board's own axes.
+                var footprint = gameObject.GetComponent<MeshRenderer>().bounds;
+                Assert.That(view.TargetRing, Is.SameAs(ring));
+                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.Eligible));
+                Assert.That(ring.ConsequenceIntent, Is.EqualTo(BoardTargetConsequenceIntent.Affect));
+                Assert.That(ring.InnerRadius,
+                    Is.EqualTo(Mathf.Max(footprint.extents.x, footprint.extents.z)).Within(Tolerance),
+                    "The reported radius is the current footprint's maximum board extent; the " +
+                    "focused silhouette regression verifies every non-circular inner edge.");
+                Assert.That(ring.transform.position.x,
+                    Is.EqualTo(footprint.center.x).Within(Tolerance));
+                Assert.That(ring.transform.position.z,
+                    Is.EqualTo(footprint.center.z).Within(Tolerance));
+                Assert.That(ring.transform.position.y,
+                    Is.EqualTo(BoardTargetRing.BoardSurfaceOffset).Within(Tolerance),
+                    "The ring is on the authoritative board plane, not hung above the piece.");
+                Assert.That(Vector3.Angle(ring.transform.up, Vector3.up), Is.LessThan(0.001f),
+                    "The generated annulus lies flat on the world XZ board plane.");
                 Assert.That(
-                    Vector3.Distance(cue.transform.up, BoardChoiceCue.ScreenUpInWorld),
-                    Is.LessThan(0.001f),
-                    "And its own up points up-screen, so the marker is not upside down.");
-                Assert.That(cue.transform.position.z,
-                    Is.GreaterThan(view.transform.position.z + 0.5f),
-                    "It sits above the hero on screen, which is +Z on this board.");
-                Assert.That(cue.transform.position.y, Is.GreaterThan(0f),
-                    "And above the board plane, so no tile draws over it.");
+                    Vector3.Angle(ring.transform.forward, BoardChoiceCue.ScreenUpInWorld),
+                    Is.LessThan(0.001f));
+                Assert.That(ring.GetComponentsInChildren<Collider>(true), Is.Empty,
+                    "The passive ring must not enlarge or intercept the hero input surface.");
+                Assert.That(ring.GetComponent<MeshRenderer>().sortingLayerID,
+                    Is.EqualTo(sourceRenderer.sortingLayerID));
+                Assert.That(ring.GetComponent<MeshRenderer>().sortingOrder,
+                    Is.EqualTo(sourceRenderer.sortingOrder + 1));
+                var washVertices = ring.GeneratedMesh.GetTriangles(2)
+                    .Distinct()
+                    .Select(index => ring.transform.TransformPoint(
+                        ring.GeneratedMesh.vertices[index]))
+                    .ToArray();
+                Assert.That(washVertices, Is.Not.Empty);
+                Assert.That(washVertices,
+                    Has.All.Matches<Vector3>(vertex => Mathf.Abs(
+                        vertex.y - footprint.max.y - BoardTargetRing.PieceWashSurfaceOffset) <
+                        Tolerance),
+                    "The translucent wash lies just over the actual hero art rather than under it " +
+                    "on the board plane.");
 
-                view.SetChoiceCue(MinionChoiceCueKind.Selected);
-                AssertColor(cue.color, BoardChoiceCue.SelectedColor);
+                view.SetTargetCue(
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Removal);
+                view.SetTargetCue(
+                    BoardTargetCueState.Hovered,
+                    BoardTargetConsequenceIntent.Affect);
+                view.SetTargetCue(
+                    BoardTargetCueState.None,
+                    BoardTargetConsequenceIntent.None);
 
-                view.SetChoiceCue(MinionChoiceCueKind.None);
-                Assert.That(view.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
-                Assert.That(cue.gameObject.activeSelf, Is.False,
-                    "Clearing hides the cue rather than destroying and rebuilding it.");
-
-                Assert.That(
-                    () => view.SetChoiceCue((MinionChoiceCueKind)7),
-                    Throws.TypeOf<System.ArgumentOutOfRangeException>());
+                Assert.That(view.TargetRing, Is.SameAs(ring));
+                Assert.That(gameObject.GetComponentsInChildren<BoardTargetRing>(true),
+                    Has.Length.EqualTo(1));
+                Assert.That(ring.GeneratedMesh, Is.SameAs(retainedMesh));
+                Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[0],
+                    Is.SameAs(retainedMaterials[0]));
+                Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[1],
+                    Is.SameAs(retainedMaterials[1]));
+                Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
+                    Is.SameAs(retainedMaterials[2]));
+                Assert.That(gameObject.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(sourceMesh));
+                Assert.That(gameObject.GetComponent<MeshRenderer>().sharedMaterials,
+                    Is.EqualTo(sourceMaterials),
+                    "The wash overlays the hero; it never replaces or tints the source art resources.");
+                Assert.That(ring.OwnedNativeResourceCount, Is.EqualTo(4),
+                    "State changes retain one mesh and three materials rather than growing resources.");
+                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(ring.ConsequenceIntent, Is.EqualTo(BoardTargetConsequenceIntent.None));
+                Assert.That(ring.IsVisible, Is.False,
+                    "Clearing disables the retained renderer rather than destroying its owner.");
             }
             finally
             {
@@ -197,16 +246,569 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        /// <summary>
-        /// Per channel and with tolerance, because a color assigned to a `TextMesh` comes back
-        /// quantised to eight bits per channel; asserting exact equality would test the quantisation
-        /// rather than the cue.
-        /// </summary>
+        [Test]
+        public void TargetRing_InnerBoundaryMeetsEntireRenderedFootprint_ForPlacedHexTokenAndBluePrimitiveHero()
+        {
+            var heroObject = new GameObject("Blue Primitive Hero Ring Fit Test");
+            var tokenObject = new GameObject("Placed Hex Token Ring Fit Test");
+
+            try
+            {
+                var hero = heroObject.AddComponent<PrimitiveHeroView>();
+                var teamSide = typeof(PrimitiveHeroView).GetField(
+                    "teamSide", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(teamSide, Is.Not.Null,
+                    "The fixture must select the tracked Blue four-sided fallback explicitly.");
+                teamSide.SetValue(hero, TeamSide.Blue);
+                heroObject.GetComponent<MeshFilter>().sharedMesh = null;
+                hero.EnsurePrimitiveVisual();
+                hero.SetTargetCue(
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Affect);
+
+                var owner = new HeroId("ring-fit-token-owner");
+                var token = new PlacedToken(
+                    new TokenInstanceId("ring-fit-token"),
+                    SyntheticComponentDefinitions.HazardDefinition,
+                    owner,
+                    owner,
+                    new CardInstanceId("ring-fit-token-source"),
+                    new HexCoordinate(0, 0));
+                var tokenView = tokenObject.AddComponent<PlacedTokenView>();
+                tokenView.Configure(token, HexWorldLayout.DefaultOuterRadius);
+                tokenView.SetTargetCue(
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Affect);
+
+                var mismatches = new List<string>();
+                CollectInnerBoundaryMismatches(
+                    "Blue four-sided primitive hero",
+                    heroObject.GetComponent<MeshFilter>(),
+                    hero.TargetRing,
+                    expectedPerimeterVertices: 4,
+                    mismatches);
+                CollectInnerBoundaryMismatches(
+                    "placed hex token",
+                    tokenObject.GetComponent<MeshFilter>(),
+                    tokenView.TargetRing,
+                    expectedPerimeterVertices: 6,
+                    mismatches);
+
+                Assert.That(mismatches, Is.Empty,
+                    "The neutral keyline's inner boundary must meet every source-mesh edge, not " +
+                    "only the footprint's furthest vertices.\n" + string.Join("\n", mismatches));
+            }
+            finally
+            {
+                Object.DestroyImmediate(tokenObject);
+                Object.DestroyImmediate(heroObject);
+            }
+        }
+
+        [Test]
+        public void TargetRing_DomainRestorationReclaimsItsRetainedNativeResources()
+        {
+            var gameObject = new GameObject("Target Ring Restoration Test");
+
+            try
+            {
+                var view = gameObject.AddComponent<PrimitiveHeroView>();
+                view.EnsurePrimitiveVisual();
+                view.SetTargetCue(
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Affect);
+                var ring = view.TargetRing;
+                var retainedMesh = ring.GeneratedMesh;
+                var retainedMaterials = ring.GetComponent<MeshRenderer>().sharedMaterials.ToArray();
+
+                foreach (var fieldName in new[]
+                         {
+                             "ownedMesh",
+                             "ownedKeylineMaterial",
+                             "ownedConsequenceMaterial",
+                             "ownedWashMaterial",
+                             "meshFilter",
+                             "meshRenderer"
+                         })
+                {
+                    var field = typeof(BoardTargetRing).GetField(
+                        fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+                    Assert.That(field, Is.Not.Null);
+                    field.SetValue(ring, null);
+                }
+
+                var restored = BoardTargetRing.GetOrCreate(gameObject.transform);
+
+                Assert.That(restored, Is.SameAs(ring));
+                Assert.That(restored.GeneratedMesh, Is.SameAs(retainedMesh));
+                Assert.That(restored.GetComponent<MeshRenderer>().sharedMaterials[0],
+                    Is.SameAs(retainedMaterials[0]));
+                Assert.That(restored.GetComponent<MeshRenderer>().sharedMaterials[1],
+                    Is.SameAs(retainedMaterials[1]));
+                Assert.That(restored.GetComponent<MeshRenderer>().sharedMaterials[2],
+                    Is.SameAs(retainedMaterials[2]));
+                Assert.That(restored.OwnedNativeResourceCount, Is.EqualTo(4));
+                Assert.That(gameObject.GetComponentsInChildren<BoardTargetRing>(true),
+                    Has.Length.EqualTo(1),
+                    "Restoration adopts the exact retained resources instead of orphaning them " +
+                    "behind a second cue or replacement native objects.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void TargetRing_ExplicitReleaseDetachesAndDestroysAllRetainedNativeResources()
+        {
+            var gameObject = new GameObject("Target Ring Disposal Test");
+            var view = gameObject.AddComponent<PrimitiveHeroView>();
+            view.EnsurePrimitiveVisual();
+            view.SetTargetCue(
+                BoardTargetCueState.Selected,
+                BoardTargetConsequenceIntent.Attack);
+            var ring = view.TargetRing;
+            var mesh = ring.GeneratedMesh;
+            var materials = ring.GetComponent<MeshRenderer>().sharedMaterials.ToArray();
+
+            typeof(BoardTargetRing).GetMethod(
+                    "ReleaseOwnedResources",
+                    BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(ring, null);
+            Assert.That(mesh == null, Is.True,
+                "Direct cue disposal must destroy its detached generated mesh.");
+            Assert.That(materials, Has.All.Matches<Material>(material => material == null),
+                "Direct cue disposal must destroy all three detached generated materials.");
+            Assert.That(ring.OwnedNativeResourceCount, Is.EqualTo(0));
+            Assert.That(ring.GetComponent<MeshFilter>().sharedMesh, Is.Null);
+            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials, Is.Empty);
+
+            Object.DestroyImmediate(gameObject);
+        }
+
+        [Test]
+        public void TargetRing_UsesTypedAffectRemovalPalettesAndOneNeutralKeyline()
+        {
+            var gameObject = new GameObject("Primitive Hero Palette Test");
+
+            try
+            {
+                var view = gameObject.AddComponent<PrimitiveHeroView>();
+                view.EnsurePrimitiveVisual();
+
+                AssertColor(BoardTargetRing.AffectColor, new Color32(27, 129, 71, 255));
+                AssertColor(BoardTargetRing.BloodRedColor, new Color32(194, 10, 24, 255));
+                AssertColor(BoardTargetRing.KeylineColor, new Color32(248, 247, 242, 255));
+                Assert.That(BoardTargetRing.EligibleWashAlpha, Is.EqualTo(0.18f));
+                Assert.That(BoardTargetRing.SelectedWashAlpha, Is.EqualTo(0.23f));
+                Assert.That(BoardTargetRing.HoverWashAlpha, Is.EqualTo(0.28f));
+                Assert.That(BoardTargetRing.EligibleWashAlpha,
+                    Is.LessThan(BoardTargetRing.SelectedWashAlpha));
+                Assert.That(BoardTargetRing.SelectedWashAlpha,
+                    Is.LessThan(BoardTargetRing.HoverWashAlpha));
+                Assert.That(BoardTargetRing.HoverWashAlpha,
+                    Is.EqualTo(BoardOverlayMaterial.OverlayAlpha),
+                    "The strongest reserved wash never exceeds the reviewed transparent-overlay cap.");
+
+                view.SetTargetCue(
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Affect);
+                var ring = view.TargetRing;
+                AssertColor(ring.VisibleConsequenceColor, BoardTargetRing.AffectColor);
+                AssertColor(ring.VisibleKeylineColor, BoardTargetRing.KeylineColor);
+                AssertColor(ring.VisibleWashColor, new Color(
+                    BoardTargetRing.AffectColor.r,
+                    BoardTargetRing.AffectColor.g,
+                    BoardTargetRing.AffectColor.b,
+                    BoardTargetRing.EligibleWashAlpha));
+                var washMaterial = ring.GetComponent<MeshRenderer>().sharedMaterials[2];
+                Assert.That(washMaterial.renderQueue,
+                    Is.EqualTo((int)UnityEngine.Rendering.RenderQueue.Transparent));
+                Assert.That(washMaterial.GetFloat("_Mode"), Is.EqualTo(3f));
+                Assert.That(washMaterial.GetInt("_SrcBlend"),
+                    Is.EqualTo((int)UnityEngine.Rendering.BlendMode.SrcAlpha));
+                Assert.That(washMaterial.GetInt("_DstBlend"),
+                    Is.EqualTo((int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha));
+                Assert.That(washMaterial.GetInt("_ZWrite"), Is.Zero);
+                Assert.That(washMaterial.IsKeywordEnabled("_ALPHABLEND_ON"), Is.True,
+                    "The over-piece wash must be genuinely blended, not merely assigned a low alpha.");
+                StringAssert.Contains("DARK GREEN", ring.AssistiveReading);
+
+                view.SetTargetCue(
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Affect);
+                AssertColor(ring.VisibleConsequenceColor, BoardTargetRing.AffectColor,
+                    "Selected changes ring count, not the operation's dark-green palette.");
+                Assert.That(ring.VisibleWashColor.a,
+                    Is.EqualTo(BoardTargetRing.SelectedWashAlpha).Within(Tolerance),
+                    "Selected reinforces the double ring with a stronger but still transparent wash.");
+
+                view.SetTargetCue(
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Removal);
+                AssertColor(ring.VisibleConsequenceColor, BoardTargetRing.BloodRedColor);
+                AssertColor(ring.VisibleWashColor, new Color(
+                    BoardTargetRing.BloodRedColor.r,
+                    BoardTargetRing.BloodRedColor.g,
+                    BoardTargetRing.BloodRedColor.b,
+                    BoardTargetRing.EligibleWashAlpha));
+                AssertColor(ring.VisibleKeylineColor, BoardTargetRing.KeylineColor,
+                    "Removal and non-removal operations use the same light-neutral keyline.");
+                StringAssert.Contains("BLOOD RED", ring.AssistiveReading);
+
+                view.SetTargetCue(
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Attack);
+                AssertColor(ring.VisibleConsequenceColor, BoardTargetRing.BloodRedColor);
+                AssertColor(ring.VisibleWashColor, new Color(
+                    BoardTargetRing.BloodRedColor.r,
+                    BoardTargetRing.BloodRedColor.g,
+                    BoardTargetRing.BloodRedColor.b,
+                    BoardTargetRing.EligibleWashAlpha));
+                StringAssert.Contains("ATTACK - BLOOD RED", ring.AssistiveReading);
+
+                view.SetTargetCue(
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Removal);
+                AssertColor(ring.VisibleConsequenceColor, BoardTargetRing.BloodRedColor,
+                    "Selected changes ring count, not the operation's blood-red palette.");
+                Assert.That(ring.VisibleWashColor.a,
+                    Is.EqualTo(BoardTargetRing.SelectedWashAlpha).Within(Tolerance));
+
+                view.SetTargetCue(
+                    BoardTargetCueState.Hovered,
+                    BoardTargetConsequenceIntent.Affect);
+                AssertColor(
+                    ring.VisibleConsequenceColor,
+                    Color.Lerp(BoardTargetRing.AffectColor, Color.white, 0.28f),
+                    "Only the reserved Hover treatment brightens the base operation colour.");
+                AssertColor(ring.VisibleKeylineColor, BoardTargetRing.KeylineColor);
+                Assert.That(ring.VisibleWashColor.a,
+                    Is.EqualTo(BoardTargetRing.HoverWashAlpha).Within(Tolerance));
+
+                Assert.That(
+                    () => view.SetTargetCue(
+                        BoardTargetCueState.None,
+                        BoardTargetConsequenceIntent.Affect),
+                    Throws.ArgumentException,
+                    "A hidden ring cannot retain stale consequence intent.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void TargetRing_ConstructsSegmentedDoubleAndSolidFourTickTreatments()
+        {
+            var gameObject = new GameObject("Primitive Hero Geometry Test");
+
+            try
+            {
+                var view = gameObject.AddComponent<PrimitiveHeroView>();
+                view.EnsurePrimitiveVisual();
+
+                view.SetTargetCue(
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Affect);
+                var ring = view.TargetRing;
+                Assert.That(
+                    CountTriangleComponents(ring.GeneratedMesh, 1),
+                    Is.EqualTo(BoardTargetRing.EligibleSegmentCount),
+                    "Eligible is one thick segmented ring.");
+
+                view.SetTargetCue(
+                    BoardTargetCueState.Selected,
+                    BoardTargetConsequenceIntent.Affect);
+                Assert.That(CountTriangleComponents(ring.GeneratedMesh, 1), Is.EqualTo(2),
+                    "Selected is exactly two complete annuli.");
+
+                view.SetTargetCue(
+                    BoardTargetCueState.Hovered,
+                    BoardTargetConsequenceIntent.Affect);
+                var mesh = ring.GeneratedMesh;
+                Assert.That(CountTriangleComponents(mesh, 1),
+                    Is.EqualTo(1 + BoardTargetRing.HoverTickCount),
+                    "Hover has one solid annulus and four tick quads.");
+
+                var components = TriangleComponents(mesh, 1);
+                var ringComponent = components.OrderByDescending(value => value.Count).First();
+                var ringVertices = ringComponent.Select(index => mesh.vertices[index]).ToArray();
+                var tickComponents = components.Where(value => !ReferenceEquals(value, ringComponent))
+                    .ToArray();
+                Assert.That(tickComponents, Has.Length.EqualTo(BoardTargetRing.HoverTickCount));
+                foreach (var tickComponent in tickComponents)
+                {
+                    var tickVertices = tickComponent.Select(index => mesh.vertices[index])
+                        .OrderBy(PlanarRadius)
+                        .ToArray();
+                    Assert.That(tickVertices, Has.Length.EqualTo(4));
+                    var innerMidpoint = (tickVertices[0] + tickVertices[1]) * 0.5f;
+                    var outerMidpoint = (tickVertices[2] + tickVertices[3]) * 0.5f;
+                    var direction = new Vector2(innerMidpoint.x, innerMidpoint.z).normalized;
+                    var alignedRingRadii = ringVertices.Where(vertex =>
+                            Vector2.Dot(
+                                new Vector2(vertex.x, vertex.z).normalized,
+                                direction) > 0.9999f)
+                        .Select(PlanarRadius)
+                        .ToArray();
+                    Assert.That(alignedRingRadii, Is.Not.Empty);
+                    Assert.That(PlanarRadius(innerMidpoint),
+                        Is.InRange(alignedRingRadii.Min(), alignedRingRadii.Max()),
+                        "Each tick starts inside the solid ring's actual contour, so there is no " +
+                        "visual gap on a circular or polygonal footprint.");
+                    Assert.That(
+                        PlanarRadius(outerMidpoint) - PlanarRadius(innerMidpoint),
+                        Is.GreaterThanOrEqualTo(BoardTargetRing.HoverTickLength),
+                        "Each of four ticks extends the required short distance outward.");
+                }
+                Assert.That(mesh.normals, Has.All.Matches<Vector3>(normal => normal.y > 0.99f),
+                    "The annulus and all four corrected tick quads face the overhead camera.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
+
         private static void AssertColor(Color actual, Color expected)
         {
-            Assert.That(actual.r, Is.EqualTo(expected.r).Within(0.01f));
-            Assert.That(actual.g, Is.EqualTo(expected.g).Within(0.01f));
-            Assert.That(actual.b, Is.EqualTo(expected.b).Within(0.01f));
+            AssertColor(actual, expected, null);
+        }
+
+        private static void AssertColor(Color actual, Color expected, string message)
+        {
+            Assert.That(actual.r, Is.EqualTo(expected.r).Within(1f / 255f), message);
+            Assert.That(actual.g, Is.EqualTo(expected.g).Within(1f / 255f), message);
+            Assert.That(actual.b, Is.EqualTo(expected.b).Within(1f / 255f), message);
+            Assert.That(actual.a, Is.EqualTo(expected.a).Within(1f / 255f), message);
+        }
+
+        private static float PlanarRadius(Vector3 value) =>
+            Mathf.Sqrt((value.x * value.x) + (value.z * value.z));
+
+        private static void CollectInnerBoundaryMismatches(
+            string label,
+            MeshFilter footprint,
+            BoardTargetRing ring,
+            int expectedPerimeterVertices,
+            ICollection<string> mismatches)
+        {
+            var centre = new Vector2(ring.transform.position.x, ring.transform.position.z);
+            var perimeter = ProjectedPerimeter(footprint, centre);
+            if (perimeter.Count != expectedPerimeterVertices)
+            {
+                mismatches.Add(
+                    $"{label}: expected {expectedPerimeterVertices} source-mesh perimeter vertices " +
+                    $"but found {perimeter.Count}.");
+                return;
+            }
+
+            for (var index = 0; index < perimeter.Count; index++)
+            {
+                var next = perimeter[(index + 1) % perimeter.Count];
+                var direction = (perimeter[index] + next).normalized;
+                var footprintDistance = RayBoundaryDistance(perimeter, direction, nearest: false);
+                var ringDistance = RayMeshDistance(
+                    ring.GeneratedMesh,
+                    ring.transform,
+                    centre,
+                    direction,
+                    subMesh: 0,
+                    nearest: true);
+                var washDistance = RayMeshDistance(
+                    ring.GeneratedMesh,
+                    ring.transform,
+                    centre,
+                    direction,
+                    subMesh: 2,
+                    nearest: false);
+                if (float.IsNaN(footprintDistance) || float.IsNaN(ringDistance) ||
+                    Mathf.Abs(ringDistance - footprintDistance) > Tolerance)
+                {
+                    mismatches.Add(
+                        $"{label} edge {index + 1}: source perimeter={footprintDistance:F4}, " +
+                        $"keyline inner boundary={ringDistance:F4}.");
+                }
+
+                if (float.IsNaN(washDistance) ||
+                    Mathf.Abs(washDistance - footprintDistance) > Tolerance)
+                {
+                    mismatches.Add(
+                        $"{label} edge {index + 1}: source perimeter={footprintDistance:F4}, " +
+                        $"wash boundary={washDistance:F4}.");
+                }
+            }
+        }
+
+        private static IReadOnlyList<Vector2> ProjectedPerimeter(
+            MeshFilter footprint, Vector2 centre)
+        {
+            var projected = footprint.sharedMesh.vertices
+                .Select(vertex => footprint.transform.TransformPoint(vertex))
+                .Select(vertex => new Vector2(vertex.x - centre.x, vertex.z - centre.y))
+                .ToArray();
+            var outerRadius = projected.Max(value => value.magnitude);
+            var perimeter = new List<Vector2>();
+            foreach (var vertex in projected.Where(value =>
+                         Mathf.Abs(value.magnitude - outerRadius) <= Tolerance))
+            {
+                if (!perimeter.Any(existing => Vector2.Distance(existing, vertex) <= Tolerance))
+                {
+                    perimeter.Add(vertex);
+                }
+            }
+
+            return perimeter
+                .OrderBy(value => Mathf.Atan2(value.y, value.x))
+                .ToArray();
+        }
+
+        private static float RayBoundaryDistance(
+            IReadOnlyList<Vector2> perimeter, Vector2 direction, bool nearest)
+        {
+            var distance = nearest ? float.PositiveInfinity : float.NegativeInfinity;
+            for (var index = 0; index < perimeter.Count; index++)
+            {
+                if (TryRaySegmentIntersection(
+                        direction,
+                        perimeter[index],
+                        perimeter[(index + 1) % perimeter.Count],
+                        out var intersection))
+                {
+                    distance = nearest
+                        ? Mathf.Min(distance, intersection)
+                        : Mathf.Max(distance, intersection);
+                }
+            }
+
+            return float.IsInfinity(distance) ? float.NaN : distance;
+        }
+
+        private static float RayMeshDistance(
+            Mesh mesh,
+            Transform meshTransform,
+            Vector2 centre,
+            Vector2 direction,
+            int subMesh,
+            bool nearest)
+        {
+            var vertices = mesh.vertices
+                .Select(vertex => meshTransform.TransformPoint(vertex))
+                .Select(vertex => new Vector2(vertex.x - centre.x, vertex.z - centre.y))
+                .ToArray();
+            var triangles = mesh.GetTriangles(subMesh);
+            var distance = nearest ? float.PositiveInfinity : float.NegativeInfinity;
+            for (var index = 0; index < triangles.Length; index += 3)
+            {
+                for (var edge = 0; edge < 3; edge++)
+                {
+                    var from = vertices[triangles[index + edge]];
+                    var to = vertices[triangles[index + ((edge + 1) % 3)]];
+                    if (!TryRaySegmentIntersection(direction, from, to, out var intersection))
+                    {
+                        continue;
+                    }
+
+                    distance = nearest
+                        ? Mathf.Min(distance, intersection)
+                        : Mathf.Max(distance, intersection);
+                }
+            }
+
+            return float.IsInfinity(distance) ? float.NaN : distance;
+        }
+
+        private static bool TryRaySegmentIntersection(
+            Vector2 direction, Vector2 from, Vector2 to, out float distance)
+        {
+            var edge = to - from;
+            var denominator = Cross(direction, edge);
+            if (Mathf.Abs(denominator) <= Tolerance)
+            {
+                distance = 0f;
+                return false;
+            }
+
+            var rayDistance = Cross(from, edge) / denominator;
+            var edgeDistance = Cross(from, direction) / denominator;
+            if (rayDistance < 0f || edgeDistance < -Tolerance || edgeDistance > 1f + Tolerance)
+            {
+                distance = 0f;
+                return false;
+            }
+
+            distance = rayDistance;
+            return true;
+        }
+
+        private static float Cross(Vector2 left, Vector2 right) =>
+            (left.x * right.y) - (left.y * right.x);
+
+        private static int CountTriangleComponents(Mesh mesh, int subMesh) =>
+            TriangleComponents(mesh, subMesh).Count;
+
+        private static IReadOnlyList<HashSet<int>> TriangleComponents(Mesh mesh, int subMesh)
+        {
+            var triangles = mesh.GetTriangles(subMesh);
+            var adjacency = new Dictionary<int, HashSet<int>>();
+            for (var index = 0; index < triangles.Length; index += 3)
+            {
+                Connect(adjacency, triangles[index], triangles[index + 1]);
+                Connect(adjacency, triangles[index + 1], triangles[index + 2]);
+                Connect(adjacency, triangles[index + 2], triangles[index]);
+            }
+
+            var visited = new HashSet<int>();
+            var pending = new Stack<int>();
+            var components = new List<HashSet<int>>();
+            foreach (var vertex in adjacency.Keys)
+            {
+                if (!visited.Add(vertex))
+                {
+                    continue;
+                }
+
+                var component = new HashSet<int> { vertex };
+                components.Add(component);
+                pending.Push(vertex);
+                while (pending.Count > 0)
+                {
+                    foreach (var neighbour in adjacency[pending.Pop()])
+                    {
+                        if (visited.Add(neighbour))
+                        {
+                            component.Add(neighbour);
+                            pending.Push(neighbour);
+                        }
+                    }
+                }
+            }
+
+            return components;
+        }
+
+        private static void Connect(
+            IDictionary<int, HashSet<int>> adjacency,
+            int left,
+            int right)
+        {
+            if (!adjacency.TryGetValue(left, out var leftNeighbours))
+            {
+                leftNeighbours = new HashSet<int>();
+                adjacency.Add(left, leftNeighbours);
+            }
+
+            if (!adjacency.TryGetValue(right, out var rightNeighbours))
+            {
+                rightNeighbours = new HashSet<int>();
+                adjacency.Add(right, rightNeighbours);
+            }
+
+            leftNeighbours.Add(right);
+            rightNeighbours.Add(left);
         }
     }
 }

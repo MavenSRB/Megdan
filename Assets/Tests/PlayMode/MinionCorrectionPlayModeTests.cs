@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Minions;
@@ -150,9 +152,12 @@ namespace GuardsDigital.Tests.PlayMode
                 baseBoard.FocusedHeroId,
                 fastTravelDestinations: baseBoard.FastTravelDestinations,
                 minionDefenseCues: System.Array.Empty<MinionDefenseCueViewModel>(),
-                minionChoiceCues: new[]
+                pieceTargetCues: new[]
                 {
-                    new MinionChoiceCueViewModel(subject.MinionId, MinionChoiceCueKind.Selected)
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForMinion(subject.MinionId),
+                        BoardTargetCueState.Selected,
+                        BoardTargetConsequenceIntent.Affect)
                 },
                 correctionDestination: destinations[1]));
             yield return null;
@@ -167,8 +172,20 @@ namespace GuardsDigital.Tests.PlayMode
                 "Every legal route endpoint is a selectable control without presentation calculating anything.");
             var subjectView = runtime.BoardView.MinionViews.Single(value =>
                 value.BoundMinionId.Equals(subject.MinionId));
-            Assert.That(subjectView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected),
+            var subjectRing = subjectView.TargetRing;
+            Assert.That(subjectView.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected),
                 "The board marks which minion the offered destinations would receive.");
+            Assert.That(subjectView.TargetConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Affect),
+                "Correction moves the subject, so its invoked consequence remains dark green.");
+            Assert.That(subjectRing.IsVisible, Is.True);
+            Assert.That(subjectRing.VisibleKeylineColor, Is.EqualTo(BoardTargetRing.KeylineColor));
+            var retainedWashMaterial = subjectRing.GetComponent<MeshRenderer>()
+                .sharedMaterials[2];
+            AssertWash(
+                subjectRing,
+                BoardTargetRing.AffectColor,
+                BoardTargetRing.SelectedWashAlpha);
             Assert.That(runtime.BoardView.Model.CorrectionDestination, Is.EqualTo(destinations[1]),
                 "Milestone 6.2d: the board lights the endpoint being pointed at, and only that one.");
             var litTiles = runtime.BoardView.TileViews
@@ -178,6 +195,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(litTiles, Contains.Item(destinations[1]));
             Assert.That(litTiles, Has.No.Member(destinations[0]),
                 "The endpoint nobody is pointing at is drawn no differently from any other space.");
+            Assert.That(subjectRing.IsVisible, Is.True,
+                "The selected piece ring coexists with the destination fill rather than replacing it.");
 
             // Place wording stays apart from Move wording inside the correction family.
             runtime.MinionChoiceView.Render(MinionChoiceViewModel.ForCorrection(
@@ -217,12 +236,30 @@ namespace GuardsDigital.Tests.PlayMode
             runtime.MinionChoicePresenter.Refresh();
             yield return null;
             Assert.That(runtime.MinionChoiceView.Model, Is.Null);
-            Assert.That(subjectView.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Selected),
+            Assert.That(subjectView.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected),
                 "The hand-rendered board cue stays until the board view is re-rendered from authority.");
             runtime.BoardPresenter.Refresh();
             yield return null;
             Assert.That(runtime.BoardView.Model.CorrectionDestination, Is.Null,
                 "The authoritative projection carries no correction, so no destination stays lit.");
+            Assert.That(subjectView.TargetRing, Is.SameAs(subjectRing));
+            Assert.That(subjectView.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
+                "The same retained ring clears when authority rebuilds the ordinary board.");
+            Assert.That(subjectRing.IsVisible, Is.False);
+            Assert.That(subjectRing.GetComponent<MeshRenderer>().sharedMaterials[2],
+                Is.SameAs(retainedWashMaterial),
+                "Clearing the correction retains the one wash material for the next projection.");
+        }
+
+        private static void AssertWash(
+            BoardTargetRing ring,
+            Color expectedColor,
+            float expectedAlpha)
+        {
+            Assert.That(ring.VisibleWashColor.r, Is.EqualTo(expectedColor.r).Within(0.0001f));
+            Assert.That(ring.VisibleWashColor.g, Is.EqualTo(expectedColor.g).Within(0.0001f));
+            Assert.That(ring.VisibleWashColor.b, Is.EqualTo(expectedColor.b).Within(0.0001f));
+            Assert.That(ring.VisibleWashColor.a, Is.EqualTo(expectedAlpha).Within(0.0001f));
         }
 
         private static IEnumerator LoadScene()

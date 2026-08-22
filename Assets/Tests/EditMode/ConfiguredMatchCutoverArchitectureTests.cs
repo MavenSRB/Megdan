@@ -2,8 +2,12 @@ using System;
 using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
+using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -20,6 +24,51 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class ConfiguredMatchCutoverArchitectureTests
     {
         private const string ScenePath = "Assets/Scenes/Milestone1_2_HexGrid.unity";
+
+        [Test]
+        public void PieceTargeting_UsesOneIdentityKeyedRingContractAndNoTileMarkerContract()
+        {
+            var cueSignature = new[]
+            {
+                typeof(BoardTargetCueState),
+                typeof(BoardTargetConsequenceIntent)
+            };
+            foreach (var pieceView in new[]
+            {
+                typeof(PrimitiveHeroView),
+                typeof(StandardMinionView),
+                typeof(PlacedTokenView)
+            })
+            {
+                Assert.That(
+                    pieceView.GetMethod("SetTargetCue", cueSignature),
+                    Is.Not.Null,
+                    $"{pieceView.Name} must consume the shared typed ring contract.");
+                Assert.That(pieceView.GetMethod("SetChoiceCue"), Is.Null,
+                    $"{pieceView.Name} must not retain the triangle-marker path.");
+            }
+
+            Assert.That(typeof(HexTileView).GetMethod(
+                    "SetChoiceCue" /* absence-intended: the legacy tile marker must stay removed */),
+                Is.Null,
+                "A piece identity must never be converted back into a tile marker.");
+            Assert.That(
+                typeof(BoardInteractionViewModel).GetProperty(
+                    nameof(BoardInteractionViewModel.PieceTargetCues)),
+                Is.Not.Null);
+            Assert.That(
+                typeof(PieceTargetCueViewModel).GetProperty(
+                    nameof(PieceTargetCueViewModel.Target)).PropertyType,
+                Is.EqualTo(typeof(BoardObjectReference)));
+            Assert.That(
+                typeof(BoardInteractionViewModel).GetProperties()
+                    .Where(property => property.Name == "HeroChoiceCues" ||
+                        property.Name == "MinionChoiceCues" ||
+                        property.Name == "TokenChoiceCues" ||
+                        property.Name == "EffectChoiceTargetSpaces"),
+                Is.Empty,
+                "Parallel identity and coordinate marker projections must not survive beside the ring list.");
+        }
 
         [Test]
         public void SavedScene_UsesCompositionRuntimeAndCarriesNoStaleSerializedBinding()

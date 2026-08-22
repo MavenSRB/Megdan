@@ -3,14 +3,13 @@ using UnityEngine;
 namespace GuardsDigital.Presentation.Board
 {
     /// <summary>
-    /// The one board-facing cue construction, shared by every unit view that has to say "this one".
+    /// The shared board-facing text construction used by signed Defense contribution badges and
+    /// board labels.
     ///
-    /// Milestone 6.1b reviewed these proportions on the minion Defense cue and milestone 6.1ao settled
-    /// the choice marker's shape and size on top of them; milestone 6.5c moved the construction here
-    /// rather than copying it, because an effect choice can name a hero as easily as a minion and two
-    /// cue builders would be two sets of proportions to keep in step. The constants keep their
-    /// reviewed values exactly - this is a move, not a redesign - and each view still owns where its
-    /// own cue sits, since a mirrored sprite and an upright prism do not hang a marker the same way.
+    /// Milestone 6.1b reviewed these proportions on the minion Defense cue. Milestone 8.11d moved
+    /// piece targeting to generated fitted rings with a translucent over-piece wash, while this helper
+    /// retains the signed-value treatment and the one camera-relative board orientation used by flat
+    /// text and target-cue geometry.
     /// </summary>
     public static class BoardChoiceCue
     {
@@ -49,22 +48,14 @@ namespace GuardsDigital.Presentation.Board
             Quaternion.FromToRotation(Vector3.forward, ScreenUpInWorld) *
             Quaternion.Euler(-90f, 0f, 0f) * Quaternion.AngleAxis(180f, Vector3.forward);
 
-        public const string Marker = "▼";
-        public const float MarkerCharacterSize = 0.09f;
         public const float ValueCharacterSize = 0.06f;
         public const float BackgroundCharacterSize = 0.18f;
         public const float BackgroundVerticalScale = 1.35f;
         public const float OpticalVerticalOffset = -0.025f;
 
-        /// <summary>The control being pointed at, in the same restrained amber every prompt uses.</summary>
-        public static Color HighlightedColor => new Color(0.86f, 0.55f, 0.06f);
-
-        /// <summary>An answer already given, or the subject an offered destination would receive.</summary>
-        public static Color SelectedColor => new Color(0.72f, 0.12f, 0.08f);
-
         /// <summary>
-        /// Builds one cue: mirrored-or-upright text over a vertically oval dark-grey backing. A caller
-        /// needing a different glyph size sets it on the returned cue after construction.
+        /// Builds one signed-value badge: mirrored-or-upright text over a vertically oval dark-grey
+        /// backing.
         /// </summary>
         public static void CreatePair(
             Transform parent,

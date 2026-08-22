@@ -134,14 +134,10 @@ namespace GuardsDigital.Presentation.Match
                 // the board: this fires inside the HUD's own draw, and rebuilding the immediate-mode
                 // models mid-pass would change the control count between layout and repaint.
                 //
-                // Milestone 6.3a: both halves are reported. A hero or minion target is marked by the
-                // space, which is how the effect definition names it; a token target is marked by the
-                // identity the control carries, because the board must not read occupancy out of a
-                // coordinate to find out which piece the words mean.
-                var moved = BoardPresenter.HighlightEffectChoiceCandidate(target?.Space);
-                moved |= BoardPresenter.HighlightTokenChoiceCandidate(
-                    target?.TokenId ?? default);
-                if (moved)
+                // The target rings are static authority-shaped candidates. Hover only controls the
+                // optional consequence preview; milestone 8.11d deliberately reserves a brighter
+                // ring state without projecting current pointer state into it.
+                if (BoardPresenter.HighlightEffectChoiceCandidate(target?.Space))
                 {
                     BoardPresenter.Refresh();
                 }
@@ -187,7 +183,7 @@ namespace GuardsDigital.Presentation.Match
                 // Only the board, for the reason every other hover notification gives: this fires
                 // inside the HUD's own draw, and rebuilding the immediate-mode models mid-pass would
                 // change the control count between layout and repaint.
-                if (BoardPresenter.HighlightTokenChoiceCandidate(
+                if (BoardPresenter.HighlightClearTokenCandidate(
                     candidate?.TokenId ?? default))
                 {
                     BoardPresenter.Refresh();
@@ -505,9 +501,7 @@ namespace GuardsDigital.Presentation.Match
                     value.Space.Equals(coordinate.Value))
                 : null;
             RoundView.ForwardTargetHighlight(target);
-            var moved = BoardPresenter.HighlightEffectChoiceCandidate(target?.Space);
-            moved |= BoardPresenter.HighlightTokenChoiceCandidate(target?.TokenId ?? default);
-            return moved;
+            return BoardPresenter.HighlightEffectChoiceCandidate(target?.Space);
         }
 
         public IReadOnlyList<ClearOfferViewModel> ClearOffers =>
@@ -569,7 +563,7 @@ namespace GuardsDigital.Presentation.Match
                     value.TokenId.Equals(tokenId))
                 : null;
             RoundView.ForwardClearTokenHighlight(candidate);
-            BoardPresenter.HighlightTokenChoiceCandidate(candidate?.TokenId ?? default);
+            BoardPresenter.HighlightClearTokenCandidate(candidate?.TokenId ?? default);
             return candidate != null || !tokenId.IsDefined;
         }
 

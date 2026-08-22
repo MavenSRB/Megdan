@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
@@ -68,7 +69,14 @@ namespace GuardsDigital.Tests.EditMode
                     Array.Empty<HexCoordinate>(),
                     Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
                     new[] { state.MinionId },
-                    default);
+                    default,
+                    pieceTargetCues: new[]
+                    {
+                        new PieceTargetCueViewModel(
+                            BoardObjectReference.ForMinion(state.MinionId),
+                            BoardTargetCueState.Eligible,
+                            BoardTargetConsequenceIntent.Attack)
+                    });
                 view.Render(model);
 
                 Object.DestroyImmediate(originalObject);
@@ -84,6 +92,12 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(view.MinionViews, Is.EquivalentTo(new[] { replacement }));
                 Assert.That(replacementObject.activeSelf, Is.True);
+                Assert.That(replacement.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
+                    "A replacement view is rebound before the current identity-keyed cue is redrawn.");
+                Assert.That(replacement.TargetConsequenceIntent,
+                    Is.EqualTo(BoardTargetConsequenceIntent.Attack));
+                AssertColor(replacement.TargetRing.VisibleConsequenceColor, BoardTargetRing.BloodRedColor);
+                StringAssert.Contains("ATTACK - BLOOD RED", replacement.TargetRing.AssistiveReading);
                 Assert.That(selector.TrySelectFromPointerRay(
                     new Ray(replacement.transform.position + (Vector3.up * 10f), Vector3.down)), Is.True);
                 Assert.That(submitted, Is.EqualTo(state.MinionId));
@@ -103,8 +117,10 @@ namespace GuardsDigital.Tests.EditMode
             var minionObject = new GameObject("Projected Minion");
             var tileObject = new GameObject("Projected Minion Tile");
             var material = new Material(Shader.Find("Standard"));
+            var priorScreenUp = BoardChoiceCue.ScreenUpInWorld;
             try
             {
+                BoardChoiceCue.SetScreenUp(new Vector3(1f, 0f, 1f));
                 var state = MinionOccupancy.FromSetup(new QuickGameMinionSetupState(
                     new MinionId("blue-target"),
                     new TeamId("blue-team"),
@@ -115,6 +131,10 @@ namespace GuardsDigital.Tests.EditMode
                     new HexCoordinate(1, 0)));
                 var minion = minionObject.AddComponent<StandardMinionView>();
                 minion.Configure(state, HexWorldLayout.DefaultOuterRadius);
+                var spriteRenderer = minion.GetComponent<SpriteRenderer>();
+                var sourceSprite = spriteRenderer.sprite;
+                var sourceMaterial = spriteRenderer.sharedMaterial;
+                var sourceColor = spriteRenderer.color;
                 var selector = minionObject.AddComponent<StandardMinionPointerSelector>();
                 var tile = tileObject.AddComponent<HexTileView>();
                 tile.Configure(state.Coordinate, HexWorldLayout.DefaultOuterRadius);
@@ -134,20 +154,140 @@ namespace GuardsDigital.Tests.EditMode
                     Array.Empty<HexCoordinate>(),
                     Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
                     new[] { state.MinionId },
-                    default));
+                    default,
+                    pieceTargetCues: new[]
+                    {
+                        new PieceTargetCueViewModel(
+                            BoardObjectReference.ForMinion(state.MinionId),
+                            BoardTargetCueState.Eligible,
+                            BoardTargetConsequenceIntent.Attack)
+                    }));
 
-                // Milestone 8.11a: a target says "this one" with the Minion Battle's own marker rather
-                // than with a fill. The fill had to compete with whatever the official board is painted
-                // underneath it; the marker carries its own backing and does not.
-                Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
+                var ring = minion.TargetRing;
+                var localSpriteBounds = spriteRenderer.sprite.bounds;
+                var expectedCentre = spriteRenderer.transform.TransformPoint(localSpriteBounds.center);
+                var expectedRadius = Mathf.Max(
+                    spriteRenderer.transform.TransformVector(
+                        Vector3.right * localSpriteBounds.extents.x).magnitude,
+                    spriteRenderer.transform.TransformVector(
+                        Vector3.up * localSpriteBounds.extents.y).magnitude);
+                var yawInflatedWorldAabbRadius = Mathf.Max(
+                    spriteRenderer.bounds.extents.x,
+                    spriteRenderer.bounds.extents.z);
+                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.Eligible));
+                Assert.That(ring.ConsequenceIntent, Is.EqualTo(BoardTargetConsequenceIntent.Attack));
+                AssertColor(ring.VisibleConsequenceColor, BoardTargetRing.BloodRedColor);
+                AssertColor(ring.VisibleWashColor, new Color(
+                    BoardTargetRing.BloodRedColor.r,
+                    BoardTargetRing.BloodRedColor.g,
+                    BoardTargetRing.BloodRedColor.b,
+                    BoardTargetRing.EligibleWashAlpha));
+                StringAssert.Contains("ATTACK - BLOOD RED", ring.AssistiveReading);
+                Assert.That(yawInflatedWorldAabbRadius,
+                    Is.GreaterThan(expectedRadius + 0.01f),
+                    "The regression fixture must exercise a yaw-inflated world AABB.");
+                Assert.That(ring.InnerRadius,
+                    Is.EqualTo(expectedRadius).Within(0.0001f),
+                    "A circular sprite ring fits its transformed local radius, independent of board yaw.");
+                Assert.That(Mathf.Abs(ring.InnerRadius - yawInflatedWorldAabbRadius),
+                    Is.GreaterThan(0.01f),
+                    "The ring must not inherit the larger axis-aligned world-bounds radius.");
+                var generatedVertices = ring.GeneratedMesh.vertices;
+                Assert.That(ring.GeneratedMesh.GetTriangles(0)
+                        .Concat(ring.GeneratedMesh.GetTriangles(1))
+                        .Distinct()
+                        .Select(index => Mathf.Sqrt(
+                            (generatedVertices[index].x * generatedVertices[index].x) +
+                            (generatedVertices[index].z * generatedVertices[index].z)))
+                        .Min(),
+                    Is.EqualTo(expectedRadius).Within(0.0001f),
+                    "The full neutral-keylined mesh begins exactly at the circular sprite footprint.");
+                var keylineRadii = ring.GeneratedMesh.GetTriangles(0)
+                    .Distinct()
+                    .Select(index => Mathf.Sqrt(
+                        (generatedVertices[index].x * generatedVertices[index].x) +
+                        (generatedVertices[index].z * generatedVertices[index].z)))
+                    .ToArray();
+                var consequenceRadii = ring.GeneratedMesh.GetTriangles(1)
+                    .Distinct()
+                    .Select(index => Mathf.Sqrt(
+                        (generatedVertices[index].x * generatedVertices[index].x) +
+                        (generatedVertices[index].z * generatedVertices[index].z)))
+                    .ToArray();
+                Assert.That(keylineRadii.Min(),
+                    Is.EqualTo(consequenceRadii.Min()).Within(0.0001f),
+                    "Colour and keyline share the exact footprint edge; the cue adds no visual moat.");
+                Assert.That(keylineRadii.Max() - consequenceRadii.Max(),
+                    Is.EqualTo(BoardTargetRing.KeylineWidth).Within(0.0001f),
+                    "Only the bright neutral keyline extends beyond the coloured eligible band.");
+                var washWorldY = ring.GeneratedMesh.GetTriangles(2)
+                    .Distinct()
+                    .Select(index => ring.transform.TransformPoint(
+                        generatedVertices[index]).y)
+                    .ToArray();
+                Assert.That(washWorldY, Is.Not.Empty);
+                Assert.That(washWorldY,
+                    Has.All.GreaterThan(spriteRenderer.bounds.max.y),
+                    "The transparent blood-red wash is drawn directly over the target's visible face.");
+                var washTriangles = ring.GeneratedMesh.GetTriangles(2);
+                var washRadii = washTriangles
+                    .Distinct()
+                    .Select(index => Mathf.Sqrt(
+                        (generatedVertices[index].x * generatedVertices[index].x) +
+                        (generatedVertices[index].z * generatedVertices[index].z)))
+                    .ToArray();
+                Assert.That(washTriangles, Has.Length.EqualTo(64 * 3));
+                Assert.That(washRadii.Min(), Is.EqualTo(0f).Within(0.0001f));
+                Assert.That(washRadii.Max(), Is.EqualTo(expectedRadius).Within(0.0001f),
+                    "The wash is a 64-sided fill of the exact circular token footprint.");
+                Assert.That(ring.GetComponent<MeshRenderer>().sortingLayerID,
+                    Is.EqualTo(spriteRenderer.sortingLayerID));
+                Assert.That(ring.GetComponent<MeshRenderer>().sortingOrder,
+                    Is.EqualTo(spriteRenderer.sortingOrder + 1),
+                    "The shared mesh overlay sorts above circular SpriteRenderer art.");
+                Assert.That(spriteRenderer.sprite, Is.SameAs(sourceSprite));
+                Assert.That(spriteRenderer.sharedMaterial, Is.SameAs(sourceMaterial));
+                Assert.That(spriteRenderer.color, Is.EqualTo(sourceColor));
+                Assert.That(spriteRenderer.enabled, Is.True,
+                    "The wash never replaces, tints, or hides the actual minion sprite.");
+                Assert.That(ring.transform.position.x,
+                    Is.EqualTo(expectedCentre.x).Within(0.0001f));
+                Assert.That(ring.transform.position.z,
+                    Is.EqualTo(expectedCentre.z).Within(0.0001f));
+                Assert.That(Vector3.Angle(ring.transform.up, Vector3.up), Is.LessThan(0.001f));
+                Assert.That(ring.GetComponentsInChildren<Collider>(true), Is.Empty);
+                Assert.That(minion.GetComponentsInChildren<TextMesh>(true), Is.Empty,
+                    "An Attack target builds no legacy triangle TextMesh or backing.");
                 Assert.That(tile.IsHighlighted, Is.False,
-                    "and it is the marker alone - lighting the space as well said it twice.");
+                    "A piece target no longer duplicates its base ring with a destination fill.");
                 Assert.That(selector.TrySelectFromPointerRay(
                     new Ray(minion.transform.position + (Vector3.up * 10f), Vector3.down)), Is.True);
                 Assert.That(submitted, Is.EqualTo(state.MinionId));
 
                 view.Render(new BoardInteractionViewModel(
                     2,
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroOccupancy>(),
+                    new[] { state },
+                    Array.Empty<HexCoordinate>(),
+                    Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>(),
+                    Array.Empty<MinionId>(),
+                    default,
+                    pieceTargetCues: new[]
+                    {
+                        new PieceTargetCueViewModel(
+                            BoardObjectReference.ForMinion(state.MinionId),
+                            BoardTargetCueState.Selected,
+                            BoardTargetConsequenceIntent.Removal)
+                    }));
+
+                Assert.That(minion.TargetRing, Is.SameAs(ring));
+                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.Selected));
+                Assert.That(ring.ConsequenceIntent,
+                    Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+                AssertColor(ring.VisibleConsequenceColor, BoardTargetRing.BloodRedColor);
+
+                view.Render(new BoardInteractionViewModel(
+                    3,
                     Array.Empty<GuardsDigital.Core.Units.Heroes.HeroOccupancy>(),
                     Array.Empty<MinionOccupancy>(),
                     Array.Empty<HexCoordinate>(),
@@ -156,12 +296,14 @@ namespace GuardsDigital.Tests.EditMode
                     default));
 
                 Assert.That(minionObject.activeSelf, Is.False);
+                Assert.That(minion.TargetRing, Is.SameAs(ring));
+                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(ring.IsVisible, Is.False,
+                    "Removal clears the retained cue before the piece view is deactivated.");
                 Assert.That(tile.IsHighlighted, Is.False);
-                Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None),
-                    "and the marker is cleared with it - a space nobody may take wears nothing.");
 
                 view.Render(new BoardInteractionViewModel(
-                    3,
+                    4,
                     Array.Empty<GuardsDigital.Core.Units.Heroes.HeroOccupancy>(),
                     new[] { state },
                     Array.Empty<HexCoordinate>(),
@@ -172,10 +314,13 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(minionObject.activeSelf, Is.True,
                     "A later authoritative projection such as Undo/restore must re-enable the retained view.");
                 Assert.That(tile.IsHighlighted, Is.False);
-                Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
+                Assert.That(minion.TargetRing, Is.SameAs(ring));
+                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.None),
+                    "Restore redraws the piece without reviving a cue absent from that projection.");
             }
             finally
             {
+                BoardChoiceCue.SetScreenUp(priorScreenUp);
                 UnityEngine.Object.DestroyImmediate(material);
                 UnityEngine.Object.DestroyImmediate(minionObject);
                 UnityEngine.Object.DestroyImmediate(tileObject);
@@ -253,8 +398,9 @@ namespace GuardsDigital.Tests.EditMode
                     "The signed glyph needs a reviewed downward optical correction after bounds alignment.");
                 Assert.That(background.GetComponent<MeshRenderer>().sortingOrder,
                     Is.LessThan(cue.GetComponent<MeshRenderer>().sortingOrder));
-                Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None),
-                    "A Defense modifier source is not a selectable Attack-target cue.");
+                Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
+                    "A Defense modifier source is not a selectable target cue.");
+                Assert.That(minion.TargetRing.IsVisible, Is.False);
                 Assert.That(tile.IsHighlighted, Is.False);
 
                 view.Render(new BoardInteractionViewModel(
@@ -340,5 +486,13 @@ namespace GuardsDigital.Tests.EditMode
                 new ConfiguredSpawnPointReference(new MapId("test-map"), new SpawnPointId($"{id}-spawn")),
                 new ConfiguredSpaceReference(new MapId("test-map"), new SpaceId("q1_r0")),
                 new HexCoordinate(1, 0)));
+
+        private static void AssertColor(Color actual, Color expected)
+        {
+            Assert.That(actual.r, Is.EqualTo(expected.r).Within(1f / 255f));
+            Assert.That(actual.g, Is.EqualTo(expected.g).Within(1f / 255f));
+            Assert.That(actual.b, Is.EqualTo(expected.b).Within(1f / 255f));
+            Assert.That(actual.a, Is.EqualTo(expected.a).Within(1f / 255f));
+        }
     }
 }

@@ -94,14 +94,16 @@ namespace GuardsDigital.Presentation.Match
             }
 
             Model = model ?? throw new ArgumentNullException(nameof(model));
-            var heroChoiceCues = model.HeroChoiceCues.ToDictionary(value => value.HeroId);
+            var pieceTargetCues = model.PieceTargetCues.ToDictionary(value => value.Target);
             foreach (var hero in heroes)
             {
                 var occupancy = model.Heroes.SingleOrDefault(value =>
                     value.HeroId.Equals(hero.Occupancy.HeroId));
                 if (!occupancy.HeroId.IsDefined)
                 {
-                    hero.SetChoiceCue(MinionChoiceCueKind.None);
+                    hero.SetTargetCue(
+                        BoardTargetCueState.None,
+                        BoardTargetConsequenceIntent.None);
                     hero.gameObject.SetActive(false);
                     continue;
                 }
@@ -112,15 +114,17 @@ namespace GuardsDigital.Presentation.Match
                 hero.Configure(occupancy, hero.OuterRadius);
                 hero.gameObject.SetActive(true);
 
-                // Milestone 6.5c: an effect-choice target is addressed by its space, so whichever
-                // unit stands there wears the cue. The hero path exists because a Push may name one.
-                hero.SetChoiceCue(
-                    heroChoiceCues.TryGetValue(occupancy.HeroId, out var heroChoiceCue)
-                        ? heroChoiceCue.Kind
-                        : model.EffectChoiceTargetSpace.HasValue &&
-                        occupancy.Coordinate.Equals(model.EffectChoiceTargetSpace.Value)
-                        ? MinionChoiceCueKind.Highlighted
-                        : MinionChoiceCueKind.None);
+                var identity = BoardObjectReference.ForHero(occupancy.HeroId);
+                if (pieceTargetCues.TryGetValue(identity, out var targetCue))
+                {
+                    hero.SetTargetCue(targetCue.State, targetCue.ConsequenceIntent);
+                }
+                else
+                {
+                    hero.SetTargetCue(
+                        BoardTargetCueState.None,
+                        BoardTargetConsequenceIntent.None);
+                }
             }
 
             RenderMinions(model);
@@ -134,24 +138,10 @@ namespace GuardsDigital.Presentation.Match
             // itself, so the space is what changes. Lighting is also the only thing that can show a
             // region as a region.
             //
-            // <b>Choosing a piece marks the piece.</b> A hero or minion an Attack may take, an effect
-            // candidate that names a unit or a token - the answer is the thing standing there, not the
-            // ground under it, and lighting the ground says the wrong thing. It also could not be made
-            // to read: a tint has to contrast with pale sand, mid brown, jungle and near-black rock at
-            // once and no colour does, while the Minion Battle's marker carries its own dark backing
-            // and does not have to.
-            var markedCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>();
-            markedCoordinates.UnionWith(model.EffectChoiceTargetSpaces);
-            foreach (var targetId in model.AttackTargets)
-            {
-                var target = model.Heroes.Single(value => value.HeroId.Equals(targetId));
-                markedCoordinates.Add(target.Coordinate);
-            }
-            foreach (var targetId in model.MinionAttackTargets)
-            {
-                var target = model.Minions.Single(value => value.MinionId.Equals(targetId));
-                markedCoordinates.Add(target.Coordinate);
-            }
+            // <b>Choosing a piece marks the piece itself.</b> The fitted ring and translucent wash from
+            // the unified stable-identity projection above apply to the piece view, so movement and
+            // rebuilds follow identity and no tile converts an identity back into a coordinate.
+            // Destination fills remain independent.
 
             var targetCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(model.MovementDestinations);
             targetCoordinates.UnionWith(model.FastTravelDestinations);
@@ -172,7 +162,6 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.11a: and every space the Respawn offers, not only the one a control was
             // pointing at, now that the board is where the choice is made.
             targetCoordinates.UnionWith(model.HeroRespawnDestinations);
-            targetCoordinates.ExceptWith(markedCoordinates);
 
             // The predicted landing space is drawn in its own color and is never selectable, so it is
             // resolved after the selectable set and can never be added to it.
@@ -187,20 +176,14 @@ namespace GuardsDigital.Presentation.Match
                     // The prediction is a space rather than a piece - where this Push would end - so it
                     // is lit like one, in its own colour and never selectable.
                     tile.SetHighlighted(true, resultingSpaceMaterial, resultingSpaceRimMaterial);
-                    tile.SetChoiceCue(MinionChoiceCueKind.None);
                     continue;
                 }
 
-                // Milestone 8.11a, at the user's request: a marked space wears the marker and nothing
-                // else. Lighting it as well said the same thing twice, and the fill was the half that
-                // read worst - it is the half that has to compete with whatever the board is painted.
-                var marked = markedCoordinates.Contains(tile.Coordinate);
-                var highlighted = !marked && targetCoordinates.Contains(tile.Coordinate);
+                var highlighted = targetCoordinates.Contains(tile.Coordinate);
                 tile.SetHighlighted(
                     highlighted,
                     highlighted ? highlightMaterial : null,
                     highlighted ? highlightRimMaterial : null);
-                tile.SetChoiceCue(marked ? MinionChoiceCueKind.Highlighted : MinionChoiceCueKind.None);
             }
         }
 
@@ -221,7 +204,9 @@ namespace GuardsDigital.Presentation.Match
         {
             var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);
             var defenseCues = model.MinionDefenseCues.ToDictionary(value => value.MinionId, value => value.Amount);
-            var choiceCues = model.MinionChoiceCues.ToDictionary(value => value.MinionId);
+            var targetCues = model.PieceTargetCues
+                .Where(value => value.Target.Kind == BoardObjectKind.Minion)
+                .ToDictionary(value => value.Target.MinionId);
             foreach (var minion in minions)
             {
                 var boundId = minion.BoundMinionId;
@@ -235,19 +220,25 @@ namespace GuardsDigital.Presentation.Match
 
                     minion.SetDefenseContributionCue(
                         defenseCues.TryGetValue(boundId, out var amount) ? amount : 0);
-                    minion.SetChoiceCue(choiceCues.TryGetValue(boundId, out var choiceCue)
-                        ? choiceCue.Kind
-                        : model.EffectChoiceTargetSpace.HasValue &&
-                            state.Coordinate.Equals(model.EffectChoiceTargetSpace.Value)
-                            ? MinionChoiceCueKind.Highlighted
-                            : MinionChoiceCueKind.None);
+                    if (targetCues.TryGetValue(boundId, out var targetCue))
+                    {
+                        minion.SetTargetCue(targetCue.State, targetCue.ConsequenceIntent);
+                    }
+                    else
+                    {
+                        minion.SetTargetCue(
+                            BoardTargetCueState.None,
+                            BoardTargetConsequenceIntent.None);
+                    }
 
                     projectedMinions.Remove(state.MinionId);
                 }
                 else
                 {
                     minion.SetDefenseContributionCue(0);
-                    minion.SetChoiceCue(MinionChoiceCueKind.None);
+                    minion.SetTargetCue(
+                        BoardTargetCueState.None,
+                        BoardTargetConsequenceIntent.None);
                     minion.gameObject.SetActive(false);
                 }
             }
@@ -279,9 +270,9 @@ namespace GuardsDigital.Presentation.Match
         private void RenderTokens(BoardInteractionViewModel model)
         {
             var projectedTokens = model.PlacedTokens.ToDictionary(value => value.Id);
-            // Milestone 6.3a: which drawn pieces a control currently names. A cue is addressed by the
-            // token's own identity rather than by its space, so a released view can never keep one.
-            var choiceCues = model.TokenChoiceCues.ToDictionary(value => value.TokenId);
+            var targetCues = model.PieceTargetCues
+                .Where(value => value.Target.Kind == BoardObjectKind.Token)
+                .ToDictionary(value => value.Target.TokenInstanceId);
             var released = new List<PlacedTokenView>();
             foreach (var token in tokens)
             {
@@ -294,14 +285,23 @@ namespace GuardsDigital.Presentation.Match
                         token.Configure(state, token.OuterRadius);
                     }
 
-                    token.SetChoiceCue(choiceCues.TryGetValue(boundId, out var choiceCue)
-                        ? choiceCue.Kind
-                        : MinionChoiceCueKind.None);
+                    if (targetCues.TryGetValue(boundId, out var targetCue))
+                    {
+                        token.SetTargetCue(targetCue.State, targetCue.ConsequenceIntent);
+                    }
+                    else
+                    {
+                        token.SetTargetCue(
+                            BoardTargetCueState.None,
+                            BoardTargetConsequenceIntent.None);
+                    }
                     projectedTokens.Remove(boundId);
                 }
                 else
                 {
-                    token.SetChoiceCue(MinionChoiceCueKind.None);
+                    token.SetTargetCue(
+                        BoardTargetCueState.None,
+                        BoardTargetConsequenceIntent.None);
                     token.gameObject.SetActive(false);
                     released.Add(token);
                 }
@@ -314,17 +314,25 @@ namespace GuardsDigital.Presentation.Match
                 if (freeIndex < released.Count)
                 {
                     view = released[freeIndex++];
+                    view.gameObject.SetActive(true);
                     view.Configure(state, view.OuterRadius);
                 }
                 else
                 {
                     view = CreateTokenView(state);
+                    view.gameObject.SetActive(true);
                 }
 
-                view.SetChoiceCue(choiceCues.TryGetValue(state.Id, out var newCue)
-                    ? newCue.Kind
-                    : MinionChoiceCueKind.None);
-                view.gameObject.SetActive(true);
+                if (targetCues.TryGetValue(state.Id, out var newCue))
+                {
+                    view.SetTargetCue(newCue.State, newCue.ConsequenceIntent);
+                }
+                else
+                {
+                    view.SetTargetCue(
+                        BoardTargetCueState.None,
+                        BoardTargetConsequenceIntent.None);
+                }
             }
         }
 
