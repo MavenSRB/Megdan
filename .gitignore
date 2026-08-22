@@ -16,6 +16,11 @@
 /Docs/Guards of Atlantis II - Tabletopia Cards/
 /Docs/Guards of Atlantis II - Map References/
 
+# Private prepared board artwork; Tools/Prepare-OfficialBoardArtwork.ps1 writes it from the corpus
+# above, and it is never committed or distributed. Its absence is the tracked project's normal state.
+/Assets/Resources/Private/
+/Assets/Resources/Private.meta
+
 # IDE and generated solution files
 /.vs/
 /.idea/

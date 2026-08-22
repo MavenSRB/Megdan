@@ -136,7 +136,12 @@ namespace GuardsDigital.Tests.EditMode
                     new[] { state.MinionId },
                     default));
 
-                Assert.That(tile.IsHighlighted, Is.True);
+                // Milestone 8.11a: a target says "this one" with the Minion Battle's own marker rather
+                // than with a fill. The fill had to compete with whatever the official board is painted
+                // underneath it; the marker carries its own backing and does not.
+                Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
+                Assert.That(tile.IsHighlighted, Is.False,
+                    "and it is the marker alone - lighting the space as well said it twice.");
                 Assert.That(selector.TrySelectFromPointerRay(
                     new Ray(minion.transform.position + (Vector3.up * 10f), Vector3.down)), Is.True);
                 Assert.That(submitted, Is.EqualTo(state.MinionId));
@@ -152,6 +157,8 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(minionObject.activeSelf, Is.False);
                 Assert.That(tile.IsHighlighted, Is.False);
+                Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None),
+                    "and the marker is cleared with it - a space nobody may take wears nothing.");
 
                 view.Render(new BoardInteractionViewModel(
                     3,
@@ -165,6 +172,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(minionObject.activeSelf, Is.True,
                     "A later authoritative projection such as Undo/restore must re-enable the retained view.");
                 Assert.That(tile.IsHighlighted, Is.False);
+                Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None));
             }
             finally
             {
@@ -245,8 +253,9 @@ namespace GuardsDigital.Tests.EditMode
                     "The signed glyph needs a reviewed downward optical correction after bounds alignment.");
                 Assert.That(background.GetComponent<MeshRenderer>().sortingOrder,
                     Is.LessThan(cue.GetComponent<MeshRenderer>().sortingOrder));
-                Assert.That(tile.IsHighlighted, Is.False,
+                Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.None),
                     "A Defense modifier source is not a selectable Attack-target cue.");
+                Assert.That(tile.IsHighlighted, Is.False);
 
                 view.Render(new BoardInteractionViewModel(
                     2,
@@ -307,7 +316,13 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(view.GetComponent<SpriteRenderer>().sprite.name, Is.EqualTo("blue-melee"));
                 Assert.That(view.transform.localPosition,
                     Is.EqualTo(HexWorldLayout.ToWorld(state.Coordinate) + (Vector3.up * StandardMinionView.DefaultVerticalOffset)));
-                Assert.That(Vector3.Angle(view.transform.localRotation * Vector3.up, Vector3.forward),
+                // Milestone 8.11a: the token takes the shared board-facing rotation rather than a
+                // copy of it, so this asks the shared construction what up is. It is world +Z while
+                // nothing is underneath the board, and the board's own up once the artwork is.
+                Assert.That(
+                    Vector3.Angle(
+                        view.transform.localRotation * Vector3.up,
+                        BoardChoiceCue.ScreenUpInWorld),
                     Is.LessThan(0.0001f));
             }
             finally

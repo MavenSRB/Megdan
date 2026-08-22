@@ -91,7 +91,11 @@ namespace GuardsDigital.Tests.EditMode
                 // observable at all - the first version was in the right place and unseeable.
                 Assert.That(Vector3.Distance(cue.transform.forward, Vector3.up), Is.LessThan(0.001f),
                     "The marker faces the camera that looks down the board plane.");
-                Assert.That(Vector3.Distance(cue.transform.up, Vector3.forward), Is.LessThan(0.001f),
+                // Milestone 8.11a: up-screen is what the framing camera calls up, which is world +Z
+                // until the official artwork puts the camera on the board's own axes.
+                Assert.That(
+                    Vector3.Distance(cue.transform.up, BoardChoiceCue.ScreenUpInWorld),
+                    Is.LessThan(0.001f),
                     "And its own up points up-screen, so the marker is not upside down.");
                 Assert.That(cue.transform.position.z,
                     Is.GreaterThan(view.transform.position.z + 0.5f),

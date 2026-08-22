@@ -902,6 +902,29 @@ namespace GuardsDigital.Application
             var projectedChoices = new List<DefenseChoicePreviewProjection>();
             foreach (var offer in choice.LegalDefenseOffers)
             {
+                // Milestone 8.11a. A Block is previewed as a Block. Milestone 8.11 taught the resolver
+                // that p.14's condition replaces the Defense comparison, but left this preview
+                // calculating a Defense value for every offer - so a Block previewed as a card worth
+                // zero, predicted the defender losing an attack it in fact stops, and gave the prompt
+                // no printed Defense icon to draw itself from.
+                var blockResult = DefenseBlockQuery.Evaluate(
+                    offer,
+                    configuration.CardDefinitions,
+                    attack.SourceDefinitionReference,
+                    attack.ActionDefinitionId);
+                if (blockResult != DefenseBlockResult.None)
+                {
+                    projectedChoices.Add(new DefenseChoicePreviewProjection(
+                        offer.SourceCardInstanceId,
+                        GetCardDisplayName(offer.SourceCardInstanceId),
+                        Array.Empty<ValueContributionProjection>(),
+                        null,
+                        blockResult,
+                        AttackOutcomeComparison.Create(
+                            attack.AttackTotal, null, blockResult).Outcome));
+                    continue;
+                }
+
                 var defense = DefenseValueQuery.Calculate(
                     offer,
                     configuration.CardDefinitions,

@@ -15,12 +15,38 @@ namespace GuardsDigital.Presentation.Board
     public static class BoardChoiceCue
     {
         /// <summary>
+        /// Which world direction is up on screen, which every board-facing cue is turned to match.
+        ///
+        /// <para>Milestone 8.11a. Until the official artwork went underneath, screen up was world +Z and
+        /// nothing had to say so. The framing camera now stands on the board's own axes so the square
+        /// face reads upright, and a cue still turned to world +Z is drawn at that same angle to the
+        /// screen - readable, but visibly crooked, which is what the user saw. The map view sets this
+        /// once when it frames the board, and it is the only mutable state in the cue construction:
+        /// there is one board, one camera, and one up.</para>
+        ///
+        /// <para>It defaults to world +Z, so a build with no artwork - which is a clean checkout - draws
+        /// every cue exactly where it drew it before this milestone.</para>
+        /// </summary>
+        public static Vector3 ScreenUpInWorld { get; private set; } = Vector3.forward;
+
+        /// <summary>
+        /// Points the cue construction at the direction the framing camera treats as up. Called by the
+        /// map view as it frames the board, because that is where the camera's orientation is decided.
+        /// </summary>
+        public static void SetScreenUp(Vector3 screenUpInWorld)
+        {
+            var flattened = new Vector3(screenUpInWorld.x, 0f, screenUpInWorld.z);
+            ScreenUpInWorld = flattened.sqrMagnitude < 1e-6f ? Vector3.forward : flattened.normalized;
+        }
+
+        /// <summary>
         /// The orientation that lays a cue flat on the board, facing the camera that looks down the
         /// XZ plane, with its own up pointing up-screen. `StandardMinionView` already carries it on
         /// the token itself; a view whose transform is upright hangs its cue from an anchor holding
         /// this, because a cue at identity rotation on such a view is edge-on and invisible.
         /// </summary>
         public static Quaternion BoardFacingRotation =>
+            Quaternion.FromToRotation(Vector3.forward, ScreenUpInWorld) *
             Quaternion.Euler(-90f, 0f, 0f) * Quaternion.AngleAxis(180f, Vector3.forward);
 
         public const string Marker = "▼";

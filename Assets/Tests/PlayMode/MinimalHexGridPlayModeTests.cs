@@ -912,7 +912,9 @@ namespace GuardsDigital.Tests.PlayMode
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(minion.Occupancy.Coordinate));
             Assert.That(runtime.BoardView.Model.MinionAttackTargets, Does.Contain(targetId));
-            Assert.That(tile.IsHighlighted, Is.True,
+            // Milestone 8.11a: the target cue is the Minion Battle's own marker rather than a fill, so
+            // that it reads the same over painted sand, jungle and rock.
+            Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted),
                 "The exact projected minion occupancy must receive the configured target cue.");
             Assert.That(minion.GetComponent<StandardMinionPointerSelector>(), Is.Not.Null);
             var pendingTargetSnapshot = runtime.CaptureSnapshot();
@@ -943,7 +945,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null);
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.True);
-            Assert.That(tile.IsHighlighted, Is.True);
+            // Milestone 8.11a: an Attack target says "this one" with the Minion Battle's marker rather
+            // than with a fill, so Undo restoring the choice restores the marker.
+            Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
 
             Assert.That(runtime.Restart(), Is.True);
             yield return null;
@@ -955,7 +959,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.True);
-            Assert.That(tile.IsHighlighted, Is.True);
+            Assert.That(tile.ChoiceCueKind, Is.EqualTo(MinionChoiceCueKind.Highlighted),
+                "and a snapshot restore restores the target marker with the choice.");
             Assert.That(pointerInput.TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
             yield return null;
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
@@ -1692,7 +1697,10 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadScene();
             var first = Root();
             Assert.That(first.OwnsGeneratedHighlightMaterial, Is.True);
-            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(2));
+            // Milestone 8.11a: four rather than two. Each of the two highlight owners now generates a
+            // fill and an opaque rim, and disposes them together - the count is what says neither half
+            // can be leaked without the other.
+            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(4));
             Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
             Assert.That(CountResultingSpaceMaterials(), Is.EqualTo(1));
             AssertCurrentMinionBindings(first);
@@ -1700,7 +1708,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadScene();
             yield return null;
             var second = Root();
-            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(2));
+            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(4),
+                "and a reload rebuilds the same four rather than accumulating them.");
             Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
             Assert.That(CountResultingSpaceMaterials(), Is.EqualTo(1));
             AssertCurrentMinionBindings(second);

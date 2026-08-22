@@ -21,7 +21,13 @@ namespace GuardsDigital.Presentation.Units.Minions
     public sealed class StandardMinionView : MonoBehaviour
     {
         public const float DefaultVerticalOffset = 0.18f;
-        public const float DefaultScale = 1.35f;
+        /// <summary>
+        /// Milestone 8.11a, at the user's request: raised from 1.35. With the official face beneath the
+        /// board, a token that left any of its space uncovered showed the space's own printed icon
+        /// around its edge, which read as a second piece rather than as the board underneath. The token
+        /// now covers its space, and stays well inside the 1.732 between one space and the next.
+        /// </summary>
+        public const float DefaultScale = 1.62f;
         public const float DefenseCueCharacterSize = BoardChoiceCue.ValueCharacterSize;
         public const float DefenseCueBackgroundCharacterSize = BoardChoiceCue.BackgroundCharacterSize;
         public const float DefenseCueBackgroundVerticalScale = BoardChoiceCue.BackgroundVerticalScale;
@@ -67,8 +73,10 @@ namespace GuardsDigital.Presentation.Units.Minions
             gameObject.name = $"{state.TeamSide} {state.MinionType} Minion {state.MinionId.Value}";
             transform.localPosition = HexWorldLayout.ToWorld(state.Coordinate, outerRadius) +
                 (Vector3.up * DefaultVerticalOffset);
-            transform.localRotation = Quaternion.Euler(-90f, 0f, 0f) *
-                Quaternion.AngleAxis(180f, Vector3.forward);
+            // Milestone 8.11a: this had the board-facing rotation written out by hand, which is why it
+            // alone stayed crooked when the framing camera moved onto the board's axes. It reads the
+            // shared construction now, so the token and every cue hanging off it turn together.
+            transform.localRotation = BoardChoiceCue.BoardFacingRotation;
             transform.localScale = Vector3.one * DefaultScale;
 
             var renderer = GetComponent<SpriteRenderer>();

@@ -58,8 +58,10 @@ namespace GuardsDigital.Presentation.Board
         private Material edgeMaterial;
         private Material redSpawnMaterial;
         private Material blueSpawnMaterial;
+        private Material suppressedFillMaterial;
         private Mesh generatedTileMesh;
         private MapDefinitionReference materialMapReference;
+        private OfficialBoardUnderlayView underlayView;
 
         public float OuterRadius => outerRadius;
         public BoardMapDefinition RenderedDefinition => renderedDefinition;
@@ -72,7 +74,25 @@ namespace GuardsDigital.Presentation.Board
             (edgeMaterial != null ? 1 : 0) +
             (redSpawnMaterial != null ? 1 : 0) +
             (blueSpawnMaterial != null ? 1 : 0) +
-            (generatedTileMesh != null ? 1 : 0);
+            (suppressedFillMaterial != null ? 1 : 0) +
+            (generatedTileMesh != null ? 1 : 0) +
+            (underlayView != null ? underlayView.OwnedNativeResourceCount : 0);
+
+        /// <summary>
+        /// Milestone 8.11a. True while the official board face is being drawn underneath, which is the
+        /// one condition that suppresses the generated fills and debug edges. It is false whenever the
+        /// private artwork is absent, and false for every map that is not the reviewed official one.
+        /// </summary>
+        public bool IsUnderlayActive => underlayView != null && underlayView.HasArtwork;
+
+        public OfficialBoardUnderlayView UnderlayView => underlayView;
+
+        /// <summary>
+        /// Which world direction the framing camera treats as up. The board's own up while the official
+        /// face is underneath, and world +Z otherwise, which is what it always was.
+        /// </summary>
+        public Vector3 ScreenUpInWorld =>
+            IsUnderlayActive ? OfficialBoardArtwork.BoardUpInWorld : Vector3.forward;
 
         /// <summary>
         /// The views this rebuild actually produced, excluding any object it retired. Consumers must
@@ -116,6 +136,13 @@ namespace GuardsDigital.Presentation.Board
 
             renderedDefinition = definition;
             renderedSetup = null;
+            // Before the materials, because whether the artwork is underneath is what decides which
+            // fill a tile is configured with and whether its debug edge is drawn at all.
+            EnsureUnderlay(definition);
+            // Every board-facing cue turns to match the framing, so a marker reads level with the
+            // screen rather than level with a world axis the camera no longer uses. Set here rather
+            // than beside the camera, because a rebuild with no camera bound still places cues.
+            BoardChoiceCue.SetScreenUp(ScreenUpInWorld);
             EnsureMaterials(definition);
 
             var spacesByCoordinate = definition.Spaces.ToDictionary(space => space.Coordinate);
@@ -232,6 +259,10 @@ namespace GuardsDigital.Presentation.Board
 
         private void ConfigureEdge(LineRenderer lineRenderer)
         {
+            // Milestone 8.11a: the debug perimeter is what the artwork replaces most directly, so it is
+            // switched off rather than restyled while the face is underneath. The renderer stays on the
+            // tile, configured and ready, so removing the artwork restores it on the next rebuild.
+            lineRenderer.enabled = !IsUnderlayActive;
             lineRenderer.sharedMaterial = edgeMaterial;
             lineRenderer.useWorldSpace = false;
             lineRenderer.loop = true;
@@ -264,6 +295,7 @@ namespace GuardsDigital.Presentation.Board
                 }
             }
 
+
             var spacesById = definition.Spaces.ToDictionary(space => space.Id);
             foreach (var spawnPoint in definition.SpawnPoints.OrderBy(spawnPoint => spawnPoint.Id.Value))
             {
@@ -285,6 +317,18 @@ namespace GuardsDigital.Presentation.Board
                     string.Equals(spawnPoint.TeamId, "red", System.StringComparison.OrdinalIgnoreCase)
                         ? redSpawnMaterial
                         : blueSpawnMaterial);
+
+                // Milestone 8.11a, at the user's request: the official face already prints every spawn,
+                // hero and minion alike, so the generated ring is a second copy of something the artwork
+                // says better. It is hidden the same way the debug edge is - the view stays configured
+                // with its reviewed shape and team colour, which is what the presentation tests read and
+                // what a rebuild without the artwork puts straight back on screen.
+                var markerRenderer = marker.GetComponent<LineRenderer>();
+                if (markerRenderer != null)
+                {
+                    markerRenderer.enabled = !IsUnderlayActive;
+                }
+
                 markersById.Remove(spawnPoint.Id);
             }
 
@@ -420,10 +464,54 @@ namespace GuardsDigital.Presentation.Board
             DestroyObject(view.gameObject);
         }
 
+        /// <summary>
+        /// Milestone 8.11a. Puts the official board face under the reviewed official map when a prepared
+        /// copy is present, and retires it in every other case.
+        /// </summary>
+        /// <remarks>
+        /// Two conditions, and both are ordinary rather than exceptional. The registration in
+        /// <see cref="OfficialBoardArtwork"/> is for one map at one revision, so no other definition may
+        /// receive it - a synthetic grid in a test would be drawn under a picture of somewhere else. And
+        /// the artwork itself is private and ignored, so a clean checkout resolves nothing and the board
+        /// keeps exactly the generated presentation it had before this milestone.
+        /// </remarks>
+        private void EnsureUnderlay(BoardMapDefinition definition)
+        {
+            var isOfficialMap = definition.Reference.Equals(OfficialBoardMapCatalog.SelectedMap);
+            if (!isOfficialMap || !OfficialBoardArtwork.TryLoadTexture(out var artwork))
+            {
+                RetireUnderlay();
+                return;
+            }
+
+            if (underlayView == null)
+            {
+                underlayView = GetComponentInChildren<OfficialBoardUnderlayView>(true);
+            }
+
+            if (underlayView == null)
+            {
+                var underlayObject = CreateGeneratedObject("Official Board Underlay", transform);
+                underlayView = underlayObject.AddComponent<OfficialBoardUnderlayView>();
+            }
+
+            underlayView.Configure(artwork, outerRadius);
+        }
+
+        private void RetireUnderlay()
+        {
+            underlayView ??= GetComponentInChildren<OfficialBoardUnderlayView>(true);
+            if (underlayView == null) return;
+            underlayView.ReleaseOwnedResources();
+            DestroyObject(underlayView.gameObject);
+            underlayView = null;
+        }
+
         private void EnsureMaterials(BoardMapDefinition definition)
         {
             terrainMaterial ??= CreateMaterial("Terrain Debug", new Color(0.20f, 0.23f, 0.26f, 1f));
             edgeMaterial ??= CreateMaterial("Map Edge Debug", new Color(0.10f, 0.11f, 0.13f, 1f));
+            suppressedFillMaterial ??= CreateTransparentMaterial("Suppressed Tile Fill");
             redSpawnMaterial ??= CreateMaterial("Red Spawn Debug", new Color(1f, 0.18f, 0.12f, 1f));
             blueSpawnMaterial ??= CreateMaterial("Blue Spawn Debug", new Color(0.12f, 0.55f, 1f, 1f));
             if (materialMapReference.Equals(definition.Reference) && zoneMaterials.Count == definition.Zones.Count)
@@ -464,8 +552,19 @@ namespace GuardsDigital.Presentation.Board
             materialMapReference = default;
         }
 
+        /// <summary>
+        /// Milestone 8.11a. With the official face underneath, every tile is configured with one fully
+        /// transparent fill instead of its zone colour: the artwork already says which zone a space is
+        /// in, and painting a flat colour over it would hide the thing the milestone is for. The tile
+        /// keeps its renderer and its material, so <see cref="HexTileView.SetHighlighted"/> still swaps
+        /// to an opaque highlight and back with no knowledge of any of this.
+        /// </summary>
         private Material GetSpaceMaterial(BoardMapSpace space) =>
-            space.Kind == BoardMapSpaceKind.Terrain ? terrainMaterial : zoneMaterials[space.ZoneId.Value];
+            IsUnderlayActive
+                ? suppressedFillMaterial
+                : space.Kind == BoardMapSpaceKind.Terrain
+                    ? terrainMaterial
+                    : zoneMaterials[space.ZoneId.Value];
 
         private static Material CreateMaterial(string name, Color color)
         {
@@ -481,15 +580,35 @@ namespace GuardsDigital.Presentation.Board
             return material;
         }
 
+        /// <summary>
+        /// Milestone 8.11a. The tile fill while the artwork is underneath: present and pickable, drawn
+        /// at nothing at all. <see cref="BoardOverlayMaterial"/> owns the blend state, because the
+        /// Standard shader is opaque until it is set and a low alpha alone would do nothing.
+        /// </summary>
+        private static Material CreateTransparentMaterial(string name) =>
+            BoardOverlayMaterial.Create(
+                name, new Color(1f, 1f, 1f, BoardOverlayMaterial.SuppressedAlpha));
+
         private void FrameWholeMap(Camera targetCamera, BoardMapDefinition definition)
         {
             if (targetCamera == null) return;
+
+            // Milestone 8.11a. The framing works in the camera's own axes rather than in the world ones.
+            // They are the same pair while nothing is underneath - screen right is world +X and screen up
+            // is world +Z, which is exactly what this did before - and they become the board's own axes
+            // once the artwork is there, so the square face reads upright. Measuring the map's extent in
+            // the same basis is what keeps every space inside the viewport either way.
+            var screenRight = IsUnderlayActive ? OfficialBoardArtwork.BoardRightInWorld : Vector3.right;
+            var screenUp = ScreenUpInWorld;
+
             var positions = definition.Spaces.Select(space => HexWorldLayout.ToWorld(space.Coordinate, outerRadius)).ToArray();
-            var minimumX = positions.Min(position => position.x) - outerRadius;
-            var maximumX = positions.Max(position => position.x) + outerRadius;
-            var minimumZ = positions.Min(position => position.z) - outerRadius;
-            var maximumZ = positions.Max(position => position.z) + outerRadius;
-            var center = new Vector3((minimumX + maximumX) * 0.5f, 60f, (minimumZ + maximumZ) * 0.5f);
+            var minimumX = positions.Min(position => Vector3.Dot(position, screenRight)) - outerRadius;
+            var maximumX = positions.Max(position => Vector3.Dot(position, screenRight)) + outerRadius;
+            var minimumZ = positions.Min(position => Vector3.Dot(position, screenUp)) - outerRadius;
+            var maximumZ = positions.Max(position => Vector3.Dot(position, screenUp)) + outerRadius;
+            var center = (screenRight * ((minimumX + maximumX) * 0.5f)) +
+                (screenUp * ((minimumZ + maximumZ) * 0.5f)) +
+                new Vector3(0f, 60f, 0f);
             var aspect = targetCamera.aspect > 0f ? targetCamera.aspect : 16f / 9f;
             var halfWidth = (maximumX - minimumX) * 0.5f;
             var halfDepth = (maximumZ - minimumZ) * 0.5f;
@@ -506,8 +625,8 @@ namespace GuardsDigital.Presentation.Board
             // map in the band that is left, which is what keeps every space inside the viewport - the
             // property `Scene_LoadsCompleteSelectedMapPresentationUnderFramedFixedCamera` measures.
             var shift = reserved * targetCamera.orthographicSize * aspect;
-            targetCamera.transform.position = new Vector3(center.x - shift, center.y, center.z);
-            targetCamera.transform.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+            targetCamera.transform.position = center - (screenRight * shift);
+            targetCamera.transform.rotation = Quaternion.LookRotation(Vector3.down, screenUp);
         }
 
         private static void DestroyObject(GameObject target)
@@ -522,11 +641,13 @@ namespace GuardsDigital.Presentation.Board
             DestroyOwnedResource(edgeMaterial);
             DestroyOwnedResource(redSpawnMaterial);
             DestroyOwnedResource(blueSpawnMaterial);
+            DestroyOwnedResource(suppressedFillMaterial);
             DestroyOwnedResource(generatedTileMesh);
             terrainMaterial = null;
             edgeMaterial = null;
             redSpawnMaterial = null;
             blueSpawnMaterial = null;
+            suppressedFillMaterial = null;
             generatedTileMesh = null;
         }
 

@@ -39,7 +39,9 @@ namespace GuardsDigital.Presentation.Match
             UnityEngine.Material highlightMaterial,
             ConfiguredMatchHudRenderer hudRenderer,
             UnityEngine.Material resultingSpaceMaterial = null,
-            Func<GuardsDigital.Core.Components.PlacedToken, PlacedTokenView> tokenViewFactory = null)
+            Func<GuardsDigital.Core.Components.PlacedToken, PlacedTokenView> tokenViewFactory = null,
+            UnityEngine.Material highlightRimMaterial = null,
+            UnityEngine.Material resultingSpaceRimMaterial = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -80,7 +82,7 @@ namespace GuardsDigital.Presentation.Match
 
             BoardView = new BoardInteractionUnityView(
                 heroViews, tileViews, highlightMaterial, minionViews, resultingSpaceMaterial,
-                tokenViewFactory);
+                tokenViewFactory, highlightRimMaterial, resultingSpaceRimMaterial);
             HandsView = new DirectorHandsUnityView();
             RoundView = new RoundActionUnityView();
             UndoRestartView = new UndoRestartUnityView();
@@ -102,9 +104,24 @@ namespace GuardsDigital.Presentation.Match
                 // Attack target is a spatial decision and must stay one; only when the authority offers
                 // nothing does the same click become what it now also means - point the tray at that
                 // hero. That path submits no command and changes no authoritative state.
-                heroId => BoardPresenter.SubmitHero(heroId) || SelectViewedHero(heroId),
-                BoardPresenter.SubmitMinion,
-                BoardPresenter.SubmitDestination);
+                // Milestone 8.11a, at the user's request: every question the board can be asked is
+                // answered on the board. Each click is offered to the authority-backed handlers in
+                // turn and the first that recognises it wins; only a click nothing claims falls
+                // through to pointing the tray at a hero, which submits no command and changes no
+                // authoritative state. The order is a route rather than a priority - the pending
+                // choices below are mutually exclusive, because the authority pauses on one at a time.
+                heroId =>
+                    BoardPresenter.SubmitHero(heroId) ||
+                    MinionChoicePresenter.SubmitUnit(
+                        GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(heroId)) ||
+                    SelectViewedHero(heroId),
+                minionId =>
+                    BoardPresenter.SubmitMinion(minionId) ||
+                    MinionChoicePresenter.SubmitUnit(
+                        GuardsDigital.Core.Rules.Modifications.RuleObject.ForMinion(minionId)),
+                coordinate =>
+                    BoardPresenter.SubmitDestination(coordinate) ||
+                    RoundPresenter.SubmitRespawnAtDestination(coordinate));
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
             HandsView.PassRequested += heroId => HandsPresenter.Pass(heroId);

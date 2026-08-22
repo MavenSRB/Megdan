@@ -238,7 +238,9 @@ namespace GuardsDigital.Presentation.Match
             HexCoordinate? effectChoiceResultingSpace = null,
             HexCoordinate? heroRespawnHighlight = null,
             IEnumerable<HeroChoiceCueViewModel> heroChoiceCues = null,
-            IEnumerable<TokenChoiceCueViewModel> tokenChoiceCues = null)
+            IEnumerable<TokenChoiceCueViewModel> tokenChoiceCues = null,
+            IEnumerable<HexCoordinate> effectChoiceTargetSpaces = null,
+            IEnumerable<HexCoordinate> heroRespawnDestinations = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -280,6 +282,10 @@ namespace GuardsDigital.Presentation.Match
 
             CorrectionDestination = correctionDestination;
             EffectChoiceDestinations = Array.AsReadOnly((effectChoiceDestinations ??
+                Enumerable.Empty<HexCoordinate>()).ToArray());
+            EffectChoiceTargetSpaces = Array.AsReadOnly((effectChoiceTargetSpaces ??
+                Enumerable.Empty<HexCoordinate>()).ToArray());
+            HeroRespawnDestinations = Array.AsReadOnly((heroRespawnDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             EffectChoiceTargetSpace = effectChoiceTargetSpace;
             EffectChoiceResultingSpace = effectChoiceResultingSpace;
@@ -349,6 +355,19 @@ namespace GuardsDigital.Presentation.Match
         /// control, because the board already says everything the control would have.
         /// </summary>
         public IReadOnlyList<HexCoordinate> EffectChoiceDestinations { get; }
+
+        /// <summary>
+        /// Milestone 8.11a: the spaces of the candidates that name a board object - a hero, a minion or
+        /// a token. They are marked rather than lit, because they hold a piece, and clicking one answers
+        /// the choice exactly as clicking an empty destination does.
+        /// </summary>
+        public IReadOnlyList<HexCoordinate> EffectChoiceTargetSpaces { get; }
+
+        /// <summary>
+        /// Milestone 8.11a: every space p.7's Hero Respawn offers, marked so the choice is made on the
+        /// board. Declining to respawn has no space, so it stays a control in the prompt.
+        /// </summary>
+        public IReadOnlyList<HexCoordinate> HeroRespawnDestinations { get; }
 
         /// <summary>The space of the effect-choice target the pointer or keyboard focus is on, if any.</summary>
         public HexCoordinate? EffectChoiceTargetSpace { get; }
@@ -507,7 +526,10 @@ namespace GuardsDigital.Presentation.Match
                     CreateHeroChoiceCues(
                         projection.PendingMinionBattleChoice,
                         highlightedChoiceUnit),
-                    CreateTokenChoiceCues(projection, highlightedToken, selectedTokens));
+                    CreateTokenChoiceCues(projection, highlightedToken, selectedTokens),
+                    EffectChoiceTargetSpaces(projection),
+                    projection.PendingHeroRespawnChoice?.Destinations
+                        .Select(destination => destination.Coordinate));
             }
 
             view.Render(lastViewModel);
@@ -671,7 +693,19 @@ namespace GuardsDigital.Presentation.Match
         /// lit, so a lit space is always one a click can take.
         /// </summary>
         private static IReadOnlyList<HexCoordinate> SelectableEffectChoiceDestinations(
-            MatchSessionProjection projection)
+            MatchSessionProjection projection) =>
+            SelectableEffectChoiceSpaces(projection, emptyOnly: true);
+
+        /// <summary>
+        /// Milestone 8.11a: every space a click can answer this choice on, occupied or not.
+        ///
+        /// <para><paramref name="emptyOnly"/> separates the two readings that used to be one. The board
+        /// lights empty candidates as destinations and marks object-naming ones as targets, which are
+        /// drawn differently and must not be confused; but a click answers either, so the submission
+        /// path asks for all of them.</para>
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> SelectableEffectChoiceSpaces(
+            MatchSessionProjection projection, bool emptyOnly = false)
         {
             var choice = projection.PendingEffectChoice;
             if (choice == null || projection.PendingEffectChoicePreview.Count == 0)
@@ -679,16 +713,33 @@ namespace GuardsDigital.Presentation.Match
                 return Array.Empty<HexCoordinate>();
             }
 
-            var empty = new HashSet<HexCoordinate>(projection.PendingEffectChoicePreview
-                .Where(preview => !preview.NamesObject)
+            var admitted = new HashSet<HexCoordinate>(projection.PendingEffectChoicePreview
+                .Where(preview => !emptyOnly || !preview.NamesObject)
                 .Select(preview => preview.Coordinate));
             return choice.SelectInvocations
                 .Where(invocation =>
                     invocation.Candidate.Kind == EffectChoiceCandidateKind.Value &&
                     invocation.Candidate.Value.Kind == EffectValueKind.Coordinate &&
-                    empty.Contains(invocation.Candidate.Value.Coordinate))
+                    admitted.Contains(invocation.Candidate.Value.Coordinate))
                 .Select(invocation => invocation.Candidate.Value.Coordinate)
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Milestone 8.11a: the spaces of the candidates that name a board object, which the board marks
+        /// so that a player can see what there is to pick before picking it.
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> EffectChoiceTargetSpaces(
+            MatchSessionProjection projection)
+        {
+            var all = SelectableEffectChoiceSpaces(projection);
+            if (all.Count == 0)
+            {
+                return Array.Empty<HexCoordinate>();
+            }
+
+            var empty = new HashSet<HexCoordinate>(SelectableEffectChoiceDestinations(projection));
+            return all.Where(space => !empty.Contains(space)).ToArray();
         }
 
         private static HexCoordinate? FindResultingSpace(
@@ -721,16 +772,27 @@ namespace GuardsDigital.Presentation.Match
                 foreach (var candidate in choice.Candidates.Where(candidate =>
                     candidate.MinionId.IsDefined))
                 {
-                    var kind = choice.SelectedMinionIds.Contains(candidate.MinionId)
-                        ? MinionChoiceCueKind.Selected
-                        : candidate.MinionId.Equals(highlightedMinionId)
-                            ? MinionChoiceCueKind.Highlighted
-                            : MinionChoiceCueKind.None;
-                    if (kind == MinionChoiceCueKind.None)
+                    // Milestone 8.11a, at the user's request. Until now an unselected candidate was
+                    // marked only while a control in the prompt was pointing at it, because the prompt
+                    // was where the choice was made and the board was echoing it. The board is where
+                    // the choice is made now, so an offered piece is marked whether or not anything is
+                    // pointing at it: a piece a player may click has to be a piece they can see is
+                    // clickable. `highlightedMinionId` still separates the two on the correction path
+                    // below, which keeps its own controls.
+                    //
+                    // What is marked is what the authority says may be selected *now*, not every unit
+                    // in the Battle Zone. Rulebook p.8 removes Heavy minions last, so a Heavy is a
+                    // candidate but not a legal selection while any non-Heavy stands - and marking a
+                    // piece the rules would refuse is an offer the board cannot honour.
+                    var isSelected = choice.SelectedMinionIds.Contains(candidate.MinionId);
+                    if (!isSelected && !choice.LegalSelectMinionIds.Contains(candidate.MinionId))
                     {
                         continue;
                     }
 
+                    var kind = isSelected
+                        ? MinionChoiceCueKind.Selected
+                        : MinionChoiceCueKind.Highlighted;
                     cues.Add(new MinionChoiceCueViewModel(candidate.MinionId, kind));
                 }
 
@@ -774,9 +836,12 @@ namespace GuardsDigital.Presentation.Match
                 .Where(candidate => candidate.HeroId.IsDefined)
                 .Select(candidate =>
                 {
+                    // Milestone 8.11a: as for the minion candidates, a hero the Battle offers is marked
+                    // whether or not a control is pointing at it - and only while the authority says it
+                    // may be selected, so the board never offers a piece the rules would refuse.
                     var kind = choice.SelectedUnits.Contains(candidate.Unit)
                         ? MinionChoiceCueKind.Selected
-                        : highlightedUnit.Equals(candidate.Unit)
+                        : choice.LegalSelectUnits.Contains(candidate.Unit)
                             ? MinionChoiceCueKind.Highlighted
                             : MinionChoiceCueKind.None;
                     return new { candidate.HeroId, Kind = kind };
@@ -853,9 +918,16 @@ namespace GuardsDigital.Presentation.Match
             var effectChoice = session.Projection.PendingEffectChoice;
             if (effectChoice != null)
             {
-                // Only an empty space answers from the board. A candidate that names an object is
-                // answered by its named control, so a click on an occupied space selects nothing.
-                if (!SelectableEffectChoiceDestinations(session.Projection).Contains(destination))
+                // Milestone 8.11a, at the user's request: every candidate answers from the board, the
+                // way an Attack target always has. Until now only an empty space did, and a candidate
+                // naming an object was answered by a control in the prompt instead - which meant the
+                // board could show you the piece being asked about but not let you pick it.
+                //
+                // Nothing about the command changes. An object-naming candidate already carries the
+                // coordinate its object stands on, which is why the same lookup finds both; what the
+                // preview adds is only whether that space is occupied, and that no longer decides
+                // whether a click counts.
+                if (!SelectableEffectChoiceSpaces(session.Projection).Contains(destination))
                 {
                     return false;
                 }
@@ -892,7 +964,12 @@ namespace GuardsDigital.Presentation.Match
             var choice = session.Projection.PendingAttackTargetChoice;
             if (choice == null || !choice.LegalTargetHeroIds.Contains(heroId))
             {
-                return false;
+                // Milestone 8.11a: a hero an effect choice names is answered by clicking the hero, the
+                // same click that takes an Attack target. It is routed through the space the hero
+                // stands on, because that is what the candidate carries.
+                var occupancy = session.Projection.Heroes
+                    .FirstOrDefault(value => value.HeroId.Equals(heroId));
+                return occupancy.HeroId.IsDefined && SubmitEffectChoiceAtSpace(occupancy.Coordinate);
             }
 
             return Execute(DirectorCommand.ChooseAttackTarget(
@@ -901,12 +978,37 @@ namespace GuardsDigital.Presentation.Match
                 heroId));
         }
 
+        /// <summary>
+        /// Milestone 8.11a. Answers a pending effect choice with the candidate standing on this space,
+        /// if one does. Shared by the hero, minion and empty-space clicks, because all three are the
+        /// same question asked of the same board.
+        /// </summary>
+        private bool SubmitEffectChoiceAtSpace(HexCoordinate space)
+        {
+            var effectChoice = session.Projection.PendingEffectChoice;
+            if (effectChoice == null ||
+                !SelectableEffectChoiceSpaces(session.Projection).Contains(space))
+            {
+                return false;
+            }
+
+            var selection = effectChoice.SelectInvocations.SingleOrDefault(value =>
+                value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
+                value.Candidate.Value.Kind == EffectValueKind.Coordinate &&
+                value.Candidate.Value.Coordinate.Equals(space));
+            return selection != null && SubmitEffectChoiceSelection(selection);
+        }
+
         public bool SubmitMinion(MinionId minionId)
         {
             var choice = session.Projection.PendingAttackTargetChoice;
             if (choice == null || !choice.LegalTargetMinionIds.Contains(minionId))
             {
-                return false;
+                // Milestone 8.11a: as for a hero, a minion an effect choice names is answered by
+                // clicking it.
+                var occupancy = session.Projection.Minions
+                    .FirstOrDefault(value => value.MinionId.Equals(minionId));
+                return occupancy != null && SubmitEffectChoiceAtSpace(occupancy.Coordinate);
             }
 
             return Execute(DirectorCommand.ChooseAttackTarget(
@@ -2117,6 +2219,18 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// Milestone 8.11a, at the user's request. Answers a Hero Respawn by clicking the space rather
+        /// than a control naming it. Declining to respawn has no board surface, so it stays a control.
+        /// </summary>
+        public bool SubmitRespawnAtDestination(HexCoordinate destination)
+        {
+            var current = GetOrCreateViewModel(session.Projection);
+            var option = current?.HeroRespawnOptions
+                .SingleOrDefault(value => value.Destination.Equals(destination));
+            return option != null && Execute(option.Command);
+        }
+
+        /// <summary>
         /// Forwards one named target control. Selecting a target of an exactly-one choice finishes it,
         /// so the confirm the authority offers straight afterwards is forwarded with it.
         /// </summary>
@@ -2892,11 +3006,22 @@ namespace GuardsDigital.Presentation.Match
                     var choicePreview = preview.Choices.Single(value =>
                         value.CardInstanceId.HasValue &&
                         value.CardInstanceId.Value.Equals(offer.SourceCardInstanceId));
-                    var printed = choicePreview.DefenseContributions.Single(value =>
-                        value.Kind == ValueContributionKind.PrintedIcon);
+
+                    // Milestone 8.11a. A Block has no printed Defense to name, so it is named by what
+                    // it does. Asking for its printed icon was the fault that stopped an attack
+                    // answered by one: `Single` found nothing on a Block's empty contribution list and
+                    // threw where the prompt is drawn, so the defender was asked nothing at all.
+                    var label = choicePreview.DefenseTotal.HasValue
+                        ? $"DISCARD {choicePreview.ChoiceLabel.ToUpperInvariant()}\n" +
+                            "PRINTED DEFENSE " +
+                            choicePreview.DefenseContributions
+                                .Single(value => value.Kind == ValueContributionKind.PrintedIcon).Amount
+                        : $"DISCARD {choicePreview.ChoiceLabel.ToUpperInvariant()}\n" +
+                            (choicePreview.BlockResult == DefenseBlockResult.Blocked
+                                ? "BLOCK - CONDITION MET"
+                                : "BLOCK - CONDITION NOT MET");
                     return new TypedInvocationViewModel(
-                        $"DISCARD {choicePreview.ChoiceLabel.ToUpperInvariant()}\n" +
-                        $"PRINTED DEFENSE {printed.Amount}",
+                        label,
                         DirectorCommand.ChooseDefenseCard(
                             choice.ResolutionId,
                             choice.ChoiceId,
@@ -2935,6 +3060,14 @@ namespace GuardsDigital.Presentation.Match
             {
                 lines.Add("  BLOCK");
                 lines.Add("RESULT: BLOCK - DEFENDED");
+            }
+            else if (choice.BlockResult == DefenseBlockResult.ConditionUnfulfilled)
+            {
+                // Milestone 8.11a: named apart from the no-Defense-Total case below, because p.14's
+                // other half is not "the attack succeeds" - it is "you are defeated", and a defender
+                // deciding between offers has to be told which of the two this is.
+                lines.Add("  BLOCK - CONDITION NOT MET");
+                lines.Add("RESULT: DEFEATED");
             }
             else if (!choice.DefenseTotal.HasValue)
             {
@@ -3366,6 +3499,27 @@ namespace GuardsDigital.Presentation.Match
             }
 
             view.Render(lastViewModel);
+        }
+
+        /// <summary>
+        /// Milestone 8.11a, at the user's request. Answers the Minion Battle by clicking the unit it is
+        /// asking about, which is the same click that takes an Attack target.
+        ///
+        /// <para>The board already marked every candidate before this milestone - that is what
+        /// <see cref="MinionChoiceCueViewModel"/> has always been for - so the piece a player was being
+        /// asked about was already the piece they were looking at. What was missing was only that
+        /// clicking it did anything.</para>
+        /// </summary>
+        public bool SubmitUnit(RuleObject unit)
+        {
+            if (!unit.IsDefined)
+            {
+                return false;
+            }
+
+            var current = GetOrCreateViewModel(session.Projection);
+            var candidate = current?.Candidates.SingleOrDefault(value => value.Unit.Equals(unit));
+            return candidate != null && Execute(candidate.Command);
         }
 
         /// <summary>

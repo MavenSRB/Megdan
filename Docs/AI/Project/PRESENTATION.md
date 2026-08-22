@@ -10,6 +10,8 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Pointy-top presentation maps `q` eastward and decreasing `r` northward; the same outer-radius value defines both the regular hex mesh and its center spacing.
 - Placeholder hexes use one light-gray fill with a darker gray perimeter for separation; this styling is non-semantic and the logical origin has no unique treatment.
 - The polished pitch uses a stylized tabletop presentation.
+- Milestone 8.11a uses the private Tabletopia `GuardsII_Small_Board` artwork embedded in `Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/g713916_s799373.sprite17__31.jpg` as the flat official-map underlay. The reviewed 292-space `official-single-lane` definition remains authoritative: existing tile views become a registered transparent interaction/highlight layer, while the manifest's 332 magnetic centres are calibration evidence only and never create rules spaces. The prepared Unity artwork remains ignored and private, and its absence retains the generated-board fallback required by a clean tracked checkout.
+- Milestone 8.11b uses the private Tabletopia `Wasp` vertical-token entry's Red and Blue circular faces for the configured mirrored hero views and reuses the tray's complete card faces for pending Defense responses. Hero/team identity, interaction, Defense legality and totals remain projected authority rather than readings of art, and absent private assets retain the tracked primitive fallback.
 - Heroes and minions appear as 3D miniatures on clearly marked team bases.
 - Miniatures may briefly animate when acting.
 - When the camera approaches top-down, units automatically crossfade to readable 2D tokens.

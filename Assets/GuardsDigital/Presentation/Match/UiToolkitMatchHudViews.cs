@@ -2244,27 +2244,24 @@ namespace GuardsDigital.Presentation.Match
                 section.Add(control);
             }
 
-            foreach (var option in Model.HeroRespawnOptions)
-            {
-                var control = HudElements.Control(
-                    option.Label,
-                    () => ForwardInvocation(new TypedInvocationViewModel(option.Label, option.Command)));
-                HudElements.OnPointedAt(control, pointedAt =>
-                    SetRespawnHighlight(pointedAt ? option : null));
-                section.Add(control);
-            }
+            // Milestone 8.11a, at the user's request: each Respawn destination is a space, so it is
+            // marked on the board and chosen by clicking it. The controls that used to name them are
+            // gone; `HeroRespawnOptions` stays on the model because the board resolves a click through
+            // it, and because the prompt still counts them to know it has a question to ask.
 
+            // Milestone 8.11a: declining to respawn has no space on the board, so it stays a control
+            // even though every destination it sits beside has become a click on the map.
             AddInvocation(section, Model.ResolveWithoutRespawn);
 
-            // Milestone 6.5c: one control per target the choice names. Nothing is drawn for a
-            // destination candidate - the lit board is its control.
-            foreach (var target in Model.EffectChoiceTargets)
-            {
-                var control = HudElements.Control(target.Label, () => ForwardTarget(target));
-                HudElements.OnPointedAt(control, pointedAt =>
-                    SetTargetHighlight(pointedAt ? target : null));
-                section.Add(control);
-            }
+            // Milestone 6.5c drew one control per target the choice names, while a destination
+            // candidate had none - the lit board was its control.
+            //
+            // Milestone 8.11a, at the user's request, makes the board the control for both. A candidate
+            // that names a hero, a minion or a token is marked where it stands and answered by clicking
+            // it, exactly as an Attack target has always been, so a second list of the same choices in
+            // the prompt would be two ways to say one thing. The prompt keeps the question and the
+            // choices that have no board surface at all; `EffectChoiceTargets` stays on the model
+            // because the presenter still resolves a click through it.
 
             if (Model.EndTurnInvocation != null)
             {
@@ -2439,20 +2436,12 @@ namespace GuardsDigital.Presentation.Match
             spacer.style.width = 96f;
             spacer.style.flexShrink = 0f;
             controls.Add(spacer);
-            foreach (var candidate in model.Candidates)
-            {
-                var control = HudElements.Control(candidate.Label, () => ForwardCandidate(candidate));
-                if (candidate.IsSelected)
-                {
-                    control.style.backgroundColor = MatchHudTheme.ConfirmAccent;
-                    control.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
-                }
-
-                HudElements.OnPointedAt(control, pointedAt =>
-                    SetHighlight(pointedAt ? candidate : null));
-                controls.Add(control);
-            }
-
+            // Milestone 8.11a, at the user's request: every candidate is a piece standing on the board,
+            // so the board is where it is chosen. Each one is marked where it stands - and only while
+            // the authority says it may be selected, which is how rulebook p.8's Heavy-last ordering
+            // stays honest - and clicking it selects or deselects it. The controls that used to name
+            // them are gone; the confirm below stays, because agreeing to a completed selection is not
+            // a thing anywhere on the map.
             if (model.ConfirmInvocation != null)
             {
                 var confirm = HudElements.Control(

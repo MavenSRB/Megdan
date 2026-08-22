@@ -161,6 +161,23 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(playableMaterialsByZone.Keys,
                 Is.EquivalentTo(mapView.RenderedDefinition.Zones.Select(zone => zone.Id)));
+
+            // Milestone 8.11a. The generated colouring is what a board with no artwork under it says,
+            // and it is still exactly what it was. With the official face present there is nothing for
+            // it to say: every zone the colours stood for is painted on the board itself, so each tile
+            // is drawn with one fully transparent fill instead. Both readings are asserted, because a
+            // clean checkout has no artwork and this project's own does.
+            if (mapView.IsUnderlayActive)
+            {
+                Assert.That(
+                    playableMaterialsByZone.Values.Concat(terrainMaterials).Distinct().Count(),
+                    Is.EqualTo(1),
+                    "One suppressed fill serves every space while the artwork is underneath.");
+                Assert.That(terrainMaterials.Single().color.a, Is.EqualTo(0f).Within(1f / 255f),
+                    "and it is fully transparent, so the zone a player reads is the painted one.");
+                return;
+            }
+
             Assert.That(playableMaterialsByZone[new ZoneId("bottom-jungle")].color,
                 Is.EqualTo(playableMaterialsByZone[new ZoneId("top-jungle")].color));
             Assert.That(playableMaterialsByZone.Values.Select(material => material.color).Distinct().Count(),
@@ -262,7 +279,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minions, Has.All.Matches<StandardMinionView>(view =>
                 view.GetComponent<SpriteRenderer>().sprite != null &&
                 mapView.RenderedDefinition.GetZoneForSpace(view.Occupancy.OccupiedSpace.SpaceId).IsStartingBattleZone &&
-                Vector3.Angle(view.transform.TransformDirection(Vector3.up), Vector3.forward) < Tolerance));
+                // Milestone 8.11a: up-screen rather than world +Z, which are the same direction until
+                // the official artwork puts the framing camera on the board's own axes.
+                Vector3.Angle(
+                    view.transform.TransformDirection(Vector3.up),
+                    BoardChoiceCue.ScreenUpInWorld) < Tolerance));
             Assert.That(minions.Where(view => view.Occupancy.TeamSide == TeamSide.Red),
                 Has.All.Matches<StandardMinionView>(view => view.GetComponent<SpriteRenderer>().sprite.name.StartsWith("red-")));
             Assert.That(minions.Where(view => view.Occupancy.TeamSide == TeamSide.Blue),

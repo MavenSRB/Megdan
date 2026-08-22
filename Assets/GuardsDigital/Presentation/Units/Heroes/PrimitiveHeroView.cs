@@ -14,7 +14,12 @@ namespace GuardsDigital.Presentation.Units.Heroes
     public sealed class PrimitiveHeroView : MonoBehaviour
     {
         public const string DefaultHeroId = "primitive-hero";
-        public const float DefaultBaseRadius = 0.32f;
+        /// <summary>
+        /// Milestone 8.11a, at the user's request: raised from 0.32 for the reason the minion scale was.
+        /// `PrimitiveHeroPointerSelector` builds its capsule from this, so the pointer target grows with
+        /// the piece and picking stays exactly what a player sees.
+        /// </summary>
+        public const float DefaultBaseRadius = 0.40f;
         public const float DefaultHeight = 0.5f;
         public const float DefaultVerticalOffset = 0.03f;
 
@@ -211,6 +216,9 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 choiceCue.characterSize = BoardChoiceCue.MarkerCharacterSize;
             }
 
+            // Milestone 8.11a: re-applied on every call, because the direction the framing camera calls
+            // up is settled when the board is framed and an anchor may already exist by then.
+            choiceCueAnchor.localRotation = BoardChoiceCue.BoardFacingRotation;
             choiceCue.gameObject.SetActive(true);
             choiceCueBackground.gameObject.SetActive(true);
             choiceCue.text = BoardChoiceCue.Marker;

@@ -148,6 +148,47 @@ namespace GuardsDigital.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         /// <summary>
+        /// Milestone 8.11a, and a gap milestone 8.11 left: the defence *preview* the prompt is drawn
+        /// from had never been asked about a Block.
+        ///
+        /// <para>Every offer was previewed by calculating a Defense value for it, which is exactly what
+        /// a Block does not have. The prompt then looked for the offer's printed Defense icon to label
+        /// it with, found none, and threw where it was drawn - so an attack answered by a Block asked
+        /// the defender nothing at all and the match stopped. This is the case that says the preview
+        /// describes a Block as a Block.</para>
+        /// </summary>
+        [Test]
+        public void ABlockOffer_IsPreviewedAsABlockRatherThanAsADefenseValue()
+        {
+            var session = ConfiguredMatchFixtures.CreateThunderBoomerangSession(out _);
+            var defender = HeroOn(session, TeamSide.Blue);
+            CommitRedAgainst(session, WaspCardContent.ThunderBoomerang, WaspCardContent.Shock);
+            AttackTheHero(session, defender);
+
+            var defense = session.Projection.PendingDefenseChoice;
+            Assert.That(defense, Is.Not.Null);
+            var block = BlockOffer(session, defense, WaspCardContent.StopProjectiles);
+
+            var preview = session.Projection.PendingDefensePreview;
+            Assert.That(preview, Is.Not.Null,
+                "The prompt is drawn from the preview, so no preview is no prompt.");
+            var blockPreview = preview.Choices.SingleOrDefault(value =>
+                value.CardInstanceId.HasValue &&
+                value.CardInstanceId.Value.Equals(block.SourceCardInstanceId));
+            Assert.That(blockPreview, Is.Not.Null,
+                "A Block is an offer like any other, so it is previewed like any other.");
+
+            Assert.That(blockPreview.DefenseTotal, Is.Null,
+                "A Block prints no Defense value, so it previews none - p.14 skips the comparison " +
+                "rather than feeding it a number.");
+            Assert.That(blockPreview.DefenseContributions, Is.Empty,
+                "and it contributes nothing, so nothing may look for its printed icon.");
+            Assert.That(blockPreview.BlockResult, Is.EqualTo(DefenseBlockResult.Blocked),
+                "What it previews instead is the verdict: this attack is ranged, so the Block holds.");
+            Assert.That(blockPreview.Outcome, Is.EqualTo(AttackResolutionOutcome.SuccessfullyDefended),
+                "and the outcome that verdict produces, which is what the defender is choosing between.");
+        }
+        /// <summary>
         /// p.14's Block, fulfilled: the attack being answered is Ranged, so the defence succeeds
         /// "regardless of the attack value" - and Thunder Boomerang's Attack 4 is higher than any
         /// Defense total Stop Projectiles could ever have contributed, because it prints none.
@@ -293,7 +334,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// Runs the Ranged attack this fixture exists for and answers it with the named Block.
         /// </summary>
-        private static void BlockTheRangedAttack(MatchSession session, CardDefinitionId blockCard)
+        internal static void BlockTheRangedAttack(MatchSession session, CardDefinitionId blockCard)
         {
             var defender = HeroOn(session, TeamSide.Blue);
             CommitRedAgainst(session, WaspCardContent.ThunderBoomerang, WaspCardContent.Shock);
@@ -318,7 +359,7 @@ namespace GuardsDigital.Tests.EditMode
         /// is deliberately not the Block the defender will later discard: a card committed to this turn
         /// is no longer in the hand p.14's step 3 reads.
         /// </summary>
-        private static void CommitRedAgainst(
+        internal static void CommitRedAgainst(
             MatchSession session, CardDefinitionId redCard, CardDefinitionId blueCard)
         {
             var red = HandCard(session, TeamSide.Red, redCard);
@@ -329,7 +370,7 @@ namespace GuardsDigital.Tests.EditMode
                 "The attacking card has to be the one acting, or every assertion below is about Blue.");
         }
 
-        private static void AttackTheHero(MatchSession session, HeroId target)
+        internal static void AttackTheHero(MatchSession session, HeroId target)
         {
             var offer = session.Projection.AvailableTurnActions.Single(candidate =>
                 ActionOf(session, candidate).Origin == ActionDefinitionOrigin.PrintedPrimary &&
@@ -403,7 +444,7 @@ namespace GuardsDigital.Tests.EditMode
                 card.State.Location == CardLocation.Hand &&
                 card.DefinitionReference.DefinitionId.Equals(cardId));
 
-        private static HeroId HeroOn(MatchSession session, TeamSide side) =>
+        internal static HeroId HeroOn(MatchSession session, TeamSide side) =>
             session.Projection.Heroes
                 .Single(occupancy =>
                     session.Projection.Participants.GetTeamForHero(occupancy.HeroId).Side == side)

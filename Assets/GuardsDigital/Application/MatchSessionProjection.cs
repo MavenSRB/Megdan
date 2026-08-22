@@ -46,9 +46,20 @@ namespace GuardsDigital.Application
             DefenseBlockResult blockResult,
             AttackResolutionOutcome outcome)
         {
-            if (cardInstanceId.HasValue != defenseTotal.HasValue)
+            // Milestone 8.11a relaxed this by exactly one case. Declining still never has a Total - it
+            // contributes nothing and there is nothing to total. A card usually has one, but rulebook
+            // p.14's Block has none at all: it settles the attack by its condition and skips the
+            // comparison, so previewing it as a card worth zero would be previewing a card it is not.
+            // The Total is absent there, and `BlockResult` is what the preview says instead.
+            if (!cardInstanceId.HasValue && defenseTotal.HasValue)
             {
                 throw new ArgumentException("Only a Defense-card preview has a Defense Total.");
+            }
+
+            if (cardInstanceId.HasValue && !defenseTotal.HasValue && blockResult == DefenseBlockResult.None)
+            {
+                throw new ArgumentException(
+                    "A Defense-card preview without a Defense Total is a Block, and states its verdict.");
             }
 
             CardInstanceId = cardInstanceId;

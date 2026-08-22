@@ -24,6 +24,8 @@ namespace GuardsDigital.Presentation.Match
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly Material highlightMaterial;
         private readonly Material resultingSpaceMaterial;
+        private readonly Material highlightRimMaterial;
+        private readonly Material resultingSpaceRimMaterial;
         private Func<HeroId, bool> heroIntentHandler;
         private Func<MinionId, bool> minionIntentHandler;
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
@@ -34,7 +36,9 @@ namespace GuardsDigital.Presentation.Match
             Material highlightMaterial,
             IEnumerable<StandardMinionView> minions = null,
             Material resultingSpaceMaterial = null,
-            Func<PlacedToken, PlacedTokenView> tokenViewFactory = null)
+            Func<PlacedToken, PlacedTokenView> tokenViewFactory = null,
+            Material highlightRimMaterial = null,
+            Material resultingSpaceRimMaterial = null)
         {
             this.heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes)))
                 .Where(value => value != null).Distinct().ToArray());
@@ -46,6 +50,11 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 6.5c: without its own material the resulting space cannot be drawn at all,
             // because painting a prediction in the destination color would say "click here".
             this.resultingSpaceMaterial = resultingSpaceMaterial;
+            // Milestone 8.11a: the perimeter each highlight draws around its space, in the highlight's
+            // own colour. Optional, because a caller that supplies no rim gets the fill-only highlight
+            // this had before - which is what every fixture below the configured scene still uses.
+            this.highlightRimMaterial = highlightRimMaterial;
+            this.resultingSpaceRimMaterial = resultingSpaceRimMaterial;
             // Milestone 6.2d: where a view for a newly placed token comes from. A token has no
             // declared roster - its identity is minted when an effect places it - so unlike heroes and
             // minions its views cannot all exist before the match does. Left unbound, a projected
@@ -117,6 +126,33 @@ namespace GuardsDigital.Presentation.Match
             RenderMinions(model);
             RenderTokens(model);
 
+            // Milestone 8.11a, at the user's request, and settled by what is actually being chosen
+            // rather than by how many there are.
+            //
+            // <b>Choosing a hex lights the hex.</b> A movement or fast-travel range, a correction
+            // destination, a respawn space, an empty effect-choice candidate - the answer is the space
+            // itself, so the space is what changes. Lighting is also the only thing that can show a
+            // region as a region.
+            //
+            // <b>Choosing a piece marks the piece.</b> A hero or minion an Attack may take, an effect
+            // candidate that names a unit or a token - the answer is the thing standing there, not the
+            // ground under it, and lighting the ground says the wrong thing. It also could not be made
+            // to read: a tint has to contrast with pale sand, mid brown, jungle and near-black rock at
+            // once and no colour does, while the Minion Battle's marker carries its own dark backing
+            // and does not have to.
+            var markedCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>();
+            markedCoordinates.UnionWith(model.EffectChoiceTargetSpaces);
+            foreach (var targetId in model.AttackTargets)
+            {
+                var target = model.Heroes.Single(value => value.HeroId.Equals(targetId));
+                markedCoordinates.Add(target.Coordinate);
+            }
+            foreach (var targetId in model.MinionAttackTargets)
+            {
+                var target = model.Minions.Single(value => value.MinionId.Equals(targetId));
+                markedCoordinates.Add(target.Coordinate);
+            }
+
             var targetCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(model.MovementDestinations);
             targetCoordinates.UnionWith(model.FastTravelDestinations);
             // Milestone 6.4b highlighted every correction route endpoint and Place space at once;
@@ -133,16 +169,10 @@ namespace GuardsDigital.Presentation.Match
             {
                 targetCoordinates.Add(model.HeroRespawnHighlight.Value);
             }
-            foreach (var targetId in model.AttackTargets)
-            {
-                var target = model.Heroes.Single(value => value.HeroId.Equals(targetId));
-                targetCoordinates.Add(target.Coordinate);
-            }
-            foreach (var targetId in model.MinionAttackTargets)
-            {
-                var target = model.Minions.Single(value => value.MinionId.Equals(targetId));
-                targetCoordinates.Add(target.Coordinate);
-            }
+            // Milestone 8.11a: and every space the Respawn offers, not only the one a control was
+            // pointing at, now that the board is where the choice is made.
+            targetCoordinates.UnionWith(model.HeroRespawnDestinations);
+            targetCoordinates.ExceptWith(markedCoordinates);
 
             // The predicted landing space is drawn in its own color and is never selectable, so it is
             // resolved after the selectable set and can never be added to it.
@@ -154,12 +184,23 @@ namespace GuardsDigital.Presentation.Match
                 if (resultingSpace.HasValue && tile.Coordinate.Equals(resultingSpace.Value) &&
                     !targetCoordinates.Contains(tile.Coordinate))
                 {
-                    tile.SetHighlighted(true, resultingSpaceMaterial);
+                    // The prediction is a space rather than a piece - where this Push would end - so it
+                    // is lit like one, in its own colour and never selectable.
+                    tile.SetHighlighted(true, resultingSpaceMaterial, resultingSpaceRimMaterial);
+                    tile.SetChoiceCue(MinionChoiceCueKind.None);
                     continue;
                 }
 
-                var highlighted = targetCoordinates.Contains(tile.Coordinate);
-                tile.SetHighlighted(highlighted, highlighted ? highlightMaterial : null);
+                // Milestone 8.11a, at the user's request: a marked space wears the marker and nothing
+                // else. Lighting it as well said the same thing twice, and the fill was the half that
+                // read worst - it is the half that has to compete with whatever the board is painted.
+                var marked = markedCoordinates.Contains(tile.Coordinate);
+                var highlighted = !marked && targetCoordinates.Contains(tile.Coordinate);
+                tile.SetHighlighted(
+                    highlighted,
+                    highlighted ? highlightMaterial : null,
+                    highlighted ? highlightRimMaterial : null);
+                tile.SetChoiceCue(marked ? MinionChoiceCueKind.Highlighted : MinionChoiceCueKind.None);
             }
         }
 

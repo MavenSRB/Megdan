@@ -161,7 +161,11 @@ namespace GuardsDigital.Presentation.Interaction
                 // Milestone 6.2d: where a view for a newly placed token comes from. The map view owns
                 // the outer radius and keeps every generated board object, so it builds them for the
                 // same reason it builds tiles and minions rather than the board view doing it.
-                mapView.CreateTokenView);
+                mapView.CreateTokenView,
+                // Milestone 8.11a: each highlight's perimeter, in its own colour. The owners generate
+                // and dispose them beside their fills, so the pair is counted and released together.
+                highlightOwner.RimMaterial,
+                resultingSpaceHighlightOwner.RimMaterial);
 
             foreach (var selector in pointerSelectors.Where(value => value != null))
             {

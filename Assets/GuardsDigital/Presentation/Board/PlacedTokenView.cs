@@ -34,7 +34,7 @@ namespace GuardsDigital.Presentation.Board
         public const float DefaultVerticalOffset = 0.05f;
 
         /// <summary>The disc's share of a tile's outer radius, leaving the tile's own edge visible.</summary>
-        public const float DiscRadiusFraction = 0.55f;
+        public const float DiscRadiusFraction = 0.68f;
 
         public const float NameCharacterSize = 0.035f;
 
@@ -194,8 +194,14 @@ namespace GuardsDigital.Presentation.Board
                 cueAnchor = cueObject.transform;
             }
 
+            // Milestone 8.11a: both anchors re-take the rotation on every pass, because the direction
+            // the framing camera calls up is settled when the board is framed and either may already
+            // exist by then.
+            cueAnchor.localRotation = BoardChoiceCue.BoardFacingRotation;
+
             if (nameLabel != null)
             {
+                nameLabel.transform.localRotation = BoardChoiceCue.BoardFacingRotation;
                 return;
             }
 

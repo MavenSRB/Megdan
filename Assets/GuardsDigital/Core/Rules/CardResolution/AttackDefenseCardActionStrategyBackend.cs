@@ -1467,26 +1467,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// asked twice could still be made to disagree by a future modification, and p.14 asks it
         /// once.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.11a moved the condition itself into <see cref="DefenseBlockQuery"/>, because the
+        /// defence preview a defender chooses from has to reach the same verdict this does. What is
+        /// left here is naming the attack being answered.
+        /// </summary>
         private DefenseBlockResult EvaluateBlock(
             ActionOffer defenseOffer,
-            IReadOnlyList<CardDefinition> definitions)
-        {
-            var action = ActionOfferQuery.FindActionDefinition(defenseOffer, definitions);
-            if (action.DefenseResolution != PrintedDefenseResolution.Block)
-            {
-                return DefenseBlockResult.None;
-            }
-
-            var attack = definitions
-                .FirstOrDefault(definition =>
-                    definition.Reference.Equals(pendingAttackResolution.SourceDefinitionReference))
-                ?.ActionDefinitions
-                .FirstOrDefault(candidate =>
-                    candidate.Id.Equals(pendingAttackResolution.ActionDefinitionId));
-            return attack != null && attack.AttackRange == AttackRangeKind.Ranged
-                ? DefenseBlockResult.Blocked
-                : DefenseBlockResult.ConditionUnfulfilled;
-        }
+            IReadOnlyList<CardDefinition> definitions) =>
+            DefenseBlockQuery.Evaluate(
+                defenseOffer,
+                definitions,
+                pendingAttackResolution.SourceDefinitionReference,
+                pendingAttackResolution.ActionDefinitionId);
 
         private PendingAttackResolution CreateOutcomeComparisonResolution(
             ActionOffer? defenseOffer,

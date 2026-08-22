@@ -222,53 +222,58 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(EndOfRoundStage.RemoveTokensAndReturnMarkers));
         }
 
+        /// <summary>
+        /// Milestone 8.11a, at the user's request: the Minion Battle is answered by clicking the piece,
+        /// so the board marks every piece that may be clicked - not only one a control was pointing at,
+        /// because there are no controls naming candidates any more.
+        ///
+        /// <para>What is marked is the authority's own legal selection, never the raw candidate list.
+        /// Rulebook p.8 removes Heavy minions last, so while a non-Heavy still stands the Heavy is a
+        /// candidate and not a legal one, and marking it would be an offer the rules refuse. That case
+        /// is the reason this test exists in this shape: the first version of the board-first marking
+        /// read the candidate list and offered the Heavy.</para>
+        /// </summary>
         [Test]
-        public void BoardCues_MarkTheSelectedAndPointedAtMinionsAndNothingElse()
+        public void BoardCues_MarkEveryLegallySelectableUnitAndNeverAHeavyTheRulesWithhold()
         {
             var session = CreatePendingRemovalSession();
             var boardView = new CapturingBoardView();
             var board = new BoardInteractionPresenter(session, boardView);
             var choice = session.Projection.PendingMinionBattleChoice;
-
-            board.Refresh();
-            Assert.That(boardView.Model.MinionChoiceCues, Is.Empty,
-                "Nothing is selected and nothing is pointed at, so the board stays unmarked.");
-
-            var pointedAt = choice.LegalSelectMinionIds[0];
-            Assert.That(board.HighlightMinionChoiceCandidate(RuleObject.ForMinion(pointedAt)), Is.True);
-            Assert.That(board.HighlightMinionChoiceCandidate(RuleObject.ForMinion(pointedAt)), Is.False,
-                "An unchanged hover rebuilds nothing.");
-            board.Refresh();
-            var highlighted = boardView.Model.MinionChoiceCues.Single();
-            Assert.That(highlighted.MinionId, Is.EqualTo(pointedAt));
-            Assert.That(highlighted.Kind, Is.EqualTo(MinionChoiceCueKind.Highlighted));
-
             var heavy = choice.Candidates.Single(value => value.MinionType == StandardMinionType.Heavy);
-            Assert.That(board.HighlightMinionChoiceCandidate(
-                RuleObject.ForMinion(heavy.MinionId)), Is.True);
-            board.Refresh();
-            Assert.That(boardView.Model.MinionChoiceCues.Single().MinionId, Is.EqualTo(heavy.MinionId),
-                "A candidate can be pointed at even while the authority offers it no control.");
 
+            board.Refresh();
+
+            Assert.That(choice.LegalSelectMinionIds, Is.Not.Empty,
+                "The scenario has something to choose, or the rest of this asserts over nothing.");
+            Assert.That(choice.Candidates.Select(value => value.MinionId),
+                Does.Contain(heavy.MinionId),
+                "and it has a Heavy among the candidates, which is the case being pinned.");
+            Assert.That(choice.LegalSelectMinionIds, Has.No.Member(heavy.MinionId),
+                "which the authority withholds while a non-Heavy still stands.");
+            Assert.That(
+                boardView.Model.MinionChoiceCues.Select(value => (value.MinionId, value.Kind)),
+                Is.EquivalentTo(choice.LegalSelectMinionIds
+                    .Select(id => (id, MinionChoiceCueKind.Highlighted))),
+                "Every legal selection is marked, and nothing else is - the Heavy included.");
+
+            var chosen = choice.LegalSelectMinionIds[0];
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
-                choice.SelectInvocations.Single(value => value.MinionId.Equals(pointedAt)))).Accepted,
+                choice.SelectInvocations.Single(value => value.MinionId.Equals(chosen)))).Accepted,
                 Is.True);
             board.Refresh();
-            var selectedCue = boardView.Model.MinionChoiceCues.Single();
-            Assert.That(selectedCue.MinionId, Is.EqualTo(pointedAt),
-                "The accepted command replaced the projection, which drops the pointed-at cue with it.");
-            Assert.That(selectedCue.Kind, Is.EqualTo(MinionChoiceCueKind.Selected));
 
-            Assert.That(board.HighlightMinionChoiceCandidate(
-                RuleObject.ForMinion(heavy.MinionId)), Is.True);
-            board.Refresh();
-            Assert.That(boardView.Model.MinionChoiceCues.Select(value => (value.MinionId, value.Kind)),
-                Is.EquivalentTo(new[]
-                {
-                    (pointedAt, MinionChoiceCueKind.Selected),
-                    (heavy.MinionId, MinionChoiceCueKind.Highlighted)
-                }),
-                "A selected minion keeps saying so while the player points at another.");
+            var afterSelection = session.Projection.PendingMinionBattleChoice;
+            Assert.That(
+                boardView.Model.MinionChoiceCues.Single(value => value.MinionId.Equals(chosen)).Kind,
+                Is.EqualTo(MinionChoiceCueKind.Selected),
+                "A chosen piece says so.");
+            Assert.That(
+                boardView.Model.MinionChoiceCues
+                    .Where(value => value.Kind == MinionChoiceCueKind.Highlighted)
+                    .Select(value => value.MinionId),
+                Is.EquivalentTo(afterSelection.LegalSelectMinionIds),
+                "and the rest of the board still offers exactly what the authority still offers.");
 
             Assert.That(session.Execute(DirectorCommand.ConfirmMinionBattleRemovals(
                 session.Projection.PendingMinionBattleChoice.ConfirmInvocation)).Accepted, Is.True);
@@ -300,7 +305,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>A configured match paused on a real one-of-several removal choice.</summary>
-        private static MatchSession CreatePendingRemovalSession()
+        internal static MatchSession CreatePendingRemovalSession()
         {
             var session = CreateSession(RemoveOneBlueRanged);
             AdvanceToEndOfRound(session);
