@@ -54,6 +54,7 @@ Desktop.ini
 # Cross-platform dotnet test harness build outputs
 /Tools/DotnetTests/bin/
 /Tools/DotnetTests/obj/
+/Tools/DotnetTests/TestResults/
 
 # The harness project file is a tracked deliverable (milestone 6.1t); it must
 # override the Unity-generated *.csproj exclusion above
