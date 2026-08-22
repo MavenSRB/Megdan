@@ -72,7 +72,20 @@ namespace GuardsDigital.Core.Cards
         /// milestone that owes the composition or the trigger that would schedule it, so this refusal
         /// can always say whose work is missing.
         /// </summary>
-        PrintedCardTextNotComposed = 28
+        PrintedCardTextNotComposed = 28,
+
+        /// <summary>
+        /// Milestone 8.8b: no token stands adjacent to the actor, so rulebook p.13's Clear could remove
+        /// nothing whatever the hero chose.
+        ///
+        /// It is the same judgement <see cref="SkillCannotApplyAnything"/> makes and it draws the same
+        /// distinction: p.13's "any number" includes zero, so a hero standing beside a token may still
+        /// clear none, and what is refused is a Clear that *cannot* remove anything rather than one
+        /// whose chooser declines to. Refusing costs the player only an action p.12 never forces them
+        /// to take. `DEV-007` records it, because the page does permit performing one that removes
+        /// nothing.
+        /// </summary>
+        ClearCannotRemoveAnything = 29
     }
 
     public enum TurnResolutionEventKind
@@ -1073,6 +1086,21 @@ namespace GuardsDigital.Core.Cards
             if (cardActions.HasPendingResolution)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
+            }
+
+            // Milestone 8.8b, and refused here for the reason milestone 6.5af's Skill clause is refused
+            // here: the offer set stamps this answer onto `ActionOffer.IsAvailable`, but the dispatcher
+            // re-derives the replacement offer from the card query on its way in and that query cannot
+            // see the board. One statement of the judgement, asked in both places.
+            if (!cardActions.CanClearRemoveAnything(
+                    replacementOffer,
+                    replacedAttackActionDefinitionId,
+                    definitions,
+                    instances,
+                    CurrentModifications()))
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.ClearCannotRemoveAnything);
             }
 
             var result = cardActions.PerformTurnClear(

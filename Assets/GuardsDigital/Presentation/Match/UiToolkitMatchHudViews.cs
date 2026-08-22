@@ -2211,7 +2211,23 @@ namespace GuardsDigital.Presentation.Match
 
             foreach (var clear in Model.ClearOffers)
             {
-                section.Add(HudElements.Control(clear.Label, () => ClearSelected?.Invoke(clear)));
+                // Milestone 8.8b: a Clear with nothing adjacent to remove keeps its label and its place
+                // and reads as unavailable through opacity as well as through being inert, which is the
+                // treatment milestones 6.5ac and 6.5af give every other refused control. It carries no
+                // command at all rather than one the authority would reject.
+                var control = HudElements.Control(
+                    clear.Label,
+                    clear.IsAvailable ? () => ClearSelected?.Invoke(clear) : (Action)null);
+                control.name = "gd-clear-offer";
+                control.tooltip = clear.IsAvailable
+                    ? "Clear replaces this card's Attack"
+                    : "No token stands adjacent to this hero, so a Clear could remove nothing";
+                if (!clear.IsAvailable)
+                {
+                    HudElements.MarkUnavailable(control);
+                }
+
+                section.Add(control);
             }
 
             foreach (var effectChoice in Model.EffectChoices)

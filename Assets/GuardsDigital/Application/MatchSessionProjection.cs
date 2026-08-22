@@ -212,10 +212,18 @@ namespace GuardsDigital.Application
                     "Clear projection requires replacement and replaced-action identities.");
             }
 
-            ReplacementOffer = replacementOffer;
             ReplacedAttackActionDefinitionId = replacedAttackActionDefinitionId;
             AdjacentTokens = Array.AsReadOnly((adjacentTokens ??
                 throw new ArgumentNullException(nameof(adjacentTokens))).ToArray());
+            // Milestone 8.8b: the offer's availability is decided here, from the token list
+            // `ClearActionQuery.FindLegalTokenIds` produced - so this and the refusal the turn
+            // authority makes at the start are one query asked twice rather than two counts. p.13's
+            // "any number" includes zero, so an offer with a candidate stays available and the empty
+            // subset stays confirmable; what is stamped unavailable is a Clear that could remove
+            // nothing whatever the hero chose.
+            ReplacementOffer = replacementOffer.IsAvailable && AdjacentTokens.Count == 0
+                ? replacementOffer.WithAvailability(false)
+                : replacementOffer;
             if (AdjacentTokens.Any(token => token == null) ||
                 AdjacentTokens.Select(token => token.Id).Distinct().Count() != AdjacentTokens.Count)
             {
@@ -229,9 +237,16 @@ namespace GuardsDigital.Application
                     "A Clear can only reach the actor's six adjacent spaces.", nameof(adjacentTokens));
             }
 
-            SubsetInvocations = Array.AsReadOnly(EnumerateSubsets(
-                replacedAttackActionDefinitionId,
-                AdjacentTokens.Select(token => token.Id).ToArray()));
+            // Milestone 8.8b: an offer the authority would refuse carries no command at all, which is
+            // the same rule a greyed action offer follows. Without it this option would still project
+            // the empty subset - a `PerformClear` the rules now reject - and "the projection offers only
+            // what the rules accept" would stop being true, which is exactly what
+            // `DeterministicMatchLoop` caught when the refusal landed without this.
+            SubsetInvocations = Array.AsReadOnly(ReplacementOffer.IsAvailable
+                ? EnumerateSubsets(
+                    replacedAttackActionDefinitionId,
+                    AdjacentTokens.Select(token => token.Id).ToArray())
+                : Array.Empty<DirectorCommand>());
         }
 
         public ActionOffer ReplacementOffer { get; }
@@ -248,6 +263,10 @@ namespace GuardsDigital.Application
         /// One canonical <c>PerformClear</c> per confirmable subset, the empty one first. p.13 permits
         /// any number, and milestone 6.3 already accepts none, so confirming nothing is an invocation
         /// like any other rather than a case a surface has to special-case.
+        ///
+        /// <para>Empty when <see cref="ReplacementOffer"/> is unavailable - milestone 8.8b's Clear with
+        /// no adjacent token. The option is still projected, because the control keeps its label and its
+        /// place, but it carries no command, exactly as a greyed action offer does.</para>
         /// </summary>
         public IReadOnlyList<DirectorCommand> SubsetInvocations { get; }
 

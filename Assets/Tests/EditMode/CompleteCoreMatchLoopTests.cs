@@ -51,14 +51,31 @@ namespace GuardsDigital.Tests.EditMode
         // Reported seeds and budgets, measured at this revision
         // -----------------------------------------------------------------------------------------
 
-        /// <summary>Ends by p.13's last Life counter after 9 rounds and 199 commands.</summary>
-        private const int LifeCounterMatchSeed = 11;
+        /// <summary>
+        /// Ends by p.13's last Life counter after 5 rounds and 109 commands.
+        ///
+        /// Re-measured at milestone 8.8b, which took one command out of the offered set - a Clear that
+        /// can remove nothing - and so moved every seed's trajectory. The rule these three are chosen
+        /// by, stated so the next re-measurement makes the same choice rather than a convenient one:
+        /// the **lowest** seed that reaches this ending inside **half** the budget. Endings stayed
+        /// plentiful either way - across seeds 1-40 the engaged scenario reached the Life-counter
+        /// ending on 22, 25 and 33 and the Wave ending on 5, 10, 12, 14, 26, 32, 37 and 40 - so no
+        /// victory path became harder to reach, only differently indexed.
+        /// </summary>
+        private const int LifeCounterMatchSeed = 22;
 
-        /// <summary>Ends by p.8's last Wave counter after 20 rounds and 502 commands.</summary>
-        private const int FinalWaveMatchSeed = 42;
+        /// <summary>Ends by p.8's last Wave counter after 22 rounds and 565 commands. Re-measured at 8.8b.</summary>
+        private const int FinalWaveMatchSeed = 32;
 
-        /// <summary>Ends by p.8's Throne capture after 2 rounds and 41 commands.</summary>
+        /// <summary>Ends by p.8's Throne capture after 2 rounds and 41 commands, unchanged by 8.8b.</summary>
         private const int ThroneCaptureMatchSeed = 1;
+
+        /// <summary>
+        /// The lowest seed on which the engaged walk takes a Clear that milestone 8.8b still offers -
+        /// one with a token standing beside the actor. It reaches no ending inside the budget, which is
+        /// why it is used for reachability alone; see <see cref="PlayTheClearReachabilityRun"/>.
+        /// </summary>
+        private const int ClearReachabilitySeed = 58;
 
         /// <summary>
         /// Generous enough that the three complete matches finish well inside it, and small enough that
@@ -117,7 +134,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheCompleteLoop_ReachesEveryPartOfThePage7TurnAndThePage8Round()
         {
-            var runs = PlayTheThreeCompleteMatches();
+            var runs = PlayTheThreeCompleteMatches()
+                .Concat(new[] { PlayTheClearReachabilityRun() })
+                .ToArray();
             var commandKinds = runs.SelectMany(run => run.ObservedCommandKinds).Distinct().ToArray();
             var eventKinds = runs.SelectMany(run => run.ObservedEventKinds).Distinct().ToArray();
 
@@ -344,6 +363,24 @@ namespace GuardsDigital.Tests.EditMode
         // -----------------------------------------------------------------------------------------
         // Scenarios
         // -----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// One bounded run whose job is reachability rather than an ending: the seed on which the walk
+        /// puts a token beside a hero who then commits a card with a replaceable Attack, which since
+        /// milestone 8.8b is the only board position p.13's Clear is offered in at all.
+        ///
+        /// <para>It exists because 8.8b showed what the gate's `PerformClear` coverage had been: before
+        /// it, every Clear the walk ever took was the empty one offered beside nothing, so the gate was
+        /// reaching the command through the one case the rules now refuse. Rather than drop the claim,
+        /// the corpus gains the run that makes it true - and the claim is stronger than it was, because
+        /// the Clear observed here is one offered over a real candidate.</para>
+        ///
+        /// <para>It is not part of <see cref="PlayTheThreeCompleteMatches"/>, because those three assert
+        /// that they end and this one deliberately does not; it is used only by the reachability case.</para>
+        /// </summary>
+        private static MatchLoopRecord PlayTheClearReachabilityRun() =>
+            DeterministicMatchLoop.Play(
+                ConfiguredMatchFixtures.CreateEngagedSession(2), ClearReachabilitySeed, CompleteMatchBudget);
 
         private IReadOnlyList<MatchLoopRecord> PlayTheThreeCompleteMatches() => new[]
         {

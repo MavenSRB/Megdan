@@ -46,6 +46,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .ToArray());
         }
 
+        /// <summary>
+        /// Whether this Clear could remove anything at all, which is rulebook p.13's "any number of
+        /// tokens adjacent to you" asked of the board rather than of the chooser.
+        ///
+        /// <para>Milestone 8.8b, and it is one statement so the offer set and the start cannot disagree
+        /// about it - the same arrangement <c>CanFindLegalTarget</c> has for an Attack. The distinction
+        /// it draws is the one milestone 6.5af drew for a Skill: zero is a number the page allows, so a
+        /// hero standing beside a token may still clear none, and what this answers false for is a Clear
+        /// that <em>cannot</em> remove anything rather than one whose chooser declines to.</para>
+        /// </summary>
+        public static bool CanRemoveAnything(
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            AdjacentMoveAuthority board,
+            RuleModificationSet modifications) =>
+            FindLegalTokenIds(
+                replacementOffer,
+                replacedAttackActionDefinitionId,
+                definitions,
+                instances,
+                board,
+                modifications).Count > 0;
+
         public static CardActionResolutionRejectionReason EvaluateSelection(
             ActionOffer replacementOffer,
             ActionDefinitionId replacedAttackActionDefinitionId,

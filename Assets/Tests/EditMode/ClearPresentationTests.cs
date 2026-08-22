@@ -239,6 +239,148 @@ namespace GuardsDigital.Tests.EditMode
                 "There is nothing left to cancel, and saying so is not the same as cancelling twice.");
         }
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.8b: a Clear that can remove nothing
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Rulebook p.13's Clear removes "any number of tokens adjacent to you". With no token adjacent
+        /// there is no number to choose, so the replacement can do nothing whatever the hero picks -
+        /// which is milestone 6.5af's judgement about an inert Skill, and gets 6.5af's treatment.
+        /// </summary>
+        [Test]
+        public void AClearWithNoAdjacentToken_IsOfferedGreyedAndCarriesNoCommand()
+        {
+            var session = StartAttackTurnWithNothingToClear(out var actorId);
+            var option = session.Projection.AvailableClearOptions.Single();
+
+            Assert.That(option.AdjacentTokens, Is.Empty,
+                "The fixture has to reach an Attack turn with nothing beside the hero, or this case " +
+                "holds over the wrong position.");
+            Assert.That(option.ReplacementOffer.IsAvailable, Is.False,
+                "The authority decides it, on the same field milestones 6.5af, 7.8a1, 8.4 and 8.7 " +
+                "decide theirs on.");
+            Assert.That(option.ReplacementOffer.ActorId, Is.EqualTo(actorId));
+
+            var presenter = CreatePresenter(session, out var view);
+            presenter.Refresh();
+            var offer = view.Model.ClearOffers.Single();
+
+            Assert.That(offer.IsAvailable, Is.False,
+                "Presentation reads the authority's stamp rather than counting candidates itself.");
+            Assert.That(offer.CandidateCount, Is.EqualTo(0));
+            Assert.That(offer.Label, Is.EqualTo("CLEAR (REPLACES ATTACK)"),
+                "It keeps its label and its place, which is what every other refused control here does.");
+            Assert.That(presenter.SelectClear(offer), Is.False,
+                "and the selection cannot be opened on it, so no surface enters a mode the authority " +
+                "would not complete.");
+            presenter.Refresh();
+            Assert.That(view.Model.ClearSelection, Is.Null);
+        }
+
+        /// <summary>
+        /// The drawn control, on the HUD's own view rather than on the capturing test view: greyed
+        /// through opacity as well as through being inert, so the state is never carried by colour or by
+        /// inertness alone, and still labelled and still in its place.
+        /// </summary>
+        [Test]
+        public void TheGreyedClearControl_KeepsItsLabelAndReadsAsUnavailable()
+        {
+            var greyed = StartAttackTurnWithNothingToClear(out _);
+            var greyedView = new RoundActionUnityView();
+            new RoundActionPresenter(greyed, greyedView).Refresh();
+            var greyedControl = Descendants(greyedView.Root)
+                .Single(element => element.name == "gd-clear-offer");
+
+            Assert.That(greyedControl.enabledSelf, Is.False);
+            Assert.That(greyedControl.style.opacity.value, Is.EqualTo(0.45f).Within(0.001f),
+                "Milestone 6.5ac's rule: unavailability is never carried by inertness alone, so the " +
+                "shared dimming is applied explicitly.");
+            Assert.That(greyedControl.tooltip, Does.Contain("could remove nothing"));
+            Assert.That(
+                Descendants(greyedView.Root).OfType<UnityEngine.UIElements.Button>()
+                    .Any(button => button.text == "CLEAR (REPLACES ATTACK)"),
+                Is.True,
+                "It keeps its label and its place rather than leaving the surface.");
+
+            var available = StartAttackTurnBesideAHazard(out _, out _);
+            var availableView = new RoundActionUnityView();
+            new RoundActionPresenter(available, availableView).Refresh();
+            var availableControl = Descendants(availableView.Root)
+                .Single(element => element.name == "gd-clear-offer");
+
+            Assert.That(availableControl.enabledSelf, Is.True);
+            Assert.That(availableControl.style.opacity.value, Is.Not.EqualTo(0.45f).Within(0.001f),
+                "and an offer the authority does allow is never dimmed - the shared treatment is " +
+                "applied to one of these two controls and not the other.");
+            Assert.That(availableControl.tooltip, Does.Not.Contain("could remove nothing"));
+        }
+
+        [Test]
+        public void AStartNamingAClearThatCanRemoveNothing_IsRefusedAndChangesNothing()
+        {
+            var session = StartAttackTurnWithNothingToClear(out _);
+            var option = session.Projection.AvailableClearOptions.Single();
+            var sourceCardId = AttackOffer(session).SourceCardInstanceId;
+            var boardBefore = session.Projection.PlacedTokens.Select(value => value.Id).ToArray();
+            var versionBefore = session.Projection.Version;
+
+            Assert.That(option.SubsetInvocations, Is.Empty,
+                "A greyed offer carries no command at all rather than one the rules would reject, " +
+                "which is what keeps \"the projection offers only what the authority accepts\" true.");
+            Assert.That(option.FindInvocation(Array.Empty<TokenInstanceId>()), Is.Null);
+
+            // Forged rather than projected, because the projection no longer offers it: this is the
+            // exact command that was accepted here before milestone 8.8b, submitted directly.
+            var result = session.Execute(DirectorCommand.PerformClear(
+                option.ReplacedAttackActionDefinitionId, Array.Empty<TokenInstanceId>()));
+
+            Assert.That(result.Accepted, Is.False,
+                "The start is refused atomically rather than resolving a card on an action that could " +
+                "do nothing.");
+            Assert.That(session.Projection.Version, Is.EqualTo(versionBefore),
+                "A refused start advances nothing, so there was nothing to roll back.");
+            Assert.That(session.Projection.PlacedTokens.Select(value => value.Id),
+                Is.EqualTo(boardBefore));
+            Assert.That(
+                session.Projection.Cards.Single(card => card.Id.Equals(sourceCardId))
+                    .State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Unresolved),
+                "and the card is still the hero's to spend - p.12's Hold is what makes the refusal " +
+                "cost them nothing.");
+        }
+
+        /// <summary>
+        /// The other half of the rule, and the one that keeps this from being a rules change: p.13's
+        /// "any number" includes zero, so a hero standing beside a token may still clear none. What
+        /// 8.8b refuses is a Clear that *cannot* remove anything, never one whose chooser declines to.
+        /// </summary>
+        [Test]
+        public void AClearBesideAToken_StaysAvailableAndStillConfirmsTheEmptySubset()
+        {
+            var session = StartAttackTurnBesideAHazard(out var token, out _);
+            var option = session.Projection.AvailableClearOptions.Single();
+            var sourceCardId = AttackOffer(session).SourceCardInstanceId;
+
+            Assert.That(option.AdjacentTokens.Select(value => value.Id), Is.EqualTo(new[] { token.Id }));
+            Assert.That(option.ReplacementOffer.IsAvailable, Is.True);
+
+            var presenter = CreatePresenter(session, out var view);
+            presenter.Refresh();
+            Assert.That(view.Model.ClearOffers.Single().IsAvailable, Is.True);
+            Assert.That(presenter.SelectClear(view.Model.ClearOffers.Single()), Is.True);
+            presenter.Refresh();
+
+            Assert.That(view.Model.ClearSelection.Candidates.Single().TokenId, Is.EqualTo(token.Id));
+            Assert.That(presenter.ConfirmClear(), Is.True,
+                "Confirming none beside a token is still p.13's own answer.");
+            Assert.That(session.Projection.PlacedTokens.Single().Id, Is.EqualTo(token.Id));
+            Assert.That(
+                session.Projection.Cards.Single(card => card.Id.Equals(sourceCardId))
+                    .State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved));
+        }
+
         /// <summary>
         /// A confirm read from an older model names a subset of a position that has moved on. The
         /// presenter refuses it for the reason it refuses every stale invocation: it validates against
@@ -364,6 +506,19 @@ namespace GuardsDigital.Tests.EditMode
                 "produce a rejection is not drawn.");
         }
 
+        private static IEnumerable<UnityEngine.UIElements.VisualElement> Descendants(
+            UnityEngine.UIElements.VisualElement element)
+        {
+            yield return element;
+            foreach (var child in element.Children())
+            {
+                foreach (var nested in Descendants(child))
+                {
+                    yield return nested;
+                }
+            }
+        }
+
         private static RoundActionPresenter CreatePresenter(
             MatchSession session, out CapturingRoundView view)
         {
@@ -384,6 +539,26 @@ namespace GuardsDigital.Tests.EditMode
         /// milestone 6.3's own command fixture reaches, which is the point: the surface under test is
         /// over an action that already worked.
         /// </summary>
+        /// <summary>
+        /// The same position with the Hazard never placed: the acting hero reaches a later turn of the
+        /// same round holding a card that prints a replaceable Attack, with nothing adjacent to clear.
+        ///
+        /// Milestone 8.8b. It spends the first turn on p.12's Hold instead of the Cache Skill, which is
+        /// the whole difference from <see cref="StartAttackTurnBesideAHazard"/> - so a case that fails
+        /// here and passes there is failing on the token rather than on anything else about the turn.
+        /// </summary>
+        private static MatchSession StartAttackTurnWithNothingToClear(out HeroId actorId)
+        {
+            var session = CreateComponentSession();
+            CommitComponentCards(session);
+            actorId = session.Projection.SelectedActor.ActorId;
+            AdvanceToNextTurnInSameRound(session);
+            CommitAttackTurnForActor(session, actorId);
+            Assert.That(session.Projection.PlacedTokens, Is.Empty,
+                "No Skill placed one and p.8's cleanup has not run, so the board carries no token at all.");
+            return session;
+        }
+
         private static MatchSession StartAttackTurnBesideAHazard(
             out PlacedToken token, out HeroId actorId)
         {

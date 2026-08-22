@@ -54,7 +54,7 @@ Non-goals: no change to Level Up eligibility, coin payment, upgrade-pair or item
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-88a-show-upgrade-choices-as-tray-style-cards-completion-evidence).
 
-### [ ] 8.8b Refuse a Clear that can remove nothing
+### [x] 8.8b Refuse a Clear that can remove nothing
 
 Added by the user-approved roadmap amendment of 2026-08-22, from the player's report that `CLEAR` reads as an ordinary choice while standing beside nothing it could take.
 
@@ -69,6 +69,16 @@ Acceptance checks:
 - Focused checks cover the greyed offer with no adjacent token, the available offer with one, the empty subset still confirmable beside a token, the atomic refusal of a start naming the greyed offer, and the selection refusing to open on it. The new rejection reason is added inert first and the checks are recorded failing before the predicate is wired and passing after.
 
 Non-goals: no change to what a Clear removes, to token adjacency, to p.13's replacement relationship with the Attack, to Fast Travel or any other replacement, to any other action's availability rule, or to the tray and contextual region beyond the greyed control.
+
+**A greyed offer had to stop carrying a command, and the complete-loop gate is what said so.** `ClearOptionProjection` still projects the option - the control keeps its label and its place - but an unavailable one now enumerates no `SubsetInvocations` at all. Without that it still projected the empty subset, which is precisely the `PerformClear` the rules had just started refusing, and `DeterministicMatchLoop` failed on its own invariant: a command the projection offered and the rules rejected. That invariant is the reason the milestone's first acceptance check is worth having, and it caught the gap within one run.
+
+**What the gate's `PerformClear` coverage had actually been.** With the refusal in place, no seed of the engaged scenario that reaches an ending takes a Clear at all: across seeds 1-60 exactly one run takes one, and it reaches no ending inside the budget. So every Clear the walk had ever taken was the empty one offered beside nothing - the gate was reaching the command through the one case p.13 now refuses here. Rather than drop the claim, `TheCompleteLoop_ReachesEveryPartOfThePage7TurnAndThePage8Round` gained one bounded reachability run on that seed, and the claim is stronger than it was, because the Clear it observes is offered over a real candidate.
+
+**The three reported seeds were re-measured, by a stated rule rather than by convenience.** Taking one command out of the offered set moves every walk's trajectory, so the Life-counter and Wave seeds moved to the **lowest seed that reaches that ending inside half the budget** - 22 and 32, replacing 11 and 42 - and the Throne seed is unchanged at 1. Endings stayed plentiful either way, which is the check that this was a re-indexing rather than a loss: across seeds 1-40 the engaged scenario still reaches the Life-counter ending on 22, 25 and 33 and the Wave ending on 5, 10, 12, 14, 26, 32, 37 and 40. `UndoCheckpointReconstructionTests` and `CompleteMatchRuntimeCaptureTests` both pin the Wave seed deliberately - they measure the match the gate proves correct - so both moved with it.
+
+**The deviation is `DEV-007`**, with its review trigger named: any card that reads "performs a Clear" as a trigger, or an official ruling that a Clear removing nothing has an effect. Milestone 8.9's `PerformedBasicAction` already carries the kind, so such a card would be able to tell a Clear from a Hold - which is exactly why the deviation is recorded rather than assumed harmless.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-88b-refuse-a-clear-that-can-remove-nothing-completion-evidence).
 
 ### [x] 8.9 Complete the Wasp basic cards
 

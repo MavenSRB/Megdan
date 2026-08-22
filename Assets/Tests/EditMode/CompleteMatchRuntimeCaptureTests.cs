@@ -496,7 +496,8 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateCompleteMatchSession() =>
             ConfiguredMatchFixtures.CreateEngagedSession(2);
 
-        private const int CaptureSeed = 42;
+        /// <summary>Re-measured with the gate's own Wave seed at milestone 8.8b.</summary>
+        private const int CaptureSeed = 32;
         private const int CaptureBudget = 1200;
 
         /// <summary>Twelve samples of one command kind: six at the start of the match and six at the end.</summary>

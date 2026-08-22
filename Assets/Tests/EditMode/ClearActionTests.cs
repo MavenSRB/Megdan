@@ -103,6 +103,39 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Board.PlacedTokens.Select(token => token.Id), Is.EqualTo(before));
         }
 
+        /// <summary>
+        /// Milestone 8.8b. The two halves of one question, on one board: with a token beside the actor
+        /// a Clear can remove something and choosing none is the chooser's call, and with the actor's
+        /// six spaces empty it can remove nothing whatever they choose. The distant token is what makes
+        /// the second half about adjacency rather than about an empty board.
+        /// </summary>
+        [Test]
+        public void AClearCanRemoveAnything_ExactlyWhenATokenStandsAdjacentToTheActor()
+        {
+            var beside = new Fixture();
+            var alone = new Fixture(false);
+
+            Assert.That(
+                ClearActionQuery.CanRemoveAnything(
+                    beside.ClearOffer, beside.AttackAction.Id, beside.Definitions, beside.Instances,
+                    beside.Board, RuleModificationSet.Empty),
+                Is.True);
+            Assert.That(
+                ClearActionQuery.CanRemoveAnything(
+                    alone.ClearOffer, alone.AttackAction.Id, alone.Definitions, alone.Instances,
+                    alone.Board, RuleModificationSet.Empty),
+                Is.False,
+                "p.13's \"any number of tokens adjacent to you\" has no number to choose from here.");
+            Assert.That(alone.Board.PlacedTokens.Single().Id, Is.EqualTo(alone.NonAdjacent.Id),
+                "and the board is not empty - the actor's own six spaces are, which is the question.");
+            Assert.That(
+                ClearActionQuery.FindLegalTokenIds(
+                    alone.ClearOffer, alone.AttackAction.Id, alone.Definitions, alone.Instances,
+                    alone.Board, RuleModificationSet.Empty),
+                Is.Empty,
+                "One query answers both, so the offer set and the start cannot disagree.");
+        }
+
         [Test]
         public void Clear_MultipleChosenTokensCommitInCanonicalBoardOrder()
         {
@@ -192,7 +225,16 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 TokenRemovalCondition.EndOfRoundCleanup);
 
-            public Fixture()
+            public Fixture() : this(true)
+            {
+            }
+
+            /// <summary>
+            /// Milestone 8.8b: the same board with the two adjacent tokens left off, so a case can ask
+            /// what a Clear is when p.13 leaves it nothing to remove. The distant token still stands,
+            /// which is the point - the board is not empty, the actor's own six spaces are.
+            /// </summary>
+            public Fixture(bool withAdjacentTokens)
             {
                 ActorId = new HeroId("clear-actor");
                 AttackAction = new ActionDefinition(
@@ -238,8 +280,12 @@ namespace GuardsDigital.Tests.EditMode
                 AdjacentA = CreateToken("clear-adjacent-a", new HexCoordinate(1, 0));
                 AdjacentB = CreateToken("clear-adjacent-b", new HexCoordinate(0, 1));
                 NonAdjacent = CreateToken("clear-non-adjacent", new HexCoordinate(2, 0));
-                Board.CommitValidatedTokenPlacement(AdjacentA);
-                Board.CommitValidatedTokenPlacement(AdjacentB);
+                if (withAdjacentTokens)
+                {
+                    Board.CommitValidatedTokenPlacement(AdjacentA);
+                    Board.CommitValidatedTokenPlacement(AdjacentB);
+                }
+
                 Board.CommitValidatedTokenPlacement(NonAdjacent);
 
                 ClearOffer = GeneralRuleActionOfferQuery.GetAvailableClearOffer(

@@ -26,7 +26,13 @@ namespace GuardsDigital.Tests.EditMode
     /// </remarks>
     public sealed class UndoCheckpointReconstructionTests
     {
-        private const int Seed = 42;
+        /// <summary>
+        /// The Wave-counter seed <c>CompleteCoreMatchLoopTests</c> reports, re-measured at milestone
+        /// 8.8b when refusing a Clear that can remove nothing changed every walk's trajectory. The two
+        /// must stay the same number: these cases are about the match that gate proves correct.
+        /// </summary>
+        private const int Seed = 32;
+
         private const int Budget = 1200;
 
         [Test]

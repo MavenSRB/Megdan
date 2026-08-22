@@ -22,6 +22,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
             this.board = board ?? throw new ArgumentNullException(nameof(board));
         }
 
+        /// <summary>
+        /// Milestone 8.8b: whether this Clear could remove anything, asked of the board this backend
+        /// owns. The counterpart of the Attack backend's target question, and the reason the turn
+        /// authority can refuse a Clear it cannot itself see the board for.
+        /// </summary>
+        public bool CanRemoveAnything(
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications) =>
+            ClearActionQuery.CanRemoveAnything(
+                replacementOffer,
+                replacedAttackActionDefinitionId,
+                definitions,
+                instances,
+                board,
+                modifications);
+
         public CardActionResolutionResult PerformTurnClear(
             ActionResolutionId resolutionId,
             ActionOffer replacementOffer,

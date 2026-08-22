@@ -1504,8 +1504,10 @@ namespace GuardsDigital.Presentation.Match
             ActionDefinitionId replacedAttackActionDefinitionId,
             CardInstanceId sourceCardInstanceId,
             HeroId actorId,
-            int candidateCount)
+            int candidateCount,
+            bool isAvailable = true)
         {
+            IsAvailable = isAvailable;
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A Clear offer requires a label.", nameof(label))
                 : label;
@@ -1528,10 +1530,22 @@ namespace GuardsDigital.Presentation.Match
         public HeroId ActorId { get; }
 
         /// <summary>
-        /// How many adjacent tokens this Clear would offer. Zero is a legal offer rather than a
-        /// hidden one: p.13 permits clearing none, so taking the replacement still resolves the card.
+        /// How many adjacent tokens this Clear would offer. Zero is drawn rather than hidden: milestone
+        /// 8.8b greys such an offer and refuses it, on the treatment every other refused control here
+        /// gets, rather than taking the control off the surface.
         /// </summary>
         public int CandidateCount { get; }
+
+        /// <summary>
+        /// Whether the authority currently offers this Clear as one that can be started.
+        ///
+        /// Milestone 8.8b. It is the authority's own stamp on the replacement offer, never a count made
+        /// here: a Clear with no adjacent token could remove nothing whatever the hero chose, so it is
+        /// drawn greyed and refused at the start, exactly as an inert Skill and a targetless Attack are.
+        /// p.13's "any number" still includes zero wherever a token *is* adjacent, and that case stays
+        /// available.
+        /// </summary>
+        public bool IsAvailable { get; }
     }
 
     /// <summary>
@@ -2166,7 +2180,10 @@ namespace GuardsDigital.Presentation.Match
                     offer.ReplacedAttackActionDefinitionId) &&
                 value.SourceCardInstanceId.Equals(offer.SourceCardInstanceId) &&
                 value.ActorId.Equals(offer.ActorId));
-            if (legal == null)
+            // Milestone 8.8b: a Clear the authority stamped unavailable opens nothing. Refusing the
+            // mode is what keeps the surface from standing in a selection whose only confirm the
+            // authority would reject - the same reason a greyed action carries no start.
+            if (legal == null || !legal.IsAvailable)
             {
                 return false;
             }
@@ -2343,7 +2360,9 @@ namespace GuardsDigital.Presentation.Match
                     option.ReplacedAttackActionDefinitionId,
                     option.ReplacementOffer.SourceCardInstanceId,
                     option.ReplacementOffer.ActorId,
-                    option.AdjacentTokens.Count))
+                    option.AdjacentTokens.Count,
+                    // Milestone 8.8b: the authority's own stamp, never a count made here.
+                    option.ReplacementOffer.IsAvailable))
                 .ToArray();
             var clearSelection = CreateClearSelection(
                 clearOptions, openClearActionDefinitionId, selectedClearTokenIds);

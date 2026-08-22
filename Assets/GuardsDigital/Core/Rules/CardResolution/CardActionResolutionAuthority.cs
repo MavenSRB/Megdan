@@ -1069,6 +1069,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications);
         }
 
+        /// <summary>
+        /// Milestone 8.8b: whether this Clear could remove anything, asked of the same backend that
+        /// validates the selection when the Clear runs. The counterpart of
+        /// <see cref="CanAttackFindTarget"/> for p.13's other replacement.
+        /// </summary>
+        public bool CanClearRemoveAnything(
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications) =>
+            clearBackend.CanRemoveAnything(
+                replacementOffer,
+                replacedAttackActionDefinitionId,
+                definitions,
+                instances,
+                modifications);
+
         public CardActionResolutionResult PerformTurnClear(
             ActionResolutionId resolutionId,
             ActionOffer replacementOffer,
