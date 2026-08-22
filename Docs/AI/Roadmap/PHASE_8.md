@@ -127,6 +127,26 @@ Acceptance checks:
 - Selection, targeting, correction, respawn, Minion Battle and Attack targeting keep their existing projected legality and typed command paths, and identify the same stable space or object before and after Undo, restart, snapshot restore, replay, and a presentation rebuild.
 
 Non-goals: no change to effect-choice authority, candidate sets, legality, or command shapes; no change to the board underlay, registration, camera framing, cue vocabulary, or highlight palette; no schema move, and no new pending state.
+
+### [ ] 8.11d Replace piece-target triangles with board-facing base rings
+
+Blocked by: milestone 8.11c, so every identity-named effect-choice candidate first has the same direct board surface whose shared cue this milestone changes.
+
+Observable outcome: every hero, minion, or token currently identified by the small downward triangle is instead identified by a static board-facing ring around its base, keeping the piece and official board artwork unobstructed while making eligible and selected targets distinct and reserving one compatible hover treatment for a future pointer-preview surface.
+
+Acceptance checks:
+
+- One shared target-ring cue replaces the triangle for heroes, minions, and tokens across Attack targeting, Minion Battle choices, effect choices, and every other existing consumer of the highlighted/selected piece-cue vocabulary. Presentation receives the same projected stable identities plus a typed consequence intent and derives no candidate, allegiance, distance, Range, immunity, or other legality.
+- An eligible target uses a thin segmented ring and a selected target uses a double ring. The reserved future hover treatment is a brighter solid ring with four short connected outward ticks; this milestone defines and tests its construction but does not manufacture a hovered state where the direct-click board flow projects none. Shape, thickness, and luminance distinguish all three treatments without colour or animation alone.
+- A choice whose consuming operation is Defeat or Remove, including a Minion Battle removal, carries removal intent and uses a dark blood-red ring. Every other piece-affecting choice uses a dark green ring. This describes the operation being invoked, not a guaranteed outcome: prevention can still stop a declared removal, and an ordinary Attack target is not coloured red merely because later resolution might defeat it. Presentation reads the typed intent and never infers it from target kind, card text, display name, or colour.
+- Both dark hues receive the same thin light-neutral contrast keyline so they survive dark and detailed board regions; eligible/selected meaning remains in segmentation versus the double ring, and visible consequence colour is repeated in the cue's assistive reading. The exact blood-red, green, and keyline values are settled with the user in this milestone's targeted Game View inspection rather than preselected away from the official artwork.
+- The ring lies flat on the board and remains centred on the authoritative occupied space. Its inner edge meets the exact rendered token or base footprint with no air gap, its radius is derived from that view's current bounds rather than one fixed hero/minion/token size, and the hover ticks join the solid ring rather than float beyond it. The treatment leaves the official token art unobstructed, accommodates a future miniature base, and stays visibly distinct from the filled hex treatment used for selectable destinations. It neither intercepts pointer input nor changes the piece's collider or clickable area.
+- Exactly one cue instance follows each projected piece view and only its state changes. Accepted or refused commands, pointer exit, selection changes, movement, removal, Defeat/respawn, Undo, restart, snapshot restore, replay, and presentation rebuild clear or reconstruct rings from the current projection without stale, duplicated, or orphaned cues.
+- Existing signed Defense-contributor badges, current-card/Active indicators, destination highlights, spawn markers, team treatments, and card-hover surfaces retain their meanings and visual priority. A target ring remains readable against representative light, dark, and highly detailed regions of the official board for both team treatments and every configured unit/token footprint.
+- Focused presentation tests cover eligible, selected, cleared, moved, removed, restored, and rebuilt rings on a hero, minion, and token; typed removal/non-removal intent without name or text inference; both consequence palettes and their keyline; construction of the reserved hover treatment; target-ring/destination-highlight coexistence; and the absence of the former triangle glyph. Directly affected Play Mode paths cover Attack, Minion Battle, and identity-named effect-choice targeting without requiring a currently unreachable hover transition. T2 validation includes one targeted 2048-by-1152 Game View inspection.
+
+Non-goals: no change to target candidates, legality, selection commands, occupancy, pointer hit areas, cue ownership, board registration, card or HUD presentation, camera behavior, animation, production VFX, or team palette.
+
 ### [ ] 8.12 Execute Active-effect and continuous trigger windows
 
 
