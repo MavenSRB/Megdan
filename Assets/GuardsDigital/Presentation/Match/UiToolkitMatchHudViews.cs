@@ -392,9 +392,21 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public HeroCurrentCardViewModel HighlightedCurrentCard => highlighted as HeroCurrentCardViewModel;
 
+        /// <summary>
+        /// The discard-pile icon the pointer is resting on, or null when none is.
+        ///
+        /// Milestone 8.11b. A discarded card is now drawn as its own icon rather than as a share of a
+        /// count, so it reveals its own face - the same one preview, through the same builder, on the
+        /// same terms as a resolved turn.
+        /// </summary>
+        public TrayCardViewModel HighlightedDiscardCard => highlighted as TrayCardViewModel;
+
         public event Action<HeroTurnSlotViewModel> TurnSlotHighlighted;
 
         public event Action<HeroCurrentCardViewModel> CurrentCardHighlighted;
+
+        /// <summary>Milestone 8.11b: the pointed-at discard icon, on the terms of the two above.</summary>
+        public event Action<TrayCardViewModel> DiscardCardHighlighted;
 
         /// <summary>Reports a pointed-at slot directly, for a driver with no pointer.</summary>
         public void ForwardTurnSlotHighlight(HeroTurnSlotViewModel slot) =>
@@ -405,6 +417,9 @@ namespace GuardsDigital.Presentation.Match
         public void ForwardCurrentCardHighlight(HeroCurrentCardViewModel current) =>
             SetHighlight(current != null && current.Card != null ? current : null);
 
+        /// <summary>Milestone 8.11b: reports a pointed-at discard icon, for a driver with no pointer.</summary>
+        public void ForwardDiscardCardHighlight(TrayCardViewModel card) => SetHighlight(card);
+
         private void SetHighlight(object model)
         {
             if (ReferenceEquals(highlighted, model))
@@ -414,6 +429,7 @@ namespace GuardsDigital.Presentation.Match
 
             var slotBefore = HighlightedTurnSlot;
             var currentBefore = HighlightedCurrentCard;
+            var discardBefore = HighlightedDiscardCard;
             highlighted = model;
             preview.Clear();
             var card = CardOf(model);
@@ -438,6 +454,11 @@ namespace GuardsDigital.Presentation.Match
             {
                 CurrentCardHighlighted?.Invoke(HighlightedCurrentCard);
             }
+
+            if (!ReferenceEquals(discardBefore, HighlightedDiscardCard))
+            {
+                DiscardCardHighlighted?.Invoke(HighlightedDiscardCard);
+            }
         }
 
         private static TrayCardViewModel CardOf(object model)
@@ -446,6 +467,9 @@ namespace GuardsDigital.Presentation.Match
             {
                 case HeroTurnSlotViewModel slot: return slot.PlayedCard;
                 case HeroCurrentCardViewModel current: return current.Card;
+                // Milestone 8.11b: a discarded card is drawn as its own icon and is its own revealable
+                // model, so it is already the card rather than something holding one.
+                case TrayCardViewModel card: return card;
                 default: return null;
             }
         }
@@ -637,10 +661,11 @@ namespace GuardsDigital.Presentation.Match
 
             rail.Add(bonuses);
 
-            // Milestone 8.7a: the four numbered slots are captioned as what they now are. Without the
-            // caption the row is four coloured boxes whose meaning a player has to infer, and the whole
-            // point of this milestone is that they mean resolved turns and the header marker means the
-            // turn being played.
+            // Milestone 8.7a: the four slots are captioned as what they now are. Without the caption
+            // the row is four card icons whose meaning a player has to infer, and the whole point of
+            // that milestone is that they mean resolved turns and the header marker means the turn
+            // being played. Milestone 8.11b: the caption carries more of that weight than it did, now
+            // that the ordinals are off the slots and the row's own order is what states the sequence.
             var caption = HudElements.Text("RESOLVED TURNS", 9f, MatchHudTheme.MutedText, FontStyle.Bold);
             caption.name = "gd-turn-slots-caption";
             caption.style.marginTop = 8f;
@@ -677,38 +702,12 @@ namespace GuardsDigital.Presentation.Match
                     DirectorHandsUnityView.ActiveOutlineWidth,
                     7f);
 
-                var element = new VisualElement { name = "gd-turn-slot" };
-                element.style.height = 34f;
-                element.style.alignItems = Align.Center;
-                element.style.justifyContent = Justify.Center;
-                element.style.backgroundColor = slot.IsOccupied
-                    ? MatchHudTheme.Face(slot.Color)
-                    : MatchHudTheme.EmptySlot;
-                HudElements.Border(
-                    element,
-                    slot.IsOccupied ? MatchHudTheme.PanelBorder : MatchHudTheme.MutedText,
-                    1f,
-                    4f);
-                var ordinal = HudElements.Text(
-                    slot.TurnLabel,
-                    12f,
-                    slot.IsOccupied ? MatchHudTheme.FaceText(slot.Color) : MatchHudTheme.MutedText,
-                    FontStyle.Bold);
-                ordinal.style.unityTextAlign = TextAnchor.MiddleCenter;
-                element.Add(ordinal);
-                element.tooltip = slot.AssistiveLabel;
-                if (slot.IsOccupied)
-                {
-                    // Milestone 8.5a: resting on an occupied slot reveals the card played on that turn.
-                    // The slot is deliberately not made focusable - the rail is informational, and eight
-                    // new tab stops in front of the tray would be a keyboard-order change this milestone
-                    // has no reason to make. What a keyboard or screen reader needs is in the slot's own
-                    // assistive label, which names the card.
-                    var pointed = slot;
-                    revealAnchors[pointed] = element;
-                    HudElements.OnPointedAt(
-                        element, entered => SetHighlight(entered ? pointed : null));
-                }
+                // Milestone 8.11b: the card that resolved on this turn, as its own icon, or an empty
+                // card outline for a turn with none. The slot is named the same and sits in the same
+                // fixed position, so the row still reads left to right as turns one to four.
+                var element = slot.IsOccupied
+                    ? BuildMiniCard("gd-turn-slot", slot.PlayedCard, slot.AssistiveLabel, slot)
+                    : BuildEmptyMiniCard("gd-turn-slot", slot.AssistiveLabel);
 
                 outline.Add(element);
                 column.Add(outline);
@@ -727,38 +726,114 @@ namespace GuardsDigital.Presentation.Match
 
             rail.Add(slots);
 
-            var discard = HudElements.Row(6f);
+            // Milestone 8.11b: the pile itself rather than a description of it.
+            //
+            // It carried a `DISCARD` label, a strip of one pip per colour present, and a count. A pip
+            // strip cannot say that two of a colour are in there, and a count cannot say what they are,
+            // so a player who wanted to know what an opponent had spent could read neither off the
+            // rail. One icon per card says both, in the same icon a resolved turn is drawn as, and the
+            // count goes because the icons are the count.
+            var discard = HudElements.Column(4f);
             discard.name = "gd-discard";
             discard.style.marginTop = 6f;
-            discard.style.justifyContent = Justify.SpaceBetween;
-            discard.style.flexWrap = Wrap.NoWrap;
             HudElements.Padding(discard, 5f);
             discard.style.backgroundColor = new Color(0.129f, 0.149f, 0.161f, 1f);
             HudElements.Border(discard, MatchHudTheme.PanelBorder, 1f, 4f);
-            var discardLabel = HudElements.Text(
-                hero.DiscardLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
-            var pips = HudElements.Row(3f);
-            pips.style.flexWrap = Wrap.NoWrap;
-            foreach (var color in hero.DiscardColors)
+
+            // The one row the mirror does not touch, by the user's 2026-08-21 decision: the pile reads
+            // left to right whichever rail it is on, so the two are compared side by side rather than
+            // being each other's reflection.
+            discard.Add(HudElements.Text(hero.DiscardLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold));
+            var pile = HudElements.Row(MiniCardGap);
+            pile.name = "gd-discard-pile";
+            pile.style.flexWrap = Wrap.Wrap;
+            foreach (var card in hero.DiscardCards)
             {
-                var pip = new VisualElement();
-                pip.style.width = 8f;
-                pip.style.height = 8f;
-                pip.style.backgroundColor = MatchHudTheme.Face(color);
-                pip.tooltip = MatchHudTheme.ColorName(color) + " in the discard pile";
-                HudElements.Border(pip, MatchHudTheme.PanelBorder, 1f, 4f);
-                pips.Add(pip);
+                pile.Add(BuildMiniCard("gd-discard-card", card, card.AssistiveLabel, card));
             }
 
-            // The one row the mirror does not touch, by the user's 2026-08-21 decision: a label and the
-            // number it counts read left to right whichever rail they are on, and a count that changed
-            // sides between the two rails made the pair harder to compare rather than easier.
-            discard.Add(discardLabel);
-            discard.Add(pips);
-            discard.Add(HudElements.Text(
-                hero.DiscardCountLabel, 12f, MatchHudTheme.PrimaryText, FontStyle.Bold));
+            if (hero.DiscardCards.Count == 0)
+            {
+                // An empty pile says so in words rather than with a nought, for the reason the count
+                // went: nothing here is a number any more.
+                pile.Add(HudElements.Text("EMPTY", 10f, MatchHudTheme.MutedText));
+            }
+
+            discard.Add(pile);
             rail.Add(discard);
             return rail;
+        }
+
+        /// <summary>The mini card's footprint, and the gap between two of them.</summary>
+        private const float MiniCardWidth = 24f;
+
+        private const float MiniCardHeight = 34f;
+
+        private const float MiniCardGap = 4f;
+
+        /// <summary>
+        /// One card as a compact card-shaped icon: the shape and the printed colour, and nothing
+        /// abbreviated onto it.
+        ///
+        /// <para>Milestone 8.11b. It is deliberately not a small card face - at this size a name band
+        /// and a value line would be unreadable smudges, and a smudge that looks like text is worse
+        /// than none. What it carries is what reads at 24 pixels: a card's proportions, its printed
+        /// colour, and a hairline band at the top so it is a card rather than a swatch. Everything else
+        /// about the card is one pointer rest away, at full size, through the same preview the tray's
+        /// own card faces are drawn by - and is in <paramref name="assistiveLabel"/> for a reader that
+        /// has no pointer.</para>
+        ///
+        /// <para>Like the slots before it, an icon takes no focus stop. The rail is informational, and
+        /// a hero's whole discard pile as tab stops in front of the tray would be a keyboard-order
+        /// change this milestone has no reason to make.</para>
+        /// </summary>
+        private VisualElement BuildMiniCard(
+            string name, TrayCardViewModel card, string assistiveLabel, object revealed)
+        {
+            var element = BuildMiniCardShape(name);
+            element.style.backgroundColor = MatchHudTheme.Face(card.Color);
+            HudElements.Border(element, MatchHudTheme.PanelBorder, 1f, 3f);
+
+            var band = new VisualElement { name = "gd-mini-card-band" };
+            band.style.height = 4f;
+            band.style.marginLeft = 3f;
+            band.style.marginRight = 3f;
+            band.style.marginTop = 3f;
+            var ink = MatchHudTheme.FaceText(card.Color);
+            band.style.backgroundColor = new Color(ink.r, ink.g, ink.b, 0.30f);
+            element.Add(band);
+
+            element.tooltip = assistiveLabel;
+            revealAnchors[revealed] = element;
+            HudElements.OnPointedAt(element, entered => SetHighlight(entered ? revealed : null));
+            return element;
+        }
+
+        /// <summary>
+        /// A reserved position with no card in it: the same footprint, drawn as an outline.
+        ///
+        /// It reveals nothing and answers no pointer, because there is nothing to reveal - an empty
+        /// resolved-turn slot is a turn this hero has not finished, and inventing a card or a number
+        /// for it would be the presentation saying something the round has not.
+        /// </summary>
+        private static VisualElement BuildEmptyMiniCard(string name, string assistiveLabel)
+        {
+            var element = BuildMiniCardShape(name);
+            element.style.backgroundColor = MatchHudTheme.EmptySlot;
+            HudElements.Border(element, MatchHudTheme.MutedText, 1f, 3f);
+            element.tooltip = assistiveLabel;
+            return element;
+        }
+
+        private static VisualElement BuildMiniCardShape(string name)
+        {
+            var element = new VisualElement { name = name };
+            element.style.width = MiniCardWidth;
+            element.style.height = MiniCardHeight;
+            element.style.flexShrink = 0f;
+            element.style.flexDirection = FlexDirection.Column;
+            element.style.alignSelf = Align.Center;
+            return element;
         }
 
         /// <summary>The marker's fixed footprint in the rail header's upper right.</summary>
@@ -1540,6 +1615,22 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private const float UpgradeOptionInset = 6f;
 
+        /// <summary>
+        /// The frame a legal Defense card sits in, on the same terms as
+        /// <see cref="UpgradeOptionInset"/>. Milestone 8.11b. Four of these plus `DECLINE DEFENSE`, the
+        /// section's own gutter label and their spacing come to well under the tray's 1280 bound, which
+        /// is milestone 5.1c's constraint on this row and the one this milestone must not break.
+        /// </summary>
+        private const float DefenseCardInset = 6f;
+
+        /// <summary>
+        /// The width one legal Defense offer occupies: a whole tray card plus the frame its shared
+        /// selection outline is drawn in. Every offer is exactly this wide, so choosing one cannot
+        /// change another's width, re-wrap its rules text, or move the row.
+        /// </summary>
+        public const float DefenseCardFootprint =
+            DirectorHandsUnityView.CardWidth + (DefenseCardInset * 2f);
+
         public static readonly Color DefensePreviewBackgroundColor =
             new Color(0.025f, 0.035f, 0.045f, 1f);
 
@@ -1552,6 +1643,15 @@ namespace GuardsDigital.Presentation.Match
         /// the selection outline belongs to exactly one of them at a time, so marking one means unmarking
         /// the rest, and a driver with no pointer has to be able to reach them by option.
         /// </summary>
+        /// <summary>
+        /// The Defense-card controls this rebuild drew. Milestone 8.11b, for milestone 8.8a's reason:
+        /// a driver with no pointer has to reach an offer the way its own control does, and an offer
+        /// this rebuild did not draw must reach nothing.
+        /// </summary>
+        private readonly List<KeyValuePair<TypedInvocationViewModel, VisualElement>>
+            defenseCardControls =
+                new List<KeyValuePair<TypedInvocationViewModel, VisualElement>>();
+
         private readonly List<KeyValuePair<SystemTransitionOptionViewModel, VisualElement>>
             upgradeOptionControls =
                 new List<KeyValuePair<SystemTransitionOptionViewModel, VisualElement>>();
@@ -1777,6 +1877,7 @@ namespace GuardsDigital.Presentation.Match
             // to them. A highlight belongs to the model it was read from, exactly as every other one here
             // does.
             upgradeOptionControls.Clear();
+            defenseCardControls.Clear();
             HighlightedUpgradeOption = null;
             status.Add(HudElements.Text(Model.Status, 12f, MatchHudTheme.PrimaryText));
 
@@ -1819,11 +1920,17 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
+        /// <summary>The gutter every section's family label reserves down this region's left edge.</summary>
+        public const float SectionGutterWidth = 96f;
+
+        /// <summary>The space between two controls in one section.</summary>
+        public const float SectionGap = 6f;
+
         private VisualElement Section(string gutter)
         {
-            var section = HudElements.Row(6f);
+            var section = HudElements.Row(SectionGap);
             var label = HudElements.Text(gutter, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
-            label.style.width = 96f;
+            label.style.width = SectionGutterWidth;
             section.Add(label);
             rows.Add(section);
             return section;
@@ -2051,6 +2158,27 @@ namespace GuardsDigital.Presentation.Match
         /// option cannot be answered through the surface any more than a forged command can be submitted
         /// through the presenter.
         /// </summary>
+        /// <summary>
+        /// Activates one drawn Defense card: the same forwarding its own control does, for a driver
+        /// that has no pointer.
+        ///
+        /// Milestone 8.11b, on milestone 8.8a's terms. The card's <see cref="Button"/> calls this, so
+        /// there is one path rather than two that could drift, and an offer this rebuild did not draw
+        /// forwards nothing at all - a stale face cannot answer a question the authority has moved on
+        /// from. What it forwards is the offer's own projected invocation, unchanged.
+        /// </summary>
+        public bool ForwardDefenseCard(TypedInvocationViewModel choice)
+        {
+            if (choice == null ||
+                !defenseCardControls.Any(entry => ReferenceEquals(entry.Key, choice)))
+            {
+                return false;
+            }
+
+            ForwardInvocation(choice);
+            return true;
+        }
+
         public bool ForwardUpgradeOption(SystemTransitionOptionViewModel option)
         {
             if (option == null ||
@@ -2155,12 +2283,31 @@ namespace GuardsDigital.Presentation.Match
             section.Add(HudElements.Control(selection.CancelLabel, () => ClearCancelled?.Invoke()));
         }
 
+        /// <summary>
+        /// p.11's Defense response: every legal card as its own whole printed face, then the one
+        /// control that is not a card.
+        ///
+        /// <para>Milestone 8.11b. A card was offered here as two lines of abbreviated text while the
+        /// same cards stood on the tray as complete faces, so a defender was comparing a summary
+        /// against the thing it summarised. The face is
+        /// <see cref="DirectorHandsUnityView.BuildStandaloneCard"/> - the tray's own builder, and the
+        /// same one p.15's upgrade prompt uses - so this region introduces no second card design and
+        /// decodes no printed sentence.</para>
+        ///
+        /// <para>Nothing about the decision moves onto the card. The authority-computed
+        /// Attack/Defense/result preview is still what hover and keyboard focus raise, still read from
+        /// the offer's own <see cref="DefenseBreakdownViewModel"/>, and the visible order is the
+        /// projected response order, which is the keyboard order too because the controls are added in
+        /// it. <c>DECLINE DEFENSE</c> is about no card, so it stays the compact control it was.</para>
+        /// </summary>
         private void BuildDefense()
         {
             var section = Section("DEFENSE");
             foreach (var choice in Model.DefenseChoices)
             {
-                var control = HudElements.Control(choice.Label, () => ForwardInvocation(choice));
+                var control = choice.Card == null
+                    ? HudElements.Control(choice.Label, () => ForwardInvocation(choice))
+                    : BuildDefenseCard(choice);
                 if (choice.DefenseBreakdown != null)
                 {
                     HudElements.OnPointedAt(control, pointedAt =>
@@ -2178,6 +2325,50 @@ namespace GuardsDigital.Presentation.Match
 
                 section.Add(control);
             }
+        }
+
+        /// <summary>
+        /// One legal Defense card: the whole card is the control, and it forwards exactly the
+        /// invocation the authority projected for it.
+        ///
+        /// The selection outline is the HUD's shared treatment, always drawn and only ever changing
+        /// colour, so pointing at or focusing an offer cannot change a card's width, re-wrap its rules
+        /// text, or move the row - the same rule milestone 8.8a's upgrade grid keeps.
+        /// </summary>
+        private Button BuildDefenseCard(TypedInvocationViewModel choice)
+        {
+            var control = new Button(() => ForwardDefenseCard(choice))
+            {
+                name = "gd-defense-card",
+                text = string.Empty
+            };
+            defenseCardControls.Add(
+                new KeyValuePair<TypedInvocationViewModel, VisualElement>(choice, control));
+            control.style.flexDirection = FlexDirection.Column;
+            control.style.alignItems = Align.Stretch;
+            control.style.flexShrink = 0f;
+            // Stretched to the row rather than centred in it, which is what the tray does with its own
+            // five: a Block prints no Defense value and an Attack's rules text runs longer, so
+            // content-sized offers came out four different heights sitting at four different
+            // baselines. The row is as tall as its tallest card and every face fills it.
+            control.style.alignSelf = Align.Stretch;
+            control.style.width = DefenseCardFootprint;
+            control.style.marginLeft = 0f;
+            control.style.marginRight = 0f;
+            control.style.marginTop = 0f;
+            control.style.marginBottom = 0f;
+            HudElements.Padding(control, DefenseCardInset);
+            control.style.backgroundColor = MatchHudTheme.PanelBackground;
+            HudElements.MarkSelectedWithoutResizing(control, false);
+
+            // The face grows to its frame, so the row is four cards of one size rather than four
+            // content-sized ones sharing a top edge. It is set here rather than in the shared builder
+            // because the rail's hover preview must stay exactly as tall as the card it draws.
+            var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
+            face.style.flexGrow = 1f;
+            control.Add(face);
+            control.tooltip = choice.Label.Replace('\n', ' ');
+            return control;
         }
 
         private void BuildActionRow()

@@ -420,11 +420,15 @@ namespace GuardsDigital.Presentation.Match
     /// round.
     ///
     /// Milestone 8.7a made both of those words true. A slot is occupied only once the card played on
-    /// its turn has reached <see cref="CardResolutionStatus.Resolved"/>, and the ordinal it stands for
-    /// is written on it: the approved mockup numbers the four slots under one `RESOLVED TURNS` caption,
-    /// which is what tells a player that this row is history rather than what is happening now. The
-    /// colour stays a swatch with <see cref="AssistiveLabel"/> behind it, exactly as milestone 7.8a
-    /// left it.
+    /// its turn has reached <see cref="CardResolutionStatus.Resolved"/>.
+    ///
+    /// <para>Milestone 8.11b took the ordinal off it. The four slots keep fixed left-to-right positions
+    /// under one `RESOLVED TURNS` caption, so the sequence is still on the screen; what the slot draws
+    /// instead of `1` is the card that resolved on that turn, as a compact card-shaped icon. A number
+    /// standing where a card belongs was the abbreviation this milestone removes - the row already said
+    /// which turn was which by where a slot sits, and said nothing about what was played there.
+    /// <see cref="TurnIndex"/> is still the fact the sequence and <see cref="AssistiveLabel"/> are built
+    /// from; it simply has no text of its own any more.</para>
     /// </summary>
     public sealed class HeroTurnSlotViewModel
     {
@@ -450,22 +454,22 @@ namespace GuardsDigital.Presentation.Match
             Color = color;
             IsOccupied = isOccupied;
             PlayedCard = playedCard;
-            TurnLabel = turnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var ordinal = turnIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // Milestone 8.7a: the same projected active-source fact the tray reads, asked of the card
             // in the slot rather than derived again here, so the two surfaces mark and unmark one card
             // on the same refresh.
             IsActiveEffectSource = isOccupied && playedCard.IsActiveEffectSource;
             ActiveLabel = IsActiveEffectSource ? "ACTIVE" : string.Empty;
+            // Milestone 8.11b: the slot draws no text at all now, so this is where the turn ordinal and
+            // the card's name live. A player using a screen reader hears more than the four numbers
+            // ever said, and a sighted player reads the same facts off the icon's own hover.
             AssistiveLabel = isOccupied
-                ? $"Turn {TurnLabel}: {MatchHudTheme.ColorName(color)} card - {playedCard.DisplayName}" +
+                ? $"Turn {ordinal}: {MatchHudTheme.ColorName(color)} card - {playedCard.DisplayName}" +
                     (IsActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty)
-                : $"Turn {TurnLabel}: empty";
+                : $"Turn {ordinal}: empty";
         }
 
         public int TurnIndex { get; }
-
-        /// <summary>The turn ordinal as the slot prints it, which milestone 8.7a made visible.</summary>
-        public string TurnLabel { get; }
 
         public CardColor Color { get; }
         public bool IsOccupied { get; }
@@ -510,19 +514,13 @@ namespace GuardsDigital.Presentation.Match
             int level,
             IEnumerable<HeroItemBonusViewModel> itemBonuses,
             IEnumerable<HeroTurnSlotViewModel> turnSlots,
-            int discardCount,
-            IEnumerable<CardColor> discardColors,
+            IEnumerable<TrayCardViewModel> discardCards,
             bool isViewed,
             HeroCurrentCardViewModel currentCard = null)
         {
             if (!heroId.IsDefined)
             {
                 throw new ArgumentException("An overview names its hero.", nameof(heroId));
-            }
-
-            if (discardCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(discardCount));
             }
 
             HeroId = heroId;
@@ -533,14 +531,13 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<HeroItemBonusViewModel>()).ToArray());
             TurnSlots = Array.AsReadOnly((turnSlots ??
                 throw new ArgumentNullException(nameof(turnSlots))).ToArray());
-            DiscardCount = discardCount;
-            DiscardColors = Array.AsReadOnly((discardColors ?? Enumerable.Empty<CardColor>()).ToArray());
+            DiscardCards = Array.AsReadOnly((discardCards ??
+                Enumerable.Empty<TrayCardViewModel>()).ToArray());
             IsViewed = isViewed;
             CurrentCard = currentCard;
             TeamLabel = teamSide == TeamSide.Red ? "RED HERO" : "BLUE HERO";
             LevelLabel = "LVL " + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
             DiscardLabel = "DISCARD";
-            DiscardCountLabel = discardCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
             // The icon slot the milestone 7.8a decision wired: a configured image drops in here later,
             // and until one exists the disc carries the hero's own initial so the two rails are told
@@ -569,16 +566,22 @@ namespace GuardsDigital.Presentation.Match
         public string LevelLabel { get; }
         public IReadOnlyList<HeroItemBonusViewModel> ItemBonuses { get; }
         public IReadOnlyList<HeroTurnSlotViewModel> TurnSlots { get; }
-        public int DiscardCount { get; }
         public string DiscardLabel { get; }
-        public string DiscardCountLabel { get; }
 
         /// <summary>
-        /// The colours currently in this hero's discard pile, so the fifth slot can show what is in it
-        /// rather than only how much. The pile has no authoritative order, so these are in colour order
-        /// rather than in an order this presenter would have had to invent.
+        /// Every card currently in this hero's discard pile, as the tray draws one, in the order
+        /// <see cref="CurrentRoundCards.DiscardedCards"/> settles.
+        ///
+        /// <para>Milestone 8.11b. The rail carried a count and a strip of colour pips, which said how
+        /// big the pile was and which colours were somewhere in it, and could not say what was in it -
+        /// two of one colour read as one pip. One card, one icon says both, and says them the same way
+        /// the resolved-turn slots do. <see cref="DiscardCount"/> is what this list is long, never a
+        /// number drawn beside it: the visible icons are the count.</para>
         /// </summary>
-        public IReadOnlyList<CardColor> DiscardColors { get; }
+        public IReadOnlyList<TrayCardViewModel> DiscardCards { get; }
+
+        /// <summary>How many cards are in the pile. It is the list's own length, and it is not drawn.</summary>
+        public int DiscardCount => DiscardCards.Count;
 
         /// <summary>Whether the tray is currently showing this hero, which the rail marks.</summary>
         public bool IsViewed { get; }
@@ -661,10 +664,6 @@ namespace GuardsDigital.Presentation.Match
         {
             var progression = projection.HeroProgression
                 .FirstOrDefault(entry => entry.HeroId.Equals(heroId));
-            var discarded = projection.Cards
-                .Where(card => card.OwnerId.Equals(heroId) &&
-                    card.State.Location == CardLocation.DiscardPile)
-                .ToArray();
             return new HeroOverviewViewModel(
                 heroId,
                 teamSide,
@@ -674,11 +673,7 @@ namespace GuardsDigital.Presentation.Match
                     .OrderBy(entry => MatchHudTheme.ChannelOrder.ToList().IndexOf(entry.Key))
                     .Select(entry => new HeroItemBonusViewModel(entry.Key, entry.Value)),
                 CurrentRoundCards.TurnSlots(projection, heroId),
-                discarded.Length,
-                discarded
-                    .Select(card => CurrentRoundCards.ColorOf(projection, card))
-                    .Distinct()
-                    .OrderBy(color => (int)color),
+                CurrentRoundCards.DiscardedCards(projection, heroId),
                 heroId.Equals(viewedHeroId),
                 CurrentRoundCards.CurrentCard(projection, heroId));
         }
@@ -773,6 +768,31 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return Array.AsReadOnly(slots.ToArray());
+        }
+
+        /// <summary>
+        /// Every card in one hero's discard pile, as the tray draws one, in a deterministic order.
+        ///
+        /// <para>Milestone 8.11b. The rail draws one icon per card now, so the pile needs an order and
+        /// the pile itself has none - p.6 says nothing about how a discard pile is stacked, and the
+        /// projection records no arrival sequence. It is ordered by card instance identity, which is
+        /// exactly what the tray already orders its own discarded group by, so a card sits in the same
+        /// place in the pile on both surfaces. Reading the order off discard <em>events</em> as they
+        /// went past would have been presentation maintaining state the authority does not keep, and it
+        /// would not survive a restore or a replay; this survives both because it is a reading of the
+        /// projection alone.</para>
+        /// </summary>
+        public static IReadOnlyList<TrayCardViewModel> DiscardedCards(
+            MatchSessionProjection projection,
+            HeroId heroId)
+        {
+            if (projection == null) throw new ArgumentNullException(nameof(projection));
+            return Array.AsReadOnly(projection.Cards
+                .Where(card => card.OwnerId.Equals(heroId) &&
+                    card.State.Location == CardLocation.DiscardPile)
+                .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
+                .Select(card => TrayCard(projection, card, TrayCardGroup.Discarded, 0, false, false))
+                .ToArray());
         }
 
         /// <summary>

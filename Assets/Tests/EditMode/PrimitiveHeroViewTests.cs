@@ -58,6 +58,82 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.11b. A hero this project has no prepared token for keeps the generated prism,
+        /// which is the tracked checkout's ordinary state rather than a fault.
+        /// </summary>
+        [Test]
+        public void WithNoPreparedToken_TheHeroKeepsTheGeneratedPrismAndItsOwnPointerRadius()
+        {
+            var gameObject = new GameObject("Primitive Hero Test");
+
+            try
+            {
+                var view = gameObject.AddComponent<PrimitiveHeroView>();
+
+                view.EnsureVisual();
+
+                Assert.That(view.HasTokenVisual, Is.False,
+                    "A view with no content identity resolves no face, and never faults over one.");
+                Assert.That(gameObject.GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
+                Assert.That(gameObject.GetComponent<MeshFilter>().sharedMesh.subMeshCount, Is.EqualTo(1));
+                Assert.That(gameObject.GetComponent<MeshRenderer>().sharedMaterials, Has.Length.EqualTo(1));
+                Assert.That(gameObject.GetComponent<MeshRenderer>().sharedMaterial.mainTexture, Is.Null);
+                Assert.That(view.SelectionRadius,
+                    Is.EqualTo(PrimitiveHeroView.DefaultBaseRadius).Within(Tolerance));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.11b. Which face a hero would use is decided by projected content identity and
+        /// authoritative team, and by nothing else - the resource is addressed the same way
+        /// <see cref="StandardMinionArtCatalog"/> addresses a minion's.
+        /// </summary>
+        [Test]
+        public void AHeroTokenIsAddressedByContentIdentityAndTeam_AndAbsenceIsAnOrdinaryAnswer()
+        {
+            var wasp = new GuardsDigital.Core.Setup.HeroContentId("wasp");
+            Assert.That(
+                HeroTokenArtwork.ResourcePath(wasp, GuardsDigital.Core.Participants.TeamSide.Red),
+                Is.EqualTo("Private/Heroes/wasp-red"));
+            Assert.That(
+                HeroTokenArtwork.ResourcePath(wasp, GuardsDigital.Core.Participants.TeamSide.Blue),
+                Is.EqualTo("Private/Heroes/wasp-blue"));
+            Assert.That(
+                HeroTokenArtwork.ResourcePath(wasp, GuardsDigital.Core.Participants.TeamSide.Red),
+                Is.Not.EqualTo(
+                    HeroTokenArtwork.ResourcePath(wasp, GuardsDigital.Core.Participants.TeamSide.Blue)),
+                "so the two teams can never resolve one face.");
+            Assert.That(
+                HeroTokenArtwork.ResourcePath(
+                    new GuardsDigital.Core.Setup.HeroContentId("tigerclaw"),
+                    GuardsDigital.Core.Participants.TeamSide.Red),
+                Is.EqualTo("Private/Heroes/tigerclaw-red"),
+                "and a hero this project has not reached yet needs no new rule to be addressed.");
+
+            Assert.That(
+                HeroTokenArtwork.TryLoadTexture(
+                    new GuardsDigital.Core.Setup.HeroContentId("no-such-hero"),
+                    GuardsDigital.Core.Participants.TeamSide.Red,
+                    out var absent),
+                Is.False,
+                "An absent face answers false rather than throwing: it is the tracked state.");
+            Assert.That(absent, Is.Null);
+
+            // The team is stated in this project's own colour, from the side rather than the picture,
+            // and it is the same colour the generated prism has always carried.
+            Assert.That(
+                HeroTokenArtwork.TeamRim(GuardsDigital.Core.Participants.TeamSide.Red),
+                Is.Not.EqualTo(HeroTokenArtwork.TeamRim(GuardsDigital.Core.Participants.TeamSide.Blue)));
+            Assert.That(HeroTokenArtwork.FaceRadius,
+                Is.LessThan(HeroTokenArtwork.TokenOuterRadius),
+                "The rim stands outside the face rather than over it.");
+        }
+
+        /// <summary>
         /// Milestone 6.5c. An effect choice can name a hero as its target, so the hero view carries
         /// the same marker the minion view does - the shared construction, the shared marker size,
         /// and the two colors that separate a selection from the control being pointed at - hung

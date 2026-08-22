@@ -1476,18 +1476,33 @@ namespace GuardsDigital.Presentation.Match
         public TypedInvocationViewModel(
             string label,
             DirectorCommand command,
-            DefenseBreakdownViewModel defenseBreakdown = null)
+            DefenseBreakdownViewModel defenseBreakdown = null,
+            TrayCardViewModel card = null)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A typed invocation requires a label.", nameof(label))
                 : label;
             Command = command ?? throw new ArgumentNullException(nameof(command));
             DefenseBreakdown = defenseBreakdown;
+            Card = card;
         }
 
         public string Label { get; }
         public DirectorCommand Command { get; }
         public DefenseBreakdownViewModel DefenseBreakdown { get; }
+
+        /// <summary>
+        /// The card this invocation is about, as the tray draws one, or null when it is not about a
+        /// card.
+        ///
+        /// Milestone 8.11b. p.11's Defense response is a choice between cards in the defender's own
+        /// hand, and until now it was offered as an abbreviated text button while the same cards sat
+        /// on the tray as whole faces - two designs for one card. The face is carried here so the
+        /// region can draw the offer with <see cref="DirectorHandsUnityView.BuildStandaloneCard"/>,
+        /// which is the builder every other card surface uses. <c>DECLINE DEFENSE</c> is about no card
+        /// and carries none, which is what keeps it a distinct control rather than a sixth face.
+        /// </summary>
+        public TrayCardViewModel Card { get; }
     }
 
     public sealed class DefenseBreakdownViewModel
@@ -3026,7 +3041,8 @@ namespace GuardsDigital.Presentation.Match
                             choice.ResolutionId,
                             choice.ChoiceId,
                             offer.SourceCardInstanceId),
-                        CreateDefenseBreakdown(projection.Version, preview, choicePreview));
+                        CreateDefenseBreakdown(projection.Version, preview, choicePreview),
+                        CreateDefenseCardFace(projection, offer.SourceCardInstanceId));
                 })
                 .ToList();
             if (choice.CanDecline)
@@ -3039,6 +3055,35 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return values;
+        }
+
+        /// <summary>
+        /// One offered Defense card as the tray draws it.
+        ///
+        /// <para>Milestone 8.11b. It is <see cref="CurrentRoundCards.TrayCard"/> and nothing composed
+        /// beside it, so an offer shows the same Initiative, name, printed values, qualifiers and exact
+        /// source text the same card shows in the hand it is still sitting in - one card, one face. The
+        /// card an offer names is always in that hand: p.11 answers an Attack with a card the defender
+        /// holds, and the discard happens on choosing rather than on being offered. It is built
+        /// selectable because the authority is offering it, which is what keeps the face at full
+        /// strength rather than wearing the spent-card treatment.</para>
+        /// </summary>
+        private static TrayCardViewModel CreateDefenseCardFace(
+            MatchSessionProjection projection,
+            CardInstanceId cardInstanceId)
+        {
+            var card = projection.Cards.FirstOrDefault(value => value.Id.Equals(cardInstanceId));
+            return card == null
+                ? null
+                : CurrentRoundCards.TrayCard(
+                    projection,
+                    card,
+                    card.State.Location == CardLocation.Hand
+                        ? TrayCardGroup.Available
+                        : TrayCardGroup.Discarded,
+                    0,
+                    true,
+                    false);
         }
 
         public static DefenseBreakdownViewModel CreateDefenseBreakdown(

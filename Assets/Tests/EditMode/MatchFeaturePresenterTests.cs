@@ -71,9 +71,16 @@ namespace GuardsDigital.Tests.EditMode
         /// content-sized unless something sets a width, so the guarantee is now structural and this
         /// reads it that way: the complete label is on the control, the label wraps rather than
         /// truncates, and no width, max-width, or text-overflow was assigned anywhere on it.
+        ///
+        /// <para>Milestone 8.11b narrowed what this covers, and deliberately: an offer that carries a
+        /// card is drawn as that card's whole face at one fixed width, which is a stronger guarantee
+        /// than a label that fits, and <c>MatchHudPresentationTests</c> is where it is checked. What is
+        /// left here is the control for an offer with no card - <c>DECLINE DEFENSE</c> - which is still
+        /// content-sized and must still be able to carry the longest label the model can hand it. The
+        /// model below therefore carries no card on purpose.</para>
         /// </summary>
         [Test]
-        public void DefenseChoiceLayout_CarriesTheCompleteLabelOnAControlNothingNarrows()
+        public void ADefenseControlWithNoCard_CarriesTheCompleteLabelAndNothingNarrowsIt()
         {
             const string longestCurrentLabel =
                 "DISCARD TEST - BLUE SCOUT SHOT\nPRINTED DEFENSE 1";

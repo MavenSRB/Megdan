@@ -785,9 +785,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(resolved.CurrentCard, Is.Null, "The marker clears when that card resolves.");
             var slot = resolved.TurnSlots.Single(value => value.IsOccupied);
             Assert.That(slot.TurnIndex, Is.EqualTo(1));
-            Assert.That(slot.TurnLabel, Is.EqualTo("1"));
             Assert.That(slot.PlayedCard.CardInstanceId, Is.EqualTo(actingCardId),
-                "and the same instance is now the numbered turn's history.");
+                "and the same instance is now that turn's history.");
             Assert.That(slot.PlayedCard.HistoryLabel, Is.EqualTo("PLAYED · TURN 1"));
             Assert.That(slot.IsActiveEffectSource, Is.False, "This card started no Active effect.");
             Assert.That(slot.ActiveLabel, Is.Empty);
@@ -1260,9 +1259,8 @@ namespace GuardsDigital.Tests.EditMode
                     played.Select(slot => slot.Color)));
                 Assert.That(hero.TurnSlots.Take(2).All(slot => slot.IsOccupied), Is.True);
                 Assert.That(hero.TurnSlots.Skip(2).All(slot => !slot.IsOccupied), Is.True);
-                Assert.That(hero.TurnSlots[0].AssistiveLabel, Does.Contain("Turn 1"));
-                Assert.That(hero.TurnSlots[0].TurnLabel, Is.EqualTo("1"),
-                    "Milestone 8.7a writes the ordinal on the slot as well.");
+                Assert.That(hero.TurnSlots[0].AssistiveLabel, Does.Contain("Turn 1"),
+                    "Milestone 8.11b: the ordinal is in the assistive reading and nowhere on the icon.");
                 Assert.That(hero.TurnSlots[0].AssistiveLabel,
                     Does.Contain(MatchHudTheme.ColorName(hero.TurnSlots[0].Color)),
                     "The colour is readable, and only from the assistive label.");
@@ -1321,11 +1319,15 @@ namespace GuardsDigital.Tests.EditMode
                     card.State.Location == CardLocation.DiscardPile)
                 .ToArray();
             Assert.That(hero.DiscardCount, Is.EqualTo(pile.Length));
-            Assert.That(hero.DiscardCountLabel, Is.EqualTo(pile.Length.ToString()));
-            Assert.That(hero.DiscardColors,
-                Is.EquivalentTo(pile
-                    .Select(card => CurrentRoundCards.ColorOf(session.Projection, card))
-                    .Distinct()));
+            Assert.That(hero.DiscardCards.Select(card => card.CardInstanceId),
+                Is.EqualTo(pile.Select(card => card.Id).OrderBy(id => id.Value, StringComparer.Ordinal)),
+                "Milestone 8.11b: one card per card in the projected pile, in the order card instance " +
+                "identity settles - which is the order the tray's own discarded group is in.");
+            Assert.That(hero.DiscardCards.Select(card => card.Color),
+                Is.EqualTo(pile
+                    .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
+                    .Select(card => CurrentRoundCards.ColorOf(session.Projection, card))));
+            Assert.That(hero.DiscardCards.All(card => card.Group == TrayCardGroup.Discarded), Is.True);
         }
 
         // -------------------------------------------------------------------------------------------
@@ -1405,6 +1407,303 @@ namespace GuardsDigital.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(host);
             }
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.11b: the rail draws cards rather than numbers, and a Defense offer is a card face
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void EveryResolvedTurnAndEveryDiscardedCard_IsItsOwnIcon_AndNoNumberIsDrawnForEither()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out var defenderId);
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            FinishTheCurrentTurn(session);
+            presenter.Refresh();
+
+            var hero = view.Model.Heroes.Single(value => value.HeroId.Equals(defenderId));
+            Assert.That(hero.DiscardCards, Is.Not.Empty,
+                "The fixture answered an Attack with a card, which p.11's reaction discards.");
+            Assert.That(view.Model.Heroes.Any(value => value.TurnSlots.Any(slot => slot.IsOccupied)),
+                Is.True,
+                "and the turn it happened in has resolved, so both rows have something in them.");
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-turn-slot"),
+                Is.EqualTo(RoundResolutionAuthority.TurnsPerRound * view.Model.Heroes.Count),
+                "Every reserved position is drawn, occupied or not, so the four keep their places.");
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-discard-card"),
+                Is.EqualTo(view.Model.Heroes.Sum(value => value.DiscardCards.Count)),
+                "and the discard pile is one icon per projected card rather than a count.");
+
+            // The point of the milestone, as a fact rather than a screenshot: nothing on either row
+            // prints a number any more.
+            //
+            // The discard row is asserted on its own text first, so it stands apart from the ordinal
+            // loop below rather than passing or failing with it whenever a pile happens to hold one to
+            // four cards - which is exactly the collision the knockout evidence for this case hit.
+            foreach (var row in Descendants(view.Root).Where(element => element.name == "gd-discard"))
+            {
+                Assert.That(
+                    Descendants(row).OfType<Label>().Select(label => label.text),
+                    Is.SubsetOf(new[] { "DISCARD", "EMPTY" }),
+                    "The discard row prints its caption and nothing else - no count, because the " +
+                    "visible icons are the count.");
+            }
+
+            var railText = Descendants(view.Root).OfType<Label>().Select(label => label.text).ToArray();
+            foreach (var ordinal in new[] { "1", "2", "3", "4" })
+            {
+                Assert.That(railText, Has.No.Member(ordinal),
+                    $"The slot ordinal '{ordinal}' is off the rail: the row's own order is the sequence.");
+            }
+
+            // An empty slot is an outline with nothing in it, rather than an invented card.
+            var drawnNames = view.Model.Heroes
+                .SelectMany(value => value.TurnSlots
+                    .Where(slot => slot.IsOccupied)
+                    .Select(slot => slot.PlayedCard.DisplayName)
+                    .Concat(value.DiscardCards.Select(card => card.DisplayName)))
+                .ToArray();
+            Assert.That(drawnNames, Is.Not.Empty);
+            Assert.That(railText.Intersect(drawnNames), Is.Empty,
+                "An icon carries no text at all - the card's name is one pointer rest away.");
+            Assert.That(hero.TurnSlots.Where(slot => !slot.IsOccupied)
+                .All(slot => slot.PlayedCard == null), Is.True);
+            Assert.That(hero.TurnSlots[3].AssistiveLabel, Does.Contain("empty"),
+                "and the empty position says so in its own assistive reading.");
+            Assert.That(hero.DiscardCards.All(card => card.AssistiveLabel.Contains("DISCARDED")),
+                Is.True,
+                "while a discard icon's own reading names the exact card and where it is.");
+        }
+
+        [Test]
+        public void RestingOnADiscardIcon_RevealsThatCardsWholeFaceInTheOneRailPreview()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out var defenderId);
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            FinishTheCurrentTurn(session);
+            presenter.Refresh();
+
+            var hero = view.Model.Heroes.Single(value => value.HeroId.Equals(defenderId));
+            var first = hero.DiscardCards[0];
+            var resolved = view.Model.Heroes
+                .SelectMany(value => value.TurnSlots)
+                .First(slot => slot.IsOccupied);
+            TrayCardViewModel reported = null;
+            view.DiscardCardHighlighted += card => reported = card;
+            var preview = Descendants(view.Root)
+                .Single(element => element.name == "gd-turn-slot-preview");
+            Assert.That(preview.style.display.value, Is.EqualTo(DisplayStyle.None),
+                "Nothing is revealed until the pointer rests.");
+
+            view.ForwardDiscardCardHighlight(first);
+            Assert.That(view.HighlightedDiscardCard, Is.SameAs(first));
+            Assert.That(reported, Is.SameAs(first));
+            Assert.That(preview.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(
+                Descendants(preview).Count(element => element.name == "gd-card-preview"),
+                Is.EqualTo(1),
+                "The face is the tray's own builder, and there is exactly one of it.");
+            Assert.That(
+                Descendants(preview).OfType<Label>().Any(label =>
+                    label.text == first.DisplayName.ToUpperInvariant()),
+                Is.True);
+            Assert.That(
+                Descendants(preview).OfType<Label>().Any(label => label.text == "DISCARDED"),
+                Is.True,
+                "and it names the lifecycle location the icon stands in.");
+
+            // Moving to any other icon replaces the one face. The two kinds of icon share the preview
+            // deliberately: two card faces on screen at once is the thing a hover reveal must not do.
+            view.ForwardTurnSlotHighlight(resolved);
+            Assert.That(view.HighlightedDiscardCard, Is.Null);
+            Assert.That(reported, Is.Null, "and the discard highlight is reported as having left.");
+            Assert.That(view.HighlightedTurnSlot, Is.SameAs(resolved));
+            Assert.That(
+                Descendants(preview).Count(element => element.name == "gd-card-preview"),
+                Is.EqualTo(1),
+                "Moving between icons replaces the face rather than putting two on screen.");
+            Assert.That(
+                Descendants(preview).OfType<Label>().Any(label =>
+                    label.text == resolved.PlayedCard.DisplayName.ToUpperInvariant()),
+                Is.True);
+
+            view.ForwardTurnSlotHighlight(null);
+            Assert.That(view.HighlightedDiscardCard, Is.Null);
+            Assert.That(view.HighlightedTurnSlot, Is.Null);
+            Assert.That(preview.style.display.value, Is.EqualTo(DisplayStyle.None),
+                "and leaving the rail closes it.");
+        }
+
+        [Test]
+        public void ARevealedDiscardCard_IsDroppedWhenTheRailIsRedrawn()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out var defenderId);
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            presenter.Refresh();
+
+            var hero = view.Model.Heroes.Single(value => value.HeroId.Equals(defenderId));
+            Assert.That(hero.DiscardCards, Is.Not.Empty);
+            view.ForwardDiscardCardHighlight(hero.DiscardCards[0]);
+            Assert.That(view.HighlightedDiscardCard, Is.Not.Null);
+
+            FinishTheCurrentTurn(session);
+            presenter.Refresh();
+            Assert.That(view.HighlightedDiscardCard, Is.Null,
+                "A rebuilt rail keeps no face for an icon element it no longer draws.");
+            Assert.That(
+                Descendants(view.Root).Single(element => element.name == "gd-turn-slot-preview")
+                    .style.display.value,
+                Is.EqualTo(DisplayStyle.None));
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-discard-card"),
+                Is.EqualTo(view.Model.Heroes.Sum(value => value.DiscardCards.Count)),
+                "and the redrawn pile is exactly the projected one, with no icon left over.");
+        }
+
+        /// <summary>
+        /// Resolves whatever turn is currently being played, without reaching end of round - which
+        /// matters for the discard pile, because p.8's retrieval empties it.
+        /// </summary>
+        private static void FinishTheCurrentTurn(MatchSession session)
+        {
+            for (var guard = 0; guard < 8 &&
+                session.Projection.Phase == RoundResolutionPhase.ResolvingTurn; guard++)
+            {
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(
+                    session.Projection.SelectedActor.CardInstanceId));
+            }
+        }
+
+        [Test]
+        public void EveryLegalDefenseOffer_IsDrawnAsTheTraysOwnCompleteCardFace_AndDeclineIsNot()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var choice = session.Projection.PendingDefenseChoice;
+            Assert.That(choice, Is.Not.Null);
+            var offered = view.Model.DefenseChoices.Where(value => value.Card != null).ToArray();
+            Assert.That(offered.Select(value => value.Card.CardInstanceId),
+                Is.EqualTo(choice.LegalDefenseOffers.Select(offer => offer.SourceCardInstanceId)),
+                "One card face per projected legal offer, in the projected response order.");
+            Assert.That(view.Model.DefenseChoices.Last().Card, Is.Null,
+                "DECLINE DEFENSE is about no card, so it carries none.");
+            Assert.That(view.Model.DefenseChoices.Last().Label, Is.EqualTo("DECLINE DEFENSE"));
+
+            var controls = Descendants(view.Root)
+                .Where(element => element.name == "gd-defense-card")
+                .ToArray();
+            Assert.That(controls, Has.Length.EqualTo(offered.Length));
+            Assert.That(controls.All(control => control.focusable), Is.True);
+            Assert.That(controls.All(control => control.enabledSelf), Is.True);
+            Assert.That(
+                controls.All(control =>
+                    Descendants(control).Count(element => element.name == "gd-card-preview") == 1),
+                Is.True,
+                "Each is the shared standalone card face, so no second abbreviated card design exists.");
+
+            // The regions a whole printed face is drawn in, on the offer, exactly as on a tray card.
+            var first = controls[0];
+            foreach (var band in new[]
+                     {
+                         "gd-card-name-band", "gd-card-secondary-values", "gd-card-primary-action",
+                         "gd-card-rules", "gd-card-history"
+                     })
+            {
+                Assert.That(Descendants(first).Any(element => element.name == band), Is.True,
+                    $"The offered face carries the tray card's {band}.");
+            }
+
+            var decline = Descendants(view.Root).OfType<Button>()
+                .Single(button => button.text == "DECLINE DEFENSE");
+            Assert.That(decline.name, Is.Not.EqualTo("gd-defense-card"));
+            Assert.That(Descendants(decline).Any(element => element.name == "gd-card-preview"), Is.False,
+                "and it stays a distinct non-card control.");
+        }
+
+        [Test]
+        public void ADefenseCard_ForwardsOnlyItsProjectedInvocationAndKeepsTheAuthorityComputedPreview()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var offer = view.Model.DefenseChoices.First(value => value.Card != null);
+            TypedInvocationViewModel submitted = null;
+            view.InvocationSubmitted += invocation => submitted = invocation;
+
+            Assert.That(view.ForwardDefenseCard(offer), Is.True,
+                "The whole card is the control, and it is the path its own Button activates.");
+            Assert.That(submitted, Is.SameAs(offer),
+                "It forwards the offer's own invocation unchanged.");
+            Assert.That(submitted.Command, Is.SameAs(offer.Command));
+
+            // A face this rebuild did not draw answers nothing, which is the refusal every other
+            // forwarded control here makes.
+            submitted = null;
+            Assert.That(
+                view.ForwardDefenseCard(new TypedInvocationViewModel(offer.Label, offer.Command)),
+                Is.False);
+            Assert.That(
+                view.ForwardDefenseCard(view.Model.DefenseChoices.Last()),
+                Is.False,
+                "and DECLINE DEFENSE is not a card control, so it is not reachable as one.");
+            Assert.That(submitted, Is.Null);
+
+            // The preview stays the authority's: it is the offer's own breakdown object, not a total
+            // this surface recomputed from the face it is drawing.
+            var breakdown = offer.DefenseBreakdown;
+            Assert.That(breakdown, Is.Not.Null);
+            view.ShowDefensePreview(breakdown, new Rect(0f, 0f, 10f, 10f));
+            Assert.That(view.ActiveDefensePreview, Is.SameAs(breakdown));
+            Assert.That(
+                Descendants(view.PreviewRoot).OfType<Label>().Any(label =>
+                    label.text.Contains("ATTACK TOTAL")),
+                Is.True,
+                "and it still reads the projected totals rather than anything on the card.");
+        }
+
+        [Test]
+        public void FourDefenseCardFacesPlusDecline_FitTheValidatedGameViewWithoutSidewaysScrolling()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var cards = Descendants(view.Root)
+                .Where(element => element.name == "gd-defense-card")
+                .ToArray();
+            Assert.That(cards, Has.Length.EqualTo(4),
+                "p.6 deals five, one is committed, and the rest are the response - which is the row " +
+                "milestone 5.1c sized this region for.");
+            Assert.That(
+                cards.All(card =>
+                    Mathf.Approximately(
+                        card.style.width.value.value, RoundActionUnityView.DefenseCardFootprint)),
+                Is.True,
+                "One width for every offer, so choosing one cannot re-wrap or resize another.");
+
+            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(2048f, 1152f);
+            var occupied = (RoundActionUnityView.DefenseCardFootprint * cards.Length) +
+                (RoundActionUnityView.SectionGap * cards.Length) +
+                RoundActionUnityView.SectionGutterWidth;
+            Assert.That(tray.width - occupied, Is.GreaterThan(120f),
+                "Four whole faces, their gutters and the section label leave DECLINE DEFENSE room on " +
+                "the same row at the validated desktop viewport.");
+            Assert.That(DirectorHandsUnityView.CardMinimumHeight, Is.LessThan(tray.height),
+                "and one row of them stands inside the tray's ordinary bound, so this response needs " +
+                "no taller context than it has always had.");
+
+            // The short desktop viewport keeps the existing bounded-scroll fallback rather than a new
+            // rule: the region is smaller than the row, and the tray region already scrolls.
+            var short0 = ConfiguredMatchHudRenderer.CalculateCardPanelRect(778f, 300f);
+            Assert.That(short0.height, Is.LessThan(DirectorHandsUnityView.CardMinimumHeight));
         }
 
         // -------------------------------------------------------------------------------------------

@@ -604,7 +604,58 @@ namespace GuardsDigital.Tests.PlayMode
                 Descendants(hud.RootElement).OfType<UnityEngine.UIElements.Label>()
                     .Count(label => label.name == "gd-turn-slots-caption" && label.text == "RESOLVED TURNS"),
                 Is.EqualTo(rails.Length),
-                "and both rails caption the numbered row as what it is.");
+                "and both rails caption the row as what it is.");
+
+            // Milestone 8.11b, in the runtime scene: the row is card icons rather than numbers, and
+            // resting on one reveals that card's whole face through the rail's single preview. The
+            // search is scoped to the rails on purpose - the tray beside them is full of printed
+            // numbers, and one of them is legitimately an Initiative of 3.
+            var railView = runtime.HeroOverviewsView;
+            var railText = Descendants(railView.Root)
+                .OfType<UnityEngine.UIElements.Label>()
+                .Select(label => label.text)
+                .ToArray();
+            foreach (var ordinal in new[] { "1", "2", "3", "4" })
+            {
+                Assert.That(railText, Has.No.Member(ordinal),
+                    $"The slot ordinal '{ordinal}' is off the runtime rail too.");
+            }
+
+            Assert.That(
+                Descendants(hud.RootElement).Count(element => element.name == "gd-turn-slot"),
+                Is.EqualTo(RoundResolutionAuthority.TurnsPerRound * rails.Length));
+
+            var occupied = resolved.TurnSlots.Single(slot => slot.IsOccupied);
+            railView.ForwardTurnSlotHighlight(occupied);
+            yield return null;
+            var preview = Descendants(railView.Root)
+                .Single(element => element.name == "gd-turn-slot-preview");
+            Assert.That(preview.style.display.value,
+                Is.EqualTo(UnityEngine.UIElements.DisplayStyle.Flex));
+            Assert.That(
+                Descendants(preview).Count(element => element.name == "gd-card-preview"),
+                Is.EqualTo(1),
+                "One face, from the tray's own builder.");
+
+            Assert.That(
+                Descendants(hud.RootElement).Count(element => element.name == "gd-discard-card"),
+                Is.EqualTo(railView.Model.Heroes.Sum(hero => hero.DiscardCards.Count)),
+                "The pile is one icon per projected card, and invents none when it is empty.");
+
+            var pile = railView.Model.Heroes.FirstOrDefault(hero => hero.DiscardCards.Count > 0);
+            if (pile != null)
+            {
+                railView.ForwardDiscardCardHighlight(pile.DiscardCards[0]);
+                yield return null;
+                Assert.That(railView.HighlightedTurnSlot, Is.Null,
+                    "Moving onto a discard icon replaces the face rather than adding one.");
+                Assert.That(
+                    Descendants(preview).Count(element => element.name == "gd-card-preview"),
+                    Is.EqualTo(1));
+            }
+
+            railView.ForwardDiscardCardHighlight(null);
+            railView.ForwardTurnSlotHighlight(null);
             yield return Capture("tmp/milestone-8-7a-resolved.png");
         }
 
@@ -735,6 +786,77 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(heroes, Has.All.Matches<PrimitiveHeroView>(hero =>
                 hero.GetComponent<MeshRenderer>().enabled &&
                 hero.GetComponent<MeshFilter>().sharedMesh != null));
+        }
+
+        /// <summary>
+        /// Milestone 8.11b. Both mirrored Wasps are drawn as the piece the project has art for, and the
+        /// pointer target is the piece a player can see.
+        ///
+        /// <para>It asserts the same things whether or not the private token artwork is present, which
+        /// is the point: the tracked project has none, and an absent face is an ordinary state rather
+        /// than a fault. What must hold either way is that both heroes are in the <em>same</em> state -
+        /// two identical Wasps cannot resolve one token and one prism - that the two teams never share
+        /// a face, and that the collider follows whichever piece was built.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_DrawsBothMirroredWaspsAsTheSamePieceAndSizesTheirPointerTargetsToIt()
+        {
+            yield return LoadScene();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
+            Assert.That(heroes, Has.Length.EqualTo(2));
+            Assert.That(heroes.Select(hero => hero.HasTokenVisual).Distinct().Count(), Is.EqualTo(1),
+                "Both seats hold the same hero, so they resolve the same kind of piece or neither does.");
+
+            var tokened = heroes[0].HasTokenVisual;
+            foreach (var hero in heroes)
+            {
+                var filter = hero.GetComponent<MeshFilter>();
+                var renderer = hero.GetComponent<MeshRenderer>();
+                var collider = hero.GetComponent<CapsuleCollider>();
+                Assert.That(filter.sharedMesh, Is.Not.Null);
+                Assert.That(renderer.sharedMaterials.All(material => material != null), Is.True,
+                    "No hero is left holding a null material by either route.");
+                Assert.That(collider.radius, Is.EqualTo(hero.SelectionRadius).Within(0.0001f),
+                    "The pointer target is the radius of the piece that was actually built.");
+
+                if (tokened)
+                {
+                    Assert.That(filter.sharedMesh.subMeshCount, Is.EqualTo(2),
+                        "The token is the official face and the team rim, on one renderer.");
+                    Assert.That(renderer.sharedMaterials, Has.Length.EqualTo(2));
+                    Assert.That(renderer.sharedMaterials[1].mainTexture, Is.Not.Null,
+                        "and the face carries this hero's own prepared token.");
+                    Assert.That(hero.SelectionRadius,
+                        Is.EqualTo(HeroTokenArtwork.TokenOuterRadius).Within(0.0001f));
+                }
+                else
+                {
+                    Assert.That(renderer.sharedMaterials, Has.Length.EqualTo(1),
+                        "The tracked fallback is exactly the prism it always was.");
+                    Assert.That(hero.SelectionRadius,
+                        Is.EqualTo(PrimitiveHeroView.DefaultBaseRadius).Within(0.0001f));
+                }
+
+                // Either way the team is stated in this project's own colour, from the authoritative
+                // side rather than from the picture.
+                Assert.That(
+                    renderer.sharedMaterials[0].color,
+                    Is.EqualTo(HeroTokenArtwork.TeamRim(hero.TeamSide)));
+            }
+
+            Assert.That(
+                heroes[0].GetComponent<MeshRenderer>().sharedMaterials[0].color,
+                Is.Not.EqualTo(heroes[1].GetComponent<MeshRenderer>().sharedMaterials[0].color),
+                "The two teams are never the same colour on the board.");
+            if (tokened)
+            {
+                Assert.That(
+                    heroes[0].GetComponent<MeshRenderer>().sharedMaterials[1].mainTexture,
+                    Is.Not.SameAs(heroes[1].GetComponent<MeshRenderer>().sharedMaterials[1].mainTexture),
+                    "and never the same face.");
+            }
+
+            yield return Capture("tmp/milestone-8-11b-tokens.png");
         }
 
         /// <summary>
@@ -1170,22 +1292,31 @@ namespace GuardsDigital.Tests.PlayMode
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
-            var defenseCards = Hand(runtime, TeamSide.Blue).Cards.Take(4).ToArray();
-            var invocations = new[]
-            {
-                new TypedInvocationViewModel(
-                    "DISCARD TEST - BLUE FEINT\nPRINTED DEFENSE 2",
-                    DirectorCommand.ChooseDefenseCard(defenseCards[0].Id)),
-                new TypedInvocationViewModel(
-                    "DISCARD TEST - BLUE SENTINEL\nPRINTED DEFENSE 4",
-                    DirectorCommand.ChooseDefenseCard(defenseCards[1].Id)),
-                new TypedInvocationViewModel(
-                    "DISCARD TEST - BLUE SCOUT SHOT\nPRINTED DEFENSE 1",
-                    DirectorCommand.ChooseDefenseCard(defenseCards[2].Id)),
-                new TypedInvocationViewModel(
-                    "DISCARD TEST - BLUE HAMMER\nPRINTED DEFENSE 1",
-                    DirectorCommand.ChooseDefenseCard(defenseCards[3].Id))
-            };
+            var hand = Hand(runtime, TeamSide.Blue);
+
+            // Milestone 8.11b: every offer carries the card it is about, as the tray draws one, so the
+            // runtime region draws whole faces here rather than abbreviated text - and the four are
+            // chosen so the Game View inspection this test captures covers p.14's Block as well as an
+            // ordinary numeric Defense. The hand holds five and this row is four, so which one is left
+            // out matters; taking the first four dropped the only Block Wasp's starting hand holds.
+            var offeredFaces = hand.TrayCards
+                .Where(card => hand.Cards.Any(instance => instance.Id.Equals(card.CardInstanceId)))
+                .OrderByDescending(card => card.Face.PrimaryActionLabel.Contains("BLOCK"))
+                .Take(4)
+                .ToArray();
+            Assert.That(offeredFaces, Has.Length.EqualTo(4));
+            Assert.That(offeredFaces.Any(card => card.Face.PrimaryActionLabel.Contains("BLOCK")), Is.True,
+                "so the captured row shows a Block face beside the numeric ones.");
+            var invocations = offeredFaces
+                .Select(card => new TypedInvocationViewModel(
+                    // Named from the card rather than from an invented string, so the tooltip and the
+                    // face a player sees are the same card - the correction milestone 8.8a made to its
+                    // own capture for the same reason.
+                    $"DISCARD {card.DisplayName.ToUpperInvariant()}\n{card.Face.ValueLine}",
+                    DirectorCommand.ChooseDefenseCard(card.CardInstanceId),
+                    null,
+                    card))
+                .ToArray();
             var declineCommand = DirectorCommand.DeclineDefense();
             var declineInvocation = new TypedInvocationViewModel(
                 "DECLINE DEFENSE",
@@ -1209,9 +1340,32 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             Assert.That(runtime.RoundView.Model.DefenseChoices, Has.Count.EqualTo(5));
-            Assert.That(runtime.RoundView.Model.DefenseChoices[2].Label,
-                Is.EqualTo("DISCARD TEST - BLUE SCOUT SHOT\nPRINTED DEFENSE 1"));
+            Assert.That(runtime.RoundView.Model.DefenseChoices[2].Label, Is.EqualTo(invocations[2].Label),
+                "Every offer keeps the complete label it was projected with, whole and unabbreviated.");
             Assert.That(runtime.RoundView.Model.DefenseChoices[4].Label, Is.EqualTo("DECLINE DEFENSE"));
+
+            // Milestone 8.11b, in the runtime scene: four whole faces from the tray's own builder, in
+            // the projected response order, and DECLINE DEFENSE still a control of its own.
+            var faces = Descendants(runtime.RoundView.Root)
+                .Where(element => element.name == "gd-defense-card")
+                .ToArray();
+            Assert.That(faces, Has.Length.EqualTo(4));
+            Assert.That(
+                faces.All(face =>
+                    Descendants(face).Count(element => element.name == "gd-card-preview") == 1),
+                Is.True);
+            Assert.That(
+                faces.SelectMany(face => Descendants(face).OfType<UnityEngine.UIElements.Label>())
+                    .Select(label => label.text)
+                    .Intersect(invocations.Select(value => value.Card.DisplayName.ToUpperInvariant()))
+                    .Count(),
+                Is.EqualTo(4),
+                "Each offer draws its own card's name, so the row is four different cards.");
+            Assert.That(
+                Descendants(runtime.RoundView.Root).OfType<UnityEngine.UIElements.Button>()
+                    .Single(button => button.text == "DECLINE DEFENSE").name,
+                Is.Not.EqualTo("gd-defense-card"));
+            yield return Capture("tmp/milestone-8-11b-defense.png");
             foreach (var invocation in invocations)
             {
                 runtime.RoundView.ForwardInvocation(invocation);
@@ -1652,6 +1806,8 @@ namespace GuardsDigital.Tests.PlayMode
             var heroViews = Object.FindObjectsByType<PrimitiveHeroView>();
             var blueHeroId = runtime.Setup.Heroes.Single(value => value.TeamSide == TeamSide.Blue).HeroId;
             var blueView = heroViews.Single(value => value.Occupancy.HeroId.Equals(blueHeroId));
+            var wasTokened = blueView.HasTokenVisual;
+            var meshBefore = blueView.GetComponent<MeshFilter>().sharedMesh;
             var remainingHeroes = baseBoard.Heroes
                 .Where(value => !value.HeroId.Equals(blueHeroId))
                 .ToArray();
@@ -1688,6 +1844,19 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(blueView.gameObject.activeSelf, Is.True);
             Assert.That(blueView.Occupancy.Coordinate, Is.EqualTo(returnedCoordinate),
                 "Respawn, Undo, or restore reuses and repositions the configured hero view.");
+            // Milestone 8.11b: and it comes back as the piece it went away as. The swap is a mesh and
+            // a material on the view's own components, so visibility, position and the piece are one
+            // object's state rather than three that could disagree after a Defeat.
+            Assert.That(blueView.HasTokenVisual, Is.EqualTo(wasTokened));
+            Assert.That(blueView.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(meshBefore));
+            Assert.That(
+                blueView.GetComponent<MeshRenderer>().sharedMaterials[0].color,
+                Is.EqualTo(HeroTokenArtwork.TeamRim(TeamSide.Blue)));
+            Assert.That(
+                Object.FindObjectsByType<PrimitiveHeroView>()
+                    .Count(value => value.Occupancy.HeroId.Equals(blueHeroId)),
+                Is.EqualTo(1),
+                "and no duplicate or stale view was built to bring it back.");
             yield return null;
         }
 

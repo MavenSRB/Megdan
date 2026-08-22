@@ -35,11 +35,22 @@ namespace GuardsDigital.Presentation.Interaction
             return boardView.TryForwardHeroIntent(hero.Occupancy.HeroId);
         }
 
+        /// <summary>
+        /// Builds the pointer target from the piece the hero is actually drawn as.
+        ///
+        /// Milestone 8.11b: <see cref="PrimitiveHeroView.SelectionRadius"/> rather than the prism's own
+        /// base radius, because the official token covers its space and is wider than the prism it
+        /// replaces. It is the same rule milestone 8.11a recorded when it raised the prism: the pointer
+        /// target grows with the piece, so picking stays exactly what a player sees. The hero this
+        /// forwards is unchanged either way - it is read from the view's own occupancy, never from the
+        /// collider.
+        /// </summary>
         private void EnsureColliderShape()
         {
+            var hero = GetComponent<PrimitiveHeroView>();
             var capsule = GetComponent<CapsuleCollider>();
             capsule.direction = 1;
-            capsule.radius = PrimitiveHeroView.DefaultBaseRadius;
+            capsule.radius = hero != null ? hero.SelectionRadius : PrimitiveHeroView.DefaultBaseRadius;
             capsule.height = PrimitiveHeroView.DefaultHeight;
             capsule.center = Vector3.up * (PrimitiveHeroView.DefaultHeight * 0.5f);
         }
